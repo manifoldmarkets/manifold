@@ -303,6 +303,11 @@ export type Perp = {
   maxFundingRate: number // f_max per period
   fundingSensitivity: number // k
   maxOraclePriceAgeMs: number // block trades if feed stale
+  // Taker fee in basis points of NOTIONAL, charged at open and close and
+  // paid into the trader's side backing pool. Missing on pre-fee contracts
+  // = PERP_TAKER_FEE_BPS_DEFAULT. Read via getPerpTakerFeeBps
+  // (common/perps/fees), never directly.
+  takerFeeBps?: number
   // ms between funding events: max(1h, feed updatePeriodMs), derived at
   // create time and frozen so later feed-registry changes can't rewrite the
   // economics of open positions. Missing on pre-period contracts = hourly.

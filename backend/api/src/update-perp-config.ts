@@ -1,3 +1,4 @@
+import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -19,12 +20,16 @@ import { APIError, APIHandler } from './helpers/endpoint'
 //   means up to 2% of the crowded side's positions per hour at full
 //   imbalance. The schema keeps it inside assertPerpFundingConfig's (0, 1)
 //   domain; a value at or above 1 would make every funding tick fail closed.
+// - takerFeeBps: per-side fee on notional, applied to the NEXT trade
+//   (existing open positions pay it when they close). 0 disables. The
+//   schema keeps it inside assertPerpTakerFeeConfig's [0, 100] domain;
+//   outside it the engine fail-closes every trade.
 export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   body,
   auth
 ) => {
   throwErrorIfNotAdmin(auth.uid)
-  const { contractId, maxLeverage, maxFundingRate } = body
+  const { contractId, maxLeverage, maxFundingRate, takerFeeBps } = body
 
   const pg = createSupabaseDirectClient()
   const contract = await getContract(pg, contractId)
@@ -38,6 +43,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   const patch = removeUndefinedProps({
     maxLeverage,
     maxFundingRate,
+    takerFeeBps,
     lastUpdatedTime,
   })
   await updateContract(pg, contractId, patch)
@@ -49,16 +55,23 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     log(
       `admin ${auth.uid} set maxFundingRate on ${contract.slug}: ${contract.maxFundingRate} -> ${maxFundingRate}`
     )
+  if (takerFeeBps !== undefined)
+    log(
+      `admin ${auth.uid} set takerFeeBps on ${contract.slug}: ${getPerpTakerFeeBps(
+        contract
+      )} -> ${takerFeeBps}`
+    )
   broadcastUpdatedContract(contract.visibility, { id: contractId, ...patch })
 
   const editedFields = Object.keys(
-    removeUndefinedProps({ maxLeverage, maxFundingRate })
+    removeUndefinedProps({ maxLeverage, maxFundingRate, takerFeeBps })
   )
   return {
     result: {
       success: true as const,
       maxLeverage: maxLeverage ?? contract.maxLeverage,
       maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
+      takerFeeBps: takerFeeBps ?? getPerpTakerFeeBps(contract),
     },
     continue: async () => {
       await recordContractEdit(contract, auth.uid, editedFields)

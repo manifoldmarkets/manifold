@@ -91,6 +91,13 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
         : 'Closed'
     return `${verb} ${d.direction} at ${px(d.closePrice)} — profit ${pnlText}`
   }
+  if (txn.category === 'PERP_TAKER_FEE') {
+    const bps = Number(d.feeBps)
+    const pct = Number.isFinite(bps) ? ` (${(bps / 100).toFixed(2)}%)` : ''
+    return `Trading fee${pct} on ${formatMoney(
+      Number(d.sizeDelta) || 0
+    )} ${d.direction} notional — paid into the market's backing pool`
+  }
   if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
     return `Residual pools returned to creator (settled at ${px(d.finalPrice)})`
   }

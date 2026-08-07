@@ -642,6 +642,10 @@ export const createPerpSchema = z.object({
   maxOraclePriceAgeMs: z.number().int().positive(),
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),
+  // Per-side taker fee in bps of notional. Omitted = the platform default
+  // (see PERP_TAKER_FEE_BPS_DEFAULT); the handler stamps the resolved value
+  // so later default changes cannot rewrite an existing market's economics.
+  takerFeeBps: z.number().min(0).max(100).optional(),
 })
 
 export const placePerpTradeSchema = z.object({

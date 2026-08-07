@@ -117,6 +117,7 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   perp_liquidation: 'Perp position liquidated',
   PERP_OPEN_MARGIN: 'Opened perp position',
   PERP_CLOSE_PAYOUT: 'Closed perp position',
+  PERP_TAKER_FEE: 'Perp trading fee',
   PERP_RESOLVE_RESIDUAL: 'Perp resolved (residual pools)',
   // Less-common txn types
   AD_CREATE: 'Ad created',

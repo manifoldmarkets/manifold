@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
+import { calcPerpTakerFee, getPerpTakerFeeBps } from 'common/perps/fees'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import { fundingPeriodUnit, getFundingPeriodMs } from 'common/perps/funding'
 import { fundingPerPeriod, getUserFacingPnl } from 'common/perps/pnl'
@@ -144,7 +145,9 @@ export const PerpPositionPanel = (props: {
       toast.success(
         `Closed ${direction} — payout ${formatMoney(
           res.payout
-        )} (profit ${formatMoney(res.pnl)})`
+        )} (profit ${formatMoney(res.pnl)}${
+          res.fee > 0 ? `, fee ${formatMoney(res.fee)}` : ''
+        })`
       )
       track('sell shares', {
         outcomeType: contract.outcomeType,
@@ -413,6 +416,11 @@ const PositionCard = (props: {
         100
       : 0
 
+  // Estimated close-side taker fee (the engine caps it at the actual close
+  // payout, so this can only overstate near liquidation).
+  const takerFeeBps = getPerpTakerFeeBps(contract)
+  const closeFee = calcPerpTakerFee(p.size, takerFeeBps)
+
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
     ? (markPrice - p.liquidationPrice) / markPrice
@@ -535,6 +543,13 @@ const PositionCard = (props: {
             ? 'Close paused — waiting for oracle'
             : `Close position @ ${formatPrice(markPrice, priceDecimals)}`}
         </Button>
+        {closeFee > 0 && (
+          <span className="text-ink-400 -mt-1 text-xs">
+            Closing pays a {formatFundingMana(closeFee)} fee (
+            {(takerFeeBps / 100).toFixed(2)}% of notional) into the market's
+            backing pool.
+          </span>
+        )}
       </Col>
     </Col>
   )

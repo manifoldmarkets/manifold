@@ -97,6 +97,25 @@ close, factor-zero ADL, funding, and resolution fail atomically if the ledger
 and pools diverge. This is required because the generic transaction primitive
 does not maintain a balance column for `CONTRACT` senders.
 
+## Taker fee
+
+`common/src/perps/fees.ts`. Trades execute at the cached oracle price, and
+with zero fees that price is a free option for latency bots (2026-08-07: two
+bots extracted ~M$70k from the BTC perp pools by sniping the 15s tick at a
+measured edge of ~0.7 bps of notional per side — faster ticks make this
+WORSE, since harvestable total variation grows as 1/√period). The fee is
+`takerFeeBps` (default 5) of NOTIONAL per side, charged on user-initiated
+opens and closes only — never on liquidation, ADL, funding, or resolution —
+and credited to the trader's side backing pool, so it recapitalizes the
+market rather than accruing to the platform (tracked in
+`collectedFees.liquidityFee`). Open-side fees move real mana
+(`PERP_TAKER_FEE` txn user → contract); close-side fees are withheld from the
+payout and never leave escrow, so they get no txn and the cash-backing
+invariant above is preserved on both paths. Close fees are capped at the
+close payout — a near-liquidation close never owes more than it returns.
+Admins tune it live per market via `update-perp-config` (0 disables);
+contracts created before the field default to 5 bps at trade time.
+
 ## Exposure capacity
 
 Opening, adding, or flipping into a side is limited so aggregate open notional

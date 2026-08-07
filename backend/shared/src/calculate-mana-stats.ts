@@ -43,7 +43,8 @@ export const updateTxnStats = async (
               -- USER<->CONTRACT flows tracked as daily summaries: AMM
               -- subsidies and perp margin/payout flows (mana held in pools).
               OR category in ('ADD_SUBSIDY', 'PERP_OPEN_MARGIN',
-                              'PERP_CLOSE_PAYOUT', 'PERP_RESOLVE_RESIDUAL'))
+                              'PERP_CLOSE_PAYOUT', 'PERP_TAKER_FEE',
+                              'PERP_RESOLVE_RESIDUAL'))
          and category not in ('CONSUME_SPICE', 'CONSUME_SPICE_DONE')
         group by from_type,
           to_type,

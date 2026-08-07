@@ -76,6 +76,7 @@ type AnyTxnType =
   | PreKycBonus
   | PerpOpenMargin
   | PerpClosePayout
+  | PerpTakerFee
   | PerpResolveResidual
 
 export type AnyTxnCategory = AnyTxnType['category']
@@ -631,6 +632,22 @@ type PerpClosePayout = {
   }
 }
 
+// Taker fee on user-initiated opens: real mana user -> contract, credited to
+// the trader's side backing pool. Close-side fees move NO mana (they are
+// withheld from the close payout and stay in escrow), so per the rule above
+// they get no txn — the fee amounts live in the contract_perp_events data.
+type PerpTakerFee = {
+  category: 'PERP_TAKER_FEE'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+  data: {
+    direction: 'long' | 'short'
+    feeBps: number
+    sizeDelta: number
+  }
+}
+
 type PerpResolveResidual = {
   category: 'PERP_RESOLVE_RESIDUAL'
   fromType: 'CONTRACT'
@@ -811,6 +828,7 @@ export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type PerpOpenMarginTxn = Txn & PerpOpenMargin
 export type PerpClosePayoutTxn = Txn & PerpClosePayout
+export type PerpTakerFeeTxn = Txn & PerpTakerFee
 export type PerpResolveResidualTxn = Txn & PerpResolveResidual
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip

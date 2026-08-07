@@ -1,0 +1,84 @@
+// Taker fee for perp trades. Charged on NOTIONAL (size, not margin) at both
+// open and close, and paid into the trader's side backing pool — it is
+// subsidy for the market, not platform revenue.
+//
+// Why this exists: perp trades execute at the cached oracle price, and with
+// zero fees that price is a free option for latency bots — watch the live
+// source, trade the stale mark just before the tick, exit just after
+// (2026-08-07: two bots extracted ~M$70k from the BTC perp pools in ~30h of
+// 4-second round trips; measured edge ~0.7 bps of notional per side). A fee
+// proportional to notional cannot be outgrown by sizing up or levering up,
+// and at the default 5 bps per side only oracle moves > 10 bps per tick
+// clear a round trip — 7 occurrences in the first 31h of the BTC feed.
+
+import { PerpDirection } from './position'
+import { PerpState } from './amm'
+
+/** Per-side default, in basis points of notional. Applies to contracts
+ * created before the field existed; new contracts stamp it at create time. */
+export const PERP_TAKER_FEE_BPS_DEFAULT = 5
+
+/** Upper bound for admin configuration: 100 bps = 1% per side. */
+export const PERP_TAKER_FEE_BPS_MAX = 100
+
+const isValidTakerFeeBps = (bps: number) =>
+  Number.isFinite(bps) && bps >= 0 && bps <= PERP_TAKER_FEE_BPS_MAX
+
+/**
+ * Fail-closed guard for the engine, mirroring assertPerpFundingConfig: new
+ * contracts are schema-validated, but old rows bypass that schema, and a
+ * corrupt fee must block trading rather than silently repricing it.
+ * `undefined` is the valid pre-fee-contract case (reads as the default).
+ */
+export const assertPerpTakerFeeConfig = (config: { takerFeeBps?: number }) => {
+  const { takerFeeBps } = config
+  if (takerFeeBps === undefined) return
+  if (!isValidTakerFeeBps(takerFeeBps))
+    throw new Error(
+      `taker fee must be finite and in [0, ${PERP_TAKER_FEE_BPS_MAX}] bps`
+    )
+}
+
+/**
+ * Effective fee in bps for a contract. Total (never throws) so corrupt legacy
+ * data cannot turn a React render into NaN — the engine separately rejects
+ * invalid config via assertPerpTakerFeeConfig before any mana moves.
+ */
+export const getPerpTakerFeeBps = (contract: {
+  takerFeeBps?: number
+}): number => {
+  const { takerFeeBps } = contract
+  if (takerFeeBps === undefined) return PERP_TAKER_FEE_BPS_DEFAULT
+  return isValidTakerFeeBps(takerFeeBps)
+    ? takerFeeBps
+    : PERP_TAKER_FEE_BPS_DEFAULT
+}
+
+/** Fee in mana on a notional amount. Returns 0 for any degenerate input. */
+export const calcPerpTakerFee = (notional: number, feeBps: number): number => {
+  if (!Number.isFinite(notional) || notional <= 0) return 0
+  if (!Number.isFinite(feeBps) || feeBps <= 0) return 0
+  const fee = notional * (feeBps / 10_000)
+  return Number.isFinite(fee) && fee > 0 ? fee : 0
+}
+
+/**
+ * Credit a collected fee to one side's backing pool. Pure, like the amm.ts
+ * transitions: the caller persists the new pool. The fee mana stays inside
+ * contract escrow (debited from the trader at open, withheld from the payout
+ * at close), so ledger = poolLong + poolShort remains a checkable invariant.
+ */
+export const creditPerpPoolFee = (
+  state: PerpState,
+  side: PerpDirection,
+  fee: number
+): PerpState => {
+  if (!Number.isFinite(fee) || fee <= 0) return state
+  return {
+    ...state,
+    pool: {
+      L: state.pool.L + (side === 'long' ? fee : 0),
+      S: state.pool.S + (side === 'short' ? fee : 0),
+    },
+  }
+}
