@@ -15,6 +15,7 @@ import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
 import { formatWithCommas } from 'common/util/format'
+import { YEAR_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
 import Link from 'next/link'
@@ -582,7 +583,7 @@ export const Stats = (props: {
 function PerpStatsRows(props: { contract: PerpContract }) {
   const { contract } = props
   const isAdmin = useAdmin()
-  const canEditLeverage = isAdmin && !contract.isResolved
+  const canEdit = isAdmin && !contract.isResolved
   const price =
     contract.resolution === 'MKT'
       ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
@@ -630,15 +631,31 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           />
         </td>
       </tr>
-      <tr className={clsx(canEditLeverage && 'bg-purple-500/30')}>
+      <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>Maximum leverage</td>
         <td>
-          {canEditLeverage ? (
+          {canEdit ? (
             <MaxLeverageInput contract={contract} />
           ) : Number.isFinite(contract.maxLeverage) ? (
             `${formatWithCommas(contract.maxLeverage)}×`
           ) : (
             '—'
+          )}
+        </td>
+      </tr>
+      <tr className={clsx(canEdit && 'bg-purple-500/30')}>
+        <td>
+          Max funding rate{' '}
+          <InfoTooltip text="Per-period cap on the funding haircut at full pool imbalance" />
+        </td>
+        <td>
+          {canEdit ? (
+            <MaxFundingRateInput contract={contract} />
+          ) : (
+            <MaxFundingRateDisplay
+              maxFundingRate={contract.maxFundingRate}
+              fundingPeriodMs={fundingPeriodMs}
+            />
           )}
         </td>
       </tr>
@@ -652,7 +669,36 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           <span className="text-ink-500 text-xs">({fundingDirection})</span>
         </td>
       </tr>
+      {canEdit && (
+        <tr className="bg-purple-500/30">
+          <td>
+            Pool subsidy{' '}
+            <InfoTooltip text="Add mana from your balance into one side's backing pool. Use to restore a side's margin cover (pool below its side's total cost basis)." />
+          </td>
+          <td>
+            <AddPerpSubsidyInput contract={contract} />
+          </td>
+        </tr>
+      )}
     </>
+  )
+}
+
+function MaxFundingRateDisplay(props: {
+  maxFundingRate: number
+  fundingPeriodMs: number
+}) {
+  const { maxFundingRate, fundingPeriodMs } = props
+  if (!Number.isFinite(maxFundingRate) || !(fundingPeriodMs > 0)) return <>—</>
+  const annualPct = maxFundingRate * (YEAR_MS / fundingPeriodMs) * 100
+  return (
+    <span className="tabular-nums">
+      {(maxFundingRate * 100).toFixed(4)}% /{' '}
+      {fundingPeriodNoun(fundingPeriodMs)}{' '}
+      <span className="text-ink-500 text-xs">
+        (~{annualPct.toFixed(0)}%/yr)
+      </span>
+    </span>
   )
 }
 
@@ -723,6 +769,176 @@ function MaxLeverageInput(props: { contract: PerpContract }) {
         Set
       </Button>
     </Row>
+  )
+}
+
+// Inline admin editor for a perp's per-period funding cap. Input is in
+// PERCENT PER PERIOD (e.g. 2 = 2% of the crowded side per period at full
+// imbalance) — the engine stores the fraction. Applies from the next
+// funding event; must stay under 100% or funding fail-closes entirely.
+function MaxFundingRateInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const fundingPeriodMs = getFundingPeriodMs(contract)
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState<number | null>(null)
+  const current =
+    justSaved != null && justSaved !== contract.maxFundingRate
+      ? justSaved
+      : contract.maxFundingRate
+  const parsed = Number(input) / 100
+  const valid =
+    input !== '' && Number.isFinite(parsed) && parsed > 0 && parsed < 1
+
+  const submit = async () => {
+    if (!valid || saving || parsed === current) return
+    setSaving(true)
+    try {
+      const res = await api('update-perp-config', {
+        contractId: contract.id,
+        maxFundingRate: parsed,
+      })
+      setJustSaved(res.maxFundingRate)
+      setInput('')
+      toast.success(
+        `Max funding rate is now ${(res.maxFundingRate * 100).toFixed(
+          4
+        )}% / ${fundingPeriodNoun(fundingPeriodMs)}`
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update max funding rate'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Row className="items-center gap-2">
+      <MaxFundingRateDisplay
+        maxFundingRate={current}
+        fundingPeriodMs={fundingPeriodMs}
+      />
+      <input
+        type="number"
+        min={0}
+        max={99}
+        step={0.1}
+        value={input}
+        disabled={saving}
+        placeholder="%/period"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+      />
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        disabled={!valid || saving || parsed === current}
+        loading={saving}
+        onClick={submit}
+      >
+        Set
+      </Button>
+    </Row>
+  )
+}
+
+// Inline admin tool to top up one side's backing pool from the admin's own
+// balance. Shows the live per-side split so a margin-cover hole (pool below
+// the side's total cost basis) can be sized and filled in one place.
+function AddPerpSubsidyInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [side, setSide] = useState<'long' | 'short'>('short')
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState<{
+    poolLong: number
+    poolShort: number
+  } | null>(null)
+  const pools =
+    justSaved != null &&
+    (justSaved.poolLong !== contract.poolLong ||
+      justSaved.poolShort !== contract.poolShort)
+      ? justSaved
+      : { poolLong: contract.poolLong, poolShort: contract.poolShort }
+  const parsed = Number(input)
+  const valid = input !== '' && Number.isFinite(parsed) && parsed > 0
+
+  const submit = async () => {
+    if (!valid || saving) return
+    setSaving(true)
+    try {
+      const res = await api('add-perp-subsidy', {
+        contractId: contract.id,
+        side,
+        amount: parsed,
+      })
+      setJustSaved({ poolLong: res.poolLong, poolShort: res.poolShort })
+      setInput('')
+      toast.success(
+        `Added M$${formatWithCommas(
+          parsed
+        )} to the ${side} pool. L=${res.poolLong.toFixed(
+          2
+        )} S=${res.poolShort.toFixed(2)}`
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to add pool subsidy'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Col className="gap-1">
+      <span className="text-ink-500 text-xs tabular-nums">
+        L: {pools.poolLong.toFixed(2)} · S: {pools.poolShort.toFixed(2)}
+      </span>
+      <Row className="items-center gap-2">
+        <Row className="border-ink-300 overflow-hidden rounded-md border">
+          {(['long', 'short'] as const).map((s) => (
+            <button
+              key={s}
+              className={clsx(
+                'px-2 py-0.5 text-xs',
+                side === s ? 'bg-primary-500 text-white' : 'text-ink-700'
+              )}
+              disabled={saving}
+              onClick={() => setSide(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </Row>
+        <input
+          type="number"
+          min={0}
+          value={input}
+          disabled={saving}
+          placeholder="M$"
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit()
+          }}
+          className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+        />
+        <Button
+          size="2xs"
+          color="indigo-outline"
+          disabled={!valid || saving}
+          loading={saving}
+          onClick={submit}
+        >
+          Add
+        </Button>
+      </Row>
+    </Col>
   )
 }
 

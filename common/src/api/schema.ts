@@ -1075,12 +1075,41 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    returns: {} as { success: true; maxLeverage: number },
+    returns: {} as {
+      success: true
+      maxLeverage: number
+      maxFundingRate: number
+    },
     props: z
       .object({
         contractId: z.string().min(1),
-        // Same bound as createPerpSchema.
-        maxLeverage: z.number().gt(1).lte(100),
+        // Same bounds as createPerpSchema. maxFundingRate must stay inside
+        // the engine's assertPerpFundingConfig domain (0, 1) — at >= 1 the
+        // funding tick fail-closes and the market stops funding entirely.
+        maxLeverage: z.number().gt(1).lte(100).optional(),
+        maxFundingRate: z.number().gt(0).lt(1).optional(),
+      })
+      .strict()
+      .refine(
+        (p) => p.maxLeverage !== undefined || p.maxFundingRate !== undefined,
+        { message: 'Provide at least one field to update' }
+      ),
+  },
+  // Admin-only escrow top-up of one side's backing pool on a live perp.
+  // Ops tool for restoring margin cover (a side's pool can fall below its
+  // side's aggregate cost basis when realized profits were paid against
+  // opposing unrealized losses that later recovered — see the UK carbon
+  // incident 2026-08-07). The funder pays from their own balance.
+  'add-perp-subsidy': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true; poolLong: number; poolShort: number },
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        side: z.enum(['long', 'short']),
+        amount: z.number().gt(0).lte(1_000_000),
       })
       .strict(),
   },
