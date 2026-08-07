@@ -4,11 +4,15 @@ import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { fetchBtcUsdSpot } from './btc-price'
 import {
   BTC_USD_FEED_ID,
+  GLDX_USD_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
+  QQQX_USD_FEED_ID,
+  SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
   UK_GRID_CARBON_FEED_ID,
 } from './oracle'
 import { fetchUkGridCarbonRecent } from './uk-grid-carbon'
+import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 
 // Registry of known oracle feeds. This is the single place that says how a
 // feed updates, what values are plausible, and when its silence is an
@@ -94,6 +98,51 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 2 * HOUR_MS,
     updatePeriodMs: 30 * MINUTE_MS,
     fetchRecent: fetchUkGridCarbonRecent,
+  },
+  // Tokenized-equity (xStocks) feeds. Corruption is caught at the source —
+  // fetchXStockUsdPrice requires cross-venue agreement, like BTC — so bounds
+  // here only reject unit-confused garbage (a cents-denominated or
+  // percent-scaled value), not fast moves. Uniform wide bounds on purpose:
+  // all three tokens trade in the $300–800 range today and a genuine 10×
+  // move in either direction should still publish. staleAfterMs is looser
+  // than BTC's because these books are thin: consensus can transiently fail
+  // on quiet weekend prints, and five minutes tolerates a few skipped ticks
+  // without paging while still bounding how old an executable price can get
+  // (markets pause at the same threshold via maxOraclePriceAgeMs).
+  {
+    id: SPYX_USD_FEED_ID,
+    description:
+      'SPYx/USD (tokenized S&P 500 ETF), median of Jupiter/Gate/MEXC',
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    minPrice: 10,
+    maxPrice: 50_000,
+    staleAfterMs: 5 * MINUTE_MS,
+    updatePeriodMs: 15_000,
+    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
+  },
+  {
+    id: QQQX_USD_FEED_ID,
+    description:
+      'QQQx/USD (tokenized Nasdaq-100 ETF), Jupiter+Gate agreement',
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    minPrice: 10,
+    maxPrice: 50_000,
+    staleAfterMs: 5 * MINUTE_MS,
+    updatePeriodMs: 15_000,
+    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
+  },
+  {
+    id: GLDX_USD_FEED_ID,
+    description: 'GLDx/USD (tokenized gold ETF), Jupiter+Gate agreement',
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    minPrice: 10,
+    maxPrice: 50_000,
+    staleAfterMs: 5 * MINUTE_MS,
+    updatePeriodMs: 15_000,
+    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into

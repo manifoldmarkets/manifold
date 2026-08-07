@@ -20,6 +20,10 @@
 //     So they get a credit and a link, and no licence label we can't back up.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
+//   - xStocks (SPYx/QQQx/GLDx) — same self-computed stance as BTC: we quote
+//     public venue prices for a crypto TOKEN, so no index-provider data is
+//     republished. "xStocks" is named so readers know what instrument the
+//     price belongs to; the venue credits are transparency, not obligation.
 
 export type OracleAttribution = {
   /** Display name of the data provider. */
@@ -52,6 +56,18 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   },
   'btc-usd': {
     source: 'Coinbase, Kraken & Bitstamp',
+  },
+  'spyx-usd': {
+    source: 'Jupiter, Gate & MEXC (SPYx by Backed xStocks)',
+    url: 'https://xstocks.fi',
+  },
+  'qqqx-usd': {
+    source: 'Jupiter & Gate (QQQx by Backed xStocks)',
+    url: 'https://xstocks.fi',
+  },
+  'gldx-usd': {
+    source: 'Jupiter & Gate (GLDx by Backed xStocks)',
+    url: 'https://xstocks.fi',
   },
 }
 
