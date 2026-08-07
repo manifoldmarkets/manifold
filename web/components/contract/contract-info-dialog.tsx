@@ -10,7 +10,11 @@ import {
   TRADED_TERM,
 } from 'common/envs/constants'
 import { computeFundingRate, getPerpBackingPool } from 'common/perps/amm'
-import { fundingPeriodNoun, getFundingPeriodMs } from 'common/perps/funding'
+import {
+  fundingPeriodNoun,
+  fundingPeriodUnit,
+  getFundingPeriodMs,
+} from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
@@ -815,11 +819,14 @@ function MaxFundingRateInput(props: { contract: PerpContract }) {
   }
 
   return (
-    <Row className="items-center gap-2">
-      <MaxFundingRateDisplay
-        maxFundingRate={current}
-        fundingPeriodMs={fundingPeriodMs}
-      />
+    <Row className="flex-wrap items-center gap-1.5">
+      <span className="tabular-nums">
+        {Number.isFinite(current)
+          ? `${(current * 100).toFixed(4)}%/${fundingPeriodUnit(
+              fundingPeriodMs
+            )}`
+          : '—'}
+      </span>
       <input
         type="number"
         min={0}
@@ -827,12 +834,12 @@ function MaxFundingRateInput(props: { contract: PerpContract }) {
         step={0.1}
         value={input}
         disabled={saving}
-        placeholder="%/period"
+        placeholder="New %"
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit()
         }}
-        className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+        className="bg-canvas-0 border-ink-300 h-7 w-20 rounded-md border px-2 text-sm"
       />
       <Button
         size="2xs"
@@ -900,13 +907,13 @@ function AddPerpSubsidyInput(props: { contract: PerpContract }) {
       <span className="text-ink-500 text-xs tabular-nums">
         L: {pools.poolLong.toFixed(2)} · S: {pools.poolShort.toFixed(2)}
       </span>
-      <Row className="items-center gap-2">
-        <Row className="border-ink-300 overflow-hidden rounded-md border">
+      <Row className="flex-wrap items-center gap-1.5">
+        <Row className="border-ink-300 shrink-0 overflow-hidden rounded-md border">
           {(['long', 'short'] as const).map((s) => (
             <button
               key={s}
               className={clsx(
-                'px-2 py-0.5 text-xs',
+                'px-1.5 py-0.5 text-xs',
                 side === s ? 'bg-primary-500 text-white' : 'text-ink-700'
               )}
               disabled={saving}
@@ -926,7 +933,7 @@ function AddPerpSubsidyInput(props: { contract: PerpContract }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') submit()
           }}
-          className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+          className="bg-canvas-0 border-ink-300 h-7 w-20 rounded-md border px-2 text-sm"
         />
         <Button
           size="2xs"
