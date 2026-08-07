@@ -1,24 +1,29 @@
-// Taker fee for perp trades. Charged on NOTIONAL (size, not margin) at both
-// open and close, and paid into the trader's side backing pool — it is
-// subsidy for the market, not platform revenue.
+// Taker fee for perp trades. Charged on NOTIONAL (size, not margin) when a
+// position is OPENED or added to — closing is free — and paid into the
+// trader's side backing pool: it is subsidy for the market, not platform
+// revenue. Open-only keeps the cost fully visible up front (a fresh position
+// starts at PnL = −fee via takerFeeCostBasis) and leaves the close path's
+// payout math untouched.
 //
 // Why this exists: perp trades execute at the cached oracle price, and with
 // zero fees that price is a free option for latency bots — watch the live
 // source, trade the stale mark just before the tick, exit just after
 // (2026-08-07: two bots extracted ~M$70k from the BTC perp pools in ~30h of
-// 4-second round trips; measured edge ~0.7 bps of notional per side). A fee
-// proportional to notional cannot be outgrown by sizing up or levering up,
-// and at the default 5 bps per side only oracle moves > 10 bps per tick
-// clear a round trip — 7 occurrences in the first 31h of the BTC feed.
+// 4-second round trips; measured edge ~1.5 bps of notional per round trip).
+// A fee proportional to notional cannot be outgrown by sizing up or levering
+// up. Every snipe requires an entry, so an open-only fee taxes each round
+// trip exactly once: at the default 10 bps, only oracle moves > 10 bps per
+// tick clear a round trip — 7 occurrences in the first 31h of the BTC feed.
 
 import { PerpDirection, PerpPosition } from './position'
 import { PerpState } from './amm'
 
-/** Per-side default, in basis points of notional. Applies to contracts
- * created before the field existed; new contracts stamp it at create time. */
-export const PERP_TAKER_FEE_BPS_DEFAULT = 5
+/** Default open-side fee, in basis points of notional. Since closing is
+ * free, this IS the round-trip cost. Applies to contracts created before the
+ * field existed; new contracts stamp it at create time. */
+export const PERP_TAKER_FEE_BPS_DEFAULT = 10
 
-/** Upper bound for admin configuration: 100 bps = 1% per side. */
+/** Upper bound for admin configuration: 100 bps = 1% per open. */
 export const PERP_TAKER_FEE_BPS_MAX = 100
 
 const isValidTakerFeeBps = (bps: number) =>
@@ -64,9 +69,9 @@ export const calcPerpTakerFee = (notional: number, feeBps: number): number => {
 
 /**
  * Credit a collected fee to one side's backing pool. Pure, like the amm.ts
- * transitions: the caller persists the new pool. The fee mana stays inside
- * contract escrow (debited from the trader at open, withheld from the payout
- * at close), so ledger = poolLong + poolShort remains a checkable invariant.
+ * transitions: the caller persists the new pool. The fee mana enters
+ * contract escrow with the open-margin debit, so ledger = poolLong +
+ * poolShort remains a checkable invariant.
  */
 export const creditPerpPoolFee = (
   state: PerpState,

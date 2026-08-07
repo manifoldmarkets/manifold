@@ -553,12 +553,15 @@ export const openOrAddPosition = async (
 
     const price = contract.oraclePrice
 
-    // Taker fee: bps of NOTIONAL at open and close, credited to the trader's
-    // side backing pool (subsidy, not platform revenue). Execution happens at
-    // the cached oracle price, and with zero fees that price was a free
-    // option for tick-sniping bots (2026-08-07: ~M$70k drained from the BTC
-    // perp pools at a measured edge of ~0.7 bps of notional per side). The
-    // fee mana never leaves contract escrow, so ledger = L + S still holds.
+    // Taker fee: bps of NOTIONAL when opening or adding, credited to the
+    // trader's side backing pool (subsidy, not platform revenue). Closing is
+    // free — the whole round-trip cost is visible up front, and the position
+    // starts at PnL = −fee via takerFeeCostBasis. Execution happens at the
+    // cached oracle price, and with zero fees that price was a free option
+    // for tick-sniping bots (2026-08-07: ~M$70k drained from the BTC perp
+    // pools at a measured edge of ~1.5 bps of notional per round trip; every
+    // snipe needs an entry, so an open-only fee taxes each round trip once).
+    // The fee mana enters escrow with the margin, so ledger = L + S holds.
     assertPerpTakerFeeConfig(contract)
     const takerFeeBps = getPerpTakerFeeBps(contract)
 
@@ -566,24 +569,13 @@ export const openOrAddPosition = async (
     let workingState: PerpState = state
     let closeEvent: PerpEvent | undefined
     let closePayout = 0
-    let closeFee = 0
     let closePnl = 0
     let closePricePnl = 0
     if (existingOpposite) {
       const closeRes = closePositionMath(workingState, existingOpposite, price)
-      // The fee is withheld from the payout, never charged beyond it: a
-      // near-liquidation close pays out what remains and owes nothing more.
-      closeFee = Math.min(
-        calcPerpTakerFee(existingOpposite.size, takerFeeBps),
-        closeRes.payout
-      )
-      closePayout = closeRes.payout - closeFee
-      workingState = creditPerpPoolFee(
-        closeRes.state,
-        existingOpposite.direction,
-        closeFee
-      )
+      workingState = closeRes.state
       assertPerpStateSolvent(workingState, price)
+      closePayout = closeRes.payout
       closePnl = getUserFacingPnlFromPayout(
         closePayout,
         existingOpposite.originalCostBasis,
@@ -602,8 +594,6 @@ export const openOrAddPosition = async (
           payout: closePayout,
           pnl: closePnl,
           pricePnl: closeRes.pnl,
-          fee: closeFee,
-          feeBps: takerFeeBps,
           entryPrice: existingOpposite.entryPrice,
           closePrice: price,
           originalCostBasis: existingOpposite.originalCostBasis,
@@ -712,7 +702,7 @@ export const openOrAddPosition = async (
           ? {
               idempotencyKey,
               request: { direction, mana, leverage },
-              response: { position: open.position, fee: openFee + closeFee },
+              response: { position: open.position, fee: openFee },
             }
           : {}),
       },
@@ -729,7 +719,7 @@ export const openOrAddPosition = async (
     const tradeVolume = mana + (existingOpposite?.originalCostBasis ?? 0)
     // Fees are pool subsidy, tracked under liquidityFee — the slot for fees
     // paid into a market's liquidity rather than to the platform or creator.
-    const feesCollected = openFee + closeFee
+    const feesCollected = openFee
     const collectedFees =
       feesCollected > 0
         ? {
@@ -804,9 +794,8 @@ export const openOrAddPosition = async (
       true
     )
 
-    // Open-side taker fee: real mana user -> contract escrow, credited to the
-    // trader's side pool above. The flip-close fee needs no txn — it was
-    // withheld from the payout and never left escrow.
+    // Open-side taker fee: real mana user -> contract escrow, credited to
+    // the trader's side pool above. This is the only fee — closing is free.
     if (openFee > 0) {
       await runTxnOutsideBetQueue(
         pgTrans,
@@ -940,11 +929,6 @@ export const closePosition = async (
                   originalCostBasis,
                   takerFeeCostBasis
                 ),
-          // Events stored before the taker fee existed have no fee field.
-          fee:
-            typeof response?.fee === 'number' && Number.isFinite(response.fee)
-              ? response.fee
-              : 0,
           // Callers must not re-run trade side effects (streaks) for a
           // replay — no trade happened on this request.
           replayed: true,
@@ -1024,21 +1008,12 @@ export const closePosition = async (
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
     const price = contract.oraclePrice
-    // See openOrAddPosition: fee on notional, withheld from the payout (never
-    // charged beyond it), credited to the closed side's backing pool. The fee
-    // mana stays in escrow, so no txn is recorded for it.
-    assertPerpTakerFeeConfig(contract)
-    const takerFeeBps = getPerpTakerFeeBps(contract)
-    const closeRes = closePositionMath(state, position, price)
-    const fee = Math.min(
-      calcPerpTakerFee(position.size, takerFeeBps),
-      closeRes.payout
-    )
-    const payout = closeRes.payout - fee
-    const result = {
-      ...closeRes,
-      state: creditPerpPoolFee(closeRes.state, direction, fee),
-    }
+    // No fee on close: the taker fee is charged in full at open (see
+    // openOrAddPosition), so exits pay out untouched. The opening fees the
+    // position accumulated still land in this close's user-facing pnl via
+    // takerFeeCostBasis.
+    const result = closePositionMath(state, position, price)
+    const payout = result.payout
     assertPerpStateSolvent(result.state, price)
     const userPnl = getUserFacingPnlFromPayout(
       payout,
@@ -1058,8 +1033,6 @@ export const closePosition = async (
         payout,
         pnl: userPnl,
         pricePnl: result.pnl,
-        fee,
-        feeBps: takerFeeBps,
         entryPrice: position.entryPrice,
         closePrice: price,
         originalCostBasis: position.originalCostBasis,
@@ -1068,7 +1041,7 @@ export const closePosition = async (
           ? {
               idempotencyKey,
               request: { direction, expectedOpenedTime },
-              response: { payout, pnl: userPnl, fee },
+              response: { payout, pnl: userPnl },
             }
           : {}),
       },
@@ -1078,13 +1051,6 @@ export const closePosition = async (
     })
 
     const contractPatch = removeUndefinedProps({
-      collectedFees:
-        fee > 0
-          ? {
-              ...(contract.collectedFees ?? noFees),
-              liquidityFee: (contract.collectedFees?.liquidityFee ?? 0) + fee,
-            }
-          : undefined,
       poolLong: result.state.pool.L,
       poolShort: result.state.pool.S,
       lastBetTime: now,
@@ -1136,7 +1102,7 @@ export const closePosition = async (
       ].join(';\n')
     )
 
-    return { payout, pnl: userPnl, fee, replayed: false }
+    return { payout, pnl: userPnl, replayed: false }
   })
 }
 

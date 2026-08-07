@@ -667,14 +667,14 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           Taker fee{' '}
-          <InfoTooltip text="Fee on notional charged at open and close, paid into this market's backing pool. Prices out oracle-tick sniping." />
+          <InfoTooltip text="Fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping." />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeBpsInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}% per side
+              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}% to open
             </span>
           )}
         </td>
@@ -792,9 +792,9 @@ function MaxLeverageInput(props: { contract: PerpContract }) {
   )
 }
 
-// Inline admin editor for a perp's per-side taker fee. Input is in BASIS
-// POINTS of notional (5 = 0.05% per side); 0 disables the fee. Applies to
-// the next trade immediately; open positions pay it when they close.
+// Inline admin editor for a perp's open-side taker fee. Input is in BASIS
+// POINTS of notional (10 = 0.10% to open; closing is free); 0 disables the
+// fee. Applies to the next open or add immediately.
 function TakerFeeBpsInput(props: { contract: PerpContract }) {
   const { contract } = props
   const [input, setInput] = useState('')
@@ -819,7 +819,7 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
       toast.success(
         `Taker fee is now ${res.takerFeeBps} bps (${(
           res.takerFeeBps / 100
-        ).toFixed(2)}%) per side`
+        ).toFixed(2)}%) to open`
       )
     } catch (err) {
       toast.error(

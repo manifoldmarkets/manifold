@@ -632,10 +632,9 @@ type PerpClosePayout = {
   }
 }
 
-// Taker fee on user-initiated opens: real mana user -> contract, credited to
-// the trader's side backing pool. Close-side fees move NO mana (they are
-// withheld from the close payout and stay in escrow), so per the rule above
-// they get no txn — the fee amounts live in the contract_perp_events data.
+// Taker fee on opens and adds (closing a perp position is free): real mana
+// user -> contract, credited to the trader's side backing pool. The per-event
+// fee also lives in the contract_perp_events data.
 type PerpTakerFee = {
   category: 'PERP_TAKER_FEE'
   fromType: 'USER'

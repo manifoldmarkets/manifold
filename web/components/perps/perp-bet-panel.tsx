@@ -178,15 +178,11 @@ export const PerpBetPanel = (props: {
   // auto-close it before opening the new one (engine does this atomically).
   const isFlip = !!openDirection && openDirection !== direction
 
-  // Taker fee on notional, per side; a flip also pays the close-side fee on
-  // the position being flipped out of. Mirrors the engine's calculation
-  // exactly (fee on deltaSize = margin × leverage); the close-leg estimate
-  // can only overstate by dust (the engine caps it at the close payout).
+  // Open-side taker fee on notional — closing is free, so this is the whole
+  // round-trip cost, shown up front. Mirrors the engine exactly (fee on
+  // deltaSize = margin × leverage); a flip pays it on the new leg only.
   const takerFeeBps = getPerpTakerFeeBps(contract)
   const openFee = calcPerpTakerFee(notional, takerFeeBps)
-  const flipCloseFee =
-    isFlip && myPosition ? calcPerpTakerFee(myPosition.size, takerFeeBps) : 0
-  const totalFee = openFee + flipCloseFee
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -421,8 +417,7 @@ export const PerpBetPanel = (props: {
         fundingPeriodMs={getFundingPeriodMs(contract)}
         isAddPreview={isAddPreview}
         takerFeeBps={takerFeeBps}
-        fee={totalFee}
-        isFlipFee={flipCloseFee > 0}
+        fee={openFee}
       />
 
       {capacity && (
@@ -597,12 +592,10 @@ const StatsGrid = (props: {
   // True when adding to a held position: entryPrice/leverage/liqPrice
   // describe the merged result, so the labels say so.
   isAddPreview?: boolean
-  // Per-side taker fee (bps of notional) and the mana fee for THIS trade —
-  // on a flip that includes the close-side fee of the position flipped out
-  // of, flagged so the label can say so.
+  // Open-side taker fee (bps of notional) and the mana fee for THIS trade.
+  // Closing is free, so this is the whole round-trip cost.
   takerFeeBps: number
   fee: number
-  isFlipFee?: boolean
 }) => {
   const {
     direction,
@@ -618,7 +611,6 @@ const StatsGrid = (props: {
     isAddPreview,
     takerFeeBps,
     fee,
-    isFlipFee,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
@@ -673,9 +665,7 @@ const StatsGrid = (props: {
       />
       {takerFeeBps > 0 && (
         <StatRow
-          label={`Fee (${(takerFeeBps / 100).toFixed(2)}%${
-            isFlipFee ? ', incl. closing flip' : ''
-          })`}
+          label={`Fee (${(takerFeeBps / 100).toFixed(2)}%, free to close)`}
           value={formatMoneyWithDecimals(fee)}
         />
       )}

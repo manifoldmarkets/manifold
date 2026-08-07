@@ -72,8 +72,9 @@ describe('calcPerpTakerFee', () => {
   })
 
   it('exceeds the measured tick-sniping edge at the default rate', () => {
-    // The BTC bots' realized edge was ~0.73 bps of notional per side; the
-    // per-side default must price that out with margin to spare.
+    // The BTC bots' realized edge was ~1.5 bps of notional per round trip.
+    // Closing is free, so the open-side default IS the round-trip cost and
+    // must price that out with margin to spare.
     expect(PERP_TAKER_FEE_BPS_DEFAULT).toBeGreaterThan(0.73 * 2)
   })
 })

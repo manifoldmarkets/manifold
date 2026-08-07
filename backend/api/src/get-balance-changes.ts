@@ -94,7 +94,7 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
   if (txn.category === 'PERP_TAKER_FEE') {
     const bps = Number(d.feeBps)
     const pct = Number.isFinite(bps) ? ` (${(bps / 100).toFixed(2)}%)` : ''
-    return `Trading fee${pct} on ${formatMoney(
+    return `Opening fee${pct} on ${formatMoney(
       Number(d.sizeDelta) || 0
     )} ${d.direction} notional — paid into the market's backing pool`
   }
