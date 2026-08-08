@@ -13,6 +13,7 @@ import {
   isLiquidated,
   liquidationPrice,
   mergedEntryPrice,
+  MIN_PERP_LEVERAGE,
   openPosition,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
@@ -70,6 +71,17 @@ describe('liquidationPrice', () => {
   it('degenerate leverage never liquidates', () => {
     expect(liquidationPrice('long', 100, 0)).toBe(0)
     expect(liquidationPrice('short', 100, 0)).toBe(Infinity)
+  })
+
+  it('overflows to ±Infinity for subnormal leverage — the reason trade requests enforce MIN_PERP_LEVERAGE', () => {
+    // 1/ℓ ≈ 6.25e303, × entry 64850 exceeds Number.MAX_VALUE. A request that
+    // reached openPosition with this leverage produced a non-finite candidate
+    // position and a 500 from assertPerpStateNumbers (prod, 2026-08-07).
+    expect(liquidationPrice('short', 64850, 1.6e-304)).toBe(Infinity)
+    expect(liquidationPrice('long', 64850, 1.6e-304)).toBe(-Infinity)
+    expect(
+      Number.isFinite(liquidationPrice('short', 64850, MIN_PERP_LEVERAGE))
+    ).toBe(true)
   })
 })
 

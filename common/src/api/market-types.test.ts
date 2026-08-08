@@ -1,8 +1,10 @@
 import { PerpContract } from 'common/contract'
+import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import { PERP_TAKER_FEE_BPS_DEFAULT } from 'common/perps/fees'
 import {
   createPerpSchema,
   LiteMarket,
+  placePerpTradeSchema,
   toFullMarket,
   toLiteMarket,
   toUltraLiteMarket,
@@ -30,6 +32,33 @@ describe('createPerpSchema', () => {
     expect(
       createPerpSchema.safeParse({ ...validPerp, maxFundingRate: 1 }).success
     ).toBe(false)
+  })
+})
+
+describe('placePerpTradeSchema', () => {
+  const base = {
+    contractId: 'c1',
+    direction: 'long' as const,
+    mana: 100,
+    idempotencyKey: 'useandom26',
+  }
+
+  it('accepts leverage at and above the floor', () => {
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: MIN_PERP_LEVERAGE })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 10 }).success
+    ).toBe(true)
+  })
+
+  it('rejects sub-floor leverage, including subnormals that overflow the liquidation-price formula', () => {
+    for (const leverage of [0, -1, 0.78125, 1e-320, Number.MIN_VALUE, NaN]) {
+      expect(
+        placePerpTradeSchema.safeParse({ ...base, leverage }).success
+      ).toBe(false)
+    }
   })
 })
 

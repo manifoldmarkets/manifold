@@ -12,6 +12,7 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
 import {
@@ -656,7 +657,7 @@ export const placePerpTradeSchema = z.object({
   contractId: z.string().min(1),
   direction: z.enum(['long', 'short']),
   mana: z.number().gt(0),
-  leverage: z.number().gt(0),
+  leverage: z.number().min(MIN_PERP_LEVERAGE),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
 })
 
