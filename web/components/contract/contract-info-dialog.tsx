@@ -9,12 +9,13 @@ import {
   supabaseConsoleContractPath,
   TRADED_TERM,
 } from 'common/envs/constants'
-import { computeFundingRate, getPerpBackingPool } from 'common/perps/amm'
+import { getPerpBackingPool } from 'common/perps/amm'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
+  getPerpFundingRate,
 } from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
@@ -593,12 +594,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
     contract.resolution === 'MKT'
       ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
       : Number(contract.oraclePrice)
-  const fundingRate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  const fundingRate = getPerpFundingRate(contract)
   const fundingPeriodMs = getFundingPeriodMs(contract)
   const fundingDirection =
     fundingRate > 0

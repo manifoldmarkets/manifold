@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { line } from 'd3-shape'
 import { PerpContract } from 'common/contract'
-import { computeFundingRate } from 'common/perps/amm'
 import {
   carryNeutralPath,
   clusterLiquidationBands,
@@ -21,6 +20,7 @@ import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
+  getPerpFundingRate,
 } from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { median } from 'common/util/math'
@@ -199,14 +199,9 @@ export const PerpChart = (props: {
   // phone widths.
   const { elemRef: containerRef, width: measuredWidth } = useMeasureSize()
 
-  // Live rate from the current pools, not the per-funding-event-refreshed
-  // contract.fundingRate — same rationale as perp-overview.tsx.
-  const liveFundingRate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  // Live rate from the current open interest, not the per-funding-event-
+  // refreshed contract.fundingRate — same rationale as perp-overview.tsx.
+  const liveFundingRate = getPerpFundingRate(contract)
   // Frozen at create from the feed's cadence; hourly on legacy contracts.
   // Everything time-denominated on this chart (projections, diamond gating,
   // axis/hover units) keys off it.

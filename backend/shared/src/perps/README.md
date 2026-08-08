@@ -121,6 +121,35 @@ subtracts it: a fresh position starts at PnL = −fee. Admins tune the rate
 live per market via `update-perp-config` (0 disables); contracts created
 before the field default to 10 bps at trade time.
 
+## Funding imbalance
+
+The funding rate is derived from each side's OPEN INTEREST (aggregate open
+notional), not from the backing pools:
+
+`f = I(max(OI_L, OI_S) / min(OI_L, OI_S)) × f_max`, signed toward the crowded
+side.
+
+The pools hold *margin*, so their ratio only tracks exposure when both sides
+run comparable leverage. Where they don't, the two disagree in sign, and a
+pool-derived rate pays the crowded side and charges the scarce one — the
+opposite of what funding is for. On 2026-08-08 two of the four live markets
+were doing exactly that (BTC held 454k long vs 348k short of notional on pools
+of 59.6k vs 83.0k; the OpenRouter market, 1.96 long-heavy on 0.82 pools).
+
+`runFunding` recomputes open interest from the positions it holds under the
+advisory lock. `contract.openInterestLong` / `openInterestShort` are a
+denormalized copy maintained by every transition that can change a position
+size, so read paths (market page, chart, bet panel, embed) can show the live
+rate without loading positions — always via `getPerpFundingRate`
+(`common/perps/funding`), never by calling `computeFundingRate` with pools.
+An absent copy reads as zero, which yields a zero rate rather than a
+direction we cannot substantiate.
+
+A side with no open interest yields no funding: the transfer moves value
+between the two sides' positions, so an empty side has no counterparty to
+receive it. Inducing entry onto an empty side would need a mechanism paying
+from somewhere other than the absent side.
+
 ## Exposure capacity
 
 Opening, adding, or flipping into a side is limited so aggregate open notional

@@ -4,8 +4,32 @@ import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
+  getPerpFundingRate,
   shouldApplyFunding,
 } from './funding'
+
+describe('getPerpFundingRate', () => {
+  const config = { fundingSensitivity: 1, maxFundingRate: 0.01 }
+
+  it('reads the rate off open interest, not the pools', () => {
+    // Same disagreement as the live BTC book: pools read short-heavy while
+    // the notional is long-heavy. The displayed rate must match what the
+    // engine will apply, which keys off open interest.
+    const rate = getPerpFundingRate({
+      ...config,
+      openInterestLong: 453771,
+      openInterestShort: 348184,
+    })
+    expect(rate).toBeGreaterThan(0) // longs crowded → longs pay
+  })
+
+  it('reports no funding when open interest is missing', () => {
+    // A contract untouched since the field was added. Zero is the
+    // fail-closed read: never show a direction we cannot substantiate.
+    expect(getPerpFundingRate(config)).toBe(0)
+    expect(getPerpFundingRate({ ...config, openInterestLong: 1000 })).toBe(0)
+  })
+})
 
 describe('getFundingPeriodMs', () => {
   it('defaults legacy contracts (no field) to hourly', () => {

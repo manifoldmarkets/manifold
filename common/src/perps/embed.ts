@@ -1,7 +1,7 @@
 import { PerpContract } from '../contract'
 import { YEAR_MS } from '../util/time'
-import { computeFundingRate, getPerpBackingPool } from './amm'
-import { getFundingPeriodMs } from './funding'
+import { getPerpBackingPool } from './amm'
+import { getFundingPeriodMs, getPerpFundingRate } from './funding'
 import { getOracleFreshness } from './oracle'
 
 export type PerpEmbedStatus =
@@ -19,8 +19,11 @@ export type PerpEmbedContract = Pick<
   | 'maxFundingRate'
   | 'maxLeverage'
   | 'maxOraclePriceAgeMs'
+  | 'openInterestLong'
+  | 'openInterestShort'
   | 'oraclePrice'
   | 'oraclePriceTime'
+  // Backing pool only — the funding rate comes from open interest.
   | 'poolLong'
   | 'poolShort'
   | 'resolution'
@@ -107,12 +110,7 @@ export const getPerpEmbedSummary = (
     ? 'stale'
     : 'unavailable'
   const periodMs = getFundingPeriodMs(contract)
-  const rate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  const rate = getPerpFundingRate(contract)
   const annualizedRate = rate * (YEAR_MS / periodMs)
 
   return {

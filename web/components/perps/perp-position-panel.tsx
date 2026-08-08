@@ -2,9 +2,12 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
-import { computeFundingRate } from 'common/perps/amm'
 import { nextFundingTimes } from 'common/perps/chart-projections'
-import { fundingPeriodUnit, getFundingPeriodMs } from 'common/perps/funding'
+import {
+  fundingPeriodUnit,
+  getFundingPeriodMs,
+  getPerpFundingRate,
+} from 'common/perps/funding'
 import {
   fundingPerPeriod,
   getUserFacingPnl,
@@ -378,15 +381,10 @@ const PositionCard = (props: {
   const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
 
   // What the next funding transfer does to this position, in mana
-  // (+ = you receive). Uses the live pool-derived rate, and the exact
-  // applyFunding scaling — a receiver on the thin side earns the transfer
-  // re-based on its own pool, not just rate × margin.
-  const liveFundingRate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  // (+ = you receive). Uses the live open-interest-derived rate, and the
+  // exact applyFunding scaling — a receiver on the thin side earns the
+  // transfer re-based on its own pool, not just rate × margin.
+  const liveFundingRate = getPerpFundingRate(contract)
   const fundingMana = fundingPerPeriod(
     p,
     markPrice,

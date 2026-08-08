@@ -3,12 +3,12 @@ import clsx from 'clsx'
 import { fromNow } from 'client-common/lib/time'
 import { PerpContract } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
-import { computeFundingRate } from 'common/perps/amm'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
+  getPerpFundingRate,
 } from 'common/perps/funding'
 import {
   formatCountdown,
@@ -96,17 +96,12 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // decimals, fractional prices scale to their magnitude.
   const priceDecimals = inferPriceDecimals([price])
 
-  // Compute the funding rate live from the current pool balances rather than
+  // Compute the funding rate live from the current open interest rather than
   // reading `contract.fundingRate`, which the scheduler only refreshes at
-  // each funding event. Without this, a user who just flipped the pool balance would
-  // still see the previous period's rate — often with the opposite sign —
-  // until the next funding tick, which reads as "backwards".
-  const liveFundingRate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  // each funding event. Without this, a user who just moved the imbalance
+  // would still see the previous period's rate — often with the opposite
+  // sign — until the next funding tick, which reads as "backwards".
+  const liveFundingRate = getPerpFundingRate(contract)
   const oracleFreshness = useOracleFreshness(contract)
   const oracleTradingPaused =
     !PERPS_SKIP_ORACLE_FRESHNESS &&

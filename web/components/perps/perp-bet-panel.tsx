@@ -10,7 +10,6 @@ import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
-  computeFundingRate,
   getPerpOpenInterestCapacity,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
@@ -22,6 +21,7 @@ import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
+  getPerpFundingRate,
 } from 'common/perps/funding'
 import { fundingPerPeriod } from 'common/perps/pnl'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
@@ -155,12 +155,7 @@ export const PerpBetPanel = (props: {
     effectiveLeverage,
   ])
   const liqPrice = preview.liqPrice
-  const fundingRate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  const fundingRate = getPerpFundingRate(contract)
   // Signed mana per funding period for the position being configured
   // (+ = earns). fundingPerPeriod mirrors applyFunding exactly — in
   // particular the RECEIVING side earns the transfer re-based on its own
