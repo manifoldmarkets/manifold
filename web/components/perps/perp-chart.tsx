@@ -1222,12 +1222,10 @@ export const PerpChart = (props: {
               {formatCarryEndPct(carryEndPct)}% to here
             </div>
             <div className="text-ink-500">
-              Total funding over this projection if the current rate (
+              Based on the current funding rate (
               {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/
-              {fundingPeriodUnit(fundingPeriodMs)} of margin) held the whole
-              way. It won&apos;t — the rate is recalculated every{' '}
-              {fundingPeriodNoun(fundingPeriodMs)} from the long/short balance,
-              so this is an estimate, not what you will be charged.
+              {fundingPeriodUnit(fundingPeriodMs)} of margin), which changes
+              every {fundingPeriodNoun(fundingPeriodMs)}.
             </div>
           </div>
         )}
