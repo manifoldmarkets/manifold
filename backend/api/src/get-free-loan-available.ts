@@ -10,6 +10,7 @@ import {
   filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  sumExcludedPerpEquity,
 } from 'common/loans'
 import {
   getUnresolvedContractMetricsContractsAnswers,
@@ -73,6 +74,8 @@ export const getFreeLoanAvailable: APIHandler<
     filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
+  // Reported so the UI can explain why perp-only portfolios earn no free loan.
+  const perpValueExcluded = sumExcludedPerpEquity(metrics, contractsById)
 
   // Calculate equity from net portfolio value (already excludes loans).
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
@@ -259,5 +262,6 @@ export const getFreeLoanAvailable: APIHandler<
     dailyLimit,
     todayLoans,
     todaysFreeLoan,
+    perpValueExcluded,
   }
 }

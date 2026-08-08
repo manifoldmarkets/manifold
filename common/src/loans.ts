@@ -1,7 +1,7 @@
 import { sumBy } from 'lodash'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
-import { Contract } from './contract'
+import { Contract, ContractToken } from './contract'
 
 export type LoanTrackingRow = {
   id?: number
@@ -169,6 +169,29 @@ export const filterLoanEquityMetrics = <M extends { contractId: string }>(
   return metrics.filter(
     (m) => contractsById[m.contractId]?.mechanism !== 'perp'
   )
+}
+
+/**
+ * The position value that `filterLoanEquityMetrics` removes from the equity
+ * base, for the given token. Purely informational: the loan endpoints return
+ * it so the UI can explain why the portfolio value it shows is lower than the
+ * one shown everywhere else on the site.
+ */
+export const sumExcludedPerpEquity = (
+  metrics: { contractId: string; payout?: number }[],
+  contractsById: Record<
+    string,
+    Pick<Contract, 'mechanism' | 'token'> | undefined
+  >,
+  token: ContractToken = 'MANA'
+): number => {
+  const total = sumBy(metrics, (m) => {
+    const contract = contractsById[m.contractId]
+    if (contract?.mechanism !== 'perp' || contract.token !== token) return 0
+    const payout = m.payout ?? 0
+    return Number.isFinite(payout) ? payout : 0
+  })
+  return Math.max(0, total)
 }
 
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
