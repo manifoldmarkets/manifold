@@ -5,7 +5,39 @@
 // so the two runtime gates cannot drift apart (the drift was a live bug:
 // see commit 846752c7d).
 
+import { computeFundingRate } from './amm'
 import { HOUR_MS, MINUTE_MS } from '../util/time'
+
+/**
+ * The funding rate a contract is currently accruing, for display.
+ *
+ * Read-side counterpart to the engine's rate: both feed open interest into
+ * `computeFundingRate`, so the number a trader sees matches the one that
+ * will be applied. Callers must NOT reach for `computeFundingRate` with the
+ * pools — that is the bug this exists to prevent.
+ *
+ * Computed live rather than read from `contract.fundingRate`, which the
+ * scheduler only refreshes at each funding event: a trader who just moved
+ * the imbalance would otherwise see the previous period's rate, often with
+ * the opposite sign, until the next tick.
+ *
+ * Open interest is maintained on the contract by every engine transition
+ * that can change position size. Absent (a contract not yet touched since
+ * the field was added) reads as zero, which yields a zero rate — funding is
+ * never displayed in a direction we cannot substantiate.
+ */
+export const getPerpFundingRate = (contract: {
+  openInterestLong?: number
+  openInterestShort?: number
+  fundingSensitivity: number
+  maxFundingRate: number
+}): number =>
+  computeFundingRate(
+    contract.openInterestLong ?? 0,
+    contract.openInterestShort ?? 0,
+    contract.fundingSensitivity,
+    contract.maxFundingRate
+  )
 
 /**
  * Default funding period. Contracts created before per-contract periods

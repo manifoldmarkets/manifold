@@ -49,6 +49,11 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                   oracleSourceTime: market.oracleSourceTime,
                   poolLong: market.poolLong,
                   poolShort: market.poolShort,
+                  // The displayed funding rate is derived from these, so a
+                  // trade that moves the imbalance must refresh them or the
+                  // page keeps showing the pre-trade rate.
+                  openInterestLong: market.openInterestLong,
+                  openInterestShort: market.openInterestShort,
                   fundingRate: market.fundingRate,
                   volume: market.volume,
                   uniqueBettorCount: market.uniqueBettorCount,

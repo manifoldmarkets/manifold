@@ -326,6 +326,15 @@ export type PerpMechanism = {
   // after the live pools have moved.
   initialPoolLong?: number
   initialPoolShort?: number
+  // Aggregate open notional per side, refreshed by every engine transition
+  // that can change position size (open, close, funding, liquidation/ADL,
+  // resolution). Denormalized purely so read paths can show the funding rate
+  // without loading positions — the engine always recomputes from the
+  // positions it holds under the lock and never trusts these. Absent on
+  // contracts untouched since the field was added; treat as unknown, not
+  // zero exposure (see getPerpFundingRate).
+  openInterestLong?: number
+  openInterestShort?: number
   oracleFeedId: string // free-text; matches oracle_prices.feed_id
   oraclePrice: number // last applied P
   oraclePriceTime?: number // ts of last applied P

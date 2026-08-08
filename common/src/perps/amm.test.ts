@@ -7,6 +7,7 @@ import {
   closePosition,
   computeFundingRate,
   getPerpBackingPool,
+  getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getUnrealizedEquity,
   imbalance,
@@ -107,6 +108,49 @@ describe('getUnrealizedEquity', () => {
   })
 })
 
+describe('getPerpOpenInterest', () => {
+  // Leverage varies by side on purpose: open interest must track notional,
+  // and these margins would give the opposite ranking.
+  const pos = (
+    direction: PerpDirection,
+    size: number,
+    costBasis: number,
+    userId: string
+  ) => makePosition({ direction, size, costBasis, entryPrice: 100, userId })
+
+  it('sums open notional per side', () => {
+    expect(
+      getPerpOpenInterest([
+        pos('long', 1000, 50, 'u1'),
+        pos('long', 500, 25, 'u2'),
+        pos('short', 200, 200, 'u3'),
+      ])
+    ).toEqual({ long: 1500, short: 200 })
+  })
+
+  it('ignores closed positions and reports an empty book as zero', () => {
+    // processLiquidations zeroes size but keeps the row until the engine
+    // deletes it; a liquidated position carries no exposure.
+    expect(
+      getPerpOpenInterest([
+        pos('long', 0, 0, 'u1'),
+        pos('short', 300, 100, 'u2'),
+      ])
+    ).toEqual({ long: 0, short: 300 })
+    expect(getPerpOpenInterest([])).toEqual({ long: 0, short: 0 })
+  })
+
+  it('does not let a corrupt size poison the funding input', () => {
+    expect(
+      getPerpOpenInterest([
+        pos('long', NaN, 10, 'u1'),
+        pos('long', 400, 10, 'u2'),
+        pos('short', Infinity, 10, 'u3'),
+      ])
+    ).toEqual({ long: 400, short: 0 })
+  })
+})
+
 describe('funding', () => {
   it('imbalance is 0 at or below balance and rises with r', () => {
     expect(imbalance(1, 1)).toBe(0)
@@ -120,6 +164,29 @@ describe('funding', () => {
     expect(computeFundingRate(500, 1000, 1, 0.01)).toBeCloseTo(-0.005, 10)
     expect(computeFundingRate(700, 700, 1, 0.01)).toBe(0)
     expect(computeFundingRate(0, 500, 1, 0.01)).toBe(0)
+  })
+
+  it('charges the side that is crowded by NOTIONAL, not by margin', () => {
+    // Live BTC market, 2026-08-08: longs held more exposure on less margin
+    // (18.4x vs 9.9x), so the pools read short-heavy while the book was
+    // long-heavy. Funding keyed on pools paid the crowded side.
+    const [oiLong, oiShort] = [453771, 348184]
+    const [poolLong, poolShort] = [59555, 82975]
+    const [k, fMax] = [1, 0.000228]
+
+    const fromOpenInterest = computeFundingRate(oiLong, oiShort, k, fMax)
+    const fromPools = computeFundingRate(poolLong, poolShort, k, fMax)
+
+    expect(fromOpenInterest).toBeGreaterThan(0) // longs crowded → longs pay
+    expect(fromPools).toBeLessThan(0) // what shipped: shorts paid longs
+  })
+
+  it('does not fund a side that nobody is on', () => {
+    // Funding is a transfer between the two sides' positions. With one side
+    // empty there is no counterparty to receive it, so no rate is applied —
+    // rather than haircutting the lone side into the pool.
+    expect(computeFundingRate(1000, 0, 1, 0.01)).toBe(0)
+    expect(computeFundingRate(0, 0, 1, 0.01)).toBe(0)
   })
 
   it('stays finite and below the cap for extreme finite pool ratios', () => {
@@ -391,12 +458,19 @@ describe('funding', () => {
       }
       assertPerpStateSolvent(state, price)
 
-      const fundingRate = computeFundingRate(
+      // Funding keys off open interest, which is independent of the pool
+      // ratio: the side with more notional can be the side with the SMALLER
+      // pool. Drive the sign independently so the fuzz covers the direction
+      // that pool-derived rates could never produce (paying side = smaller
+      // pool), not just the one that shipped.
+      const magnitude = computeFundingRate(
         state.pool.L,
         state.pool.S,
         0.5 + random() * 2,
         0.001 + random() * 0.049
       )
+      const longsPay = random() < 0.5
+      const fundingRate = longsPay ? Math.abs(magnitude) : -Math.abs(magnitude)
       const corrected = applyFundingWithSolvency(state, fundingRate, price)
 
       expect(() => assertPerpStateSolvent(corrected.state, price)).not.toThrow()
@@ -746,10 +820,9 @@ describe('open / close accounting', () => {
       expect(getUnrealizedEquity(position, mark)).toBeCloseTo(separateEquity, 8)
       // Deposited M$600 across six tranches; withdrawable must be the honest
       // figure, not the M$2600 the arithmetic merge produced.
-      expect(position.costBasis + getUnrealizedEquity(position, mark)).toBeCloseTo(
-        600 + separateEquity,
-        8
-      )
+      expect(
+        position.costBasis + getUnrealizedEquity(position, mark)
+      ).toBeCloseTo(600 + separateEquity, 8)
     })
 
     it('merged entry price always lies between the two entry prices', () => {

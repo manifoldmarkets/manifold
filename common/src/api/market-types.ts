@@ -81,6 +81,10 @@ export type LiteMarket = {
   oracleSourceTime?: number | null
   poolLong?: number
   poolShort?: number
+  // Drives the live funding rate (getPerpFundingRate) — must travel with the
+  // pools so a polling client's rate stays in step with the engine's.
+  openInterestLong?: number
+  openInterestShort?: number
   fundingRate?: number
   lastFundingTime?: number
   maxLeverage?: number
@@ -224,6 +228,8 @@ export function toLiteMarket(
           oracleSourceTime: contract.oracleSourceTime,
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
+          openInterestLong: contract.openInterestLong,
+          openInterestShort: contract.openInterestShort,
           fundingRate: contract.fundingRate,
           lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,

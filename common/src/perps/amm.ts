@@ -153,12 +153,49 @@ export const imbalance = (r: number, k: number) => {
 }
 
 /**
- * Funding rate for the period.
- *   +ve means longs pay shorts (L > S); -ve means shorts pay longs (S > L).
+ * Aggregate open notional per side — the exposure actually at risk.
+ *
+ * This is NOT interchangeable with the backing pools. A pool holds margin,
+ * so pool ratio only tracks exposure ratio when both sides run comparable
+ * leverage. Where they don't, the two can disagree in SIGN: on 2026-08-08
+ * the BTC market held 454k long vs 348k short of notional (1.30 long-heavy)
+ * on pools of 59.6k long vs 83.0k short (0.72 — reading short-heavy), so
+ * pool-driven funding paid the crowded side and charged the scarce one.
+ */
+export const getPerpOpenInterest = (positions: PerpPosition[]) => {
+  let long = 0
+  let short = 0
+  for (const p of positions) {
+    if (!Number.isFinite(p.size) || p.size <= 0) continue
+    if (p.direction === 'long') long += p.size
+    else short += p.size
+  }
+  return {
+    long: Number.isFinite(long) ? long : 0,
+    short: Number.isFinite(short) ? short : 0,
+  }
+}
+
+/**
+ * Funding rate for the period, from the two sides' OPEN INTEREST (notional).
+ *
+ *   +ve means longs pay shorts (longs crowded);
+ *   -ve means shorts pay longs (shorts crowded).
+ *
+ * Pass `getPerpOpenInterest(...)`, never the backing pools — see that
+ * function for why the two disagree. The parameters are deliberately named
+ * for the quantity rather than L/S: those names are what invited the pools
+ * in the first place.
+ *
+ * A side with zero open interest yields a rate of zero: funding transfers
+ * between the two sides' positions, so with nobody on one side there is no
+ * counterparty to receive it. Inducing entry onto an empty side needs a
+ * mechanism that pays from somewhere other than the absent side, which is
+ * out of scope here.
  */
 export const computeFundingRate = (
-  L: number,
-  S: number,
+  openInterestLong: number,
+  openInterestShort: number,
   k: number,
   fMax: number
 ) => {
@@ -166,31 +203,31 @@ export const computeFundingRate = (
   // invalid contract configuration before applying funding. Returning zero
   // here prevents corrupt legacy data from turning a React render into NaN.
   if (
-    !Number.isFinite(L) ||
-    !Number.isFinite(S) ||
+    !Number.isFinite(openInterestLong) ||
+    !Number.isFinite(openInterestShort) ||
     !Number.isFinite(k) ||
     !Number.isFinite(fMax) ||
     k <= 0 ||
     fMax <= 0
   )
     return 0
-  if (L <= 0 || S <= 0) return 0
-  if (L === S) return 0
+  if (openInterestLong <= 0 || openInterestShort <= 0) return 0
+  if (openInterestLong === openInterestShort) return 0
 
   // Algebraically equivalent to imbalance(high / low, k), but normalizing
   // low by high avoids an overflowing high / low ratio for extreme yet valid
-  // finite pools:
+  // finite inputs:
   //   (r - 1) / (r - 1 + k)
   //   = (1 - low/high) / (1 - low/high + k * low/high)
-  const high = Math.max(L, S)
-  const low = Math.min(L, S)
+  const high = Math.max(openInterestLong, openInterestShort)
+  const low = Math.min(openInterestLong, openInterestShort)
   const lowOverHigh = low / high
   const gap = 1 - lowOverHigh
   const denominator = gap + k * lowOverHigh
   const fraction = denominator > 0 ? gap / denominator : 0
   const magnitude = fraction * fMax
   if (!Number.isFinite(magnitude) || magnitude === 0) return 0
-  return L > S ? magnitude : -magnitude
+  return openInterestLong > openInterestShort ? magnitude : -magnitude
 }
 
 /**

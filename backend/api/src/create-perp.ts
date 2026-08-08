@@ -228,6 +228,10 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       fundingPeriodMs,
       poolLong: subsidyLong,
       poolShort: subsidyShort,
+      // Subsidy is backing, not exposure: a new market has no positions, so
+      // no imbalance and no funding until someone trades.
+      openInterestLong: 0,
+      openInterestShort: 0,
       initialSubsidy: totalSubsidy,
       initialPoolLong: subsidyLong,
       initialPoolShort: subsidyShort,

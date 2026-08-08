@@ -14,15 +14,19 @@ const getContract = (
   maxOraclePriceAgeMs: 60_000,
   oraclePrice: 100,
   oraclePriceTime: NOW - 1_000,
-  poolLong: 60_000,
-  poolShort: 40_000,
+  // Long-crowded book (1.5x) sitting on short-heavy pools. The two disagree
+  // whenever the sides run different leverage; funding follows the exposure.
+  openInterestLong: 60_000,
+  openInterestShort: 40_000,
+  poolLong: 40_000,
+  poolShort: 60_000,
   resolution: undefined,
   resolvedOraclePrice: undefined,
   ...overrides,
 })
 
 describe('getPerpEmbedSummary', () => {
-  it('shows a fresh market as tradeable with live pool-derived funding', () => {
+  it('shows a fresh market as tradeable with live open-interest funding', () => {
     const summary = getPerpEmbedSummary(getContract(), NOW)
 
     expect(summary.status).toBe('live')
@@ -118,7 +122,10 @@ describe('getPerpEmbedSummary', () => {
       getContract({
         fundingPeriodMs: Number.POSITIVE_INFINITY,
         maxLeverage: Number.NaN,
+        // Backing and funding read from different fields now: the pool feeds
+        // the displayed backing, open interest feeds the rate.
         poolLong: Number.NaN,
+        openInterestLong: Number.NaN,
       }),
       NOW
     )

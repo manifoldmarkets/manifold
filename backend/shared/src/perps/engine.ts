@@ -21,6 +21,7 @@ import {
   closePosition as closePositionMath,
   computeFundingRate,
   getLeverage,
+  getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPositionValue,
   liquidationPrice as computeLiquidationPrice,
@@ -359,6 +360,19 @@ const assertIdempotencyKey = (idempotencyKey: string | undefined) => {
   ) {
     throw new APIError(400, 'Invalid PERP idempotency key')
   }
+}
+
+/**
+ * Contract-patch fragment carrying the post-transition open interest.
+ *
+ * Always derived from the transition's FINAL positions rather than adjusted
+ * incrementally, so the denormalized copy cannot drift from the positions
+ * table however the sizes moved (a trade, a funding haircut, an ADL scale,
+ * a liquidation). Every patch that writes poolLong/poolShort spreads this.
+ */
+const openInterestPatch = (positions: PerpPosition[]) => {
+  const { long, short } = getPerpOpenInterest(positions)
+  return { openInterestLong: long, openInterestShort: short }
 }
 
 const diffForWrite = (
@@ -748,6 +762,7 @@ export const openOrAddPosition = async (
       collectedFees,
       poolLong: open.state.pool.L,
       poolShort: open.state.pool.S,
+      ...openInterestPatch(open.state.positions),
       lastBetTime: now,
       lastUpdatedTime: now,
       volume: (contract.volume ?? 0) + tradeVolume,
@@ -1069,6 +1084,7 @@ export const closePosition = async (
     const contractPatch = removeUndefinedProps({
       poolLong: result.state.pool.L,
       poolShort: result.state.pool.S,
+      ...openInterestPatch(result.state.positions),
       lastBetTime: now,
       lastUpdatedTime: now,
       volume: (contract.volume ?? 0) + position.originalCostBasis,
@@ -1502,6 +1518,7 @@ export const runOracleUpdate = async (
     const contractPatch = removeUndefinedProps({
       poolLong: applied.finalState.pool.L,
       poolShort: applied.finalState.pool.S,
+      ...openInterestPatch(applied.finalState.positions),
       oraclePrice: newPrice,
       oraclePriceTime: ts,
       // null deliberately clears metadata if a newer point does not carry it;
@@ -1650,9 +1667,16 @@ export const runFunding = async (
     })
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
+    // Open interest, NOT the pools. The pools hold margin, so their ratio
+    // only tracks exposure when both sides run comparable leverage; where
+    // they don't it can invert the sign and pay the crowded side (BTC and
+    // the OpenRouter market were both doing exactly that before this).
+    // Computed from the positions loaded under the advisory lock, never from
+    // the contract's denormalized copy.
+    const openInterest = getPerpOpenInterest(state.positions)
     const fundingRate = computeFundingRate(
-      state.pool.L,
-      state.pool.S,
+      openInterest.long,
+      openInterest.short,
       contract.fundingSensitivity,
       contract.maxFundingRate
     )
@@ -1712,6 +1736,7 @@ export const runFunding = async (
     const contractPatch = removeUndefinedProps({
       poolLong: next.pool.L,
       poolShort: next.pool.S,
+      ...openInterestPatch(next.positions),
       lastFundingTime: ts,
       fundingRate,
       lastUpdatedTime: adlEvents.length > 0 ? ts : undefined,
@@ -1996,6 +2021,9 @@ export const resolvePerp = async (
     const contractPatch = removeUndefinedProps({
       poolLong: 0,
       poolShort: 0,
+      // Resolution settles every open position.
+      openInterestLong: 0,
+      openInterestShort: 0,
       oraclePrice: finalPrice,
       oraclePriceTime: oracleTs,
       oracleSourceTime: oracleSourceTime ?? null,
