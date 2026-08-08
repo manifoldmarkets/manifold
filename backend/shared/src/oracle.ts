@@ -9,6 +9,10 @@ export const TRUMP_APPROVAL_FEED_ID = 'trump-approval-rating'
 export const BTC_USD_FEED_ID = 'btc-usd'
 export const UK_GRID_CARBON_FEED_ID = 'uk-grid-carbon'
 export const OPENROUTER_OPEN_WEIGHT_FEED_ID = 'openrouter-open-weight-share'
+export const SPYX_USD_FEED_ID = 'spyx-usd'
+export const QQQX_USD_FEED_ID = 'qqqx-usd'
+export const GLDX_USD_FEED_ID = 'gldx-usd'
+export const NVDAX_USD_FEED_ID = 'nvdax-usd'
 
 // Append oracle price points for a feed. Published history is immutable:
 // duplicate (feed_id, ts) values remain unchanged even if a source later
