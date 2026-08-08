@@ -1,0 +1,81 @@
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
+index 834cbaf..c51848b 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
+@@ -115,10 +115,53 @@ public class RNWidget {
+         }
+         addCollectionViews(widgetId, remoteWidgetView, widgetWithViews);
+ 
++        applyCountdown(remoteWidgetView, light);
++
+         AppWidgetManager.getInstance(appContext)
+             .updateAppWidget(widgetId, remoteWidgetView);
+     }
+ 
++    // Live countdown overlay. The root widget passes { showCountdown, countdownMs }
++    // via clickActionData (a supported passthrough). When shown, we drive a native
++    // Chronometer that ticks down to the target with no app process — the one thing
++    // a flattened-bitmap widget can't do on its own. countdownMs is the remaining
++    // time at render; the Chronometer keeps ticking accurately between re-renders.
++    private void applyCountdown(RemoteViews remoteWidgetView, ReadableMap rootConfig) {
++        boolean show = false;
++        long countdownMs = 0;
++        if (rootConfig != null && rootConfig.hasKey("props")) {
++            ReadableMap props = rootConfig.getMap("props");
++            if (props != null && props.hasKey("clickActionData")) {
++                ReadableMap data = props.getMap("clickActionData");
++                if (data != null && data.hasKey("showCountdown") && data.getBoolean("showCountdown")) {
++                    show = true;
++                    if (data.hasKey("countdownMs")) {
++                        countdownMs = (long) data.getDouble("countdownMs");
++                    }
++                }
++            }
++        }
++
++        if (show && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
++            long base = android.os.SystemClock.elapsedRealtime() + Math.max(0, countdownMs);
++            remoteWidgetView.setChronometer(R.id.rn_widget_chronometer, base, "%s", true);
++            remoteWidgetView.setChronometerCountDown(R.id.rn_widget_chronometer, true);
++            // Urgency colour by time remaining (set per render, so it steps as the
++            // widget refreshes — on app-open + every ~30 min): white >=12h, amber
++            // under 12h, red under 4h.
++            int countdownColor = 0xFFFFFFFF;
++            if (countdownMs < 4L * 60 * 60 * 1000) {
++                countdownColor = 0xFFFF5C5C;
++            } else if (countdownMs < 12L * 60 * 60 * 1000) {
++                countdownColor = 0xFFFFC83C;
++            }
++            remoteWidgetView.setTextColor(R.id.rn_widget_chronometer, countdownColor);
++            remoteWidgetView.setViewVisibility(R.id.rn_widget_chronometer, View.VISIBLE);
++        } else {
++            remoteWidgetView.setViewVisibility(R.id.rn_widget_chronometer, View.GONE);
++        }
++    }
++
+     public WritableMap createPreview(int width, int height) throws Exception {
+         ReadableMap configClone = Arguments.makeNativeMap(config.toHashMap());
+ 
+diff --git a/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml b/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
+index 6651155..3731629 100644
+--- a/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
++++ b/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
+@@ -19,6 +19,18 @@
+         android:scaleType="matrix"
+         android:visibility="gone" />
+ 
++    <Chronometer
++        android:id="@+id/rn_widget_chronometer"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="bottom|start"
++        android:layout_marginStart="16dp"
++        android:layout_marginBottom="14dp"
++        android:textColor="#FFFFFF"
++        android:textSize="15sp"
++        android:textStyle="bold"
++        android:visibility="gone" />
++
+     <FrameLayout
+         android:id="@+id/rn_widget_clickable_container"
+         android:layout_width="match_parent"
