@@ -144,6 +144,7 @@ export const PerpChart = (props: {
   const [loading, setLoading] = useState(true)
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
   const [hoveredMark, setHoveredMark] = useState<ProjectionPoint | null>(null)
+  const [hoveredCarryEnd, setHoveredCarryEnd] = useState(false)
   const [overlays, setOverlays] = usePersistentInMemoryState<OverlayToggles>(
     DEFAULT_OVERLAYS,
     'perp-chart-overlays'
@@ -687,9 +688,10 @@ export const PerpChart = (props: {
   // Cumulative funding pinned to the carry line's endpoint — the answer to
   // "what does holding to here cost". Rendered only where the per-event
   // diamonds are suppressed: at short horizons the diamonds already say it
-  // and the cumulative sum is dust. Tod 2026-07-27: label the END with the
+  // and the cumulative sum is dust. Tod 2026-07-27: mark the END with the
   // cumulative amount so the long dashed climb reads as accrued cost, not a
-  // price forecast.
+  // price forecast — as a single hover diamond, matching the per-event marks,
+  // rather than baked-in text cluttering the plot.
   const carryEnd =
     overlayGeom &&
     overlayGeom.carry.length > 0 &&
@@ -699,6 +701,13 @@ export const PerpChart = (props: {
       : null
   const carryEndPct = carryEnd
     ? Math.abs(liveFundingRate) * (overlayGeom!.horizon / fundingPeriodMs) * 100
+    : 0
+  // Drawn outside the clip so the endpoint diamond stays whole at the right
+  // edge, and clamped vertically because a steep carry line deliberately
+  // exits the top of the plot.
+  const carryEndX = carryEnd ? Math.min(xScale(carryEnd.ts), width - 12) : 0
+  const carryEndY = carryEnd
+    ? Math.min(Math.max(yScale(carryEnd.value), 14), height - 24)
     : 0
 
   return (
@@ -733,7 +742,7 @@ export const PerpChart = (props: {
               active={overlays.you}
               onClick={() => toggleOverlay('you')}
               label="You"
-              tooltip="Your entry (solid), liquidation (dotted amber), and personal funding break-even (dashed). Funding is charged on margin, so higher leverage flattens your personal carry hurdle."
+              tooltip="Your entry (solid), liquidation (dotted amber), and break-even (dashed)."
               swatch={<YouSwatch />}
             />
           )}
@@ -1060,31 +1069,44 @@ export const PerpChart = (props: {
                 />
               ))}
           {carryEnd && (
-            <g className="text-ink-600">
-              <text
-                x={Math.min(xScale(carryEnd.ts) - 6, width - 14)}
-                y={Math.min(
-                  Math.max(yScale(carryEnd.value) - 8, 20),
-                  height - 26
-                )}
-                fontSize={10}
-                textAnchor="end"
+            <g
+              className="cursor-help"
+              role="img"
+              tabIndex={0}
+              aria-label={`Hold cost to the end of this projection: ${
+                liveFundingRate > 0 ? 'longs' : 'shorts'
+              } pay about ${formatCarryEndPct(carryEndPct)}% of margin.`}
+              onMouseEnter={() => setHoveredCarryEnd(true)}
+              onMouseLeave={() => setHoveredCarryEnd(false)}
+              onFocus={() => setHoveredCarryEnd(true)}
+              onBlur={() => setHoveredCarryEnd(false)}
+            >
+              {/* Oversized invisible hit area — a 6px diamond is not a hover
+                  target. */}
+              <circle cx={carryEndX} cy={carryEndY} r={11} fill="transparent" />
+              {hoveredCarryEnd && (
+                <circle
+                  cx={carryEndX}
+                  cy={carryEndY}
+                  r={8}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeOpacity={0.35}
+                  className="text-primary-600"
+                />
+              )}
+              <rect
+                x={hoveredCarryEnd ? -4.5 : -3}
+                y={hoveredCarryEnd ? -4.5 : -3}
+                width={hoveredCarryEnd ? 9 : 6}
+                height={hoveredCarryEnd ? 9 : 6}
+                transform={`translate(${carryEndX} ${carryEndY}) rotate(45)`}
                 fill="currentColor"
-                opacity={0.85}
-              >
-                {liveFundingRate > 0 ? 'longs' : 'shorts'} pay ≈
-                {carryEndPct < 1
-                  ? carryEndPct.toFixed(2)
-                  : carryEndPct.toFixed(1)}
-                % to here
-                <title>
-                  Cumulative funding over this projection at today&apos;s rate (
-                  {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/
-                  {fundingPeriodUnit(fundingPeriodMs)} of margin). The rate
-                  floats every {fundingPeriodNoun(fundingPeriodMs)}, so treat
-                  this as a yardstick, not a bill.
-                </title>
-              </text>
+                fillOpacity={hoveredCarryEnd ? 1 : 0.85}
+                className={
+                  hoveredCarryEnd ? 'text-primary-600' : 'text-ink-600'
+                }
+              />
             </g>
           )}
           {hovered && (
@@ -1181,6 +1203,30 @@ export const PerpChart = (props: {
                 ? 'shorts pay longs'
                 : 'balanced'}{' '}
               {(Math.abs(liveFundingRate) * 100).toFixed(3)}% of margin
+            </div>
+          </div>
+        )}
+        {carryEnd && hoveredCarryEnd && (
+          <div
+            className="bg-canvas-0 border-ink-200 pointer-events-none absolute top-2 max-w-[15rem] rounded-md border px-2 py-1 text-xs shadow-sm"
+            style={{
+              left: `${(carryEndX / width) * 100}%`,
+              transform:
+                carryEndX / width > 0.8
+                  ? 'translateX(calc(-100% - 8px))'
+                  : 'translateX(-50%)',
+            }}
+          >
+            <div className="text-ink-900 whitespace-nowrap font-semibold">
+              {liveFundingRate > 0 ? 'Longs' : 'Shorts'} pay ≈
+              {formatCarryEndPct(carryEndPct)}% to here
+            </div>
+            <div className="text-ink-500">
+              Cumulative funding over this projection at today&apos;s rate (
+              {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/
+              {fundingPeriodUnit(fundingPeriodMs)} of margin). The rate floats
+              every {fundingPeriodNoun(fundingPeriodMs)}, so treat this as a
+              yardstick, not a bill.
             </div>
           </div>
         )}
@@ -1346,6 +1392,11 @@ const formatHoverValue = (
   const hoverDecimals = Math.max(priceDecimals, v === Math.round(v) ? 0 : 2)
   return formatPrice(v, hoverDecimals)
 }
+
+// Sub-1% carry needs the extra digit to say anything at all; past that the
+// second decimal is noise on a rate that floats anyway.
+const formatCarryEndPct = (pct: number) =>
+  pct < 1 ? pct.toFixed(2) : pct.toFixed(1)
 
 const formatHoverDate = (ts: number) => {
   const d = dayjs(ts)
