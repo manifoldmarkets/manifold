@@ -321,6 +321,7 @@ export const VERIFIED_USERNAMES = [
   'NickyCase',
   'TamayBesiroglu',
   'realTomBayes',
+  'MNX',
 ]
 
 export const BANNED_TRADING_USER_IDS = [
