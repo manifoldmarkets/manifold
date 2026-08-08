@@ -115,11 +115,16 @@ export function DailyLoan(props: {
     freeLoanData.maxLoan > 0
   const hasNoEligiblePositions =
     freeLoanData && !alreadyClaimedToday && !atMaxLoanLimit && !canClaimFreeLoan
+  // Perps don't back loans, so a perp-only portfolio reads as "no positions".
+  const onlyPerpPositions =
+    hasNoEligiblePositions && (freeLoanData?.perpValueExcluded ?? 0) >= 1
 
   // Ineligible = at max limit OR no eligible positions (but NOT if already claimed)
   const isIneligible = atMaxLoanLimit || hasNoEligiblePositions
-  // Disabled = no eligible positions (can't even repay if nothing invested)
-  const isButtonDisabled = hasNoEligiblePositions
+  // Disabled = no eligible positions (can't even repay if nothing invested).
+  // Perp-only holders stay clickable so the modal can explain why perps don't
+  // count — the tooltip alone isn't shown on mobile.
+  const isButtonDisabled = hasNoEligiblePositions && !onlyPerpPositions
 
   const getTooltipText = () => {
     if (isLoading) return 'Loading...'
@@ -131,6 +136,9 @@ export function DailyLoan(props: {
     }
     if (atMaxLoanLimit) {
       return 'At maximum loan limit'
+    }
+    if (onlyPerpPositions) {
+      return "Perps don't earn daily loans — trade a market to start earning"
     }
     if (hasNoEligiblePositions) {
       return 'Invest more to earn daily loan'

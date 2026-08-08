@@ -2662,6 +2662,8 @@ export const API = (_apiTypeCheck = {
       // Equity-based calculation fields (equity = portfolioValue - loans)
       equity?: number
       portfolioValue?: number
+      // Perp position value left out of the equity base (display only)
+      perpValueExcluded?: number
     },
     props: z.object({
       userId: z.string(),
@@ -2731,6 +2733,8 @@ export const API = (_apiTypeCheck = {
       todayLoans: number
       // Today's claimed free loan
       todaysFreeLoan: number
+      // Perp position value left out of the equity base (display only)
+      perpValueExcluded?: number
     },
     props: z.object({ userId: z.string() }),
   },
