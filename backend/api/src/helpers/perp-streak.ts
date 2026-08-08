@@ -1,4 +1,5 @@
 import { PerpContract } from 'common/contract'
+import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { payBettingStreak } from 'shared/betting-streak-bonus'
 import { createFollowSuggestionNotification } from 'shared/create-notification'
@@ -24,49 +25,27 @@ import { payReferralBetBonus } from '../on-create-bet'
 // replayed=true from its stored-event paths): a replay is not a trade, and
 // calling this on one would advance the streak and pay the daily bonus for
 // free — once per day, forever, off a single historical request.
-//
-// Serialized through betsQueue on the user id — the same per-user
-// serialization the bet path gets — so two near-simultaneous trades (or a
-// trade racing a bet) can't both observe streak_incremented and double-pay
-// the daily bonus.
 export const advancePerpBettingStreak = async (
   userId: string,
   contractId: string,
   isApi: boolean
 ) => {
-  return betsQueue.enqueueFn(
-    () => advancePerpBettingStreakInternal(userId, contractId, isApi),
+  const pg = createSupabaseDirectClient()
+
+  // Only the read-and-increment holds the betsQueue lock — the same per-user
+  // serialization the bet path gets — so two near-simultaneous trades (or a
+  // trade racing a bet) can't both observe streak_incremented and double-pay
+  // the daily bonus. The payout must run AFTER the lock is released:
+  // payBettingStreak -> runTxnFromBank re-enters betsQueue on the same user
+  // id, so holding the lock across it deadlocks until the queue timeout and
+  // the bonus txn rolls back, while the already-committed increment survives
+  // and silently consumes the user's streak day.
+  const increment = await betsQueue.enqueueFn(
+    () => incrementStreak(userId),
     [userId]
   )
-}
-
-const advancePerpBettingStreakInternal = async (
-  userId: string,
-  contractId: string,
-  isApi: boolean
-) => {
-  const pg = createSupabaseDirectClient()
-  const user = await getUser(userId)
-  if (!user) return
-  const isFirstTradeEver = !user.lastBetTime
-
-  const now = Date.now()
-  const rows = await pg.any<{ streak_incremented: boolean }>(
-    incrementStreakQuery(user, now)
-  )
-  const streakIncremented = rows[0]?.streak_incremented === true
-
-  broadcastUpdatedUser(
-    removeUndefinedProps({
-      id: user.id,
-      currentBettingStreak: streakIncremented
-        ? (user.currentBettingStreak ?? 0) + 1
-        : undefined,
-      lastBetTime: now,
-    })
-  )
-
-  if (isApi) return
+  if (!increment || isApi) return
+  const { user, isFirstTradeEver, streakIncremented } = increment
 
   const needsContract = (streakIncremented || isFirstTradeEver) && contractId
   const contract = needsContract
@@ -97,4 +76,34 @@ const advancePerpBettingStreakInternal = async (
   }
 
   await addToLeagueIfNotInOne(pg, user.id)
+}
+
+const incrementStreak = async (
+  userId: string
+): Promise<
+  | { user: User; isFirstTradeEver: boolean; streakIncremented: boolean }
+  | undefined
+> => {
+  const pg = createSupabaseDirectClient()
+  const user = await getUser(userId)
+  if (!user) return undefined
+  const isFirstTradeEver = !user.lastBetTime
+
+  const now = Date.now()
+  const rows = await pg.any<{ streak_incremented: boolean }>(
+    incrementStreakQuery(user, now)
+  )
+  const streakIncremented = rows[0]?.streak_incremented === true
+
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: user.id,
+      currentBettingStreak: streakIncremented
+        ? (user.currentBettingStreak ?? 0) + 1
+        : undefined,
+      lastBetTime: now,
+    })
+  )
+
+  return { user, isFirstTradeEver, streakIncremented }
 }

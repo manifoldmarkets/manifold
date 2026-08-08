@@ -14,6 +14,9 @@ export type PerpPosition = {
   costBasis: number
   /** original margin the user put in (never scaled). Used for user-facing PnL. */
   originalCostBasis: number
+  /** Cumulative taker fees paid while opening/adding to this live position.
+   * Kept separate from margin so leverage and liquidation math stay unchanged. */
+  takerFeeCostBasis?: number
   /** P_e — entry price; units-weighted (harmonic) mean on add, so that
    * merging tranches conserves equity. See `mergedEntryPrice`. */
   entryPrice: number

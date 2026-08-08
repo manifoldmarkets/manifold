@@ -7,12 +7,14 @@ create table if not exists
     size numeric not null,
     cost_basis numeric not null,
     original_cost_basis numeric not null,
+    taker_fee_cost_basis numeric not null default 0,
     entry_price numeric not null,
     leverage numeric not null,
     liquidation_price numeric not null,
     opened_time timestamp with time zone not null default now(),
     updated_time timestamp with time zone not null default now(),
-    constraint contract_perp_positions_direction_check check (direction in ('long','short'))
+    constraint contract_perp_positions_direction_check check (direction in ('long','short')),
+    constraint contract_perp_positions_taker_fee_cost_basis_check check (taker_fee_cost_basis >= 0)
   );
 
 alter table contract_perp_positions enable row level security;

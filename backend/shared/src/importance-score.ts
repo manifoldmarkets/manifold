@@ -30,6 +30,35 @@ import { bulkUpdate } from 'shared/supabase/utils'
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
 
+// The batch score write races with other multi-row contracts writers (perp
+// oracle ticks, metrics updates) and deadlocks a few times a day (40P01).
+// Take the row locks in id order up front so two id-ordered writers can never
+// cycle; the plain bulkUpdate acquires them in join order instead.
+const updateContractScores = async (
+  pg: SupabaseDirectClientTimeout,
+  updates: {
+    id: string
+    boosted: boolean
+    importance_score: number
+    freshness_score: number
+    daily_score: number
+  }[]
+) => {
+  if (!updates.length) return
+  await pg.tx(async (tx) => {
+    await tx.none(
+      `select 1 from contracts where id in ($1:csv) order by id for update`,
+      [updates.map((u) => u.id)]
+    )
+    await bulkUpdate(tx, 'contracts', ['id'], updates)
+  })
+}
+
+const isDeadlock = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: unknown }).code === '40P01'
+
 export async function calculateImportanceScore(
   pg: SupabaseDirectClientTimeout,
   readOnly = false,
@@ -254,17 +283,13 @@ export async function calculateImportanceScore(
   }
 
   if (!readOnly) {
-    log('Updating', contractsWithUpdates.length, 'contracts')
-    await bulkUpdate(
-      pg,
-      'contracts',
-      ['id'],
+    const updates = sortBy(
       contractsWithUpdates
         .filter(
           (c) =>
-            !isNaN(c.importanceScore) &&
-            !isNaN(c.freshnessScore) &&
-            !isNaN(c.dailyScore)
+            Number.isFinite(c.importanceScore) &&
+            Number.isFinite(c.freshnessScore) &&
+            Number.isFinite(c.dailyScore)
         )
         .map((contract) => ({
           id: contract.id,
@@ -272,8 +297,23 @@ export async function calculateImportanceScore(
           importance_score: contract.importanceScore,
           freshness_score: contract.freshnessScore,
           daily_score: contract.dailyScore,
-        }))
+        })),
+      'id'
     )
+    log('Updating', updates.length, 'contracts')
+    try {
+      await updateContractScores(pg, updates)
+    } catch (error) {
+      if (!isDeadlock(error)) throw error
+      // A writer with a different lock order beat us; back off with jitter so
+      // we don't re-collide in lockstep, and let a second loss crash the job
+      // (that is a real signal, not a race).
+      log.warn('contract score update lost a deadlock race, retrying once')
+      await new Promise((resolve) =>
+        setTimeout(resolve, 250 + Math.random() * 500)
+      )
+      await updateContractScores(pg, updates)
+    }
   }
 }
 

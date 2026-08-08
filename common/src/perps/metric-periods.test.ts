@@ -87,6 +87,65 @@ describe('calculatePerpMetricPeriods', () => {
     })
   })
 
+  it('counts an opening fee paid inside the period as invested cash and loss', () => {
+    const result = calculatePerpMetricPeriods({
+      currentPositions: [
+        position({
+          takerFeeCostBasis: 0.5,
+          openedTime: NOW - DAY_MS / 2,
+        }),
+      ],
+      events: [
+        event({
+          id: 1,
+          eventType: 'open',
+          appliedTime: NOW - DAY_MS / 2,
+          sizeDelta: 1_000,
+          costBasisDelta: 100,
+          originalCostBasisDelta: 100,
+          data: { entryPrice: 100, fee: 0.5 },
+        }),
+      ],
+      currentPrice: 100,
+      periods: periods(100),
+    })
+
+    expect(result?.from.day).toEqual({
+      profit: -0.5,
+      profitPercent: (-0.5 / 100.5) * 100,
+      invested: 100.5,
+      prevValue: 0,
+      value: 100,
+    })
+  })
+
+  it('does not charge an opening fee paid before the period again', () => {
+    const result = calculatePerpMetricPeriods({
+      currentPositions: [position({ takerFeeCostBasis: 0.5 })],
+      events: [
+        event({
+          id: 1,
+          eventType: 'open',
+          appliedTime: NOW - 2 * DAY_MS,
+          sizeDelta: 1_000,
+          costBasisDelta: 100,
+          originalCostBasisDelta: 100,
+          data: { entryPrice: 100, fee: 0.5 },
+        }),
+      ],
+      currentPrice: 100,
+      periods: periods(100),
+    })
+
+    expect(result?.from.day).toEqual({
+      profit: 0,
+      profitPercent: 0,
+      invested: 100,
+      prevValue: 100,
+      value: 100,
+    })
+  })
+
   it('counts funding and new margin without treating the deposit as profit', () => {
     const result = calculatePerpMetricPeriods({
       currentPositions: [

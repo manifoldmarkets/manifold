@@ -473,6 +473,7 @@ export const openPosition = (
       size: totalSize,
       costBasis,
       originalCostBasis: existing.originalCostBasis + mana,
+      takerFeeCostBasis: existing.takerFeeCostBasis ?? 0,
       entryPrice,
       leverage: lev,
       liquidationPrice: liquidationPrice(direction, entryPrice, lev),
@@ -487,6 +488,7 @@ export const openPosition = (
       size: newSize,
       costBasis: newCostBasis,
       originalCostBasis: mana,
+      takerFeeCostBasis: 0,
       entryPrice: oraclePrice,
       leverage,
       liquidationPrice: liquidationPrice(direction, oraclePrice, leverage),
@@ -707,6 +709,8 @@ const assertPerpStateNumbers = (state: PerpState, price: number) => {
       `${prefix} original cost basis`,
       position.originalCostBasis
     )
+    const takerFeeCostBasis = position.takerFeeCostBasis ?? 0
+    assertFiniteNumber(`${prefix} taker fee cost basis`, takerFeeCostBasis)
     assertFiniteNumber(`${prefix} entry price`, position.entryPrice)
     assertFiniteNumber(`${prefix} leverage`, position.leverage)
     assertFiniteNumber(`${prefix} liquidation price`, position.liquidationPrice)
@@ -716,7 +720,8 @@ const assertPerpStateNumbers = (state: PerpState, price: number) => {
     if (
       position.size < 0 ||
       position.costBasis < 0 ||
-      position.originalCostBasis < 0
+      position.originalCostBasis < 0 ||
+      takerFeeCostBasis < 0
     )
       throw new Error(`${prefix} amounts must be non-negative`)
     if (position.entryPrice <= 0)

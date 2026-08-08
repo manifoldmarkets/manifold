@@ -38,6 +38,7 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
           leverage: position.leverage,
           liquidationPrice: position.liquidationPrice,
         },
+        fee: result.fee,
       },
       continue: async () => {
         // An idempotent replay is not a trade — re-running side effects

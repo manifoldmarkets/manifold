@@ -47,12 +47,36 @@ export const getUnrealizedPnl = (position: PerpPosition, price: number) =>
 
 /**
  * Profit as the user perceives it:
- *   currentValue - originalMargin
+ *   currentValue - originalMargin - openingFees
  * Funding haircut/bonus is absorbed into `currentValue`; user just sees the
  * delta against what they put in.
  */
-export const getUserFacingPnl = (position: PerpPosition, price: number) =>
-  getPositionValue(position, price) - position.originalCostBasis
+export const getUserFacingPnl = (position: PerpPosition, price: number) => {
+  const totalCost = getValidatedPerpPositionTotalCost(position)
+  return totalCost === undefined
+    ? 0
+    : getPositionValue(position, price) - totalCost
+}
+
+/** Total cash committed to a live position: margin plus opening/add fees. */
+const getValidatedPerpPositionTotalCost = (
+  position: Pick<PerpPosition, 'originalCostBasis' | 'takerFeeCostBasis'>
+) => {
+  const { originalCostBasis, takerFeeCostBasis = 0 } = position
+  if (
+    !Number.isFinite(originalCostBasis) ||
+    originalCostBasis < 0 ||
+    !Number.isFinite(takerFeeCostBasis) ||
+    takerFeeCostBasis < 0
+  )
+    return undefined
+  const total = originalCostBasis + takerFeeCostBasis
+  return Number.isFinite(total) ? total : undefined
+}
+
+export const getPerpPositionTotalCost = (
+  position: Pick<PerpPosition, 'originalCostBasis' | 'takerFeeCostBasis'>
+) => getValidatedPerpPositionTotalCost(position) ?? 0
 
 /**
  * Realized PnL shown on close receipts, history, and ledger rows. Settlement
@@ -61,24 +85,28 @@ export const getUserFacingPnl = (position: PerpPosition, price: number) =>
  */
 export const getUserFacingPnlFromPayout = (
   payout: number,
-  originalCostBasis: number
+  originalCostBasis: number,
+  takerFeeCostBasis = 0
 ) => {
   if (
     !Number.isFinite(payout) ||
     payout < 0 ||
     !Number.isFinite(originalCostBasis) ||
-    originalCostBasis < 0
+    originalCostBasis < 0 ||
+    !Number.isFinite(takerFeeCostBasis) ||
+    takerFeeCostBasis < 0
   )
     return 0
-  const pnl = payout - originalCostBasis
+  const pnl = payout - originalCostBasis - takerFeeCostBasis
   return Number.isFinite(pnl) ? pnl : 0
 }
 
-/** Percentage form, using originalCostBasis as the denominator. */
+/** Percentage form, using total cash committed as the denominator. */
 export const getUserFacingPnlPercent = (
   position: PerpPosition,
   price: number
 ) => {
-  if (position.originalCostBasis <= 0) return 0
-  return getUserFacingPnl(position, price) / position.originalCostBasis
+  const totalCost = getPerpPositionTotalCost(position)
+  if (totalCost <= 0) return 0
+  return getUserFacingPnl(position, price) / totalCost
 }

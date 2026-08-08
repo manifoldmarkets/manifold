@@ -13,6 +13,7 @@ import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
+import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
 import {
   getTierIndexFromLiquidityAndAnswers,
@@ -83,6 +84,7 @@ export type LiteMarket = {
   fundingRate?: number
   lastFundingTime?: number
   maxLeverage?: number
+  takerFeeBps?: number
   resolvedOraclePrice?: number
 }
 export type ApiAnswer = Omit<
@@ -225,6 +227,7 @@ export function toLiteMarket(
           fundingRate: contract.fundingRate,
           lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,
+          takerFeeBps: getPerpTakerFeeBps(contract),
           resolvedOraclePrice: contract.resolvedOraclePrice,
         }
       : {}),
@@ -643,6 +646,11 @@ export const createPerpSchema = z.object({
   maxOraclePriceAgeMs: z.number().int().positive(),
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),
+  // Open-side taker fee in bps of notional (closing is free). Omitted = the
+  // platform default (see PERP_TAKER_FEE_BPS_DEFAULT); the handler stamps
+  // the resolved value so later default changes cannot rewrite an existing
+  // market's economics.
+  takerFeeBps: z.number().min(0).max(100).optional(),
 })
 
 export const placePerpTradeSchema = z.object({
