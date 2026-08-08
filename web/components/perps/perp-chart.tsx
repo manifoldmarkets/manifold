@@ -1224,8 +1224,7 @@ export const PerpChart = (props: {
             <div className="text-ink-500">
               Based on the current funding rate (
               {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/
-              {fundingPeriodUnit(fundingPeriodMs)} of margin), which changes
-              every {fundingPeriodNoun(fundingPeriodMs)}.
+              {fundingPeriodUnit(fundingPeriodMs)} of margin).
             </div>
           </div>
         )}
