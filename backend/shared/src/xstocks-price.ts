@@ -14,9 +14,9 @@ import { log } from './utils'
 // rate-limited, or wicked by a thin-book print can't move the feed.
 //
 // Venue map (probed 2026-08-07): Jupiter's lite-api aggregates all Solana
-// DEX liquidity ($1.7-2.5M routed per token); Gate and MEXC are CEX spot
-// books. SPYx has all three; QQQx and GLDx are not listed on MEXC, so those
-// feeds run getConsensusMedian's two-source path — both venues must respond
+// DEX liquidity ($0.2-2.5M routed per token); Gate and MEXC are CEX spot
+// books. SPYx and NVDAx have all three; QQQx and GLDx are not listed on
+// MEXC, so those feeds run getConsensusMedian's two-source path — both venues must respond
 // AND agree within tolerance or the tick is skipped, and a single venue
 // outage stalls the feed until it recovers (markets pause via
 // maxOraclePriceAgeMs). Kraken is the largest xStocks venue but does not
@@ -58,6 +58,12 @@ export const XSTOCK_SPECS = {
     symbol: 'GLDx',
     mint: 'Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re',
     gatePair: 'GLDX_USDT',
+  },
+  NVDAX: {
+    symbol: 'NVDAx',
+    mint: 'Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh',
+    gatePair: 'NVDAX_USDT',
+    mexcSymbol: 'NVDAXUSDT',
   },
 } as const satisfies Record<string, XStockSpec>
 

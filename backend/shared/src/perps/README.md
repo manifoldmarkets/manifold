@@ -136,8 +136,8 @@ Feed adapters live next to it:
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
-- `xstocks-price.ts` — tokenized-equity USD prices (SPYx/QQQx/GLDx, xStocks
-  by Backed), consensus median across Jupiter/Gate/MEXC venue quotes. Pure
+- `xstocks-price.ts` — tokenized-equity USD prices (SPYx/QQQx/GLDx/NVDAx,
+  xStocks by Backed), consensus median across Jupiter/Gate/MEXC venue quotes. Pure
   response parsing lives in `common/src/perps/xstocks.ts` (unit-tested,
   including the raw-vs-rebase-scaled unit trap).
 - `uk-grid-carbon.ts` — GB grid carbon intensity (gCO2/kWh), NESO 30-min

@@ -5,6 +5,7 @@ import { fetchBtcUsdSpot } from './btc-price'
 import {
   BTC_USD_FEED_ID,
   GLDX_USD_FEED_ID,
+  NVDAX_USD_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
@@ -103,7 +104,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // fetchXStockUsdPrice requires cross-venue agreement, like BTC — so bounds
   // here only reject unit-confused garbage (a cents-denominated or
   // percent-scaled value), not fast moves. Uniform wide bounds on purpose:
-  // all three tokens trade in the $300–800 range today and a genuine 10×
+  // the four tokens trade in the $200–800 range today and a genuine 10×
   // move in either direction should still publish. staleAfterMs is looser
   // than BTC's because these books are thin: consensus can transiently fail
   // on quiet weekend prints, and five minutes tolerates a few skipped ticks
@@ -143,6 +144,17 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 15_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
+  },
+  {
+    id: NVDAX_USD_FEED_ID,
+    description: 'NVDAx/USD (tokenized Nvidia), median of Jupiter/Gate/MEXC',
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    minPrice: 10,
+    maxPrice: 50_000,
+    staleAfterMs: 5 * MINUTE_MS,
+    updatePeriodMs: 15_000,
+    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into

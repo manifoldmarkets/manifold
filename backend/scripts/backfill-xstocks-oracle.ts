@@ -1,5 +1,6 @@
 import {
   GLDX_USD_FEED_ID,
+  NVDAX_USD_FEED_ID,
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   insertOraclePrices,
@@ -16,8 +17,8 @@ import { runScript } from './run-script'
 // in consistent units. Each candle is recorded at its CLOSE time; the live
 // feed then takes over at 15s cadence via update-oracle-feeds.
 //
-// Args: <SPYX|QQQX|GLDX> [days] [interval] — defaults 90 days of 1h candles.
-// Example: `ts-node backfill-xstocks-oracle.ts SPYX 90 1h`
+// Args: <SPYX|QQQX|GLDX|NVDAX> [days] [interval] — defaults 90 days of 1h
+// candles. Example: `ts-node backfill-xstocks-oracle.ts SPYX 90 1h`
 // Finer patching: `ts-node backfill-xstocks-oracle.ts SPYX 2 5m`
 // (interval must be one Gate supports: 1m/5m/15m/30m/1h/4h/8h/1d).
 
@@ -25,6 +26,7 @@ const FEED_BY_KEY = {
   SPYX: SPYX_USD_FEED_ID,
   QQQX: QQQX_USD_FEED_ID,
   GLDX: GLDX_USD_FEED_ID,
+  NVDAX: NVDAX_USD_FEED_ID,
 } as const
 
 const INTERVAL_S: Record<string, number> = {

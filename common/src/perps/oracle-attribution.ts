@@ -69,6 +69,10 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     source: 'Jupiter & Gate (GLDx by Backed xStocks)',
     url: 'https://xstocks.fi',
   },
+  'nvdax-usd': {
+    source: 'Jupiter, Gate & MEXC (NVDAx by Backed xStocks)',
+    url: 'https://xstocks.fi',
+  },
 }
 
 export const getOracleAttribution = (
