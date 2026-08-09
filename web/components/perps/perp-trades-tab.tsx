@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
@@ -8,9 +9,12 @@ import { Row } from 'web/components/layout/row'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import ShortToggle from 'web/components/widgets/short-toggle'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { POSITIONS_POLL_MS as POLL_MS } from './use-perp-positions'
 
 type Event = {
@@ -27,6 +31,7 @@ type Event = {
   payout: number | null
   pnl: number | null
   adlFactor: number | null
+  isApi: boolean
   userName: string | null
   username: string | null
   avatarUrl: string | null
@@ -43,6 +48,13 @@ export const PerpTradesTab = (props: {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const initializedRef = useRef(false)
+  // Filtering is server-side (like the bets tab): dropping API rows on the
+  // client would leave short, ragged pages since pagination counts rows
+  // before the filter.
+  const [hideApiTrades, setHideApiTrades] = usePersistentInMemoryState(
+    false,
+    `hide-api-perp-trades-${contract.id}`
+  )
   // Hoisted out of EventRow: one resize listener for the tab, not one per row.
   const isMobile = useIsMobile(800)
 
@@ -53,10 +65,16 @@ export const PerpTradesTab = (props: {
   useEffect(() => {
     let cancelled = false
     initializedRef.current = false
+    setEvents(null)
+    setHasMore(true)
     const load = () =>
       api('get-perp-events', {
         contractId: contract.id,
         limit: PAGE_SIZE,
+        // Omitted rather than sent as false: the props schema is strict, so
+        // an unknown key 400s. Web deploys ahead of the API, and the default
+        // view must keep working against an API that predates this filter.
+        ...(hideApiTrades ? { excludeApi: true } : {}),
       })
         .then((rows) => {
           if (cancelled) return
@@ -78,7 +96,7 @@ export const PerpTradesTab = (props: {
       cancelled = true
       clearInterval(id)
     }
-  }, [contract.id])
+  }, [contract.id, hideApiTrades])
 
   // Count is a lower bound while pagination is in progress. Good enough for
   // the tab title in v1.
@@ -95,6 +113,7 @@ export const PerpTradesTab = (props: {
         contractId: contract.id,
         beforeId: oldest.id,
         limit: PAGE_SIZE,
+        ...(hideApiTrades ? { excludeApi: true } : {}),
       })
       if (more.length === 0) {
         setHasMore(false)
@@ -108,26 +127,54 @@ export const PerpTradesTab = (props: {
     }
   }
 
-  if (!events) return <LoadingIndicator />
-  if (events.length === 0)
-    return <div className="text-ink-500 p-4 text-sm">No trades yet.</div>
+  const filterRow = (
+    <Row className="bg-canvas-50 items-center gap-2 rounded-lg px-3 py-2 sm:px-4">
+      <span className="text-ink-500 text-xs font-medium uppercase tracking-wide">
+        Hide API trades
+      </span>
+      <ShortToggle
+        on={hideApiTrades}
+        setOn={(enabled) => {
+          setHideApiTrades(enabled)
+          track('toggle-hide-api-trades-filter', {
+            contractSlug: contract.slug,
+            contractName: contract.question,
+            hideApiTrades: enabled,
+            isPerp: true,
+          })
+        }}
+        size="sm"
+      />
+    </Row>
+  )
 
   const priceDecimals = inferPriceDecimals([
     Number(contract.oraclePrice),
-    ...events.map((e) => e.oraclePrice),
+    ...(events ?? []).map((e) => e.oraclePrice),
   ])
 
   return (
     <Col className="gap-2">
-      {events.map((e) => (
-        <EventRow
-          key={e.id}
-          event={e}
-          priceDecimals={priceDecimals}
-          short={isMobile}
-        />
-      ))}
-      {hasMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+      {filterRow}
+      {!events ? (
+        <LoadingIndicator />
+      ) : events.length === 0 ? (
+        <div className="text-ink-500 p-4 text-sm">
+          {hideApiTrades ? 'No manual trades yet.' : 'No trades yet.'}
+        </div>
+      ) : (
+        <>
+          {events.map((e) => (
+            <EventRow
+              key={e.id}
+              event={e}
+              priceDecimals={priceDecimals}
+              short={isMobile}
+            />
+          ))}
+          {hasMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+        </>
+      )}
     </Col>
   )
 }
@@ -219,6 +266,11 @@ const EventRow = (props: {
             shortened
             className="text-ink-400 !ml-1 text-xs"
           />
+          {event.isApi && (
+            <InfoTooltip text="Placed via the API" className="!ml-1">
+              🤖
+            </InfoTooltip>
+          )}
         </Row>
       </Col>
       <Col className="ml-auto shrink-0 items-end text-sm">

@@ -16,13 +16,15 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
   onlyUsersWhoCanPerformAction('trade', async (body, auth) => {
     assertPerpExposureIncreaseEnabled()
     const { contractId, direction, mana, leverage, idempotencyKey } = body
+    const isApi = auth.creds.kind === 'key'
     const result = await openOrAddPosition(
       contractId,
       auth.uid,
       direction,
       mana,
       leverage,
-      idempotencyKey
+      idempotencyKey,
+      isApi
     )
 
     const { position } = result
@@ -46,11 +48,7 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
         // stored request.
         if (result.replayed) return
         try {
-          await advancePerpBettingStreak(
-            auth.uid,
-            contractId,
-            auth.creds.kind === 'key'
-          )
+          await advancePerpBettingStreak(auth.uid, contractId, isApi)
         } catch (err) {
           log('perp streak update failed (non-fatal):', err)
         }
