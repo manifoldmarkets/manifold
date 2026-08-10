@@ -6,8 +6,10 @@ import {
   calculateDailyLoanLimit,
   canClaimDailyFreeLoan,
   calculateTotalFreeLoanAvailable,
+  filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  sumExcludedPerpEquity,
 } from 'common/loans'
 import {
   canAccessMarginLoans,
@@ -70,11 +72,14 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
+  // Reported so the UI can explain the gap vs. the sitewide portfolio value.
+  const perpValueExcluded = sumExcludedPerpEquity(metrics, contractsById)
 
   // Total loan includes both free loans and margin loans
   const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
@@ -160,5 +165,6 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     // Equity-based calculation fields (equity = portfolioValue - loans)
     equity,
     portfolioValue,
+    perpValueExcluded,
   }
 }
