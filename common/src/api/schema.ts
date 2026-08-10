@@ -1262,6 +1262,7 @@ export const API = (_apiTypeCheck = {
       payout: number | null
       pnl: number | null
       adlFactor: number | null
+      isApi: boolean
       userName: string | null
       username: string | null
       avatarUrl: string | null
@@ -1272,6 +1273,10 @@ export const API = (_apiTypeCheck = {
         userId: z.string().min(1).optional(),
         beforeId: z.coerce.number().int().optional(),
         limit: z.coerce.number().int().positive().max(200).optional(),
+        // Drops trades placed with an API key. Liquidations and ADL stay:
+        // they aren't anyone's order. Events written before the flag shipped
+        // carry no marker and read as manual.
+        excludeApi: coerceBoolean.optional(),
       })
       .strict(),
   },

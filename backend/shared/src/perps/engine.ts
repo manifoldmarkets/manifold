@@ -419,7 +419,12 @@ export const openOrAddPosition = async (
   direction: PerpDirection,
   mana: number,
   leverage: number,
-  idempotencyKey?: string
+  idempotencyKey?: string,
+  /** Trade arrived via an API key rather than the site — recorded on the
+   * event so readers can filter bot flow out of the Trades tab, matching
+   * `bets.is_api`. Lives in `data` so no migration is needed; events written
+   * before this shipped carry no flag and read as manual. */
+  isApi = false
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
@@ -728,6 +733,7 @@ export const openOrAddPosition = async (
         leverage,
         fee: openFee,
         feeBps: takerFeeBps,
+        ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,
@@ -893,7 +899,9 @@ export const closePosition = async (
   userId: string,
   direction: PerpDirection,
   idempotencyKey?: string,
-  expectedOpenedTime?: number
+  expectedOpenedTime?: number,
+  /** See `openOrAddPosition`. */
+  isApi = false
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (
@@ -1068,6 +1076,7 @@ export const closePosition = async (
         closePrice: price,
         originalCostBasis: position.originalCostBasis,
         takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
+        ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,

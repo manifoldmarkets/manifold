@@ -8,7 +8,7 @@ import { APIHandler } from './helpers/endpoint'
 // each affected ADL position already has its own user-attributed event.
 // Used by the Trades tab and user position history.
 export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
-  const { contractId, userId, beforeId, limit = 50 } = body
+  const { contractId, userId, beforeId, limit = 50, excludeApi } = body
   const pg = createSupabaseDirectClient()
 
   const rows = await pg.manyOrNone<{
@@ -38,9 +38,10 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
         and e.user_id is not null
         and ($2::text is null or e.user_id = $2::text)
         and ($3::bigint is null or e.id < $3::bigint)
+        and ($5::boolean is not true or e.data->>'isApi' is distinct from 'true')
       order by e.id desc
       limit $4`,
-    [contractId, userId ?? null, beforeId ?? null, limit]
+    [contractId, userId ?? null, beforeId ?? null, limit, excludeApi ?? false]
   )
 
   return rows.map((r) => {
@@ -77,6 +78,7 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
         adlFactor <= 1
           ? adlFactor
           : null,
+      isApi: data.isApi === true,
       userName: r.user_name,
       username: r.username,
       avatarUrl: r.avatar_url,
