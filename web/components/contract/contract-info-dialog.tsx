@@ -696,7 +696,94 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           </td>
         </tr>
       )}
+      {canEdit && (
+        <tr className="bg-purple-500/30">
+          <td>
+            Resolve{' '}
+            <InfoTooltip text="Settles every open position at the latest published oracle price and closes the market permanently. Perps are meant to run indefinitely — this is an escape hatch, not routine." />
+          </td>
+          <td>
+            <ResolvePerpButton contract={contract} />
+          </td>
+        </tr>
+      )}
     </>
+  )
+}
+
+// Admin-only escape hatch. `resolvePerp` settles every open position at the
+// newest published feed point — not necessarily the cached oraclePrice, which
+// lags whenever the engine has been rejecting updates — pays the residual pool
+// to the creator, and marks the contract resolved. There is no undo, so the
+// button confirms in place rather than firing on the first click.
+function ResolvePerpButton(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [confirming, setConfirming] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const price = Number(contract.oraclePrice)
+  // Shown only as orientation: the settlement price is whatever the feed has
+  // published by the time the transaction runs, which is newer than this
+  // whenever the market has been stuck.
+  const cachedLabel = !Number.isFinite(price)
+    ? ''
+    : ` (cached: ${formatPrice(price, inferPriceDecimals([price]))}${
+        contract.oraclePriceTime
+          ? `, ${formatTimeWithTimezone(contract.oraclePriceTime)}`
+          : ''
+      })`
+
+  const resolve = async () => {
+    if (resolving) return
+    setResolving(true)
+    try {
+      // `outcome` is ignored on the PERP path — the engine always writes 'MKT'
+      // with the settlement price — but the shared schema still requires one.
+      await api('market/:contractId/resolve', {
+        contractId: contract.id,
+        outcome: 'MKT',
+      })
+      setConfirming(false)
+      toast.success('Market resolved')
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to resolve market'
+      )
+    } finally {
+      setResolving(false)
+    }
+  }
+
+  if (!confirming)
+    return (
+      <Button
+        size="2xs"
+        color="red-outline"
+        onClick={() => setConfirming(true)}
+      >
+        Resolve market
+      </Button>
+    )
+
+  return (
+    <Col className="gap-1">
+      <span className="text-ink-600 text-xs">
+        Settles every open position at the latest published oracle price
+        {cachedLabel} and closes the market. This cannot be undone.
+      </span>
+      <Row className="items-center gap-1.5">
+        <Button size="2xs" color="red" disabled={resolving} onClick={resolve}>
+          {resolving ? 'Resolving…' : 'Confirm resolve'}
+        </Button>
+        <Button
+          size="2xs"
+          color="gray-outline"
+          disabled={resolving}
+          onClick={() => setConfirming(false)}
+        >
+          Cancel
+        </Button>
+      </Row>
+    </Col>
   )
 }
 
