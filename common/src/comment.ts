@@ -36,6 +36,11 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   visibility: Visibility
   editedTime?: number
   isApi?: boolean
+  // Author was flagged `isBot` when they posted. Denormalized so comments
+  // arriving over the websocket or in static props can be filtered client-side
+  // without a second lookup; the server-side filter reads users.is_bot, which
+  // stays correct when someone is flagged a bot after the fact.
+  isBot?: boolean
 } & T
 
 export type OnContract = {

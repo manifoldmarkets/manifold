@@ -1,5 +1,8 @@
 import { ENV_CONFIG } from './envs/constants'
-import { notification_preferences } from './user-notification-preferences'
+import {
+  bot_notification_level,
+  notification_preferences,
+} from './user-notification-preferences'
 import { UserEntitlement } from './shop/types'
 import { DAY_MS, HOUR_MS } from './util/time'
 import {
@@ -186,6 +189,10 @@ export type PrivateUser = {
   initialIpAddress?: string
   apiKey?: string
   notificationPreferences: notification_preferences
+  // How much a user flagged `isBot` is allowed to notify this user. Undefined
+  // reads as DEFAULT_BOT_NOTIFICATION_LEVEL rather than 'always' — see
+  // botNotificationAllowed in common/user-notification-preferences.
+  botNotificationLevel?: bot_notification_level
   twitchInfo?: {
     twitchName: string
     controlToken: string

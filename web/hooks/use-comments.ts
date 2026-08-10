@@ -3,7 +3,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { ContractComment } from 'common/comment'
 import { convertContractComment } from 'common/supabase/comments'
 import { groupBy, sortBy, uniqBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from 'web/lib/api/api'
 import {
   getAllCommentRows,
@@ -103,36 +103,60 @@ export const useGlobalComments = (limit: number) => {
 export const useCommentThreads = (
   contractId: string,
   limit: number,
-  disabled: boolean
+  disabled: boolean,
+  excludeBots?: boolean
 ) => {
   const [threads, setThreads] = useState<
     { parent: ContractComment; replies: ContractComment[] }[]
   >([])
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(false)
+  // Changing the filter has to restart at page 0, and state set in the same
+  // tick isn't readable by the fetch that follows it, so the page and the
+  // in-flight guard live in refs. requestId discards a response whose request
+  // has since been superseded by a filter change.
+  const pageRef = useRef(0)
+  const loadingRef = useRef(false)
+  const requestId = useRef(0)
 
-  const loadMore = async () => {
-    if (loading) return
+  const fetchPage = async (restart: boolean) => {
+    if (loadingRef.current && !restart) return
+    const thisRequest = ++requestId.current
+    const pageToLoad = restart ? 0 : pageRef.current
+    loadingRef.current = true
     setLoading(true)
-    const { parentComments, replyComments } = await api('comment-threads', {
-      contractId,
-      limit,
-      page,
-    })
-    const repliesByParent = groupBy(replyComments, 'replyToCommentId')
-    const newThreads = parentComments.map((p) => ({
-      parent: p,
-      replies: repliesByParent[p.id] ?? [],
-    }))
-    setThreads((t) => [...t, ...newThreads])
-    setPage((p) => p + 1)
-    setLoading(false)
+    try {
+      const { parentComments, replyComments } = await api('comment-threads', {
+        contractId,
+        limit,
+        page: pageToLoad,
+        // Only sent when on: props are strict and web deploys ahead of the
+        // API, so the default view must work against an API without the param.
+        ...(excludeBots ? { excludeBots: true } : {}),
+      })
+      if (thisRequest !== requestId.current) return
+      const repliesByParent = groupBy(replyComments, 'replyToCommentId')
+      const newThreads = parentComments.map((p) => ({
+        parent: p,
+        replies: repliesByParent[p.id] ?? [],
+      }))
+      setThreads((t) => (pageToLoad === 0 ? newThreads : [...t, ...newThreads]))
+      pageRef.current = pageToLoad + 1
+      setPage(pageToLoad + 1)
+    } finally {
+      if (thisRequest === requestId.current) {
+        loadingRef.current = false
+        setLoading(false)
+      }
+    }
   }
+
+  const loadMore = () => fetchPage(false)
 
   useEffect(() => {
     if (disabled) return
-    loadMore()
-  }, [contractId, disabled])
+    fetchPage(true)
+  }, [contractId, disabled, excludeBots])
 
   return { threads, loadMore, loading, page }
 }

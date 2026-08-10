@@ -18,6 +18,8 @@ import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import {
+  bot_notification_level,
+  DEFAULT_BOT_NOTIFICATION_LEVEL,
   getDefaultNotificationPreferences,
   notification_destination_types,
   notification_preference,
@@ -36,6 +38,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SwitchSetting } from 'web/components/switch-setting'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
@@ -279,6 +282,7 @@ export function NotificationSettings(props: {
           icon={<InboxInIcon className={'h-6 w-6'} />}
           data={generalOther}
         />
+        <BotNotificationSetting privateUser={privateUser} />
         <NotificationSection
           icon={<ExclamationIcon className={'h-6 w-6'} />}
           data={optOutAll}
@@ -287,6 +291,63 @@ export function NotificationSettings(props: {
         <FollowMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </SectionRoutingContext.Provider>
+  )
+}
+
+const BOT_LEVEL_DESCRIPTIONS: Record<bot_notification_level, string> = {
+  never: 'Bots never notify you, even when they reply to you directly.',
+  mentions:
+    'Only when a bot replies to you or @mentions you. Their other comments stay silent.',
+  always: 'Treat bot comments like anyone else’s.',
+}
+
+function BotNotificationSetting(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const serverLevel =
+    privateUser.botNotificationLevel ?? DEFAULT_BOT_NOTIFICATION_LEVEL
+  const [level, setLevel] = useState<bot_notification_level>(serverLevel)
+  const [saving, setSaving] = useState(false)
+
+  // Re-sync if the prop updates from a websocket push (e.g. changed in another
+  // tab) and we're not mid-save.
+  useEffect(() => {
+    if (!saving) setLevel(serverLevel)
+  }, [serverLevel, saving])
+
+  const handleChange = async (newLevel: bot_notification_level) => {
+    const previous = level
+    setLevel(newLevel)
+    setSaving(true)
+    try {
+      await api('me/private/update', { botNotificationLevel: newLevel })
+    } catch (e) {
+      setLevel(previous)
+      toast.error('Failed to update preference')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Col className="gap-2">
+      <Row className={'text-ink-700 gap-2 text-xl'}>
+        <span>Bots</span>
+      </Row>
+      <Col className="ml-3 gap-2 text-sm">
+        <ChoicesToggleGroup
+          currentChoice={level}
+          choicesMap={{
+            Never: 'never',
+            Mentions: 'mentions',
+            Always: 'always',
+          }}
+          setChoice={(choice) => handleChange(choice as bot_notification_level)}
+          disabled={saving}
+          className="w-fit"
+        />
+        <span className="text-ink-500">{BOT_LEVEL_DESCRIPTIONS[level]}</span>
+      </Col>
+    </Col>
   )
 }
 

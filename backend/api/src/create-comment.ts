@@ -129,6 +129,7 @@ export const createCommentOnContractInternal = async (
     ...denormalizeBet(bet, contract),
 
     isApi,
+    ...(creator.isBot ? { isBot: true } : {}),
     isRepost,
   } as ContractComment)
   await pg

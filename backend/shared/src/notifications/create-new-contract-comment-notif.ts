@@ -15,6 +15,7 @@ import {
   EmailAndTemplateEntry,
 } from '../emails'
 import {
+  botNotificationAllowed,
   getNotificationDestinationsForUser,
   notification_destination_types,
   userIsBlocked,
@@ -136,6 +137,7 @@ export const createCommentOnContractNotification = async (
       !privateUser ||
       sourceUser.id == userId ||
       userIsBlocked(privateUser, sourceUser.id) ||
+      (sourceUser.isBot && !botNotificationAllowed(privateUser, reason)) ||
       (!followerIds.some((id) => id === userId) &&
         !needNotFollowContractReasons.includes(reason))
     )
@@ -401,6 +403,9 @@ export const createCommentOnPostNotification = async (
   for (const { userId, reason } of uniqueUsersToNotify) {
     const privateUser = privateUserMap.get(userId)
     if (!privateUser || userIsBlocked(privateUser, commentCreator.id)) {
+      continue
+    }
+    if (commentCreator.isBot && !botNotificationAllowed(privateUser, reason)) {
       continue
     }
 

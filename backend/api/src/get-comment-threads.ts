@@ -8,12 +8,13 @@ import { type APIHandler } from './helpers/endpoint'
 export const getContractCommentThreads: APIHandler<'comment-threads'> = async (
   props
 ) => {
-  const { contractId, limit, page } = props
+  const { contractId, limit, page, excludeBots } = props
   const pg = createSupabaseDirectClient()
   return await getCommentThreads(pg, {
     contractId,
     limit: limit ?? 50,
     page: page ?? 0,
+    excludeBots,
   })
 }
 

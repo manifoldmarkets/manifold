@@ -60,10 +60,16 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   } = props
   const user = useUser()
 
+  const [hideBotComments, setHideBotComments] = usePersistentInMemoryState(
+    false,
+    `hide-bot-comments-${staticContract.id}`
+  )
+
   const { threads, loadMore, loading, page } = useCommentThreads(
     staticContract.id,
     10,
-    !!highlightCommentId
+    !!highlightCommentId,
+    hideBotComments
   )
   const [highlightedThreads, setHighlightedThreads] = useState<
     { parent: ContractComment; replies: ContractComment[] }[]
@@ -122,6 +128,22 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       'id'
     )
   }, [newComments, staticComments, threads, highlightedThreads, page])
+
+  // The API already drops bot comments from paginated pages; this catches the
+  // ones it never saw — static props rendered before the toggle was flipped,
+  // and comments arriving live over the websocket. A deep link wins over the
+  // filter: landing on a blank page after following a permalink to a bot
+  // comment is worse than being shown the comment you asked for.
+  const shownComments = useMemo(() => {
+    if (!hideBotComments) return allComments
+    const highlightedIds = new Set(
+      highlightedThreads.flatMap((t) => [
+        t.parent.id,
+        ...t.replies.map((r) => r.id),
+      ])
+    )
+    return allComments.filter((c) => !c.isBot || highlightedIds.has(c.id))
+  }, [allComments, hideBotComments, highlightedThreads])
 
   const commentExistsLocally = useMemo(
     () => allComments.some((c) => c.id === highlightCommentId),
@@ -201,7 +223,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
-  const strictlySortedComments = sortBy(allComments, [
+  const strictlySortedComments = sortBy(shownComments, [
     sort === 'Best'
       ? (c) =>
           isReply(c)
@@ -230,7 +252,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     (c) => c.replyToCommentId ?? '_'
   )
 
-  const commentById = keyBy(allComments, 'id')
+  const commentById = keyBy(shownComments, 'id')
 
   // lump comments on load/sort to prevent jumping
   const [frozenCommentIds, refreezeIds] = useReducer(
@@ -271,9 +293,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   }, [allComments.length, totalComments])
 
   const pinnedComments = uniqBy(
-    staticPinnedComments.concat(
-      allComments.filter((comment) => comment.pinned)
-    ),
+    staticPinnedComments
+      .concat(allComments.filter((comment) => comment.pinned))
+      .filter((comment) => !hideBotComments || !comment.isBot),
     'id'
   )
 
@@ -315,6 +337,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
       <div ref={endOfMessagesRef} />
       <ContractCommentInput
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- explicitly off
         autoFocus={false}
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
@@ -354,7 +377,39 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       )}
 
       {allComments.length > 0 && (
-        <Row className="justify-end">
+        <Row className="items-center justify-between">
+          <Row className="items-center gap-1">
+            <span className="text-ink-400 text-sm">Bot comments:</span>
+            <DropdownMenu
+              items={generateFilterDropdownItems(
+                [
+                  { label: 'Show', value: 'show' },
+                  { label: 'Hide', value: 'hide' },
+                ],
+                (value: string) => {
+                  const hide = value === 'hide'
+                  setHideBotComments(hide)
+                  refreezeIds()
+                  track('change-comments-bot-filter', {
+                    contractSlug: staticContract.slug,
+                    contractName: staticContract.question,
+                    hideBotComments: hide,
+                  })
+                }
+              )}
+              buttonContent={
+                <Row className="text-ink-600 items-center text-sm">
+                  <span className="whitespace-nowrap">
+                    {hideBotComments ? 'Hide' : 'Show'}
+                  </span>
+                  <ChevronDownIcon className="h-4 w-4" />
+                </Row>
+              }
+              menuWidth={'w-24'}
+              selectedItemName={hideBotComments ? 'Hide' : 'Show'}
+              closeOnClick
+            />
+          </Row>
           <Tooltip text={sortTooltip}>
             <Row className="items-center gap-1">
               <span className="text-ink-400 text-sm">Sort by:</span>

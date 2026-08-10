@@ -1502,6 +1502,10 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100).default(10),
         page: z.coerce.number().gte(0).default(0),
+        // Drops comments by users flagged `isBot`, including whole threads
+        // rooted at one. Filtered server-side because pagination counts rows
+        // before the filter, so client-side dropping leaves ragged pages.
+        excludeBots: z.coerce.boolean().optional(),
       })
       .strict(),
     cache: DEFAULT_CACHE_STRATEGY,
@@ -1593,6 +1597,9 @@ export const API = (_apiTypeCheck = {
         paymentInfo: z.string().optional(),
         lastAppReviewTime: z.number().optional(),
         optOutAppReviewPrompts: z.boolean().optional(),
+        botNotificationLevel: z
+          .enum(['never', 'mentions', 'always'])
+          .optional(),
       })
       .strict(),
   },

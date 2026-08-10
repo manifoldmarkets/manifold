@@ -33,17 +33,24 @@ export async function getCommentThreads(
     contractId: string
     limit: number
     page: number
+    excludeBots?: boolean
   }
 ) {
-  const { contractId, limit, page } = filters
+  const { contractId, limit, page, excludeBots } = filters
 
+  // users.is_bot rather than the comment's denormalized isBot: it stays right
+  // for comments written before an account was flagged as a bot. A bot's
+  // top-level comment takes its replies with it — the thread has no root to
+  // hang them off once it's gone.
   const allComments = await pg.map(
     `
     with parent_comments as (
       select cc.data, cc.likes, cc.comment_id from contract_comments cc
+      join users u on u.id = cc.user_id
       where cc.contract_id = $1
       and (cc.data->>'replyToCommentId' is null)
       and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+      and ($4::boolean is not true or not u.is_bot)
       order by cc.created_time desc
       limit $2
       offset $3
@@ -51,11 +58,13 @@ export async function getCommentThreads(
     select * from parent_comments
     union all
     select cc.data, cc.likes, cc.comment_id from contract_comments cc
+    join users u on u.id = cc.user_id
     where cc.contract_id = $1
     and (cc.data->>'replyToCommentId' in (select comment_id from parent_comments))
     and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+    and ($4::boolean is not true or not u.is_bot)
     `,
-    [contractId, limit, page * limit],
+    [contractId, limit, page * limit, excludeBots ?? false],
     convertContractComment
   )
 

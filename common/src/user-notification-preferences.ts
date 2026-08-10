@@ -5,6 +5,41 @@ import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 
 export type notification_destination_types = 'email' | 'browser' | 'mobile'
+
+// How much users flagged `isBot` are allowed to notify you. This is a scalar
+// rather than another notification_preferences key because it cuts across
+// every comment reason instead of being one of them: a bot reply to your
+// comment and a bot comment on a market you follow differ in whether you
+// asked for them, not in which preference row they belong to.
+export type bot_notification_level = 'never' | 'mentions' | 'always'
+
+// 'mentions' rather than 'never': bots that reply to you are usually bots you
+// invoked (a randomness draw, a question you asked), and dropping those
+// notifications makes the bot look broken. The firehose — every bot comment on
+// a market you follow or hold shares in — is what's worth muting by default.
+export const DEFAULT_BOT_NOTIFICATION_LEVEL: bot_notification_level = 'mentions'
+
+// Reasons that mean the bot was addressing this user specifically, rather than
+// the user happening to be attached to the market it commented on.
+const DIRECT_BOT_INTERACTION_REASONS: NotificationReason[] = [
+  'tagged_user',
+  'reply_to_users_comment',
+  'reply_to_users_answer',
+]
+
+/** Whether a comment authored by a bot may notify this user at all. Applied on
+ * top of the usual per-reason destination settings, never instead of them. */
+export const botNotificationAllowed = (
+  privateUser: PrivateUser,
+  reason: NotificationReason
+) => {
+  const level =
+    privateUser.botNotificationLevel ?? DEFAULT_BOT_NOTIFICATION_LEVEL
+  if (level === 'always') return true
+  if (level === 'never') return false
+  return DIRECT_BOT_INTERACTION_REASONS.includes(reason)
+}
+
 export type notification_preference = keyof notification_preferences
 export type notification_preferences = {
   // Watched Markets
