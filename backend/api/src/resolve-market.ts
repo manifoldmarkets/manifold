@@ -12,7 +12,7 @@ import {
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { throwErrorIfNotMod } from 'shared/helpers/auth'
+import { throwErrorIfNotAdmin, throwErrorIfNotMod } from 'shared/helpers/auth'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   resolveBinarySchema,
@@ -71,6 +71,12 @@ export const resolveMarketMain: APIHandler<
   // price, refund residual pool to the creator, and mark the contract
   // resolved. Bypass the CPMM/multi resolution helper entirely.
   if (outcomeType === 'PERP') {
+    // Stricter than the creator-or-mod gate above. Resolution force-settles
+    // every open position at the oracle price and cannot be undone, and a
+    // perp is meant to run indefinitely — there is no "correct" time to end
+    // one. Match the admin gate already on every other perp state-mutating
+    // endpoint (create-perp, update-perp-config, add-perp-subsidy).
+    throwErrorIfNotAdmin(auth.uid)
     if (contract.isResolved)
       throw new APIError(403, 'Contract already resolved')
     const { resolvePerp } = await import('shared/perps/engine')
