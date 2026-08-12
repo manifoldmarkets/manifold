@@ -50,7 +50,7 @@ import { DAY_MS } from '../util/time'
 // change silently when a third party edits a metadata field.
 
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-08-07'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-12'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -84,6 +84,13 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
   // them. If Meta later opens the weights, new entries count from that
   // release forward only — never reclassify retroactively.
   'meta/muse-spark-1.1-20260709': { open: false }, // Meta: Muse Spark 1.1
+  // Added 2026-08-12: entered the top 50 (as the :free variant) and froze the
+  // feed. Public BF16 + NVFP4 repos with full safetensors in the nvidia HF
+  // org, ungated (verified 2026-08-12).
+  'nvidia/nemotron-3.5-lightning-20260807': {
+    open: true,
+    weights: 'nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16',
+  }, // NVIDIA: Nemotron 3.5 Lightning
   // Added 2026-08-05: these four entered the top 50 during the week of
   // 2026-07-29 and froze the feed (fail-closed on unclassified models, as
   // designed — see the header comment).
