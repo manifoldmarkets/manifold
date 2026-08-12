@@ -46,7 +46,10 @@ const updateContractScores = async (
 ) => {
   if (!updates.length) return
   await pg.tx(async (tx) => {
-    await tx.none(
+    // .any, NOT .none: the lock select returns one row per contract, and
+    // pg-promise's none() rejects on any returned row ("No return data was
+    // expected"), which aborted the transaction before the score write.
+    await tx.any(
       `select 1 from contracts where id in ($1:csv) order by id for update`,
       [updates.map((u) => u.id)]
     )
