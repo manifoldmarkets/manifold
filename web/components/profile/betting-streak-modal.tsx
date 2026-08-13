@@ -7,16 +7,10 @@ import {
 import { formatMoney } from 'common/util/format'
 import { getEffectiveTier, User } from 'common/user'
 import { getEffectiveBonusMultiplier } from 'common/supporter-config'
-import dayjs from 'dayjs'
-import timezone from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
+import { getStreakDayStart } from 'common/streak'
 import clsx from 'clsx'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { ReducedBonusNotice } from 'web/components/upsell/reduced-bonus-notice'
-
-// Initialize dayjs plugins
-dayjs.extend(utc)
-dayjs.extend(timezone)
 
 export function BettingStreakModal(props: {
   isOpen: boolean
@@ -124,44 +118,16 @@ export function BettingStreakModal(props: {
   )
 }
 
+// lastBetTime is stamped on every streak-qualifying action (see the
+// invariant note beside incrementStreakQuery in backend), so comparing it
+// against the shared Pacific day boundary matches the nightly reset exactly.
 export function hasCompletedStreakToday(user: User) {
   if (user.currentBettingStreak === 0) return false
-
-  // Get current time in Pacific
-  const now = dayjs().tz('America/Los_Angeles')
-
-  // Get today's reset time (midnight Pacific)
-  const todayResetTime = now.startOf('day')
-
-  // Get yesterday's reset time
-  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
-
-  // Use yesterday's reset time if we haven't hit today's yet
-  const resetTime = now.isBefore(todayResetTime)
-    ? yesterdayResetTime
-    : todayResetTime
-
-  return (user?.lastBetTime ?? 0) > resetTime.valueOf()
+  return (user.lastBetTime ?? 0) >= getStreakDayStart()
 }
 
-// Check if a streak freeze was used recently (within last day since last reset)
+// Whether a streak freeze has been consumed since the current day began.
 export function wasStreakFrozenRecently(user: User) {
   if (!user.lastStreakFreezeTime) return false
-
-  // Get current time in Pacific
-  const now = dayjs().tz('America/Los_Angeles')
-
-  // Get today's reset time (midnight Pacific)
-  const todayResetTime = now.startOf('day')
-
-  // Get yesterday's reset time
-  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
-
-  // Use yesterday's reset time if we haven't hit today's yet
-  const resetTime = now.isBefore(todayResetTime)
-    ? yesterdayResetTime
-    : todayResetTime
-
-  // Freeze was used if it happened after the reset time
-  return user.lastStreakFreezeTime > resetTime.valueOf()
+  return user.lastStreakFreezeTime >= getStreakDayStart()
 }

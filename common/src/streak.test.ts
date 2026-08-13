@@ -109,8 +109,5 @@ describe('getStreakDayToJudge', () => {
     const { start, end } = getStreakDayToJudge(jobRun)
     expect(bet).toBeGreaterThanOrEqual(start)
     expect(bet).toBeLessThan(end)
-
-    // The cutoff the job used to apply, for contrast.
-    expect(bet).toBeLessThan(jobRun - 24 * HOUR_MS)
   })
 })
