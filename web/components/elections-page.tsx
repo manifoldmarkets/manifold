@@ -1,10 +1,9 @@
 import { ReactNode, useState } from 'react'
 import clsx from 'clsx'
-import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { Row } from './layout/row'
 import { HomepageMap } from './usa-map/homepage-map'
-import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
+import { TrendingMidtermsCarousel } from './us-elections/trending-midterms-carousel'
 import { FeedContractCard } from './contract/feed-contract-card'
 import { BalanceOfPowerPanel } from './us-elections/balance-of-power-panel'
 import { Presidency2028Section } from './us-elections/presidency-2028-section'
@@ -68,7 +67,7 @@ export function USElectionsPage(
     houseDistrictsContract,
     primaryContracts,
     redistrictingContracts,
-    trendingDashboard,
+    trendingContracts,
     hideTitle,
   } = props
 
@@ -85,28 +84,6 @@ export function USElectionsPage(
   const shareUrl = `https://${ENV_CONFIG.domain}/election${
     user?.username ? referralQuery(user.username) : ''
   }`
-
-  const trending =
-    trendingDashboard.state == 'not found' ? null : (
-      <Col className="gap-2">
-        <Link
-          href="/election/politicsheadline"
-          className="text-primary-700 hover:text-primary-800 flex w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl"
-        >
-          <span className="relative h-4 w-4">
-            <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-            <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
-          </span>
-          Trending
-        </Link>
-        <HorizontalDashboard
-          initialDashboard={trendingDashboard.initialDashboard}
-          previews={trendingDashboard.previews}
-          initialContracts={trendingDashboard.initialContracts}
-          slug={trendingDashboard.slug}
-        />
-      </Col>
-    )
 
   return (
     <Col className="mb-8 gap-6 px-1 sm:px-2">
@@ -132,6 +109,28 @@ export function USElectionsPage(
           Share
         </CopyLinkOrShareButton>
       </Row>
+
+      {/* Trending — the hottest open midterm markets right now, auto-selected
+          by daily score server-side (getTrendingMidtermContracts) and
+          refreshed on every revalidation, so the top of the page always shows
+          today's action with zero curation. */}
+      {trendingContracts.length > 0 && (
+        <Col className="gap-2">
+          <Col className="gap-0.5">
+            <Row className="text-primary-700 w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
+              <span className="relative h-4 w-4">
+                <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
+                <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
+              </span>
+              Trending
+            </Row>
+            <div className="text-ink-500 text-sm">
+              The hottest midterm markets right now
+            </div>
+          </Col>
+          <TrendingMidtermsCarousel contracts={trendingContracts} />
+        </Col>
+      )}
 
       {/* 2026 Midterms — the balance-of-power levers and the race map together
           in a single card so the section reads as one unit. */}
@@ -186,10 +185,8 @@ export function USElectionsPage(
         </Col>
       )}
 
-      {trending}
-
       {/* 2028 outlook — one collapsible card (party split + candidate field).
-          Sits below the midterms + trending so the 2026 races (the page's focus)
+          Sits below the midterms sections so the 2026 races (the page's focus)
           lead, with the longer-range 2028 outlook just above the general feed. */}
       {presidency2028Contract && (
         <Presidency2028Section

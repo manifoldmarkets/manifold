@@ -1,3 +1,5 @@
+import { uniqBy } from 'lodash'
+
 import { Contract } from 'common/contract'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
@@ -20,7 +22,50 @@ import {
   senateCandidates2026,
 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/api/api'
-import { getDashboardProps } from 'web/lib/politics/news-dashboard'
+
+// The Trending carousel picks itself: the hottest open midterm markets right
+// now, by dailyScore (the platform's rolling one-day activity metric, kept
+// current by the score-contracts job), backfilled with the best overall (by
+// score) so the row stays full on slow news days. It re-fetches on every ISR
+// revalidation, so it can't drift the way the old hand-curated
+// politicsheadline dashboard did.
+const TRENDING_TOPIC_SLUG = '2026-midterms'
+const TRENDING_SIZE = 10
+
+async function getTrendingMidtermContracts(): Promise<Contract[]> {
+  try {
+    const [hotToday, bestOverall] = await Promise.all([
+      api('search-markets-full', {
+        term: '',
+        sort: 'daily-score',
+        filter: 'open',
+        topicSlug: TRENDING_TOPIC_SLUG,
+        limit: TRENDING_SIZE * 2,
+      }),
+      api('search-markets-full', {
+        term: '',
+        sort: 'score',
+        filter: 'open',
+        topicSlug: TRENDING_TOPIC_SLUG,
+        limit: TRENDING_SIZE,
+      }),
+    ])
+    // The hero markets (balance of power, chamber control, districts) are
+    // always visible just below the carousel — don't spend slots on them.
+    const featured = Object.values(MIDTERMS_2026) as string[]
+    const hot = hotToday.filter(
+      (c) => Number.isFinite(c.dailyScore) && c.dailyScore > 0
+    )
+    return uniqBy([...hot, ...bestOverall], (c) => c.id)
+      .filter((c) => !featured.includes(c.slug))
+      .slice(0, TRENDING_SIZE)
+  } catch (e) {
+    // Trending is a nice-to-have: render the page without it rather than
+    // failing the whole revalidation when search is unavailable.
+    console.error('getTrendingMidtermContracts failed', e)
+    return []
+  }
+}
 
 export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
   const adminDb = await initSupabaseAdmin()
@@ -32,7 +77,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     governorStateContracts,
     senateCandidateContracts,
     governorCandidateContracts,
-    headlines,
+    trendingContracts,
     balanceOfPowerContract,
     houseControlContract,
     senateControlContract,
@@ -46,7 +91,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     getStateContracts(getContractFromSlugFunction, governors2026),
     getStateContracts(getContractFromSlugFunction, senateCandidates2026),
     getStateContracts(getContractFromSlugFunction, governorCandidates2026),
-    api('headlines', { slug: 'politics' }),
+    getTrendingMidtermContracts(),
     getContractFromSlugFunction(MIDTERMS_2026.balanceOfPower),
     getContractFromSlugFunction(MIDTERMS_2026.houseControl),
     getContractFromSlugFunction(MIDTERMS_2026.senateControl),
@@ -68,12 +113,6 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     (c): c is Contract => !!c && !c.isResolved && !c.resolution
   )
 
-  const newsDashboards = await Promise.all(
-    headlines.map(async (headline) => getDashboardProps(headline.slug))
-  )
-
-  const trendingDashboard = await getDashboardProps('politicsheadline')
-
   return {
     presidency2028Contract,
     presidency2028PartyContract,
@@ -87,9 +126,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     houseDistrictsContract,
     primaryContracts,
     redistrictingContracts,
-    newsDashboards,
-    headlines,
-    trendingDashboard,
+    trendingContracts,
   }
 }
 
