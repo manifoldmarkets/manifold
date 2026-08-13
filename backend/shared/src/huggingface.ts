@@ -40,10 +40,14 @@ export type HuggingFaceVerification =
 /**
  * Verify that `repo` holds publicly downloadable weights.
  *
- * Gated repos still count as public — Llama and Gemma sit behind a
- * click-through licence that any member of the public can accept, and the
- * methodology's line is "can anyone get them", not "is the licence tidy". A
- * private repo does not count, and neither does a repo with no weight files
+ * Click-through gating still counts as public — Llama and Gemma sit behind a
+ * licence any member of the public can accept, and the methodology's line is
+ * "can anyone get them", not "is the licence tidy". Discretionary gating does
+ * NOT: HF's `gated` is a trichotomy, and `"manual"` means the owner approves
+ * each request individually, so the public cannot in fact get the weights.
+ * Hence the accept-list below — any value HF invents later reads as unresolved
+ * rather than silently confirming, per the directionality note above. A private
+ * repo does not count either, and neither does a repo with no weight files
  * (tokenizer-only publications are the exact trap Upstage's `solar-pro*` line
  * sets: `solar-pro3-tokenizer` resolves while the weights never shipped).
  */
@@ -74,11 +78,20 @@ export const verifyHuggingFaceWeights = async (
 
   const body = (await res.json()) as {
     private?: boolean
-    gated?: string | boolean
+    // Not a boolean: HF returns false | "auto" (click-through) | "manual"
+    // (owner approves each request), and the three do not mean the same thing.
+    gated?: string | boolean | null
     siblings?: { rfilename?: string }[]
   }
   if (body.private)
     return { confirmed: false, repo, reason: 'repo is private' }
+
+  if (!isPubliclyGettable(body.gated))
+    return {
+      confirmed: false,
+      repo,
+      reason: `gating is not public: ${JSON.stringify(body.gated)}`,
+    }
 
   const weightFiles = (body.siblings ?? [])
     .map((s) => s.rfilename ?? '')
@@ -102,6 +115,16 @@ export const verifyHuggingFaceWeights = async (
     },
   }
 }
+
+/**
+ * Whether HF's `gated` value still leaves the weights gettable by anyone.
+ *
+ * An accept-list, not a reject-list, so a value HF adds later ("research",
+ * "waitlist", whatever) fails closed into "unresolved" and waits for a human
+ * instead of quietly counting on the open side of an executable index.
+ */
+const isPubliclyGettable = (gated: string | boolean | null | undefined) =>
+  gated == null || gated === false || gated === 'auto'
 
 /** Repo ids are `org/name`; the slash is structural and must not be escaped. */
 const encodeRepo = (repo: string) =>

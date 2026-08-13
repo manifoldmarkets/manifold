@@ -10,9 +10,12 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 // overrides in `model_classifications`.
 //
 // The seed file stays the published methodology; this decides what the oracle
-// actually scores against on a given tick. Overrides win, because the whole
-// point is that a classification can land without a deploy — but every override
-// carries its evidence and its author, so the merged map is still auditable.
+// actually scores against on a given tick. Overrides win on models the seed
+// does NOT classify, because the whole point is that a classification can land
+// without a deploy — but every override carries its evidence and its author, so
+// the merged map is still auditable. Where the seed does classify a model the
+// seed wins, on read as well as on write: reclassifying an audited entry is a
+// change to the published methodology, not an admin-form decision.
 
 export type ClassificationRow = {
   permaslug: string
@@ -77,6 +80,12 @@ export const resolveModelClassifications = async (
       else pendingUnclassified.push(slug)
       continue
     }
+    // The seed list is the published methodology and is version-stamped onto
+    // every point the oracle writes, so an override of a seeded model would
+    // make that stamp a lie. `setModelClassification` refuses to write one;
+    // this enforces the same invariant on read, which also covers the rows
+    // `upsertClassification` wrote automatically before the seed caught up.
+    if (OPEN_WEIGHT_MODELS[slug]) continue
     classifications[slug] = row.open
       ? { open: true, weights: row.weights ?? undefined }
       : { open: false }

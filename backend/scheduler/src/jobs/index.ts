@@ -244,9 +244,14 @@ export function createJobs(jobSet: SchedulerJobSet) {
       // outbound HuggingFace calls, and the perps instance exists to keep the
       // 15s oracle tick on an unshared event loop. It only writes a table the
       // perps instance reads, so the split costs nothing.
-      // Hours chosen to miss the 08:00 UTC API restart window and the
-      // ~10:00-11:30 UTC scheduler memory pressure window.
-      '0 15 2,8,14,20 * * *',
+      // LA hours, like every schedule in this file. Chosen to miss both the
+      // 08:00 UTC API restart window and the ~10:00-11:30 UTC scheduler memory
+      // pressure window in BOTH DST offsets: 05/11/17/23 LA is 12/18/00/06 UTC
+      // in PDT and 13/19/01/07 UTC in PST. Those windows land on 00:00-04:30 LA
+      // across the two offsets, which makes this the only 6-hourly cycle that
+      // clears them year-round — do not shift it by an hour without redoing
+      // that arithmetic.
+      '0 15 5,11,17,23 * * *',
       updateModelClassifications
     ),
     // Daily jobs:

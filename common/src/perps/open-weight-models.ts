@@ -791,7 +791,14 @@ export const computeOpenWeightShare = (
     // Its tokens are still counted, because how MUCH is unclassified is what
     // decides whether the index may publish at all.
     if (!classification) {
-      unclassifiedSet[row.model_permaslug] = true
+      // Keyed on the BASE slug, like everything else that touches an
+      // unclassified model: the grace-window rows are stored base, so the
+      // publication gate's expiry check compares these strings against base
+      // slugs. A raw `foo:free` key here would never match `foo` there, and a
+      // model that only ever ranks as its :free variant would publish under
+      // grace forever — which is exactly how nemotron-3.5-lightning entered
+      // the top 50 (see its note above).
+      unclassifiedSet[basePermaslug(row.model_permaslug)] = true
       unclassifiedTokens += tokens
       continue
     }

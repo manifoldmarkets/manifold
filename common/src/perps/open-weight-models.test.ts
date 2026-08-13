@@ -247,6 +247,35 @@ describe('publication validation', () => {
     if (!validation.ok) expect(validation.reason).toContain('grace window')
   })
 
+  it('halts on an expired unknown that only ever ranks as its :free variant', () => {
+    // The grace rows are stored under base slugs, so an unknown reported as
+    // `foo:free` has to match the expiry list's `foo` or the deadline never
+    // fires and the model publishes under grace forever. This is not a
+    // hypothetical shape — nemotron-3.5-lightning reached the top 50 as its
+    // :free variant.
+    const rows = completeWindow()
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer:free', 35))
+    const result = computeOpenWeightShare(rows)
+
+    expect(result.unclassified).toEqual(['newlab/tiny-newcomer'])
+    const validation = validateOpenWeightPublication(result, {
+      expiredUnclassified: ['newlab/tiny-newcomer'],
+    })
+    expect(validation.ok).toBe(false)
+    if (!validation.ok) expect(validation.reason).toContain('grace window')
+  })
+
+  it('reports one unknown when the same model ranks paid and :free', () => {
+    const rows = completeWindow()
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer', 20))
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer:free', 15))
+    const result = computeOpenWeightShare(rows)
+
+    expect(result.unclassified).toEqual(['newlab/tiny-newcomer'])
+    // Both variants' tokens still count toward the unclassified pressure.
+    expect(result.unclassifiedShareOfClassified).toBeCloseTo(0.005)
+  })
+
   it('restores halt-on-any-unknown when the cap is zero', () => {
     const rows = completeWindow()
     rows.push(row('2026-07-26', 'newlab/tiny-newcomer', 1))
