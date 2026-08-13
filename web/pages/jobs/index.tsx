@@ -24,7 +24,7 @@ type Job = {
 const JOBS: Job[] = [
   {
     title: 'Backend Engineer',
-    location: 'SF / remote',
+    location: 'SF',
     comp: 'Base + equity',
     stage: 'Pre-launch',
     blurb:
@@ -50,7 +50,7 @@ const JOBS: Job[] = [
   },
   {
     title: 'Quantitative Trader',
-    location: 'SF / remote',
+    location: 'SF',
     comp: 'Base + equity + carry',
     stage: 'Pre-launch',
     blurb:
