@@ -81,6 +81,52 @@ describe('computeOpenWeightShare', () => {
     expect(computeOpenWeightShare(rows).unclassified).toEqual([])
   })
 
+  it('does not read unclassified tokens as the excluded `other` row', () => {
+    // Unknown tokens also push payloadTokens above classifiedTokens, so the
+    // looser "payload exceeds classified" form passed a payload that had no
+    // `other` row at all.
+    const rows = [
+      row('2026-07-26', OPEN, 600),
+      row('2026-07-26', CLOSED, 400),
+      row('2026-07-26', 'newlab/unknown', 50),
+    ]
+    const res = computeOpenWeightShare(rows)
+    expect(res.hasExcludedPayload).toBe(false)
+    expect(res.otherTokens).toBe(0)
+    expect(res.unclassifiedTokens).toBe(50)
+  })
+
+  it('honours a caller-supplied classification map (database overrides)', () => {
+    const rows = [
+      row('2026-07-26', 'newlab/pending', 1000),
+      row('2026-07-26', CLOSED, 1000),
+      row('2026-07-26', 'other', 500),
+    ]
+    expect(computeOpenWeightShare(rows).unclassified).toEqual([
+      'newlab/pending',
+    ])
+
+    const overridden = computeOpenWeightShare(rows, OPEN_WEIGHT_WINDOW_DAYS, {
+      ...OPEN_WEIGHT_MODELS,
+      'newlab/pending': { open: true, weights: 'newlab/pending-weights' },
+    })
+    expect(overridden.unclassified).toEqual([])
+    expect(overridden.share).toBeCloseTo(50)
+  })
+
+  it('measures the unclassified share against classified tokens, not payload', () => {
+    // `other` dwarfs everything, and must not dilute the ratio the cap reads.
+    const rows = [
+      row('2026-07-26', OPEN, 600),
+      row('2026-07-26', CLOSED, 400),
+      row('2026-07-26', 'newlab/unknown', 10),
+      row('2026-07-26', 'other', 1_000_000),
+    ]
+    expect(
+      computeOpenWeightShare(rows).unclassifiedShareOfClassified
+    ).toBeCloseTo(0.01)
+  })
+
   it('keeps only the newest N dates', () => {
     // 9 days present; only the last 7 may count.
     const rows: RankingRow[] = []
@@ -153,6 +199,7 @@ describe('publication validation', () => {
 
   it('rejects unknown models instead of publishing a shrunken denominator', () => {
     const rows = completeWindow()
+    // 1000 unknown against 7000 classified — 14%, far over the cap.
     rows.push(row('2026-07-26', 'newlab/unknown', 1000))
     const validation = validateOpenWeightPublication(
       computeOpenWeightShare(rows)
@@ -160,6 +207,81 @@ describe('publication validation', () => {
     expect(validation.ok).toBe(false)
     if (!validation.ok)
       expect(validation.reason).toContain('unclassified models')
+  })
+
+  it('publishes under grace when the unknown is below the cap', () => {
+    const rows = completeWindow()
+    // 35 unknown against 7000 classified = 0.5%, inside the 1% cap.
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer', 35))
+    const result = computeOpenWeightShare(rows)
+    const validation = validateOpenWeightPublication(result)
+
+    expect(validation.ok).toBe(true)
+    if (!validation.ok) return
+    // The index itself is untouched — the unknown is still out of both sides.
+    expect(validation.share).toBeCloseTo(60)
+    expect(validation.grace?.unclassified).toEqual(['newlab/tiny-newcomer'])
+    expect(validation.grace?.shareOfClassified).toBeCloseTo(0.005)
+    // 0.005 * max(0.6, 0.4) / 1.005 * 100 = 0.2985 points.
+    expect(validation.grace?.maxIndexError).toBeCloseTo(0.2985, 3)
+  })
+
+  it('reports no grace at all when everything is classified', () => {
+    const validation = validateOpenWeightPublication(
+      computeOpenWeightShare(completeWindow())
+    )
+    expect(validation.ok).toBe(true)
+    if (validation.ok) expect(validation.grace).toBeUndefined()
+  })
+
+  it('halts on a below-cap unknown once its grace window has expired', () => {
+    const rows = completeWindow()
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer', 35))
+    const result = computeOpenWeightShare(rows)
+    // Small enough to publish, but the operator says time is up.
+    expect(validateOpenWeightPublication(result).ok).toBe(true)
+    const validation = validateOpenWeightPublication(result, {
+      expiredUnclassified: ['newlab/tiny-newcomer'],
+    })
+    expect(validation.ok).toBe(false)
+    if (!validation.ok) expect(validation.reason).toContain('grace window')
+  })
+
+  it('restores halt-on-any-unknown when the cap is zero', () => {
+    const rows = completeWindow()
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer', 1))
+    const validation = validateOpenWeightPublication(
+      computeOpenWeightShare(rows),
+      { unclassifiedShareCap: 0 }
+    )
+    expect(validation.ok).toBe(false)
+  })
+
+  it('bounds the real error a grace publication can cause', () => {
+    // Property check of the documented bound: whatever side the unknown
+    // actually falls on, the published index is within maxIndexError of it.
+    const rows = completeWindow()
+    rows.push(row('2026-07-26', 'newlab/tiny-newcomer', 35))
+    const validation = validateOpenWeightPublication(
+      computeOpenWeightShare(rows)
+    )
+    if (!validation.ok || !validation.grace) throw new Error('expected grace')
+
+    const asOpen = computeOpenWeightShare(rows, OPEN_WEIGHT_WINDOW_DAYS, {
+      ...OPEN_WEIGHT_MODELS,
+      'newlab/tiny-newcomer': { open: true, weights: 'newlab/tiny' },
+    }).share
+    const asClosed = computeOpenWeightShare(rows, OPEN_WEIGHT_WINDOW_DAYS, {
+      ...OPEN_WEIGHT_MODELS,
+      'newlab/tiny-newcomer': { open: false },
+    }).share
+
+    for (const truth of [asOpen, asClosed]) {
+      expect(truth).not.toBeNull()
+      expect(Math.abs((truth as number) - validation.share)).toBeLessThanOrEqual(
+        validation.grace.maxIndexError + 1e-9
+      )
+    }
   })
 
   it('rejects short, gapped, and missing-other windows', () => {

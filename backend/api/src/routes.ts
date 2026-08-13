@@ -76,6 +76,10 @@ import { closePerpPosition } from './close-perp-position'
 import { updatePerpConfig } from './update-perp-config'
 import { addPerpSubsidy } from './add-perp-subsidy'
 import {
+  getModelClassifications,
+  setModelClassification,
+} from './model-classifications'
+import {
   getOraclePrice,
   getOraclePriceSeries,
 } from './get-oracle-price'
@@ -446,6 +450,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'close-perp-position': closePerpPosition,
   'update-perp-config': updatePerpConfig,
   'add-perp-subsidy': addPerpSubsidy,
+  'get-model-classifications': getModelClassifications,
+  'set-model-classification': setModelClassification,
   'get-oracle-price': getOraclePrice,
   'get-oracle-price-series': getOraclePriceSeries,
   'get-known-oracle-feeds': getKnownOracleFeeds,

@@ -115,6 +115,79 @@ export const parseRankingRows = (data: unknown): RankingRow[] => {
   })
 }
 
+export const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models'
+
+export type OpenRouterCatalogEntry = {
+  /** The key the rankings payload uses, and the key the index classifies on. */
+  permaslug: string
+  name: string
+  /** Publisher-declared weights repo. A HINT ONLY — see huggingface.ts. */
+  huggingFaceId: string | null
+  /** When OpenRouter listed it; the head start a watcher gets. */
+  listedAt: number | null
+}
+
+/**
+ * The full model catalog — every model OpenRouter serves, not just the ranked
+ * top 50. Unauthenticated and separate from the rankings dataset.
+ *
+ * This is the lead time the nightly watcher runs on. Models appear here before
+ * they climb into the rankings: of the three that froze the feed in the week to
+ * 2026-08-13, muse-spark was listed 22 days ahead, solar-pro4 three days, and
+ * nemotron-3.5-lightning one. Classifying from the catalog turns "the index
+ * halted overnight" into "there is a row to review in the morning".
+ */
+export const fetchOpenRouterCatalog = async (): Promise<
+  OpenRouterCatalogEntry[]
+> => {
+  const res = await fetch(OPENROUTER_MODELS_URL, {
+    headers: { 'user-agent': 'Manifold/1.0 (+https://manifold.markets)' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
+  if (!res.ok)
+    throw new Error(
+      `OpenRouter models: ${res.status} ${res.statusText}`
+    )
+
+  const body = (await res.json()) as unknown
+  const data =
+    body && typeof body === 'object' && 'data' in body ? body.data : undefined
+  if (!Array.isArray(data))
+    throw new Error('OpenRouter models payload data is not an array')
+
+  const entries: OpenRouterCatalogEntry[] = []
+  for (const row of data) {
+    if (!row || typeof row !== 'object') continue
+    // `canonical_slug` is what the rankings dataset keys on; `id` is the
+    // routing alias and drops the dated suffix, so it would not match.
+    const permaslug =
+      'canonical_slug' in row && typeof row.canonical_slug === 'string'
+        ? row.canonical_slug
+        : 'id' in row && typeof row.id === 'string'
+        ? row.id
+        : null
+    if (!permaslug) continue
+
+    const hf =
+      'hugging_face_id' in row && typeof row.hugging_face_id === 'string'
+        ? row.hugging_face_id.trim()
+        : ''
+    const created =
+      'created' in row && typeof row.created === 'number' ? row.created : null
+
+    entries.push({
+      permaslug,
+      name:
+        'name' in row && typeof row.name === 'string' ? row.name : permaslug,
+      huggingFaceId: hf.length > 0 ? hf : null,
+      listedAt: created ? created * 1000 : null,
+    })
+  }
+
+  log(`[openrouter] catalog has ${entries.length} models`)
+  return entries
+}
+
 /**
  * The attribution string OpenRouter's dataset terms require wherever this
  * data is republished. `as_of` is not optional and cannot be hardcoded — it

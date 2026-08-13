@@ -63,6 +63,7 @@ import { updateStatsCore } from './update-stats'
 import { updatePerps } from './update-perps'
 import { updateOracleFeeds } from './update-oracle-feeds'
 import { updateOpenRouterShare } from './update-openrouter-share'
+import { updateModelClassifications } from './update-model-classifications'
 import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
@@ -236,6 +237,17 @@ export function createJobs(jobSet: SchedulerJobSet) {
       // 24 calls/day against OpenRouter's 500/day account limit.
       '0 50 * * * *',
       updateOpenRouterShare
+    ),
+    createJob(
+      'update-model-classifications',
+      // Every 6 hours. Deliberately NOT a perp job: it makes a few hundred
+      // outbound HuggingFace calls, and the perps instance exists to keep the
+      // 15s oracle tick on an unshared event loop. It only writes a table the
+      // perps instance reads, so the split costs nothing.
+      // Hours chosen to miss the 08:00 UTC API restart window and the
+      // ~10:00-11:30 UTC scheduler memory pressure window.
+      '0 15 2,8,14,20 * * *',
+      updateModelClassifications
     ),
     // Daily jobs:
     createJob(
