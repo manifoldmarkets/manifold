@@ -50,7 +50,7 @@ import { DAY_MS } from '../util/time'
 // change silently when a third party edits a metadata field.
 
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-08-12'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-13'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -75,6 +75,18 @@ export type ModelClassification = {
  * variant suffixes (`...:free`), which are the same model for index purposes.
  */
 export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
+  // Added 2026-08-13: entered the top 50 with OpenRouter's 2026-08-12 day and
+  // froze the feed (fail-closed). Solar Pro 4 is API-only. No `solar-pro4`
+  // repo exists anywhere on HuggingFace (global search, 0 hits), and the whole
+  // `solar-pro*` line publishes tokenizer-only repos — `solar-pro2-tokenizer`
+  // and `solar-pro3-tokenizer` resolve, `upstage/solar-pro3` itself does not.
+  // Upstage's downloadable weights ship under the separately branded Solar
+  // Open line (`upstage/Solar-Open-100B`, `upstage/Solar-Open2-250B`), which
+  // is not what OpenRouter is serving here; their `/models` entry for this
+  // permaslug carries `hugging_face_id: null` (verified 2026-08-13). If
+  // Upstage later publishes the weights, that counts from the release date
+  // forward via a new entry — never retroactively.
+  'upstage/solar-pro4-20260810': { open: false }, // Upstage: Solar Pro 4
   // Added 2026-08-07: entered the top 50 and froze the feed (fail-closed).
   // Muse Spark is Meta's first CLOSED-weights family — API-only via
   // api.meta.ai, no repo in meta-llama/facebook HF orgs, widely reported as
