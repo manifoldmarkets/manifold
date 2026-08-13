@@ -6,7 +6,6 @@ dayjs.extend(timezone)
 
 import {
   uniq,
-  sum,
   countBy,
   mapValues,
   intersection,
@@ -41,7 +40,13 @@ interface StatEvent {
   userId: string
   ts: number
 }
-type StatBet = StatEvent & { amount: number; token: 'MANA' | 'CASH' }
+type DailyBetStats = {
+  day: string
+  betCount: number
+  manaAmount: number
+  totalAmount: number
+  userCounts: { userId: string; betCount: number }[]
+}
 type StatUser = StatEvent & {
   d1BetCount: number
   freeQuestionsCreated: number | undefined
@@ -132,28 +137,40 @@ async function getDailyBets(
   end: string,
   token?: 'CASH'
 ) {
+  // Aggregated in SQL: shipping every bet via json_agg (~2.6M rows / ~320MB
+  // of JSON over the 68-day buffer window) outgrew the 1-hour client
+  // query_timeout as bet volume rose, which killed this job — and every
+  // daily_stats/txn/mana-supply write after it — nightly from 2026-08-04.
+  // The stats only need per-day totals and per-user bet counts.
   const bets = await pg.manyOrNone(
-    `select
-    date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
-    json_agg(json_build_object(
-      'ts', ts_to_millis(b.created_time),
-      'userId', user_id,
-      'token', c.token,
-      'amount', amount,
-      'id', bet_id
-    )) as values
-    from contract_bets b join contracts c on b.contract_id = c.id
-    where
-      b.created_time >= date_to_midnight_pt($1)
-      and b.created_time < date_to_midnight_pt($2)
-      and is_redemption = false
-      and ($3 is null or c.token = $3)
+    `with per_user as (
+      select
+        date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
+        b.user_id,
+        count(*) as bet_count,
+        sum(b.amount) filter (where c.token = 'MANA') as mana_amount,
+        sum(b.amount) as total_amount
+      from contract_bets b join contracts c on b.contract_id = c.id
+      where
+        b.created_time >= date_to_midnight_pt($1)
+        and b.created_time < date_to_midnight_pt($2)
+        and is_redemption = false
+        and ($3 is null or c.token = $3)
+      group by 1, 2
+    )
+    select
+      day,
+      sum(bet_count)::int as "betCount",
+      coalesce(sum(mana_amount), 0)::double precision as "manaAmount",
+      coalesce(sum(total_amount), 0)::double precision as "totalAmount",
+      json_agg(json_build_object('userId', user_id, 'betCount', bet_count)) as "userCounts"
+    from per_user
     group by day
     order by day asc`,
     [start, end, token]
   )
 
-  return bets as { day: string; values: StatBet[] }[]
+  return bets as DailyBetStats[]
 }
 
 async function getDailyPerpTrades(
@@ -409,11 +426,8 @@ export const updateActivityStats = async (
     pg,
     dailyBets.map((bets) => ({
       start_date: bets.day,
-      bet_count: bets.values.length,
-      bet_amount:
-        sum(
-          bets.values.filter((b) => b.token === 'MANA').map((b) => b.amount)
-        ) / 100,
+      bet_count: bets.betCount,
+      bet_amount: bets.manaAmount / 100,
     }))
   )
 
@@ -443,8 +457,15 @@ export const updateActivityStats = async (
       contracts.values.map((c) => c.userId),
     ])
   )
+  // One entry per bet, not per user: the countBy in the median-actions calc
+  // below needs the multiset, and uniq covers the DAU-style consumers.
   const betUsersByDay = Object.fromEntries(
-    dailyBets.map((bets) => [bets.day, bets.values.map((b) => b.userId)])
+    dailyBets.map((bets) => [
+      bets.day,
+      bets.userCounts.flatMap((u) =>
+        Array.from({ length: u.betCount }, () => u.userId)
+      ),
+    ])
   )
   const perpTradeUsersByDay = Object.fromEntries(
     dailyPerpTrades.map((trades) => [
@@ -848,8 +869,8 @@ export const updateCashActivityStats = async (
     pg,
     dailyBets.map((bets) => ({
       start_date: bets.day,
-      cash_bet_count: bets.values.length,
-      cash_bet_amount: sum(bets.values.map((b) => b.amount)),
+      cash_bet_count: bets.betCount,
+      cash_bet_amount: bets.totalAmount,
     }))
   )
 
@@ -878,8 +899,15 @@ export const updateCashActivityStats = async (
       contracts.values.map((c) => c.userId),
     ])
   )
+  // One entry per bet, not per user: the countBy in the median-actions calc
+  // below needs the multiset, and uniq covers the DAU-style consumers.
   const betUsersByDay = Object.fromEntries(
-    dailyBets.map((bets) => [bets.day, bets.values.map((b) => b.userId)])
+    dailyBets.map((bets) => [
+      bets.day,
+      bets.userCounts.flatMap((u) =>
+        Array.from({ length: u.betCount }, () => u.userId)
+      ),
+    ])
   )
   const commentUsersByDay = Object.fromEntries(
     dailyComments.map((comments) => [
