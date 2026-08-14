@@ -50,7 +50,7 @@ import { DAY_MS } from '../util/time'
 // change silently when a third party edits a metadata field.
 
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-08-13'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-14'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -75,6 +75,27 @@ export type ModelClassification = {
  * variant suffixes (`...:free`), which are the same model for index purposes.
  */
 export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
+  // Added 2026-08-14: both entered the top 50 with OpenRouter's 2026-08-13 day
+  // and froze the feed together.
+  //
+  // V4 Pro 0813 is a new dated release, NOT the 20260423 entry below — DeepSeek
+  // ships each one as its own permaslug and each needs its own verdict.
+  // deepseek-ai/DeepSeek-V4-Pro-0813 is public and ungated with 66 safetensors
+  // shards, and third-party quants (unsloth/DeepSeek-V4-Pro-0813-GGUF) are
+  // already up, which nobody could produce without the weights in hand
+  // (verified 2026-08-14).
+  'deepseek/deepseek-v4-pro-20260813': {
+    open: true,
+    weights: 'deepseek-ai/DeepSeek-V4-Pro-0813',
+  }, // DeepSeek: DeepSeek V4 Pro 0813
+  // Grok 4.6 is API-only, consistent with every other xAI model here. No
+  // grok-4.6 repo exists in any org; the xai-org account holds only grok-1 and
+  // grok-2, the two generations they open-sourced after retiring them, and
+  // OpenRouter reports hugging_face_id: null (verified 2026-08-14). Note
+  // OpenRouter now labels the publisher "SpaceXAI" — a vendor rename, not a
+  // licensing change. If a Grok 4.6 release follows the grok-1/grok-2 pattern
+  // later, that counts from the release date forward via a new entry.
+  'x-ai/grok-4.6-20260810': { open: false }, // SpaceXAI: Grok 4.6
   // Added 2026-08-13: entered the top 50 with OpenRouter's 2026-08-12 day and
   // froze the feed (fail-closed). Solar Pro 4 is API-only. No `solar-pro4`
   // repo exists anywhere on HuggingFace (global search, 0 hits), and the whole
