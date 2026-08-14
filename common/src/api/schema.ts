@@ -1092,6 +1092,9 @@ export const API = (_apiTypeCheck = {
         rankedAgeMs: number | null
         /** Past the window: the index is already halting on this one. */
         graceExpired: boolean
+        /** The research agent's recommendation, if it ran. Never auto-applied. */
+        agentRecommendation: string | null
+        agentReasoning: string | null
       }[]
       recent: {
         permaslug: string

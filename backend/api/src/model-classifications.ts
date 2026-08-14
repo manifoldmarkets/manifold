@@ -65,6 +65,8 @@ export const getModelClassifications: APIHandler<
           graceExpired:
             firstRankedAt !== null &&
             now - firstRankedAt > UNCLASSIFIED_GRACE_WINDOW_MS,
+          agentRecommendation: evidenceString(r, 'agentRecommendation'),
+          agentReasoning: evidenceString(r, 'agentReasoning'),
         }
       }),
     recent: rows

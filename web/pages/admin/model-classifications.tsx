@@ -136,6 +136,8 @@ function PendingRow(props: {
     ageMs: number
     rankedAgeMs: number | null
     graceExpired: boolean
+    agentRecommendation: string | null
+    agentReasoning: string | null
   }
   onDone: () => void
 }) {
@@ -199,6 +201,26 @@ function PendingRow(props: {
           {model.discoveredVia ?? 'unknown'}
         </span>
       </Row>
+
+      {model.agentReasoning && (
+        <Col className="bg-canvas-50 gap-1 rounded p-2 text-xs">
+          <div className="text-ink-700 font-semibold">
+            Research says:{' '}
+            {model.agentRecommendation === 'closed' ? (
+              <span className="text-ink-900">closed — API only</span>
+            ) : (
+              <span className="text-ink-500">could not determine</span>
+            )}
+          </div>
+          <div className="text-ink-600 whitespace-pre-wrap">
+            {model.agentReasoning}
+          </div>
+          <div className="text-ink-400">
+            A recommendation, not a classification — nothing was applied. Only
+            an open verdict can be machine-checked, so this one is yours.
+          </div>
+        </Col>
+      )}
 
       <Row className="flex-wrap items-center gap-2">
         <Input

@@ -240,6 +240,40 @@ export const upsertClassification = async (
   )
 }
 
+/**
+ * Attach the research agent's findings to a PENDING row without adjudicating
+ * it.
+ *
+ * The row stays `open is null`, so the model remains excluded from both sides
+ * of the index exactly as before — nothing about the published number changes.
+ * What changes is the review queue: instead of a bare permaslug to go and
+ * google, the operator sees a recommendation and the searches behind it, and
+ * confirms with one click.
+ *
+ * Only ever touches unadjudicated rows: the `where` clause means a human
+ * verdict can never be overwritten by a later agent run.
+ */
+export const recordAgentRecommendation = async (
+  pg: SupabaseDirectClient,
+  permaslug: string,
+  recommendation: 'closed' | null,
+  evidence: Record<string, unknown>
+) => {
+  await pg.none(
+    `update model_classifications
+     set evidence = evidence || $2::jsonb, updated_time = now()
+     where permaslug = $1 and open is null`,
+    [
+      basePermaslug(permaslug),
+      JSON.stringify({
+        ...evidence,
+        agentRecommendation: recommendation,
+        agentRanAt: new Date().toISOString(),
+      }),
+    ]
+  )
+}
+
 /** Pending rows for the admin tool, oldest first — the review queue. */
 export const getPendingClassifications = async (
   pg: SupabaseDirectClient

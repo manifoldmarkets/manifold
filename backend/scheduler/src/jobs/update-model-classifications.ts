@@ -5,11 +5,19 @@ import {
 } from 'shared/huggingface'
 import {
   getPendingClassifications,
+  recordAgentRecommendation,
   recordPendingModels,
   upsertClassification,
 } from 'shared/perps/model-classifications'
-import { fetchOpenRouterCatalog } from 'shared/openrouter-tokens'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { classifyModelWithAgent } from 'shared/perps/classify-model-agent'
+import {
+  fetchOpenRouterCatalog,
+  OpenRouterCatalogEntry,
+} from 'shared/openrouter-tokens'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
 // Classify new OpenRouter models BEFORE they reach the top 50.
@@ -75,16 +83,16 @@ const updateModelClassificationsInternal = async () => {
   // OpenRouter frequently populates `hugging_face_id` days after listing, and
   // labs publish weights after launch. Both cases resolve themselves here.
   let confirmed = 0
-  let unresolved = 0
+  const needsResearch: typeof unknown = []
   for (const model of unknown) {
     if (!model.huggingFaceId) {
-      unresolved++
+      needsResearch.push(model)
       continue
     }
     const verification = await verifyHuggingFaceWeights(model.huggingFaceId)
     logHuggingFaceVerification(model.permaslug, verification)
     if (!verification.confirmed) {
-      unresolved++
+      needsResearch.push(model)
       continue
     }
     await upsertClassification(pg, {
@@ -97,11 +105,15 @@ const updateModelClassificationsInternal = async () => {
     confirmed++
   }
 
+  const researched = await researchRemainingModels(pg, needsResearch)
+
   const pending = await getPendingClassifications(pg)
   log(
     `[model-classifier] ${unknown.length} unclassified in catalog: ` +
-      `${confirmed} auto-classified open, ${unresolved} unresolved; ` +
-      `${pending.length} awaiting review`
+      `${confirmed} auto-classified open from a declared repo, ` +
+      `${researched.confirmed} open via research, ` +
+      `${researched.recommended} closed-recommendations for review, ` +
+      `${researched.unresolved} unresolved; ${pending.length} awaiting review`
   )
 
   // Warn rather than error: a pending model is not yet a problem — the index
@@ -114,4 +126,89 @@ const updateModelClassificationsInternal = async () => {
         .map((p) => p.permaslug)
         .join(', ')}`
     )
+}
+
+/**
+ * Hand whatever the deterministic pass could not settle to the research agent.
+ *
+ * This is the half that kept freezing the feed: models with no declared repo,
+ * where deciding means actually searching HuggingFace rather than fetching one
+ * URL. The agent runs the same searches a human would and its `open` verdicts
+ * are re-verified against the live API before they land, so the automation can
+ * only ever be as wrong as the API is.
+ *
+ * `closed` comes back as a recommendation, not a classification. Nothing
+ * machine-checks a negative claim, and with the grace threshold in place an
+ * unclassified model no longer halts the index — so the cheap, correct move is
+ * to leave it pending with the research attached and let a human confirm in
+ * one click. Set PERPS_AUTOCLASSIFY_CLOSED=true to apply them automatically;
+ * it is off by default deliberately.
+ */
+const researchRemainingModels = async (
+  pg: SupabaseDirectClient,
+  models: OpenRouterCatalogEntry[]
+) => {
+  const autoApplyClosed = process.env.PERPS_AUTOCLASSIFY_CLOSED === 'true'
+  let confirmed = 0
+  let recommended = 0
+  let unresolved = 0
+
+  for (const model of models) {
+    const result = await classifyModelWithAgent({
+      permaslug: model.permaslug,
+      name: model.name,
+      declaredHuggingFaceId: model.huggingFaceId,
+    })
+    const evidence = {
+      openRouterName: model.name,
+      agentReasoning: result.verdict.reasoning,
+      // The tool calls the verdict rests on, so an operator reviewing this
+      // sees what was actually searched rather than a bare assertion.
+      agentSearches: result.searches.map((s) => ({
+        tool: s.tool,
+        input: s.input,
+        result: s.result.slice(0, 1000),
+      })),
+      rejectedReason: result.rejectedReason ?? null,
+    }
+
+    if (result.verdict.verdict === 'open') {
+      await upsertClassification(pg, {
+        permaslug: model.permaslug,
+        open: true,
+        weights: result.verdict.weights,
+        source: 'auto',
+        evidence: { ...evidence, ...(result.confirmation?.confirmed
+          ? result.confirmation.evidence
+          : {}) },
+      })
+      confirmed++
+      continue
+    }
+
+    if (result.verdict.verdict === 'closed') {
+      if (autoApplyClosed) {
+        await upsertClassification(pg, {
+          permaslug: model.permaslug,
+          open: false,
+          source: 'auto',
+          evidence,
+        })
+        confirmed++
+        continue
+      }
+      await recordAgentRecommendation(pg, model.permaslug, 'closed', evidence)
+      recommended++
+      log.warn(
+        `[model-classifier] ${model.permaslug}: agent recommends CLOSED — ` +
+          `${result.verdict.reasoning.slice(0, 300)}`
+      )
+      continue
+    }
+
+    await recordAgentRecommendation(pg, model.permaslug, null, evidence)
+    unresolved++
+  }
+
+  return { confirmed, recommended, unresolved }
 }
