@@ -250,8 +250,21 @@ export type SearchTypes =
 // Deliberately lower than TOPIC_SIMILARITY_THRESHOLD (0.5), which compares
 // two full questions. A search term is much shorter than the questions it is
 // being compared against, which drags cosine similarity down for matches that
-// are perfectly good. NOT yet validated against real query embeddings — check
-// this against live searches in dev before trusting the number.
+// are perfectly good.
+//
+// Calibrated 2026-08-14 against real query embeddings on dev (13 short
+// user-style queries vs stored question embeddings, same-model pairs):
+// ordinary good matches score 0.42-0.65, deep synonym matches with zero
+// keyword overlap ("riemann hypothesis" -> the zeta-zeros question) ~0.30,
+// junk-query noise floor 0.31-0.42. There is no clean separating value;
+// 0.35 leans toward recall, which is the right bias for a tail that only
+// appears on otherwise-dead pages. Raising it above ~0.4 silently kills the
+// synonym cases this feature exists for.
+//
+// Caveat: similarity is only meaningful between same-model embeddings. The
+// embedding model changed 2024-06-27 (0329b37ae, ada-002 -> 3-small, same
+// 1536 dims); contracts whose stored embedding predates a re-embed are pure
+// noise against query vectors and can never surface here.
 export const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.35
 // Over-fetch from the index, then let the normal filters cut it down, the
 // same way close_contract_embeddings does with match_count + 500.
@@ -283,6 +296,20 @@ const groupsFilterSql = (args: {
   )
 }
 
+// News surfaces only markets that moved recently. Shared for the same reason
+// as groupsFilterSql: both search paths must apply it, or the semantic tail
+// would pad the movers page with dormant markets.
+const newsMovementFilterSql = () => [
+  withClause(
+    `recent_movements as (
+        select distinct contract_id
+        from contract_movement_notifications
+        where created_time > now() - interval '72 hours'
+      )`
+  ),
+  join(`recent_movements rm on rm.contract_id = contracts.id`),
+]
+
 /**
  * Nearest markets to an already-computed query embedding, run through the
  * same filters as a normal search so status/type/token/blocks still hold.
@@ -296,7 +323,8 @@ export function getSemanticSearchContractSQL(
     excludeContractIds?: string[]
   }
 ) {
-  const { embedding, limit, privateUser, excludeContractIds } = args
+  const { embedding, limit, filter, uid, hasBets, privateUser, excludeContractIds } =
+    args
   return renderSql(
     select(contractColumnsToSelectWithPrefix('contracts')),
     from(
@@ -310,13 +338,21 @@ export function getSemanticSearchContractSQL(
     ),
     join('contracts on contracts.id = se.contract_id'),
     groupsFilterSql(args),
-    getSearchContractWhereSQL({ ...args, hideStonks: true }),
-    privateUser && privateUserBlocksSql(privateUser),
+    filter === 'news' && newsMovementFilterSql(),
+    hasBets === '1' && uid && userBetsJoinSql,
+    // Both hide* flags mirror what the lexical path computes when a term is
+    // present (always the case here): an explicit search never hides stonks
+    // or resolved sports markets, and the two halves of one response must
+    // obey the same visibility rules.
+    getSearchContractWhereSQL({ ...args, hideStonks: false, hideLove: false }),
+    privateUserBlocksSql(privateUser),
     // Already-returned lexical hits, so the tail can't repeat the head.
     (excludeContractIds?.length ?? 0) > 0 &&
-      where(`contracts.id <> all(array[$1])`, [excludeContractIds]),
+      where(`contracts.id <> all($1)`, [excludeContractIds]),
     orderBy('se.similarity desc'),
-    lim(limit)
+    // sql-builder silently drops a limit of 0 (rendering NO limit clause), so
+    // clamp: callers must never pass 0, but if one does, 1 row beats 200.
+    lim(Math.max(limit, 1))
   )
 }
 
@@ -368,19 +404,7 @@ export function getSearchContractSQL(
   const groupsFilter = groupsFilterSql({ groupId, groupIds, token })
 
   // Recent movements filter
-  const newsFilter =
-    filter === 'news' &&
-    withClause(
-      `recent_movements as (
-        select distinct contract_id
-        from contract_movement_notifications
-        where created_time > now() - interval '72 hours'
-      )`
-    )
-
-  const newsJoin =
-    filter === 'news' &&
-    join(`recent_movements rm on rm.contract_id = contracts.id`)
+  const newsMovement = filter === 'news' && newsMovementFilterSql()
 
   const newsWhere =
     filter === 'news' &&
@@ -393,8 +417,7 @@ export function getSearchContractSQL(
     select(contractColumnsToSelectWithPrefix('contracts')),
     from('contracts'),
     groupsFilter,
-    newsFilter,
-    newsJoin,
+    newsMovement,
     newsWhere,
     userBetsJoin,
     searchType === 'answer' &&
