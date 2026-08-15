@@ -240,6 +240,52 @@ export const upsertClassification = async (
   )
 }
 
+/**
+ * Attach the research agent's findings to a PENDING row without adjudicating
+ * it.
+ *
+ * The row stays `open is null`, so the model remains excluded from both sides
+ * of the index exactly as before — nothing about the published number changes.
+ * What changes is the review queue: instead of a bare permaslug to go and
+ * google, the operator sees a recommendation and the searches behind it, and
+ * confirms with one click.
+ *
+ * Only ever touches unadjudicated rows: the `where` clause means a human
+ * verdict can never be overwritten by a later agent run.
+ */
+export const recordAgentRecommendation = async (
+  pg: SupabaseDirectClient,
+  permaslug: string,
+  /**
+   * What the agent concluded — including `open`, which is a recommendation
+   * like any other rather than a classification. The row stays pending either
+   * way; only a human moves it off `null`.
+   */
+  recommendation: 'open' | 'closed' | null,
+  evidence: Record<string, unknown>,
+  /**
+   * Whether this run counts as "researched" for cooldown purposes. False for
+   * transient failures: the evidence is still attached so the queue shows what
+   * happened, but the clock does not start, so the next sweep retries. See
+   * AGENT_RESEARCH_COOLDOWN_MS for why burning a retry here is a live outage.
+   */
+  startCooldown = true
+) => {
+  await pg.none(
+    `update model_classifications
+     set evidence = evidence || $2::jsonb, updated_time = now()
+     where permaslug = $1 and open is null`,
+    [
+      basePermaslug(permaslug),
+      JSON.stringify({
+        ...evidence,
+        agentRecommendation: recommendation,
+        ...(startCooldown ? { agentRanAt: new Date().toISOString() } : {}),
+      }),
+    ]
+  )
+}
+
 /** Pending rows for the admin tool, oldest first — the review queue. */
 export const getPendingClassifications = async (
   pg: SupabaseDirectClient
@@ -251,3 +297,84 @@ export const getPendingClassifications = async (
      where open is null
      order by first_ranked_at asc nulls last, first_seen asc`
   )
+
+/**
+ * How long a researched-but-unsettled model is left alone before a re-run.
+ *
+ * DERIVED from the grace window rather than chosen independently, because the
+ * two are not independent quantities and drifting them apart is a live outage.
+ *
+ * Only ranked models are researched at all, so every model under cooldown has
+ * a grace clock already running. A cooldown longer than that window means a
+ * model researched once is never retried before its grace expires and the feed
+ * halts. That is not a theoretical ordering: a transient failure — Anthropic
+ * unreachable, a missing key, a run that burns its turns — comes back as
+ * `unresolved`, and a flat seven-day cooldown against a two-day window turned
+ * one bad API call into a guaranteed halt two days later, with seven sweeps
+ * sitting idle in between that could each have fixed it.
+ *
+ * A quarter of the window gives roughly four attempts before the deadline,
+ * which is enough to ride out a transient outage, while still cutting the
+ * four-sweeps-a-day re-ask that motivated a cooldown in the first place. The
+ * cost that buys is negligible: the ranked population is a handful of models,
+ * so four retries is cents. Expressed as a fraction so that changing the grace
+ * window moves this with it and the invariant cannot silently break.
+ */
+export const AGENT_RESEARCH_COOLDOWN_MS = UNCLASSIFIED_GRACE_WINDOW_MS / 4
+
+export type ResearchEligibility = {
+  /** Base slugs that have entered the ranked window at least once. */
+  everRanked: string[]
+  /** Base slugs researched recently enough to skip this sweep. */
+  recentlyResearched: string[]
+}
+
+/**
+ * Who is worth spending a research call on right now.
+ *
+ * Two independent filters, and between them they are the whole cost story.
+ *
+ * RANKED. The index is defined over OpenRouter's top 50, so a model that has
+ * never ranked cannot move it. The catalog carries ~130 unclassified models
+ * with no declared repo and most will never rank, so researching all of them
+ * is spend with no reachable effect on the published number. `first_ranked_at`
+ * already records exactly the models that started mattering, and the grace
+ * window already covers the gap between ranking and adjudication — so research
+ * follows ranking rather than trying to pre-empt it.
+ *
+ * COOLDOWN. A `closed` recommendation and an `unresolved` both leave the row
+ * `open is null` on purpose (only a human may conclude closed). Without a
+ * cooldown those rows re-enter the candidate set on the very next sweep and
+ * are researched again, unchanged, four times a day, forever — the answer does
+ * not improve on re-asking, because nothing about the model changed. A week is
+ * long enough that a re-run is only paid when a publisher plausibly shipped
+ * weights in the interim, which is the one thing that would change the verdict.
+ */
+export const getResearchEligibility = async (
+  pg: SupabaseDirectClient,
+  now = Date.now(),
+  cooldownMs = AGENT_RESEARCH_COOLDOWN_MS
+): Promise<ResearchEligibility> => {
+  const rows = await pg.manyOrNone<{
+    permaslug: string
+    first_ranked_at: string | null
+    agent_ran_at: string | null
+  }>(
+    `select permaslug, first_ranked_at, evidence->>'agentRanAt' as agent_ran_at
+     from model_classifications
+     where open is null`
+  )
+
+  const everRanked: string[] = []
+  const recentlyResearched: string[] = []
+  for (const row of rows) {
+    const slug = basePermaslug(row.permaslug)
+    if (row.first_ranked_at) everRanked.push(slug)
+    const ranAt = row.agent_ran_at ? Date.parse(row.agent_ran_at) : NaN
+    // A malformed timestamp reads as "never researched" rather than blocking
+    // the model forever — it costs one extra call, not a permanent hole.
+    if (Number.isFinite(ranAt) && now - ranAt < cooldownMs)
+      recentlyResearched.push(slug)
+  }
+  return { everRanked, recentlyResearched }
+}

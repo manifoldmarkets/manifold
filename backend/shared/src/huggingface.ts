@@ -130,6 +130,77 @@ const isPubliclyGettable = (gated: string | boolean | null | undefined) =>
 const encodeRepo = (repo: string) =>
   repo.split('/').map(encodeURIComponent).join('/')
 
+export type HuggingFaceRepoSummary = {
+  id: string
+  downloads?: number
+  lastModified?: string
+}
+
+/**
+ * Search repos by name fragment across every org.
+ *
+ * The decisive NEGATIVE signal: a global search for a model's name returning
+ * nothing is the strongest available evidence that no public weights exist
+ * anywhere. It is what settled Solar Pro 4 and Grok 4.6.
+ */
+export const searchHuggingFaceModels = async (
+  query: string,
+  limit = 20
+): Promise<HuggingFaceRepoSummary[]> => {
+  if (!query) return []
+  return fetchRepoList(
+    `${HF_API}?search=${encodeURIComponent(query)}&limit=${limit}`
+  )
+}
+
+/**
+ * List an org's repos, most recently modified first.
+ *
+ * Reveals what a single-repo lookup cannot: that a publisher ships weights
+ * under a separately branded line (Upstage's Solar Open vs Solar Pro), or that
+ * a line publishes tokenizers only.
+ */
+export const listHuggingFaceOrgModels = async (
+  org: string,
+  limit = 30
+): Promise<HuggingFaceRepoSummary[]> => {
+  if (!org) return []
+  return fetchRepoList(
+    `${HF_API}?author=${encodeURIComponent(
+      org
+    )}&sort=lastModified&direction=-1&limit=${limit}`
+  )
+}
+
+const fetchRepoList = async (
+  url: string
+): Promise<HuggingFaceRepoSummary[]> => {
+  const res = await fetch(url, {
+    headers: { 'user-agent': 'Manifold/1.0 (+https://manifold.markets)' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
+  if (!res.ok)
+    throw new Error(`HuggingFace list: ${res.status} ${res.statusText}`)
+
+  const body = (await res.json()) as unknown
+  if (!Array.isArray(body)) return []
+  return body.flatMap((row) => {
+    if (!row || typeof row !== 'object' || !('id' in row)) return []
+    const id = (row as { id: unknown }).id
+    if (typeof id !== 'string') return []
+    const downloads = (row as { downloads?: unknown }).downloads
+    const lastModified = (row as { lastModified?: unknown }).lastModified
+    return [
+      {
+        id,
+        downloads: typeof downloads === 'number' ? downloads : undefined,
+        lastModified:
+          typeof lastModified === 'string' ? lastModified : undefined,
+      },
+    ]
+  })
+}
+
 export const logHuggingFaceVerification = (
   permaslug: string,
   verification: HuggingFaceVerification

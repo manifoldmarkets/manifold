@@ -1092,6 +1092,28 @@ export const API = (_apiTypeCheck = {
         rankedAgeMs: number | null
         /** Past the window: the index is already halting on this one. */
         graceExpired: boolean
+        /** The research agent's recommendation, if it ran. Never auto-applied. */
+        agentRecommendation: string | null
+        agentReasoning: string | null
+        /**
+         * The tool calls the recommendation rests on, in order. A closed
+         * verdict cannot be machine-checked, so this is what the operator
+         * actually adjudicates against — the summary alone is not evidence.
+         */
+        agentSearches: {
+          tool: string
+          input: string | null
+          result: string
+        }[]
+        /**
+         * A repo the agent proposed and the live HuggingFace API confirmed.
+         * Never applied automatically — verification and a name match cannot
+         * establish that the repo is THIS model's — but prefilled so the
+         * operator confirms rather than retypes.
+         */
+        agentProposedWeights: string | null
+        /** Weight files the live API reported for that repo, when known. */
+        agentWeightFileCount: number | null
       }[]
       recent: {
         permaslug: string

@@ -136,6 +136,11 @@ function PendingRow(props: {
     ageMs: number
     rankedAgeMs: number | null
     graceExpired: boolean
+    agentRecommendation: string | null
+    agentReasoning: string | null
+    agentSearches: { tool: string; input: string | null; result: string }[]
+    agentProposedWeights: string | null
+    agentWeightFileCount: number | null
   }
   onDone: () => void
 }) {
@@ -144,7 +149,9 @@ function PendingRow(props: {
   // starting point, not evidence: the publisher field is routinely absent for
   // models whose weights are public, and present for repos that hold only a
   // tokenizer. Confirm it resolves and carries weight files before saving.
-  const [weights, setWeights] = useState(model.huggingFaceId ?? '')
+  const [weights, setWeights] = useState(
+    model.agentProposedWeights ?? model.huggingFaceId ?? ''
+  )
   const [saving, setSaving] = useState(false)
 
   const classify = async (open: boolean) => {
@@ -199,6 +206,84 @@ function PendingRow(props: {
           {model.discoveredVia ?? 'unknown'}
         </span>
       </Row>
+
+      {model.agentReasoning && (
+        <Col className="bg-canvas-50 gap-1 rounded p-2 text-xs">
+          <div className="text-ink-700 font-semibold">
+            Research says:{' '}
+            {model.agentRecommendation === 'closed' ? (
+              <span className="text-ink-900">closed — API only</span>
+            ) : model.agentRecommendation === 'open' ? (
+              <span className="text-teal-600">
+                open — weights found
+                {model.agentProposedWeights && (
+                  <span className="text-ink-700 font-mono">
+                    {' '}
+                    {model.agentProposedWeights}
+                  </span>
+                )}
+                {model.agentWeightFileCount !== null && (
+                  <span className="text-ink-500">
+                    {' '}
+                    ({model.agentWeightFileCount} weight files, re-verified
+                    against the live API)
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="text-ink-500">could not determine</span>
+            )}
+          </div>
+          <div className="text-ink-600 whitespace-pre-wrap">
+            {model.agentReasoning}
+          </div>
+
+          {/* The searches themselves, not just the summary of them. This is
+              the only checkable thing about a closed verdict — a global search
+              returning nothing is the evidence; the prose describing it is
+              not. Collapsed so the queue stays skimmable. */}
+          {model.agentSearches.length > 0 ? (
+            <details className="mt-1">
+              <summary className="text-ink-500 cursor-pointer select-none">
+                {model.agentSearches.length} search
+                {model.agentSearches.length === 1 ? '' : 'es'} it ran — check
+                these, not the summary
+              </summary>
+              <Col className="mt-1 gap-2">
+                {model.agentSearches.map((search, i) => (
+                  <Col
+                    key={i}
+                    className="border-ink-200 gap-0.5 border-l-2 pl-2"
+                  >
+                    <div className="text-ink-700 font-mono">
+                      {search.tool}
+                      {search.input && (
+                        <span className="text-ink-500"> {search.input}</span>
+                      )}
+                    </div>
+                    <div className="text-ink-600 whitespace-pre-wrap font-mono">
+                      {search.result || '(no output recorded)'}
+                    </div>
+                  </Col>
+                ))}
+              </Col>
+            </details>
+          ) : (
+            <div className="text-scarlet-600">
+              No searches recorded — this verdict rests on nothing checkable.
+              Treat it as unresearched.
+            </div>
+          )}
+
+          <div className="text-ink-400">
+            A recommendation, not a classification — nothing was applied. That
+            includes an open verdict: verification proves the repo is public and
+            carries weights, and the name check proves it looks like this model,
+            but neither proves it IS this model. A sibling in the same family
+            passes both. Check the repo, then click.
+          </div>
+        </Col>
+      )}
 
       <Row className="flex-wrap items-center gap-2">
         <Input
