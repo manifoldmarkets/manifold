@@ -37,7 +37,33 @@ import { log } from 'shared/utils'
 // error than mis-siding one (see UNCLASSIFIED_TOKEN_SHARE_CAP), so waiting is
 // genuinely cheaper than guessing.
 
-const CLASSIFIER_MODEL = 'claude-opus-5'
+// Haiku, not Opus, and the reasoning is about what actually protects the index.
+//
+// This is a search-and-cite task, not a reasoning task: the agent runs the HF
+// searches a human would run and names a repo. Everything that makes an `open`
+// verdict safe runs AFTER the model answers and does not care which model
+// produced the citation — the repo is re-fetched from the live HuggingFace API
+// and must carry public weight files, and the name must clear the deterministic
+// guard in common/perps/weights-repo-match. A weaker model therefore cannot
+// produce a WRONG `open`; it can only fail to find a repo that exists, which
+// comes back as `unresolved` and lands in the human review queue. The failure
+// mode degrades into queue depth, not into index error.
+//
+// The cost difference is the reason it matters. At Opus-5 rates a single
+// classification runs ~$0.27 (roughly 30k input + 4.6k output across ~6 turns,
+// history resent each turn); on Haiku the same session is ~$0.05. Combined with
+// the ranked-only gate and the cooldown in update-model-classifications, that
+// is the difference between a job that costs a few cents a day and one that
+// does not fit in the budget this feed is worth.
+//
+// Override per-environment if a specific model ever proves necessary; the
+// verification path is unchanged either way.
+const CLASSIFIER_MODEL = process.env.PERPS_CLASSIFIER_MODEL || 'claude-haiku-4-5'
+// No prompt caching here on purpose: Haiku 4.5's minimum cacheable prefix is
+// 4096 tokens and this system prompt plus tool definitions is ~1.5k, so a
+// cache_control breakpoint would silently never engage. (It WOULD engage on
+// Opus 5, whose minimum is 512 — the two levers interact, and picking the
+// cheaper model is worth more here than caching a prefix this small.)
 const MAX_TURNS = 12
 const MAX_TOKENS = 16_000
 
@@ -203,9 +229,14 @@ export const classifyModelWithAgent = async (params: {
       response = await anthropic.messages.create({
         model: CLASSIFIER_MODEL,
         max_tokens: MAX_TOKENS,
-        // No temperature: Claude Opus 5 rejects sampling parameters outright,
-        // and the shared promptClaude helper hardcodes temperature: 0, which
-        // is why this does not go through it.
+        // No sampling parameters, and deliberately not routed through the
+        // shared promptClaude helper, which hardcodes temperature: 0. Haiku
+        // accepts temperature, but the Opus/Sonnet 5 generation rejects
+        // sampling parameters with a 400 — so promptClaude cannot be pointed
+        // at those models at all, and this call stays portable across whatever
+        // PERPS_CLASSIFIER_MODEL is set to. Worth knowing independently of
+        // this file: any other promptClaude call site aimed at a 5-series
+        // model fails the same way.
         system: SYSTEM_PROMPT,
         tools: TOOLS,
         messages,

@@ -4,6 +4,7 @@ import {
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
 } from 'common/perps/open-weight-models'
+import { DAY_MS } from 'common/util/time'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
 // Resolution layer between the audited seed list and the operator/auto
@@ -285,3 +286,63 @@ export const getPendingClassifications = async (
      where open is null
      order by first_ranked_at asc nulls last, first_seen asc`
   )
+
+/** How long a researched-but-unsettled model is left alone before a re-run. */
+export const AGENT_RESEARCH_COOLDOWN_MS = 7 * DAY_MS
+
+export type ResearchEligibility = {
+  /** Base slugs that have entered the ranked window at least once. */
+  everRanked: string[]
+  /** Base slugs researched recently enough to skip this sweep. */
+  recentlyResearched: string[]
+}
+
+/**
+ * Who is worth spending a research call on right now.
+ *
+ * Two independent filters, and between them they are the whole cost story.
+ *
+ * RANKED. The index is defined over OpenRouter's top 50, so a model that has
+ * never ranked cannot move it. The catalog carries ~130 unclassified models
+ * with no declared repo and most will never rank, so researching all of them
+ * is spend with no reachable effect on the published number. `first_ranked_at`
+ * already records exactly the models that started mattering, and the grace
+ * window already covers the gap between ranking and adjudication — so research
+ * follows ranking rather than trying to pre-empt it.
+ *
+ * COOLDOWN. A `closed` recommendation and an `unresolved` both leave the row
+ * `open is null` on purpose (only a human may conclude closed). Without a
+ * cooldown those rows re-enter the candidate set on the very next sweep and
+ * are researched again, unchanged, four times a day, forever — the answer does
+ * not improve on re-asking, because nothing about the model changed. A week is
+ * long enough that a re-run is only paid when a publisher plausibly shipped
+ * weights in the interim, which is the one thing that would change the verdict.
+ */
+export const getResearchEligibility = async (
+  pg: SupabaseDirectClient,
+  now = Date.now(),
+  cooldownMs = AGENT_RESEARCH_COOLDOWN_MS
+): Promise<ResearchEligibility> => {
+  const rows = await pg.manyOrNone<{
+    permaslug: string
+    first_ranked_at: string | null
+    agent_ran_at: string | null
+  }>(
+    `select permaslug, first_ranked_at, evidence->>'agentRanAt' as agent_ran_at
+     from model_classifications
+     where open is null`
+  )
+
+  const everRanked: string[] = []
+  const recentlyResearched: string[] = []
+  for (const row of rows) {
+    const slug = basePermaslug(row.permaslug)
+    if (row.first_ranked_at) everRanked.push(slug)
+    const ranAt = row.agent_ran_at ? Date.parse(row.agent_ran_at) : NaN
+    // A malformed timestamp reads as "never researched" rather than blocking
+    // the model forever — it costs one extra call, not a permanent hole.
+    if (Number.isFinite(ranAt) && now - ranAt < cooldownMs)
+      recentlyResearched.push(slug)
+  }
+  return { everRanked, recentlyResearched }
+}

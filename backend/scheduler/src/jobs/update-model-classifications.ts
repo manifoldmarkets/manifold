@@ -5,6 +5,7 @@ import {
 } from 'shared/huggingface'
 import {
   getPendingClassifications,
+  getResearchEligibility,
   recordAgentRecommendation,
   recordPendingModels,
   upsertClassification,
@@ -38,6 +39,16 @@ import { log } from 'shared/utils'
 // never concludes closed — see the directionality note in shared/huggingface.
 // Anything it cannot confirm stays pending for a human, which is what the
 // admin tool and the grace window exist for.
+/**
+ * Hard ceiling on research calls in one sweep.
+ *
+ * Sized against reality rather than ambition: in the worst week on record
+ * three previously-unseen models entered the top 50, and the job runs four
+ * times a day. Ten leaves a wide margin over that while bounding a runaway
+ * sweep to a known, small number.
+ */
+const MAX_RESEARCH_PER_SWEEP = 10
+
 export const updateModelClassifications = async () => {
   try {
     await updateModelClassificationsInternal()
@@ -108,21 +119,29 @@ const updateModelClassificationsInternal = async () => {
   const researched = await researchRemainingModels(pg, needsResearch)
 
   const pending = await getPendingClassifications(pg)
+  // Split the queue the way the index sees it. A pending model that has never
+  // ranked is backlog — it is excluded from an index it was never part of, and
+  // nobody needs to act on it. A pending model that HAS ranked is the live
+  // queue: it is being excluded under grace right now, and its window is
+  // running. Reporting one number for both buried three urgent rows in a
+  // hundred-plus inert ones and made the warning unreadable.
+  const rankedPending = pending.filter((p) => p.first_ranked_at)
   log(
     `[model-classifier] ${unknown.length} unclassified in catalog: ` +
       `${confirmed} auto-classified open from a declared repo, ` +
       `${researched.confirmed} open via research, ` +
       `${researched.recommended} closed-recommendations for review, ` +
-      `${researched.unresolved} unresolved; ${pending.length} awaiting review`
+      `${researched.unresolved} unresolved; ${rankedPending.length} ranked ` +
+      `awaiting review, ${pending.length - rankedPending.length} unranked backlog`
   )
 
   // Warn rather than error: a pending model is not yet a problem — the index
   // publishes under grace while it is small and fresh. It becomes an error
   // only when the publication gate actually halts on it, which the
   // [openrouter] tag reports with the numbers that justify it.
-  if (pending.length > 0)
+  if (rankedPending.length > 0)
     log.warn(
-      `[model-classifier] awaiting human classification: ${pending
+      `[model-classifier] ranked and awaiting human classification: ${rankedPending
         .map((p) => p.permaslug)
         .join(', ')}`
     )
@@ -143,15 +162,58 @@ const updateModelClassificationsInternal = async () => {
  * to leave it pending with the research attached and let a human confirm in
  * one click. Set PERPS_AUTOCLASSIFY_CLOSED=true to apply them automatically;
  * it is off by default deliberately.
+ *
+ * Because a recommendation leaves the row pending by design, the candidate set
+ * does NOT shrink on its own — which is what makes the two filters below load-
+ * bearing rather than an optimisation. Without them this loop re-researches
+ * every unsettled model on every sweep, indefinitely: ~130 catalog models,
+ * four times a day, whose verdicts cannot change between runs.
  */
 const researchRemainingModels = async (
   pg: SupabaseDirectClient,
-  models: OpenRouterCatalogEntry[]
+  candidates: OpenRouterCatalogEntry[]
 ) => {
   const autoApplyClosed = process.env.PERPS_AUTOCLASSIFY_CLOSED === 'true'
   let confirmed = 0
   let recommended = 0
   let unresolved = 0
+
+  // Spend follows the index, not the catalog: research only models that have
+  // actually entered the ranked window, and not ones researched recently
+  // enough that the answer cannot have changed. See getResearchEligibility.
+  const { everRanked, recentlyResearched } = await getResearchEligibility(pg)
+  const rankedSet = new Set(everRanked)
+  const cooledSet = new Set(recentlyResearched)
+
+  const eligible = candidates.filter(
+    (m) => rankedSet.has(m.permaslug) && !cooledSet.has(m.permaslug)
+  )
+  const skippedUnranked = candidates.filter((m) => !rankedSet.has(m.permaslug))
+  const skippedCooldown = candidates.filter(
+    (m) => rankedSet.has(m.permaslug) && cooledSet.has(m.permaslug)
+  )
+
+  // A last-resort ceiling on a single sweep, so a pathological run (an
+  // upstream shape change, a HuggingFace outage pushing every declared-repo
+  // model into this path) cannot turn into an unbounded bill. Reaching it is
+  // an anomaly, not a routine truncation — hence log.error, not a silent slice.
+  const models = eligible.slice(0, MAX_RESEARCH_PER_SWEEP)
+  if (eligible.length > models.length)
+    log.error(
+      `[model-classifier] ${eligible.length} models eligible for research, ` +
+        `capped at ${MAX_RESEARCH_PER_SWEEP} this sweep — deferring: ` +
+        eligible
+          .slice(MAX_RESEARCH_PER_SWEEP)
+          .map((m) => m.permaslug)
+          .join(', ')
+    )
+
+  log(
+    `[model-classifier] research candidates: ${candidates.length} unsettled, ` +
+      `${skippedUnranked.length} never ranked (cannot move the index), ` +
+      `${skippedCooldown.length} inside the research cooldown, ` +
+      `${models.length} researched this sweep`
+  )
 
   for (const model of models) {
     const result = await classifyModelWithAgent({

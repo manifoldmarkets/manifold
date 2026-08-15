@@ -93,9 +93,34 @@ export const weightsRepoNameOverlap = (
  * `DeepSeek-V4-Pro-0813` scores 1.0; `nemotron-3.5-lightning-20260807` ->
  * `NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` scores 1.0) while rejecting the
  * near-miss that motivates the guard (`solar-pro4` -> `Solar-Open2-250B`
- * scores 0.33).
+ * scores 0.50, `grok-4.6` -> `grok-1` scores 0.50).
  */
 export const WEIGHTS_REPO_MATCH_THRESHOLD = 0.6
+
+/**
+ * Minimum number of distinctive tokens the MODEL name must contribute before a
+ * ratio over it means anything.
+ *
+ * A ratio alone is not enough, because the denominator can be 1. Bare integers
+ * are dropped as noise (see identifierTokens), so `x-ai/grok-5-20260901`
+ * reduces to exactly `["grok"]` — and then ANY repo containing "grok" scores a
+ * perfect 1.00. `xai-org/grok-1` is real, public, and full of weight files, so
+ * it clears verification too, and a closed frontier model would land on the
+ * open side of an executable index with both guards satisfied.
+ *
+ * This is not a hypothetical shape: 10 of the 243 audited seed permaslugs
+ * reduce to one token, including `openai/gpt-5-2025-08-07`,
+ * `x-ai/grok-4-07-09`, and `z-ai/glm-5-20260211` — the highest-traffic closed
+ * models on the index, and precisely the family names a successor release
+ * would reuse. Those specific slugs are safe today only because the seed list
+ * already classifies them and overrides on seeded models are refused; the
+ * exposure is the NEXT one, which is what this agent exists to catch.
+ *
+ * Two tokens is the smallest bar that makes the ratio load-bearing: a
+ * single-token model can no longer be matched by family name alone, and every
+ * real pair observed so far contributes three or more.
+ */
+export const MIN_DISTINCTIVE_MODEL_TOKENS = 2
 
 /**
  * Whether a proposed repo may back an `open` verdict for this model.
@@ -104,9 +129,16 @@ export const WEIGHTS_REPO_MATCH_THRESHOLD = 0.6
  * declared on their own model needs no name check — the publisher is the
  * authority on which repo is theirs, and their naming is occasionally
  * unguessable (`z-ai/glm-4.6` -> `zai-org/GLM-4.6`).
+ *
+ * Returns false when the model name is too generic to discriminate at all.
+ * That is a refusal to auto-apply, not a verdict of closed: the model stays
+ * pending and a human adjudicates it from the review queue, which costs a
+ * bounded sub-point of index error under the grace window rather than an
+ * unbounded one from a false positive.
  */
 export const proposedRepoMatchesModel = (
   permaslug: string,
   repo: string
 ): boolean =>
+  identifierTokens(permaslug).length >= MIN_DISTINCTIVE_MODEL_TOKENS &&
   weightsRepoNameOverlap(permaslug, repo) >= WEIGHTS_REPO_MATCH_THRESHOLD

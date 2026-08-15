@@ -71,6 +71,48 @@ describe('the repos that actually froze the feed', () => {
       )
     ).toBe(false)
   })
+
+  it('refuses to auto-apply when the model name is a single family token', () => {
+    // `<family>-<integer>-<date>` reduces to ONE token, because bare integers
+    // are dropped as noise. The ratio is then 1.00 against any repo carrying
+    // the family name — and those repos are real, public, and weight-bearing,
+    // so verification clears them too. Without a floor on the denominator both
+    // guards pass and a closed frontier model lands on the open side.
+    for (const [permaslug, repo] of [
+      ['x-ai/grok-5-20260901', 'xai-org/grok-1'],
+      ['openai/gpt-6-20260901', 'openai-community/gpt-2'],
+      ['meta/llama-5-20260901', 'unsloth/Llama-3.1-8B-Instruct-GGUF'],
+      ['z-ai/glm-6-20260901', 'zai-org/GLM-4.6'],
+    ] as [string, string][]) {
+      expect([permaslug, identifierTokens(permaslug).length]).toEqual([
+        permaslug,
+        1,
+      ])
+      // The ratio alone would accept every one of these.
+      expect([permaslug, weightsRepoNameOverlap(permaslug, repo)]).toEqual([
+        permaslug,
+        1,
+      ])
+      expect([permaslug, proposedRepoMatchesModel(permaslug, repo)]).toEqual([
+        permaslug,
+        false,
+      ])
+    }
+  })
+
+  it('still accepts real pairs, which all clear the token floor', () => {
+    // The floor must not cost us any genuine match: every real pair observed
+    // contributes three or more distinctive tokens.
+    for (const permaslug of [
+      'deepseek/deepseek-v4-pro-20260813',
+      'nvidia/nemotron-3.5-lightning-20260807',
+      'qwen/qwen3-coder-480b-a35b-07-25',
+    ])
+      expect([
+        permaslug,
+        identifierTokens(permaslug).length >= 2,
+      ]).toEqual([permaslug, true])
+  })
 })
 
 describe('weightsRepoNameOverlap', () => {
