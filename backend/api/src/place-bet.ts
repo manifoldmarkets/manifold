@@ -384,6 +384,9 @@ export const executeNewBetResult = async (
     silent,
     replyToCommentId,
     betGroupId,
+    // Immutable marker of an executed bet: the zero-amount early return below
+    // means only rows that ran incrementStreakQuery carry it.
+    streakEligible: newBet.amount !== 0 ? true : undefined,
     ...newBet,
   })
 

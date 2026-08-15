@@ -8,7 +8,7 @@ import {
   broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 import { removeUndefinedProps } from 'common/util/object'
-import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
+import { getStreakDayStart } from 'common/streak'
 import { log } from 'node:console'
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { Row } from 'common/supabase/utils'
@@ -207,7 +207,10 @@ export const incrementBalance = async (
 // See the streak-qualifying-activity invariant below before adding callers
 // or judging streak activity anywhere else.
 export const incrementStreakQuery = (user: User, newBetTime: number) => {
-  const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
+  // The boundary of the bet's OWN Pacific day, so a bet stamped just before
+  // midnight but processed just after it still counts for the day it belongs
+  // to (Date.now() here would judge it against the wrong day).
+  const betStreakResetTime = getStreakDayStart(newBetTime)
 
   return pgp.as.format(
     `
@@ -278,11 +281,13 @@ export const streakQualifyingActivitySql = (startMs: number, endMs: number) =>
         where b.user_id = u.id
           and b.created_time >= millis_to_ts($1)
           and b.created_time < millis_to_ts($2)
-          -- amount is 0 on a limit order until it fills, and the insert-time
-          -- amount is what decided streakIncremented. An order placed at 0
-          -- that filled inside the window can leak through (lenient, and
-          -- only reachable for users who also acted after the window).
-          and b.amount != 0
+          -- streakEligible is the immutable insert-time marker of an
+          -- executed bet (common/src/bet.ts): later maker fills merge into
+          -- data and can neither add nor remove it. Rows from before the
+          -- marker existed fall back to amount != 0, which a passive fill
+          -- can mutate — a lenient legacy inference that ages out one day
+          -- after the API deploy.
+          and coalesce((b.data->>'streakEligible')::boolean, b.amount != 0)
           and b.is_redemption is not true
       )
       or exists (

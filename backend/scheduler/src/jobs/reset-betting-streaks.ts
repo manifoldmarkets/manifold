@@ -40,9 +40,14 @@ export const resetBettingStreaksInternal = async () => {
   // actions that advance a streak (see the invariant note in
   // shared/supabase/users.ts), so:
   //   lastBetTime in [start, end) -> the user kept the day; never selected.
-  //   lastBetTime <  start        -> nothing since before the judged day: missed.
+  //   lastBetTime <  start        -> missed, per the scalar.
   //   lastBetTime >= end          -> acted after midnight; the overwritten
-  //     scalar can't see into the closed day, so ask the activity tables.
+  //     scalar can't see into the closed day.
+  // Every remaining candidate is then verified against the activity tables
+  // themselves — required for the post-midnight cohort, and a safety net for
+  // the scalar-missed one: a perp trade whose post-commit streak call failed
+  // leaves a qualifying event row with no lastBetTime stamp, and the probe
+  // spares that user rather than punishing a day they really traded.
   //
   // Verdicts mirror what a run at exactly `end` would have produced:
   //   freeze available -> spend it, streak untouched (a post-midnight
@@ -83,11 +88,9 @@ export const resetBettingStreaksInternal = async () => {
             then 1 else 0 end) > 0
       and (
         coalesce((u.data->>'lastBetTime')::bigint, 0) < $1
-        or (
-          coalesce((u.data->>'lastBetTime')::bigint, 0) >= $2
-          and not ${streakQualifyingActivitySql(start, end)}
-        )
+        or coalesce((u.data->>'lastBetTime')::bigint, 0) >= $2
       )
+      and not ${streakQualifyingActivitySql(start, end)}
     returning
       u.id,
       (u.data->'currentBettingStreak')::int as streak_after,

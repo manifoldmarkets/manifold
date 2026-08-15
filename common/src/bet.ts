@@ -39,6 +39,12 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
+  // Set at insert iff the bet executed with nonzero amount — the immutable
+  // streak-qualifying marker. Absent on unfilled limit orders and never
+  // touched by later maker fills (which merge into data and cannot add or
+  // remove it). Consumed by streakQualifyingActivitySql.
+  streakEligible?: boolean
+
   isRedemption: boolean // true when automatically redeeming shares
   isRebalance?: boolean // true when rebalancing sums-to-one cpmm shares
 
