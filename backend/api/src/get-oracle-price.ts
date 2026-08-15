@@ -31,11 +31,19 @@ export const getOraclePrice: APIHandler<'get-oracle-price'> = async (body) => {
 export const getOraclePriceSeries: APIHandler<
   'get-oracle-price-series'
 > = async (body) => {
-  const { feedId, since, limit = 5000, bucketSeconds } = body
+  const { feedId, since, before, limit = 5000, bucketSeconds } = body
   const pg = createSupabaseDirectClient()
-  // Return the *most recent* N points (newest first, then reversed to asc for
-  // charting). If `since` is provided we also filter to points >= since, but
-  // we still cap at `limit` most-recent rows inside the window.
+  // Return the *most recent* N points in the window (newest first, then
+  // reversed to asc for charting). `since` sets the inclusive lower bound and
+  // `before` the exclusive upper one; because the cap always keeps the newest
+  // rows, `before` is the cursor that walks a feed backwards to its start —
+  // pass the first ts of the previous page.
+  //
+  // Both bounds compare `ts` against a timestamptz rather than extracting an
+  // epoch from it, which keeps them index conditions on (feed_id, ts) instead
+  // of post-scan filters. The epoch form made a recent `since` read the feed's
+  // entire history to return a handful of rows, and would have made every
+  // `before` page do the same.
   //
   // With `bucketSeconds`, downsample to the LAST point of each bucket (its
   // real ts, not the bucket edge): the chart's gap-break and outage handling
@@ -44,27 +52,29 @@ export const getOraclePriceSeries: APIHandler<
   const rows = bucketSeconds
     ? await pg.manyOrNone<{ ts: string; price: number | string }>(
         `select ts, price from (
-           select distinct on (floor(extract(epoch from ts) / $4))
-             floor(extract(epoch from ts) / $4) as bucket, ts, price
+           select distinct on (floor(extract(epoch from ts) / $5))
+             floor(extract(epoch from ts) / $5) as bucket, ts, price
            from oracle_prices
            where feed_id = $1
-             and ($2::bigint is null or extract(epoch from ts) * 1000 >= $2::bigint)
-           order by floor(extract(epoch from ts) / $4) desc, ts desc
-           limit $3
+             and ($2::bigint is null or ts >= to_timestamp($2::bigint / 1000.0))
+             and ($3::bigint is null or ts < to_timestamp($3::bigint / 1000.0))
+           order by floor(extract(epoch from ts) / $5) desc, ts desc
+           limit $4
          ) sub
          order by ts asc`,
-        [feedId, since ?? null, limit, bucketSeconds]
+        [feedId, since ?? null, before ?? null, limit, bucketSeconds]
       )
     : await pg.manyOrNone<{ ts: string; price: number | string }>(
         `select ts, price from (
            select ts, price from oracle_prices
            where feed_id = $1
-             and ($2::bigint is null or extract(epoch from ts) * 1000 >= $2::bigint)
+             and ($2::bigint is null or ts >= to_timestamp($2::bigint / 1000.0))
+             and ($3::bigint is null or ts < to_timestamp($3::bigint / 1000.0))
            order by ts desc
-           limit $3
+           limit $4
          ) sub
          order by ts asc`,
-        [feedId, since ?? null, limit]
+        [feedId, since ?? null, before ?? null, limit]
       )
   return rows.map((r) => ({
     ts: new Date(r.ts).getTime(),
