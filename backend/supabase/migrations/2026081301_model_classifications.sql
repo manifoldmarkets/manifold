@@ -69,4 +69,26 @@ create index if not exists model_classifications_pending_idx
   on model_classifications (first_seen)
   where open is null;
 
+-- RLS on, with NO policy: deny-all for anon and authenticated.
+--
+-- Not hygiene — this table is a lever on an executable index.
+-- resolveModelClassifications merges these rows into the classification map the
+-- oracle scores against, so a row anyone can write is a row that can move a
+-- market that settles real money. A table in the public schema is reachable
+-- through PostgREST, and with RLS disabled the only thing standing between the
+-- anon key and this table is whatever grants happen to be in place.
+--
+-- Deny-all is the correct policy rather than the cautious one, because nothing
+-- legitimate reads this from a client. Both surfaces that touch it — the
+-- `get-model-classifications` and `set-model-classification` endpoints — are
+-- admin-gated and run on createSupabaseDirectClient(), a direct connection that
+-- bypasses RLS entirely. The admin page reaches them through useAPIGetter, never
+-- through Supabase. So there is no client read to preserve, and adding a public
+-- read policy (as oracle_prices does, for data that IS rendered client-side)
+-- would grant reach nothing needs.
+--
+-- Every one of the 119 tables in prod's public schema has RLS enabled. Without
+-- this line, model_classifications would be the only exception.
+alter table model_classifications enable row level security;
+
 commit;
