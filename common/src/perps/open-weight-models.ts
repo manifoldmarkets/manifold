@@ -814,11 +814,16 @@ export const validateOpenWeightPublication = (
   for (let i = 1; i < result.dates.length; i++) {
     const previous = Date.parse(result.dates[i - 1])
     const current = Date.parse(result.dates[i])
-    if (
-      !Number.isFinite(previous) ||
-      !Number.isFinite(current) ||
-      current - previous !== DAY_MS
-    )
+    if (!Number.isFinite(previous) || !Number.isFinite(current)) {
+      const invalidDate = !Number.isFinite(previous)
+        ? result.dates[i - 1]
+        : result.dates[i]
+      return {
+        ok: false,
+        reason: `invalid window date: ${invalidDate}`,
+      }
+    }
+    if (current - previous !== DAY_MS)
       return {
         ok: false,
         reason: `non-consecutive window dates: ${result.dates.join(', ')}`,
