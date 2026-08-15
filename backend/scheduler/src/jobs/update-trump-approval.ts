@@ -37,17 +37,26 @@ export const updateTrumpApproval = async () => {
   if (await hasTrumpApprovalPointForDay(pg, today)) return
 
   try {
-    await publishTrumpApprovalPoint(pg)
+    const result = await publishTrumpApprovalPoint(pg)
+    // A returned failure and a thrown one are the same event to a retry
+    // loop: nothing was published, and the day is only lost if no attempt
+    // remains. Classifying only thrown errors would let `no-polls` and
+    // `rejected` page every hour and would leave the final attempt of the
+    // day without its "no attempts left" signal.
+    if (result.status !== 'published') reportFailure(today, result.reason)
   } catch (err) {
-    // Feed staleness is already alerted on by update-perps and
-    // update-oracle-feeds, so a retryable attempt logs at WARN to keep from
-    // paging once an hour for the same outage. The final attempt of the day
-    // is the one that means the day is lost, so that one is an ERROR.
-    const hour = dayjs.tz(dayjs(), TRUMP_APPROVAL_TZ).hour()
-    const lastAttempt = hour >= TRUMP_APPROVAL_LAST_ATTEMPT_HOUR
-    const message = `[trump-approval] publish failed for ${today} — ${err}`
-    if (lastAttempt)
-      log.error(`${message}; no attempts left today, feed will go stale`)
-    else log.warn(`${message}; retrying next hour`)
+    reportFailure(today, `${err}`)
   }
+}
+
+// Feed staleness is already alerted on by update-perps and
+// update-oracle-feeds, so a retryable attempt logs at WARN to keep from
+// paging once an hour for the same outage. The final attempt of the day is
+// the one that means the day is lost, so that one is an ERROR.
+const reportFailure = (day: string, reason: string) => {
+  const hour = dayjs.tz(dayjs(), TRUMP_APPROVAL_TZ).hour()
+  const message = `[trump-approval] publish failed for ${day} — ${reason}`
+  if (hour >= TRUMP_APPROVAL_LAST_ATTEMPT_HOUR)
+    log.error(`${message}; no attempts left today, feed will go stale`)
+  else log.warn(`${message}; retrying next hour`)
 }

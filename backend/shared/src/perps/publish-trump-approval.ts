@@ -56,7 +56,7 @@ export const hasTrumpApprovalPointForDay = async (
 
 export type TrumpApprovalPublishResult =
   | { status: 'published'; price: number; ts: number }
-  | { status: 'no-polls' }
+  | { status: 'no-polls'; reason: string }
   | { status: 'rejected'; reason: string }
 
 /**
@@ -65,8 +65,11 @@ export type TrumpApprovalPublishResult =
  * instead of pretending the revised value was tradable from midnight or
  * rewriting a point that liquidations/funding may already have consumed.
  *
- * Throws if the upstream fetch fails — callers decide whether that is a
- * retryable blip or a lost day.
+ * Every unsuccessful outcome is REPORTED, never logged here: a thrown fetch
+ * error and a returned `no-polls` are the same kind of event to a caller
+ * that retries, and only the caller knows whether another attempt is coming.
+ * Logging failures at this level is what made an hourly retry loop page
+ * hourly for a single outage.
  */
 export const publishTrumpApprovalPoint = async (
   pg: SupabaseDirectClient
@@ -79,12 +82,11 @@ export const publishTrumpApprovalPoint = async (
 
   const polls = await fetchTrumpApprovalPolls(fetchStart)
   const points = computeRollingAverages(polls, today, today)
-  if (points.length === 0) {
-    log.error(
-      `[trump-approval] no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window; skipping publication`
-    )
-    return { status: 'no-polls' }
-  }
+  if (points.length === 0)
+    return {
+      status: 'no-polls',
+      reason: `no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window`,
+    }
 
   const [computedPoint] = points
   const point = { ...computedPoint, ts: Date.now() }
@@ -103,12 +105,11 @@ export const publishTrumpApprovalPoint = async (
         point
       )
     : `missing OracleFeedDef for ${TRUMP_APPROVAL_FEED_ID}`
-  if (rejection) {
-    log.error(
-      `[trump-approval] rejected ${point.price.toFixed(2)} — ${rejection}`
-    )
-    return { status: 'rejected', reason: rejection }
-  }
+  if (rejection)
+    return {
+      status: 'rejected',
+      reason: `computed ${point.price.toFixed(2)} but ${rejection}`,
+    }
 
   log(
     `today's ${TRUMP_APPROVAL_WINDOW_DAYS}-day rolling Trump approval average: ${point.price.toFixed(
