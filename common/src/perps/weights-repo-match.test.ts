@@ -60,6 +60,36 @@ describe('the repos that actually froze the feed', () => {
     ).toBe(false)
   })
 
+  it('rejects a SIBLING in the same family, which verification cannot catch', () => {
+    // The dropped token is the one that names the model. Every repo here is
+    // real, public and weight-bearing, so live HF verification confirms all of
+    // them — the guard is the only thing standing between a sibling's weights
+    // and a closed model being marked open.
+    for (const [permaslug, repo] of [
+      // pro vs flash: same publisher, same version, different product
+      ['deepseek/deepseek-v4-pro-20260813', 'deepseek-ai/DeepSeek-V4-Flash-0731'],
+      ['deepseek/deepseek-v4-flash-20260731', 'deepseek-ai/DeepSeek-V4-Pro-0813'],
+      // lightning vs ultra
+      [
+        'nvidia/nemotron-3.5-lightning-20260807',
+        'nvidia/NVIDIA-Nemotron-3.5-Ultra-BF16',
+      ],
+      // same family and shape, different SIZE — the case that scored a perfect
+      // 1.00 while sizes were being tokenized away to a bare unit letter
+      ['qwen/qwen3-coder-480b-a35b-07-25', 'Qwen/Qwen3-Coder-30B-A3B-Instruct'],
+    ] as [string, string][])
+      expect([permaslug, repo, proposedRepoMatchesModel(permaslug, repo)]).toEqual(
+        [permaslug, repo, false]
+      )
+  })
+
+  it('keeps parameter counts distinguishable through tokenization', () => {
+    // If 480b and 30b both collapse to `b`, siblings become indistinguishable.
+    expect(identifierTokens('qwen/qwen3-coder-480b-a35b-07-25')).not.toEqual(
+      identifierTokens('Qwen/Qwen3-Coder-30B-A3B-Instruct')
+    )
+  })
+
   it('rejects a same-org repo for an unrelated model family', () => {
     expect(
       proposedRepoMatchesModel('x-ai/grok-4.6-20260810', 'xai-org/grok-1')

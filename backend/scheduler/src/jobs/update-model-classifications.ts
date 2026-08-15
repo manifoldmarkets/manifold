@@ -268,7 +268,18 @@ const researchRemainingModels = async (
       continue
     }
 
-    await recordAgentRecommendation(pg, model.permaslug, null, evidence)
+    // A transient failure starts no cooldown. Recording `agentRanAt` here
+    // would mark the model researched when nothing was learned, and since the
+    // cooldown is a fraction of the grace window, that would burn one of the
+    // few retries a ranked model gets before its window expires and the feed
+    // halts. Attach the evidence either way so the queue shows what happened.
+    await recordAgentRecommendation(
+      pg,
+      model.permaslug,
+      null,
+      evidence,
+      !result.transient
+    )
     unresolved++
   }
 

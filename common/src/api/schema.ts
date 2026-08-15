@@ -1095,6 +1095,16 @@ export const API = (_apiTypeCheck = {
         /** The research agent's recommendation, if it ran. Never auto-applied. */
         agentRecommendation: string | null
         agentReasoning: string | null
+        /**
+         * The tool calls the recommendation rests on, in order. A closed
+         * verdict cannot be machine-checked, so this is what the operator
+         * actually adjudicates against — the summary alone is not evidence.
+         */
+        agentSearches: {
+          tool: string
+          input: string | null
+          result: string
+        }[]
       }[]
       recent: {
         permaslug: string

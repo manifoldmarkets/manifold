@@ -41,6 +41,27 @@ export const getModelClassifications: APIHandler<
     return typeof value === 'string' ? value : null
   }
 
+  // Defensive on shape rather than trusting it: this column is jsonb written
+  // by a job that has changed twice, and rows survive across deploys, so an
+  // older row can carry an older shape. Anything unrecognised reads as "no
+  // searches recorded", which is honest, instead of throwing in an admin tool.
+  const evidenceSearches = (row: ClassificationRow) => {
+    const raw = row.evidence?.['agentSearches']
+    if (!Array.isArray(raw)) return []
+    return raw.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return []
+      const { tool, input, result } = entry as Record<string, unknown>
+      if (typeof tool !== 'string') return []
+      return [
+        {
+          tool,
+          input: input === undefined ? null : JSON.stringify(input),
+          result: typeof result === 'string' ? result : '',
+        },
+      ]
+    })
+  }
+
   return {
     // A pending row for a model the seed already classifies is inert — the
     // seed verdict stands — so it must not appear as work to do.
@@ -67,6 +88,14 @@ export const getModelClassifications: APIHandler<
             now - firstRankedAt > UNCLASSIFIED_GRACE_WINDOW_MS,
           agentRecommendation: evidenceString(r, 'agentRecommendation'),
           agentReasoning: evidenceString(r, 'agentReasoning'),
+          // The searches, not just the summary of them. A closed verdict is a
+          // negative claim with nothing to machine-check it, which is exactly
+          // why it comes to a human — and the only thing that makes it
+          // checkable is what the searches actually returned. Shipping the
+          // model's own prose about its searches, while the searches sat
+          // write-only in the evidence column, asked the operator to confirm
+          // an unverifiable claim on the strength of an unverifiable summary.
+          agentSearches: evidenceSearches(r),
         }
       }),
     recent: rows

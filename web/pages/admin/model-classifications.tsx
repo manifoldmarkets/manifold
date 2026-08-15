@@ -138,6 +138,7 @@ function PendingRow(props: {
     graceExpired: boolean
     agentRecommendation: string | null
     agentReasoning: string | null
+    agentSearches: { tool: string; input: string | null; result: string }[]
   }
   onDone: () => void
 }) {
@@ -215,6 +216,44 @@ function PendingRow(props: {
           <div className="text-ink-600 whitespace-pre-wrap">
             {model.agentReasoning}
           </div>
+
+          {/* The searches themselves, not just the summary of them. This is
+              the only checkable thing about a closed verdict — a global search
+              returning nothing is the evidence; the prose describing it is
+              not. Collapsed so the queue stays skimmable. */}
+          {model.agentSearches.length > 0 ? (
+            <details className="mt-1">
+              <summary className="text-ink-500 cursor-pointer select-none">
+                {model.agentSearches.length} search
+                {model.agentSearches.length === 1 ? '' : 'es'} it ran — check
+                these, not the summary
+              </summary>
+              <Col className="mt-1 gap-2">
+                {model.agentSearches.map((search, i) => (
+                  <Col
+                    key={i}
+                    className="border-ink-200 gap-0.5 border-l-2 pl-2"
+                  >
+                    <div className="text-ink-700 font-mono">
+                      {search.tool}
+                      {search.input && (
+                        <span className="text-ink-500"> {search.input}</span>
+                      )}
+                    </div>
+                    <div className="text-ink-600 whitespace-pre-wrap font-mono">
+                      {search.result || '(no output recorded)'}
+                    </div>
+                  </Col>
+                ))}
+              </Col>
+            </details>
+          ) : (
+            <div className="text-scarlet-600">
+              No searches recorded — this verdict rests on nothing checkable.
+              Treat it as unresearched.
+            </div>
+          )}
+
           <div className="text-ink-400">
             A recommendation, not a classification — nothing was applied. Only
             an open verdict can be machine-checked, so this one is yours.

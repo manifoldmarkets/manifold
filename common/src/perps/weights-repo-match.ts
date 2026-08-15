@@ -42,13 +42,22 @@ const NOISE_TOKENS = new Set([
 
 /**
  * Split an identifier into comparable tokens: lowercase, punctuation to
- * spaces, digits split from letters so `v4pro` and `v4-pro` agree, noise and
- * bare-number tokens dropped.
+ * spaces, a break inserted after a letter-then-digit run so `v4pro` and
+ * `v4-pro` agree, noise and bare-number tokens dropped.
  *
  * Bare numbers go because dated permaslugs (`-20260813`) and repo date
  * suffixes (`-0813`) rarely agree on format, and a shared `2` or `70` says
  * nothing about identity. Version numbers survive attached to their letter
  * (`v4`, `k2`), which is where they actually discriminate.
+ *
+ * Digit-then-letter is deliberately NOT split, and that is load-bearing rather
+ * than incidental. Splitting it turned every parameter count into the bare
+ * number (dropped as noise) plus a lone unit letter, so `480b` and `30b` both
+ * reduced to `b` — and two different-sized members of one family became
+ * token-identical. `qwen3-coder-480b-a35b` then scored a PERFECT 1.00 against
+ * `Qwen3-Coder-30B-A3B`, a real, public, weight-bearing repo for a different
+ * model. Size is often the only thing distinguishing siblings, so it has to
+ * survive tokenization: `480b` and `30b` stay whole and no longer match.
  */
 export const identifierTokens = (identifier: string): string[] => {
   const withoutOrg = identifier.includes('/')
@@ -57,7 +66,6 @@ export const identifierTokens = (identifier: string): string[] => {
   return withoutOrg
     .toLowerCase()
     .replace(/([a-z])(\d)/g, '$1$2 ')
-    .replace(/(\d)([a-z])/g, '$1 $2')
     .split(/[^a-z0-9.]+/)
     .map((token) => token.replace(/^[.]+|[.]+$/g, ''))
     .filter(
@@ -87,15 +95,31 @@ export const weightsRepoNameOverlap = (
 }
 
 /**
- * Minimum overlap for a PROPOSED repo to be accepted.
+ * Minimum overlap for a PROPOSED repo to be accepted: FULL coverage. Every
+ * distinctive token in the model's name must appear in the repo's.
  *
- * 0.6 clears the real pairs seen so far (`deepseek-v4-pro-20260813` ->
- * `DeepSeek-V4-Pro-0813` scores 1.0; `nemotron-3.5-lightning-20260807` ->
- * `NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` scores 1.0) while rejecting the
- * near-miss that motivates the guard (`solar-pro4` -> `Solar-Open2-250B`
- * scores 0.50, `grok-4.6` -> `grok-1` scores 0.50).
+ * A partial threshold cannot separate a sibling from a match, because it is
+ * exactly the missing token that names the difference. At 0.6, every one of
+ * these cleared the bar against a real, public, weight-bearing repo for a
+ * DIFFERENT model:
+ *
+ *   deepseek-v4-pro       -> DeepSeek-V4-Flash-0731        0.67
+ *   deepseek-v4-flash     -> DeepSeek-V4-Pro-0813          0.67
+ *   nemotron-3.5-lightning-> NVIDIA-Nemotron-3.5-Ultra     0.67
+ *   qwen3-coder-480b-a35b -> Qwen3-Coder-30B-A3B-Instruct  0.60
+ *
+ * The shared tokens carry the family; the dropped one carries the identity.
+ * `pro` vs `flash` IS the model. Live HuggingFace verification cannot catch
+ * any of these, because the repo it re-fetches is genuinely public and
+ * genuinely full of weights — it is simply the wrong model's.
+ *
+ * Full coverage costs nothing on real data: every correct pair observed scores
+ * exactly 1.00, because a weights repo names its model and then ADDS to it.
+ * The asymmetry that makes extra repo tokens free (size, precision, an
+ * instruct/base split) is what lets a strict bar stay strict without
+ * rejecting correct repos.
  */
-export const WEIGHTS_REPO_MATCH_THRESHOLD = 0.6
+export const WEIGHTS_REPO_MATCH_THRESHOLD = 1
 
 /**
  * Minimum number of distinctive tokens the MODEL name must contribute before a

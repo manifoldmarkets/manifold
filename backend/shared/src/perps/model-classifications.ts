@@ -4,7 +4,6 @@ import {
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
 } from 'common/perps/open-weight-models'
-import { DAY_MS } from 'common/util/time'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
 // Resolution layer between the audited seed list and the operator/auto
@@ -258,7 +257,14 @@ export const recordAgentRecommendation = async (
   pg: SupabaseDirectClient,
   permaslug: string,
   recommendation: 'closed' | null,
-  evidence: Record<string, unknown>
+  evidence: Record<string, unknown>,
+  /**
+   * Whether this run counts as "researched" for cooldown purposes. False for
+   * transient failures: the evidence is still attached so the queue shows what
+   * happened, but the clock does not start, so the next sweep retries. See
+   * AGENT_RESEARCH_COOLDOWN_MS for why burning a retry here is a live outage.
+   */
+  startCooldown = true
 ) => {
   await pg.none(
     `update model_classifications
@@ -269,7 +275,7 @@ export const recordAgentRecommendation = async (
       JSON.stringify({
         ...evidence,
         agentRecommendation: recommendation,
-        agentRanAt: new Date().toISOString(),
+        ...(startCooldown ? { agentRanAt: new Date().toISOString() } : {}),
       }),
     ]
   )
@@ -287,8 +293,29 @@ export const getPendingClassifications = async (
      order by first_ranked_at asc nulls last, first_seen asc`
   )
 
-/** How long a researched-but-unsettled model is left alone before a re-run. */
-export const AGENT_RESEARCH_COOLDOWN_MS = 7 * DAY_MS
+/**
+ * How long a researched-but-unsettled model is left alone before a re-run.
+ *
+ * DERIVED from the grace window rather than chosen independently, because the
+ * two are not independent quantities and drifting them apart is a live outage.
+ *
+ * Only ranked models are researched at all, so every model under cooldown has
+ * a grace clock already running. A cooldown longer than that window means a
+ * model researched once is never retried before its grace expires and the feed
+ * halts. That is not a theoretical ordering: a transient failure — Anthropic
+ * unreachable, a missing key, a run that burns its turns — comes back as
+ * `unresolved`, and a flat seven-day cooldown against a two-day window turned
+ * one bad API call into a guaranteed halt two days later, with seven sweeps
+ * sitting idle in between that could each have fixed it.
+ *
+ * A quarter of the window gives roughly four attempts before the deadline,
+ * which is enough to ride out a transient outage, while still cutting the
+ * four-sweeps-a-day re-ask that motivated a cooldown in the first place. The
+ * cost that buys is negligible: the ranked population is a handful of models,
+ * so four retries is cents. Expressed as a fraction so that changing the grace
+ * window moves this with it and the invariant cannot silently break.
+ */
+export const AGENT_RESEARCH_COOLDOWN_MS = UNCLASSIFIED_GRACE_WINDOW_MS / 4
 
 export type ResearchEligibility = {
   /** Base slugs that have entered the ranked window at least once. */

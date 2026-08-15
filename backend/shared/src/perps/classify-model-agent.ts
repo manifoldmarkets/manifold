@@ -86,6 +86,16 @@ export type AgentClassification = {
   confirmation?: HuggingFaceVerification
   /** Why a proposed `open` was downgraded, when it was. */
   rejectedReason?: string
+  /**
+   * True when the run failed for an infrastructural reason rather than
+   * reaching a conclusion — no key, the API unreachable, turns exhausted.
+   *
+   * The caller uses this to decide whether to start a research cooldown. A
+   * verdict is worth not re-asking; a failed call carries no information and
+   * must be retried on the next sweep, because the model's grace window is
+   * running the whole time.
+   */
+  transient?: boolean
 }
 
 const SYSTEM_PROMPT = `You classify AI models for a published market index. The index measures what fraction of tokens on OpenRouter go to models whose weights the public can download, and it settles real money, so a wrong call moves a market.
@@ -204,6 +214,7 @@ export const classifyModelWithAgent = async (params: {
         reasoning: 'ANTHROPIC_API_KEY not set',
       },
       searches,
+      transient: true,
     }
 
   const anthropic = new Anthropic({ apiKey })
@@ -249,6 +260,7 @@ export const classifyModelWithAgent = async (params: {
           reasoning: `classifier request failed — ${err}`,
         },
         searches,
+        transient: true,
       }
     }
 
@@ -269,6 +281,7 @@ export const classifyModelWithAgent = async (params: {
           reasoning: 'agent stopped without submitting a classification',
         },
         searches,
+        transient: true,
       }
 
     const submission = toolUses.find(
@@ -299,6 +312,7 @@ export const classifyModelWithAgent = async (params: {
       reasoning: `no classification after ${MAX_TURNS} turns`,
     },
     searches,
+    transient: true,
   }
 }
 
@@ -364,8 +378,32 @@ const finalizeVerdict = async (
   const weights =
     typeof fields.weights === 'string' ? fields.weights.trim() : ''
 
-  if (verdict === 'closed')
+  if (verdict === 'closed') {
+    // A closed verdict IS its searches. Nothing machine-checks a negative
+    // claim — the strongest available form of it is "these specific searches
+    // came back empty" — so a closed call with no searches behind it is not a
+    // weak conclusion, it is the model answering from memory about a model
+    // released after its training data ended. That is precisely the guess the
+    // system prompt forbids, and the one PERPS_AUTOCLASSIFY_CLOSED would
+    // otherwise write straight into the index.
+    //
+    // Downgraded rather than rejected: `unresolved` keeps the model pending,
+    // which is where an unadjudicated model belongs anyway, and leaves it for
+    // a human. Not marked transient — the agent ran fine, it just did not look,
+    // and an immediate retry would produce the same answer.
+    const searched = searches.some((s) => s.tool !== 'submit_classification')
+    if (!searched)
+      return {
+        permaslug,
+        verdict: {
+          verdict: 'unresolved',
+          reasoning: `claimed closed without running any searches — ${reasoning}`,
+        },
+        searches,
+        rejectedReason: 'closed verdict rested on no evidence',
+      }
     return { permaslug, verdict: { verdict: 'closed', reasoning }, searches }
+  }
 
   if (verdict !== 'open')
     return {
