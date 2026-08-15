@@ -25,29 +25,40 @@ import { log } from 'shared/utils'
 // asking a model whether a model it has never heard of is open-weights would
 // be asking it to guess.
 //
-// WHAT THIS DOES AND DOES NOT DECIDE. An `open` verdict is machine-checkable:
-// the cited repo must resolve, be public, carry weight files, and pass the
-// name guard in common/perps/weights-repo-match. Those checks run after the
-// agent returns, against the live API, so a fabricated repo fails on contact
-// with reality rather than reaching the index. A `closed` verdict has no
-// equivalent check — it is a negative claim, and the strongest form of it is
-// "these searches came back empty". So closed comes back as a RECOMMENDATION
-// with its evidence, for a human to confirm in one click. Auto-applying it is
-// opt-in, and off by default: excluding an unknown model costs less index
-// error than mis-siding one (see UNCLASSIFIED_TOKEN_SHARE_CAP), so waiting is
-// genuinely cheaper than guessing.
+// WHAT THIS DOES AND DOES NOT DECIDE. Nothing here is applied automatically.
+// Every verdict comes back as a RECOMMENDATION on a still-pending row, and a
+// human confirms it from the admin queue.
+//
+// For `closed` that was always true: it is a negative claim, and the strongest
+// available form of it is "these specific searches came back empty" — so the
+// verdict is only as good as the searches, which is why it now requires them
+// and why they are rendered for the operator.
+//
+// For `open` it is the considered position rather than the obvious one. An
+// open verdict looks checkable: the cited repo is re-fetched from the live API
+// and must carry public weight files, and its name must fully match the
+// model's. Those checks are real and they run — but they establish that a
+// public weight-bearing repo exists under a matching name, not that it is THIS
+// model's. Identity is not a string comparison. The guard has been wrong twice
+// in review, both times on repos that verified perfectly: a single-token family
+// name matching any sibling, and parameter counts tokenized away so a 30B repo
+// matched a 480B model. Each fix closed the case we had found. Requiring a
+// human closes the class.
+//
+// The cost of that is one click on a handful of models a week, because only
+// ranked models are researched at all. The cost of getting it wrong is an
+// executable index moving on a false positive. The repo, its verification, and
+// every search ride along on the row so the click stays a click.
 
 // Haiku, not Opus, and the reasoning is about what actually protects the index.
 //
 // This is a search-and-cite task, not a reasoning task: the agent runs the HF
-// searches a human would run and names a repo. Everything that makes an `open`
-// verdict safe runs AFTER the model answers and does not care which model
-// produced the citation — the repo is re-fetched from the live HuggingFace API
-// and must carry public weight files, and the name must clear the deterministic
-// guard in common/perps/weights-repo-match. A weaker model therefore cannot
-// produce a WRONG `open`; it can only fail to find a repo that exists, which
-// comes back as `unresolved` and lands in the human review queue. The failure
-// mode degrades into queue depth, not into index error.
+// searches a human would run and names a repo. Nothing it concludes reaches the
+// index without a human, and the repo it names is re-fetched from the live API
+// and shown to that human alongside every search it ran. So the model tier
+// cannot buy or lose correctness here — a weaker model produces a worse
+// SHORTLIST, not a wrong classification, and the failure mode is an operator
+// reading one unhelpful recommendation rather than an index moving on it.
 //
 // The cost difference is the reason it matters. At Opus-5 rates a single
 // classification runs ~$0.27 (roughly 30k input + 4.6k output across ~6 turns,
@@ -384,8 +395,8 @@ const finalizeVerdict = async (
     // came back empty" — so a closed call with no searches behind it is not a
     // weak conclusion, it is the model answering from memory about a model
     // released after its training data ended. That is precisely the guess the
-    // system prompt forbids, and the one PERPS_AUTOCLASSIFY_CLOSED would
-    // otherwise write straight into the index.
+    // system prompt forbids, and it would reach an operator dressed as a
+    // researched conclusion.
     //
     // Downgraded rather than rejected: `unresolved` keeps the model pending,
     // which is where an unadjudicated model belongs anyway, and leaves it for

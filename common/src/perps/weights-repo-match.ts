@@ -147,18 +147,24 @@ export const WEIGHTS_REPO_MATCH_THRESHOLD = 1
 export const MIN_DISTINCTIVE_MODEL_TOKENS = 2
 
 /**
- * Whether a proposed repo may back an `open` verdict for this model.
+ * Whether a proposed repo is worth SHOWING an operator as this model's weights.
+ *
+ * Read the verb carefully: this gates a recommendation, not a classification.
+ * Nothing downstream auto-applies an agent-proposed repo — that decision needs
+ * a human, because verification plus a name match still cannot establish that
+ * a repo IS this model's, and this guard has been wrong twice on repos that
+ * verified cleanly. Its job is to keep obvious mismatches out of the review
+ * queue so the queue stays quick to work through; the index's correctness does
+ * not rest on it.
  *
  * Applies only to repos something GUESSED. A `hugging_face_id` the publisher
- * declared on their own model needs no name check — the publisher is the
- * authority on which repo is theirs, and their naming is occasionally
+ * declared on their own model needs no name check and IS auto-applied on
+ * verification — the publisher is the authority on which repo is theirs, so
+ * there is no identity inference to get wrong, and their naming is occasionally
  * unguessable (`z-ai/glm-4.6` -> `zai-org/GLM-4.6`).
  *
- * Returns false when the model name is too generic to discriminate at all.
- * That is a refusal to auto-apply, not a verdict of closed: the model stays
- * pending and a human adjudicates it from the review queue, which costs a
- * bounded sub-point of index error under the grace window rather than an
- * unbounded one from a false positive.
+ * Returns false when the model name is too generic to discriminate at all,
+ * which surfaces as "could not determine" rather than a verdict of closed.
  */
 export const proposedRepoMatchesModel = (
   permaslug: string,

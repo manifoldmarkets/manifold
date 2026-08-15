@@ -256,7 +256,12 @@ export const upsertClassification = async (
 export const recordAgentRecommendation = async (
   pg: SupabaseDirectClient,
   permaslug: string,
-  recommendation: 'closed' | null,
+  /**
+   * What the agent concluded — including `open`, which is a recommendation
+   * like any other rather than a classification. The row stays pending either
+   * way; only a human moves it off `null`.
+   */
+  recommendation: 'open' | 'closed' | null,
   evidence: Record<string, unknown>,
   /**
    * Whether this run counts as "researched" for cooldown purposes. False for

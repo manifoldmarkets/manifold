@@ -139,6 +139,8 @@ function PendingRow(props: {
     agentRecommendation: string | null
     agentReasoning: string | null
     agentSearches: { tool: string; input: string | null; result: string }[]
+    agentProposedWeights: string | null
+    agentWeightFileCount: number | null
   }
   onDone: () => void
 }) {
@@ -147,7 +149,9 @@ function PendingRow(props: {
   // starting point, not evidence: the publisher field is routinely absent for
   // models whose weights are public, and present for repos that hold only a
   // tokenizer. Confirm it resolves and carries weight files before saving.
-  const [weights, setWeights] = useState(model.huggingFaceId ?? '')
+  const [weights, setWeights] = useState(
+    model.agentProposedWeights ?? model.huggingFaceId ?? ''
+  )
   const [saving, setSaving] = useState(false)
 
   const classify = async (open: boolean) => {
@@ -209,6 +213,23 @@ function PendingRow(props: {
             Research says:{' '}
             {model.agentRecommendation === 'closed' ? (
               <span className="text-ink-900">closed — API only</span>
+            ) : model.agentRecommendation === 'open' ? (
+              <span className="text-teal-600">
+                open — weights found
+                {model.agentProposedWeights && (
+                  <span className="text-ink-700 font-mono">
+                    {' '}
+                    {model.agentProposedWeights}
+                  </span>
+                )}
+                {model.agentWeightFileCount !== null && (
+                  <span className="text-ink-500">
+                    {' '}
+                    ({model.agentWeightFileCount} weight files, re-verified
+                    against the live API)
+                  </span>
+                )}
+              </span>
             ) : (
               <span className="text-ink-500">could not determine</span>
             )}
@@ -255,8 +276,11 @@ function PendingRow(props: {
           )}
 
           <div className="text-ink-400">
-            A recommendation, not a classification — nothing was applied. Only
-            an open verdict can be machine-checked, so this one is yours.
+            A recommendation, not a classification — nothing was applied. That
+            includes an open verdict: verification proves the repo is public and
+            carries weights, and the name check proves it looks like this model,
+            but neither proves it IS this model. A sibling in the same family
+            passes both. Check the repo, then click.
           </div>
         </Col>
       )}

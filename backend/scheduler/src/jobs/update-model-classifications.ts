@@ -35,10 +35,19 @@ import { log } from 'shared/utils'
 // resolved before it can matter and the rest is a review queue rather than an
 // outage.
 //
-// It only ever decides OPEN, and only on confirmed public weight files. It
-// never concludes closed — see the directionality note in shared/huggingface.
-// Anything it cannot confirm stays pending for a human, which is what the
-// admin tool and the grace window exist for.
+// It decides one thing on its own: OPEN, from a repo the PUBLISHER declared,
+// confirmed to carry public weight files. That is safe to automate because the
+// publisher is the authority on which repo is theirs — there is no identity
+// inference involved, only verification of a claim they made. Measured against
+// the 243 audited seed entries, `hugging_face_id` present agrees with the audit
+// on 96 of 99 open models, and the three disagreements are declared-but-empty
+// repos that verification rejects anyway.
+//
+// Everything else is a recommendation for a human, including the research
+// agent's OPEN verdicts — see researchRemainingModels for why a verified,
+// name-matched repo still is not proof of identity. The admin tool and the
+// grace window are what make that affordable: an unclassified model no longer
+// halts the index while it waits for a click.
 /**
  * Hard ceiling on research calls in one sweep.
  *
@@ -129,8 +138,7 @@ const updateModelClassificationsInternal = async () => {
   log(
     `[model-classifier] ${unknown.length} unclassified in catalog: ` +
       `${confirmed} auto-classified open from a declared repo, ` +
-      `${researched.confirmed} open via research, ` +
-      `${researched.recommended} closed-recommendations for review, ` +
+      `${researched.recommended} agent recommendations for review, ` +
       `${researched.unresolved} unresolved; ${rankedPending.length} ranked ` +
       `awaiting review, ${pending.length - rankedPending.length} unranked backlog`
   )
@@ -156,12 +164,24 @@ const updateModelClassificationsInternal = async () => {
  * are re-verified against the live API before they land, so the automation can
  * only ever be as wrong as the API is.
  *
- * `closed` comes back as a recommendation, not a classification. Nothing
- * machine-checks a negative claim, and with the grace threshold in place an
- * unclassified model no longer halts the index — so the cheap, correct move is
- * to leave it pending with the research attached and let a human confirm in
- * one click. Set PERPS_AUTOCLASSIFY_CLOSED=true to apply them automatically;
- * it is off by default deliberately.
+ * NOTHING the agent concludes is applied automatically. Every verdict lands as
+ * a recommendation on a still-pending row, and a human confirms it in one click
+ * from the admin queue.
+ *
+ * That holds for `open` as well as `closed`, and the `open` case is the
+ * deliberate part. An open verdict looks machine-checkable — the cited repo is
+ * re-fetched from the live API and must carry public weight files, and its name
+ * must fully match the model's. But those checks establish that a real,
+ * public, weight-bearing repo exists under a similar name; they cannot
+ * establish that it is THIS model's. Identity is not a string comparison, and
+ * the guard has already been wrong twice in review on repos that passed
+ * verification cleanly. Patching each case closes that case; requiring a human
+ * closes the class.
+ *
+ * The trade is affordable precisely because of the ranked-only gate above: the
+ * queue is a handful of models a week, so this is a click each, and the agent
+ * still does all the legwork — the repo, its verification, and every search are
+ * attached to the row.
  *
  * Because a recommendation leaves the row pending by design, the candidate set
  * does NOT shrink on its own — which is what makes the two filters below load-
@@ -173,8 +193,6 @@ const researchRemainingModels = async (
   pg: SupabaseDirectClient,
   candidates: OpenRouterCatalogEntry[]
 ) => {
-  const autoApplyClosed = process.env.PERPS_AUTOCLASSIFY_CLOSED === 'true'
-  let confirmed = 0
   let recommended = 0
   let unresolved = 0
 
@@ -235,30 +253,39 @@ const researchRemainingModels = async (
     }
 
     if (result.verdict.verdict === 'open') {
-      await upsertClassification(pg, {
-        permaslug: model.permaslug,
-        open: true,
-        weights: result.verdict.weights,
-        source: 'auto',
-        evidence: { ...evidence, ...(result.confirmation?.confirmed
-          ? result.confirmation.evidence
-          : {}) },
+      // A verified, name-matched repo is still only a RECOMMENDATION.
+      //
+      // Verification proves the cited repo is public and carries weight files.
+      // The name guard proves the repo's name looks like this model's. Neither
+      // proves the repo IS this model — that is an identity claim, and no
+      // string comparison establishes identity. The guard has now been wrong
+      // twice in review, in a class we only found by going looking: a
+      // single-token family name matching any sibling, and parameter counts
+      // tokenized away so a 30B repo matched a 480B model. Both cited real,
+      // public, weight-bearing repos, so verification confirmed both.
+      //
+      // Each patch closed the case we thought of. Requiring a human closes the
+      // class. The cost is one click on a handful of models a week; the thing
+      // it buys is that a name heuristic can no longer move a market that
+      // settles real money.
+      //
+      // The repo and its verification ride along so the click stays one click:
+      // the queue prefills the input with the repo and shows what the live API
+      // returned for it.
+      await recordAgentRecommendation(pg, model.permaslug, 'open', {
+        ...evidence,
+        agentProposedWeights: result.verdict.weights,
+        ...(result.confirmation?.confirmed ? result.confirmation.evidence : {}),
       })
-      confirmed++
+      recommended++
+      log(
+        `[model-classifier] ${model.permaslug}: agent recommends OPEN — ` +
+          `${result.verdict.weights} (verified, awaiting confirmation)`
+      )
       continue
     }
 
     if (result.verdict.verdict === 'closed') {
-      if (autoApplyClosed) {
-        await upsertClassification(pg, {
-          permaslug: model.permaslug,
-          open: false,
-          source: 'auto',
-          evidence,
-        })
-        confirmed++
-        continue
-      }
       await recordAgentRecommendation(pg, model.permaslug, 'closed', evidence)
       recommended++
       log.warn(
@@ -283,5 +310,5 @@ const researchRemainingModels = async (
     unresolved++
   }
 
-  return { confirmed, recommended, unresolved }
+  return { recommended, unresolved }
 }

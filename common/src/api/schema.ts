@@ -1105,6 +1105,15 @@ export const API = (_apiTypeCheck = {
           input: string | null
           result: string
         }[]
+        /**
+         * A repo the agent proposed and the live HuggingFace API confirmed.
+         * Never applied automatically — verification and a name match cannot
+         * establish that the repo is THIS model's — but prefilled so the
+         * operator confirms rather than retypes.
+         */
+        agentProposedWeights: string | null
+        /** Weight files the live API reported for that repo, when known. */
+        agentWeightFileCount: number | null
       }[]
       recent: {
         permaslug: string

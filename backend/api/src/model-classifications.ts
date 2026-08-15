@@ -96,6 +96,15 @@ export const getModelClassifications: APIHandler<
           // write-only in the evidence column, asked the operator to confirm
           // an unverifiable claim on the strength of an unverifiable summary.
           agentSearches: evidenceSearches(r),
+          // The repo the agent proposed and the live API confirmed. Carried so
+          // the operator confirms a filled-in form rather than retyping a repo
+          // id from the reasoning text — the recommendation is only worth
+          // having if acting on it is one click.
+          agentProposedWeights: evidenceString(r, 'agentProposedWeights'),
+          agentWeightFileCount:
+            typeof r.evidence?.['weightFileCount'] === 'number'
+              ? (r.evidence['weightFileCount'] as number)
+              : null,
         }
       }),
     recent: rows
