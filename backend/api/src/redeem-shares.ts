@@ -113,6 +113,11 @@ export const redeemShares = async (
             userId,
             ...b.newBet,
             betGroupId,
+            // Automatic redemption, not a user action: these run outside
+            // executeNewBetResult so no streak increment happened. Only the
+            // amount === 0 ones set isRedemption, so mark the rest here
+            // rather than leaving them to the reset job's legacy fallback.
+            streakEligible: false,
           }))
         )
 

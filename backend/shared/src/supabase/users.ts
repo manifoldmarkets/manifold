@@ -284,10 +284,13 @@ export const streakQualifyingActivitySql = (startMs: number, endMs: number) =>
           -- streakEligible is the immutable insert-time marker of an
           -- executed bet (common/src/bet.ts), written explicitly true or
           -- false; later maker fills merge into data and can neither add
-          -- nor remove it. Only rows predating the field are absent, and
-          -- they fall back to amount != 0 — mutable, but the fallback can
-          -- only be reached for a day whose bets were all inserted before
-          -- the API deploy, so it ages out within a day of it.
+          -- nor remove it. The fallback is amount != 0 — the mutable
+          -- inference this marker replaces — and it matters only for rows
+          -- whose amount can still change, i.e. unfilled limit orders,
+          -- which are created solely in executeNewBetResult and so always
+          -- carry the marker. Rows predating the field age out within a day
+          -- of the API deploy, since a row is only ever probed for the
+          -- single day it was created in.
           and coalesce((b.data->>'streakEligible')::boolean, b.amount != 0)
           and b.is_redemption is not true
       )

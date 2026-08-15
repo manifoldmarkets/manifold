@@ -121,11 +121,12 @@ describe('isStreakEligibleBetAmount', () => {
     expect(isStreakEligibleBetAmount(0)).toBe(false) // unfilled limit order
   })
 
-  // Regression: the marker was first written as `amount !== 0 ? true :
-  // undefined`, which removeUndefinedProps stripped from the row. The reset
-  // job falls back to `amount` when the marker is missing, and a passive fill
-  // rewrites `amount` — so an order the user never executed became a day of
-  // activity. The verdict has to survive being stored.
+  // The marker was once written as `amount !== 0 ? true : undefined`, which
+  // removeUndefinedProps stripped from the row. The reset job falls back to
+  // `amount` when the marker is missing, and a passive fill rewrites
+  // `amount` — so an order the user never executed became a day of activity.
+  // This guards the rule itself; pinning the place-bet call sites needs the
+  // backend test harness the repo doesn't have yet.
   it('always stores a boolean, so the marker survives removeUndefinedProps', () => {
     for (const amount of [25, -40, 0]) {
       const stored = removeUndefinedProps({
