@@ -79,6 +79,50 @@ export const getPerpPositionTotalCost = (
 ) => getValidatedPerpPositionTotalCost(position) ?? 0
 
 /**
+ * Oracle/close price required to reach a user-facing PnL target. The target
+ * is net of all opening/add fees already paid; future funding is necessarily
+ * excluded. Returns undefined when the inputs cannot describe a valid target.
+ */
+export const getPerpPriceForUserFacingPnl = (
+  position: Pick<
+    PerpPosition,
+    | 'direction'
+    | 'size'
+    | 'costBasis'
+    | 'originalCostBasis'
+    | 'takerFeeCostBasis'
+    | 'entryPrice'
+  >,
+  targetPnl: number
+): number | undefined => {
+  const { direction, size, costBasis, entryPrice } = position
+  const totalCost = getValidatedPerpPositionTotalCost(position)
+  if (
+    (direction !== 'long' && direction !== 'short') ||
+    !Number.isFinite(size) ||
+    size <= 0 ||
+    !Number.isFinite(costBasis) ||
+    costBasis < 0 ||
+    !Number.isFinite(entryPrice) ||
+    entryPrice <= 0 ||
+    totalCost === undefined ||
+    totalCost <= 0 ||
+    !Number.isFinite(targetPnl) ||
+    targetPnl < 0
+  )
+    return undefined
+
+  const targetValue = totalCost + targetPnl
+  const pricePnlNeeded = targetValue - costBasis
+  const relativeMove = pricePnlNeeded / size
+  const directionSign = direction === 'long' ? 1 : -1
+  const targetPrice = entryPrice * (1 + directionSign * relativeMove)
+  return Number.isFinite(targetPrice) && targetPrice > 0
+    ? targetPrice
+    : undefined
+}
+
+/**
  * Realized PnL shown on close receipts, history, and ledger rows. Settlement
  * payout already contains every funding transfer, so compare it with the
  * margin the user actually deposited rather than the funding-scaled basis.
