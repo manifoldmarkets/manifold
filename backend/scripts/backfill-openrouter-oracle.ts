@@ -71,7 +71,25 @@ if (require.main === module)
       const window = dates.slice(i - OPEN_WEIGHT_WINDOW_DAYS + 1, i + 1)
       const rows = window.flatMap((d) => byDate[d])
       const result = computeOpenWeightShare(rows)
-      const publication = validateOpenWeightPublication(result)
+      // Cap 0 = halt on ANY unclassified model, which is what this call meant
+      // before the grace window existed and still has to mean here.
+      //
+      // Grace is a trade the LIVE feed can make: publishing a bounded sub-point
+      // error for a few hours beats marking a live market against a stale
+      // oracle, and the error is temporary because the model gets classified
+      // and the next tick is correct. A backfill has neither half of that.
+      // There is no stale-oracle harm to weigh against — nothing is trading on
+      // a point from six months ago — and nothing self-corrects, because
+      // insertOraclePrices never overwrites an existing (feed_id, ts). A point
+      // written under grace here is a permanently wrong point in published
+      // history, computed from a denominator that silently omitted a model.
+      //
+      // So this script keeps its original posture: any unclassified model in
+      // any window aborts the whole run with no inserts, and a human extends
+      // the seed list before retrying.
+      const publication = validateOpenWeightPublication(result, {
+        unclassifiedShareCap: 0,
+      })
       if (!publication.ok) {
         rejections.push(`${dates[i]}: ${publication.reason}`)
         continue
