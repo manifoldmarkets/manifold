@@ -1227,6 +1227,12 @@ export const API = (_apiTypeCheck = {
       .object({
         feedId: z.string().min(1),
         since: z.coerce.number().int().optional(),
+        // Exclusive upper bound (ms). `limit` always returns the NEWEST points
+        // in the window, so `before` is what makes the series pageable: pass
+        // the first ts of the previous response to walk backwards to the start
+        // of the feed. Without it, `since` alone can only shrink a window that
+        // is already anchored to now.
+        before: z.coerce.number().int().optional(),
         limit: z.coerce.number().int().positive().max(5000).optional(),
         // Server-side downsampling: return the last point of each
         // `bucketSeconds` bucket instead of raw rows. A 15s feed emits ~5k

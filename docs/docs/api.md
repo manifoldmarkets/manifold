@@ -1877,13 +1877,29 @@ Parameters:
 
 - `feedId`: Required.
 - `since`: Optional. Only return points at or after this timestamp (ms).
+- `before`: Optional. Only return points strictly before this timestamp (ms).
 - `limit`: Optional. Max `5000`.
 - `bucketSeconds`: Optional, max `86400`. Server-side downsampling: return
   the last point of each bucket instead of raw rows. Fast feeds emit a point
   every ~15 seconds, so request week-plus windows bucketed or the `limit` cap
   will truncate the window.
 
-Response is an array of `{ ts: number, price: number }`.
+Response is an array of `{ ts: number, price: number }`, ascending by `ts`.
+
+A request always returns the *newest* points in the window, so `since` alone
+cannot reach further back than `limit` points from now. To page through a full
+feed history, walk backwards with `before`: omit it on the first request, then
+pass the `ts` of the first (oldest) point you received as the next request's
+`before`, until a page comes back empty.
+
+```
+GET /v0/get-oracle-price-series?feedId=btc-usd&limit=5000
+GET /v0/get-oracle-price-series?feedId=btc-usd&limit=5000&before=<oldest ts from previous page>
+```
+
+To get the whole history in one request instead, pass `bucketSeconds` — e.g.
+`bucketSeconds=3600` returns hourly points, which covers years of a fast feed
+inside the `limit` cap.
 
 ### `POST /v0/create-perp`
 
