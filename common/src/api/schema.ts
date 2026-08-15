@@ -1072,6 +1072,61 @@ export const API = (_apiTypeCheck = {
     returns: {} as { payout: number; pnl: number },
     props: closePerpPositionSchema,
   },
+  // The open-weight index halts on models it cannot classify. These two
+  // endpoints are how that gets cleared without a deploy: the queue of models
+  // the nightly watcher could not confirm, and the verdict on one.
+  'get-model-classifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      pending: {
+        permaslug: string
+        openRouterName: string | null
+        huggingFaceId: string | null
+        discoveredVia: string | null
+        firstSeen: number
+        ageMs: number
+        /** Null until the model actually enters the ranked window. */
+        firstRankedAt: number | null
+        rankedAgeMs: number | null
+        /** Past the window: the index is already halting on this one. */
+        graceExpired: boolean
+      }[]
+      recent: {
+        permaslug: string
+        open: boolean
+        weights: string | null
+        source: string
+        classifiedAt: number | null
+        classifiedBy: string | null
+      }[]
+      seedVersion: string
+      graceWindowMs: number
+    },
+    props: z.object({}).strict(),
+  },
+  'set-model-classification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true; permaslug: string; open: boolean },
+    props: z
+      .object({
+        permaslug: z.string().min(1),
+        open: z.boolean(),
+        // The HuggingFace repo proving the weights are downloadable.
+        weights: z.string().min(1).optional(),
+      })
+      .strict()
+      // Same invariant the seed list's test and the table's check constraint
+      // enforce: an `open` verdict cites its evidence or it does not land.
+      // Rejecting here means the operator finds out at the form, not from a
+      // constraint violation.
+      .refine((p) => !p.open || !!p.weights, {
+        message: 'An open classification must cite a public weights repo',
+      }),
+  },
   // Admin-only live risk tuning; undocumented deliberately — internal
   // operator tooling, not part of the public perp API surface.
   'update-perp-config': {

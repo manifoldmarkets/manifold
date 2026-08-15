@@ -32,6 +32,15 @@ import { DAY_MS } from '../util/time'
 //     denominator, and alerted on. Never defaulted to a side: a mis-defaulted
 //     frontier launch would move the index several points overnight for no
 //     real reason.
+//   - An unclassified model does NOT halt the index outright while it is
+//     small. Halting on any unknown treats a model with 0.1% of tokens the
+//     same as one with 15%, and in practice that meant a live market marking
+//     against a hours-stale oracle — and charging funding against it — every
+//     time a new model cracked the top 50. The rule instead bounds the error
+//     it can cause: see UNCLASSIFIED_TOKEN_SHARE_CAP. Above the cap, or once
+//     an unknown has gone unclassified for longer than the operator's grace
+//     window, the index halts as before. Exclusion is never silent — every
+//     grace publication names the excluded models.
 //
 // The list covers every model that entered OpenRouter's top 50 in the year to
 // the version date, not just today's top 50, because the backfilled chart is
@@ -56,6 +65,49 @@ export const OPEN_WEIGHT_LIST_VERSION = '2026-08-14'
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
 
 /**
+ * How much of the classified token pool may sit in unclassified models before
+ * the index refuses to publish, as a fraction U/C (unclassified tokens over
+ * classified tokens).
+ *
+ * The bound this buys, exactly. With p the reported share (as a fraction), C
+ * classified tokens, U unclassified, and w = U/C, the true share lies in
+ *
+ *     [ p/(1+w) , (p + w)/(1 + w) ]
+ *
+ * — the low end if every unclassified token is closed, the high end if every
+ * one is open. So the worst-case error is w * max(p, 1-p) / (1 + w), i.e.
+ * strictly under w. At this cap and an index near 70%, publishing with an
+ * unknown excluded is off by at most ~0.7 percentage points, and only until
+ * the model is classified.
+ *
+ * That is the trade being made: a bounded sub-point error for a few hours,
+ * versus halting the feed and leaving a live market marking (and funding)
+ * against an oracle that is hours stale and unbounded in error. The stale
+ * oracle is strictly worse, which is why the cap exists at all.
+ *
+ * NEEDS CALIBRATION against real rankings data — a model entering at #50
+ * displaces the previous #50, so the realistic entry share sets how often the
+ * grace path actually saves a freeze. Tune from `unclassifiedShareOfClassified`
+ * on published points before trusting this number.
+ */
+export const UNCLASSIFIED_TOKEN_SHARE_CAP = 0.01
+
+/**
+ * How long a below-cap unknown may keep publishing before the index halts on
+ * it anyway, measured from when the catalog watcher first saw the model.
+ *
+ * The cap bounds how wrong a single publication can be; this bounds how long
+ * we are willing to be wrong at all. Without it a model that never gets
+ * adjudicated would sit excluded from the denominator forever, and the index
+ * would quietly stop meaning what the methodology says it means.
+ *
+ * Two days: the watcher runs nightly, so this is roughly two chances to notice
+ * plus a weekend's slack, and still far short of the multi-day drift that
+ * would make the published definition a fiction.
+ */
+export const UNCLASSIFIED_GRACE_WINDOW_MS = 2 * DAY_MS
+
+/**
  * OpenRouter aggregates everything outside the top 50 into a single row under
  * this key. It cannot be classified, so it is excluded from the denominator —
  * the index is defined over the top 50, and the market description must say
@@ -69,6 +121,15 @@ export type ModelClassification = {
   /** Public weights repo — the evidence backing an `open` call. */
   weights?: string
 }
+
+/**
+ * A resolved classification map. The constant below is the audited seed; the
+ * backend layers operator/auto-classifier overrides from the database on top
+ * and passes the merged map in, so a classification can land without a deploy.
+ * Every consumer takes the map as an argument for exactly that reason — the
+ * module-level default keeps pure callers (tests, the methodology UI) honest.
+ */
+export type ModelClassifications = Record<string, ModelClassification>
 
 /**
  * Keyed on the BASE permaslug. OpenRouter bills the same weights under
@@ -630,9 +691,10 @@ export const basePermaslug = (permaslug: string): string => {
 }
 
 export const classifyModel = (
-  permaslug: string
+  permaslug: string,
+  classifications: ModelClassifications = OPEN_WEIGHT_MODELS
 ): ModelClassification | undefined =>
-  OPEN_WEIGHT_MODELS[basePermaslug(permaslug)]
+  classifications[basePermaslug(permaslug)]
 
 /** One row of OpenRouter's `datasets/rankings-daily` payload. */
 export type RankingRow = {
@@ -650,11 +712,18 @@ export type OpenWeightShareResult = {
   unclassified: string[]
   /** Rows in the window whose token count could not be parsed. */
   invalidTokenRows: string[]
-  /** True when `other` or another excluded row is present in the payload. */
+  /** True when the aggregated `other` row is present in the payload. */
   hasExcludedPayload: boolean
+  /**
+   * U/C — unclassified tokens over classified tokens, the quantity
+   * UNCLASSIFIED_TOKEN_SHARE_CAP bounds. 0 when everything is classified.
+   */
+  unclassifiedShareOfClassified: number
   /** Token counts, as doubles — display/telemetry only, never the divisor. */
   openTokens: number
   classifiedTokens: number
+  unclassifiedTokens: number
+  otherTokens: number
   /** Everything in the payload including `other` and unclassified models. */
   payloadTokens: number
 }
@@ -706,7 +775,8 @@ export const newestWindowDates = (
  */
 export const computeOpenWeightShare = (
   allRows: RankingRow[],
-  days = OPEN_WEIGHT_WINDOW_DAYS
+  days = OPEN_WEIGHT_WINDOW_DAYS,
+  classifications: ModelClassifications = OPEN_WEIGHT_MODELS
 ): OpenWeightShareResult => {
   const dates = newestWindowDates(allRows, days)
   const inWindow: Record<string, true> = {}
@@ -715,6 +785,8 @@ export const computeOpenWeightShare = (
 
   let openTokens = 0n
   let classifiedTokens = 0n
+  let unclassifiedTokens = 0n
+  let otherTokens = 0n
   let payloadTokens = 0n
   const unclassifiedSet: Record<string, true> = {}
   const invalidTokenRowSet: Record<string, true> = {}
@@ -729,13 +801,26 @@ export const computeOpenWeightShare = (
 
     // Rule 1: `other` is unclassifiable by construction — never in the
     // denominator, never estimated.
-    if (basePermaslug(row.model_permaslug) === OTHER_MODEL_KEY) continue
+    if (basePermaslug(row.model_permaslug) === OTHER_MODEL_KEY) {
+      otherTokens += tokens
+      continue
+    }
 
-    const classification = classifyModel(row.model_permaslug)
+    const classification = classifyModel(row.model_permaslug, classifications)
     // Rule 2: unknown model -> out of BOTH sides, and surfaced so the caller
     // can alert. Defaulting it either way would move the index on a guess.
+    // Its tokens are still counted, because how MUCH is unclassified is what
+    // decides whether the index may publish at all.
     if (!classification) {
-      unclassifiedSet[row.model_permaslug] = true
+      // Keyed on the BASE slug, like everything else that touches an
+      // unclassified model: the grace-window rows are stored base, so the
+      // publication gate's expiry check compares these strings against base
+      // slugs. A raw `foo:free` key here would never match `foo` there, and a
+      // model that only ever ranks as its :free variant would publish under
+      // grace forever — which is exactly how nemotron-3.5-lightning entered
+      // the top 50 (see its note above).
+      unclassifiedSet[basePermaslug(row.model_permaslug)] = true
+      unclassifiedTokens += tokens
       continue
     }
 
@@ -756,12 +841,34 @@ export const computeOpenWeightShare = (
     dates,
     unclassified: Object.keys(unclassifiedSet).sort(),
     invalidTokenRows,
-    hasExcludedPayload: payloadTokens > classifiedTokens,
+    // Checked against `other` specifically, not "payload exceeds classified":
+    // unclassified tokens also widen that gap, so the loose form would read a
+    // payload with an unknown model but NO `other` row as healthy.
+    hasExcludedPayload: otherTokens > 0n,
+    unclassifiedShareOfClassified: ratioOfBigInts(
+      unclassifiedTokens,
+      classifiedTokens
+    ),
     openTokens: finiteBigIntTelemetry(openTokens),
     classifiedTokens: finiteBigIntTelemetry(classifiedTokens),
+    unclassifiedTokens: finiteBigIntTelemetry(unclassifiedTokens),
+    otherTokens: finiteBigIntTelemetry(otherTokens),
     payloadTokens: finiteBigIntTelemetry(payloadTokens),
   }
 }
+
+/**
+ * numerator/denominator without going through doubles first — both sides
+ * routinely exceed Number.MAX_SAFE_INTEGER, where the naive Number(a)/Number(b)
+ * has already dropped units. Returns 0 for an empty denominator so a payload
+ * with nothing classified reports "no unclassified pressure" and is rejected
+ * by the share check instead.
+ */
+const ratioOfBigInts = (numerator: bigint, denominator: bigint): number =>
+  denominator > 0n
+    ? Number((numerator * OPEN_WEIGHT_SHARE_SCALE) / denominator) /
+      Number(OPEN_WEIGHT_SHARE_SCALE)
+    : 0
 
 const OPEN_WEIGHT_SHARE_SCALE = 1_000_000_000n
 
@@ -781,30 +888,59 @@ const parseTokens = (raw: string): bigint | null => {
   return m ? BigInt(m[1]) : null
 }
 
+/** Details of a publication that excluded unknown models under the cap. */
+export type OpenWeightGrace = {
+  /** The excluded permaslugs — named on every grace publication, never silent. */
+  unclassified: string[]
+  /** U/C at publication time. */
+  shareOfClassified: number
+  /** Worst-case error, in percentage POINTS, the exclusion can cause. */
+  maxIndexError: number
+}
+
 export type OpenWeightPublicationValidation =
-  | { ok: true; share: number }
+  | { ok: true; share: number; grace?: OpenWeightGrace }
   | { ok: false; reason: string }
+
+export type OpenWeightPublicationOptions = {
+  expectedDays?: number
+  /** Override the cap; 0 restores the old halt-on-any-unknown behaviour. */
+  unclassifiedShareCap?: number
+  /**
+   * Unknowns that have been unclassified for longer than the operator's grace
+   * window. Present here they halt the index regardless of how small they are:
+   * the cap buys time to classify, it is not a licence to run indefinitely on
+   * a knowingly incomplete denominator. Supplied by the caller because the
+   * first-seen timestamps live in the database, not in this leaf package.
+   */
+  expiredUnclassified?: string[]
+}
 
 /**
  * Fail-closed publication gate shared by the live writer and backfill.
  * Computing a diagnostic share is useful, but it is not enough to make that
  * share safe to expose as an executable oracle price.
+ *
+ * Structural checks run before the unclassified decision so that a payload
+ * which is broken in several ways reports the more fundamental fault, and so
+ * the grace path can quote a share it has already validated.
  */
 export const validateOpenWeightPublication = (
   result: OpenWeightShareResult,
-  expectedDays = OPEN_WEIGHT_WINDOW_DAYS
+  options: OpenWeightPublicationOptions = {}
 ): OpenWeightPublicationValidation => {
+  const {
+    expectedDays = OPEN_WEIGHT_WINDOW_DAYS,
+    unclassifiedShareCap = UNCLASSIFIED_TOKEN_SHARE_CAP,
+    expiredUnclassified = [],
+  } = options
+
   if (result.invalidTokenRows.length > 0)
     return {
       ok: false,
       reason: `malformed token count rows: ${result.invalidTokenRows.join(
         ', '
       )}`,
-    }
-  if (result.unclassified.length > 0)
-    return {
-      ok: false,
-      reason: `unclassified models: ${result.unclassified.join(', ')}`,
     }
   if (result.dates.length !== expectedDays)
     return {
@@ -841,5 +977,52 @@ export const validateOpenWeightPublication = (
     result.share > 100
   )
     return { ok: false, reason: `invalid share ${result.share}` }
-  return { ok: true, share: result.share }
+
+  if (result.unclassified.length === 0) return { ok: true, share: result.share }
+
+  const expired = result.unclassified.filter((slug) =>
+    expiredUnclassified.includes(slug)
+  )
+  if (expired.length > 0)
+    return {
+      ok: false,
+      reason: `unclassified models past their grace window: ${expired.join(
+        ', '
+      )}`,
+    }
+
+  const w = result.unclassifiedShareOfClassified
+  if (!Number.isFinite(w) || w > unclassifiedShareCap)
+    return {
+      ok: false,
+      reason:
+        `unclassified models hold ${(w * 100).toFixed(3)}% of classified ` +
+        `tokens, over the ${(unclassifiedShareCap * 100).toFixed(3)}% cap: ` +
+        result.unclassified.join(', '),
+    }
+
+  return {
+    ok: true,
+    share: result.share,
+    grace: {
+      unclassified: result.unclassified,
+      shareOfClassified: w,
+      maxIndexError: maxIndexErrorPoints(result.share, w),
+    },
+  }
+}
+
+/**
+ * Worst-case percentage-POINT error from excluding unknowns, per the bound
+ * documented on UNCLASSIFIED_TOKEN_SHARE_CAP: w * max(p, 1-p) / (1 + w), with
+ * p the reported share as a fraction. Attained when every unclassified token
+ * turns out to sit on one side.
+ */
+export const maxIndexErrorPoints = (
+  sharePercent: number,
+  unclassifiedShareOfClassified: number
+): number => {
+  const p = sharePercent / 100
+  const w = unclassifiedShareOfClassified
+  return (100 * w * Math.max(p, 1 - p)) / (1 + w)
 }
