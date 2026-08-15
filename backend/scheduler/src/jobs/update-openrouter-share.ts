@@ -1,9 +1,14 @@
 import {
   computeOpenWeightShare,
   OPEN_WEIGHT_LIST_VERSION,
+  OPEN_WEIGHT_WINDOW_DAYS,
   openWeightWindowRange,
   validateOpenWeightPublication,
 } from 'common/perps/open-weight-models'
+import {
+  recordUnclassifiedInRankings,
+  resolveModelClassifications,
+} from 'shared/perps/model-classifications'
 import { fetchOpenRouterRankings } from 'shared/openrouter-tokens'
 import {
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
@@ -61,14 +66,43 @@ const updateOpenRouterShareInternal = async () => {
     return
   }
 
-  const result = computeOpenWeightShare(rankings.rows)
-  const publication = validateOpenWeightPublication(result)
+  // Seed list plus any operator/auto overrides that landed since the last
+  // deploy, so a classification takes effect on the next tick rather than the
+  // next release.
+  const { classifications, expiredUnclassified } =
+    await resolveModelClassifications(pg)
+
+  const result = computeOpenWeightShare(
+    rankings.rows,
+    OPEN_WEIGHT_WINDOW_DAYS,
+    classifications
+  )
+
+  // Start the grace clock for anything unknown that is actually in the ranked
+  // window — creating the row if the catalog sweep never saw it, since the
+  // rankings dataset carries models /models does not list.
+  if (result.unclassified.length > 0)
+    await recordUnclassifiedInRankings(pg, result.unclassified)
+
+  const publication = validateOpenWeightPublication(result, {
+    expiredUnclassified,
+  })
   if (!publication.ok) {
     log.error(
       `[openrouter] unsafe index payload — ${publication.reason}; skipping publication`
     )
     return
   }
+  if (publication.grace)
+    log.warn(
+      `[openrouter] publishing under grace — excluding ${publication.grace.unclassified.join(
+        ', '
+      )} (${(publication.grace.shareOfClassified * 100).toFixed(
+        3
+      )}% of classified tokens, index off by at most ${publication.grace.maxIndexError.toFixed(
+        3
+      )}pp)`
+    )
 
   const point = {
     ts: now,

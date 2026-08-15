@@ -4,73 +4,59 @@ import * as utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-import { TRUMP_APPROVAL_FEED_ID, insertOraclePrices } from 'shared/oracle'
-import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
-import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  computeRollingAverages,
-  fetchTrumpApprovalPolls,
-  TRUMP_APPROVAL_WINDOW_DAYS,
-} from 'shared/trump-approval'
+  hasTrumpApprovalPointForDay,
+  publishTrumpApprovalPoint,
+  trumpApprovalDay,
+  TRUMP_APPROVAL_TZ,
+} from 'shared/perps/publish-trump-approval'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
-// Fetch enough poll history to fully cover today's trailing window, plus a
-// safety buffer for long fielding periods (some polls span 2+ weeks).
-const FETCH_LOOKBACK_DAYS = TRUMP_APPROVAL_WINDOW_DAYS + 14
+// The last Pacific hour the job is scheduled to fire. MUST match the end of
+// the hour range in this job's cron expression in ./index.ts — it is how a
+// run knows whether another attempt is coming today, which decides whether a
+// failure is a blip to retry or a lost day worth paging on.
+export const TRUMP_APPROVAL_LAST_ATTEMPT_HOUR = 23
 
-// Writes one observation of today's rolling value, stamped when it becomes
-// available to the market. Corrections append another observation instead of
-// pretending the revised value was tradable from midnight or rewriting a
-// point that liquidations/funding may already have consumed.
+// Publishes one point per Pacific day for the `trump-approval-rating` feed.
+//
+// Scheduled hourly rather than once, because a single daily firing made the
+// feed only as reliable as VoteHub's worst minute of the day: on 2026-08-14
+// the 5:30am attempt got an HTTP 500, and with no retry the feed sat frozen
+// for over 26 hours, tripped its staleness alerts, and came within ~1.5h of
+// the market's maxOraclePriceAgeMs — which pauses the engine, and with it
+// liquidations and ADL, on a market carrying leveraged positions.
+//
+// The first attempt is still 5:30am Pacific, so the normal publication time
+// is unchanged; later firings only do work when the day has no point yet.
 export const updateTrumpApproval = async () => {
   const pg = createSupabaseDirectClient()
+  const today = trumpApprovalDay()
 
-  const now = dayjs.tz(dayjs(), 'America/Los_Angeles')
-  const fetchStart = now
-    .subtract(FETCH_LOOKBACK_DAYS, 'day')
-    .format('YYYY-MM-DD')
-  const today = now.format('YYYY-MM-DD')
+  if (await hasTrumpApprovalPointForDay(pg, today)) return
 
-  const polls = await fetchTrumpApprovalPolls(fetchStart)
-  const points = computeRollingAverages(polls, today, today)
-  if (points.length === 0) {
-    log.error(
-      `[trump-approval] no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window; skipping publication`
-    )
-    return
+  try {
+    const result = await publishTrumpApprovalPoint(pg)
+    // A returned failure and a thrown one are the same event to a retry
+    // loop: nothing was published, and the day is only lost if no attempt
+    // remains. Classifying only thrown errors would let `no-polls` and
+    // `rejected` page every hour and would leave the final attempt of the
+    // day without its "no attempts left" signal.
+    if (result.status !== 'published') reportFailure(today, result.reason)
+  } catch (err) {
+    reportFailure(today, `${err}`)
   }
+}
 
-  const [computedPoint] = points
-  const point = { ...computedPoint, ts: Date.now() }
-  const feed = getOracleFeed(TRUMP_APPROVAL_FEED_ID)
-  const prev = await pg.oneOrNone<{ ts: string; price: number | string }>(
-    `select ts, price from oracle_prices where feed_id = $1
-     order by ts desc limit 1`,
-    [TRUMP_APPROVAL_FEED_ID]
-  )
-  const rejection = feed
-    ? validateOraclePoint(
-        feed,
-        prev
-          ? { ts: new Date(prev.ts).getTime(), price: Number(prev.price) }
-          : null,
-        point
-      )
-    : `missing OracleFeedDef for ${TRUMP_APPROVAL_FEED_ID}`
-  if (rejection) {
-    log.error(
-      `[trump-approval] rejected ${point.price.toFixed(2)} — ${rejection}`
-    )
-    return
-  }
-
-  log(
-    `today's ${TRUMP_APPROVAL_WINDOW_DAYS}-day rolling Trump approval average: ${point.price.toFixed(
-      2
-    )} (${new Date(point.ts).toISOString()})`
-  )
-  await insertOraclePrices(pg, TRUMP_APPROVAL_FEED_ID, [point])
-  await applyOraclePointToLivePerps(pg, TRUMP_APPROVAL_FEED_ID, point)
-  log(`inserted 1 ${TRUMP_APPROVAL_FEED_ID} oracle point for ${today}`)
+// Feed staleness is already alerted on by update-perps and
+// update-oracle-feeds, so a retryable attempt logs at WARN to keep from
+// paging once an hour for the same outage. The final attempt of the day is
+// the one that means the day is lost, so that one is an ERROR.
+const reportFailure = (day: string, reason: string) => {
+  const hour = dayjs.tz(dayjs(), TRUMP_APPROVAL_TZ).hour()
+  const message = `[trump-approval] publish failed for ${day} — ${reason}`
+  if (hour >= TRUMP_APPROVAL_LAST_ATTEMPT_HOUR)
+    log.error(`${message}; no attempts left today, feed will go stale`)
+  else log.warn(`${message}; retrying next hour`)
 }

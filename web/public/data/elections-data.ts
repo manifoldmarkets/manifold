@@ -299,10 +299,9 @@ export type ElectionsPageProps = {
   primaryContracts: Contract[]
   // Mid-decade redistricting markets (open only), for the watch-list section.
   redistrictingContracts: Contract[]
-  // Trending politics dashboards.
-  newsDashboards: NewsDashboardPageProps[]
-  headlines: Headline[]
-  trendingDashboard: NewsDashboardPageProps
+  // Hottest open midterm markets right now, auto-selected by daily score in
+  // getTrendingMidtermContracts — no editorial curation.
+  trendingContracts: Contract[]
 }
 
 export type SuccesNewsDashboardPageProps = {
