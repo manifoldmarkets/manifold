@@ -19,7 +19,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 
 // Classify new OpenRouter models BEFORE they reach the top 50.
 //
@@ -193,6 +193,11 @@ const researchRemainingModels = async (
   pg: SupabaseDirectClient,
   candidates: OpenRouterCatalogEntry[]
 ) => {
+  if (!isProd()) {
+    log('[model-classifier] skipping paid agent research outside prod')
+    return { recommended: 0, unresolved: candidates.length }
+  }
+
   let recommended = 0
   let unresolved = 0
 
