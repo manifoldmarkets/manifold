@@ -340,6 +340,16 @@ describe('publication validation', () => {
     if (!otherValidation.ok)
       expect(otherValidation.reason).toContain('no excluded `other`')
   })
+
+  it('reports an invalid window date separately from a date gap', () => {
+    const result = computeOpenWeightShare(completeWindow())
+    result.dates[3] = 'not-a-date'
+
+    expect(validateOpenWeightPublication(result)).toEqual({
+      ok: false,
+      reason: 'invalid window date: not-a-date',
+    })
+  })
 })
 
 describe('window dates', () => {

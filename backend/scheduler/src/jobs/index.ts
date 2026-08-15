@@ -367,7 +367,9 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'update-trump-approval',
-      '0 30 5 * * *', // 5:30am daily
+      // 5:30am Pacific, then hourly until the day's point is published. The
+      // end hour MUST stay in sync with TRUMP_APPROVAL_LAST_ATTEMPT_HOUR.
+      '0 30 5-23 * * *',
       updateTrumpApproval
     ),
     createJob(
