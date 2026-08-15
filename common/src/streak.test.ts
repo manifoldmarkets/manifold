@@ -2,8 +2,10 @@ import {
   getStreakDayEnd,
   getStreakDayStart,
   getStreakDayToJudge,
+  isStreakEligibleBetAmount,
 } from './streak'
 import { HOUR_MS } from './util/time'
+import { removeUndefinedProps } from './util/object'
 
 const ms = (iso: string) => new Date(iso).getTime()
 const iso = (t: number) => new Date(t).toISOString()
@@ -109,5 +111,29 @@ describe('getStreakDayToJudge', () => {
     const { start, end } = getStreakDayToJudge(jobRun)
     expect(bet).toBeGreaterThanOrEqual(start)
     expect(bet).toBeLessThan(end)
+  })
+})
+
+describe('isStreakEligibleBetAmount', () => {
+  it('counts executed bets and sells, not unfilled limit orders', () => {
+    expect(isStreakEligibleBetAmount(25)).toBe(true)
+    expect(isStreakEligibleBetAmount(-40)).toBe(true) // sell
+    expect(isStreakEligibleBetAmount(0)).toBe(false) // unfilled limit order
+  })
+
+  // Regression: the marker was first written as `amount !== 0 ? true :
+  // undefined`, which removeUndefinedProps stripped from the row. The reset
+  // job falls back to `amount` when the marker is missing, and a passive fill
+  // rewrites `amount` — so an order the user never executed became a day of
+  // activity. The verdict has to survive being stored.
+  it('always stores a boolean, so the marker survives removeUndefinedProps', () => {
+    for (const amount of [25, -40, 0]) {
+      const stored = removeUndefinedProps({
+        amount,
+        streakEligible: isStreakEligibleBetAmount(amount),
+      })
+      expect(stored).toHaveProperty('streakEligible')
+      expect(typeof stored.streakEligible).toBe('boolean')
+    }
   })
 })

@@ -11,6 +11,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { Answer } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
+import { isStreakEligibleBetAmount } from 'common/streak'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import {
   CPMM_MIN_POOL_QTY,
@@ -384,10 +385,12 @@ export const executeNewBetResult = async (
     silent,
     replyToCommentId,
     betGroupId,
-    // Immutable marker of an executed bet: the zero-amount early return below
-    // means only rows that ran incrementStreakQuery carry it.
-    streakEligible: newBet.amount !== 0 ? true : undefined,
     ...newBet,
+    // Immutable record of whether this row's insert ran incrementStreakQuery
+    // (the zero-amount early return below is the only path that doesn't).
+    // Written explicitly either way, so absence means only "inserted before
+    // this field existed".
+    streakEligible: isStreakEligibleBetAmount(newBet.amount),
   })
 
   // Just an unfilled limit order, no need to update metrics, maker shares, contract, etc.
@@ -472,6 +475,9 @@ export const executeNewBetResult = async (
           isApi,
           betGroupId,
           ...bet,
+          // Arbitrage legs of the same user action, inserted in the
+          // transaction that runs incrementStreakQuery.
+          streakEligible: isStreakEligibleBetAmount(bet.amount),
         })
 
         const { YES: poolYes, NO: poolNo } = cpmmState.pool

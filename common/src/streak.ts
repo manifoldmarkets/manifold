@@ -49,6 +49,19 @@ const getOffsetMs = (ts: number) => {
   return wallClockAsUtc - Math.floor(ts / 1000) * 1000
 }
 
+/**
+ * Whether inserting a bet row with this amount advances a prediction streak:
+ * true for an executed bet or sell, false for an unfilled limit order (which
+ * place-bet inserts via an early return, without running incrementStreakQuery).
+ *
+ * Stored on the row at insert as `streakEligible` and never recomputed — a
+ * later passive fill rewrites `amount`, so recomputing would turn an order the
+ * user never executed into a day of activity. Always returns a boolean:
+ * `undefined` would be dropped by removeUndefinedProps, and a missing marker
+ * sends the reset job back to the mutable `amount` this exists to replace.
+ */
+export const isStreakEligibleBetAmount = (amount: number) => amount !== 0
+
 /** Epoch ms of the Pacific midnight that opens the streak day holding `at`. */
 export const getStreakDayStart = (at: number = Date.now()) => {
   const { year, month, day } = getWallClock(at)

@@ -11,7 +11,7 @@ export const closePerpPosition: APIHandler<'close-perp-position'> = async (
   assertPerpCloseEnabled()
   const { contractId, direction, idempotencyKey, expectedOpenedTime } = body
   const isApi = auth.creds.kind === 'key'
-  const { payout, pnl, replayed } = await closePosition(
+  const { payout, pnl, replayed, eventTs } = await closePosition(
     contractId,
     auth.uid,
     direction,
@@ -28,7 +28,12 @@ export const closePerpPosition: APIHandler<'close-perp-position'> = async (
       // replay is not a trade and must not advance the streak.
       if (replayed) return
       try {
-        await advancePerpBettingStreak(auth.uid, contractId, isApi)
+        await advancePerpBettingStreak(
+          auth.uid,
+          contractId,
+          isApi,
+          eventTs ?? Date.now()
+        )
       } catch (err) {
         log('perp streak update failed (non-fatal):', err)
       }

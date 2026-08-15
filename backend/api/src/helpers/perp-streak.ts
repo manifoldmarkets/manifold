@@ -28,7 +28,11 @@ import { payReferralBetBonus } from '../on-create-bet'
 export const advancePerpBettingStreak = async (
   userId: string,
   contractId: string,
-  isApi: boolean
+  isApi: boolean,
+  // The trade event's own timestamp. This runs after the engine transaction
+  // commits, so Date.now() here can land in the next Pacific day and credit
+  // the trade to a day it did not happen in.
+  actionTime: number
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -41,7 +45,7 @@ export const advancePerpBettingStreak = async (
   // the bonus txn rolls back, while the already-committed increment survives
   // and silently consumes the user's streak day.
   const increment = await betsQueue.enqueueFn(
-    () => incrementStreak(userId),
+    () => incrementStreak(userId, actionTime),
     [userId]
   )
   if (!increment || isApi) return
@@ -79,7 +83,8 @@ export const advancePerpBettingStreak = async (
 }
 
 const incrementStreak = async (
-  userId: string
+  userId: string,
+  now: number
 ): Promise<
   | { user: User; isFirstTradeEver: boolean; streakIncremented: boolean }
   | undefined
@@ -89,7 +94,6 @@ const incrementStreak = async (
   if (!user) return undefined
   const isFirstTradeEver = !user.lastBetTime
 
-  const now = Date.now()
   const rows = await pg.any<{ streak_incremented: boolean }>(
     incrementStreakQuery(user, now)
   )
