@@ -33,6 +33,14 @@ async function refreshIfStale(
     if (!user?.uid) return data
     const fresh = await fetchStreakSnapshot(CONFIGS[ENV].apiEndpoint, user.uid)
     if (!fresh) return data
+    // A sign-out during the fetch clears the stored user. Without this check we'd
+    // persist the old account's snapshot with a fresh updatedAt, which also closes
+    // the staleness gate above — so a signed-out phone would keep rendering that
+    // streak indefinitely. iOS can't hit this (no headless fetch; clearStreakWidget
+    // is final there), so leaving it would be a real lockstep divergence. Returning
+    // null renders 'loggedOut', matching index.swift's loadStreakData guard.
+    const current = await getData<{ uid?: string }>('user')
+    if (current?.uid !== user.uid) return null
     await saveStreakSnapshot(fresh)
     return fresh
   } catch {

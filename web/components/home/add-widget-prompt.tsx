@@ -8,7 +8,11 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { useNativeInfo } from 'web/components/native-message-provider'
-import { nativePinStreakWidget } from 'web/lib/native/native-messages'
+import {
+  isAtLeastVersion,
+  MIN_WIDGET_APP_VERSION,
+  nativePinStreakWidget,
+} from 'web/lib/native/native-messages'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { track } from 'web/lib/service/analytics'
 
@@ -155,12 +159,19 @@ function PreviewTall() {
 // collapsed choice persists (localStorage), so once a user folds it away it
 // stays tidy on future visits.
 export function AddWidgetPrompt() {
-  const { isNative, platform } = useNativeInfo()
+  const { isNative, platform, version } = useNativeInfo()
   const [collapsed, setCollapsed] = usePersistentLocalState(
     false,
     'streak-widget-prompt-collapsed'
   )
   if (!isNative || (platform !== 'android' && platform !== 'ios')) return null
+  // The widget lives in the native binary, which ships days after this web
+  // deploy. On an older iOS binary there's no widget target, so the long-press
+  // instructions send people hunting for something that isn't in the gallery; on
+  // an older Android binary `pinStreakWidget` falls through to App.tsx's else
+  // branch and the button silently does nothing. `version` is '' until the
+  // versionRequested handshake answers — fail closed and show nothing.
+  if (!isAtLeastVersion(version, MIN_WIDGET_APP_VERSION)) return null
   const isIOS = platform === 'ios'
 
   const onAdd = () => {
