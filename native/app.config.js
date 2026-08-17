@@ -1,5 +1,11 @@
 export default ({ config }) => {
-  const otaUpdateVersion = '1.0.0'
+  // BUMP THIS whenever native code changes. This release adds the
+  // react-native-android-widget native module, which index.js require()s on
+  // Android; that module resolves via TurboModuleRegistry.getEnforcing, which
+  // THROWS AT STARTUP if the binary doesn't contain it. Publishing this JS as an
+  // OTA on runtime 1.0.0 would therefore crash every existing Android install on
+  // launch. A new runtime keeps the widget bundle away from old binaries.
+  const otaUpdateVersion = '1.1.0'
 
   return {
     expo: {

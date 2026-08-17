@@ -56,6 +56,29 @@ index 834cbaf..c51848b 100644
      public WritableMap createPreview(int width, int height) throws Exception {
          ReadableMap configClone = Arguments.makeNativeMap(config.toHashMap());
  
+diff --git a/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml b/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml
+index 9426de7..26f6813 100644
+--- a/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml
++++ b/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml
+@@ -19,6 +19,18 @@
+         android:scaleType="matrix"
+         android:visibility="visible" />
+ 
++    <Chronometer
++        android:id="@+id/rn_widget_chronometer"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="bottom|start"
++        android:layout_marginStart="16dp"
++        android:layout_marginBottom="14dp"
++        android:textColor="#FFFFFF"
++        android:textSize="15sp"
++        android:textStyle="bold"
++        android:visibility="gone" />
++
+     <FrameLayout
+         android:id="@+id/rn_widget_clickable_container"
+         android:layout_width="match_parent"
 diff --git a/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml b/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
 index 6651155..3731629 100644
 --- a/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml

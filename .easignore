@@ -21,6 +21,25 @@ mantic-markets-firebase-adminsdk*.json
 .env
 .env.local
 
+# --- from native/.gitignore: Apple key material + build artifacts ---
+# EAS honors only THIS file once it exists, so nested .gitignores never apply and
+# these have to be re-stated or they ride along in the upload. iOS builds use
+# REMOTE credentials ("ios": {} in eas.json), so Apple key material is never a
+# build input and is always safe to drop.
+#
+# NOT excluded on purpose: credentials.json / *.jks / *.keystore. Android sets
+# credentialsSource: "local" on every profile, so those ARE build inputs — adding
+# them here would break Android signing. Keep them out of the repo instead.
+#
+# Also not excluded: native/google-services.json — the build needs it.
+*.p8
+*.p12
+*.mobileprovision
+*.apk
+*.aab
+*.ipa
+native/ios/Manifold/GoogleService-Info.plist
+
 # --- build outputs & caches the EAS worker never needs ---
 .git/
 web/.next/

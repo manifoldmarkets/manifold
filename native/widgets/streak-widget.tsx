@@ -220,12 +220,21 @@ function pacificWeekday(now: Date): number {
 }
 
 // Next Monday 00:00 Pacific strictly after `at` (the weekly-quest reset).
+// The Pacific midnight `days` days after the one containing `at`. Adding a flat
+// days*24h lands an hour off on the two DST-transition days (the Pacific day is
+// 23h or 25h long), so we overshoot by 2h and snap back with pacificStartOfDayMs
+// — the same trick msUntilPacificReset uses, and what keeps this in lockstep
+// with index.swift, which gets DST correctness free from Calendar.
+function pacificDayStartAfterMs(at: Date, days: number): number {
+  const approx = pacificStartOfDayMs(at) + (days * 24 + 2) * 60 * 60 * 1000
+  return pacificStartOfDayMs(new Date(approx))
+}
+
 function nextPacificWeekResetMs(at: Date): number {
-  const startToday = pacificStartOfDayMs(at)
   const wd = pacificWeekday(at)
   let days = (1 - wd + 7) % 7 // 0 if today is Monday
   if (days === 0) days = 7 // this Monday's midnight already passed → next one
-  return startToday + days * 24 * 60 * 60 * 1000
+  return pacificDayStartAfterMs(at, days)
 }
 
 // Apply the period-reset to a stored quest snapshot, returning the rows to render.
@@ -236,7 +245,7 @@ function effectiveQuests(
   if (!data || !data.quests?.length) return []
   try {
     const nowMs = now.getTime()
-    const dayEnd = pacificStartOfDayMs(new Date(data.updatedAt)) + 24 * 60 * 60 * 1000
+    const dayEnd = pacificDayStartAfterMs(new Date(data.updatedAt), 1)
     const weekEnd = nextPacificWeekResetMs(new Date(data.updatedAt))
     // Defensive: skip any malformed row so the headless render never passes
     // undefined across the bridge to a native TextWidget (text is typed
