@@ -11,7 +11,6 @@ import {
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
-  UK_GRID_CARBON_FEED_ID,
 } from '../oracle'
 import { getOracleFeed } from '../oracle-feeds'
 
@@ -78,37 +77,6 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
       subsidyShort: 25_000,
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
-  },
-  {
-    feedId: UK_GRID_CARBON_FEED_ID,
-    question: 'UK grid carbon intensity (gCO₂/kWh)',
-    requiredTopics: [
-      {
-        // Science exists under one stable slug in both environments. PROD can
-        // additionally attach Climate, but launch readiness must be testable
-        // in DEV without inventing an environment-only topic.
-        name: 'Science',
-        slugByEnvironment: {
-          DEV: 'science-default',
-          PROD: 'science-default',
-        },
-      },
-    ],
-    oracleBehavior: 'batched-public',
-    requiresSourceAsOf: false,
-    gameDesign:
-      'Oscillating and mean-reverting with coherent long and short theses; public forecasts reward informed trading.',
-    latencyArbitrageRisk:
-      'Finalized 30-minute actuals can be visible at NESO before the next Manifold poll, and the public forecast makes the direction partially anticipatable.',
-    recommended: {
-      maxLeverage: 3,
-      annualMaxFundingRate: 1,
-      fundingSensitivity: 1,
-      maxOraclePriceAgeMs: 3 * HOUR_MS,
-      subsidyLong: 10_000,
-      subsidyShort: 10_000,
-    },
-    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 * 2 },
   },
   {
     feedId: TRUMP_APPROVAL_FEED_ID,

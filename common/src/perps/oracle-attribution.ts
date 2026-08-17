@@ -46,6 +46,11 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     url: 'https://openrouter.ai/rankings',
     showAsOf: true,
   },
+  // Retained after the feed itself was removed from the backend registry
+  // (market sunset 2026-08-10). The resolved market's page still charts the
+  // NESO history we ingested, so the credit is still owed — this entry going
+  // away with the feed would have been a silent licence breach, which is the
+  // failure mode this whole map exists to prevent.
   'uk-grid-carbon': {
     source: 'NESO Carbon Intensity API',
     url: 'https://carbonintensity.org.uk',

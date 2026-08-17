@@ -193,8 +193,6 @@ Feed adapters live next to it:
   xStocks by Backed), consensus median across Jupiter/Gate/MEXC venue quotes. Pure
   response parsing lives in `common/src/perps/xstocks.ts` (unit-tested,
   including the raw-vs-rebase-scaled unit trap).
-- `uk-grid-carbon.ts` — GB grid carbon intensity (gCO2/kWh), NESO 30-min
-  actuals.
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
 - `openrouter-tokens.ts` — trailing seven-day open-weight share of classified
   top-50 OpenRouter model traffic.

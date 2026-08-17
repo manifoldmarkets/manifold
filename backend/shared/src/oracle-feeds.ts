@@ -10,9 +10,7 @@ import {
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
-  UK_GRID_CARBON_FEED_ID,
 } from './oracle'
-import { fetchUkGridCarbonRecent } from './uk-grid-carbon'
 import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 
 // Registry of known oracle feeds. This is the single place that says how a
@@ -60,12 +58,12 @@ export type OracleFeedDef = {
    * Doubles as the floor for a market's maxOraclePriceAgeMs at create time. */
   staleAfterMs: number
   /** Expected interval between genuinely NEW values — not the poll cadence
-   * (that is pollPeriodMs: UK carbon is polled every 15s but NESO settles a
-   * value every 30min), and not staleAfterMs (a deliberately looser health
-   * threshold). create-perp derives a market's frozen funding period from
-   * this: max(1h, updatePeriodMs). Getting it wrong on a daily feed
-   * reintroduces the open-before-the-tick funding dodge, so when in doubt,
-   * err longer. */
+   * (that is pollPeriodMs: the openrouter feed writes a point every hour but
+   * its value only steps once a UTC day), and not staleAfterMs (a
+   * deliberately looser health threshold). create-perp derives a market's
+   * frozen funding period from this: max(1h, updatePeriodMs). Getting it
+   * wrong on a daily feed reintroduces the open-before-the-tick funding
+   * dodge, so when in doubt, err longer. */
   updatePeriodMs: number
   /** How often the tick actually polls this `fast` feed, throttled inside
    * update-oracle-feeds. Absent = poll on every tick firing.
@@ -111,22 +109,17 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     pollPeriodMs: 5_000,
     fetchLatest: fetchBtcUsdSpot,
   },
-  {
-    id: UK_GRID_CARBON_FEED_ID,
-    description: 'GB grid carbon intensity (gCO2/kWh), NESO 30-min actuals',
-    marketCreationEnabled: true,
-    cadence: 'fast',
-    minPrice: 1,
-    maxPrice: 600,
-    // Actuals land one settlement block behind, occasionally later.
-    staleAfterMs: 2 * HOUR_MS,
-    updatePeriodMs: 30 * MINUTE_MS,
-    // Pinned to the tick's old rate so speeding up the BTC feed does not
-    // silently triple our call volume against NESO, which settles a value
-    // every 30min regardless. Nothing here needs 5s.
-    pollPeriodMs: 15_000,
-    fetchRecent: fetchUkGridCarbonRecent,
-  },
+  // The `uk-grid-carbon` (NESO) feed was removed when its market was
+  // sunset on 2026-08-10. Nothing consumed it afterwards, and the tick kept
+  // polling NESO every 15s for a resolved market — which also forced the
+  // `[oracle-feeds]` GCP alert to carry a `NOT ... "uk-grid-carbon"` filter
+  // that silenced real errors from every other feed by substring. Reviving
+  // it means restoring this entry, the adapter and its backfill script from
+  // history, and dropping that alert exclusion. Its historical oracle_prices
+  // rows are untouched, and its attribution entry deliberately stays in
+  // common/perps/oracle-attribution.ts — the resolved market page still
+  // renders that data and the NESO credit is a licence obligation.
+
   // Tokenized-equity (xStocks) feeds. Corruption is caught at the source —
   // fetchXStockUsdPrice requires cross-venue agreement, like BTC — so bounds
   // here only reject unit-confused garbage (a cents-denominated or
@@ -137,6 +130,18 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // on quiet weekend prints, and five minutes tolerates a few skipped ticks
   // without paging while still bounding how old an executable price can get
   // (markets pause at the same threshold via maxOraclePriceAgeMs).
+  //
+  // All four stay on the tick's old 15s poll rather than following BTC to 5s.
+  // A round costs 4 Jupiter calls (one per token), 4 Gate and 2 MEXC; at 5s
+  // that is 48/min against Jupiter's keyless lite tier, which is close enough
+  // to its limit that a 429 is likely — and a 429 drops QQQx or GLDx below
+  // getConsensusMedian's two-source minimum, skipping the tick entirely. A
+  // stalled feed pauses its market, which is a far worse outcome than a mark
+  // that is 15s old. Nothing here is being sniped yet either: these markets
+  // do not exist until after this deploys, so there is no measured edge to
+  // price against, unlike BTC. To move them to 5s later, batch the Jupiter
+  // leg first — its price v3 endpoint takes comma-separated ids, so all four
+  // tokens collapse into one call.
   {
     id: SPYX_USD_FEED_ID,
     description:
@@ -147,18 +152,19 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 15_000,
+    pollPeriodMs: 15_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
   },
   {
     id: QQQX_USD_FEED_ID,
-    description:
-      'QQQx/USD (tokenized Nasdaq-100 ETF), Jupiter+Gate agreement',
+    description: 'QQQx/USD (tokenized Nasdaq-100 ETF), Jupiter+Gate agreement',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 15_000,
+    pollPeriodMs: 15_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
   },
   {
@@ -170,6 +176,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 15_000,
+    pollPeriodMs: 15_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
   },
   {
@@ -181,6 +188,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 15_000,
+    pollPeriodMs: 15_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
