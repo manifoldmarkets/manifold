@@ -11,21 +11,42 @@
 // silent offset equal to the accrued-dividend multiplier (~0.5% on SPYx as of
 // Aug 2026) — inside any sane consensus tolerance, so it would pass the
 // agreement gate and permanently bias the median rather than fail loudly.
-// `scaledUiConfig.usdPricePrescaled` is the raw-unit price. Tokens without
-// the extension (GLDx pays no dividends) have no `scaledUiConfig`, and their
-// top-level price is already the raw price.
+// `scaledUiConfig.usdPricePrescaled` is the raw-unit price.
 //
-// Which of the two a token is cannot be inferred from the response, so it is
-// declared per token as an `XStockUnitMode` and the reader fails CLOSED on a
-// rebasing token whose prescaled price is missing. Falling back to `usdPrice`
-// there reintroduces exactly the silent offset described above: Jupiter's
-// price API does not guarantee `scaledUiConfig`, so a schema change or a
-// partial response would quietly swap the unit, land well inside the 2%
+// Which of the two a token is cannot be inferred from a price response, so it
+// is declared per token as an `XStockUnitMode` and the reader fails CLOSED on
+// a rebasing token whose prescaled price is missing. Falling back to
+// `usdPrice` there reintroduces exactly the silent offset described above:
+// Jupiter's price API does not guarantee `scaledUiConfig`, so a schema change
+// or a partial response would quietly swap the unit, land well inside the 2%
 // consensus tolerance, and -- on the two-source feeds, where
 // getConsensusMedian averages the pair rather than picking a middle -- go
 // straight into the executable mark. Returning NaN drops Jupiter from the
 // quote set instead, which the consensus gate already handles: three-source
 // feeds carry on, two-source feeds skip the tick and alert.
+//
+// ⚠️ `static` is an ASSERTION ABOUT THE CURRENT MULTIPLIER, NOT ABOUT THE MINT.
+// An earlier version of this note claimed GLDx simply lacks the extension.
+// That is false: queried on-chain 2026-08-18, all four mints carry a
+// `scaledUiAmountConfig` with a live (non-null) update authority. GLDx's
+// multiplier merely happens to be exactly 1, which is why Jupiter omits
+// `scaledUiConfig` from its response today and why its `usdPrice` is
+// currently also the raw price. That authority can change the multiplier at
+// any time without any code change here.
+//
+// So `static` is defended two ways rather than trusted:
+//   1. Both modes prefer `usdPricePrescaled` whenever it is usable. At
+//      multiplier 1 the two units coincide, so this is a no-op today and
+//      automatically correct the moment a multiplier appears.
+//   2. If a `static` token's response carries a multiplier that is NOT 1, the
+//      declaration is provably stale and the reader fails closed rather than
+//      returning a number in an unknown unit.
+// The residual hole is narrow and deliberate: a token that starts rebasing
+// while Jupiter reports NO scaled metadata at all is undetectable in-band.
+// Flipping GLDx to `rebasing` today would not fix that -- Jupiter omits the
+// field, so it would fail closed on every tick and, on a two-source feed,
+// take the feed permanently dark. Closing it properly needs an out-of-band
+// watch on the mint's multiplier; see the launch runbook.
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -50,9 +71,18 @@ const toPositivePrice = (value: unknown): number => {
  * - `rebasing` - pays dividends by scaling balances, so `usdPrice` is the
  *   per-scaled-unit price and ONLY `usdPricePrescaled` is comparable to a CEX
  *   quote. Required, not merely preferred.
- * - `static` - never rebases, so `usdPrice` is already the raw-unit price.
+ * - `static` - the multiplier is currently exactly 1, so `usdPrice` is also
+ *   the raw-unit price. This asserts the CURRENT multiplier, not an immutable
+ *   property of the mint (every xStocks mint has a live update authority), and
+ *   the reader verifies it against the response wherever the data exists.
  */
 export type XStockUnitMode = 'rebasing' | 'static'
+
+/** A multiplier this far from 1 means the token is really rebasing. Loose
+ * enough to ignore float representation of an exact 1, tight enough that any
+ * genuine accrual trips it — the smallest live multiplier at the time of
+ * writing was NVDAx at 1.000103. */
+const STATIC_MULTIPLIER_EPSILON = 1e-6
 
 /**
  * Raw-unit USD price from a Jupiter lite-api `price/v3` response, keyed by
@@ -69,17 +99,34 @@ export const readJupiterRawUsdPrice = (
 ): number => {
   const entry = asRecord(asRecord(body)?.[mint])
   if (!entry) return Number.NaN
-  const prescaled = toPositivePrice(
-    asRecord(entry.scaledUiConfig)?.usdPricePrescaled
-  )
+  const scaled = asRecord(entry.scaledUiConfig)
+  const prescaled = toPositivePrice(scaled?.usdPricePrescaled)
   // Prefer the prescaled price whenever it is usable, for EITHER mode: it is
   // the raw-unit price by definition, and equals `usdPrice` on a token whose
   // multiplier is 1. So a `static` token that ever starts rebasing reads the
   // right number here instead of silently drifting.
   if (Number.isFinite(prescaled)) return prescaled
-  // Absent or unusable. Only a non-rebasing token may fall back.
+  // Absent or unusable. A rebasing token has no safe fallback.
   if (unitMode === 'rebasing') return Number.NaN
+  // Declared `static`, so `usdPrice` is only the raw price while the
+  // multiplier is 1. If the response says otherwise the declaration is stale
+  // and `usdPrice` is in an unknown unit — fail closed rather than publish it.
+  // Checked on both fields: `multiplier` is in force now, `newMultiplier` is
+  // the scheduled next one, and either being off 1 means this is not static.
+  if (isRebasingMultiplier(scaled?.multiplier)) return Number.NaN
+  if (isRebasingMultiplier(scaled?.newMultiplier)) return Number.NaN
   return toPositivePrice(entry.usdPrice)
+}
+
+/** True only when the value is present, numeric, and meaningfully not 1. An
+ * absent or unparseable multiplier is NOT evidence of rebasing — that is the
+ * ordinary shape of a static token's response, where Jupiter omits the whole
+ * `scaledUiConfig` object. */
+const isRebasingMultiplier = (value: unknown): boolean => {
+  if (typeof value !== 'string' && typeof value !== 'number') return false
+  const multiplier = Number(value)
+  if (!Number.isFinite(multiplier)) return false
+  return Math.abs(multiplier - 1) > STATIC_MULTIPLIER_EPSILON
 }
 
 /**

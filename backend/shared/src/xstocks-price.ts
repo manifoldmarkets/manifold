@@ -41,11 +41,17 @@ export type XStockSpec = {
   gatePair: string
   /** Only some xStocks are listed on MEXC. */
   mexcSymbol?: string
-  /** Whether the token rebases, which decides how Jupiter's response is read.
-   * Declared per token because it cannot be inferred from the response and
-   * reading it wrong biases the mark silently -- see common/perps/xstocks.ts.
-   * Follows whether the underlying pays a dividend: the three equity/ETF
-   * tokens do, gold does not. */
+  /** Whether the token's balance currently rebases, which decides how
+   * Jupiter's response is read. Declared per token because a price response
+   * cannot reveal it, and reading it wrong biases the mark silently -- see
+   * common/perps/xstocks.ts.
+   *
+   * Verified on-chain 2026-08-18 via getMultipleAccounts(jsonParsed): ALL
+   * FOUR mints carry a scaledUiAmountConfig with a live update authority.
+   * SPYx 1.003909, QQQx 1.001954 and NVDAx 1.000103 are accruing, so they are
+   * `rebasing`; GLDx sits at exactly 1, so `static` is true today but is not
+   * guaranteed by the mint. The reader fails closed if a response ever
+   * contradicts a `static` declaration. */
   unitMode: XStockUnitMode
 }
 

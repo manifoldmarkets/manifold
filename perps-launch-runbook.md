@@ -9,7 +9,7 @@ than trusting this count, which has drifted before.
 
 Current DEV state (2026-07-28): all six July PERP follow-up migrations are
 installed and their schema/immutability checks pass; do not rerun them. Exactly
-four clean manifest markets are unlisted with zero positions, exact backing,
+seven clean manifest markets are unlisted with zero positions, exact backing,
 fresh feeds, required topics, and embeddings. Both `feeds` and `unlisted`
 preflights report zero failures. The guarded legacy cleanup retired 27
 prototypes and removed 45 derived metrics without changing immutable history or
@@ -38,7 +38,7 @@ The phases mean:
   markets are warnings; any existing launch market must have its topic and
   embedding.
 - `unlisted`: exactly one unresolved market must exist for every launch feed,
-  and all four must be unlisted.
+  and every one of them must be unlisted.
 - `rollout`: one to three explicitly named `--public-feed` markets must be
   public and every other launch market must remain unlisted. Repeat
   `--public-feed` for the cumulative set already exposed.
@@ -72,10 +72,34 @@ protect the pools when the trader is flat at the funding timestamp.
 
 | Feed                         | Day-one game design                          | Execution risk                                                                               |
 | ---------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| BTC/USD                      | Best fit: continuous and genuinely two-sided | Exchange prices can lead the 15-second poll                                                  |
-| UK grid carbon               | Two-sided and mean-reverting                 | Finalized batches and forecasts can lead ingestion                                           |
+| BTC/USD                      | Best fit: continuous and genuinely two-sided | Exchange prices can lead the 5-second poll                                                   |
+| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided       | Venue prices can lead the 15-second poll; books far thinner than BTC                         |
 | Trump approval               | Coherent politics theses, but slow           | Public daily step plus known scheduler timing                                                |
 | OpenRouter open-weight share | Two-sided index with coherent adoption theses | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
+
+### xStocks multiplier watch (ongoing, post-launch)
+
+Every xStocks mint carries a Token-2022 `scaledUiAmountConfig` with a LIVE
+update authority. `XSTOCK_SPECS.unitMode` records which ones are currently
+rebasing (SPYx, QQQx, NVDAx) versus sitting at multiplier 1 (GLDx, verified
+on-chain 2026-08-18) — it is an assertion about today's multiplier, not about
+the mint.
+
+The parser fails closed if a Jupiter response ever contradicts a `static`
+declaration. It CANNOT catch the case where the multiplier changes and Jupiter
+reports no scaled metadata at all, which would silently reintroduce the
+wrong-unit price the fee-era mark depends on. So check periodically, and after
+any issuer announcement:
+
+```powershell
+# multiplier / newMultiplier for the four mints; GLDx must read exactly 1
+solana account <GLDX_MINT> --output json-compact --url mainnet-beta
+```
+
+If GLDx's multiplier leaves 1, flip its `unitMode` to `rebasing` **only after**
+confirming Jupiter populates `usdPricePrescaled` for it — flipping while
+Jupiter omits the field fails closed on every tick and, on a two-source feed,
+takes the feed permanently dark.
 
 Do not treat more frequent identical timestamps, larger pools, or a higher
 funding cap as fixes. Durable options are trade-time source refresh, a
@@ -165,7 +189,7 @@ automatic. Then:
    must have zero failures and exactly that one reviewed warning.
 
 2. Deploy the final reviewed web commit and verify the deployed SHA and
-   environment. Keep all four markets unlisted.
+   environment. Keep every market unlisted.
 3. With deliberately minimal M$ amounts, open long, add, flip, fully close, and
    retry the same request idempotency key on every market. Avoid materially
    inflating their initial ranking volume. Partial close is not implemented in
@@ -200,10 +224,12 @@ npx.cmd ts-node perp-launch-preflight.ts --phase=rollout --public-feed=btc-usd -
 
 Before each next flip, inspect Browse/Explore rank, impressions, pool movement,
 and unique/repeat traders. Add another `--public-feed=<id>` for each market
-already exposed. After all four are public, switch to the final `--phase=public`
-command; the rollout phase deliberately rejects a four-feed set. The final gate
-must emit only four acknowledged latency warnings and the one explicitly
-allowed external-alert warning.
+already exposed. After every market is public, switch to the final
+`--phase=public` command; the rollout phase deliberately rejects a full set.
+The final gate must emit one acknowledged latency warning per launch feed and
+the one explicitly allowed external-alert warning. Counts here are deliberately
+not written out: `getPerpLaunchManifestErrors()` is the executable source, and
+these numbers have drifted twice already.
 
 For an incident:
 

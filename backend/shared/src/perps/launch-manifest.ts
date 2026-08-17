@@ -67,7 +67,7 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     gameDesign:
       'Genuinely two-sided and continuously moving; the strongest fit in the launch set.',
     latencyArbitrageRisk:
-      'Exchange prices are visible before the 15-second poll reaches Manifold, so exact-price zero-fee execution can be picked off.',
+      'Exchange prices are visible before the 5-second poll reaches Manifold, so exact-price zero-fee execution can be picked off. The poll was 15s until 2026-08-17, when measured extraction of ~M$34k against the 10bps taker fee shrank it.',
     recommended: {
       maxLeverage: 5,
       annualMaxFundingRate: 1,

@@ -27,7 +27,9 @@ const jupiterGldx = {
   [GLDX_MINT]: {
     usdPrice: 394.2284266101142,
     decimals: 8,
-    // No scaledUiConfig: GLD pays no dividends, so the token never rebases.
+    // No scaledUiConfig: Jupiter omits it while the multiplier is exactly 1,
+    // which is GLDx's state as of 2026-08-18. NOT because the mint lacks the
+    // extension -- it has one, with a live update authority.
   },
 }
 
@@ -41,7 +43,7 @@ describe('readJupiterRawUsdPrice', () => {
     )
   })
 
-  it('falls back to usdPrice for tokens without the scaled-ui extension', () => {
+  it('falls back to usdPrice when Jupiter reports no scaled metadata', () => {
     expect(readJupiterRawUsdPrice(jupiterGldx, GLDX_MINT, 'static')).toBe(
       394.2284266101142
     )
@@ -84,6 +86,51 @@ describe('readJupiterRawUsdPrice', () => {
         'static'
       )
     ).toBe(394.5)
+  })
+
+  // `static` asserts the CURRENT multiplier is 1, and every xStocks mint has a
+  // live update authority that can change it. If a response contradicts the
+  // declaration, `usdPrice` is in an unknown unit and must not be published.
+  it('returns NaN when a static token reports a multiplier that is not 1', () => {
+    expect(
+      readJupiterRawUsdPrice(
+        {
+          [GLDX_MINT]: {
+            usdPrice: 394.2,
+            scaledUiConfig: { multiplier: 1.0042 },
+          },
+        },
+        GLDX_MINT,
+        'static'
+      )
+    ).toBeNaN()
+  })
+
+  it('returns NaN when a static token has a scheduled newMultiplier off 1', () => {
+    expect(
+      readJupiterRawUsdPrice(
+        {
+          [GLDX_MINT]: {
+            usdPrice: 394.2,
+            scaledUiConfig: { multiplier: 1, newMultiplier: 1.0008 },
+          },
+        },
+        GLDX_MINT,
+        'static'
+      )
+    ).toBeNaN()
+  })
+
+  it('still accepts a static token whose reported multiplier is exactly 1', () => {
+    expect(
+      readJupiterRawUsdPrice(
+        {
+          [GLDX_MINT]: { usdPrice: 394.2, scaledUiConfig: { multiplier: 1 } },
+        },
+        GLDX_MINT,
+        'static'
+      )
+    ).toBe(394.2)
   })
 
   it('prefers prescaled even for a static token, so one that starts rebasing still reads right', () => {

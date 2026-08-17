@@ -61,7 +61,11 @@ import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { updatePerps } from './update-perps'
-import { updateOracleFeeds } from './update-oracle-feeds'
+import {
+  ORACLE_TICK_PERIOD_MS,
+  updateOracleFeeds,
+  validateOracleFeedPollPeriods,
+} from './update-oracle-feeds'
 import { updateOpenRouterShare } from './update-openrouter-share'
 import { updateModelClassifications } from './update-model-classifications'
 import { updateTrumpApproval } from './update-trump-approval'
@@ -96,6 +100,10 @@ export function getSchedulerJobSet(): SchedulerJobSet {
 }
 
 export function createJobs(jobSet: SchedulerJobSet) {
+  // Report any feed whose pollPeriodMs the tick cannot actually honour. Here
+  // rather than at module scope so it runs once per boot, with logging up.
+  validateOracleFeedPollPeriods()
+
   // Schedules are 6-field croner expressions (seconds first) evaluated in
   // America/Los_Angeles (DEFAULT_OPTS in ./helpers.ts) — NOT UTC. A run that
   // is still going when its next firing comes due is skipped ("protect").
@@ -226,11 +234,12 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'update-oracle-feeds',
-      // Every 5 seconds (fast perp oracle tick). This is the FLOOR for how
-      // often any fast feed can be polled; each feed's own pollPeriodMs
-      // throttles it down from here, so raising this rate does not by itself
-      // increase load on any particular source.
-      '*/5 * * * * *',
+      // The FLOOR for how often any fast feed can be polled; each feed's own
+      // pollPeriodMs throttles it down from here, so raising this rate does
+      // not by itself increase load on any particular source. Derived from
+      // ORACLE_TICK_PERIOD_MS so the schedule and the throttle that rounds to
+      // it cannot drift apart.
+      `*/${ORACLE_TICK_PERIOD_MS / 1000} * * * * *`,
       updateOracleFeeds
     ),
     createJob(

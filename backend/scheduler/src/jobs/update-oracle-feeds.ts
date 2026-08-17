@@ -47,6 +47,8 @@ export async function updateOracleFeeds() {
       dispatch(feed.id, () => probeDailyFeedStaleness(pg, feed))
     }
   }
+
+  alertOnStuckFeeds(now)
 }
 
 // Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
@@ -55,7 +57,46 @@ export async function updateOracleFeeds() {
 // in-memory — a scheduler restart polls everything once immediately, which is
 // the correct bias: fresher marks, and staleness alerting re-arms at once.
 const lastPollAttempt: Record<string, number> = {}
-const inFlight: Record<string, boolean> = {}
+/** Start time of the run currently in flight, or absent when idle. */
+const inFlightSince: Record<string, number> = {}
+/** Last time a stuck feed was reported, to keep the alert to once a period. */
+const lastStuckAlert: Record<string, number> = {}
+
+// How overdue an in-flight run must be before it is treated as stuck. Every
+// fetch adapter is bounded (AbortSignal.timeout), but the DB work behind
+// runOracleUpdate is not, and an advisory-lock wait or a pool starvation can
+// last far longer than any poll period.
+const STUCK_GRACE_MS = 2 * MINUTE_MS
+const STUCK_ALERT_INTERVAL_MS = 5 * MINUTE_MS
+
+/**
+ * Because dispatch skips a feed while its previous run is in flight, a promise
+ * that never settles takes that feed permanently dark — silently, since the
+ * staleness check lives INSIDE the work that is no longer running. The job
+ * itself keeps reporting success either way: `updateOracleFeeds` returns after
+ * dispatching, so `scheduler_info.last_end_time` is now a dispatcher heartbeat
+ * and says nothing about whether feed work completes. (`perp-launch-preflight`
+ * reads that column as a liveness signal; it still correctly means "the job is
+ * firing", which is what it checks.) This is the compensating signal.
+ *
+ * `update-perps` would also catch it hourly for feeds with a live market; this
+ * reports in minutes and covers feeds that have no market yet.
+ */
+const alertOnStuckFeeds = (now: number) => {
+  for (const feedId of Object.keys(inFlightSince)) {
+    const startedAt = inFlightSince[feedId]
+    if (startedAt == null) continue
+    const age = now - startedAt
+    if (age < STUCK_GRACE_MS) continue
+    if (now - (lastStuckAlert[feedId] ?? 0) < STUCK_ALERT_INTERVAL_MS) continue
+    lastStuckAlert[feedId] = now
+    log.error(
+      `[oracle-feeds] ${feedId}: poll has been in flight for ${Math.round(
+        age / 1000
+      )}s and is blocking its own next run — the feed is effectively dark`
+    )
+  }
+}
 
 /**
  * Start a feed's work without blocking the cron run, at most once at a time.
@@ -71,13 +112,15 @@ const inFlight: Record<string, boolean> = {}
  * cannot become an unhandled rejection that takes the scheduler down.
  */
 const dispatch = (feedId: string, run: () => Promise<void>) => {
-  if (inFlight[feedId]) return
-  inFlight[feedId] = true
-  lastPollAttempt[feedId] = Date.now()
+  if (inFlightSince[feedId] != null) return
+  const startedAt = Date.now()
+  inFlightSince[feedId] = startedAt
+  lastPollAttempt[feedId] = startedAt
   void run()
     .catch((err) => log.error(`[oracle-feeds] ${feedId}: unhandled — ${err}`))
     .finally(() => {
-      inFlight[feedId] = false
+      delete inFlightSince[feedId]
+      delete lastStuckAlert[feedId]
     })
 }
 
@@ -85,10 +128,26 @@ const dispatch = (feedId: string, run: () => Promise<void>) => {
 // no reason to run 12x a minute; it can only alert once an hour anyway.
 const DAILY_PROBE_PERIOD_MS = MINUTE_MS
 
-// Cron firings are not spaced exactly pollPeriodMs apart. Without slack, a
-// feed whose period equals the tick interval would fail the comparison on
-// roughly every other firing and silently run at half its configured rate.
-const POLL_PERIOD_SLACK = 0.8
+/**
+ * How often this job fires. Exported so the cron registration and the poll
+ * throttle cannot disagree — a feed can only ever be polled on a firing, so
+ * this is the quantum every pollPeriodMs is rounded to.
+ */
+export const ORACLE_TICK_PERIOD_MS = 5_000
+
+// Firings are not spaced exactly pollPeriodMs apart, so the due check needs
+// slack. Two things make the stamps jitter: croner's own scheduling, and the
+// two awaited Supabase round-trips `createJob` performs before it ever calls
+// this job — a slow one shifts the stamp by however long it took.
+//
+// The tolerance is HALF A TICK, tied to the cron quantum rather than to the
+// period. It was previously 20% OF THE PERIOD, which silently rescaled the
+// request: the nominally 60s daily probe actually ran at 50s, and a 6.3s feed
+// would have quantized to 5s — faster than asked, which is the wrong
+// direction to round for a rate-limited source. Half a tick makes every
+// period land on its nearest multiple of the tick (60s stays 60s) and
+// absorbs up to 2.5s of stamp jitter.
+const POLL_JITTER_TOLERANCE_MS = ORACLE_TICK_PERIOD_MS / 2
 
 const isPollDue = (
   feedId: string,
@@ -101,7 +160,38 @@ const isPollDue = (
     return true
   const last = lastPollAttempt[feedId]
   if (last == null) return true
-  return now - last >= periodMs * POLL_PERIOD_SLACK
+  // Cap at half the period too, so a period shorter than one tick cannot be
+  // swallowed by the tolerance and turn into "poll on every firing".
+  const tolerance = Math.min(POLL_JITTER_TOLERANCE_MS, periodMs / 2)
+  return now - last >= periodMs - tolerance
+}
+
+/**
+ * A pollPeriodMs that is not a whole number of ticks cannot be honoured — the
+ * feed can only be polled on a firing, so it silently runs at the nearest
+ * multiple instead. Report it rather than let the registry read as a promise
+ * the scheduler does not keep. Checked once at startup; `pollPeriodMs` is a
+ * static registry value, so a clean boot is a permanent all-clear.
+ */
+export const validateOracleFeedPollPeriods = () => {
+  for (const feed of ORACLE_FEEDS) {
+    const period = feed.pollPeriodMs
+    if (period == null) continue
+    if (!Number.isFinite(period) || period <= 0) {
+      log.error(
+        `[oracle-feeds] ${feed.id}: pollPeriodMs ${period} is not a positive duration; it will be polled on every tick`
+      )
+      continue
+    }
+    if (period % ORACLE_TICK_PERIOD_MS !== 0) {
+      const effective =
+        Math.max(1, Math.round(period / ORACLE_TICK_PERIOD_MS)) *
+        ORACLE_TICK_PERIOD_MS
+      log.error(
+        `[oracle-feeds] ${feed.id}: pollPeriodMs ${period} is not a multiple of the ${ORACLE_TICK_PERIOD_MS}ms tick; it will actually poll every ${effective}ms`
+      )
+    }
+  }
 }
 
 // Dead-man switch for daily feeds. Their points are written by their own
