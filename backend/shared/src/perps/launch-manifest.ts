@@ -5,7 +5,11 @@ import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 import {
   BTC_USD_FEED_ID,
+  GLDX_USD_FEED_ID,
+  NVDAX_USD_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
+  QQQX_USD_FEED_ID,
+  SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
   UK_GRID_CARBON_FEED_ID,
 } from '../oracle'
@@ -161,6 +165,132 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
       subsidyShort: 10_000,
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  // Tokenized-equity trio (xStocks by Backed). These deliberately track the
+  // TOKEN's venue price, not the underlying index: that is what makes the
+  // feed free and licence-clean (we composite public crypto-venue quotes,
+  // like BTC) and what gives it genuine 24/7 price discovery — mint/redeem
+  // arbitrage pins the token to the ETF during US market hours and it trades
+  // like a futures proxy overnight and on weekends. The questions name the
+  // index for discovery but state the tracked instrument.
+  //
+  // Leverage is capped below BTC's because total venue turnover is ~3 orders
+  // of magnitude thinner (~$3-6M/day SPYx, less for the others): the
+  // consensus gate rejects single-venue wicks, but a thin-book move that two
+  // venues echo executes here at zero fees.
+  {
+    feedId: SPYX_USD_FEED_ID,
+    question: 'S&P 500 — tokenized SPY price (SPYx, USD)',
+    requiredTopics: [
+      {
+        // DEV has no Stocks topic; economics-default exists in both
+        // environments (same pattern as BTC's crypto-default).
+        name: 'Stocks',
+        slugByEnvironment: {
+          DEV: 'economics-default',
+          PROD: 'stocks',
+        },
+      },
+    ],
+    oracleBehavior: 'continuous-public',
+    requiresSourceAsOf: false,
+    gameDesign:
+      'Two-sided macro exposure with real 24/7 price discovery: pinned to SPY intraday by issuer arbitrage, a futures-like proxy on nights and weekends. Dividend reinvestment (balance rebasing) makes the raw token drift above SPY spot by roughly 1%/yr; the feed quotes the raw token consistently.',
+    latencyArbitrageRisk:
+      'Venue prices are public before the 15-second poll reaches Manifold, so exact-price zero-fee execution can be picked off, and books are far thinner than BTC. Weekend liquidity is the worst case: consensus can wobble and a genuine fast move executes against the stale cache for up to a tick.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+  },
+  {
+    feedId: QQQX_USD_FEED_ID,
+    question: 'Nasdaq-100 — tokenized QQQ price (QQQx, USD)',
+    requiredTopics: [
+      {
+        name: 'Stocks',
+        slugByEnvironment: {
+          DEV: 'economics-default',
+          PROD: 'stocks',
+        },
+      },
+    ],
+    oracleBehavior: 'continuous-public',
+    requiresSourceAsOf: false,
+    gameDesign:
+      'Higher-beta sibling of the SPYx market with the same 24/7 discovery mechanics; correlated with both SPYx and BTC, which traders can spread against.',
+    latencyArbitrageRisk:
+      'Same pick-off surface as SPYx, plus a two-source consensus (MEXC does not list QQQx): one venue outage stalls the feed until it recovers, pausing trading at maxOraclePriceAgeMs rather than executing one-venue prices.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+  },
+  {
+    feedId: GLDX_USD_FEED_ID,
+    question: 'Gold — tokenized GLD price (GLDx, USD)',
+    requiredTopics: [
+      {
+        name: 'Economics',
+        slugByEnvironment: {
+          DEV: 'economics-default',
+          PROD: 'economics-default',
+        },
+      },
+    ],
+    oracleBehavior: 'continuous-public',
+    requiresSourceAsOf: false,
+    gameDesign:
+      'Macro/safe-haven exposure that diversifies the equity pair; no dividends, so no rebase drift. Thinnest venue set in the trio (Gate turned over ~$56K/day at probe time), hence the same conservative caps despite the calmer underlying.',
+    latencyArbitrageRisk:
+      'Same pick-off surface and two-source consensus caveat as QQQx, on the thinnest books of the three markets.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+  },
+  {
+    feedId: NVDAX_USD_FEED_ID,
+    question: 'Nvidia — tokenized NVDA price (NVDAx, USD)',
+    requiredTopics: [
+      {
+        name: 'Stocks',
+        slugByEnvironment: {
+          DEV: 'economics-default',
+          PROD: 'stocks',
+        },
+      },
+    ],
+    oracleBehavior: 'continuous-public',
+    requiresSourceAsOf: false,
+    gameDesign:
+      'The only single-name equity in the set: higher volatility and coherent theses on both sides, but earnings and headline gaps land harder than on the index pairs — leverage should stay at the conservative recommendation until post-earnings behavior is observed. Pays a negligible dividend, so rebase drift is immaterial.',
+    latencyArbitrageRisk:
+      'Same pick-off surface as SPYx (all three venues listed), with larger single-name jumps: an earnings gap can exceed the consensus tolerance venue-by-venue for a few ticks while books reprice.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
   },
 ]
 

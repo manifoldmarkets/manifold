@@ -189,6 +189,10 @@ Feed adapters live next to it:
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
+- `xstocks-price.ts` — tokenized-equity USD prices (SPYx/QQQx/GLDx/NVDAx,
+  xStocks by Backed), consensus median across Jupiter/Gate/MEXC venue quotes. Pure
+  response parsing lives in `common/src/perps/xstocks.ts` (unit-tested,
+  including the raw-vs-rebase-scaled unit trap).
 - `uk-grid-carbon.ts` — GB grid carbon intensity (gCO2/kWh), NESO 30-min
   actuals.
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
@@ -203,7 +207,7 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,uk-carbon,trump-approval,openrouter}-oracle.ts`)
+(`backend/scripts/backfill-{btc,xstocks,uk-carbon,trump-approval,openrouter}-oracle.ts`)
 seed chart history before market creation.
 
 The executable launch set, conservative initial parameters, feed-specific game
