@@ -23,7 +23,7 @@ ENV=${1:-dev}
 #   all   — every job on one instance (single-instance mode; the dev default)
 #   main  — everything except the PERP jobs (instance: scheduler)
 #   perps — only the PERP oracle/funding jobs (instance: scheduler-perps)
-# Prod requires an explicit main/perps pair so the 15s oracle tick never
+# Prod requires an explicit main/perps pair so the 5s oracle tick never
 # shares an event loop with heavy batch jobs, which stall it for minutes.
 TARGET=${2:-all}
 

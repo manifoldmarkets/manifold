@@ -101,9 +101,21 @@ does not maintain a balance column for `CONTRACT` senders.
 
 `common/src/perps/fees.ts`. Trades execute at the cached oracle price, and
 with zero fees that price is a free option for latency bots (2026-08-07: two
-bots extracted ~M$70k from the BTC perp pools by sniping the 15s tick at a
-measured edge of ~1.5 bps of notional per round trip — faster ticks make
-this WORSE, since harvestable total variation grows as 1/√period). The fee
+bots extracted ~M$70k from the BTC perp pools by sniping the then-15s tick at
+a measured edge of ~1.5 bps of notional per round trip).
+
+**The fee inverts how the tick rate matters, so read the two regimes
+separately.** With NO fee, every tick is worth exercising, so total harvest
+over a fixed window is `(W/T) · |move|(T)`, and since per-tick movement grows
+only as ~√T, shortening the period makes extraction WORSE as 1/√T. With a fee
+`F`, only ticks whose move exceeds `F` are worth taking, and the frequency of
+those was measured on the BTC feed at ~T^1.95 — so the same shortening now
+makes extraction dramatically BETTER for us. That is why the 2026-08-17 change
+to a 5s poll is a mitigation and not a regression: it is only correct because
+the fee exists. Do not remove the fee and keep the fast tick — that combination
+is the worst of both, and it is the one this paragraph originally warned about.
+
+The fee
 is `takerFeeBps` (default 10) of NOTIONAL, charged when a position is opened
 or added to — closing is free, so this is the whole round-trip cost, visible
 up front. Every snipe needs an entry, so an open-only fee taxes each round
@@ -189,8 +201,10 @@ Feed adapters live next to it:
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
-- `uk-grid-carbon.ts` — GB grid carbon intensity (gCO2/kWh), NESO 30-min
-  actuals.
+- `xstocks-price.ts` — tokenized-equity USD prices (SPYx/QQQx/GLDx/NVDAx,
+  xStocks by Backed), consensus median across Jupiter/Gate/MEXC venue quotes. Pure
+  response parsing lives in `common/src/perps/xstocks.ts` (unit-tested,
+  including the raw-vs-rebase-scaled unit trap).
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
 - `openrouter-tokens.ts` — trailing seven-day open-weight share of classified
   top-50 OpenRouter model traffic.
@@ -203,7 +217,7 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,uk-carbon,trump-approval,openrouter}-oracle.ts`)
+(`backend/scripts/backfill-{btc,xstocks,trump-approval,openrouter}-oracle.ts`)
 seed chart history before market creation.
 
 The executable launch set, conservative initial parameters, feed-specific game
@@ -214,7 +228,7 @@ sequence and rollback are in `perps-launch-runbook.md`.
 
 ## Scheduler
 
-- `update-oracle-feeds.ts` runs **every 15 seconds** (croner handles
+- `update-oracle-feeds.ts` fires **every 5 seconds** (croner handles
   sub-minute fine — see the existing `sports-live` job). It fetches `fast`
   feeds, validates points against the registry, writes `oracle_prices`, and
   applies `runOracleUpdate` to live perps on those feeds. Liquidation + ADL

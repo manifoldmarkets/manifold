@@ -24,7 +24,7 @@ import {
 } from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { median } from 'common/util/math'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -72,16 +72,33 @@ const DEFAULT_OVERLAYS: OverlayToggles = {
 
 // Each frame fetches its own window server-side. Short frames take raw
 // points; longer frames downsample via bucketSeconds (last point per
-// bucket) so a 15s feed's week/month views aren't truncated to "the last
-// two days" by the 5000-point response cap. Bucket sizes keep every frame
-// comfortably under the cap: 1D 24h/30s=2880, 1W 7d/5min=2016,
-// 1M 30d/20min=2160, All 2h buckets=up to ~13 months. 1W/1M matter for
-// slow feeds: on a 30-min feed the readable view — each day's wave
-// distinct — lives at the weeks scale (buckets ≥ cadence pass points
-// through untouched).
-type Timeframe = '1H' | '6H' | '1D' | '1W' | '1M' | 'ALL'
-const TIMEFRAMES: Timeframe[] = ['1H', '6H', '1D', '1W', '1M', 'ALL']
+// bucket) so a fast feed's week/month views aren't truncated to "the last
+// two days" by the 5000-point response cap.
+//
+// The cap is the binding constraint and it fails SILENTLY — the query is
+// `order by ts desc limit 5000`, so an over-budget frame returns the newest
+// 5000 points and renders a window shorter than its own label. Every frame
+// must therefore stay under it at the FASTEST cadence any feed runs, which
+// since 2026-08-17 is the BTC feed's 5s poll (was 15s):
+//   15M  raw            15min/5s   =   180
+//   1H   raw             1h/5s     =   720
+//   6H   15s buckets     6h/15s    = 1,440   (raw would be 4,320 — 86% of
+//                                             the cap, and climbing on any
+//                                             feed faster than 5s)
+//   1D   30s buckets    24h/30s    = 2,880
+//   1W   5min buckets    7d/5min   = 2,016
+//   1M   20min buckets  30d/20min  = 2,160
+//   ALL  2h buckets                = up to ~13 months
+// Buckets ≥ a feed's cadence pass its points through untouched, so bucketing
+// a frame costs slow feeds nothing. 1W/1M matter for slow feeds specifically:
+// on a 30-min feed the readable view — each day's wave distinct — lives at
+// the weeks scale. 15M matters for fast ones: at 5s the mark steps visibly
+// within it, which is the whole point of a fast poll. Cadence gating (below)
+// keeps 15M off feeds too slow to fill it, with no per-feed special-casing.
+type Timeframe = '15M' | '1H' | '6H' | '1D' | '1W' | '1M' | 'ALL'
+const TIMEFRAMES: Timeframe[] = ['15M', '1H', '6H', '1D', '1W', '1M', 'ALL']
 const TIMEFRAME_MS: { [k in Timeframe]: number } = {
+  '15M': 15 * MINUTE_MS,
   '1H': HOUR_MS,
   '6H': 6 * HOUR_MS,
   '1D': DAY_MS,
@@ -92,8 +109,9 @@ const TIMEFRAME_MS: { [k in Timeframe]: number } = {
 const TIMEFRAME_FETCH: {
   [k in Timeframe]: { windowMs?: number; bucketSeconds?: number }
 } = {
+  '15M': { windowMs: 15 * MINUTE_MS },
   '1H': { windowMs: HOUR_MS },
-  '6H': { windowMs: 6 * HOUR_MS },
+  '6H': { windowMs: 6 * HOUR_MS, bucketSeconds: 15 },
   '1D': { windowMs: DAY_MS, bucketSeconds: 30 },
   '1W': { windowMs: 7 * DAY_MS, bucketSeconds: 300 },
   '1M': { windowMs: 30 * DAY_MS, bucketSeconds: 1200 },

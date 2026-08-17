@@ -113,7 +113,7 @@ const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
 // All engine writers on one contract serialize on the advisory lock, but each
 // waiter's SERIALIZABLE snapshot predates the winner's commit, so contended
 // transactions abort with 40001 on wake-up and must retry. Under a burst
-// (concurrent trades + the 15s tick) the default 3 attempts demonstrably
+// (concurrent trades + the 5s tick) the default 3 attempts demonstrably
 // exhaust: the QA drill lost 2 of 6 parallel ops. 8 attempts with the
 // jittered backoff in transactWithRetries absorbs bursts; integrity is
 // unaffected either way (failed attempts write nothing).
