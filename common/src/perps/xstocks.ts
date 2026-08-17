@@ -14,6 +14,18 @@
 // `scaledUiConfig.usdPricePrescaled` is the raw-unit price. Tokens without
 // the extension (GLDx pays no dividends) have no `scaledUiConfig`, and their
 // top-level price is already the raw price.
+//
+// Which of the two a token is cannot be inferred from the response, so it is
+// declared per token as an `XStockUnitMode` and the reader fails CLOSED on a
+// rebasing token whose prescaled price is missing. Falling back to `usdPrice`
+// there reintroduces exactly the silent offset described above: Jupiter's
+// price API does not guarantee `scaledUiConfig`, so a schema change or a
+// partial response would quietly swap the unit, land well inside the 2%
+// consensus tolerance, and -- on the two-source feeds, where
+// getConsensusMedian averages the pair rather than picking a middle -- go
+// straight into the executable mark. Returning NaN drops Jupiter from the
+// quote set instead, which the consensus gate already handles: three-source
+// feeds carry on, two-source feeds skip the tick and alert.
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -31,17 +43,42 @@ const toPositivePrice = (value: unknown): number => {
 }
 
 /**
- * Raw-unit USD price from a Jupiter lite-api `price/v3` response, keyed by
- * mint address. Prefers `scaledUiConfig.usdPricePrescaled` (see module note);
- * falls back to `usdPrice` for tokens without the scaled-ui extension.
+ * Whether a token's balance rebases (Token-2022 scaled-ui-amount), which
+ * decides whether Jupiter's top-level `usdPrice` is in the same unit that CEX
+ * order books trade.
+ *
+ * - `rebasing` - pays dividends by scaling balances, so `usdPrice` is the
+ *   per-scaled-unit price and ONLY `usdPricePrescaled` is comparable to a CEX
+ *   quote. Required, not merely preferred.
+ * - `static` - never rebases, so `usdPrice` is already the raw-unit price.
  */
-export const readJupiterRawUsdPrice = (body: unknown, mint: string): number => {
+export type XStockUnitMode = 'rebasing' | 'static'
+
+/**
+ * Raw-unit USD price from a Jupiter lite-api `price/v3` response, keyed by
+ * mint address.
+ *
+ * `unitMode` is deliberately required rather than defaulted: a new call site
+ * that has not thought about the unit should fail to compile, because getting
+ * it wrong is invisible at runtime (see the module note).
+ */
+export const readJupiterRawUsdPrice = (
+  body: unknown,
+  mint: string,
+  unitMode: XStockUnitMode
+): number => {
   const entry = asRecord(asRecord(body)?.[mint])
   if (!entry) return Number.NaN
   const prescaled = toPositivePrice(
     asRecord(entry.scaledUiConfig)?.usdPricePrescaled
   )
+  // Prefer the prescaled price whenever it is usable, for EITHER mode: it is
+  // the raw-unit price by definition, and equals `usdPrice` on a token whose
+  // multiplier is 1. So a `static` token that ever starts rebasing reads the
+  // right number here instead of silently drifting.
   if (Number.isFinite(prescaled)) return prescaled
+  // Absent or unusable. Only a non-rebasing token may fall back.
+  if (unitMode === 'rebasing') return Number.NaN
   return toPositivePrice(entry.usdPrice)
 }
 

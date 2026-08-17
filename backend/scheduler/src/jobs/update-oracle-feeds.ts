@@ -24,29 +24,29 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 //   3. Alert (log.error → GCP log-based alerting) when a feed goes stale.
 // `daily` feeds are written by their own jobs; their staleness is checked by
 // the hourly update-perps job, which sees which live contracts they back.
-// Croner's `protect` skips a firing while the previous one still runs, so a
-// slow upstream can't stack ticks — at a 5s cron a slow BTC fetch (up to the
-// adapter's 5s timeout) therefore degrades the effective rate toward 10s
-// rather than queueing work, which is the right failure mode.
+// Feeds are dispatched, NOT awaited, and each is guarded independently. This
+// matters because croner's `protect` is per-JOB: it skips a firing while the
+// previous one is still running, so awaiting every due feed together would
+// let any one slow source hold the whole run across the next tick. With
+// xStocks on the same job that is a live regression of this file's purpose —
+// their adapter waits on up to three venues at a 5s timeout each and they
+// come due every third BTC firing, so one hanging Jupiter request would push
+// BTC's interval to 10s exactly when the mark is moving. The per-feed
+// in-flight guard below is a strictly finer-grained `protect`: it still
+// prevents a feed from stacking on ITSELF, without coupling feeds to each
+// other.
 export async function updateOracleFeeds() {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
 
-  const fastFeeds = ORACLE_FEEDS.filter(
-    (f) => f.cadence === 'fast' && isPollDue(f.id, f.pollPeriodMs, now)
-  )
-  const dailyFeeds = ORACLE_FEEDS.filter(
-    (f) => f.cadence === 'daily' && isPollDue(f.id, DAILY_PROBE_PERIOD_MS, now)
-  )
-  // Stamp before awaiting, not after: a source that hangs until its fetch
-  // timeout must not earn an immediate retry on the very next firing.
-  for (const feed of [...fastFeeds, ...dailyFeeds])
-    lastPollAttempt[feed.id] = now
-
-  await Promise.all([
-    ...fastFeeds.map((feed) => tickOneFeed(pg, feed)),
-    ...dailyFeeds.map((feed) => probeDailyFeedStaleness(pg, feed)),
-  ])
+  for (const feed of ORACLE_FEEDS) {
+    if (feed.cadence === 'fast') {
+      if (isPollDue(feed.id, feed.pollPeriodMs, now))
+        dispatch(feed.id, () => tickOneFeed(pg, feed))
+    } else if (isPollDue(feed.id, DAILY_PROBE_PERIOD_MS, now)) {
+      dispatch(feed.id, () => probeDailyFeedStaleness(pg, feed))
+    }
+  }
 }
 
 // Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
@@ -55,6 +55,31 @@ export async function updateOracleFeeds() {
 // in-memory — a scheduler restart polls everything once immediately, which is
 // the correct bias: fresher marks, and staleness alerting re-arms at once.
 const lastPollAttempt: Record<string, number> = {}
+const inFlight: Record<string, boolean> = {}
+
+/**
+ * Start a feed's work without blocking the cron run, at most once at a time.
+ *
+ * Skipping while in-flight is what replaces croner's `protect` at feed
+ * granularity: a source slower than its own poll period falls back to running
+ * as often as it can finish, rather than piling up overlapping fetches.
+ *
+ * The attempt is stamped here, before the work starts, so a source that hangs
+ * to its fetch timeout does not earn an immediate retry on the next firing.
+ * `tickOneFeed` and `probeDailyFeedStaleness` both catch internally and never
+ * reject; the `.catch` is a backstop so a future edit that lets one throw
+ * cannot become an unhandled rejection that takes the scheduler down.
+ */
+const dispatch = (feedId: string, run: () => Promise<void>) => {
+  if (inFlight[feedId]) return
+  inFlight[feedId] = true
+  lastPollAttempt[feedId] = Date.now()
+  void run()
+    .catch((err) => log.error(`[oracle-feeds] ${feedId}: unhandled — ${err}`))
+    .finally(() => {
+      inFlight[feedId] = false
+    })
+}
 
 // The daily feeds' staleness probe is a read-only indexed lookup, but it has
 // no reason to run 12x a minute; it can only alert once an hour anyway.

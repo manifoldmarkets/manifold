@@ -205,7 +205,7 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,xstocks,uk-carbon,trump-approval,openrouter}-oracle.ts`)
+(`backend/scripts/backfill-{btc,xstocks,trump-approval,openrouter}-oracle.ts`)
 seed chart history before market creation.
 
 The executable launch set, conservative initial parameters, feed-specific game

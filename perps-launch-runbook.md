@@ -2,7 +2,10 @@
 
 This is the operational source of truth for the first public PERP rollout.
 `backend/shared/src/perps/launch-manifest.ts` is the executable source of truth
-for the four intended feeds and their conservative day-one settings.
+for the seven intended feeds and their conservative day-one settings (BTC, the
+four xStocks tokenized equities, Trump approval, and OpenRouter open-weight
+share). It is executable on purpose: run `getPerpLaunchManifestErrors()` rather
+than trusting this count, which has drifted before.
 
 Current DEV state (2026-07-28): all six July PERP follow-up migrations are
 installed and their schema/immutability checks pass; do not rerun them. Exactly
@@ -107,8 +110,9 @@ Keep that redesign separate from the capped day-one launch.
    scheduler. Configure the API runtime with `PERP_TRADING_MODE=enabled` and
    verify OpenRouter writes a point with provider `source_ts`.
 3. Provision `OPENROUTER_API_KEY` in the target environment.
-4. Run the BTC, UK carbon, Trump, and OpenRouter oracle backfills if history is
-   absent.
+4. Run the BTC, xStocks, Trump, and OpenRouter oracle backfills if history is
+   absent. (The UK carbon feed and its backfill script were removed when that
+   market was sunset on 2026-08-10.)
 5. Review and settle/retire out-of-manifest or legacy prototypes. This changes
    balances; record the intended final oracle point and affected positions
    before executing it.
@@ -148,7 +152,7 @@ will immediately be recreated.
 
 ## Unlisted smoke pass
 
-Create only the four manifest feeds as unlisted. Required topic tags are
+Create only the manifest feeds as unlisted. Required topic tags are
 automatic. Then:
 
 1. Run the discovery backfill in dry-run mode, then:

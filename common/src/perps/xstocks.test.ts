@@ -36,46 +36,101 @@ describe('readJupiterRawUsdPrice', () => {
     // The scaled usdPrice (769.64) is a real price for a DIFFERENT unit than
     // CEX books trade; choosing it would bias the composite by the accrued
     // dividend multiplier without tripping the consensus gate.
-    expect(readJupiterRawUsdPrice(jupiterSpyx, SPYX_MINT)).toBe(
+    expect(readJupiterRawUsdPrice(jupiterSpyx, SPYX_MINT, 'rebasing')).toBe(
       774.0335270381266
     )
   })
 
   it('falls back to usdPrice for tokens without the scaled-ui extension', () => {
-    expect(readJupiterRawUsdPrice(jupiterGldx, GLDX_MINT)).toBe(
+    expect(readJupiterRawUsdPrice(jupiterGldx, GLDX_MINT, 'static')).toBe(
       394.2284266101142
     )
   })
 
-  it('falls back to usdPrice when the prescaled value is unusable', () => {
+  // A rebasing token must NOT fall back to usdPrice. That price is real, but
+  // denominated per SCALED unit, so pairing it with a raw-token CEX quote
+  // biases the composite by the accrued-dividend multiplier (~0.5% on SPYx)
+  // -- well inside the 2% consensus tolerance, and on a two-source feed
+  // getConsensusMedian averages the pair straight into the executable mark.
+  it('returns NaN for a rebasing token when the prescaled price is unusable', () => {
     const body = {
-      [SPYX_MINT]: {
-        usdPrice: 770,
-        scaledUiConfig: { usdPricePrescaled: 0 },
-      },
+      [SPYX_MINT]: { usdPrice: 770, scaledUiConfig: { usdPricePrescaled: 0 } },
     }
-    expect(readJupiterRawUsdPrice(body, SPYX_MINT)).toBe(770)
+    expect(readJupiterRawUsdPrice(body, SPYX_MINT, 'rebasing')).toBeNaN()
+  })
+
+  it('returns NaN for a rebasing token with no scaledUiConfig at all', () => {
+    // Jupiter's documented price schema does not guarantee the scaled
+    // metadata, so a schema change or partial response lands here.
+    expect(
+      readJupiterRawUsdPrice(
+        { [SPYX_MINT]: { usdPrice: 770 } },
+        SPYX_MINT,
+        'rebasing'
+      )
+    ).toBeNaN()
+  })
+
+  it('lets a static token fall back to usdPrice', () => {
+    expect(
+      readJupiterRawUsdPrice(
+        {
+          [GLDX_MINT]: {
+            usdPrice: 394.5,
+            scaledUiConfig: { usdPricePrescaled: 0 },
+          },
+        },
+        GLDX_MINT,
+        'static'
+      )
+    ).toBe(394.5)
+  })
+
+  it('prefers prescaled even for a static token, so one that starts rebasing still reads right', () => {
+    expect(
+      readJupiterRawUsdPrice(
+        {
+          [GLDX_MINT]: {
+            usdPrice: 394.2,
+            scaledUiConfig: { usdPricePrescaled: 396.1 },
+          },
+        },
+        GLDX_MINT,
+        'static'
+      )
+    ).toBe(396.1)
   })
 
   it('returns NaN when the mint is absent or the body is malformed', () => {
-    expect(readJupiterRawUsdPrice(jupiterSpyx, GLDX_MINT)).toBeNaN()
-    expect(readJupiterRawUsdPrice({}, SPYX_MINT)).toBeNaN()
-    expect(readJupiterRawUsdPrice(null, SPYX_MINT)).toBeNaN()
-    expect(readJupiterRawUsdPrice([jupiterSpyx], SPYX_MINT)).toBeNaN()
-    expect(readJupiterRawUsdPrice('774', SPYX_MINT)).toBeNaN()
+    expect(readJupiterRawUsdPrice(jupiterSpyx, GLDX_MINT, 'rebasing')).toBeNaN()
+    expect(readJupiterRawUsdPrice({}, SPYX_MINT, 'rebasing')).toBeNaN()
+    expect(readJupiterRawUsdPrice(null, SPYX_MINT, 'rebasing')).toBeNaN()
+    expect(
+      readJupiterRawUsdPrice([jupiterSpyx], SPYX_MINT, 'rebasing')
+    ).toBeNaN()
+    expect(readJupiterRawUsdPrice('774', SPYX_MINT, 'rebasing')).toBeNaN()
   })
 
   it('returns NaN for non-positive or non-finite prices', () => {
     expect(
-      readJupiterRawUsdPrice({ [SPYX_MINT]: { usdPrice: 0 } }, SPYX_MINT)
+      readJupiterRawUsdPrice(
+        { [SPYX_MINT]: { usdPrice: 0 } },
+        SPYX_MINT,
+        'static'
+      )
     ).toBeNaN()
     expect(
-      readJupiterRawUsdPrice({ [SPYX_MINT]: { usdPrice: -5 } }, SPYX_MINT)
+      readJupiterRawUsdPrice(
+        { [SPYX_MINT]: { usdPrice: -5 } },
+        SPYX_MINT,
+        'static'
+      )
     ).toBeNaN()
     expect(
       readJupiterRawUsdPrice(
         { [SPYX_MINT]: { usdPrice: Number.POSITIVE_INFINITY } },
-        SPYX_MINT
+        SPYX_MINT,
+        'static'
       )
     ).toBeNaN()
   })
@@ -103,9 +158,9 @@ describe('readGateTickerMid', () => {
         { last: '774.69', lowest_ask: '', highest_bid: '774.57' },
       ])
     ).toBe(774.69)
-    expect(
-      readGateTickerMid([{ last: '774.69', highest_bid: '774.57' }])
-    ).toBe(774.69)
+    expect(readGateTickerMid([{ last: '774.69', highest_bid: '774.57' }])).toBe(
+      774.69
+    )
   })
 
   it('falls back to last on a crossed snapshot', () => {
@@ -120,7 +175,9 @@ describe('readGateTickerMid', () => {
     expect(readGateTickerMid([])).toBeNaN()
     expect(readGateTickerMid(null)).toBeNaN()
     expect(readGateTickerMid({})).toBeNaN()
-    expect(readGateTickerMid([{ last: '0', lowest_ask: '', highest_bid: '' }])).toBeNaN()
+    expect(
+      readGateTickerMid([{ last: '0', lowest_ask: '', highest_bid: '' }])
+    ).toBeNaN()
   })
 })
 
@@ -132,9 +189,15 @@ describe('readMexcBookTickerMid', () => {
   })
 
   it('returns NaN rather than guessing on one-sided, crossed, or malformed books', () => {
-    expect(readMexcBookTickerMid({ bidPrice: '773.30', askPrice: '0' })).toBeNaN()
-    expect(readMexcBookTickerMid({ bidPrice: '775', askPrice: '770' })).toBeNaN()
-    expect(readMexcBookTickerMid({ msg: 'invalid symbol', code: -1121 })).toBeNaN()
+    expect(
+      readMexcBookTickerMid({ bidPrice: '773.30', askPrice: '0' })
+    ).toBeNaN()
+    expect(
+      readMexcBookTickerMid({ bidPrice: '775', askPrice: '770' })
+    ).toBeNaN()
+    expect(
+      readMexcBookTickerMid({ msg: 'invalid symbol', code: -1121 })
+    ).toBeNaN()
     expect(readMexcBookTickerMid(null)).toBeNaN()
   })
 })

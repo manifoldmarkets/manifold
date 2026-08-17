@@ -1,5 +1,6 @@
 import { getConsensusMedian } from 'common/perps/oracle'
 import {
+  XStockUnitMode,
   readGateTickerMid,
   readJupiterRawUsdPrice,
   readMexcBookTickerMid,
@@ -40,6 +41,12 @@ export type XStockSpec = {
   gatePair: string
   /** Only some xStocks are listed on MEXC. */
   mexcSymbol?: string
+  /** Whether the token rebases, which decides how Jupiter's response is read.
+   * Declared per token because it cannot be inferred from the response and
+   * reading it wrong biases the mark silently -- see common/perps/xstocks.ts.
+   * Follows whether the underlying pays a dividend: the three equity/ETF
+   * tokens do, gold does not. */
+  unitMode: XStockUnitMode
 }
 
 export const XSTOCK_SPECS = {
@@ -47,22 +54,26 @@ export const XSTOCK_SPECS = {
     symbol: 'SPYx',
     mint: 'XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W',
     gatePair: 'SPYX_USDT',
+    unitMode: 'rebasing',
     mexcSymbol: 'SPYXUSDT',
   },
   QQQX: {
     symbol: 'QQQx',
     mint: 'Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ',
     gatePair: 'QQQX_USDT',
+    unitMode: 'rebasing',
   },
   GLDX: {
     symbol: 'GLDx',
     mint: 'Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re',
     gatePair: 'GLDX_USDT',
+    unitMode: 'static',
   },
   NVDAX: {
     symbol: 'NVDAx',
     mint: 'Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh',
     gatePair: 'NVDAX_USDT',
+    unitMode: 'rebasing',
     mexcSymbol: 'NVDAXUSDT',
   },
 } as const satisfies Record<string, XStockSpec>
@@ -88,7 +99,8 @@ const buildSources = (spec: XStockSpec): XStockSource[] => {
       fetchPrice: async () =>
         readJupiterRawUsdPrice(
           await fetchJson(`https://lite-api.jup.ag/price/v3?ids=${spec.mint}`),
-          spec.mint
+          spec.mint,
+          spec.unitMode
         ),
     },
     {
