@@ -1,4 +1,5 @@
 import { normalizeOraclePointBatch } from 'common/perps/oracle'
+import { MINUTE_MS } from 'common/util/time'
 
 import { insertOraclePrices } from 'shared/oracle'
 import {
@@ -13,8 +14,8 @@ import {
 import { log } from 'shared/utils'
 import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
-// The fast oracle tick (every 15s, modeled on sports-live). For each `fast`
-// feed in the registry:
+// The fast oracle tick (fires every 5s, modeled on sports-live). For each
+// `fast` feed in the registry that is due to be polled:
 //   1. Fetch the latest point, validate against sanity bounds and timestamp
 //      ordering, and upsert into oracle_prices.
 //   2. Apply the price to every live perp on the feed via runOracleUpdate
@@ -24,22 +25,65 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 // `daily` feeds are written by their own jobs; their staleness is checked by
 // the hourly update-perps job, which sees which live contracts they back.
 // Croner's `protect` skips a firing while the previous one still runs, so a
-// slow upstream can't stack ticks.
+// slow upstream can't stack ticks — at a 5s cron a slow BTC fetch (up to the
+// adapter's 5s timeout) therefore degrades the effective rate toward 10s
+// rather than queueing work, which is the right failure mode.
 export async function updateOracleFeeds() {
   const pg = createSupabaseDirectClient()
-  const fastFeeds = ORACLE_FEEDS.filter((f) => f.cadence === 'fast')
-  const dailyFeeds = ORACLE_FEEDS.filter((f) => f.cadence === 'daily')
+  const now = Date.now()
+
+  const fastFeeds = ORACLE_FEEDS.filter(
+    (f) => f.cadence === 'fast' && isPollDue(f.id, f.pollPeriodMs, now)
+  )
+  const dailyFeeds = ORACLE_FEEDS.filter(
+    (f) => f.cadence === 'daily' && isPollDue(f.id, DAILY_PROBE_PERIOD_MS, now)
+  )
+  // Stamp before awaiting, not after: a source that hangs until its fetch
+  // timeout must not earn an immediate retry on the very next firing.
+  for (const feed of [...fastFeeds, ...dailyFeeds])
+    lastPollAttempt[feed.id] = now
+
   await Promise.all([
     ...fastFeeds.map((feed) => tickOneFeed(pg, feed)),
     ...dailyFeeds.map((feed) => probeDailyFeedStaleness(pg, feed)),
   ])
 }
 
+// Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
+// (5s, for BTC); every other feed opts down via pollPeriodMs, so raising the
+// tick rate for one source does not raise it for all of them. State is
+// in-memory — a scheduler restart polls everything once immediately, which is
+// the correct bias: fresher marks, and staleness alerting re-arms at once.
+const lastPollAttempt: Record<string, number> = {}
+
+// The daily feeds' staleness probe is a read-only indexed lookup, but it has
+// no reason to run 12x a minute; it can only alert once an hour anyway.
+const DAILY_PROBE_PERIOD_MS = MINUTE_MS
+
+// Cron firings are not spaced exactly pollPeriodMs apart. Without slack, a
+// feed whose period equals the tick interval would fail the comparison on
+// roughly every other firing and silently run at half its configured rate.
+const POLL_PERIOD_SLACK = 0.8
+
+const isPollDue = (
+  feedId: string,
+  periodMs: number | undefined,
+  now: number
+) => {
+  // Absent or nonsensical period = poll on every firing (the pre-throttle
+  // behavior), so a registry addition can never accidentally go silent.
+  if (periodMs == null || !Number.isFinite(periodMs) || periodMs <= 0)
+    return true
+  const last = lastPollAttempt[feedId]
+  if (last == null) return true
+  return now - last >= periodMs * POLL_PERIOD_SLACK
+}
+
 // Dead-man switch for daily feeds. Their points are written by their own
 // jobs, and the only other staleness check (update-perps) runs per LIVE
 // contract — a daily feed with no unresolved market on it can die silently.
 // This probe is read-only (no fetch, no apply) and throttled so a stale feed
-// alerts about once per hour instead of every 15s tick. Throttle state is
+// alerts about once per hour instead of on every probe. Throttle state is
 // in-memory; a scheduler restart re-alerts immediately, which is fine.
 const STALE_ALERT_INTERVAL_MS = 60 * 60 * 1000
 const lastStaleAlert: Record<string, number> = {}

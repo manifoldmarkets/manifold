@@ -226,7 +226,11 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'update-oracle-feeds',
-      '*/15 * * * * *', // every 15 seconds (fast perp oracle tick)
+      // Every 5 seconds (fast perp oracle tick). This is the FLOOR for how
+      // often any fast feed can be polled; each feed's own pollPeriodMs
+      // throttles it down from here, so raising this rate does not by itself
+      // increase load on any particular source.
+      '*/5 * * * * *',
       updateOracleFeeds
     ),
     createJob(
@@ -242,7 +246,7 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'update-model-classifications',
       // Every 6 hours. Deliberately NOT a perp job: it makes a few hundred
       // outbound HuggingFace calls, and the perps instance exists to keep the
-      // 15s oracle tick on an unshared event loop. It only writes a table the
+      // 5s oracle tick on an unshared event loop. It only writes a table the
       // perps instance reads, so the split costs nothing.
       // LA hours, like every schedule in this file. Chosen to miss both the
       // 08:00 UTC API restart window and the ~10:00-11:30 UTC scheduler memory

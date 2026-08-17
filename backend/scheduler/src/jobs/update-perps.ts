@@ -22,7 +22,7 @@ import { log } from 'shared/utils'
 //      maxOraclePriceAgeMs — this is the health check for daily feeds; fast
 //      feeds are additionally watched every tick by update-oracle-feeds).
 //   2. runOracleUpdate -> applies liquidations + ADL + updates oraclePrice.
-//      For fast-feed contracts the 15s tick has usually done this already,
+//      For fast-feed contracts the 5s tick has usually done this already,
 //      in which case the engine's no-change fast path makes it a cheap no-op.
 //   3. runFunding -> applies funding event, emits per-user funding events.
 //      The authoritative once-per-period gate lives inside runFunding

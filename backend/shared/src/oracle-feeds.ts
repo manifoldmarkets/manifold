@@ -13,8 +13,9 @@ import { fetchUkGridCarbonRecent } from './uk-grid-carbon'
 // Registry of known oracle feeds. This is the single place that says how a
 // feed updates, what values are plausible, and when its silence is an
 // incident. Consumers:
-//   - update-oracle-feeds (scheduler, 15s): polls `fast` feeds, validates
-//     points, applies engine updates, alerts on staleness.
+//   - update-oracle-feeds (scheduler, 5s): polls `fast` feeds that are due
+//     (see pollPeriodMs), validates points, applies engine updates, alerts
+//     on staleness.
 //   - update-perps (scheduler, hourly): alerts when a live contract's feed is
 //     stale (covers `daily` feeds, which write via their own jobs).
 //   - create-perp (API): rejects a market whose maxOraclePriceAgeMs is
@@ -29,8 +30,8 @@ export type OracleFeedDef = {
    * creation does not stop ingestion, health checks, or updates for existing
    * contracts. */
   marketCreationEnabled: boolean
-  /** 'fast' feeds are fetched by the 15s tick; 'daily' feeds are written by
-   * their own scheduler job and only health-checked. */
+  /** 'fast' feeds are fetched by the oracle tick; 'daily' feeds are written
+   * by their own scheduler job and only health-checked. */
   cadence: 'fast' | 'daily'
   /** Hard plausibility bounds; points outside are dropped and alerted.
    *
@@ -54,12 +55,27 @@ export type OracleFeedDef = {
    * Doubles as the floor for a market's maxOraclePriceAgeMs at create time. */
   staleAfterMs: number
   /** Expected interval between genuinely NEW values — not the poll cadence
-   * (UK carbon polls every 15s but NESO settles a value every 30min), and
-   * not staleAfterMs (a deliberately looser health threshold). create-perp
-   * derives a market's frozen funding period from this:
-   * max(1h, updatePeriodMs). Getting it wrong on a daily feed reintroduces
-   * the open-before-the-tick funding dodge, so when in doubt, err longer. */
+   * (that is pollPeriodMs: UK carbon is polled every 15s but NESO settles a
+   * value every 30min), and not staleAfterMs (a deliberately looser health
+   * threshold). create-perp derives a market's frozen funding period from
+   * this: max(1h, updatePeriodMs). Getting it wrong on a daily feed
+   * reintroduces the open-before-the-tick funding dodge, so when in doubt,
+   * err longer. */
   updatePeriodMs: number
+  /** How often the tick actually polls this `fast` feed, throttled inside
+   * update-oracle-feeds. Absent = poll on every tick firing.
+   *
+   * This exists because the tick's cron is global but the right poll rate is
+   * per-feed. The rate is an anti-latency-arbitrage control, not a data-
+   * freshness one: perp trades execute at the cached mark with no spread and
+   * no price impact, so the interval between polls IS the window in which a
+   * bot that watches the underlying directly can trade a price we already
+   * know is wrong. Measured on the BTC feed, the frequency of windows that
+   * diverge past the taker fee scales ~T^1.95, so shortening the poll is a
+   * far better-targeted deterrent than raising the fee (which charges honest
+   * holders too). Trade it off against the source's rate limits: poll faster
+   * than the source publishes and you spend quota for no new information. */
+  pollPeriodMs?: number
   fetchLatest?: () => Promise<{ ts: number; price: number } | null>
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
@@ -80,7 +96,14 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // agreement between independent exchanges, which validates the current
     // level without assuming BTC moves slowly.
     staleAfterMs: 2 * MINUTE_MS,
-    updatePeriodMs: 15_000,
+    // BTC quotes continuously, so "interval between new values" is really the
+    // poll rate. Funding is unaffected: max(1h, updatePeriodMs) is 1h either
+    // way, so contracts created before and after this keep the same cadence.
+    updatePeriodMs: 5_000,
+    // 5s rather than 15s: three exchanges at 12 req/min each, comfortably
+    // inside their public limits, and it cuts the stale-mark window that
+    // latency bots trade against by 3x. See pollPeriodMs.
+    pollPeriodMs: 5_000,
     fetchLatest: fetchBtcUsdSpot,
   },
   {
@@ -93,6 +116,10 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // Actuals land one settlement block behind, occasionally later.
     staleAfterMs: 2 * HOUR_MS,
     updatePeriodMs: 30 * MINUTE_MS,
+    // Pinned to the tick's old rate so speeding up the BTC feed does not
+    // silently triple our call volume against NESO, which settles a value
+    // every 30min regardless. Nothing here needs 5s.
+    pollPeriodMs: 15_000,
     fetchRecent: fetchUkGridCarbonRecent,
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
