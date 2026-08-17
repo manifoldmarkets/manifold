@@ -1,4 +1,5 @@
 import {
+  CheckCircleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
@@ -11,20 +12,30 @@ import { nativePinStreakWidget } from 'web/lib/native/native-messages'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { track } from 'web/lib/service/analytics'
 
+// The real widgets' lit gradient (FLAME in streak-widget.tsx / index.swift).
+// The previews show a low streak, so flame — not the gold milestone palette.
 const CARD =
-  'relative overflow-hidden select-none rounded-2xl bg-gradient-to-br ' +
-  'from-orange-400 to-orange-600 p-2.5 text-white shadow-md'
+  'relative overflow-hidden select-none rounded-2xl p-2.5 text-white shadow-md ' +
+  'bg-[linear-gradient(to_bottom_right,#FF8A3D,#C7331A)]'
 
-// Mani, the widget mascot: faceted crane head peeking from the bottom-right
-// corner (matches ManiView / mani-svg.ts on the real widgets).
-function MiniMani({ className }: { className?: string }) {
+// Mani's viewBox on the real widgets. The body geometry deliberately runs past
+// the bottom (to y=140) so the neck bleeds off the edge instead of ending in
+// mid-air; the SVG viewport crops it. Keep the element's aspect EXACTLY this or
+// the mascot letterboxes and floats away from the corner.
+const MANI_W = 110
+const MANI_H = 118
+
+// Mani, the widget mascot: faceted crane head peeking up from the bottom-right,
+// neck running off the bottom edge (matches ManiView / mani-svg.ts, PURPLE
+// palette). Sized by width; height follows the real aspect.
+function MiniMani({ width }: { width: number }) {
   return (
     <svg
-      viewBox="0 0 110 126"
+      viewBox={`0 0 ${MANI_W} ${MANI_H}`}
+      preserveAspectRatio="xMidYMax meet"
       aria-hidden
-      className={`pointer-events-none absolute -bottom-1 -right-1 drop-shadow ${
-        className ?? 'h-14 w-12'
-      }`}
+      style={{ width, height: (width * MANI_H) / MANI_W }}
+      className="pointer-events-none absolute bottom-0 right-2 drop-shadow"
     >
       <polygon points="100,140 114,140 104,68 94,70" fill="#4F3FD6" />
       <polygon points="78,140 100,140 94,70 80,74" fill="#6C5CE7" />
@@ -37,11 +48,32 @@ function MiniMani({ className }: { className?: string }) {
   )
 }
 
+// Quest checkbox for the iOS preview — mirrors questRow() in index.swift, which
+// uses SF Symbols `circle` / `checkmark.circle.fill` at 14pt (white, dimmed to
+// 0.65 while undone). Android's real widget uses ⬜/✅ emoji because TextWidget
+// can't draw a vector inline, so PreviewTall keeps those on purpose.
+function QuestCheck({ done }: { done?: boolean }) {
+  if (done) return <CheckCircleIcon className="h-3.5 w-3.5 shrink-0" />
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden className="h-3.5 w-3.5 shrink-0">
+      <circle
+        cx="10"
+        cy="10"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="opacity-[0.65]"
+      />
+    </svg>
+  )
+}
+
 // 2x2: compact streak widget — streak top-left, Mani bottom-right.
 function PreviewSmall() {
   return (
     <div className={CARD} style={{ width: 96, height: 96 }}>
-      <MiniMani />
+      <MiniMani width={46} />
       <div className="relative">
         <Row className="items-center gap-1">
           <span className="text-2xl leading-none drop-shadow">🔥</span>
@@ -58,7 +90,7 @@ function PreviewSmall() {
 function PreviewMediumIOS() {
   return (
     <div className={CARD} style={{ width: 208, height: 96 }}>
-      <MiniMani className="h-12 w-10" />
+      <MiniMani width={40} />
       <Row className="relative h-full items-stretch gap-2">
         <Col className="justify-center">
           <Row className="items-center gap-1">
@@ -69,13 +101,18 @@ function PreviewMediumIOS() {
         </Col>
         <div className="w-px shrink-0 bg-white/25" />
         <Col className="min-w-0 flex-1 justify-start gap-1 pt-1 text-[10px] font-semibold">
-          <Row className="items-center justify-between gap-1">
-            <span className="truncate">✅ Share a market</span>
-            <span className="opacity-90">+M5</span>
+          {/* Done rows dim + strike through, like questRow() on the real widget. */}
+          <Row className="items-center gap-1.5">
+            <QuestCheck done />
+            <span className="truncate line-through opacity-[0.55]">
+              Share a market
+            </span>
+            <span className="ml-auto shrink-0 opacity-50">+M5</span>
           </Row>
-          <Row className="items-center justify-between gap-1">
-            <span className="truncate">⬜ Create a market</span>
-            <span className="opacity-90">+M100</span>
+          <Row className="items-center gap-1.5">
+            <QuestCheck />
+            <span className="truncate">Create a market</span>
+            <span className="ml-auto shrink-0 opacity-[0.92]">+M100</span>
           </Row>
         </Col>
       </Row>
@@ -84,10 +121,12 @@ function PreviewMediumIOS() {
 }
 
 // 2x3: taller widget — quest checklist up top, streak below, Mani bottom-right.
+// Keeps the ⬜/✅ emoji: that IS what the real Android widget draws (TextWidget
+// can't render a vector icon inline), unlike the iOS medium above.
 function PreviewTall() {
   return (
     <div className={CARD} style={{ width: 150 }}>
-      <MiniMani />
+      <MiniMani width={52} />
       <div className="relative">
         <Row className="items-center justify-between text-[10px] font-semibold">
           <span>✅ Share a market</span>
