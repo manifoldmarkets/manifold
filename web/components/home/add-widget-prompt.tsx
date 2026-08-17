@@ -16,7 +16,7 @@ import { track } from 'web/lib/service/analytics'
 // The previews show a low streak, so flame — not the gold milestone palette.
 const CARD =
   'relative overflow-hidden select-none rounded-2xl p-2.5 text-white shadow-md ' +
-  'bg-[linear-gradient(to_bottom_right,#FF8A3D,#C7331A)]'
+  'bg-gradient-to-br from-[#FF8A3D] to-[#C7331A]'
 
 // Mani's viewBox on the real widgets. The body geometry deliberately runs past
 // the bottom (to y=140) so the neck bleeds off the edge instead of ending in
