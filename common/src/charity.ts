@@ -68,21 +68,62 @@ At Topos, we pioneer emerging mathematical sciences of connection and integratio
     photo: 'https://i.imgur.com/6akJg2p.png',
     description: `An independent, non-profit organization dedicated to broadening the adoption of Haskell, by supporting its ecosystem of tools, libraries, education, and research.`,
   },
+  // Closed by EA Funds in 2026 and succeeded by the Transformative AI Fund
+  // below. Kept in the list so historical donations and giveaway entries still
+  // resolve to a name; excluded from the giveaway picker in web/pages/charity.tsx.
   {
-    name: 'Long-Term Future Fund',
+    name: 'Long-Term Future Fund (closed)',
     id: 'long-term-future-fund',
     website: 'https://funds.effectivealtruism.org/funds/far-future',
     photo: 'https://i.imgur.com/C2qka9g.png',
     preview:
-      'The Long-Term Future Fund aims to improve the long-term trajectory of civilization by making grants that address global catastrophic risks.',
-    description: `The Long-Term Future Fund aims to positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks, especially potential risks from advanced artificial intelligence and pandemics. In addition, we seek to promote, implement, and advocate for longtermist ideas, and to otherwise increase the likelihood that future generations will flourish.
+      'The Long-Term Future Fund has closed. EA Funds now runs the Transformative AI Fund in its stead.',
+    description: `The Long-Term Future Fund aimed to positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks, especially potential risks from advanced artificial intelligence and pandemics.
 
-    The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
+    EA Funds has since closed the fund and launched the Transformative AI Fund in its stead. If you want to support this work, donate to the Transformative AI Fund instead.`,
+  },
+  {
+    name: 'Transformative AI Fund',
+    id: 'transformative-ai-fund',
+    website: 'https://funds.effectivealtruism.org/funds/transformative-ai',
+    // Generic EA Funds wordmark — the same asset the LTFF entry uses. EA Funds
+    // does not publish a per-fund logo.
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      'EA Funds’ successor to the Long-Term Future Fund, making early-stage grants that reduce global catastrophic risks from advanced AI.',
+    description: `The Transformative AI Fund makes early-stage grants to individuals, new organizations, and existing organizations with new projects addressing transformative AI, with a primary focus on reducing global catastrophic risks from advanced AI systems.
 
-    We intend to support:
-    - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
-    - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
-    - Promoting long-term thinking`,
+    The fund backs technical AI safety research, policy analysis, forecasting, advocacy, and demonstration projects, as well as the field-building infrastructure that supports them. A minority of grants go to other neglected implications of transformative AI, such as flourishing futures and digital sentience.
+
+    Grants are typically $10k–$150k and rarely exceed $300k, aimed at the early stage where a small amount of funding can be decisive. It is led by Head of Fund Lowe Lundin, with fund advisors Caleb Parikh and Catherine Low.
+
+    EA Funds launched the Transformative AI Fund in 2026 after closing the Long-Term Future Fund.`,
+  },
+  {
+    name: 'AI Safety Tactical Opportunities Fund',
+    id: 'ai-safety-tactical-opportunities-fund',
+    website: 'https://manifund.org/JueYan',
+    preview:
+      'AISTOF moves fast to fund emerging opportunities in AI governance, technical alignment, and evaluations.',
+    description: `The AI Safety Tactical Opportunities Fund (AISTOF) is a pooled, multi-donor fund working to reduce catastrophic risks from advanced AI. It is run by JueYan Zhang and regrants through Manifund.
+
+    AISTOF aims to be fast and to capture emerging opportunities in a rapidly changing landscape, including in governance, technical alignment, and evaluations / audit. Its grants span technical safety research (interpretability, alignment, evaluations), AI governance and policy, safety infrastructure and tooling, international safety initiatives, talent development and education, and safety-focused startups and accelerators.
+
+    The fund has raised over $30 million and committed more than 150 grants.`,
+  },
+  {
+    name: 'Sentinel Bio',
+    id: 'sentinel-bio',
+    website: 'https://sentinelbio.org/',
+    photo:
+      'https://sentinelbio.org/wp-content/themes/theme/assets/img/android-chrome-512x512.png',
+    preview:
+      'Sentinel Bio is working to make pandemics history within our lifetimes.',
+    description: `Sentinel Bio is an independent 501(c)(3) research and philanthropic organization working to make pandemics history within our lifetimes.
+
+    It funds and supports strategic solutions across three areas: understanding the drivers of catastrophic pandemics, strengthening safeguards for advanced biotechnologies, and improving global pandemic preparedness. In the near term its work concentrates on guardrails for safely advancing biotechnology, including nucleic acid synthesis governance, with grantees such as the Johns Hopkins Center for Health Security and RAND.
+
+    Sentinel Bio's staff and advisors work in global health and pandemic prevention and are based in the U.S., the Netherlands, and Singapore.`,
   },
   // Temporarily disabled as New Science isn't accepting donations
   // {
