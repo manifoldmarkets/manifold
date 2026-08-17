@@ -49,6 +49,13 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   'trump-approval-rating': {
     source: 'VoteHub',
     url: 'https://votehub.com',
+    // Stated on VoteHub's API documentation: "This API is licensed under
+    // Creative Commons Attribution 4.0 International." Read directly, hence
+    // the label — CC BY 4.0 permits reuse and redistribution, including
+    // commercially, on the single condition that the source is credited.
+    // The oracle mirrors their published average, so this credit IS the
+    // compliance, not decoration.
+    licence: 'CC BY 4.0',
   },
   'btc-usd': {
     source: 'Coinbase, Kraken & Bitstamp',
