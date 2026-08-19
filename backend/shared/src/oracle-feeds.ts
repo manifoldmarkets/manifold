@@ -103,12 +103,12 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // poll rate. Funding is unaffected: max(1h, updatePeriodMs) is 1h either
     // way, so contracts created before and after this keep the same cadence.
     updatePeriodMs: 2_000,
-    // 2s: three exchanges at 30 req/min each. Still inside their public
-    // limits (Kraken's ~1 req/s is the tightest), but this is the practical
-    // ceiling for REST polling — 1s would be 60/min per venue, and the
-    // failure mode is backwards: fetchBtcUsdSpot needs 2 of 3 venues to
-    // answer or it writes NO point at all, so tripping a rate limit LENGTHENS
-    // the stale-mark window it was meant to shorten. Going below 2s wants
+    // 2s: five exchanges at 30 req/min each. Still inside every venue's
+    // public limits (Kraken's ~1 req/s is the tightest), but this is the
+    // practical ceiling for REST polling — 1s would be 60/min per venue, and
+    // the failure mode is backwards: fetchBtcUsdSpot needs 2 venues to answer
+    // or it writes NO point at all, so tripping a rate limit LENGTHENS the
+    // stale-mark window it was meant to shorten. Going below 2s wants
     // exchange websocket tickers, not a faster poll.
     //
     // Measured divergence-window frequency scales ~T^1.95, so 5s -> 2s is
