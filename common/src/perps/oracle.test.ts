@@ -214,6 +214,34 @@ describe('getConsensusMedian', () => {
     expect(getConsensusMedian([100, 102], 0.02)).toBe(101)
     expect(getConsensusMedian([100, 102.01], 0.02)).toBeNull()
   })
+
+  it('accepts exact boundaries that do not round cleanly', () => {
+    // [100, 102] passes under either comparison, so it proves nothing on its
+    // own. These are exactly 2% apart too, but `(b - a) / a` evaluates them to
+    // 0.020000000000000018 and rejects them.
+    expect(getConsensusMedian([3, 3.06], 0.02)).toBeCloseTo(3.03, 10)
+    expect(getConsensusMedian([68365.55, 69732.861], 0.02)).toBeCloseTo(
+      69049.2055,
+      6
+    )
+  })
+
+  it('still rejects a split that a rounding error would have hidden', () => {
+    // Two pairs, each exactly 2% wide internally and far apart from each
+    // other. Rejecting [3, 3.06] would leave [10, 10.01] as the sole
+    // corroborated cluster and publish 10.005 as though it were consensus.
+    expect(getConsensusMedian([3, 3.06, 10, 10.01], 0.02)).toBeNull()
+    expect(
+      getConsensusMedian([68365.55, 69732.861, 80000, 80100], 0.02)
+    ).toBeNull()
+  })
+
+  it('does not let the epsilon widen the tolerance meaningfully', () => {
+    // A hair beyond the boundary must still be rejected: the epsilon exists
+    // to cancel float error, not to soften the threshold.
+    expect(getConsensusMedian([100, 102.0001], 0.02)).toBeNull()
+    expect(getConsensusMedian([3, 3.0601], 0.02)).toBeNull()
+  })
 })
 
 describe('decideOracleTransition', () => {

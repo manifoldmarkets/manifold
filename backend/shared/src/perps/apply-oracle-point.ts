@@ -103,23 +103,20 @@ export const applyOraclePointToLivePerps = async (
     [feedId]
   )
 
-  // SET LOCAL bounds a statement and a lock wait, not a run: contracts are
-  // processed one after another, and pool checkout, the query above, and
-  // notifications all sit outside those bounds. Several contended markets can
-  // therefore hold a feed in-flight across many ticks even though no single
-  // statement misbehaved. A bounded caller gets an overall budget too.
-  const startedAt = Date.now()
-  const deadline =
-    bounds == null ? Number.POSITIVE_INFINITY : startedAt + bounds.runDeadlineMs
-  const deferred: string[] = []
-
+  // NOTE: the bounds here are per-statement and per-lock, not a deadline for
+  // the whole run. Contracts are applied sequentially, and pool checkout, the
+  // query above, and notifications all sit outside them, so one slow contract
+  // can still hold a feed in-flight past a tick — the in-flight guard then
+  // skips that firing, which is degraded but correct.
+  //
+  // A run-wide budget was tried and removed: it can only bind when a feed
+  // backs more than one market, which none currently do, and skipping
+  // contracts by wall-clock in an unordered result set starves whichever ones
+  // sort last. Doing it properly needs oldest-first ordering (or rotation),
+  // escalation for contracts that keep getting skipped, and a deadline
+  // propagated from dispatch. That belongs with the change that first puts two
+  // markets on one feed, not here.
   for (const { data: contract } of rows) {
-    if (Date.now() >= deadline) {
-      // Whatever is left is better served by the next tick, which will carry
-      // a fresher price than the one being applied here.
-      deferred.push(contract.slug)
-      continue
-    }
     const currentPoint =
       contract.oraclePriceTime == null
         ? null
@@ -166,10 +163,8 @@ export const applyOraclePointToLivePerps = async (
       // One malformed/contended contract must not leave every other market on
       // the same feed trading against a stale cached price.
       const message = `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${persistedPoint.ts}: ${err}`
-      // How far this contract's executable mark now trails the published
-      // point. Measured against the contract's own state, because that — not
-      // the feed's history — is what trades and liquidations settle against.
-      // Wall-clock age, matching what trading freshness actually gates on.
+      // Wall-clock age of the mark this contract executes against, matching
+      // what trading freshness actually gates on.
       // Measuring `persistedPoint.ts - oraclePriceTime` instead would freeze
       // the moment the feed stopped advancing: a contract that missed one
       // point keeps a constant delta while its cached mark ages past
@@ -200,13 +195,4 @@ export const applyOraclePointToLivePerps = async (
       }
     }
   }
-
-  if (deferred.length > 0)
-    log.warn(
-      `[oracle-feeds] ${feedId}: ran out of its ${
-        bounds?.runDeadlineMs
-      }ms budget after ${Date.now() - startedAt}ms; deferred ${deferred.join(
-        ', '
-      )} to the next tick`
-    )
 }

@@ -91,7 +91,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: BTC_USD_FEED_ID,
     description:
-      'BTC/USD spot, median of the agreeing cluster among Coinbase/Kraken/Bitstamp/Gemini/Bitfinex',
+      'BTC/USD spot, median of the agreeing cluster among Coinbase/Kraken/Bitstamp/Gemini',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 1_000,
@@ -104,7 +104,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // poll rate. Funding is unaffected: max(1h, updatePeriodMs) is 1h either
     // way, so contracts created before and after this keep the same cadence.
     updatePeriodMs: 2_000,
-    // 2s: five exchanges at 30 req/min each. Still inside every venue's
+    // 2s: four exchanges at 30 req/min each. Still inside every venue's
     // public limits (Kraken's ~1 req/s is the tightest), but this is the
     // practical ceiling for REST polling — 1s would be 60/min per venue, and
     // the failure mode is backwards: fetchBtcUsdSpot needs 2 venues to answer

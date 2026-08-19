@@ -161,6 +161,28 @@ export const normalizeOraclePointBatch = (
  * fallback usable while retaining the median's one-outlier resistance when
  * three or more values are available.
  */
+/**
+ * Whether two sorted prices are within a divergence tolerance of each other.
+ *
+ * Multiplicative rather than the obvious `(b - a) / a <= frac`. The
+ * subtractive form performs three rounding steps and gets exact boundaries
+ * wrong: `(3.06 - 3) / 3` evaluates to 0.020000000000000018 and rejects a pair
+ * that is exactly 2% apart. Worse, it does so unevenly — `[100, 102]` happens
+ * to round favourably while `[68365.55, 69732.861]` does not — so whether a
+ * legitimate pair is accepted depends on the price level, and on a four-source
+ * feed a spurious rejection can split one cluster into two and turn a clear
+ * consensus into an "ambiguous" one that publishes nothing.
+ *
+ * The epsilon absorbs the residual error of the single remaining multiply. At
+ * 1e-9 relative it is orders of magnitude below any price difference that
+ * could matter — on a $68k mark it widens a 2% band by about a thousandth of a
+ * cent — while removing the boundary flapping entirely.
+ */
+const BOUNDARY_EPSILON = 1e-9
+
+const withinTolerance = (lower: number, upper: number, frac: number) =>
+  upper <= lower * (1 + frac) * (1 + BOUNDARY_EPSILON)
+
 export const getConsensusMedian = (
   values: readonly number[],
   maxPairDivergenceFrac: number
@@ -182,7 +204,7 @@ export const getConsensusMedian = (
   const clusters: number[][] = []
   let current: number[] = [sorted[0]]
   for (let i = 1; i < sorted.length; i++) {
-    if ((sorted[i] - sorted[i - 1]) / sorted[i - 1] <= maxPairDivergenceFrac)
+    if (withinTolerance(sorted[i - 1], sorted[i], maxPairDivergenceFrac))
       current.push(sorted[i])
     else {
       clusters.push(current)

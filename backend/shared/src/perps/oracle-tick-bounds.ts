@@ -29,17 +29,6 @@ export type OracleUpdateBounds = {
   statementTimeoutMs: number
   /** Attempts INCLUDING the first. See FAST_TICK_ORACLE_BOUNDS for why 1. */
   maxAttempts: number
-  /**
-   * Overall budget for applying one point across ALL contracts on a feed.
-   *
-   * The SET LOCAL timeouts bound a statement and a lock wait; they do not
-   * bound a run. Contracts are applied sequentially, and pool checkout, the
-   * contract query, and notifications all fall outside those timeouts, so
-   * several contended markets can hold a feed in-flight across many ticks
-   * without any single statement misbehaving. Remaining contracts are
-   * deferred to the next tick, which carries a fresher price anyway.
-   */
-  runDeadlineMs: number
 }
 
 /**
@@ -63,9 +52,6 @@ export const FAST_TICK_ORACLE_BOUNDS: OracleUpdateBounds = {
   // by the in-flight guard. On a fast feed the next tick IS the retry, and it
   // carries a better price than the one being retried.
   maxAttempts: 1,
-  // Under the 2s tick, leaving room for the feed's own fetch and write before
-  // this stage begins.
-  runDeadlineMs: 1_500,
 }
 
 /** lock_timeout expiry. */

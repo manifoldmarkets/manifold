@@ -2,15 +2,20 @@ import { getConsensusMedian } from 'common/perps/oracle'
 
 import { log } from './utils'
 
-// BTC/USD spot from five independent, free, no-auth, US-accessible exchanges.
+// BTC/USD spot from four independent, free, no-auth, US-accessible exchanges.
 // (Binance is deliberately absent: api.binance.com geo-blocks US IPs, which
 // is where prod GCP egress lands.) The oracle point is the median so that one
 // exchange being down, rate-limited, or briefly off-market can't move the
 // feed; we require at least two sources or return null (skip the tick).
 //
-// Five rather than three is about surviving slow venues, not about the quorum
+// Four rather than three is about surviving slow venues, not about the quorum
 // — the two-source floor has never once been the binding constraint. It is
 // what makes the short fetch timeout below safe to set.
+//
+// A fifth venue was evaluated and rejected: its public ticker needs no
+// account, but its terms cover all API use and bar U.S. persons, and prod
+// egress belongs to a California entity. Vet a candidate's terms, not just its
+// endpoint.
 
 // Must stay comfortably under the oracle tick interval (ORACLE_TICK_PERIOD_MS,
 // 2s — not importable here, since scheduler depends on shared and not the
@@ -23,11 +28,11 @@ import { log } from './utils'
 //
 // Bounding it below the tick converts "everyone waits for the slowest venue"
 // into "the slow venue misses this tick's median" — which is only tolerable
-// because there are five sources and two are enough.
+// because there are four sources and two are enough.
 //
 // Measured round-trips (ms), three consecutive rounds from a warm process:
 //   coinbase 327/254/257  kraken 311/294/300  bitstamp 301/19/261
-//   gemini  2483/1428/277  bitfinex 96/10/11
+//   gemini  2483/1428/277
 // Every venue settles well inside this budget once its connection is warm.
 // Gemini is the outlier on the first couple of calls, so it may miss the
 // opening ticks after a scheduler restart and then self-heal — which is the
@@ -86,20 +91,6 @@ const readGeminiPrice = (body: unknown) => {
   return Number(body.last)
 }
 
-// Bitfinex v2 returns a bare positional array, not an object:
-//   [BID, BID_SIZE, ASK, ASK_SIZE, DAILY_CHANGE, DAILY_CHANGE_REL,
-//    LAST_PRICE, VOLUME, HIGH, LOW]
-// LAST_PRICE is index 6. Length is checked rather than assumed equal to 10 —
-// the live response carries a trailing field beyond the documented ten, and a
-// shape that grows at the end must not break a fixed-index read.
-const BITFINEX_LAST_PRICE_INDEX = 6
-
-const readBitfinexPrice = (body: unknown) => {
-  if (!Array.isArray(body) || body.length <= BITFINEX_LAST_PRICE_INDEX)
-    return Number.NaN
-  return Number(body[BITFINEX_LAST_PRICE_INDEX])
-}
-
 type BtcSource = {
   name: string
   fetchPrice: () => Promise<number>
@@ -138,15 +129,6 @@ const SOURCES: BtcSource[] = [
     fetchPrice: async () => {
       const body = await fetchJson('https://api.gemini.com/v1/pubticker/btcusd')
       return readGeminiPrice(body)
-    },
-  },
-  {
-    name: 'bitfinex',
-    fetchPrice: async () => {
-      const body = await fetchJson(
-        'https://api-pub.bitfinex.com/v2/ticker/tBTCUSD'
-      )
-      return readBitfinexPrice(body)
     },
   },
 ]
@@ -204,7 +186,7 @@ export const fetchBtcUsdSpot = async (): Promise<{
   const price = getBtcConsensusPrice(quotes)
   if (price == null) {
     log.error(
-      `[btc-price] no exchange pair agreed within ${
+      `[btc-price] no unique consensus cluster within ${
         MAX_SOURCE_DIVERGENCE_FRAC * 100
       }% (${quotes
         .map((quote) => `${quote.source}=${quote.price}`)

@@ -22,21 +22,6 @@ describe('FAST_TICK_ORACLE_BOUNDS', () => {
     )
   })
 
-  it('budgets a whole run inside one tick interval', () => {
-    // SET LOCAL bounds a statement, not a run. Without this, several
-    // contended contracts on one feed can hold it in-flight across many
-    // ticks even though no single statement misbehaved.
-    const ORACLE_TICK_PERIOD_MS = 2_000
-    expect(FAST_TICK_ORACLE_BOUNDS.runDeadlineMs).toBeLessThan(
-      ORACLE_TICK_PERIOD_MS
-    )
-    // A run must be able to outlast a single lock wait, or one contended
-    // contract would consume the entire budget before anything else is tried.
-    expect(FAST_TICK_ORACLE_BOUNDS.runDeadlineMs).toBeGreaterThan(
-      FAST_TICK_ORACLE_BOUNDS.lockTimeoutMs
-    )
-  })
-
   it('bounds a statement above the lock wait', () => {
     // Waiting on a lock is pure loss; executing liquidation and ADL work is
     // not. The statement backstop must not fire before the lock timeout has.
