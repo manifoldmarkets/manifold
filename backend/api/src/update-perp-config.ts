@@ -1,4 +1,4 @@
-import { getPerpTakerFeeBps } from 'common/perps/fees'
+import { getPerpImpactK, getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { removeUndefinedProps } from 'common/util/object'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
@@ -21,10 +21,16 @@ import { APIError, APIHandler } from './helpers/endpoint'
 //   means up to 2% of the crowded side's positions per hour at full
 //   imbalance. The schema keeps it inside assertPerpFundingConfig's (0, 1)
 //   domain; a value at or above 1 would make every funding tick fail closed.
-// - takerFeeBps: open-side fee on notional (closing is free, so this is the
-//   round-trip cost), applied to the NEXT open or add. 0 disables. The
-//   schema keeps it inside assertPerpTakerFeeConfig's [0, 100] domain;
-//   outside it the engine fail-closes every trade.
+// - takerFeeBps: open-side BASE fee on notional (closing is free), applied
+//   to the NEXT open or add. 0 disables. The schema keeps it inside
+//   assertPerpTakerFeeConfig's [0, 100] domain; outside it the engine
+//   fail-closes every trade. Caps the base only — the size-dependent total
+//   is intentionally uncapped.
+// - impactK: coefficient of the size-dependent fee term (marginal rate is
+//   takerFeeBps + impactK·(share of pool)² bps, integrated over the added
+//   notional — see calcPerpSizeFee). 0 keeps the fee flat at the base.
+//   Applied to the NEXT open or add; the schema keeps it inside
+//   assertPerpTakerFeeConfig's [0, PERP_IMPACT_K_MAX] domain.
 // - maxOraclePriceAgeMs: the age at which the engine stops accepting trades
 //   AND closes against the cached mark. Lowering it is the direct lever on
 //   latency arbitrage — every stale-mark window a bot can trade is bounded by
@@ -43,6 +49,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    impactK,
     maxOraclePriceAgeMs,
   } = body
 
@@ -74,6 +81,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    impactK,
     maxOraclePriceAgeMs,
     lastUpdatedTime,
   })
@@ -92,6 +100,12 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
         contract.slug
       }: ${getPerpTakerFeeBps(contract)} -> ${takerFeeBps}`
     )
+  if (impactK !== undefined)
+    log(
+      `admin ${auth.uid} set impactK on ${contract.slug}: ${getPerpImpactK(
+        contract
+      )} -> ${impactK}`
+    )
   if (maxOraclePriceAgeMs !== undefined)
     log(
       `admin ${auth.uid} set maxOraclePriceAgeMs on ${contract.slug}: ${contract.maxOraclePriceAgeMs} -> ${maxOraclePriceAgeMs}`
@@ -103,6 +117,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxLeverage,
       maxFundingRate,
       takerFeeBps,
+      impactK,
       maxOraclePriceAgeMs,
     })
   )
@@ -112,6 +127,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxLeverage: maxLeverage ?? contract.maxLeverage,
       maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
       takerFeeBps: takerFeeBps ?? getPerpTakerFeeBps(contract),
+      impactK: impactK ?? getPerpImpactK(contract),
       maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
     },
     continue: async () => {

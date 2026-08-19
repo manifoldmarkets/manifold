@@ -10,7 +10,11 @@ import {
   TRADED_TERM,
 } from 'common/envs/constants'
 import { getPerpBackingPool } from 'common/perps/amm'
-import { getPerpTakerFeeBps } from 'common/perps/fees'
+import {
+  getPerpImpactK,
+  getPerpTakerFeeBps,
+  PERP_IMPACT_K_MAX,
+} from 'common/perps/fees'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -663,14 +667,30 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           Taker fee{' '}
-          <InfoTooltip text="Fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping." />
+          <InfoTooltip text="Base fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping. Positions large relative to the pool pay more on top — see fee impact." />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeBpsInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}% to open
+              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}%
+              {getPerpImpactK(contract) > 0 ? ' base' : ''} to open
+            </span>
+          )}
+        </td>
+      </tr>
+      <tr className={clsx(canEdit && 'bg-purple-500/30')}>
+        <td>
+          Fee impact (k){' '}
+          <InfoTooltip text="Size coefficient of the taker fee: the marginal rate at pool-share s is base + k·s² bps, so a fresh position that is share S of the pool pays base + (k/3)·S² bps on average. 0 = flat base fee only. Small trades pay ~base regardless of k." />
+        </td>
+        <td>
+          {canEdit ? (
+            <ImpactKInput contract={contract} />
+          ) : (
+            <span className="tabular-nums">
+              {formatWithCommas(getPerpImpactK(contract))}
             </span>
           )}
         </td>
@@ -931,6 +951,79 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
           if (e.key === 'Enter') submit()
         }}
         className="bg-canvas-0 border-ink-300 h-7 w-20 rounded-md border px-2 text-sm"
+      />
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        disabled={!valid || saving || parsed === current}
+        loading={saving}
+        onClick={submit}
+      >
+        Set
+      </Button>
+    </Row>
+  )
+}
+
+// Inline admin editor for a perp's fee impact coefficient k. The marginal
+// taker fee at pool-share s is base + k·s² bps; 0 keeps the fee flat at the
+// base. Applies to the next open or add immediately.
+function ImpactKInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState<number | null>(null)
+  const stored = getPerpImpactK(contract)
+  const current = justSaved != null && justSaved !== stored ? justSaved : stored
+  const parsed = Number(input)
+  const valid =
+    input !== '' &&
+    Number.isFinite(parsed) &&
+    parsed >= 0 &&
+    parsed <= PERP_IMPACT_K_MAX
+
+  const submit = async () => {
+    if (!valid || saving || parsed === current) return
+    setSaving(true)
+    try {
+      const res = await api('update-perp-config', {
+        contractId: contract.id,
+        impactK: parsed,
+      })
+      setJustSaved(res.impactK)
+      setInput('')
+      toast.success(
+        res.impactK > 0
+          ? `Fee impact k is now ${res.impactK} — a pool-sized position pays ${
+              getPerpTakerFeeBps(contract) + res.impactK / 3
+            } bps effective`
+          : 'Fee impact is off — the taker fee is flat at the base'
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update fee impact'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Row className="flex-wrap items-center gap-1.5">
+      <span className="tabular-nums">{formatWithCommas(current)}</span>
+      <input
+        type="number"
+        min={0}
+        max={PERP_IMPACT_K_MAX}
+        step={10}
+        value={input}
+        disabled={saving}
+        placeholder="New k"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
       />
       <Button
         size="2xs"

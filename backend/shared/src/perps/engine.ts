@@ -42,9 +42,10 @@ import {
 import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
-  calcPerpTakerFee,
   creditPerpPoolFee,
+  getPerpImpactK,
   getPerpTakerFeeBps,
+  perpSizeFeeDetails,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
@@ -588,17 +589,24 @@ export const openOrAddPosition = async (
 
     const price = contract.oraclePrice
 
-    // Taker fee: bps of NOTIONAL when opening or adding, credited to the
-    // trader's side backing pool (subsidy, not platform revenue). Closing is
-    // free — the whole round-trip cost is visible up front, and the position
-    // starts at PnL = −fee via takerFeeCostBasis. Execution happens at the
-    // cached oracle price, and with zero fees that price was a free option
-    // for tick-sniping bots (2026-08-07: ~M$70k drained from the BTC perp
-    // pools at a measured edge of ~1.5 bps of notional per round trip; every
-    // snipe needs an entry, so an open-only fee taxes each round trip once).
-    // The fee mana enters escrow with the margin, so ledger = L + S holds.
+    // Taker fee: size-dependent bps of NOTIONAL when opening or adding,
+    // credited to the trader's side backing pool (subsidy, not platform
+    // revenue). Closing is free — the whole round-trip cost is visible up
+    // front, and the position starts at PnL = −fee via takerFeeCostBasis.
+    // Execution happens at the cached oracle price, and with zero fees that
+    // price was a free option for tick-sniping bots (2026-08-07: ~M$70k
+    // drained from the BTC perp pools at a measured edge of ~1.5 bps of
+    // notional per round trip; every snipe needs an entry, so an open-only
+    // fee taxes each round trip once). The flat base could not tell honest
+    // flow (median ~1% of pool) from pool-sized informed entries (median
+    // ~142% of pool, 2026-08-19), so the marginal rate scales with the
+    // position's share of the backing pool: base + impactK·share², charged
+    // as its integral over the added notional (calcPerpSizeFee) so chopping
+    // one big add into many small ones costs the same. The fee mana enters
+    // escrow with the margin, so ledger = L + S holds.
     assertPerpTakerFeeConfig(contract)
     const takerFeeBps = getPerpTakerFeeBps(contract)
+    const impactK = getPerpImpactK(contract)
 
     // Auto-close opposite side first, then open on top of the resulting state.
     let workingState: PerpState = state
@@ -649,7 +657,20 @@ export const openOrAddPosition = async (
     // trader whose mana is all in the position they are flipping out of).
     // The user row is locked FOR UPDATE above, so the balance cannot move
     // between here and the debit.
-    const openFee = calcPerpTakerFee(mana * leverage, takerFeeBps)
+    // Fee inputs: N0 is the user's standing same-direction notional (a flip
+    // close removes only the OPPOSITE row, so existingSame is unaffected by
+    // it), and the pool depth is the PRE-trade pool — post flip-close for a
+    // flip, since that is the depth the new leg actually consumes against,
+    // but before this trade's own margin/fee credits, to avoid circularity.
+    const notionalBefore = existingSame?.size ?? 0
+    const openFeeDetails = perpSizeFeeDetails({
+      notionalBefore,
+      notionalAfter: notionalBefore + mana * leverage,
+      poolDepth: workingState.pool.L + workingState.pool.S,
+      baseBps: takerFeeBps,
+      impactK,
+    })
+    const openFee = openFeeDetails.fee
     const totalDebit = mana + openFee
     const spendableBalance = trader.balance + closePayout
     if (spendableBalance < totalDebit)
@@ -674,8 +695,9 @@ export const openOrAddPosition = async (
       now
     )
     // openPositionMath always computes deltaSize = mana * leverage, so the
-    // fee credited here is exactly bps × deltaSize. Checks below run on the
-    // fee-credited state — the one that gets persisted.
+    // fee credited here was priced on exactly this deltaSize (the N0 → N1
+    // integral above). Checks below run on the fee-credited state — the one
+    // that gets persisted.
     const feeAccrued = accruePerpPositionTakerFee(
       openRes.state,
       openRes.position,
@@ -743,7 +765,13 @@ export const openOrAddPosition = async (
         mana,
         leverage,
         fee: openFee,
-        feeBps: takerFeeBps,
+        // The EFFECTIVE (average) rate this add actually paid — base plus the
+        // integrated size term — not the configured base alone. feeBase,
+        // impactK, and poolShareAfter reconstruct it for audit/UI.
+        feeBps: openFeeDetails.effectiveBps,
+        feeBase: takerFeeBps,
+        impactK,
+        poolShareAfter: openFeeDetails.poolShareAfter,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
@@ -857,7 +885,10 @@ export const openOrAddPosition = async (
           token: 'M$',
           data: {
             direction,
-            feeBps: takerFeeBps,
+            // Effective rate actually paid; feeBase is the configured flat
+            // component (they differ once impactK > 0 and the size matters).
+            feeBps: openFeeDetails.effectiveBps,
+            feeBase: takerFeeBps,
             sizeDelta: open.deltaSize,
           },
         },

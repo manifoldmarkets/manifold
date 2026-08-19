@@ -163,6 +163,9 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                   ...(market.takerFeeBps != null
                     ? { takerFeeBps: market.takerFeeBps }
                     : {}),
+                  ...(market.impactK != null
+                    ? { impactK: market.impactK }
+                    : {}),
                 }
           )
 

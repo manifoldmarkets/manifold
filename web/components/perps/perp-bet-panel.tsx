@@ -10,13 +10,18 @@ import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
+  closePosition,
   getPerpOpenInterestCapacity,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
   mergedEntryPrice,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
-import { calcPerpTakerFee, getPerpTakerFeeBps } from 'common/perps/fees'
+import {
+  getPerpImpactK,
+  getPerpTakerFeeBps,
+  perpSizeFeeDetails,
+} from 'common/perps/fees'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -31,6 +36,7 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Slider, sliderColors } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -173,11 +179,52 @@ export const PerpBetPanel = (props: {
   // auto-close it before opening the new one (engine does this atomically).
   const isFlip = !!openDirection && openDirection !== direction
 
-  // Open-side taker fee on notional — closing is free, so this is the whole
-  // round-trip cost, shown up front. Mirrors the engine exactly (fee on
-  // deltaSize = margin × leverage); a flip pays it on the new leg only.
+  // Open-side taker fee — closing is free, so this is the whole round-trip
+  // cost, shown up front. Mirrors the engine exactly: the marginal rate is
+  // base + impactK·(share of pool)² bps, integrated over the added notional
+  // (perpSizeFeeDetails), so an ADD is priced at the cumulative share
+  // (existing size → existing size + new notional), and a flip pays on the
+  // new leg only, against the post-flip-close pool depth.
   const takerFeeBps = getPerpTakerFeeBps(contract)
-  const openFee = calcPerpTakerFee(notional, takerFeeBps)
+  const impactK = getPerpImpactK(contract)
+  const feePoolDepth = useMemo(() => {
+    const current = contract.poolLong + contract.poolShort
+    if (!isFlip || !myPosition) return current
+    try {
+      // The engine auto-closes the opposite side before opening the new leg,
+      // which debits the pools — price the fee against that depth. Only the
+      // pool transition matters here, so the positions list can be empty.
+      const closed = closePosition(
+        {
+          pool: { L: contract.poolLong, S: contract.poolShort },
+          positions: [],
+        },
+        { ...myPosition, contractId: contract.id },
+        price
+      )
+      return closed.state.pool.L + closed.state.pool.S
+    } catch {
+      // Corrupt or transiently inconsistent cached data must not break the
+      // render; the engine remains authoritative at submit.
+      return current
+    }
+  }, [
+    isFlip,
+    myPosition,
+    contract.poolLong,
+    contract.poolShort,
+    contract.id,
+    price,
+  ])
+  const feeNotionalBefore = isAdd && myPosition ? myPosition.size : 0
+  const feeDetails = perpSizeFeeDetails({
+    notionalBefore: feeNotionalBefore,
+    notionalAfter: feeNotionalBefore + notional,
+    poolDepth: feePoolDepth,
+    baseBps: takerFeeBps,
+    impactK,
+  })
+  const openFee = feeDetails.fee
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -279,6 +326,11 @@ export const PerpBetPanel = (props: {
         leverage: effectiveLeverage,
         notional,
         perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
+        // Fee distribution telemetry: what rate people actually pay and how
+        // big they trade relative to the pool, for tuning impactK.
+        fee: openFee,
+        feeBps: feeDetails.effectiveBps,
+        poolShareAfter: feeDetails.poolShareAfter,
       })
       // Reflect the trade everywhere on the page (position panel, pools,
       // funding, this panel's open direction) immediately — onTrade bumps
@@ -411,8 +463,11 @@ export const PerpBetPanel = (props: {
         fundingManaPerPeriod={fundingManaPerPeriod}
         fundingPeriodMs={getFundingPeriodMs(contract)}
         isAddPreview={isAddPreview}
-        takerFeeBps={takerFeeBps}
+        feeBaseBps={takerFeeBps}
         fee={openFee}
+        feeEffectiveBps={feeDetails.effectiveBps}
+        feeSizeBps={feeDetails.sizeBps}
+        poolShareAfter={feeDetails.poolShareAfter}
       />
 
       {capacity && (
@@ -567,6 +622,39 @@ export const formatFundingMana = (absAmount: number) => {
   return `${m}${body}`
 }
 
+// One decimal keeps a small size term visible (10.3 bps at 10% of pool)
+// without implying precision the whale range doesn't need.
+const formatBps = (bps: number) =>
+  Number.isFinite(bps)
+    ? bps >= 100
+      ? Math.round(bps).toString()
+      : bps.toFixed(1)
+    : '0.0'
+
+const formatPoolShare = (share: number) => {
+  if (!Number.isFinite(share) || share <= 0) return '0%'
+  const pct = share * 100
+  return `${pct >= 10 ? Math.round(pct) : Number(pct.toFixed(1))}%`
+}
+
+// The fee row turns amber once the position would be half the backing pool —
+// well before the convex part of the curve really bites (≥ 100% of pool).
+const LARGE_POOL_SHARE_WARNING = 0.5
+
+// "7.2×" below 10, "36×" above — the leading digits carry the message.
+const formatFeeMultiple = (multiple: number) =>
+  Number.isFinite(multiple)
+    ? multiple >= 10
+      ? Math.round(multiple).toString()
+      : multiple.toFixed(1)
+    : '1'
+
+const SizeFeeWhyTooltip = () => (
+  <InfoTooltip text="Fees scale with your position's share of this market's backing pool — like price impact on an order book, but shown exactly before you trade. Small positions pay just the base rate, and closing is always free.">
+    <span className="text-xs font-medium">why?</span>
+  </InfoTooltip>
+)
+
 const StatsGrid = (props: {
   direction: 'long' | 'short'
   notional: number
@@ -587,10 +675,16 @@ const StatsGrid = (props: {
   // True when adding to a held position: entryPrice/leverage/liqPrice
   // describe the merged result, so the labels say so.
   isAddPreview?: boolean
-  // Open-side taker fee (bps of notional) and the mana fee for THIS trade.
-  // Closing is free, so this is the whole round-trip cost.
-  takerFeeBps: number
+  // Open-side taker fee for THIS trade. Closing is free, so this is the
+  // whole round-trip cost. The effective rate is base + size: positions
+  // large relative to the pool pay more (feeSizeBps > 0), and poolShareAfter
+  // says how large — the breakdown line shows all three once the size term
+  // is visible at display precision.
+  feeBaseBps: number
   fee: number
+  feeEffectiveBps: number
+  feeSizeBps: number
+  poolShareAfter: number
 }) => {
   const {
     direction,
@@ -604,11 +698,20 @@ const StatsGrid = (props: {
     fundingManaPerPeriod,
     fundingPeriodMs,
     isAddPreview,
-    takerFeeBps,
+    feeBaseBps,
     fee,
+    feeEffectiveBps,
+    feeSizeBps,
+    poolShareAfter,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
+
+  // Show the base/size breakdown only once the size term is visible at
+  // display precision — small trades (< ~10% of pool) read as just the base.
+  const showFeeBreakdown = feeSizeBps >= 0.05
+  const isLargeShareFee =
+    feeSizeBps > 0 && poolShareAfter >= LARGE_POOL_SHARE_WARNING
 
   const canShowScenarios =
     Number.isFinite(entryPrice) && margin > 0 && leverage > 0
@@ -658,11 +761,50 @@ const StatsGrid = (props: {
             : undefined
         }
       />
-      {takerFeeBps > 0 && (
-        <StatRow
-          label={`Fee (${(takerFeeBps / 100).toFixed(2)}%, free to close)`}
-          value={formatMoneyWithDecimals(fee)}
-        />
+      {(feeBaseBps > 0 || feeSizeBps > 0) && (
+        <Col className="gap-1">
+          <StatRow
+            label="Fee (free to close)"
+            value={`${formatMoneyWithDecimals(fee)} · ${formatBps(
+              notional > 0 ? feeEffectiveBps : feeBaseBps
+            )} bps`}
+            valueClass={
+              isLargeShareFee
+                ? 'font-semibold text-amber-600 dark:text-amber-400'
+                : undefined
+            }
+          />
+          {showFeeBreakdown && !isLargeShareFee && (
+            <Row className="text-ink-400 items-center gap-1 text-xs leading-tight">
+              <span>
+                {formatBps(feeEffectiveBps)} bps = {formatBps(feeBaseBps)} base
+                + {formatBps(feeSizeBps)} size (position is{' '}
+                {formatPoolShare(poolShareAfter)} of pool)
+              </span>
+              <SizeFeeWhyTooltip />
+            </Row>
+          )}
+          {isLargeShareFee && (
+            <div className="rounded-md bg-amber-100 px-3 py-2 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+              <Row className="items-center gap-1.5">
+                <span className="text-sm font-bold">
+                  Size fee active: {(feeEffectiveBps / 100).toFixed(2)}%
+                  {feeBaseBps > 0 &&
+                    ` — ${formatFeeMultiple(
+                      feeEffectiveBps / feeBaseBps
+                    )}× the base rate`}
+                </span>
+                <SizeFeeWhyTooltip />
+              </Row>
+              <span className="mt-0.5 block text-xs leading-tight">
+                {formatBps(feeBaseBps)} bps base + {formatBps(feeSizeBps)} bps
+                size — this position would be {formatPoolShare(poolShareAfter)}{' '}
+                of the backing pool. Reduce size or leverage to pay less.
+                Closing stays free.
+              </span>
+            </div>
+          )}
+        </Col>
       )}
 
       {scenarios.length > 0 && (

@@ -13,7 +13,11 @@ import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
-import { getPerpTakerFeeBps } from 'common/perps/fees'
+import {
+  getPerpImpactK,
+  getPerpTakerFeeBps,
+  PERP_IMPACT_K_MAX,
+} from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
 import {
   getTierIndexFromLiquidityAndAnswers,
@@ -89,6 +93,10 @@ export type LiteMarket = {
   lastFundingTime?: number
   maxLeverage?: number
   takerFeeBps?: number
+  // Impact coefficient for the size-dependent taker fee. Travels with the
+  // pools so a client can price its own fee: marginal rate is
+  // takerFeeBps + impactK·(share of pool)² bps (see calcPerpSizeFee).
+  impactK?: number
   resolvedOraclePrice?: number
 }
 export type ApiAnswer = Omit<
@@ -234,6 +242,7 @@ export function toLiteMarket(
           lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,
           takerFeeBps: getPerpTakerFeeBps(contract),
+          impactK: getPerpImpactK(contract),
           resolvedOraclePrice: contract.resolvedOraclePrice,
         }
       : {}),
@@ -657,6 +666,10 @@ export const createPerpSchema = z.object({
   // the resolved value so later default changes cannot rewrite an existing
   // market's economics.
   takerFeeBps: z.number().min(0).max(100).optional(),
+  // Impact coefficient for the size-dependent taker fee (marginal rate is
+  // takerFeeBps + impactK·(share of pool)² bps). Omitted = the platform
+  // default (see PERP_IMPACT_K_DEFAULT); stamped like takerFeeBps above.
+  impactK: z.number().min(0).max(PERP_IMPACT_K_MAX).optional(),
 })
 
 export const placePerpTradeSchema = z.object({

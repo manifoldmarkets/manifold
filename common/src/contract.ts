@@ -308,6 +308,11 @@ export type Perp = {
   // on pre-fee contracts = PERP_TAKER_FEE_BPS_DEFAULT. Read via
   // getPerpTakerFeeBps (common/perps/fees), never directly.
   takerFeeBps?: number
+  // Impact coefficient `k` for the size-dependent taker fee: the marginal
+  // rate at pool-share s is takerFeeBps + k·s² bps, integrated over the added
+  // notional (see calcPerpSizeFee). Missing or 0 = flat base fee only. Read
+  // via getPerpImpactK (common/perps/fees), never directly.
+  impactK?: number
   // ms between funding events: max(1h, feed updatePeriodMs), derived at
   // create time and frozen so later feed-registry changes can't rewrite the
   // economics of open positions. Missing on pre-period contracts = hourly.
