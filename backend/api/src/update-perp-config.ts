@@ -1,4 +1,5 @@
 import { getPerpTakerFeeBps } from 'common/perps/fees'
+import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { removeUndefinedProps } from 'common/util/object'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -24,12 +25,26 @@ import { APIError, APIHandler } from './helpers/endpoint'
 //   round-trip cost), applied to the NEXT open or add. 0 disables. The
 //   schema keeps it inside assertPerpTakerFeeConfig's [0, 100] domain;
 //   outside it the engine fail-closes every trade.
+// - maxOraclePriceAgeMs: the age at which the engine stops accepting trades
+//   AND closes against the cached mark. Lowering it is the direct lever on
+//   latency arbitrage — every stale-mark window a bot can trade is bounded by
+//   this number, not by the tick rate. It is floored at the feed's own cadence
+//   (getMinTradingMarkAgeMs), because a gate tighter than a couple of update
+//   periods would pause the market between perfectly healthy ticks. Note it
+//   pauses honest closes too, so tighten it with the feed's observed
+//   reliability in hand rather than by taste.
 export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   body,
   auth
 ) => {
   throwErrorIfNotAdmin(auth.uid)
-  const { contractId, maxLeverage, maxFundingRate, takerFeeBps } = body
+  const {
+    contractId,
+    maxLeverage,
+    maxFundingRate,
+    takerFeeBps,
+    maxOraclePriceAgeMs,
+  } = body
 
   const pg = createSupabaseDirectClient()
   const contract = await getContract(pg, contractId)
@@ -39,11 +54,27 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   if (contract.isResolved)
     throw new APIError(403, 'Cannot update a resolved market')
 
+  if (maxOraclePriceAgeMs !== undefined) {
+    const feedDef = getOracleFeed(contract.oracleFeedId)
+    if (!feedDef)
+      throw new APIError(
+        400,
+        `Contract ${contractId} references unknown feed "${contract.oracleFeedId}"`
+      )
+    const minMarkAgeMs = getMinTradingMarkAgeMs(feedDef)
+    if (maxOraclePriceAgeMs < minMarkAgeMs)
+      throw new APIError(
+        400,
+        `maxOraclePriceAgeMs ${maxOraclePriceAgeMs} is below feed "${contract.oracleFeedId}" update cadence (min ${minMarkAgeMs}ms) — the market would pause between healthy ticks`
+      )
+  }
+
   const lastUpdatedTime = Date.now()
   const patch = removeUndefinedProps({
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    maxOraclePriceAgeMs,
     lastUpdatedTime,
   })
   await updateContract(pg, contractId, patch)
@@ -57,14 +88,23 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     )
   if (takerFeeBps !== undefined)
     log(
-      `admin ${auth.uid} set takerFeeBps on ${contract.slug}: ${getPerpTakerFeeBps(
-        contract
-      )} -> ${takerFeeBps}`
+      `admin ${auth.uid} set takerFeeBps on ${
+        contract.slug
+      }: ${getPerpTakerFeeBps(contract)} -> ${takerFeeBps}`
+    )
+  if (maxOraclePriceAgeMs !== undefined)
+    log(
+      `admin ${auth.uid} set maxOraclePriceAgeMs on ${contract.slug}: ${contract.maxOraclePriceAgeMs} -> ${maxOraclePriceAgeMs}`
     )
   broadcastUpdatedContract(contract.visibility, { id: contractId, ...patch })
 
   const editedFields = Object.keys(
-    removeUndefinedProps({ maxLeverage, maxFundingRate, takerFeeBps })
+    removeUndefinedProps({
+      maxLeverage,
+      maxFundingRate,
+      takerFeeBps,
+      maxOraclePriceAgeMs,
+    })
   )
   return {
     result: {
@@ -72,6 +112,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxLeverage: maxLeverage ?? contract.maxLeverage,
       maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
       takerFeeBps: takerFeeBps ?? getPerpTakerFeeBps(contract),
+      maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
     },
     continue: async () => {
       await recordContractEdit(contract, auth.uid, editedFields)

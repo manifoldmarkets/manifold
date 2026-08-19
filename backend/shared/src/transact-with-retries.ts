@@ -6,25 +6,53 @@ import {
 } from './supabase/init'
 import { log } from 'shared/monitoring/log'
 
+export type TransactionRetryOptions = {
+  /**
+   * Classifies a failure the caller anticipates and handles itself, so it is
+   * logged at WARN rather than ERROR.
+   *
+   * Exists because a caller that deliberately bounds its own transaction (see
+   * the fast oracle tick's lock/statement timeouts) cannot otherwise stop this
+   * helper announcing the expected outcome as an error — the outer catch runs
+   * too late, so the ERROR line is already emitted and the telemetry already
+   * polluted. Scope it narrowly: pass a predicate for the specific codes the
+   * caller induced, never a blanket "ignore cancellations".
+   */
+  isExpectedError?: (error: unknown) => boolean
+  /**
+   * pg-promise transaction tag, surfaced to the process-wide error handler as
+   * `e.ctx.tag`. The only way that handler can distinguish a failure a caller
+   * deliberately induced from the same error code arising anywhere else.
+   */
+  tag?: string
+}
+
 export const runTransactionWithRetries = async <T>(
   callback: (trans: SupabaseTransaction) => Promise<T>,
-  maxAttempts = 3
+  maxAttempts = 3,
+  options?: TransactionRetryOptions
 ) => {
   const pg = createSupabaseDirectClient()
-  return transactWithRetries(pg, maxAttempts, callback)
+  return transactWithRetries(pg, maxAttempts, callback, options)
 }
 
 async function transactWithRetries<T>(
   pg: SupabaseDirectClient,
   maxAttempts = 5,
-  fn: (t: SupabaseTransaction) => Promise<T>
+  fn: (t: SupabaseTransaction) => Promise<T>,
+  options?: TransactionRetryOptions
 ): Promise<T> {
   let attempt = 0
   while (true) {
     try {
       attempt++
-      log(`Attempt ${attempt} of ${maxAttempts}`)
-      return await pg.tx({ mode: SERIAL_MODE }, fn)
+      // A single-attempt caller has no retry story to narrate, and on a 2s
+      // cadence this line would otherwise repeat forever for no information.
+      if (maxAttempts > 1) log(`Attempt ${attempt} of ${maxAttempts}`)
+      return await pg.tx(
+        { mode: SERIAL_MODE, ...(options?.tag ? { tag: options.tag } : {}) },
+        fn
+      )
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error)
       const code =
@@ -39,7 +67,9 @@ async function transactWithRetries<T>(
         code === '40P01' // deadlock_detected
 
       if (!isRetryable || attempt >= maxAttempts) {
-        log.error(`Attempt ${attempt} of ${maxAttempts} failed: ${message}`)
+        const line = `Attempt ${attempt} of ${maxAttempts} failed: ${message}`
+        if (options?.isExpectedError?.(error)) log.warn(line)
+        else log.error(line)
         throw error
       }
       log.warn(

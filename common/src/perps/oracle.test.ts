@@ -168,9 +168,12 @@ describe('normalizeOraclePointBatch', () => {
 })
 
 describe('getConsensusMedian', () => {
-  it('uses the median after two sources confirm the level', () => {
-    expect(getConsensusMedian([100, 101, 10_000], 0.02)).toBe(101)
+  it('medians the agreeing cluster and ignores an outlier entirely', () => {
+    // 100.5, not 101: the outlier is discarded rather than allowed to pull
+    // the result toward itself by shifting which quote sits in the middle.
+    expect(getConsensusMedian([100, 101, 10_000], 0.02)).toBe(100.5)
     expect(getConsensusMedian([100, 101], 0.02)).toBe(100.5)
+    expect(getConsensusMedian([100, 101, 102], 0.02)).toBe(101)
   })
 
   it('rejects unconfirmed, invalid, or insufficient values', () => {
@@ -179,6 +182,90 @@ describe('getConsensusMedian', () => {
       getConsensusMedian([Number.NaN, Number.POSITIVE_INFINITY, 100], 0.02)
     ).toBeNull()
     expect(getConsensusMedian([100, 101], 0)).toBeNull()
+  })
+
+  it('never returns a price no agreeing cluster supports', () => {
+    // The four-source split that motivated clustering. Two pairs agree
+    // internally and disagree with each other; the midpoint 105.5 is a price
+    // no venue reported and neither pair corroborates.
+    expect(getConsensusMedian([100, 101, 110, 111], 0.02)).toBeNull()
+    // Same ambiguity with a lone extra quote that corroborates nothing.
+    expect(getConsensusMedian([100, 101, 105.5, 110, 111], 0.02)).toBeNull()
+  })
+
+  it('follows the larger cluster when one clearly wins', () => {
+    // Three venues agreeing outvote two that agree with each other.
+    expect(getConsensusMedian([100, 101, 110, 111, 112], 0.02)).toBe(111)
+    // ...and the winning cluster is medianed alone, so the losing pair
+    // cannot shift the result.
+    expect(getConsensusMedian([100, 101, 102, 110, 111], 0.02)).toBe(101)
+  })
+
+  it('requires corroboration, not just presence, from five sources', () => {
+    // Five mutually disagreeing venues: every cluster is a single quote.
+    expect(getConsensusMedian([100, 110, 120, 130, 140], 0.02)).toBeNull()
+    // Four agreeing plus one outlier still resolves on the four.
+    expect(getConsensusMedian([100, 100.5, 101, 101.5, 10_000], 0.02)).toBe(
+      100.75
+    )
+  })
+
+  it('treats tolerance as inclusive at the boundary', () => {
+    expect(getConsensusMedian([100, 102], 0.02)).toBe(101)
+    expect(getConsensusMedian([100, 102.01], 0.02)).toBeNull()
+  })
+
+  it('accepts exact boundaries that do not round cleanly', () => {
+    // [100, 102] passes under either comparison, so it proves nothing on its
+    // own. These are exactly 2% apart too, but `(b - a) / a` evaluates them to
+    // 0.020000000000000018 and rejects them.
+    expect(getConsensusMedian([3, 3.06], 0.02)).toBeCloseTo(3.03, 10)
+    expect(getConsensusMedian([68365.55, 69732.861], 0.02)).toBeCloseTo(
+      69049.2055,
+      6
+    )
+  })
+
+  it('still rejects a split that a rounding error would have hidden', () => {
+    // Two pairs, each exactly 2% wide internally and far apart from each
+    // other. Rejecting [3, 3.06] would leave [10, 10.01] as the sole
+    // corroborated cluster and publish 10.005 as though it were consensus.
+    expect(getConsensusMedian([3, 3.06, 10, 10.01], 0.02)).toBeNull()
+    expect(
+      getConsensusMedian([68365.55, 69732.861, 80000, 80100], 0.02)
+    ).toBeNull()
+  })
+
+  it('refuses a chain whose ends disagree, however short each step is', () => {
+    // Neighbour agreement chains: each step here is exactly 2%, so the old
+    // rule admitted all four as one "cluster" spanning 6.12% and published
+    // 103.02 — a price no venue reported, ~3% from BOTH ends.
+    expect(getConsensusMedian([100, 102, 104.04, 106.1208], 0.02)).toBeNull()
+    // The same shape at BTC scale: a $4,162 spread publishing 70053.6.
+    expect(
+      getConsensusMedian([68000, 69360, 70747.2, 72162.144], 0.02)
+    ).toBeNull()
+    // Three venues is enough to chain past tolerance — the xStocks shape.
+    expect(getConsensusMedian([100, 102, 104.04], 0.02)).toBeNull()
+  })
+
+  it('does not let a chained outlier drag the mark off the agreeing venues', () => {
+    // Two venues printed exactly 68000. The chain used to pull the published
+    // mark $680 above a level two independent sources both reported.
+    expect(getConsensusMedian([68000, 68000, 69360, 70747.2], 0.02)).toBeNull()
+  })
+
+  it('still publishes when four sources genuinely agree', () => {
+    // The guard must not cost availability in normal conditions: real venue
+    // dispersion is ~0.1%, far inside the 2% window.
+    expect(getConsensusMedian([68000, 68001, 68002, 68003], 0.02)).toBe(68001.5)
+  })
+
+  it('does not let the epsilon widen the tolerance meaningfully', () => {
+    // A hair beyond the boundary must still be rejected: the epsilon exists
+    // to cancel float error, not to soften the threshold.
+    expect(getConsensusMedian([100, 102.0001], 0.02)).toBeNull()
+    expect(getConsensusMedian([3, 3.0601], 0.02)).toBeNull()
   })
 })
 

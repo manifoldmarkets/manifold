@@ -153,13 +153,40 @@ export const normalizeOraclePointBatch = (
 }
 
 /**
- * Median of independently sourced positive values, provided at least one
- * adjacent pair agrees within the configured relative spread.
+ * Whether two sorted prices are within a divergence tolerance of each other.
  *
- * A median alone is unsafe with exactly two sources because one bad source
- * can drag their midpoint arbitrarily. The agreement gate makes a two-source
- * fallback usable while retaining the median's one-outlier resistance when
- * three or more values are available.
+ * Multiplicative rather than the obvious `(b - a) / a <= frac`. The
+ * subtractive form performs three rounding steps and gets exact boundaries
+ * wrong: `(3.06 - 3) / 3` evaluates to 0.020000000000000018 and rejects a pair
+ * that is exactly 2% apart. Worse, it does so unevenly — `[100, 102]` happens
+ * to round favourably while `[68365.55, 69732.861]` does not — so whether a
+ * legitimate pair is accepted depends on the price level, and on a four-source
+ * feed a spurious rejection can split one cluster into two and turn a clear
+ * consensus into an "ambiguous" one that publishes nothing.
+ *
+ * The epsilon absorbs the residual error of the single remaining multiply. At
+ * 1e-9 relative it is orders of magnitude below any price difference that
+ * could matter — on a $68k mark it widens a 2% band by about a thousandth of a
+ * cent — while removing the boundary flapping entirely.
+ */
+const BOUNDARY_EPSILON = 1e-9
+
+const withinTolerance = (lower: number, upper: number, frac: number) =>
+  upper <= lower * (1 + frac) * (1 + BOUNDARY_EPSILON)
+
+/**
+ * Median of independently sourced positive values, provided a group of at
+ * least two of them agree with EACH OTHER within the configured relative
+ * spread.
+ *
+ * A median alone is unsafe with exactly two sources, because one bad source
+ * drags their midpoint arbitrarily. The agreement gate makes a two-source
+ * fallback usable while keeping the median's one-outlier resistance when more
+ * values are available.
+ *
+ * "Agree" means the whole group, not merely each value and its neighbour —
+ * see the span check below for why that distinction is load-bearing rather
+ * than pedantic.
  */
 export const getConsensusMedian = (
   values: readonly number[],
@@ -173,18 +200,59 @@ export const getConsensusMedian = (
     .sort((a, b) => a - b)
   if (sorted.length < 2) return null
 
-  const hasAgreement = sorted.some(
-    (value, index) =>
-      index > 0 &&
-      (value - sorted[index - 1]) / sorted[index - 1] <= maxPairDivergenceFrac
-  )
-  if (!hasAgreement) return null
+  // Partition into maximal runs whose neighbours are all within tolerance.
+  // Taking the median of EVERY quote once any single pair agreed was wrong as
+  // soon as more than three venues could answer: [100, 101, 110, 111] has two
+  // agreeing pairs and returns 105.5, a price no venue reported and neither
+  // cluster supports. It also let an outlier drag the result — [100, 101,
+  // 10000] returned 101 rather than the level the two agreeing venues found.
+  const clusters: number[][] = []
+  let current: number[] = [sorted[0]]
+  for (let i = 1; i < sorted.length; i++) {
+    if (withinTolerance(sorted[i - 1], sorted[i], maxPairDivergenceFrac))
+      current.push(sorted[i])
+    else {
+      clusters.push(current)
+      current = [sorted[i]]
+    }
+  }
+  clusters.push(current)
 
-  const middle = Math.floor(sorted.length / 2)
+  // A lone quote is unconfirmed by definition; only a cluster of two or more
+  // is corroborated.
+  const corroborated = clusters.filter((cluster) => cluster.length >= 2)
+  if (corroborated.length === 0) return null
+
+  const largest = Math.max(...corroborated.map((cluster) => cluster.length))
+  const winners = corroborated.filter((cluster) => cluster.length === largest)
+  // Equal-sized disagreeing clusters mean the venues genuinely split and
+  // nothing here can say which side is right. Publishing either — or worse,
+  // something between them — would set the price liquidations settle against
+  // on a coin flip. Refuse, and let the next tick decide.
+  if (winners.length > 1) return null
+
+  const cluster = winners[0]
+  // Neighbour-chaining bounds each STEP, not the cluster. At a 2% tolerance
+  // four sources can chain into one "cluster" spanning 1.02^3 - 1 = 6.12%, and
+  // its median then sits ~3% from the quotes at BOTH ends — a price no venue
+  // reported, published as the mark that liquidations and ADL settle against.
+  // Latency, not malice, produces that ladder, and it does so precisely during
+  // a fast move. Sorted ascending, so checking the endpoints bounds every
+  // interior pair: either the whole cluster agrees, or nothing is published
+  // and the mark ages into the contract's freshness gate.
+  if (
+    !withinTolerance(
+      cluster[0],
+      cluster[cluster.length - 1],
+      maxPairDivergenceFrac
+    )
+  )
+    return null
+  const middle = Math.floor(cluster.length / 2)
   const consensus =
-    sorted.length % 2 === 1
-      ? sorted[middle]
-      : (sorted[middle - 1] + sorted[middle]) / 2
+    cluster.length % 2 === 1
+      ? cluster[middle]
+      : (cluster[middle - 1] + cluster[middle]) / 2
   return Number.isFinite(consensus) && consensus > 0 ? consensus : null
 }
 

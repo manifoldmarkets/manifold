@@ -13,8 +13,9 @@ import {
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
+import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 
-// The fast oracle tick (fires every 5s, modeled on sports-live). For each
+// The fast oracle tick (fires every 2s, modeled on sports-live). For each
 // `fast` feed in the registry that is due to be polled:
 //   1. Fetch the latest point, validate against sanity bounds and timestamp
 //      ordering, and upsert into oracle_prices.
@@ -133,7 +134,7 @@ const DAILY_PROBE_PERIOD_MS = MINUTE_MS
  * throttle cannot disagree — a feed can only ever be polled on a firing, so
  * this is the quantum every pollPeriodMs is rounded to.
  */
-export const ORACLE_TICK_PERIOD_MS = 5_000
+export const ORACLE_TICK_PERIOD_MS = 2_000
 
 // Firings are not spaced exactly pollPeriodMs apart, so the due check needs
 // slack. Two things make the stamps jitter: croner's own scheduling, and the
@@ -184,8 +185,16 @@ export const validateOracleFeedPollPeriods = () => {
       continue
     }
     if (period % ORACLE_TICK_PERIOD_MS !== 0) {
+      // Report what isPollDue ACTUALLY does, which is round DOWN, not to the
+      // nearest tick: it fires on the first firing at or past
+      // `period - tolerance`, so a 15s period on a 2s tick runs at 14s, not
+      // 16s. The previous Math.round here misreported that in the direction
+      // that matters — it claimed a feed was slower than it really is, which
+      // would send someone hunting the wrong problem while the oracle quietly
+      // polled a venue harder than its rate limit allows.
+      const tolerance = Math.min(POLL_JITTER_TOLERANCE_MS, period / 2)
       const effective =
-        Math.max(1, Math.round(period / ORACLE_TICK_PERIOD_MS)) *
+        Math.max(1, Math.ceil((period - tolerance) / ORACLE_TICK_PERIOD_MS)) *
         ORACLE_TICK_PERIOD_MS
       log.error(
         `[oracle-feeds] ${feed.id}: pollPeriodMs ${period} is not a multiple of the ${ORACLE_TICK_PERIOD_MS}ms tick; it will actually poll every ${effective}ms`
@@ -312,7 +321,18 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
 
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.
-    await applyOraclePointToLivePerps(pg, feed.id, latestPoint)
+    //
+    // This is the ONLY caller that passes bounds. The fast tick is the one
+    // context where abandoning an apply beats completing it late: the next
+    // tick is seconds away and carries a better price. Every other caller
+    // (hourly update-perps, the daily publishers, the admin write path) must
+    // wait and apply — see OracleUpdateBounds.
+    await applyOraclePointToLivePerps(
+      pg,
+      feed.id,
+      latestPoint,
+      FAST_TICK_ORACLE_BOUNDS
+    )
   } catch (err) {
     log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }

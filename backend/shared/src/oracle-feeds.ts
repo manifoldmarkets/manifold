@@ -90,7 +90,8 @@ export type OracleFeedDef = {
 export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: BTC_USD_FEED_ID,
-    description: 'BTC/USD spot, median of Coinbase/Kraken/Bitstamp',
+    description:
+      'BTC/USD spot, median of the agreeing cluster among Coinbase/Kraken/Bitstamp/Gemini',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 1_000,
@@ -102,11 +103,18 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // BTC quotes continuously, so "interval between new values" is really the
     // poll rate. Funding is unaffected: max(1h, updatePeriodMs) is 1h either
     // way, so contracts created before and after this keep the same cadence.
-    updatePeriodMs: 5_000,
-    // 5s rather than 15s: three exchanges at 12 req/min each, comfortably
-    // inside their public limits, and it cuts the stale-mark window that
-    // latency bots trade against by 3x. See pollPeriodMs.
-    pollPeriodMs: 5_000,
+    updatePeriodMs: 2_000,
+    // 2s: four exchanges at 30 req/min each. Still inside every venue's
+    // public limits (Kraken's ~1 req/s is the tightest), but this is the
+    // practical ceiling for REST polling — 1s would be 60/min per venue, and
+    // the failure mode is backwards: fetchBtcUsdSpot needs 2 venues to answer
+    // or it writes NO point at all, so tripping a rate limit LENGTHENS the
+    // stale-mark window it was meant to shorten. Going below 2s wants
+    // exchange websocket tickers, not a faster poll.
+    //
+    // Measured divergence-window frequency scales ~T^1.95, so 5s -> 2s is
+    // roughly a 6x cut in the windows a latency bot can trade against.
+    pollPeriodMs: 2_000,
     fetchLatest: fetchBtcUsdSpot,
   },
   // The `uk-grid-carbon` (NESO) feed was removed when its market was
@@ -151,8 +159,11 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 15_000,
-    pollPeriodMs: 15_000,
+    updatePeriodMs: 16_000,
+    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
+    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
+    // wait on up to three venues, so round AWAY from more load, not toward it.
+    pollPeriodMs: 16_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
   },
   {
@@ -163,8 +174,11 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 15_000,
-    pollPeriodMs: 15_000,
+    updatePeriodMs: 16_000,
+    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
+    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
+    // wait on up to three venues, so round AWAY from more load, not toward it.
+    pollPeriodMs: 16_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
   },
   {
@@ -175,8 +189,11 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 15_000,
-    pollPeriodMs: 15_000,
+    updatePeriodMs: 16_000,
+    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
+    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
+    // wait on up to three venues, so round AWAY from more load, not toward it.
+    pollPeriodMs: 16_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
   },
   {
@@ -187,8 +204,11 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 15_000,
-    pollPeriodMs: 15_000,
+    updatePeriodMs: 16_000,
+    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
+    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
+    // wait on up to three venues, so round AWAY from more load, not toward it.
+    pollPeriodMs: 16_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
@@ -239,6 +259,29 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     updatePeriodMs: HOUR_MS,
   },
 ]
+
+/**
+ * Minimum `maxOraclePriceAgeMs` a market on this feed may be configured with —
+ * i.e. the tightest "refuse to trade against a mark older than this" gate.
+ *
+ * This used to be `staleAfterMs`, which conflated two different questions.
+ * `staleAfterMs` answers "when should this feed page someone?", and is
+ * deliberately slack — 2 minutes on BTC, so a couple of missed ticks do not
+ * wake anyone at 3am. The trading gate answers "how old a price may a trade
+ * execute against?", where 2 minutes is 60 ticks of a 2s feed. Using the
+ * alerting number as the floor is why the BTC market shipped accepting trades
+ * against a two-minute-old mark, which is the window latency bots were paid
+ * out of.
+ *
+ * The floor that actually matters is the feed's own cadence: a gate tighter
+ * than a couple of update periods would freeze trading between perfectly
+ * healthy updates. Taking the MIN of the two can only ever loosen the previous
+ * floor, so every market that validates today still validates.
+ */
+export const MIN_MARK_AGE_UPDATE_PERIODS = 2
+
+export const getMinTradingMarkAgeMs = (feed: OracleFeedDef) =>
+  Math.min(feed.staleAfterMs, MIN_MARK_AGE_UPDATE_PERIODS * feed.updatePeriodMs)
 
 export const getOracleFeed = (id: string) =>
   ORACLE_FEEDS.find((f) => f.id === id)
