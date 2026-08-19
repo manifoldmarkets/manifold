@@ -18,8 +18,8 @@ import {
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
 import {
-  getPerpImpactK,
   getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
   perpSizeFeeDetails,
 } from 'common/perps/fees'
 import {
@@ -181,12 +181,12 @@ export const PerpBetPanel = (props: {
 
   // Open-side taker fee — closing is free, so this is the whole round-trip
   // cost, shown up front. Mirrors the engine exactly: the marginal rate is
-  // base + impactK·(share of pool)² bps, integrated over the added notional
-  // (perpSizeFeeDetails), so an ADD is priced at the cumulative share
-  // (existing size → existing size + new notional), and a flip pays on the
-  // new leg only, against the post-flip-close pool depth.
+  // base + takerFeeImpact·(share of pool)² bps, integrated over the added
+  // notional (perpSizeFeeDetails), so an ADD is priced at the cumulative
+  // share (existing size → existing size + new notional), and a flip pays on
+  // the new leg only, against the post-flip-close pool depth.
   const takerFeeBps = getPerpTakerFeeBps(contract)
-  const impactK = getPerpImpactK(contract)
+  const takerFeeImpact = getPerpTakerFeeImpact(contract)
   const feePoolDepth = useMemo(() => {
     const current = contract.poolLong + contract.poolShort
     if (!isFlip || !myPosition) return current
@@ -222,7 +222,7 @@ export const PerpBetPanel = (props: {
     notionalAfter: feeNotionalBefore + notional,
     poolDepth: feePoolDepth,
     baseBps: takerFeeBps,
-    impactK,
+    impact: takerFeeImpact,
   })
   const openFee = feeDetails.fee
   const capacity = useMemo(() => {
@@ -327,7 +327,7 @@ export const PerpBetPanel = (props: {
         notional,
         perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
         // Fee distribution telemetry: what rate people actually pay and how
-        // big they trade relative to the pool, for tuning impactK.
+        // big they trade relative to the pool, for tuning takerFeeImpact.
         fee: openFee,
         feeBps: feeDetails.effectiveBps,
         poolShareAfter: feeDetails.poolShareAfter,

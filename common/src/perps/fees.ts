@@ -28,20 +28,22 @@ export const PERP_TAKER_FEE_BPS_DEFAULT = 10
  * intentionally uncapped, so pool-sized entries pay more than 100 bps. */
 export const PERP_TAKER_FEE_BPS_MAX = 100
 
-/** Default impact coefficient `k` for the size-dependent fee. Shipped at 0 so
- * a deploy changes nothing (the fee stays exactly the flat base); enabled
- * per-contract via update-perp-config once a market is watched live. */
-export const PERP_IMPACT_K_DEFAULT = 0
+/** Default size-impact coefficient for the size-dependent fee (deliberately
+ * NOT named `k` — the ManiPerp paper already uses k for fundingSensitivity).
+ * Shipped at 0 so a deploy changes nothing (the fee stays exactly the flat
+ * base); enabled per-contract via update-perp-config once a market is
+ * watched live. */
+export const PERP_TAKER_FEE_IMPACT_DEFAULT = 0
 
-/** Sanity bound for admin configuration of `k`. A bound on the CONFIG knob,
- * not on the resulting fee. */
-export const PERP_IMPACT_K_MAX = 10_000
+/** Sanity bound for admin configuration of the impact coefficient. A bound
+ * on the CONFIG knob, not on the resulting fee. */
+export const PERP_TAKER_FEE_IMPACT_MAX = 10_000
 
 const isValidTakerFeeBps = (bps: number) =>
   Number.isFinite(bps) && bps >= 0 && bps <= PERP_TAKER_FEE_BPS_MAX
 
-const isValidImpactK = (k: number) =>
-  Number.isFinite(k) && k >= 0 && k <= PERP_IMPACT_K_MAX
+const isValidTakerFeeImpact = (impact: number) =>
+  Number.isFinite(impact) && impact >= 0 && impact <= PERP_TAKER_FEE_IMPACT_MAX
 
 /**
  * Fail-closed guard for the engine, mirroring assertPerpFundingConfig: new
@@ -51,16 +53,16 @@ const isValidImpactK = (k: number) =>
  */
 export const assertPerpTakerFeeConfig = (config: {
   takerFeeBps?: number
-  impactK?: number
+  takerFeeImpact?: number
 }) => {
-  const { takerFeeBps, impactK } = config
+  const { takerFeeBps, takerFeeImpact } = config
   if (takerFeeBps !== undefined && !isValidTakerFeeBps(takerFeeBps))
     throw new Error(
       `taker fee must be finite and in [0, ${PERP_TAKER_FEE_BPS_MAX}] bps`
     )
-  if (impactK !== undefined && !isValidImpactK(impactK))
+  if (takerFeeImpact !== undefined && !isValidTakerFeeImpact(takerFeeImpact))
     throw new Error(
-      `fee impact coefficient must be finite and in [0, ${PERP_IMPACT_K_MAX}]`
+      `taker fee size impact must be finite and in [0, ${PERP_TAKER_FEE_IMPACT_MAX}]`
     )
 }
 
@@ -88,33 +90,37 @@ export const calcPerpTakerFee = (notional: number, feeBps: number): number => {
 }
 
 /**
- * Impact coefficient `k` for a contract. Total (never throws), like
+ * Size-impact coefficient for a contract. Total (never throws), like
  * getPerpTakerFeeBps: corrupt legacy data reads as the default; the engine
  * separately rejects invalid config via assertPerpTakerFeeConfig.
  */
-export const getPerpImpactK = (contract: { impactK?: number }): number => {
-  const { impactK } = contract
-  if (impactK === undefined) return PERP_IMPACT_K_DEFAULT
-  return isValidImpactK(impactK) ? impactK : PERP_IMPACT_K_DEFAULT
+export const getPerpTakerFeeImpact = (contract: {
+  takerFeeImpact?: number
+}): number => {
+  const { takerFeeImpact } = contract
+  if (takerFeeImpact === undefined) return PERP_TAKER_FEE_IMPACT_DEFAULT
+  return isValidTakerFeeImpact(takerFeeImpact)
+    ? takerFeeImpact
+    : PERP_TAKER_FEE_IMPACT_DEFAULT
 }
 
 /**
  * Size-dependent taker fee in mana on an exposure INCREASE (open, add, or the
  * newly-opened leg of a flip): the marginal rate at pool-share s = N/P is
- * `base + k·s²` bps, charged as its integral over the added notional
+ * `base + impact·s²` bps, charged as its integral over the added notional
  * [N0, N1]:
  *
- *   fee = (1/10_000) · [ base·(N1−N0) + (k/(3·P²))·(N1³ − N0³) ]
+ *   fee = (1/10_000) · [ base·(N1−N0) + (impact/(3·P²))·(N1³ − N0³) ]
  *
  * The integral form makes the fee splitting-proof per account: chopping one
  * big add into many small sequential adds costs exactly the same, because the
  * integral is path-independent in notional. A fresh position of pool-share
- * S = N1/P pays the effective (average) rate `base + (k/3)·S²` bps — honest
- * sub-10%-of-pool flow pays ~base, pool-sized entries pay multiples of it.
- * The total is intentionally NOT capped at PERP_TAKER_FEE_BPS_MAX; only the
- * base config is.
+ * S = N1/P pays the effective (average) rate `base + (impact/3)·S²` bps —
+ * honest sub-10%-of-pool flow pays ~base, pool-sized entries pay multiples of
+ * it. The total is intentionally NOT capped at PERP_TAKER_FEE_BPS_MAX; only
+ * the base config is.
  *
- * Computed in share space, (k/3)·P·(s1³ − s0³), which is algebraically
+ * Computed in share space, (impact/3)·P·(s1³ − s0³), which is algebraically
  * identical but keeps intermediates O(pool) instead of O(notional³).
  *
  * Guards (display path is total, mirroring calcPerpTakerFee): returns 0 when
@@ -127,22 +133,23 @@ export const calcPerpSizeFee = (args: {
   notionalAfter: number // N1 = N0 + added notional
   poolDepth: number // P: pre-trade poolLong + poolShort
   baseBps: number // flat base rate (today's takerFeeBps)
-  impactK: number // k: impact coefficient
+  impact: number // size-impact coefficient (contract takerFeeImpact)
 }): number => {
-  const { notionalBefore, notionalAfter, poolDepth, baseBps, impactK } = args
+  const { notionalBefore, notionalAfter, poolDepth, baseBps } = args
   if (!Number.isFinite(notionalBefore) || notionalBefore < 0) return 0
   if (!Number.isFinite(notionalAfter)) return 0
   const added = notionalAfter - notionalBefore
   if (!Number.isFinite(added) || added <= 0) return 0
   const base = Number.isFinite(baseBps) && baseBps > 0 ? baseBps : 0
-  const k = Number.isFinite(impactK) && impactK > 0 ? impactK : 0
+  const impact =
+    Number.isFinite(args.impact) && args.impact > 0 ? args.impact : 0
   const baseFee = (base * added) / 10_000
-  if (k <= 0 || !Number.isFinite(poolDepth) || poolDepth <= 0)
+  if (impact <= 0 || !Number.isFinite(poolDepth) || poolDepth <= 0)
     return Number.isFinite(baseFee) && baseFee > 0 ? baseFee : 0
   const shareBefore = notionalBefore / poolDepth
   const shareAfter = notionalAfter / poolDepth
   const impactFee =
-    ((k / 3) * poolDepth * (shareAfter ** 3 - shareBefore ** 3)) / 10_000
+    ((impact / 3) * poolDepth * (shareAfter ** 3 - shareBefore ** 3)) / 10_000
   const fee = baseFee + impactFee
   return Number.isFinite(fee) && fee > 0 ? fee : 0
 }
@@ -165,7 +172,7 @@ export const perpSizeFeeDetails = (args: {
   notionalAfter: number
   poolDepth: number
   baseBps: number
-  impactK: number
+  impact: number
 }): PerpSizeFeeDetails => {
   const { notionalBefore, notionalAfter, poolDepth, baseBps } = args
   const fee = calcPerpSizeFee(args)

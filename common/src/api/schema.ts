@@ -35,7 +35,7 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
-import { PERP_IMPACT_K_MAX } from 'common/perps/fees'
+import { PERP_TAKER_FEE_IMPACT_MAX } from 'common/perps/fees'
 import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
@@ -1162,7 +1162,7 @@ export const API = (_apiTypeCheck = {
       maxLeverage: number
       maxFundingRate: number
       takerFeeBps: number
-      impactK: number
+      takerFeeImpact: number
       maxOraclePriceAgeMs: number
     },
     props: z
@@ -1176,12 +1176,17 @@ export const API = (_apiTypeCheck = {
         // Open-side BASE taker fee in bps of notional (closing is free);
         // 0 disables. Bounds match assertPerpTakerFeeConfig — outside them
         // the engine fail-closes every trade. This caps the base only: the
-        // size-dependent total (base + impactK·share² marginal) is
+        // size-dependent total (base + takerFeeImpact·share² marginal) is
         // intentionally uncapped.
         takerFeeBps: z.number().min(0).max(100).optional(),
-        // Impact coefficient for the size-dependent taker fee. 0 keeps the
-        // fee flat at the base. Bounds match assertPerpTakerFeeConfig.
-        impactK: z.number().min(0).max(PERP_IMPACT_K_MAX).optional(),
+        // Size-impact coefficient of the taker fee (NOT the paper's k —
+        // that is fundingSensitivity). 0 keeps the fee flat at the base.
+        // Bounds match assertPerpTakerFeeConfig.
+        takerFeeImpact: z
+          .number()
+          .min(0)
+          .max(PERP_TAKER_FEE_IMPACT_MAX)
+          .optional(),
         // How old the executable mark may be before the engine refuses trades
         // and closes. Tunable live because the right value depends on how
         // reliably the feed is actually ticking, which is an operational fact
@@ -1200,7 +1205,7 @@ export const API = (_apiTypeCheck = {
           p.maxLeverage !== undefined ||
           p.maxFundingRate !== undefined ||
           p.takerFeeBps !== undefined ||
-          p.impactK !== undefined ||
+          p.takerFeeImpact !== undefined ||
           p.maxOraclePriceAgeMs !== undefined,
         { message: 'Provide at least one field to update' }
       ),

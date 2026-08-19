@@ -4,7 +4,7 @@ import { API } from 'common/api/schema'
 import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import {
-  PERP_IMPACT_K_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_BPS_DEFAULT,
 } from 'common/perps/fees'
 import {
@@ -185,7 +185,7 @@ describe('toLiteMarket', () => {
       lastFundingTime: 1_700_000_080_000,
       maxLeverage: 10,
       takerFeeBps: 12,
-      impactK: 90,
+      takerFeeImpact: 90,
       resolvedOraclePrice: 42,
       description: '',
     } as unknown as PerpContract
@@ -204,12 +204,12 @@ describe('toLiteMarket', () => {
         fundingRate: 0.001,
         lastFundingTime: 1_700_000_080_000,
         takerFeeBps: 12,
-        impactK: 90,
+        takerFeeImpact: 90,
         resolvedOraclePrice: 42,
       })
     )
     expect(toFullMarket(contract).takerFeeBps).toBe(12)
-    expect(toFullMarket(contract).impactK).toBe(90)
+    expect(toFullMarket(contract).takerFeeImpact).toBe(90)
   })
 
   it('projects the effective legacy default while preserving explicit zero', () => {
@@ -242,9 +242,15 @@ describe('toLiteMarket', () => {
     expect(
       toLiteMarket({ ...legacyContract, takerFeeBps: 0 }).takerFeeBps
     ).toBe(0)
-    expect(toLiteMarket(legacyContract).impactK).toBe(PERP_IMPACT_K_DEFAULT)
-    expect(toLiteMarket({ ...legacyContract, impactK: 0 }).impactK).toBe(0)
-    expect(toLiteMarket({ ...legacyContract, impactK: 90 }).impactK).toBe(90)
+    expect(toLiteMarket(legacyContract).takerFeeImpact).toBe(
+      PERP_TAKER_FEE_IMPACT_DEFAULT
+    )
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeImpact: 0 }).takerFeeImpact
+    ).toBe(0)
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeImpact: 90 }).takerFeeImpact
+    ).toBe(90)
   })
 })
 
@@ -285,11 +291,11 @@ describe('update-perp-config props', () => {
 
   it('enumerates the tunable fields, so the loop below cannot pass vacuously', () => {
     expect(optionalFields.sort()).toEqual([
-      'impactK',
       'maxFundingRate',
       'maxLeverage',
       'maxOraclePriceAgeMs',
       'takerFeeBps',
+      'takerFeeImpact',
     ])
   })
 
@@ -298,7 +304,7 @@ describe('update-perp-config props', () => {
       maxLeverage: 10,
       maxFundingRate: 0.02,
       takerFeeBps: 10,
-      impactK: 90,
+      takerFeeImpact: 90,
       maxOraclePriceAgeMs: 10_000,
     }
     for (const field of optionalFields) {
@@ -315,12 +321,12 @@ describe('update-perp-config props', () => {
     expect(props.safeParse({ contractId: 'c1' }).success).toBe(false)
   })
 
-  it('rejects an out-of-bounds impactK at the schema', () => {
-    expect(props.safeParse({ contractId: 'c1', impactK: -1 }).success).toBe(
-      false
-    )
+  it('rejects an out-of-bounds takerFeeImpact at the schema', () => {
     expect(
-      props.safeParse({ contractId: 'c1', impactK: 10_001 }).success
+      props.safeParse({ contractId: 'c1', takerFeeImpact: -1 }).success
+    ).toBe(false)
+    expect(
+      props.safeParse({ contractId: 'c1', takerFeeImpact: 10_001 }).success
     ).toBe(false)
   })
 })

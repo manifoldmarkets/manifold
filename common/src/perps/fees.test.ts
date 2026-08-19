@@ -4,11 +4,11 @@ import {
   calcPerpSizeFee,
   calcPerpTakerFee,
   creditPerpPoolFee,
-  getPerpImpactK,
+  getPerpTakerFeeImpact,
   getPerpTakerFeeBps,
   perpSizeFeeDetails,
-  PERP_IMPACT_K_DEFAULT,
-  PERP_IMPACT_K_MAX,
+  PERP_TAKER_FEE_IMPACT_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_MAX,
   PERP_TAKER_FEE_BPS_DEFAULT,
   PERP_TAKER_FEE_BPS_MAX,
 } from './fees'
@@ -50,57 +50,65 @@ describe('assertPerpTakerFeeConfig', () => {
     expect(() =>
       assertPerpTakerFeeConfig({ takerFeeBps: PERP_TAKER_FEE_BPS_MAX })
     ).not.toThrow()
-    expect(() => assertPerpTakerFeeConfig({ impactK: 0 })).not.toThrow()
-    expect(() => assertPerpTakerFeeConfig({ impactK: 90 })).not.toThrow()
+    expect(() => assertPerpTakerFeeConfig({ takerFeeImpact: 0 })).not.toThrow()
+    expect(() => assertPerpTakerFeeConfig({ takerFeeImpact: 90 })).not.toThrow()
     expect(() =>
-      assertPerpTakerFeeConfig({ impactK: PERP_IMPACT_K_MAX })
+      assertPerpTakerFeeConfig({ takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX })
     ).not.toThrow()
     expect(() =>
-      assertPerpTakerFeeConfig({ takerFeeBps: 10, impactK: 90 })
+      assertPerpTakerFeeConfig({ takerFeeBps: 10, takerFeeImpact: 90 })
     ).not.toThrow()
   })
 
   it('fails closed on corrupt persisted values', () => {
     for (const bad of [NaN, Infinity, -1, PERP_TAKER_FEE_BPS_MAX + 0.001])
       expect(() => assertPerpTakerFeeConfig({ takerFeeBps: bad })).toThrow()
-    for (const bad of [NaN, Infinity, -1, PERP_IMPACT_K_MAX + 0.001])
-      expect(() => assertPerpTakerFeeConfig({ impactK: bad })).toThrow()
-    // A corrupt impactK blocks trading even when the base is fine.
+    for (const bad of [NaN, Infinity, -1, PERP_TAKER_FEE_IMPACT_MAX + 0.001])
+      expect(() => assertPerpTakerFeeConfig({ takerFeeImpact: bad })).toThrow()
+    // A corrupt takerFeeImpact blocks trading even when the base is fine.
     expect(() =>
-      assertPerpTakerFeeConfig({ takerFeeBps: 10, impactK: NaN })
+      assertPerpTakerFeeConfig({ takerFeeBps: 10, takerFeeImpact: NaN })
     ).toThrow()
   })
 })
 
-describe('getPerpImpactK', () => {
+describe('getPerpTakerFeeImpact', () => {
   it('defaults when the field is missing (pre-impact contracts)', () => {
-    expect(getPerpImpactK({})).toBe(PERP_IMPACT_K_DEFAULT)
+    expect(getPerpTakerFeeImpact({})).toBe(PERP_TAKER_FEE_IMPACT_DEFAULT)
   })
 
   it('returns a valid configured value, including an explicit 0', () => {
-    expect(getPerpImpactK({ impactK: 0 })).toBe(0)
-    expect(getPerpImpactK({ impactK: 90 })).toBe(90)
-    expect(getPerpImpactK({ impactK: PERP_IMPACT_K_MAX })).toBe(
-      PERP_IMPACT_K_MAX
-    )
+    expect(getPerpTakerFeeImpact({ takerFeeImpact: 0 })).toBe(0)
+    expect(getPerpTakerFeeImpact({ takerFeeImpact: 90 })).toBe(90)
+    expect(
+      getPerpTakerFeeImpact({ takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX })
+    ).toBe(PERP_TAKER_FEE_IMPACT_MAX)
   })
 
   it('falls back to the default on corrupt values (display path is total)', () => {
-    for (const bad of [NaN, Infinity, -Infinity, -1, PERP_IMPACT_K_MAX + 1])
-      expect(getPerpImpactK({ impactK: bad })).toBe(PERP_IMPACT_K_DEFAULT)
+    for (const bad of [
+      NaN,
+      Infinity,
+      -Infinity,
+      -1,
+      PERP_TAKER_FEE_IMPACT_MAX + 1,
+    ])
+      expect(getPerpTakerFeeImpact({ takerFeeImpact: bad })).toBe(
+        PERP_TAKER_FEE_IMPACT_DEFAULT
+      )
   })
 
   it('ships with the size term OFF, so deploying is a behavior no-op', () => {
-    // The rollout contract: nothing changes on deploy; impactK is enabled
-    // per-contract via update-perp-config afterwards.
-    expect(PERP_IMPACT_K_DEFAULT).toBe(0)
+    // The rollout contract: nothing changes on deploy; takerFeeImpact is
+    // enabled per-contract via update-perp-config afterwards.
+    expect(PERP_TAKER_FEE_IMPACT_DEFAULT).toBe(0)
     expect(
       calcPerpSizeFee({
         notionalBefore: 0,
         notionalAfter: 662_000,
         poolDepth: 466_000,
         baseBps: 10,
-        impactK: PERP_IMPACT_K_DEFAULT,
+        impact: PERP_TAKER_FEE_IMPACT_DEFAULT,
       })
     ).toBeCloseTo(calcPerpTakerFee(662_000, 10), 10)
   })
@@ -138,14 +146,14 @@ describe('calcPerpSizeFee', () => {
   // trade is 1.1% of pool, whale median 142%, on a ~M$466k BTC pool.
   const P = 466_000
   const base = 10
-  const k = 90
+  const impact = 90
   const feeFor = (notional: number) =>
     calcPerpSizeFee({
       notionalBefore: 0,
       notionalAfter: notional,
       poolDepth: P,
       baseBps: base,
-      impactK: k,
+      impact,
     })
   const effectiveBpsFor = (notional: number) =>
     (feeFor(notional) / notional) * 10_000
@@ -156,12 +164,15 @@ describe('calcPerpSizeFee', () => {
     expect(Math.abs(effectiveBpsFor(0.011 * P) - base)).toBeLessThan(0.1)
   })
 
-  it('charges base + k/3 bps on an exactly pool-sized position', () => {
-    expect(effectiveBpsFor(P)).toBeCloseTo(base + k / 3, 10)
+  it('charges base + impact/3 bps on an exactly pool-sized position', () => {
+    expect(effectiveBpsFor(P)).toBeCloseTo(base + impact / 3, 10)
   })
 
   it('charges the whale median (142% of pool) ~70 bps — above their ~37 bps gross edge', () => {
-    expect(effectiveBpsFor(1.42 * P)).toBeCloseTo(base + (k / 3) * 1.42 ** 2, 8)
+    expect(effectiveBpsFor(1.42 * P)).toBeCloseTo(
+      base + (impact / 3) * 1.42 ** 2,
+      8
+    )
     expect(effectiveBpsFor(1.42 * P)).toBeCloseTo(70.49, 1)
   })
 
@@ -181,7 +192,7 @@ describe('calcPerpSizeFee', () => {
     expect(effectiveBpsFor(3.43 * P)).toBeCloseTo(362.95, 1)
     expect(() => assertPerpTakerFeeConfig({ takerFeeBps: 101 })).toThrow()
     expect(() =>
-      assertPerpTakerFeeConfig({ takerFeeBps: 100, impactK: 90 })
+      assertPerpTakerFeeConfig({ takerFeeBps: 100, takerFeeImpact: 90 })
     ).not.toThrow()
   })
 
@@ -199,7 +210,7 @@ describe('calcPerpSizeFee', () => {
         notionalAfter: notionalBefore + part,
         poolDepth: P,
         baseBps: base,
-        impactK: k,
+        impact,
       })
       notionalBefore += part
     }
@@ -214,13 +225,13 @@ describe('calcPerpSizeFee', () => {
       notionalAfter: 500_000,
       poolDepth: P,
       baseBps: base,
-      impactK: k,
+      impact,
     })
     const fresh = feeFor(100_000)
     expect(addOnTop).toBeGreaterThan(fresh)
   })
 
-  it('reduces to the flat base fee when k = 0', () => {
+  it('reduces to the flat base fee when the impact is 0', () => {
     for (const notional of [20, 5_126, 662_000])
       expect(
         calcPerpSizeFee({
@@ -228,7 +239,7 @@ describe('calcPerpSizeFee', () => {
           notionalAfter: notional,
           poolDepth: P,
           baseBps: base,
-          impactK: 0,
+          impact: 0,
         })
       ).toBeCloseTo(calcPerpTakerFee(notional, base), 10)
   })
@@ -241,7 +252,7 @@ describe('calcPerpSizeFee', () => {
           notionalAfter: 10_000,
           poolDepth: badPool,
           baseBps: base,
-          impactK: k,
+          impact,
         })
       ).toBeCloseTo(calcPerpTakerFee(10_000, base), 10)
   })
@@ -252,7 +263,7 @@ describe('calcPerpSizeFee', () => {
       notionalAfter: 10_000,
       poolDepth: P,
       baseBps: base,
-      impactK: k,
+      impact,
     }
     expect(calcPerpSizeFee({ ...ok, notionalAfter: 0 })).toBe(0)
     expect(
@@ -267,25 +278,25 @@ describe('calcPerpSizeFee', () => {
       expect(calcPerpSizeFee({ ...ok, notionalAfter: bad })).toBe(0)
   })
 
-  it('treats a degenerate base or k as 0 rather than poisoning the fee', () => {
+  it('treats a degenerate base or impact as 0 rather than poisoning the fee', () => {
     const ok = {
       notionalBefore: 0,
       notionalAfter: 466_000,
       poolDepth: P,
-      impactK: k,
+      impact,
     }
-    // No base: pure impact term, (k/3)·1² = 30 bps on a pool-sized entry.
+    // No base: pure impact term, (impact/3)·1² = 30 bps on a pool-sized entry.
     for (const badBase of [0, -5, NaN, Infinity])
       expect(
         (calcPerpSizeFee({ ...ok, baseBps: badBase }) / 466_000) * 10_000
-      ).toBeCloseTo(k / 3, 8)
-    // No k: flat base.
-    for (const badK of [-5, NaN, Infinity])
+      ).toBeCloseTo(impact / 3, 8)
+    // No impact: flat base.
+    for (const badImpact of [-5, NaN, Infinity])
       expect(
-        calcPerpSizeFee({ ...ok, baseBps: base, impactK: badK })
+        calcPerpSizeFee({ ...ok, baseBps: base, impact: badImpact })
       ).toBeCloseTo(calcPerpTakerFee(466_000, base), 10)
     // Both degenerate: free, never negative or NaN.
-    expect(calcPerpSizeFee({ ...ok, baseBps: 0, impactK: 0 })).toBe(0)
+    expect(calcPerpSizeFee({ ...ok, baseBps: 0, impact: 0 })).toBe(0)
   })
 })
 
@@ -296,7 +307,7 @@ describe('perpSizeFeeDetails', () => {
     notionalAfter: 1.42 * P,
     poolDepth: P,
     baseBps: 10,
-    impactK: 90,
+    impact: 90,
   }
 
   it('decomposes the effective rate into base + size and reports the pool share', () => {
@@ -352,7 +363,7 @@ describe('open path with the size fee (engine composition)', () => {
       notionalAfter: mana * leverage,
       poolDepth,
       baseBps: 10,
-      impactK: 90,
+      impact: 90,
     })
     const openRes = openPosition(
       state,

@@ -11,9 +11,9 @@ import {
 } from 'common/envs/constants'
 import { getPerpBackingPool } from 'common/perps/amm'
 import {
-  getPerpImpactK,
   getPerpTakerFeeBps,
-  PERP_IMPACT_K_MAX,
+  getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
@@ -667,7 +667,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           Taker fee{' '}
-          <InfoTooltip text="Base fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping. Positions large relative to the pool pay more on top — see fee impact." />
+          <InfoTooltip text="Base fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping. Positions large relative to the pool pay more on top — see fee size impact." />
         </td>
         <td>
           {canEdit ? (
@@ -675,22 +675,22 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           ) : (
             <span className="tabular-nums">
               {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}%
-              {getPerpImpactK(contract) > 0 ? ' base' : ''} to open
+              {getPerpTakerFeeImpact(contract) > 0 ? ' base' : ''} to open
             </span>
           )}
         </td>
       </tr>
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
-          Fee impact (k){' '}
-          <InfoTooltip text="Size coefficient of the taker fee: the marginal rate at pool-share s is base + k·s² bps, so a fresh position that is share S of the pool pays base + (k/3)·S² bps on average. 0 = flat base fee only. Small trades pay ~base regardless of k." />
+          Fee size impact{' '}
+          <InfoTooltip text="Size coefficient of the taker fee: the marginal rate at pool-share s is base + impact·s² bps, so a fresh position that is share S of the pool pays base + (impact/3)·S² bps on average. 0 = flat base fee only. Small trades pay ~base regardless of the impact." />
         </td>
         <td>
           {canEdit ? (
-            <ImpactKInput contract={contract} />
+            <TakerFeeImpactInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {formatWithCommas(getPerpImpactK(contract))}
+              {formatWithCommas(getPerpTakerFeeImpact(contract))}
             </span>
           )}
         </td>
@@ -965,22 +965,22 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
   )
 }
 
-// Inline admin editor for a perp's fee impact coefficient k. The marginal
-// taker fee at pool-share s is base + k·s² bps; 0 keeps the fee flat at the
-// base. Applies to the next open or add immediately.
-function ImpactKInput(props: { contract: PerpContract }) {
+// Inline admin editor for a perp's fee size-impact coefficient. The marginal
+// taker fee at pool-share s is base + impact·s² bps; 0 keeps the fee flat at
+// the base. Applies to the next open or add immediately.
+function TakerFeeImpactInput(props: { contract: PerpContract }) {
   const { contract } = props
   const [input, setInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [justSaved, setJustSaved] = useState<number | null>(null)
-  const stored = getPerpImpactK(contract)
+  const stored = getPerpTakerFeeImpact(contract)
   const current = justSaved != null && justSaved !== stored ? justSaved : stored
   const parsed = Number(input)
   const valid =
     input !== '' &&
     Number.isFinite(parsed) &&
     parsed >= 0 &&
-    parsed <= PERP_IMPACT_K_MAX
+    parsed <= PERP_TAKER_FEE_IMPACT_MAX
 
   const submit = async () => {
     if (!valid || saving || parsed === current) return
@@ -988,20 +988,22 @@ function ImpactKInput(props: { contract: PerpContract }) {
     try {
       const res = await api('update-perp-config', {
         contractId: contract.id,
-        impactK: parsed,
+        takerFeeImpact: parsed,
       })
-      setJustSaved(res.impactK)
+      setJustSaved(res.takerFeeImpact)
       setInput('')
       toast.success(
-        res.impactK > 0
-          ? `Fee impact k is now ${res.impactK} — a pool-sized position pays ${
-              getPerpTakerFeeBps(contract) + res.impactK / 3
+        res.takerFeeImpact > 0
+          ? `Fee size impact is now ${
+              res.takerFeeImpact
+            } — a pool-sized position pays ${
+              getPerpTakerFeeBps(contract) + res.takerFeeImpact / 3
             } bps effective`
-          : 'Fee impact is off — the taker fee is flat at the base'
+          : 'Fee size impact is off — the taker fee is flat at the base'
       )
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to update fee impact'
+        err instanceof Error ? err.message : 'Failed to update fee size impact'
       )
     } finally {
       setSaving(false)
@@ -1014,11 +1016,11 @@ function ImpactKInput(props: { contract: PerpContract }) {
       <input
         type="number"
         min={0}
-        max={PERP_IMPACT_K_MAX}
+        max={PERP_TAKER_FEE_IMPACT_MAX}
         step={10}
         value={input}
         disabled={saving}
-        placeholder="New k"
+        placeholder="New impact"
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit()

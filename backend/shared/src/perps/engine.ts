@@ -43,8 +43,8 @@ import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
   creditPerpPoolFee,
-  getPerpImpactK,
   getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
   perpSizeFeeDetails,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
@@ -600,13 +600,13 @@ export const openOrAddPosition = async (
     // fee taxes each round trip once). The flat base could not tell honest
     // flow (median ~1% of pool) from pool-sized informed entries (median
     // ~142% of pool, 2026-08-19), so the marginal rate scales with the
-    // position's share of the backing pool: base + impactK·share², charged
-    // as its integral over the added notional (calcPerpSizeFee) so chopping
-    // one big add into many small ones costs the same. The fee mana enters
-    // escrow with the margin, so ledger = L + S holds.
+    // position's share of the backing pool: base + takerFeeImpact·share²,
+    // charged as its integral over the added notional (calcPerpSizeFee) so
+    // chopping one big add into many small ones costs the same. The fee mana
+    // enters escrow with the margin, so ledger = L + S holds.
     assertPerpTakerFeeConfig(contract)
     const takerFeeBps = getPerpTakerFeeBps(contract)
-    const impactK = getPerpImpactK(contract)
+    const takerFeeImpact = getPerpTakerFeeImpact(contract)
 
     // Auto-close opposite side first, then open on top of the resulting state.
     let workingState: PerpState = state
@@ -668,7 +668,7 @@ export const openOrAddPosition = async (
       notionalAfter: notionalBefore + mana * leverage,
       poolDepth: workingState.pool.L + workingState.pool.S,
       baseBps: takerFeeBps,
-      impactK,
+      impact: takerFeeImpact,
     })
     const openFee = openFeeDetails.fee
     const totalDebit = mana + openFee
@@ -767,10 +767,10 @@ export const openOrAddPosition = async (
         fee: openFee,
         // The EFFECTIVE (average) rate this add actually paid — base plus the
         // integrated size term — not the configured base alone. feeBase,
-        // impactK, and poolShareAfter reconstruct it for audit/UI.
+        // feeImpact, and poolShareAfter reconstruct it for audit/UI.
         feeBps: openFeeDetails.effectiveBps,
         feeBase: takerFeeBps,
-        impactK,
+        feeImpact: takerFeeImpact,
         poolShareAfter: openFeeDetails.poolShareAfter,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
@@ -886,7 +886,7 @@ export const openOrAddPosition = async (
           data: {
             direction,
             // Effective rate actually paid; feeBase is the configured flat
-            // component (they differ once impactK > 0 and the size matters).
+            // component (they differ once takerFeeImpact > 0 and size matters).
             feeBps: openFeeDetails.effectiveBps,
             feeBase: takerFeeBps,
             sizeDelta: open.deltaSize,

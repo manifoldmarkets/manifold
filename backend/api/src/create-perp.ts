@@ -8,8 +8,8 @@ import {
 } from 'common/contract'
 import { DEFAULT_CONVERSION_SCORE } from 'common/new-contract'
 import {
-  PERP_IMPACT_K_DEFAULT,
   PERP_TAKER_FEE_BPS_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_DEFAULT,
 } from 'common/perps/fees'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
@@ -79,7 +79,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     subsidyLong,
     subsidyShort,
     takerFeeBps,
-    impactK,
+    takerFeeImpact,
   } = body
 
   const totalSubsidy = subsidyLong + subsidyShort
@@ -231,7 +231,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       // cannot silently rewrite this market's economics (same reasoning as
       // fundingPeriodMs above).
       takerFeeBps: takerFeeBps ?? PERP_TAKER_FEE_BPS_DEFAULT,
-      impactK: impactK ?? PERP_IMPACT_K_DEFAULT,
+      takerFeeImpact: takerFeeImpact ?? PERP_TAKER_FEE_IMPACT_DEFAULT,
       fundingPeriodMs,
       poolLong: subsidyLong,
       poolShort: subsidyShort,
