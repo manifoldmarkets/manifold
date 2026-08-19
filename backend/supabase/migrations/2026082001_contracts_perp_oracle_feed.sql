@@ -14,10 +14,15 @@
 -- The predicate is byte-identical to the query's WHERE clause; the planner
 -- will not use a partial index it cannot prove covers the query.
 --
--- On prod create this CONCURRENTLY by hand, BEFORE deploying the faster tick,
--- to avoid locking the live table:
+-- ALREADY APPLIED on dev and prod (2026-08-20), created CONCURRENTLY by hand to
+-- avoid locking the live table. Verified there: indisvalid = true, and the tick
+-- query went from a 28,499-buffer bitmap heap scan at 185 ms to a 30-buffer
+-- index scan at 0.5 ms. The name below MUST stay byte-identical to what was
+-- created by hand — IF NOT EXISTS matches on name, so a differently-named copy
+-- of the same index would be silently created a second time, doubling write
+-- cost on contracts for nothing. The command used was:
 --
---   create index concurrently if not exists contracts_perp_oracle_feed_idx
+--   create index concurrently if not exists contracts_perp_oracle_feed
 --     on contracts ((data->>'oracleFeedId'))
 --     where mechanism = 'perp' and resolution_time is null;
 --   analyze contracts;
@@ -28,11 +33,11 @@
 -- silently ignores, so verify afterwards:
 --
 --   select indisvalid from pg_index
---    where indexrelid = 'contracts_perp_oracle_feed_idx'::regclass;
+--    where indexrelid = 'contracts_perp_oracle_feed'::regclass;
 --
 -- This file uses the plain (transaction-safe) form for fresh / CI databases,
 -- where the contracts table is small so a brief lock is fine. IF NOT EXISTS
 -- makes it a no-op wherever the index already exists (incl. prod).
-create index if not exists contracts_perp_oracle_feed_idx
+create index if not exists contracts_perp_oracle_feed
   on contracts ((data->>'oracleFeedId'))
   where mechanism = 'perp' and resolution_time is null;
