@@ -1,0 +1,18 @@
+{
+  "name": "perp-funding-sandbox",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Analysis sandbox for perp funding and house risk. Imports all math from common/src/perps \u2014 never reimplements it. Not a workspace; builds and ships with nothing.",
+  "scripts": {
+    "ui": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/server.ts",
+    "sim": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts",
+    "validate": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts validate",
+    "typecheck": "node ../node_modules/typescript/bin/tsc --project tsconfig.json",
+    "design": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts design",
+    "house": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts house",
+    "burn": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts burn",
+    "replay": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts replay",
+    "paths": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts paths",
+    "drift": "node ../node_modules/ts-node/dist/bin.js --project tsconfig.json src/cli.ts drift"
+  }
+}

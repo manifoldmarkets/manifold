@@ -1,0 +1,32 @@
+{
+  "_comment": "Current BTC book aggregated by leverage bucket, pulled read-only from prod 2026-08-11. Separate from btc-snapshot.json (2026-08-09, position-level) because the book has grown to 107 positions and this only needs aggregates. Used by the house-economics analysis.",
+  "pulledAt": "2026-08-11",
+  "poolLong": 90065.0895620599,
+  "poolShort": 77104.4719385999,
+  "oraclePrice": 64203.1,
+  "liveTraderMargin": 44359.1749354872,
+  "takerFeesInLivePositions": 857.9269,
+  "buckets": [
+    { "bucket": "1-2", "direction": "long", "n": 10, "oi": 2445.49489988784, "margin": 2094.98314726582 },
+    { "bucket": "2-5", "direction": "long", "n": 27, "oi": 67642.0653883174, "margin": 17268.3048083535 },
+    { "bucket": "5-10", "direction": "long", "n": 7, "oi": 9184.75271377847, "margin": 1443.98759795281 },
+    { "bucket": "10-25", "direction": "long", "n": 10, "oi": 61895.2087588458, "margin": 2875.43198483723 },
+    { "bucket": "25-50", "direction": "long", "n": 3, "oi": 140237.199340405, "margin": 5008.36908287196 },
+    { "bucket": "50-100", "direction": "long", "n": 5, "oi": 387513.951368628, "margin": 5289.76327833963 },
+    { "bucket": "1-2", "direction": "short", "n": 5, "oi": 1225.25505422806, "margin": 1217.78942474437 },
+    { "bucket": "2-5", "direction": "short", "n": 16, "oi": 2645.84134739525, "margin": 1017.13155353338 },
+    { "bucket": "5-10", "direction": "short", "n": 5, "oi": 5164.02368818553, "margin": 857.929988140566 },
+    { "bucket": "10-25", "direction": "short", "n": 9, "oi": 42769.8002623758, "margin": 3388.84500680075 },
+    { "bucket": "25-50", "direction": "short", "n": 3, "oi": 27584.6954549351, "margin": 1098.42197527427 },
+    { "bucket": "50-100", "direction": "short", "n": 7, "oi": 245803.985822677, "margin": 2798.2170873729 }
+  ],
+  "organicVolume": {
+    "_comment": "Aug 5-6 was launch QA: two accounts generated 96% of all volume (M$1.03bn notional). Only Aug 7-10 is organic.",
+    "days": [
+      { "d": "2026-08-07", "opens": 60, "notional": 587632.5 },
+      { "d": "2026-08-08", "opens": 73, "notional": 677886.11 },
+      { "d": "2026-08-09", "opens": 77, "notional": 1776707.47 },
+      { "d": "2026-08-10", "opens": 15, "notional": 334433 }
+    ]
+  }
+}

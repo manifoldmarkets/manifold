@@ -1,0 +1,1540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Perp funding sandbox</title>
+<link rel="icon" href="data:," />
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --plane: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --pool: #2a78d6;
+    --oi: #eb6834;
+    --good: #0ca30c;
+    --critical: #d03b3b;
+    --warning: #fab219;
+    --seq-100: #cde2fb; --seq-200: #9ec5f4; --seq-300: #6da7ec;
+    --seq-400: #3987e5; --seq-500: #256abf; --seq-600: #184f95;
+    --seq-700: #0d366b;
+    /* diverging: blue (gain) ↔ red (loss), neutral gray midpoint */
+    --div-mid: #f0efec;
+    --div-n1: #f7d9d9; --div-n2: #eda6a6; --div-n3: #dc6a6a; --div-n4: #c02e2e;
+    --div-p1: #cde2fb; --div-p2: #9ec5f4; --div-p3: #3987e5; --div-p4: #184f95;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --plane: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --pool: #3987e5;
+      --oi: #d95926;
+      --div-mid: #383835;
+      --div-n1: #5c2b2b; --div-n2: #8a3535; --div-n3: #b93f3f; --div-n4: #e05a5a;
+      --div-p1: #1c3f66; --div-p2: #1c5cab; --div-p3: #2a78d6; --div-p4: #6da7ec;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--text-primary);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 20px 24px 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
+  .sub { color: var(--text-secondary); font-size: 13px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 0 24px 64px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border);
+  }
+  .badge.ok { color: var(--good); }
+  .badge.bad { color: var(--critical); }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  nav { display: flex; gap: 4px; margin: 18px 0 0; border-bottom: 1px solid var(--border); }
+  nav button {
+    background: none; border: none; padding: 9px 14px; font: inherit;
+    color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  nav button[aria-selected="true"] { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 600; }
+  nav button:hover { color: var(--text-primary); }
+
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; margin-top: 16px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 2px; font-weight: 650; }
+  .card .hint { color: var(--text-secondary); font-size: 12.5px; margin: 0 0 12px; }
+
+  /* one filter row above everything it scopes */
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; }
+  .ctl { display: flex; flex-direction: column; gap: 4px; }
+  .ctl label { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; letter-spacing: .01em; }
+  .ctl input[type="number"], .ctl select {
+    font: inherit; font-size: 13px; padding: 5px 8px; width: 108px;
+    background: var(--plane); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px;
+  }
+  .ctl.wide input { width: 150px; }
+  .ctl input[type="range"] { width: 150px; accent-color: var(--pool); }
+  .ctl .val { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  button.act {
+    font: inherit; font-weight: 600; font-size: 13px; padding: 7px 14px;
+    border-radius: 7px; border: 1px solid var(--border);
+    background: var(--text-primary); color: var(--surface-1); cursor: pointer;
+  }
+  button.act.ghost { background: transparent; color: var(--text-primary); }
+  button.act:disabled { opacity: .5; cursor: default; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .tile { border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; background: var(--plane); }
+  .tile .k { font-size: 11.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .tile .k .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .tile .v { font-size: 22px; font-weight: 640; margin-top: 3px; letter-spacing: -.01em; }
+  .tile .m { font-size: 12px; color: var(--text-secondary); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .legend .item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 14px; height: 3px; border-radius: 2px; }
+
+  .chartwrap { position: relative; }
+  svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+  svg.chart text { font: 11px system-ui, sans-serif; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  svg.chart .grid line { stroke: var(--grid); stroke-width: 1; }
+  svg.chart .axis line { stroke: var(--axis); stroke-width: 1; }
+  svg.chart .ref { stroke: var(--axis); stroke-width: 1; }
+  svg.chart .zero { stroke: var(--text-secondary); stroke-width: 1; opacity: .55; }
+  svg.chart path.line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  svg.chart .endlabel { font-weight: 650; font-size: 11px; }
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 7px;
+    padding: 7px 9px; font-size: 12px; box-shadow: 0 3px 12px rgba(0,0,0,.14);
+    white-space: nowrap; z-index: 5;
+  }
+  .tip .r { display: flex; align-items: center; gap: 6px; justify-content: space-between; gap: 14px; }
+  .tip .r .lbl { display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+  .tip .r .sw { width: 9px; height: 3px; border-radius: 2px; }
+  .tip .r .n { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .tip .hd { font-weight: 650; margin-bottom: 4px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: right; padding: 5px 9px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+  th { color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+  .scroll { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--text-secondary); font-size: 12.5px; }
+
+  pre.report {
+    background: var(--plane); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; overflow-x: auto; font: 12px/1.45 ui-monospace, "Cascadia Code", Consolas, monospace;
+    color: var(--text-primary); max-height: 640px;
+  }
+  .note { font-size: 12.5px; color: var(--text-secondary); }
+  .warn { color: var(--critical); font-weight: 600; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+  .hm { border-collapse: separate; border-spacing: 2px; width: auto; }
+  .hm td.cell { text-align: center; border: none; border-radius: 4px; padding: 7px 14px; font-size: 11.5px; font-weight: 600; cursor: default; }
+  .hm th, .hm td { border-bottom: none; }
+  .hm th:first-child, .hm td:first-child {
+    width: 1%; white-space: nowrap; padding-right: 16px;
+    color: var(--text-primary); font-weight: 600;
+  }
+  .hm th { text-align: center; }
+  .hidden { display: none; }
+  .err { color: var(--critical); font-size: 13px; white-space: pre-wrap; font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Perp funding sandbox</h1>
+  <div class="sub" id="subtitle">loading…</div>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="play">Playground</button>
+    <button role="tab" aria-selected="false" data-tab="paths">Pathways</button>
+    <button role="tab" aria-selected="false" data-tab="real">Real BTC paths</button>
+    <button role="tab" aria-selected="false" data-tab="drift">Drift &amp; subsidy</button>
+    <button role="tab" aria-selected="false" data-tab="design">Market design</button>
+    <button role="tab" aria-selected="false" data-tab="burn">House P&amp;L</button>
+    <button role="tab" aria-selected="false" data-tab="sweep">Parameter sweep</button>
+    <button role="tab" aria-selected="false" data-tab="valid">Validation</button>
+    <button role="tab" aria-selected="false" data-tab="report">Text reports</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ───────────── PLAYGROUND ───────────── -->
+  <section id="tab-play">
+    <div class="card">
+      <h2>Parameters</h2>
+      <p class="hint">Everything below re-runs the whole simulation in Node against the real <code>common/src/perps</code> math. Both models always run on the same book.</p>
+      <div class="controls">
+        <div class="ctl"><label for="book">Book</label>
+          <select id="book">
+            <option value="btc">Live BTC (prod snapshot)</option>
+            <option value="asymmetry">Leverage asymmetry (synthetic)</option>
+          </select></div>
+        <div class="ctl"><label for="k">k (sensitivity)</label><input type="number" id="k" step="0.5" min="0.1" /></div>
+        <div class="ctl"><label for="fmaxMult">f_max (× contract)</label><input type="number" id="fmaxMult" step="1" min="0.1" value="1" /></div>
+        <div class="ctl"><label for="exponent">exponent p</label><input type="number" id="exponent" step="0.25" min="0.25" value="1" /></div>
+        <div class="ctl"><label for="periodHours">period (hours)</label><input type="number" id="periodHours" step="1" min="1" value="1" /></div>
+        <div class="ctl"><label for="periods">horizon (periods)</label><input type="number" id="periods" step="24" min="1" value="720" /></div>
+        <div class="ctl"><label for="movePct">oracle move (%)</label><input type="number" id="movePct" step="5" value="0" /></div>
+        <div class="ctl"><label for="moveOver">move over (periods)</label><input type="number" id="moveOver" step="6" min="1" value="48" /></div>
+        <div class="ctl"><label for="takerFee">taker fee (bps)</label><input type="number" id="takerFee" step="5" min="0" value="10" /></div>
+        <div class="ctl"><label for="flowLong">flow long (margin/period)</label><input type="number" id="flowLong" step="100" min="0" value="0" /></div>
+        <div class="ctl"><label for="flowShort">flow short (margin/period)</label><input type="number" id="flowShort" step="100" min="0" value="0" /></div>
+        <div class="ctl"><label for="flowLev">flow leverage</label><input type="number" id="flowLev" step="1" min="1" value="5" /></div>
+        <button class="act" id="run">Run</button>
+        <button class="act ghost" id="reset">Reset to contract</button>
+      </div>
+      <div id="asymCtl" class="controls hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="ctl"><label for="numLongs"># longs</label><input type="number" id="numLongs" value="100" min="1" /></div>
+        <div class="ctl"><label for="longMargin">long margin each</label><input type="number" id="longMargin" value="100" /></div>
+        <div class="ctl"><label for="longLev">long leverage</label><input type="number" id="longLev" value="50" /></div>
+        <div class="ctl"><label for="shortMargin">short margin</label><input type="number" id="shortMargin" value="500000" /></div>
+        <div class="ctl"><label for="shortLev">short leverage</label><input type="number" id="shortLev" value="1" /></div>
+      </div>
+      <div id="err" class="err"></div>
+    </div>
+
+    <div class="card">
+      <h2>Opening state</h2>
+      <p class="hint" id="openingHint"></p>
+      <div class="tiles" id="tiles"></div>
+      <div id="signWarn" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Funding rate per period</h2>
+      <p class="hint">Above the zero line, longs pay shorts. Below it, shorts pay longs. Sign is the whole argument.</p>
+      <div class="legend" id="leg1"></div>
+      <div class="chartwrap"><div id="c-rate"></div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Long-side capacity used</h2>
+        <p class="hint">Open interest as a share of its cap. The 100% line is where new longs stop being accepted.</p>
+        <div class="legend" id="leg2"></div>
+        <div class="chartwrap"><div id="c-util"></div></div>
+      </div>
+      <div class="card">
+        <h2>Cumulative funding transferred</h2>
+        <p class="hint">Total mana moved between the two pools since period 1.</p>
+        <div class="legend" id="leg3"></div>
+        <div class="chartwrap"><div id="c-cum"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Totals over the run</h2>
+      <div class="scroll"><table id="totals"></table></div>
+      <details>
+        <summary>Table view — the series behind the charts</summary>
+        <div class="scroll" style="margin-top:10px"><table id="dataTable"></table></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────── PATHWAYS ───────────── -->
+  <section id="tab-paths" class="hidden">
+    <div class="card">
+      <h2>Where does the market end up?</h2>
+      <p class="hint">Every combination of price move and elapsed time, run from the live book. The move ramps over two days then holds, so the longer horizons are "moved, then sat there" — which is where funding gets time to work.</p>
+      <div class="controls">
+        <div class="ctl"><label for="pInput">funding from</label>
+          <select id="pInput">
+            <option value="openInterest">Open interest (PR #3985)</option>
+            <option value="pool">Pools (prod today)</option>
+          </select></div>
+        <div class="ctl"><label for="pK">k</label><input type="number" id="pK" step="0.5" min="0.1" value="1" /></div>
+        <div class="ctl"><label for="pFmax">f_max (× contract)</label><input type="number" id="pFmax" step="1" min="0.1" value="1" /></div>
+        <div class="ctl"><label for="pExp">exponent p</label><input type="number" id="pExp" step="0.25" min="0.25" value="1" /></div>
+        <button class="act" id="pRun">Run pathways</button>
+      </div>
+      <p class="note" id="pBase" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Buffer — what the market keeps if everyone closes</h2>
+      <p class="hint">Escrow minus everything owed to open positions at that price. Red means the cushion is smaller than it is now; blue means bigger. Hover any cell for the full breakdown.</p>
+      <div class="legend" id="legPath"></div>
+      <div class="scroll"><table class="hm" id="pathHeat"></table></div>
+      <div class="chartwrap"><div class="tip" id="pathTip"></div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Liquidations and ADL</h2>
+        <p class="hint">Shown as liquidations / periods with ADL / aborted funding ticks.</p>
+        <div class="scroll"><table id="pathRisk"></table></div>
+      </div>
+      <div class="card">
+        <h2>Buffer against price, at each horizon</h2>
+        <p class="hint">The same grid read as curves. Where a line dips is where the market is thinnest.</p>
+        <div class="legend" id="legPath2"></div>
+        <div class="chartwrap"><div id="c-path"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Can any parameter protect against a sharp move?</h2>
+      <p class="hint">The same shock run under a grid of funding settings, and separately with added subsidy. Compare the two on one number: the buffer left afterwards.</p>
+      <div class="controls">
+        <div class="ctl"><label for="kMove">shock size (%)</label><input type="number" id="kMove" step="5" value="20" /></div>
+        <div class="ctl"><label for="kDays">over (days)</label><input type="number" id="kDays" step="1" min="1" value="1" /></div>
+        <button class="act" id="kRun">Test</button>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <p class="note" style="margin:0 0 8px"><strong>Funding settings</strong></p>
+          <div class="scroll"><table id="shockFunding"></table></div>
+        </div>
+        <div>
+          <p class="note" style="margin:0 0 8px"><strong>Subsidy</strong></p>
+          <div class="scroll"><table id="shockSubsidy"></table></div>
+        </div>
+      </div>
+      <p class="note" id="shockVerdict" style="margin-top:12px"></p>
+    </div>
+  </section>
+
+  <!-- ───────────── REAL PATHS ───────────── -->
+  <section id="tab-real" class="hidden">
+    <div class="card">
+      <h2>What normal actually looks like</h2>
+      <p class="hint">Realized volatility from the live <code>btc-usd</code> oracle feed, and real 90-day windows from the past year mirrored onto today's book. Not scenarios I invented — prices the feed actually printed.</p>
+      <div class="controls">
+        <div class="ctl"><label for="rDays">window length (days)</label><input type="number" id="rDays" step="15" min="7" max="180" value="90" /></div>
+        <div class="ctl"><label for="rInput">funding from</label>
+          <select id="rInput">
+            <option value="openInterest">Open interest (PR #3985)</option>
+            <option value="pool">Pools (prod today)</option>
+          </select></div>
+        <div class="ctl"><label for="rInvert">direction</label>
+          <select id="rInvert">
+            <option value="false">As it happened (BTC fell all year)</option>
+            <option value="true">Returns inverted (falls become rises)</option>
+          </select></div>
+        <button class="act" id="rRun">Replay</button>
+      </div>
+      <p class="note" id="rFeed" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Sigma bands</h2>
+      <p class="hint">How far the price actually travels, by horizon. Worth comparing against the ±20% you were treating as a shock.</p>
+      <div class="scroll"><table id="rBands"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Each window run against the live book</h2>
+      <p class="hint">The window's returns are applied starting from today's oracle price, so the book always begins where it is now.</p>
+      <div class="scroll"><table id="rTable"></table></div>
+      <p class="note" id="rCaveat" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Buffer through each path</h2>
+      <p class="hint">The endpoint is not the risk — the dip is. Watch where each line bottoms out.</p>
+      <div class="legend" id="legReal"></div>
+      <div class="chartwrap"><div id="c-real"></div></div>
+    </div>
+  </section>
+
+  <!-- ───────────── DRIFT & SUBSIDY ───────────── -->
+  <section id="tab-drift" class="hidden">
+    <div class="card">
+      <h2>Can funding pay for an asset that drifts up?</h2>
+      <p class="hint">The question behind SPY and QQQ. Equities carry a real expected return; if longs collect it and funding cannot claw it back, the long side is +EV by construction and someone has to fund that.</p>
+      <div class="controls">
+        <div class="ctl"><label for="dDrift">expected drift (%/yr)</label><input type="number" id="dDrift" step="1" value="8" /></div>
+        <div class="ctl"><label for="dK">k</label><input type="number" id="dK" step="0.5" min="0.1" value="1" /></div>
+        <div class="ctl"><label for="dFmax">f_max (× contract)</label><input type="number" id="dFmax" step="1" min="0.1" value="1" /></div>
+        <div class="ctl"><label for="dPeriod">period (hours)</label><input type="number" id="dPeriod" step="1" min="1" value="1" /></div>
+        <button class="act" id="dRun">Recalculate</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The headline number</h2>
+      <div class="tiles" id="dTiles"></div>
+      <p class="note" id="dVerdict" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Break-even by leverage</h2>
+      <p class="hint">A long earns drift on <strong>notional</strong> and pays funding on <strong>margin</strong>. Per unit of margin it collects drift × leverage and pays funding × 1, so the funding needed to stay EV-neutral scales linearly with leverage while the cap does not move at all.</p>
+      <div class="scroll"><table id="dTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Max fair leverage against drift</h2>
+      <p class="hint">Above this line the long side is +EV no matter how the imbalance sits, because the required rate exceeds f_max. Below it, funding can in principle compensate — at the imbalance ratio shown.</p>
+      <div class="legend" id="legDrift"></div>
+      <div class="chartwrap"><div id="c-drift"></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Where a one-sided book settles</h2>
+      <p class="hint">A short's funding income is amplified by the pool ratio — the transfer is f × the long pool, spread over a smaller short pool — which is what makes crowding self-correcting. This is modelling layered on top of prod's math, not prod behaviour: only the funding rate itself comes from <code>common/</code>.</p>
+      <div class="controls">
+        <div class="ctl"><label for="eLongLev">longs' leverage</label><input type="number" id="eLongLev" step="5" min="1" value="10" /></div>
+        <div class="ctl"><label for="eShortLev">shorts' leverage</label><input type="number" id="eShortLev" step="1" min="1" value="5" /></div>
+        <button class="act" id="eRun">Solve</button>
+      </div>
+      <p class="note" id="eVerdict" style="margin-top:12px"></p>
+      <div class="scroll" style="margin-top:12px"><table id="eTable"></table></div>
+      <p class="note" style="margin-top:10px">Short leverage cancels out of the break-even, so it changes each side's numbers but never the settling ratio.</p>
+      <div class="scroll" style="margin-top:14px"><table id="eReq"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>What a subsidy buys</h2>
+      <p class="hint">Added mana raises each side's cover, and cover is what caps open interest. That is the part worth thinking about carefully before giga-subsidising anything.</p>
+      <div class="controls">
+        <div class="ctl"><label for="sSplit">share added to long pool</label>
+          <input type="range" id="sSplit" min="0" max="1" step="0.05" value="0.5" />
+          <span class="val" id="sSplitVal">50%</span></div>
+      </div>
+      <div class="scroll" style="margin-top:12px"><table id="sTable"></table></div>
+      <p class="note" id="sNote" style="margin-top:10px"></p>
+    </div>
+  </section>
+
+  <!-- ───────────── MARKET DESIGN ───────────── -->
+  <section id="tab-design" class="hidden">
+    <div class="card">
+      <h2>How much of BTC is house money?</h2>
+      <p class="hint">Escrow is trader margin plus everything Manifold put in. Because a newly opened position reserves exactly its own margin against the opposing side, <strong>trader margin cannot finance capacity at all</strong> — every unit of cover comes from subsidy, taker fees, funding, or the opposing side losing money.</p>
+      <div class="tiles" id="hTiles"></div>
+      <p class="note" id="hNote" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>What a leverage cap would do</h2>
+      <p class="hint">Holding every trader's margin fixed, so this is the conservative reading — if they instead posted more margin to keep their exposure, the house does better still.</p>
+      <div class="scroll"><table id="hCaps"></table></div>
+      <div class="legend" id="legHouse" style="margin-top:14px"></div>
+      <div class="chartwrap"><div id="c-house"></div></div>
+    </div>
+
+    <div class="card">
+      <h2>The house edge that already exists</h2>
+      <p class="hint">The taker fee is 10 bps of notional at open, paid into the trader's own side pool. It is the only systematic inflow the market has.</p>
+      <div class="controls">
+        <div class="ctl"><label for="hFee">taker fee (bps)</label><input type="number" id="hFee" step="5" min="0" value="10" /></div>
+        <button class="act" id="hRun">Recalculate</button>
+      </div>
+      <div class="scroll" style="margin-top:12px"><table id="hFees"></table></div>
+      <p class="note warn" id="hCaveat" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Structuring SPY, QQQ and GOLD</h2>
+      <p class="hint">Two <em>independent</em> constraints bind the leverage cap and the answer is the smaller. Drift: a long earns it on notional and pays funding on margin, so break-even leverage is f_max ÷ drift. Volatility: liquidation sits 1/leverage away, so ordinary noise must not reach it. They bind different assets — BTC is volatility-limited and driftless; SPY is the reverse.</p>
+      <div class="controls">
+        <div class="ctl"><label for="gSigmas">liquidation must survive</label><input type="number" id="gSigmas" step="0.5" min="0.5" value="2" /><span class="val">σ daily moves</span></div>
+        <div class="ctl"><label for="gEdge">acceptable long edge (%/yr)</label><input type="number" id="gEdge" step="5" min="0" value="10" /></div>
+        <div class="ctl"><label for="gFmax">f_max (× BTC's)</label><input type="number" id="gFmax" step="1" min="0.1" value="1" /></div>
+        <div class="ctl"><label for="gK">k</label><input type="number" id="gK" step="0.5" min="0.1" value="1" /></div>
+        <button class="act" id="gRun">Recalculate</button>
+      </div>
+      <p class="note" id="gAnnual" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Assumptions — edit these, they drive everything below</h2>
+      <p class="hint">Only BTC's volatility is measured (from the live oracle feed). The rest are long-run judgement calls and the output is exactly as good as they are.</p>
+      <div class="scroll"><table id="gAssume"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Leverage cap by constraint</h2>
+      <div class="scroll"><table id="gTable"></table></div>
+      <p class="note" id="gNote" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Where each book settles, and what it costs</h2>
+      <p class="hint">Capping leverage <em>at</em> the drift break-even is not enough — the settling ratio only charges the long half the cap, so it still clears f_max/2 a year. The last column is the cap that actually neutralises it.</p>
+      <div class="scroll"><table id="gSettle"></table></div>
+    </div>
+  </section>
+
+  <!-- ───────────── HOUSE P&L ───────────── -->
+  <section id="tab-burn" class="hidden">
+    <div class="card">
+      <h2>Twelve-month house P&amp;L, as a distribution</h2>
+      <p class="hint">Escrow moves by exactly three things: <strong>+ taker fees</strong>, <strong>− net OI × return</strong> (the house is, in aggregate, short whatever traders are net long), and <strong>− bad debt on feed discontinuities</strong>. Funding contributes zero — it is a transfer inside the same escrow, so it matters only through its effect on net OI.</p>
+      <p class="hint">Returns are block-bootstrapped from the 368 real daily returns of the live oracle feed, then <em>de-meaned</em>: the sample year ran at −47.5%/yr, and leaving that in would manufacture an edge that is really just "BTC happened to fall in 2025-26". Set the drift you actually believe in below.</p>
+      <div class="controls">
+        <div class="ctl"><label for="bSubsidy">house money</label><input type="number" id="bSubsidy" step="50000" value="122810" /></div>
+        <div class="ctl"><label for="bFee">taker fee (bps)</label><input type="number" id="bFee" step="5" min="0" value="10" /></div>
+        <div class="ctl"><label for="bTurnover">turnover (× OI/day)</label><input type="number" id="bTurnover" step="0.05" min="0" value="0.85" /></div>
+        <div class="ctl"><label for="bNetOi">net OI (% of OI)</label><input type="number" id="bNetOi" step="1" min="0" value="34.6" /></div>
+        <div class="ctl"><label for="bEdge">trader edge (bps)</label><input type="number" id="bEdge" step="0.5" value="0" /></div>
+        <div class="ctl"><label for="bDrift">drift (%/yr)</label><input type="number" id="bDrift" step="1" value="0" /></div>
+        <div class="ctl"><label for="bPaths">paths</label><input type="number" id="bPaths" step="500" min="200" value="2000" /></div>
+        <button class="act" id="bRun">Run</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Outcome</h2>
+      <div class="tiles" id="bTiles"></div>
+      <div class="scroll" style="margin-top:14px"><table id="bComponents"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>House equity over the year</h2>
+      <p class="hint">Median with the 5th and 95th percentile band. The dip below the starting line is the burn you have to be able to sit through without pulling the money out.</p>
+      <div class="legend" id="legBurn"></div>
+      <div class="chartwrap"><div id="c-burn"></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Does adding liquidity improve the odds?</h2>
+      <p class="hint">If open interest, volume and net exposure all scale with house money, then expected profit and risk scale by the same factor — so the ratio between them, and therefore the odds, do not move at all.</p>
+      <div class="scroll"><table id="bScaling"></table></div>
+      <p class="note" id="bScaleNote" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <h2>What actually moves the odds</h2>
+      <div class="scroll"><table id="bSens"></table></div>
+      <p class="note warn" id="bWarn" style="margin-top:10px"></p>
+    </div>
+  </section>
+
+  <!-- ───────────── SWEEP ───────────── -->
+  <section id="tab-sweep" class="hidden">
+    <div class="card">
+      <h2>Where does funding bite?</h2>
+      <p class="hint">Cells are the compounded <strong>%/day</strong> paid by the crowded side at the chosen imbalance ratio. The question is which combinations charge meaningfully at 3–5× without taxing 1.2×.</p>
+      <div class="controls">
+        <div class="ctl"><label for="swRatio">imbalance ratio r</label>
+          <input type="range" id="swRatio" min="1.05" max="10" step="0.05" value="4" />
+          <span class="val" id="swRatioVal">4.00×</span></div>
+        <div class="ctl"><label for="swExp">exponent p</label><input type="number" id="swExp" step="0.25" min="0.25" value="1" /></div>
+        <div class="ctl"><label for="swPeriod">period (hours)</label><input type="number" id="swPeriod" step="1" min="1" value="1" /></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>%/day at r = <span id="swRatioLbl">4.00</span>× — rows are k, columns are f_max</h2>
+      <p class="hint">Darker means a bigger charge. Hover a cell for its 1.2× cost and its bite ratio.</p>
+      <div class="scroll"><table class="hm" id="heat"></table></div>
+      <div class="chartwrap"><div class="tip" id="heatTip"></div></div>
+    </div>
+    <div class="card">
+      <h2>Cost curve across imbalance</h2>
+      <p class="hint">%/day against the imbalance ratio, at the first k in the grid and the contract's f_max. Markers sit at 1.2× and 4×. A convex p pushes the curve down at the left while keeping the right.</p>
+      <div class="legend" id="leg4"></div>
+      <div class="chartwrap"><div id="c-curve"></div></div>
+    </div>
+  </section>
+
+  <!-- ───────────── VALIDATION ───────────── -->
+  <section id="tab-valid" class="hidden">
+    <div class="card">
+      <h2>Replay against production</h2>
+      <p class="hint">Every stored funding event for the BTC perp, recomputed from that event's own recorded pool balances through the imported <code>computeFundingRate</code>. This is the gate: if it fails, nothing else on this page is trustworthy.</p>
+      <div id="valSummary"></div>
+      <div class="scroll" style="margin-top:12px"><table id="valTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ───────────── REPORTS ───────────── -->
+  <section id="tab-report" class="hidden">
+    <div class="card">
+      <h2>Full text reports</h2>
+      <p class="hint">The complete CLI output, run with the Playground's current parameters. Scenario 4 runs 20 simulations and takes a few seconds.</p>
+      <div class="controls">
+        <button class="act ghost" data-report="1">Scenario 1 — live book</button>
+        <button class="act ghost" data-report="2">Scenario 2 — sweep</button>
+        <button class="act ghost" data-report="3">Scenario 3 — leverage asymmetry</button>
+        <button class="act ghost" data-report="4">Scenario 4 — stress</button>
+      </div>
+      <pre class="report" id="reportOut">Pick a report above.</pre>
+    </div>
+  </section>
+</main>
+
+<script>
+// ───────────────────────── helpers ─────────────────────────
+const $ = (id) => document.getElementById(id)
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()
+const COL = () => ({ pool: css('--pool'), oi: css('--oi') })
+const NAMES = { pool: 'Pool-derived (prod today)', oi: 'OI-derived (PR #3985)' }
+
+const fmtMana = (v) => {
+  if (v == null || !isFinite(v)) return '—'
+  const a = Math.abs(v)
+  if (a >= 1e6) return (v / 1e6).toFixed(2) + 'M'
+  if (a >= 1e3) return (v / 1e3).toFixed(1) + 'k'
+  return v.toFixed(a < 10 ? 2 : 1)
+}
+const fmtBps = (r) => (r == null || !isFinite(r)) ? '—' : (r * 1e4).toFixed(4)
+const fmtPct = (v, dp = 2) => (v == null || !isFinite(v)) ? '—' : (v * 100).toFixed(dp) + '%'
+const fmtX = (v) => (v == null || !isFinite(v)) ? '∞' : v.toFixed(3) + '×'
+const dirWord = (r) => r > 0 ? 'longs pay shorts' : r < 0 ? 'shorts pay longs' : 'no transfer'
+
+// ───────────────────────── line chart ─────────────────────────
+// series: [{id,label,color,points:[[x,y]]}]
+function lineChart(host, opts) {
+  host._opts = opts // kept so a window resize can re-render at the new width
+  const { series, yFmt, xLabel, yLabel, refs = [], zero = false, height = 260 } = opts
+  // 1 SVG unit == 1 CSS pixel, so type stays 11px whether the chart is
+  // full-width or in a two-up grid. A fixed viewBox would scale the text.
+  const W = Math.max(340, Math.round(host.clientWidth || 760))
+  const H = height, m = { t: 14, r: 58, b: 34, l: 62 }
+  const all = series.flatMap(s => s.points).filter(p => p[1] != null && isFinite(p[1]))
+  if (!all.length) { host.innerHTML = '<p class="note">No data.</p>'; return }
+  const xs = all.map(p => p[0]), ys = all.map(p => p[1])
+  let x0 = Math.min(...xs), x1 = Math.max(...xs)
+  let y0 = Math.min(...ys), y1 = Math.max(...ys)
+  for (const r of refs) { y0 = Math.min(y0, r.y); y1 = Math.max(y1, r.y) }
+  if (zero) { y0 = Math.min(y0, 0); y1 = Math.max(y1, 0) }
+  if (y0 === y1) { y0 -= 1; y1 += 1 }
+  const padY = (y1 - y0) * 0.10; y0 -= padY; y1 += padY
+  if (x1 === x0) x1 = x0 + 1
+  const X = (v) => m.l + ((v - x0) / (x1 - x0)) * (W - m.l - m.r)
+  const Y = (v) => m.t + (1 - (v - y0) / (y1 - y0)) * (H - m.t - m.b)
+
+  const ticks = (lo, hi, n) => {
+    const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw)))
+    const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => s >= raw) || mag * 10
+    const out = []
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-12; v += step) out.push(v)
+    return out
+  }
+  const yT = ticks(y0, y1, 5), xT = ticks(x0, x1, 6)
+
+  let svg = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${yLabel} against ${xLabel}">`
+  svg += `<g class="grid">` + yT.map(t => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`).join('') + `</g>`
+  svg += yT.map(t => `<text x="${m.l - 8}" y="${(Y(t) + 3.5).toFixed(1)}" text-anchor="end">${yFmt(t)}</text>`).join('')
+  svg += xT.map(t => `<text x="${X(t).toFixed(1)}" y="${H - m.b + 16}" text-anchor="middle">${Math.round(t)}</text>`).join('')
+  svg += `<g class="axis"><line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/></g>`
+  if (zero && y0 < 0 && y1 > 0) svg += `<line class="zero" x1="${m.l}" x2="${W - m.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>`
+  for (const r of refs) {
+    svg += `<line class="ref" x1="${m.l}" x2="${W - m.r}" y1="${Y(r.y).toFixed(1)}" y2="${Y(r.y).toFixed(1)}"/>`
+    svg += `<text x="${W - m.r + 5}" y="${(Y(r.y) + 3.5).toFixed(1)}">${r.label}</text>`
+  }
+  svg += `<text x="${m.l}" y="${H - 3}" text-anchor="start">${xLabel}</text>`
+
+  const endLabels = []
+  for (const s of series) {
+    const pts = s.points.filter(p => p[1] != null && isFinite(p[1]))
+    if (!pts.length) continue
+    svg += `<path class="line" d="${pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join(' ')}" stroke="${s.color}"/>`
+    const last = pts[pts.length - 1]
+    svg += `<circle cx="${X(last[0]).toFixed(1)}" cy="${Y(last[1]).toFixed(1)}" r="3.5" fill="${s.color}" stroke="var(--surface-1)" stroke-width="2"/>`
+    endLabels.push({ x: X(last[0]) + 8, y: Y(last[1]), color: s.color, text: yFmt(last[1]) })
+  }
+  // Nudge overlapping endpoint labels apart — a clipped or stacked pair of
+  // numbers reads as one wrong number.
+  endLabels.sort((a, b) => a.y - b.y)
+  for (let i = 1; i < endLabels.length; i++) {
+    const gap = endLabels[i].y - endLabels[i - 1].y
+    if (gap < 12) endLabels[i].y = endLabels[i - 1].y + 12
+  }
+  for (const l of endLabels) {
+    svg += `<text class="endlabel" x="${l.x.toFixed(1)}" y="${(l.y + 3.5).toFixed(1)}" fill="${l.color}">${l.text}</text>`
+  }
+  svg += `<g id="cross" style="display:none"><line class="ref" y1="${m.t}" y2="${H - m.b}"/></g>`
+  svg += `<rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hit"/>`
+  svg += `</svg>`
+  host.innerHTML = svg
+
+  // hover: crosshair + tooltip (enhances; the table view carries every value)
+  const el = host.querySelector('svg'), hit = host.querySelector('#hit'), cross = host.querySelector('#cross')
+  let tip = host.parentElement.querySelector('.tip')
+  if (!tip) { tip = document.createElement('div'); tip.className = 'tip'; host.parentElement.appendChild(tip) }
+  const idxOf = (xv) => {
+    let best = 0, bd = Infinity
+    series[0].points.forEach((p, i) => { const d = Math.abs(p[0] - xv); if (d < bd) { bd = d; best = i } })
+    return best
+  }
+  const move = (ev) => {
+    const r = el.getBoundingClientRect()
+    const sx = (ev.clientX - r.left) / r.width * W
+    const xv = x0 + ((sx - m.l) / (W - m.l - m.r)) * (x1 - x0)
+    const i = idxOf(xv)
+    const px = X(series[0].points[i][0])
+    cross.style.display = ''
+    cross.querySelector('line').setAttribute('x1', px); cross.querySelector('line').setAttribute('x2', px)
+    tip.innerHTML = `<div class="hd">${xLabel} ${Math.round(series[0].points[i][0])}</div>` +
+      series.map(s => {
+        const pt = s.points[i]
+        return `<div class="r"><span class="lbl"><span class="sw" style="background:${s.color}"></span>${s.label}</span><span class="n">${pt && pt[1] != null && isFinite(pt[1]) ? yFmt(pt[1]) : '—'}</span></div>`
+      }).join('')
+    tip.style.opacity = 1
+    const hostRect = host.parentElement.getBoundingClientRect()
+    let left = ev.clientX - hostRect.left + 14
+    if (left + tip.offsetWidth > hostRect.width) left = ev.clientX - hostRect.left - tip.offsetWidth - 14
+    tip.style.left = left + 'px'
+    tip.style.top = (ev.clientY - hostRect.top - 10) + 'px'
+  }
+  hit.addEventListener('mousemove', move)
+  hit.addEventListener('mouseleave', () => { tip.style.opacity = 0; cross.style.display = 'none' })
+}
+
+// Re-render every live chart at the new container width.
+let resizeT
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT)
+  resizeT = setTimeout(() => {
+    document.querySelectorAll('.chartwrap > div').forEach((h) => {
+      if (h._opts) lineChart(h, h._opts)
+    })
+  }, 150)
+})
+
+function legend(host, items) {
+  host.innerHTML = items.map(i =>
+    `<span class="item"><span class="sw" style="background:${i.color}"></span>${i.label}</span>`).join('')
+}
+
+// ───────────────────────── state ─────────────────────────
+let INIT = null, LAST = null
+
+const params = () => ({
+  k: +$('k').value,
+  fMax: INIT.snapshot.fMax * (+$('fmaxMult').value),
+  exponent: +$('exponent').value,
+  periods: Math.max(1, Math.round(+$('periods').value)),
+  periodHours: Math.max(1, +$('periodHours').value),
+  takerFeeBps: +$('takerFee').value,
+  book: $('book').value,
+  movePct: +$('movePct').value,
+  moveOverPeriods: Math.max(1, Math.round(+$('moveOver').value)),
+  flow: {
+    marginLong: +$('flowLong').value,
+    marginShort: +$('flowShort').value,
+    leverageLong: +$('flowLev').value,
+    leverageShort: +$('flowLev').value,
+  },
+  asym: {
+    numLongs: +$('numLongs').value,
+    longMargin: +$('longMargin').value,
+    longLeverage: +$('longLev').value,
+    shortMargin: +$('shortMargin').value,
+    shortLeverage: +$('shortLev').value,
+  },
+})
+
+async function post(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  return r.json()
+}
+
+// ───────────────────────── playground render ─────────────────────────
+async function run() {
+  $('run').disabled = true; $('err').textContent = ''
+  try {
+    const d = await post('/api/sim', params())
+    if (d.error) { $('err').textContent = 'Simulation failed: ' + d.error; return }
+    LAST = d
+    renderPlay(d)
+  } catch (e) {
+    $('err').textContent = 'Request failed: ' + e.message
+  } finally { $('run').disabled = false }
+}
+
+function renderPlay(d) {
+  const c = COL()
+  const ph = +$('periodHours').value
+  $('openingHint').textContent =
+    `Book: pools ${fmtMana(d.book.poolLong)} long / ${fmtMana(d.book.poolShort)} short · ` +
+    `open interest ${fmtMana(d.book.oiLong)} / ${fmtMana(d.book.oiShort)} · ` +
+    `${d.book.numLong} long and ${d.book.numShort} short positions · ` +
+    `leverage median ${d.book.leverageMedian.toFixed(2)}×, notional-weighted ${d.book.leverageWeighted.toFixed(1)}× · ` +
+    `oracle ${d.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+
+  const tiles = []
+  for (const id of ['pool', 'oi']) {
+    const o = d[id].opening
+    tiles.push(`<div class="tile">
+      <div class="k"><span class="sw" style="background:${c[id]}"></span>${NAMES[id]}</div>
+      <div class="v">${fmtBps(o.rate)}<span style="font-size:13px;color:var(--text-secondary)"> bps</span></div>
+      <div class="m">${dirWord(o.rate)} · ratio ${fmtX(o.ratio)} · ${fmtPct(o.pctDay, 3)}/day</div>
+    </div>`)
+  }
+  $('tiles').innerHTML = tiles.join('')
+
+  const rp = d.pool.opening.rate, ro = d.oi.opening.rate
+  $('signWarn').innerHTML = (rp * ro < 0)
+    ? `<p class="warn">⚠ The two models disagree on direction: pool says ${dirWord(rp)}, open interest says ${dirWord(ro)}.</p>`
+    : (rp === 0 || ro === 0)
+      ? `<p class="note">One model charges nothing here${ro === 0 ? ' (open interest is balanced)' : ''}.</p>`
+      : `<p class="note">Both models point the same way (${dirWord(rp)}).</p>`
+
+  const S = (id, f) => ({ id, label: NAMES[id], color: c[id], points: d[id].series.map(r => [r.p, f(r)]) })
+  const items = [{ label: NAMES.pool, color: c.pool }, { label: NAMES.oi, color: c.oi }]
+  legend($('leg1'), items); legend($('leg2'), items); legend($('leg3'), items)
+
+  lineChart($('c-rate'), {
+    series: [S('pool', r => r.rate * 1e4), S('oi', r => r.rate * 1e4)],
+    yFmt: (v) => v.toFixed(2), xLabel: 'period', yLabel: 'funding rate (bps per period)', zero: true,
+  })
+  lineChart($('c-util'), {
+    series: [S('pool', r => r.util == null ? null : r.util * 100), S('oi', r => r.util == null ? null : r.util * 100)],
+    yFmt: (v) => v.toFixed(0) + '%', xLabel: 'period', yLabel: 'long capacity used',
+    refs: [{ y: 100, label: 'cap' }], height: 240,
+  })
+  lineChart($('c-cum'), {
+    series: [S('pool', r => r.cum), S('oi', r => r.cum)],
+    yFmt: fmtMana, xLabel: 'period', yLabel: 'cumulative transfer', height: 240,
+  })
+
+  const row = (label, f) => `<tr><td>${label}</td><td>${f(d.pool.totals)}</td><td>${f(d.oi.totals)}</td></tr>`
+  $('totals').innerHTML =
+    `<thead><tr><th>metric</th><th>Pool-derived</th><th>OI-derived</th></tr></thead><tbody>` +
+    row('funding moved', t => fmtMana(Math.max(t.longPays, t.shortPays))) +
+    row('paid by', t => t.longPays > t.shortPays ? 'longs' : t.shortPays > 0 ? 'shorts' : '—') +
+    row('liquidations', t => t.liquidations) +
+    row('periods with ADL', t => t.adlPeriods) +
+    row('ADL settlements paid', t => fmtMana(t.adlSettled)) +
+    row('aborted ticks', t => t.blocked) +
+    row('flow opens refused at cap', t => t.rejectedOpens) +
+    `</tbody>`
+
+  const s = d.pool.series
+  $('dataTable').innerHTML =
+    `<thead><tr><th>period</th><th>price</th><th>pool bps</th><th>pool ratio</th><th>pool long util</th>
+     <th>OI bps</th><th>OI ratio</th><th>OI long util</th></tr></thead><tbody>` +
+    s.map((r, i) => {
+      const o = d.oi.series[i]
+      return `<tr><td>${r.p}</td><td>${r.price.toFixed(0)}</td><td>${fmtBps(r.rate)}</td><td>${fmtX(r.ratio)}</td><td>${fmtPct(r.util, 1)}</td>
+      <td>${fmtBps(o.rate)}</td><td>${fmtX(o.ratio)}</td><td>${fmtPct(o.util, 1)}</td></tr>`
+    }).join('') + `</tbody>`
+}
+
+// ───────────────────────── sweep ─────────────────────────
+const KS = [0.5, 1, 2, 3, 5, 8, 12, 20]
+const MULTS = [1, 2, 5, 10, 20, 50]
+const SEQ = ['--seq-100', '--seq-200', '--seq-300', '--seq-400', '--seq-500', '--seq-600', '--seq-700']
+
+async function runSweep() {
+  const ratio = +$('swRatio').value
+  $('swRatioVal').textContent = ratio.toFixed(2) + '×'
+  $('swRatioLbl').textContent = ratio.toFixed(2)
+  const d = await post('/api/sweep', {
+    ks: KS, fMaxMults: MULTS, baseFMax: INIT.snapshot.fMax,
+    exponent: +$('swExp').value, periodHours: Math.max(1, +$('swPeriod').value), ratio,
+  })
+  if (d.error) return
+
+  const vals = d.grid.flat().map(c => c.atRatio).filter(v => isFinite(v))
+  const max = Math.max(...vals, 1e-9)
+  const step = (v) => {
+    // sequential: one hue, light→dark, on sqrt scale so small values stay legible
+    const t = Math.sqrt(Math.max(v, 0) / max)
+    return css(SEQ[Math.min(SEQ.length - 1, Math.max(0, Math.round(t * (SEQ.length - 1))))])
+  }
+  let html = `<thead><tr><th>k \\ f_max</th>` + MULTS.map(m => `<th>${m}×</th>`).join('') + `</tr></thead><tbody>`
+  d.grid.forEach((rowCells, ri) => {
+    html += `<tr><td>${KS[ri]}</td>` + rowCells.map((cell, ci) => {
+      const bg = step(cell.atRatio)
+      const dark = Math.sqrt(cell.atRatio / max) > 0.55
+      return `<td class="cell" style="background:${bg};color:${dark ? '#fff' : '#0b0b0b'}"
+        data-k="${cell.k}" data-m="${cell.mult}" data-r="${(cell.atRatio * 100).toFixed(3)}"
+        data-a="${(cell.at12 * 100).toFixed(4)}" data-b="${(cell.at4 * 100).toFixed(3)}"
+        data-bite="${cell.bite == null ? '—' : cell.bite.toFixed(1)}">${(cell.atRatio * 100).toFixed(2)}</td>`
+    }).join('') + `</tr>`
+  })
+  $('heat').innerHTML = html + `</tbody>`
+
+  const tip = $('heatTip')
+  $('heat').querySelectorAll('td.cell').forEach(td => {
+    td.addEventListener('mouseenter', (ev) => {
+      tip.innerHTML = `<div class="hd">k = ${td.dataset.k}, f_max = ${td.dataset.m}× contract</div>
+        <div class="r"><span class="lbl">at r = ${ratio.toFixed(2)}×</span><span class="n">${td.dataset.r}%/day</span></div>
+        <div class="r"><span class="lbl">at r = 1.2×</span><span class="n">${td.dataset.a}%/day</span></div>
+        <div class="r"><span class="lbl">at r = 4×</span><span class="n">${td.dataset.b}%/day</span></div>
+        <div class="r"><span class="lbl">bite (4× ÷ 1.2×)</span><span class="n">${td.dataset.bite}</span></div>`
+      tip.style.opacity = 1
+      const host = tip.parentElement.getBoundingClientRect()
+      tip.style.left = Math.min(ev.clientX - host.left + 12, host.width - tip.offsetWidth - 4) + 'px'
+      tip.style.top = (ev.clientY - host.top - 90) + 'px'
+    })
+    td.addEventListener('mouseleave', () => { tip.style.opacity = 0 })
+  })
+
+  const c = COL()
+  legend($('leg4'), [{ label: `k = ${KS[0]}, f_max = contract's, p = ${$('swExp').value}`, color: c.pool }])
+  lineChart($('c-curve'), {
+    series: [{ id: 'curve', label: 'cost of carry', color: c.pool, points: d.curve.map(p => [p.r, p.drag * 100]) }],
+    yFmt: (v) => v.toFixed(2) + '%', xLabel: 'imbalance ratio r', yLabel: '%/day',
+    refs: [], height: 250,
+  })
+}
+
+// ───────────────────────── pathways ─────────────────────────
+const MOVES = [-30, -20, -10, -5, 0, 5, 10, 20, 30]
+const DIV_NEG = ['--div-n1', '--div-n2', '--div-n3', '--div-n4']
+const DIV_POS = ['--div-p1', '--div-p2', '--div-p3', '--div-p4']
+let PATHS = null
+
+async function runPathways() {
+  $('pRun').disabled = true
+  try {
+    const p = params()
+    const d = await post('/api/pathways', {
+      ...p, k: +$('pK').value, fMax: INIT.snapshot.fMax * (+$('pFmax').value),
+      exponent: +$('pExp').value, input: $('pInput').value, moves: MOVES,
+    })
+    if (d.error) { $('pBase').textContent = 'Failed: ' + d.error; return }
+    PATHS = d
+    renderPathways(d)
+  } finally { $('pRun').disabled = false }
+}
+
+function renderPathways(d) {
+  $('pBase').innerHTML =
+    `Right now: <strong>${fmtMana(d.base.escrow)}</strong> escrowed, ` +
+    `<strong>${fmtMana(d.base.liability)}</strong> owed to open positions, ` +
+    `leaving a buffer of <strong>${fmtMana(d.base.buffer)}</strong>. ` +
+    `Open interest ${fmtMana(d.base.oiLong)} long / ${fmtMana(d.base.oiShort)} short.`
+
+  // diverging scale: symmetric around zero so the midpoint reads as "no change"
+  const deltas = d.cells.flat().map(c => c.bufferDelta)
+  const span = Math.max(...deltas.map(Math.abs), 1)
+  const shade = (v) => {
+    const t = Math.min(1, Math.abs(v) / span)
+    if (t < 0.06) return css('--div-mid')
+    const idx = Math.min(3, Math.floor(t * 4))
+    return css((v < 0 ? DIV_NEG : DIV_POS)[idx])
+  }
+  const ink = (v) => {
+    const t = Math.min(1, Math.abs(v) / span)
+    return t >= 0.5 ? '#fff' : 'var(--text-primary)'
+  }
+
+  let html = `<thead><tr><th>price move</th><th>price</th>` +
+    d.horizons.map(h => `<th>${h.label}</th>`).join('') + `</tr></thead><tbody>`
+  d.cells.forEach((row, ri) => {
+    html += `<tr><td>${d.moves[ri] > 0 ? '+' : ''}${d.moves[ri]}%</td>` +
+      `<td style="color:var(--text-secondary);font-weight:500">${row[0].endPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>` +
+      row.map((c, ci) => `<td class="cell" style="background:${shade(c.bufferDelta)};color:${ink(c.bufferDelta)}"
+        data-i="${ri}" data-j="${ci}">${c.bufferDelta >= 0 ? '+' : ''}${fmtMana(c.bufferDelta)}</td>`).join('') + `</tr>`
+  })
+  $('pathHeat').innerHTML = html + `</tbody>`
+
+  legend($('legPath'), [
+    { label: 'buffer shrinks', color: css('--div-n3') },
+    { label: 'roughly unchanged', color: css('--div-mid') },
+    { label: 'buffer grows', color: css('--div-p3') },
+  ])
+
+  const tip = $('pathTip')
+  $('pathHeat').querySelectorAll('td.cell').forEach(td => {
+    td.addEventListener('mouseenter', (ev) => {
+      const c = d.cells[+td.dataset.i][+td.dataset.j]
+      tip.innerHTML = `<div class="hd">${c.movePct > 0 ? '+' : ''}${c.movePct}% over ${c.days} day${c.days > 1 ? 's' : ''} → ${c.endPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+        <div class="r"><span class="lbl">buffer</span><span class="n">${fmtMana(c.buffer)} (${c.bufferDelta >= 0 ? '+' : ''}${fmtMana(c.bufferDelta)})</span></div>
+        <div class="r"><span class="lbl">escrow</span><span class="n">${fmtMana(c.escrow)}</span></div>
+        <div class="r"><span class="lbl">owed to traders</span><span class="n">${fmtMana(c.liability)}</span></div>
+        <div class="r"><span class="lbl">pools L / S</span><span class="n">${fmtMana(c.poolLong)} / ${fmtMana(c.poolShort)}</span></div>
+        <div class="r"><span class="lbl">open interest L / S</span><span class="n">${fmtMana(c.oiLong)} / ${fmtMana(c.oiShort)}</span></div>
+        <div class="r"><span class="lbl">funding moved</span><span class="n">${fmtMana(c.fundingMoved)}${c.fundingPayer === 'none' ? '' : ' (' + c.fundingPayer + 's pay)'}</span></div>
+        <div class="r"><span class="lbl">liquidations</span><span class="n">${c.liquidations}</span></div>
+        <div class="r"><span class="lbl">periods with ADL</span><span class="n">${c.adlPeriods}${c.worstAdl < 1 ? ' (worst ' + c.worstAdl.toFixed(4) + ')' : ''}</span></div>
+        <div class="r"><span class="lbl">aborted funding ticks</span><span class="n">${c.blocked}</span></div>`
+      tip.style.opacity = 1
+      const host = tip.parentElement.getBoundingClientRect()
+      tip.style.left = Math.max(4, Math.min(ev.clientX - host.left + 12, host.width - tip.offsetWidth - 4)) + 'px'
+      tip.style.top = (ev.clientY - host.top - 210) + 'px'
+    })
+    td.addEventListener('mouseleave', () => { tip.style.opacity = 0 })
+  })
+
+  $('pathRisk').innerHTML =
+    `<thead><tr><th>move</th>` + d.horizons.map(h => `<th>${h.label}</th>`).join('') + `</tr></thead><tbody>` +
+    d.cells.map((row, ri) => `<tr><td>${d.moves[ri] > 0 ? '+' : ''}${d.moves[ri]}%</td>` +
+      row.map(c => `<td${c.adlPeriods > 0 ? ' style="color:var(--critical);font-weight:600"' : ''}>${c.liquidations} / ${c.adlPeriods} / ${c.blocked}</td>`).join('') + `</tr>`).join('') +
+    `</tbody>`
+
+  // buffer against price, one line per horizon (sequential ramp: ordered time)
+  const ramp = ['--seq-200', '--seq-400', '--seq-500', '--seq-700'].map(css)
+  const series = d.horizons.map((h, j) => ({
+    id: h.label, label: h.label, color: ramp[j],
+    points: d.cells.map((row, ri) => [d.moves[ri], row[j].buffer]),
+  }))
+  legend($('legPath2'), series.map(s => ({ label: s.label, color: s.color })))
+  lineChart($('c-path'), {
+    series, yFmt: fmtMana, xLabel: 'price move (%)', yLabel: 'buffer', height: 250,
+    refs: [{ y: d.base.buffer, label: 'now' }],
+  })
+}
+
+// ───────────────────────── shock response ─────────────────────────
+async function runShock() {
+  $('kRun').disabled = true
+  try {
+    const p = params()
+    const d = await post('/api/shock', {
+      ...p, k: +$('pK').value, fMax: INIT.snapshot.fMax * (+$('pFmax').value),
+      exponent: +$('pExp').value, input: $('pInput').value,
+      movePct: +$('kMove').value, days: Math.max(1, +$('kDays').value),
+    })
+    if (d.error) return
+    const row = (x) => `<tr><td>${x.label}</td><td>${fmtMana(x.buffer)}</td>
+      <td style="color:${x.bufferDelta < 0 ? 'var(--critical)' : 'var(--good)'}">${x.bufferDelta >= 0 ? '+' : ''}${fmtMana(x.bufferDelta)}</td>
+      <td>${fmtMana(x.fundingMoved)}</td><td>${x.liquidations}</td><td>${x.adlPeriods}</td></tr>`
+    const head = `<thead><tr><th>setting</th><th>buffer after</th><th>vs now</th><th>funding moved</th><th>liq</th><th>ADL</th></tr></thead><tbody>`
+    $('shockFunding').innerHTML = head + d.funding.map(row).join('') + `</tbody>`
+    $('shockSubsidy').innerHTML = head + d.subsidy.map(row).join('') + `</tbody>`
+
+    const buffers = d.funding.map(x => x.buffer)
+    const spread = Math.max(...buffers) - Math.min(...buffers)
+    const realistic = d.funding.filter(x => x.fMaxMultiple <= 10).map(x => x.buffer)
+    const realisticSpread = Math.max(...realistic) - Math.min(...realistic)
+    const loss = d.baseline - Math.min(...buffers)
+    $('shockVerdict').innerHTML =
+      `The shock costs about <strong>${fmtMana(loss)}</strong> of buffer. Across every funding setting
+       tried, the total spread is ${fmtMana(spread)} — and within settings anyone would actually ship
+       (f_max up to 10×), only <strong>${fmtMana(realisticSpread)}</strong>.
+       <span class="warn">Funding parameters do not defend against a sharp move.</span>
+       A one-day shock gives funding 24 periods to act while the price moves the liability in one step;
+       the two are orders of magnitude apart. Subsidy shows up roughly 1:1 in the buffer because it is
+       simply more escrow. The other real levers are lower max leverage and a tighter cover multiple,
+       both of which shrink the exposure the move acts on.`
+  } finally { $('kRun').disabled = false }
+}
+
+// ───────────────────────── real paths ─────────────────────────
+let REAL = null
+async function runReal() {
+  $('rRun').disabled = true
+  try {
+    const p = params()
+    const d = await post('/api/replay', {
+      ...p, k: +$('pK').value || INIT.snapshot.k,
+      fMax: INIT.snapshot.fMax, exponent: 1,
+      days: Math.max(7, +$('rDays').value), input: $('rInput').value,
+      invert: $('rInvert').value === 'true',
+    })
+    if (d.error) return
+    REAL = d
+    renderReal(d)
+  } finally { $('rRun').disabled = false }
+}
+
+function renderReal(d) {
+  const v = d.feed.vol
+  $('rFeed').innerHTML =
+    `Feed <code>${d.feed.id}</code>, ${d.feed.first} → ${d.feed.last} (${d.feed.n} daily closes).
+     Realized volatility <strong>${fmtPct(v.sdHourly, 3)}/hour</strong>, ${fmtPct(v.sdDaily, 2)}/day,
+     <strong>${fmtPct(v.sdAnnual, 1)}/yr</strong>, measured over ${v.nHourlyReturns.toLocaleString('en-US')} hourly returns.
+     Worst day in the sample ${fmtPct(v.worstDay, 1)}, best ${fmtPct(v.bestDay, 1)}.`
+
+  $('rBands').innerHTML =
+    `<thead><tr><th>horizon</th><th>−2SD</th><th>−1SD</th><th>+1SD</th><th>+2SD</th></tr></thead><tbody>` +
+    d.bands.map(b => `<tr><td>${b.label}</td><td>${fmtPct(b.down2, 1)}</td><td>${fmtPct(b.down1, 1)}</td>
+      <td>${fmtPct(b.up1, 1)}</td><td>${fmtPct(b.up2, 1)}</td></tr>`).join('') + `</tbody>`
+
+  $('rTable').innerHTML =
+    `<thead><tr><th>window</th><th>starts</th><th>return</th><th>max drawdown</th><th>daily σ</th>
+     <th>end buffer</th><th>min buffer</th><th>vs now</th><th>liq</th><th>ADL</th><th>aborted</th></tr></thead><tbody>` +
+    d.windows.map(w => `<tr><td>${w.label}</td><td>${w.startDate}</td>
+      <td>${fmtPct(w.totalReturnPct / 100, 1)}</td><td>${fmtPct(w.maxDrawdownPct / 100, 1)}</td>
+      <td>${fmtPct(w.realisedSdDaily, 2)}</td><td>${fmtMana(w.endBuffer)}</td>
+      <td${w.minBuffer < d.baseBuffer * 0.6 ? ' style="color:var(--critical);font-weight:600"' : ''}>${fmtMana(w.minBuffer)}</td>
+      <td style="color:${w.bufferDelta < 0 ? 'var(--critical)' : 'var(--good)'}">${w.bufferDelta >= 0 ? '+' : ''}${fmtMana(w.bufferDelta)}</td>
+      <td>${w.liquidations}</td><td${w.adlPeriods > 0 ? ' style="color:var(--critical);font-weight:600"' : ''}>${w.adlPeriods}</td>
+      <td>${w.blocked}</td></tr>`).join('') + `</tbody>`
+
+  $('rCaveat').innerHTML =
+    `Buffer now is ${fmtMana(d.baseBuffer)}. Two caveats that change how you should read this:
+     daily closes cannot contain an intraday wick, so <strong>liquidation counts are a floor, not an estimate</strong>;
+     and ${d.invert
+      ? 'these are <strong>inverted</strong> returns — real paths mirrored, same volatility, opposite direction. They are a symmetry test, not history.'
+      : 'BTC fell across this entire sample, so <strong>every window here is a down-move</strong>. Switch the direction control to test the upside, which the Pathways grid says is the more dangerous one.'}`
+
+  const ramp = ['--seq-100', '--seq-200', '--seq-300', '--seq-400', '--seq-500', '--seq-700'].map(css)
+  const series = d.windows.map((w, i) => ({
+    id: w.label, label: `${w.label} (${w.totalReturnPct >= 0 ? '+' : ''}${w.totalReturnPct.toFixed(0)}%)`,
+    color: ramp[i % ramp.length],
+    points: w.series.map(s => [s.p / 24, s.buffer]),
+  }))
+  legend($('legReal'), series.map(s => ({ label: s.label, color: s.color })))
+  lineChart($('c-real'), {
+    series, yFmt: fmtMana, xLabel: 'day', yLabel: 'buffer', height: 280,
+    refs: [{ y: d.baseBuffer, label: 'now' }],
+  })
+}
+
+// ───────────────────────── equilibrium ─────────────────────────
+async function runEquilibrium() {
+  $('eRun').disabled = true
+  try {
+    const p = params()
+    const d = await post('/api/equilibrium', {
+      ...p, k: +$('dK').value, fMax: INIT.snapshot.fMax * (+$('dFmax').value),
+      periodHours: Math.max(1, +$('dPeriod').value),
+      annualDriftPct: +$('dDrift').value,
+      longLeverage: +$('eLongLev').value, shortLeverage: +$('eShortLev').value,
+    })
+    if (d.error) return
+    const perYear = (r) => r * ((365 * 24) / Math.max(1, +$('dPeriod').value)) * 100
+    const split = (s) => `${(100 - s).toFixed(0)}/${s.toFixed(0)}`
+
+    $('eVerdict').innerHTML = d.equilibriumRatio === null
+      ? `<span class="warn">Shorts are never paid enough at this drift and leverage — the book has no settling point short of the capacity cap.</span>`
+      : `With longs at ${d.longLeverage}×, shorts stop entering once the split reaches
+         <strong>${split(d.equilibriumShortSharePct)}</strong> (OI ratio ${d.equilibriumRatio.toFixed(2)}).
+         A 90/10 book is <strong>${d.equilibriumShortSharePct < 10 ? 'past' : 'short of'}</strong> that, so it
+         ${d.equilibriumShortSharePct < 10 ? 'would not correct further on its own' : 'corrects back toward balance on its own'}.
+         But at the settling point the long side is still earning
+         <strong>${perYear(d.longEvAtEquilibrium).toFixed(0)}%/yr</strong> — so funding pins the
+         <em>ratio</em>, not the <em>size</em>. Total open interest keeps growing until the capacity cap
+         binds, and the escrow funds drift × net open interest the whole way.`
+
+    $('eTable').innerHTML =
+      `<thead><tr><th>OI split L/S</th><th>ratio</th><th>funding bps</th><th>short's yield %/yr</th>
+       <th>short's drift cost %/yr</th><th>short EV %/yr</th><th>long EV %/yr</th><th>shorts want in?</th></tr></thead><tbody>` +
+      d.rows.map(r => `<tr><td>${split(r.shortSharePct)}</td><td>${r.ratio.toFixed(2)}</td>
+        <td>${fmtBps(r.fundingRate)}</td><td>${perYear(r.shortYield).toFixed(0)}</td>
+        <td>${perYear(r.shortDriftCost).toFixed(0)}</td>
+        <td style="color:${r.shortEv > 0 ? 'var(--good)' : 'var(--critical)'};font-weight:600">${perYear(r.shortEv).toFixed(0)}</td>
+        <td>${perYear(r.longEv).toFixed(0)}</td>
+        <td style="color:${r.shortAttractive ? 'var(--good)' : 'var(--critical)'};font-weight:600">${r.shortAttractive ? 'yes' : 'no'}</td></tr>`).join('') +
+      `</tbody>`
+
+    $('eReq').innerHTML =
+      `<thead><tr><th>to hold a short share of</th><th>OI ratio</th><th>f_max needed</th><th>× current</th><th>annualised</th></tr></thead><tbody>` +
+      d.required.map(r => `<tr><td>${r.shortSharePct}%</td><td>${r.ratio.toFixed(2)}</td>
+        <td>${r.fMaxNeeded.toExponential(3)}</td><td>${r.multipleOfCurrent.toFixed(2)}×</td>
+        <td>${perYear(r.fMaxNeeded).toFixed(0)}%</td></tr>`).join('') + `</tbody>`
+  } finally { $('eRun').disabled = false }
+}
+
+// ───────────────────────── drift & subsidy ─────────────────────────
+const SUBSIDIES = [0, 25000, 50000, 100000, 250000, 500000, 1000000]
+let DRIFT = null
+
+async function runDrift() {
+  $('dRun').disabled = true
+  try {
+    const p = params()
+    const d = await post('/api/drift', {
+      ...p, k: +$('dK').value, fMax: INIT.snapshot.fMax * (+$('dFmax').value),
+      periodHours: Math.max(1, +$('dPeriod').value),
+      annualDriftPct: +$('dDrift').value,
+      subsidies: SUBSIDIES, splitToLong: +$('sSplit').value,
+    })
+    if (d.error) return
+    DRIFT = d
+    renderDrift(d)
+  } finally { $('dRun').disabled = false }
+}
+
+function renderDrift(d) {
+  const c = COL()
+  const be = d.breakEvenLeverage
+  const ok = be >= d.maxLeverage
+  $('dTiles').innerHTML = `
+    <div class="tile"><div class="k">Max fair leverage</div>
+      <div class="v" style="color:${ok ? 'var(--good)' : 'var(--critical)'}">${be.toFixed(1)}×</div>
+      <div class="m">above this, no funding rate compensates</div></div>
+    <div class="tile"><div class="k">Market's max leverage</div>
+      <div class="v">${d.maxLeverage}×</div>
+      <div class="m">what the contract actually allows</div></div>
+    <div class="tile"><div class="k">f_max annualised</div>
+      <div class="v">${d.fMaxAnnualisedPct.toFixed(0)}%</div>
+      <div class="m">vs ${d.annualDriftPct}%/yr drift</div></div>
+    <div class="tile"><div class="k">Leak at today's net OI</div>
+      <div class="v">${fmtMana(d.netLeakPerYear)}</div>
+      <div class="m">per year · ${fmtPct(d.leakAsShareOfEscrowPerYear, 1)} of escrow</div></div>
+    <div class="tile"><div class="k">Leak if longs fill the cap</div>
+      <div class="v">${fmtMana(d.maxNetLeakPerYear)}</div>
+      <div class="m">per year, on ${fmtMana(d.maxLongOi)} of long OI</div></div>`
+
+  $('dVerdict').innerHTML = ok
+    ? `<span style="color:var(--good);font-weight:600">Funding can cover this drift across the whole allowed leverage range.</span>`
+    : `<span class="warn">At ${d.maxLeverage}× — which this market allows — a long is +EV no matter how funding is tuned.</span>
+       Funding would need ${(d.rows.find(r => r.leverage === d.maxLeverage)?.requiredFMaxMultiple ?? 0).toFixed(1)}× the current f_max
+       just to reach break-even at ${d.maxLeverage}×, and that is the cap, only approached at infinite imbalance.
+       The honest levers are a lower max leverage, a much higher f_max, or charging funding on notional instead of margin.`
+
+  $('dTable').innerHTML =
+    `<thead><tr><th>leverage</th><th>drift earned /period</th><th>funding at cap</th><th>rate needed</th>
+     <th>× f_max needed</th><th>imbalance ratio needed</th><th>covered?</th></tr></thead><tbody>` +
+    d.rows.map(r => `<tr>
+      <td>${r.leverage}×</td>
+      <td>${fmtBps(r.driftOnMargin)} bps</td>
+      <td>${fmtBps(r.fundingAtCap)} bps</td>
+      <td>${fmtBps(r.requiredRate)} bps</td>
+      <td>${r.requiredFMaxMultiple.toFixed(2)}×</td>
+      <td>${r.requiredRatio === null ? '<span class="warn">unreachable</span>' : r.requiredRatio.toFixed(2) + '×'}</td>
+      <td style="color:${r.coveredAtCap ? 'var(--good)' : 'var(--critical)'};font-weight:600">${r.coveredAtCap ? 'yes' : 'no'}</td>
+    </tr>`).join('') + `</tbody>`
+
+  legend($('legDrift'), [{ label: 'max fair leverage at that imbalance ratio', color: c.pool }])
+  lineChart($('c-drift'), {
+    series: [{
+      id: 'be', label: 'max fair leverage', color: c.pool,
+      points: d.breakEvenAtRatio.map(x => [x.r, x.leverage]),
+    }],
+    yFmt: (v) => v.toFixed(0) + '×', xLabel: 'imbalance ratio r', yLabel: 'max fair leverage',
+    refs: [{ y: d.maxLeverage, label: 'allowed' }], height: 240,
+  })
+
+  $('sSplitVal').textContent = Math.round(+$('sSplit').value * 100) + '%'
+  $('sTable').innerHTML =
+    `<thead><tr><th>subsidy added</th><th>pool long</th><th>pool short</th><th>escrow</th>
+     <th>long OI cap</th><th>long headroom</th><th>max drift leak /yr</th></tr></thead><tbody>` +
+    d.subsidy.map(s => `<tr><td>${s.added === 0 ? 'none (today)' : fmtMana(s.added)}</td>
+      <td>${fmtMana(s.poolLong)}</td><td>${fmtMana(s.poolShort)}</td><td>${fmtMana(s.escrow)}</td>
+      <td>${fmtMana(s.longLimit)}</td><td>${fmtMana(s.longHeadroom)}</td>
+      <td>${fmtMana(s.maxNetLeakPerYear)}</td></tr>`).join('') + `</tbody>`
+
+  const first = d.subsidy[0], last = d.subsidy[d.subsidy.length - 1]
+  $('sNote').innerHTML =
+    `Subsidy raises the cap roughly in proportion to itself, and the cap is what bounds how much
+     net exposure the drift can act on — so the worst-case leak scales with the subsidy too
+     (${fmtMana(first.maxNetLeakPerYear)}/yr today → ${fmtMana(last.maxNetLeakPerYear)}/yr at
+     ${fmtMana(last.added)} added, at ${d.annualDriftPct}%/yr). On a driftless asset that is
+     simply more room to trade. On a drifting one it is more room to lose, which is the whole
+     point of settling the drift question before listing SPY or QQQ.`
+}
+
+// ───────────────────────── house P&L over 12 months ─────────────────────────
+let BURN = null
+async function runBurn() {
+  $('bRun').disabled = true
+  $('bRun').textContent = 'Running…'
+  try {
+    const d = await post('/api/burn', {
+      subsidy: +$('bSubsidy').value,
+      feeBps: +$('bFee').value,
+      dailyTurnover: +$('bTurnover').value,
+      netOiFraction: +$('bNetOi').value / 100,
+      traderEdgeBps: +$('bEdge').value,
+      annualDriftPct: +$('bDrift').value,
+      paths: Math.max(200, +$('bPaths').value),
+    })
+    if (d.error) return
+    BURN = d
+    renderBurn(d)
+  } finally { $('bRun').disabled = false; $('bRun').textContent = 'Run' }
+}
+
+function renderBurn(d) {
+  const m = d.main, c = COL(), stake = m.params.subsidy
+  const ok = m.probAhead >= 0.9
+  $('bTiles').innerHTML =
+    '<div class="tile"><div class="k">P(ahead after 12 months)</div>' +
+      '<div class="v" style="color:' + (ok ? 'var(--good)' : 'var(--critical)') + '">' + fmtPct(m.probAhead, 1) + '</div>' +
+      '<div class="m">P(house money burned) ' + fmtPct(m.probRuin, 1) + '</div></div>' +
+    '<div class="tile"><div class="k">Expected P&amp;L</div>' +
+      '<div class="v">' + fmtMana(m.mean) + '</div>' +
+      '<div class="m">' + fmtPct(m.mean / stake, 0) + ' of the ' + fmtMana(stake) + ' stake</div></div>' +
+    '<div class="tile"><div class="k">Signal to noise</div>' +
+      '<div class="v">' + m.ratio.toFixed(2) + '</div>' +
+      '<div class="m">mean ÷ sd (' + fmtMana(m.sdPnl) + ')</div></div>' +
+    '<div class="tile"><div class="k">5th percentile</div>' +
+      '<div class="v" style="color:' + (m.p5 < 0 ? 'var(--critical)' : 'var(--good)') + '">' + fmtMana(m.p5) + '</div>' +
+      '<div class="m">worst path ' + fmtMana(m.worstPath) + '</div></div>' +
+    '<div class="tile"><div class="k">Mean max drawdown</div>' +
+      '<div class="v">' + fmtMana(m.meanMaxDrawdown) + '</div>' +
+      '<div class="m">the dip you must sit through</div></div>'
+
+  const grey = ' style="text-align:left;color:var(--text-secondary)"'
+  $('bComponents').innerHTML =
+    '<thead><tr><th>component</th><th>mean over 12 months</th><th>note</th></tr></thead><tbody>' +
+    '<tr><td>taker fees</td><td>' + fmtMana(m.meanFees) + '</td><td' + grey + '>volume × fee — the only systematic inflow</td></tr>' +
+    '<tr><td>directional (net OI × return)</td><td>' + fmtMana(m.meanDirectional) + '</td><td' + grey + '>zero in expectation; this is Monte Carlo residual</td></tr>' +
+    '<tr><td>bad debt on discontinuities</td><td>' + fmtMana(m.meanGaps) + '</td><td' + grey + '>feed outages only — a clean liquidation costs nothing</td></tr>' +
+    '<tr><td style="font-weight:700">NET</td><td style="font-weight:700">' + fmtMana(m.mean) + '</td><td></td></tr>' +
+    '</tbody>'
+
+  legend($('legBurn'), [
+    { label: 'median', color: c.pool },
+    { label: '5th / 95th percentile', color: c.oi },
+  ])
+  lineChart($('c-burn'), {
+    series: [
+      { id: 'p50', label: 'median', color: c.pool, points: m.curves.map(function (x) { return [x.day, x.p50] }) },
+      { id: 'p95', label: '95th', color: c.oi, points: m.curves.map(function (x) { return [x.day, x.p95] }) },
+      { id: 'p5', label: '5th', color: c.oi, points: m.curves.map(function (x) { return [x.day, x.p5] }) },
+    ],
+    yFmt: fmtMana, xLabel: 'day', yLabel: 'house equity', height: 280,
+    refs: [{ y: stake, label: 'start' }],
+  })
+
+  $('bScaling').innerHTML =
+    '<thead><tr><th>house money</th><th>mean P&amp;L</th><th>sd</th><th>P(ahead)</th><th>signal/noise</th></tr></thead><tbody>' +
+    d.scaling.map(function (x) {
+      return '<tr><td>' + fmtMana(x.subsidy) + '</td><td>' + fmtMana(x.mean) + '</td><td>' + fmtMana(x.sd) +
+        '</td><td>' + fmtPct(x.probAhead, 1) + '</td><td>' + x.ratio.toFixed(2) + '</td></tr>'
+    }).join('') + '</tbody>'
+  $('bScaleNote').innerHTML =
+    'The signal-to-noise column is flat. <strong>Adding liquidity does not make you more likely to win — it scales ' +
+    'how much you win or lose.</strong> The odds are set by turnover, fee, imbalance and volatility, and by nothing else.'
+
+  $('bSens').innerHTML =
+    '<thead><tr><th>scenario</th><th>mean P&amp;L</th><th>P(ahead)</th><th>P(ruin)</th><th>signal/noise</th></tr></thead><tbody>' +
+    d.sensitivities.map(function (x) {
+      return '<tr><td>' + x.label + '</td><td>' + fmtMana(x.mean) + '</td><td style="color:' +
+        (x.probAhead >= 0.9 ? 'var(--good)' : 'var(--critical)') + ';font-weight:600">' + fmtPct(x.probAhead, 1) +
+        '</td><td>' + fmtPct(x.probRuin, 1) + '</td><td>' + x.ratio.toFixed(2) + '</td></tr>'
+    }).join('') + '</tbody>'
+
+  $('bWarn').innerHTML =
+    'The load-bearing assumption is trader edge — the model defaults to flow being <em>uninformed</em>. ' +
+    'The BTC perp has already disproved that once: two bots extracted roughly M$70k in about 30 hours of ' +
+    '4-second round trips, at a measured ~1.5 bps of notional per trip. At 10 bps the fee covers that with ' +
+    'room to spare, and the "+10 bps" row is where it stops covering it.'
+}
+
+// ───────────────────────── house economics ─────────────────────────
+let HOUSE = null
+async function runHouse() {
+  $('hRun').disabled = true
+  try {
+    const d = await post('/api/house', { feeBps: +$('hFee').value })
+    if (d.error) return
+    HOUSE = d
+    renderHouse(d)
+  } finally { $('hRun').disabled = false }
+}
+
+function renderHouse(d) {
+  const v = d.view, c = COL()
+  $('hTiles').innerHTML = `
+    <div class="tile"><div class="k">House money in the pools</div>
+      <div class="v" style="color:var(--critical)">${fmtMana(v.houseMoney)}</div>
+      <div class="m">${v.houseSharePct.toFixed(1)}% of the ${fmtMana(v.escrow)} escrowed</div></div>
+    <div class="tile"><div class="k">Trader margin</div>
+      <div class="v">${fmtMana(v.traderMargin)}</div>
+      <div class="m">${(100 - v.houseSharePct).toFixed(1)}% of escrow</div></div>
+    <div class="tile"><div class="k">Open interest</div>
+      <div class="v">${fmtMana(v.openInterest)}</div>
+      <div class="m">${v.aggregateLeverage.toFixed(1)}× aggregate leverage</div></div>
+    <div class="tile"><div class="k">Net long exposure</div>
+      <div class="v">${fmtMana(v.netOi)}</div>
+      <div class="m">what the house's money is exposed to</div></div>
+    <div class="tile"><div class="k">Carried above 50×</div>
+      <div class="v" style="color:var(--critical)">${v.topBucket.sharePct.toFixed(0)}%</div>
+      <div class="m">${fmtMana(v.topBucket.oi)} of OI on ${fmtMana(v.topBucket.margin)} of margin</div></div>`
+
+  $('hNote').innerHTML =
+    `Twelve positions above 50× carry <strong>${v.topBucket.sharePct.toFixed(0)}% of all exposure</strong>
+     (${fmtMana(v.topBucket.oi)}) on ${fmtMana(v.topBucket.margin)} of margin — ${v.topBucket.impliedLeverage.toFixed(0)}× in
+     aggregate. A move against the net position costs escrow roughly ` +
+    v.moveCost.map(m => `${fmtMana(m.cost)} at ${m.movePct}%`).join(', ') +
+    ` — that last one is ${v.moveCost[v.moveCost.length - 1].pctOfHouseMoney.toFixed(0)}% of the house's stake.
+      (Upper bound: liquidations cap the real figure, and the Pathways sim is the exact one.)`
+
+  $('hCaps').innerHTML =
+    `<thead><tr><th>max leverage</th><th>open interest</th><th>OI removed</th><th>cover required</th>
+     <th>house money freed</th><th>net OI</th></tr></thead><tbody>` +
+    d.caps.map(x => `<tr><td>${x.cap}×</td><td>${fmtMana(x.openInterest)}</td>
+      <td>${x.oiRemovedPct.toFixed(0)}%</td><td>${fmtMana(x.coverRequired)}</td>
+      <td style="color:var(--good);font-weight:600">${fmtMana(x.houseMoneyFreed)}</td>
+      <td>${fmtMana(x.netOi)}</td></tr>`).join('') + `</tbody>`
+
+  legend($('legHouse'), [
+    { label: 'cover the book requires', color: c.pool },
+    { label: 'net long exposure', color: c.oi },
+  ])
+  const caps = [...d.caps].sort((a, b) => a.cap - b.cap)
+  lineChart($('c-house'), {
+    series: [
+      { id: 'cover', label: 'cover required', color: c.pool, points: caps.map(x => [x.cap, x.coverRequired]) },
+      { id: 'net', label: 'net long exposure', color: c.oi, points: caps.map(x => [x.cap, x.netOi]) },
+    ],
+    yFmt: fmtMana, xLabel: 'max leverage', yLabel: 'mana', height: 240,
+    refs: [{ y: d.view.houseMoney, label: 'house money' }],
+  })
+
+  $('hFees').innerHTML =
+    `<thead><tr><th>fee</th><th>revenue/day</th><th>revenue/yr</th><th>yield on house money</th><th>payback</th></tr></thead><tbody>` +
+    d.fees.map(f => `<tr><td>${f.feeBps} bps</td><td>${fmtMana(f.revenuePerDay)}</td>
+      <td>${fmtMana(f.revenuePerYear)}</td><td>${f.yieldOnHouseMoneyPct.toFixed(0)}%/yr</td>
+      <td>${f.paybackYears.toFixed(2)} yr</td></tr>`).join('') + `</tbody>`
+
+  $('hCaveat').innerHTML =
+    `Read these with real caution. They rest on ${d.volumeDays.length} days of organic volume ` +
+    `(${d.volumeDays.map(x => fmtMana(x.notional)).join(', ')}), on a market two weeks old, ` +
+    `and daily opens are falling — ${d.volumeDays.map(x => x.opens).join(' → ')}. ` +
+    `Launch-QA volume on Aug 5-6 is excluded: two accounts generated 96% of all notional ever traded. ` +
+    `The mechanism is sound; the run-rate is not yet a number to bank on.`
+}
+
+// ───────────────────────── market design ─────────────────────────
+let ASSETS = null
+async function runDesign() {
+  $('gRun').disabled = true
+  try {
+    if (!ASSETS) ASSETS = null // first call uses the server defaults
+    const p = params()
+    const d = await post('/api/design', {
+      ...p, k: +$('gK').value, fMax: INIT.snapshot.fMax * (+$('gFmax').value),
+      exponent: 1, periodHours: 1,
+      assets: ASSETS, sigmas: +$('gSigmas').value,
+      targetLongEdgePct: +$('gEdge').value,
+    })
+    if (d.error) return
+    ASSETS = d.results.map(r => r.asset)
+    renderDesign(d)
+  } finally { $('gRun').disabled = false }
+}
+
+// JSON has no Infinity — the server's unbounded values arrive as null.
+const lev = (v, dp) => (v == null || !isFinite(v)) ? 'unbounded' : v.toFixed(dp) + '×'
+
+function renderDesign(d) {
+  $('gAnnual').innerHTML =
+    `At the chosen f_max, funding is capped at <strong>${d.fMaxAnnualPct.toFixed(0)}%/yr</strong> —
+     that ceiling is the numerator of the drift constraint, and it is only ever
+     approached at infinite imbalance.`
+
+  $('gAssume').innerHTML =
+    `<thead><tr><th>asset</th><th>drift %/yr</th><th>vol %/yr</th><th>trading days</th><th>where it comes from</th></tr></thead><tbody>` +
+    d.results.map((r, i) => `<tr><td>${r.asset.name}</td>
+      <td><input type="number" step="1" value="${r.asset.driftPct}" data-i="${i}" data-f="driftPct" class="asm" style="width:70px;font:inherit;padding:3px 6px;background:var(--plane);color:var(--text-primary);border:1px solid var(--border);border-radius:5px;text-align:right"/></td>
+      <td><input type="number" step="1" value="${r.asset.volPct}" data-i="${i}" data-f="volPct" class="asm" style="width:70px;font:inherit;padding:3px 6px;background:var(--plane);color:var(--text-primary);border:1px solid var(--border);border-radius:5px;text-align:right"/></td>
+      <td>${r.asset.tradingDays}</td>
+      <td style="text-align:left;color:var(--text-secondary);font-size:12px">${r.asset.source}</td></tr>`).join('') +
+    `</tbody>`
+  document.querySelectorAll('input.asm').forEach(el => el.addEventListener('change', () => {
+    ASSETS[+el.dataset.i][el.dataset.f] = +el.value
+    ASSETS[+el.dataset.i].source = 'edited here'
+    runDesign()
+  }))
+
+  $('gTable').innerHTML =
+    `<thead><tr><th>asset</th><th>1SD day</th><th>1SD 90d</th><th>max lev — drift</th>
+     <th>max lev — volatility</th><th>cap</th><th>binds on</th></tr></thead><tbody>` +
+    d.results.map(r => `<tr><td>${r.asset.name}</td>
+      <td>${r.move1SdDailyPct.toFixed(2)}%</td><td>${r.move1Sd90dPct.toFixed(1)}%</td>
+      <td${r.bindingConstraint === 'drift' ? ' style="font-weight:700"' : ' style="color:var(--text-secondary)"'}>${lev(r.driftMaxLeverage, 1)}</td>
+      <td${r.bindingConstraint === 'volatility' ? ' style="font-weight:700"' : ' style="color:var(--text-secondary)"'}>${lev(r.volMaxLeverage, 1)}</td>
+      <td style="font-weight:700">${lev(r.recommendedLeverage, 0)}</td>
+      <td style="text-align:left">${r.bindingConstraint}</td></tr>`).join('') + `</tbody>`
+
+  $('gNote').innerHTML =
+    `Bold marks the binding constraint. Note they swap: BTC has no structural drift so only volatility
+     limits it, while SPY and QQQ could tolerate far more leverage on volatility grounds but are held
+     back by drift. A single leverage cap across all four markets is wrong in both directions.`
+
+  $('gSettle').innerHTML =
+    `<thead><tr><th>asset</th><th>cap</th><th>settles at L/S</th><th>long's residual edge %/yr</th>
+     <th>cap for ≤${d.results[0].targetLongEdgePct}%/yr edge</th></tr></thead><tbody>` +
+    d.results.map(r => `<tr><td>${r.asset.name}</td><td>${lev(r.recommendedLeverage, 0)}</td>
+      <td>${r.equilibriumShortSharePct === null ? 'no settling point' : (100 - r.equilibriumShortSharePct).toFixed(0) + '/' + r.equilibriumShortSharePct.toFixed(0)}</td>
+      <td style="color:${(r.longResidualEvPct ?? 0) > 20 ? 'var(--critical)' : 'var(--good)'};font-weight:600">${r.longResidualEvPct === null ? '—' : r.longResidualEvPct.toFixed(0)}</td>
+      <td style="font-weight:700">${lev(r.leverageForTargetEdge, 1)}</td></tr>`).join('') + `</tbody>`
+}
+
+// ───────────────────────── validation ─────────────────────────
+function renderValidation(v) {
+  const badge = v.passed
+    ? `<span class="badge ok"><span class="dot"></span>PASS — all ${v.total} events reproduce</span>`
+    : `<span class="badge bad"><span class="dot"></span>FAIL</span>`
+  const cc = v.configChange
+  $('valSummary').innerHTML = `${badge}
+    <p class="note" style="margin:10px 0 0">
+      ${v.matchingAtCurrentConfig} of ${v.total} events reproduce at <em>today's</em> config.
+      ${cc ? `The rest are explained by a live config change at ${cc.at}: f_max ${cc.from.toExponential(6)} → ${cc.to.toExponential(6)}.
+      That earlier value is <strong>recovered from the events themselves</strong> (it is 1/8760 to 7 s.f.), not read from prod.` : ''}
+      Applying the config in force at each event, worst relative error is ${v.maxRelErrorHistoric.toExponential(2)}.
+    </p>
+    <p class="note" style="margin:8px 0 0">
+      The live contract's stored rate is ${v.live.storedRate.toExponential(6)}
+      (${dirWord(v.live.storedRate)}). Pool-derived on the current book gives
+      ${v.live.poolDerived.toExponential(6)} — <strong>same direction</strong>. OI-derived gives
+      ${v.live.oiDerived.toExponential(6)} — <strong>${v.live.poolDerived * v.live.oiDerived < 0 ? 'the opposite' : 'the same'} direction</strong>.
+      This is what proves prod is running the pool model today.
+    </p>`
+  $('valTable').innerHTML =
+    `<thead><tr><th>event</th><th>pool long</th><th>pool short</th><th>prod stored</th><th>recomputed</th><th>f_max used</th><th>rel error</th></tr></thead><tbody>` +
+    v.rows.map(r => `<tr><td>${r.ts}</td><td>${fmtMana(r.poolLong)}</td><td>${fmtMana(r.poolShort)}</td>
+      <td>${r.stored.toExponential(10)}</td><td>${r.recomputed.toExponential(10)}</td>
+      <td>${r.fMaxUsed.toExponential(4)}</td><td>${r.relError.toExponential(2)}</td></tr>`).join('') + `</tbody>`
+}
+
+// ───────────────────────── boot ─────────────────────────
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-selected', String(x === b)))
+  for (const t of ['play', 'paths', 'real', 'drift', 'design', 'burn', 'sweep', 'valid', 'report']) $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab)
+  if (b.dataset.tab === 'sweep' && !$('heat').innerHTML) runSweep()
+  if (b.dataset.tab === 'paths' && !PATHS) { runPathways(); runShock() }
+  if (b.dataset.tab === 'real' && !REAL) runReal()
+  if (b.dataset.tab === 'drift' && !DRIFT) { runDrift(); runEquilibrium() }
+  if (b.dataset.tab === 'design' && !ASSETS) { runDesign(); runHouse() }
+  if (b.dataset.tab === 'burn' && !BURN) runBurn()
+}))
+$('pRun').addEventListener('click', () => { runPathways(); runShock() })
+$('kRun').addEventListener('click', runShock)
+$('rRun').addEventListener('click', runReal)
+$('eRun').addEventListener('click', runEquilibrium)
+$('gRun').addEventListener('click', runDesign)
+$('hRun').addEventListener('click', runHouse)
+$('bRun').addEventListener('click', runBurn)
+$('dRun').addEventListener('click', () => { runDrift(); runEquilibrium() })
+$('sSplit').addEventListener('input', () => { if (DRIFT) runDrift() })
+
+$('book').addEventListener('change', () => {
+  $('asymCtl').classList.toggle('hidden', $('book').value !== 'asymmetry')
+})
+$('run').addEventListener('click', run)
+$('reset').addEventListener('click', () => {
+  $('k').value = INIT.snapshot.k; $('fmaxMult').value = 1; $('exponent').value = 1
+  $('periodHours').value = INIT.snapshot.periodHours; $('periods').value = 720
+  $('movePct').value = 0; $('takerFee').value = 10
+  $('flowLong').value = 0; $('flowShort').value = 0
+  run()
+})
+;['swRatio', 'swExp', 'swPeriod'].forEach(id => $(id).addEventListener('input', runSweep))
+document.querySelectorAll('[data-report]').forEach(b => b.addEventListener('click', async () => {
+  $('reportOut').textContent = 'Running…'
+  const d = await post('/api/report', { ...params(), scenario: b.dataset.report })
+  $('reportOut').textContent = d.error ? ('Failed: ' + d.error + '\n' + (d.stack || '')) : d.text
+}))
+
+;(async () => {
+  INIT = await (await fetch('/api/init')).json()
+  const s = INIT.snapshot
+  $('subtitle').innerHTML =
+    `BTC perp <code>${s.contractId}</code> · snapshot ${s.pulledAt} · oracle ${s.oraclePrice.toLocaleString('en-US')} · ` +
+    `contract k=${s.k}, f_max=${s.fMax}, ${s.periodHours}h funding, max leverage ${s.maxLeverage}× · ` +
+    (INIT.validation.passed
+      ? `<span class="badge ok"><span class="dot"></span>validated against ${INIT.validation.total} prod events</span>`
+      : `<span class="badge bad"><span class="dot"></span>VALIDATION FAILING</span>`)
+  $('k').value = s.k
+  $('periodHours').value = s.periodHours
+  renderValidation(INIT.validation)
+  run()
+})()
+</script>
+</body>
+</html>
