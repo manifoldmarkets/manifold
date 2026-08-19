@@ -17,7 +17,7 @@ import { slugify } from 'common/util/slugify'
 import { camelCase, first, uniqBy } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
-import { getOracleFeed } from 'shared/oracle-feeds'
+import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
 import {
   PERP_LAUNCH_MARKETS,
@@ -141,12 +141,14 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       `Feed "${oracleFeedId}" is missing the provider source timestamp required for attribution.`
     )
 
-  // A maxOraclePriceAgeMs below the feed's normal update interval would
-  // freeze trading between perfectly healthy updates.
-  if (maxOraclePriceAgeMs < feedDef.staleAfterMs)
+  // A maxOraclePriceAgeMs below the feed's own update cadence would freeze
+  // trading between perfectly healthy updates. See getMinTradingMarkAgeMs for
+  // why this is NOT staleAfterMs.
+  const minMarkAgeMs = getMinTradingMarkAgeMs(feedDef)
+  if (maxOraclePriceAgeMs < minMarkAgeMs)
     throw new APIError(
       400,
-      `maxOraclePriceAgeMs ${maxOraclePriceAgeMs} is below feed "${oracleFeedId}" expected update interval (${feedDef.staleAfterMs}ms)`
+      `maxOraclePriceAgeMs ${maxOraclePriceAgeMs} is below feed "${oracleFeedId}" update cadence (min ${minMarkAgeMs}ms)`
     )
 
   // Funding must never fire more often than the market actually moves, and

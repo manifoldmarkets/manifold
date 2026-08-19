@@ -260,6 +260,29 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   },
 ]
 
+/**
+ * Minimum `maxOraclePriceAgeMs` a market on this feed may be configured with —
+ * i.e. the tightest "refuse to trade against a mark older than this" gate.
+ *
+ * This used to be `staleAfterMs`, which conflated two different questions.
+ * `staleAfterMs` answers "when should this feed page someone?", and is
+ * deliberately slack — 2 minutes on BTC, so a couple of missed ticks do not
+ * wake anyone at 3am. The trading gate answers "how old a price may a trade
+ * execute against?", where 2 minutes is 60 ticks of a 2s feed. Using the
+ * alerting number as the floor is why the BTC market shipped accepting trades
+ * against a two-minute-old mark, which is the window latency bots were paid
+ * out of.
+ *
+ * The floor that actually matters is the feed's own cadence: a gate tighter
+ * than a couple of update periods would freeze trading between perfectly
+ * healthy updates. Taking the MIN of the two can only ever loosen the previous
+ * floor, so every market that validates today still validates.
+ */
+export const MIN_MARK_AGE_UPDATE_PERIODS = 2
+
+export const getMinTradingMarkAgeMs = (feed: OracleFeedDef) =>
+  Math.min(feed.staleAfterMs, MIN_MARK_AGE_UPDATE_PERIODS * feed.updatePeriodMs)
+
 export const getOracleFeed = (id: string) =>
   ORACLE_FEEDS.find((f) => f.id === id)
 
