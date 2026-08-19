@@ -103,7 +103,23 @@ export const applyOraclePointToLivePerps = async (
     [feedId]
   )
 
+  // SET LOCAL bounds a statement and a lock wait, not a run: contracts are
+  // processed one after another, and pool checkout, the query above, and
+  // notifications all sit outside those bounds. Several contended markets can
+  // therefore hold a feed in-flight across many ticks even though no single
+  // statement misbehaved. A bounded caller gets an overall budget too.
+  const startedAt = Date.now()
+  const deadline =
+    bounds == null ? Number.POSITIVE_INFINITY : startedAt + bounds.runDeadlineMs
+  const deferred: string[] = []
+
   for (const { data: contract } of rows) {
+    if (Date.now() >= deadline) {
+      // Whatever is left is better served by the next tick, which will carry
+      // a fresher price than the one being applied here.
+      deferred.push(contract.slug)
+      continue
+    }
     const currentPoint =
       contract.oraclePriceTime == null
         ? null
@@ -153,27 +169,44 @@ export const applyOraclePointToLivePerps = async (
       // How far this contract's executable mark now trails the published
       // point. Measured against the contract's own state, because that — not
       // the feed's history — is what trades and liquidations settle against.
-      const applicationLag =
+      // Wall-clock age, matching what trading freshness actually gates on.
+      // Measuring `persistedPoint.ts - oraclePriceTime` instead would freeze
+      // the moment the feed stopped advancing: a contract that missed one
+      // point keeps a constant delta while its cached mark ages past
+      // maxOraclePriceAgeMs, so the alert would never fire on the case that
+      // matters most.
+      const markAge =
         contract.oraclePriceTime == null
           ? Number.POSITIVE_INFINITY
-          : persistedPoint.ts - contract.oraclePriceTime
+          : Date.now() - contract.oraclePriceTime
       const lagBudget =
         contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION
 
       // A single bounded tick giving up its slot is the design working, and
       // the next tick is already due with a better price — that should not
       // page. But repeated failures walk the mark toward the freshness
-      // threshold with no other alarm attached to it, so escalate on the lag
-      // itself rather than on the cause.
-      if (isOracleTickTimeout(err) && applicationLag < lagBudget) {
+      // threshold with no other alarm attached to it, so escalate on the age
+      // itself rather than on the cause. Only a caller that ASKED for these
+      // bounds may treat them as expected: an unbounded caller's 57014 came
+      // from somewhere it did not choose, and stays an error.
+      if (bounds != null && isOracleTickTimeout(err) && markAge < lagBudget) {
         log.warn(message)
-      } else if (applicationLag >= lagBudget) {
+      } else if (markAge >= lagBudget) {
         log.error(
-          `${message} — executable mark is ${applicationLag}ms behind the feed, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; this market will freeze if it keeps failing`
+          `${message} — executable mark is ${markAge}ms old, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; this market will stop trading if it keeps failing`
         )
       } else {
         log.error(message)
       }
     }
   }
+
+  if (deferred.length > 0)
+    log.warn(
+      `[oracle-feeds] ${feedId}: ran out of its ${
+        bounds?.runDeadlineMs
+      }ms budget after ${Date.now() - startedAt}ms; deferred ${deferred.join(
+        ', '
+      )} to the next tick`
+    )
 }

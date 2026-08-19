@@ -22,6 +22,21 @@ describe('FAST_TICK_ORACLE_BOUNDS', () => {
     )
   })
 
+  it('budgets a whole run inside one tick interval', () => {
+    // SET LOCAL bounds a statement, not a run. Without this, several
+    // contended contracts on one feed can hold it in-flight across many
+    // ticks even though no single statement misbehaved.
+    const ORACLE_TICK_PERIOD_MS = 2_000
+    expect(FAST_TICK_ORACLE_BOUNDS.runDeadlineMs).toBeLessThan(
+      ORACLE_TICK_PERIOD_MS
+    )
+    // A run must be able to outlast a single lock wait, or one contended
+    // contract would consume the entire budget before anything else is tried.
+    expect(FAST_TICK_ORACLE_BOUNDS.runDeadlineMs).toBeGreaterThan(
+      FAST_TICK_ORACLE_BOUNDS.lockTimeoutMs
+    )
+  })
+
   it('bounds a statement above the lock wait', () => {
     // Waiting on a lock is pure loss; executing liquidation and ADL work is
     // not. The statement backstop must not fire before the lock timeout has.
@@ -32,17 +47,20 @@ describe('FAST_TICK_ORACLE_BOUNDS', () => {
 })
 
 describe('isOracleTickTimeout', () => {
-  it('recognises the two codes the bounds induce', () => {
+  it('recognises the codes a bounded single-attempt tick induces', () => {
     expect(isOracleTickTimeout({ code: '55P03' })).toBe(true) // lock_timeout
     expect(isOracleTickTimeout({ code: '57014' })).toBe(true) // statement_timeout
+    // Serialization failure means the same thing here as the other two —
+    // someone else is writing. The pg error handler already documents it as
+    // ordinary contention; with one attempt it surfaces rather than being
+    // retried away, and it must not then be reported twice as an error.
+    expect(isOracleTickTimeout({ code: '40001' })).toBe(true)
   })
 
-  it('does not classify other database failures as expected', () => {
-    // Serialization failures and deadlocks are real problems that must keep
-    // their ERROR disposition rather than be filed as a healthy skipped tick.
-    expect(isOracleTickTimeout({ code: '40001' })).toBe(false)
-    expect(isOracleTickTimeout({ code: '40P01' })).toBe(false)
-    expect(isOracleTickTimeout({ code: '23505' })).toBe(false)
+  it('does not classify unrelated database failures as expected', () => {
+    expect(isOracleTickTimeout({ code: '40P01' })).toBe(false) // deadlock
+    expect(isOracleTickTimeout({ code: '23505' })).toBe(false) // unique violation
+    expect(isOracleTickTimeout({ code: '42P01' })).toBe(false) // undefined table
   })
 
   it('is defensive about non-error shapes', () => {

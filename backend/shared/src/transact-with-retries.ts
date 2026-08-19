@@ -19,6 +19,12 @@ export type TransactionRetryOptions = {
    * caller induced, never a blanket "ignore cancellations".
    */
   isExpectedError?: (error: unknown) => boolean
+  /**
+   * pg-promise transaction tag, surfaced to the process-wide error handler as
+   * `e.ctx.tag`. The only way that handler can distinguish a failure a caller
+   * deliberately induced from the same error code arising anywhere else.
+   */
+  tag?: string
 }
 
 export const runTransactionWithRetries = async <T>(
@@ -43,7 +49,10 @@ async function transactWithRetries<T>(
       // A single-attempt caller has no retry story to narrate, and on a 2s
       // cadence this line would otherwise repeat forever for no information.
       if (maxAttempts > 1) log(`Attempt ${attempt} of ${maxAttempts}`)
-      return await pg.tx({ mode: SERIAL_MODE }, fn)
+      return await pg.tx(
+        { mode: SERIAL_MODE, ...(options?.tag ? { tag: options.tag } : {}) },
+        fn
+      )
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error)
       const code =

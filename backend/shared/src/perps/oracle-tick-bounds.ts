@@ -29,7 +29,26 @@ export type OracleUpdateBounds = {
   statementTimeoutMs: number
   /** Attempts INCLUDING the first. See FAST_TICK_ORACLE_BOUNDS for why 1. */
   maxAttempts: number
+  /**
+   * Overall budget for applying one point across ALL contracts on a feed.
+   *
+   * The SET LOCAL timeouts bound a statement and a lock wait; they do not
+   * bound a run. Contracts are applied sequentially, and pool checkout, the
+   * contract query, and notifications all fall outside those timeouts, so
+   * several contended markets can hold a feed in-flight across many ticks
+   * without any single statement misbehaving. Remaining contracts are
+   * deferred to the next tick, which carries a fresher price anyway.
+   */
+  runDeadlineMs: number
 }
+
+/**
+ * Transaction tag for the bounded tick, so the process-wide pg-promise error
+ * handler can tell a failure this path induced on itself from the same code
+ * arising anywhere else. Without it that handler logs 55P03/57014 at ERROR
+ * before any caller-level downgrade can apply.
+ */
+export const FAST_TICK_TX_TAG = 'perp-oracle-fast-tick'
 
 export const FAST_TICK_ORACLE_BOUNDS: OracleUpdateBounds = {
   // Shorter than the tick interval on purpose: if the contract is busy, let
@@ -44,12 +63,24 @@ export const FAST_TICK_ORACLE_BOUNDS: OracleUpdateBounds = {
   // by the in-flight guard. On a fast feed the next tick IS the retry, and it
   // carries a better price than the one being retried.
   maxAttempts: 1,
+  // Under the 2s tick, leaving room for the feed's own fetch and write before
+  // this stage begins.
+  runDeadlineMs: 1_500,
 }
 
 /** lock_timeout expiry. */
 const LOCK_NOT_AVAILABLE = '55P03'
 /** statement_timeout expiry (also plain query cancellation). */
 const QUERY_CANCELED = '57014'
+/**
+ * Serialization failure. Included because the engine's own pg error handler
+ * already documents it as ordinary contention under the advisory-lock +
+ * SERIALIZABLE pattern and logs it at WARN. A bounded tick takes one attempt,
+ * so it surfaces here instead of being retried away — and it means exactly
+ * what the other two mean: someone else is writing, skip and let the next
+ * tick carry a fresher price.
+ */
+const SERIALIZATION_FAILURE = '40001'
 
 /**
  * True for the two failures FAST_TICK_ORACLE_BOUNDS induces on itself.
@@ -63,7 +94,9 @@ export const isOracleTickTimeout = (err: unknown) =>
   typeof err === 'object' &&
   err !== null &&
   'code' in err &&
-  (err.code === LOCK_NOT_AVAILABLE || err.code === QUERY_CANCELED)
+  (err.code === LOCK_NOT_AVAILABLE ||
+    err.code === QUERY_CANCELED ||
+    err.code === SERIALIZATION_FAILURE)
 
 /**
  * Bound how long an oracle tick may spend waiting on the database.

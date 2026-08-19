@@ -90,7 +90,8 @@ export type OracleFeedDef = {
 export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: BTC_USD_FEED_ID,
-    description: 'BTC/USD spot, median of Coinbase/Kraken/Bitstamp',
+    description:
+      'BTC/USD spot, median of the agreeing cluster among Coinbase/Kraken/Bitstamp/Gemini/Bitfinex',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 1_000,

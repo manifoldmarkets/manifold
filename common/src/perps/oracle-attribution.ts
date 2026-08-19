@@ -60,7 +60,7 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     url: 'https://votehub.com',
   },
   'btc-usd': {
-    source: 'Coinbase, Kraken & Bitstamp',
+    source: 'Coinbase, Kraken, Bitstamp, Gemini & Bitfinex',
   },
   'spyx-usd': {
     source: 'Jupiter, Gate & MEXC (SPYx by Backed xStocks)',

@@ -68,6 +68,7 @@ import {
   TransactionRetryOptions,
 } from 'shared/transact-with-retries'
 import {
+  FAST_TICK_TX_TAG,
   isOracleTickTimeout,
   OracleUpdateBounds,
   oracleTickTimeoutsQuery,
@@ -1640,7 +1641,9 @@ export const runOracleUpdate = async (
     bounds?.maxAttempts,
     // Only a bounded caller can produce these, and it handles them itself.
     // Unbounded callers keep ERROR for every failure.
-    bounds ? { isExpectedError: isOracleTickTimeout } : undefined
+    bounds
+      ? { isExpectedError: isOracleTickTimeout, tag: FAST_TICK_TX_TAG }
+      : undefined
   )
 }
 

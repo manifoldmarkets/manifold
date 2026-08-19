@@ -173,18 +173,43 @@ export const getConsensusMedian = (
     .sort((a, b) => a - b)
   if (sorted.length < 2) return null
 
-  const hasAgreement = sorted.some(
-    (value, index) =>
-      index > 0 &&
-      (value - sorted[index - 1]) / sorted[index - 1] <= maxPairDivergenceFrac
-  )
-  if (!hasAgreement) return null
+  // Partition into maximal runs whose neighbours are all within tolerance.
+  // Taking the median of EVERY quote once any single pair agreed was wrong as
+  // soon as more than three venues could answer: [100, 101, 110, 111] has two
+  // agreeing pairs and returns 105.5, a price no venue reported and neither
+  // cluster supports. It also let an outlier drag the result — [100, 101,
+  // 10000] returned 101 rather than the level the two agreeing venues found.
+  const clusters: number[][] = []
+  let current: number[] = [sorted[0]]
+  for (let i = 1; i < sorted.length; i++) {
+    if ((sorted[i] - sorted[i - 1]) / sorted[i - 1] <= maxPairDivergenceFrac)
+      current.push(sorted[i])
+    else {
+      clusters.push(current)
+      current = [sorted[i]]
+    }
+  }
+  clusters.push(current)
 
-  const middle = Math.floor(sorted.length / 2)
+  // A lone quote is unconfirmed by definition; only a cluster of two or more
+  // is corroborated.
+  const corroborated = clusters.filter((cluster) => cluster.length >= 2)
+  if (corroborated.length === 0) return null
+
+  const largest = Math.max(...corroborated.map((cluster) => cluster.length))
+  const winners = corroborated.filter((cluster) => cluster.length === largest)
+  // Equal-sized disagreeing clusters mean the venues genuinely split and
+  // nothing here can say which side is right. Publishing either — or worse,
+  // something between them — would set the price liquidations settle against
+  // on a coin flip. Refuse, and let the next tick decide.
+  if (winners.length > 1) return null
+
+  const cluster = winners[0]
+  const middle = Math.floor(cluster.length / 2)
   const consensus =
-    sorted.length % 2 === 1
-      ? sorted[middle]
-      : (sorted[middle - 1] + sorted[middle]) / 2
+    cluster.length % 2 === 1
+      ? cluster[middle]
+      : (cluster[middle - 1] + cluster[middle]) / 2
   return Number.isFinite(consensus) && consensus > 0 ? consensus : null
 }
 
