@@ -34,6 +34,25 @@ const jupiterGldx = {
 }
 
 describe('readJupiterRawUsdPrice', () => {
+  it('selects the right mint out of a batched multi-mint response', () => {
+    // The tick fetches all four mints in ONE price/v3 call (comma-separated
+    // ids), so every read now happens against a body containing every token.
+    // Picking the wrong key here would silently price SPYx off GLDx's book.
+    const batched = { ...jupiterSpyx, ...jupiterGldx }
+    expect(readJupiterRawUsdPrice(batched, SPYX_MINT, 'rebasing')).toBe(
+      774.0335270381266
+    )
+    expect(readJupiterRawUsdPrice(batched, GLDX_MINT, 'static')).toBe(
+      394.2284266101142
+    )
+  })
+
+  it('fails closed when a batched response omits the mint asked for', () => {
+    // A partial batch (Jupiter dropping one id) must read as "no quote" and
+    // let the consensus gate skip the point, never as another token's price.
+    expect(readJupiterRawUsdPrice(jupiterGldx, SPYX_MINT, 'rebasing')).toBeNaN()
+  })
+
   it('prefers the prescaled (raw-unit) price when the token rebases', () => {
     // The scaled usdPrice (769.64) is a real price for a DIFFERENT unit than
     // CEX books trade; choosing it would bias the composite by the accrued

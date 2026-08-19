@@ -93,6 +93,59 @@ const fetchJson = async (url: string): Promise<unknown> => {
   return res.json()
 }
 
+/**
+ * One Jupiter call per ROUND instead of one per token.
+ *
+ * `price/v3` is keyed by mint and takes comma-separated ids, and
+ * `readJupiterRawUsdPrice` already indexes the response by mint — so batching
+ * needs no parser change. Four calls collapse into one, which is what makes a
+ * faster tick affordable: at a 5s poll this is 12 req/min against Jupiter's
+ * keyless lite tier rather than 48, the same per-source rate the BTC feed
+ * already runs comfortably.
+ *
+ * Measured 2026-08-18, before this change: on a 15s poll the four feeds were
+ * publishing at a 15-60s median gap with 51-115 gaps over a minute in five
+ * hours, so they were already missing their configured cadence.
+ *
+ * The TTL only has to span one round of concurrent callers, and is kept well
+ * under the 15s poll so a point can never be served from a previous round. A
+ * failed batch is not cached: the memo is cleared so the next round retries
+ * rather than inheriting the error.
+ *
+ * Gate and MEXC are still one call per token. Their readers take a single
+ * ticker, so batching them means changing tested parsers in common/, and
+ * neither is the rate limit that bites — Jupiter's keyless tier is. Do those
+ * separately if the tick goes below 5s.
+ */
+const JUPITER_BATCH_TTL_MS = 3_000
+
+let jupiterBatch: { at: number; body: Promise<unknown> } | null = null
+
+const allMints = () =>
+  Object.values(XSTOCK_SPECS)
+    .map((spec) => spec.mint)
+    .join(',')
+
+const fetchJupiterBatch = (): Promise<unknown> => {
+  const now = Date.now()
+  if (jupiterBatch && now - jupiterBatch.at < JUPITER_BATCH_TTL_MS)
+    return jupiterBatch.body
+  const body = fetchJson(
+    `https://lite-api.jup.ag/price/v3?ids=${allMints()}`
+  ).catch((err) => {
+    // Do not let a rejected promise sit in the memo for the rest of its TTL.
+    if (jupiterBatch?.body === body) jupiterBatch = null
+    throw err
+  })
+  jupiterBatch = { at: now, body }
+  return body
+}
+
+/** Test seam: drop the memo so a case cannot inherit another's response. */
+export const resetJupiterBatchCache = () => {
+  jupiterBatch = null
+}
+
 type XStockSource = {
   name: string
   fetchPrice: () => Promise<number>
@@ -104,7 +157,7 @@ const buildSources = (spec: XStockSpec): XStockSource[] => {
       name: 'jupiter',
       fetchPrice: async () =>
         readJupiterRawUsdPrice(
-          await fetchJson(`https://lite-api.jup.ag/price/v3?ids=${spec.mint}`),
+          await fetchJupiterBatch(),
           spec.mint,
           spec.unitMode
         ),
