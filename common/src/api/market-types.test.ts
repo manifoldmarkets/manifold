@@ -1,3 +1,6 @@
+import { z } from 'zod'
+
+import { API } from 'common/api/schema'
 import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import { PERP_TAKER_FEE_BPS_DEFAULT } from 'common/perps/fees'
@@ -257,3 +260,47 @@ function getLiteMarket(overrides: Partial<LiteMarket> = {}): LiteMarket {
     ...overrides,
   }
 }
+
+describe('update-perp-config props', () => {
+  // The schema lives in schema.ts, but its refine is the kind of guard that
+  // silently rots: every optional field has to be listed, and forgetting one
+  // makes a request that sets ONLY that field fail as "nothing to update".
+  // maxOraclePriceAgeMs shipped that way and would have rejected the exact
+  // call the change existed to enable.
+  const props = API['update-perp-config'].props
+
+  const optionalFields = Object.keys(
+    (props as unknown as { _def: { schema: z.ZodObject<z.ZodRawShape> } })._def
+      .schema.shape
+  ).filter((k) => k !== 'contractId')
+
+  it('enumerates the tunable fields, so the loop below cannot pass vacuously', () => {
+    expect(optionalFields.sort()).toEqual([
+      'maxFundingRate',
+      'maxLeverage',
+      'maxOraclePriceAgeMs',
+      'takerFeeBps',
+    ])
+  })
+
+  it('accepts each tunable field on its own', () => {
+    const sample: Record<string, number> = {
+      maxLeverage: 10,
+      maxFundingRate: 0.02,
+      takerFeeBps: 10,
+      maxOraclePriceAgeMs: 10_000,
+    }
+    for (const field of optionalFields) {
+      expect(sample[field]).toBeDefined() // keeps this test honest as fields are added
+      const parsed = props.safeParse({
+        contractId: 'c1',
+        [field]: sample[field],
+      })
+      expect([field, parsed.success]).toEqual([field, true])
+    }
+  })
+
+  it('still rejects a request that changes nothing', () => {
+    expect(props.safeParse({ contractId: 'c1' }).success).toBe(false)
+  })
+})

@@ -1185,10 +1185,15 @@ export const API = (_apiTypeCheck = {
       })
       .strict()
       .refine(
+        // Every optional field above must appear here. Omitting one makes a
+        // request that sets ONLY that field fail as "nothing to update",
+        // which is both baffling and invisible until someone tries it in
+        // prod — maxOraclePriceAgeMs shipped that way.
         (p) =>
           p.maxLeverage !== undefined ||
           p.maxFundingRate !== undefined ||
-          p.takerFeeBps !== undefined,
+          p.takerFeeBps !== undefined ||
+          p.maxOraclePriceAgeMs !== undefined,
         { message: 'Provide at least one field to update' }
       ),
   },
