@@ -14,6 +14,12 @@
 //     liquidations), but the push is assembled where only the pre-tick
 //     snapshot is available, so pushing them would race the polled path and
 //     sometimes overwrite fresher values with older ones. They stay polled.
+//     Pools share that trade-mutability — a trade moves them at an UNCHANGED
+//     oraclePriceTime — so the client applies only the price fields from a
+//     quote and keeps pools on the polled path. Pools stay in the payload
+//     because the tick does authoritatively settle them (liquidations move
+//     pools) and the wire shape is useful for debugging and for any future
+//     consumer that orders by arrival rather than by tick time.
 //   - Resolution. Ticks only ever apply to live markets, so a quote can never
 //     legitimately carry `isResolved`, and letting it patch that field would
 //     risk un-resolving a settled market on the client.

@@ -17,7 +17,7 @@
 
 import { getApiUrl } from 'common/api/utils'
 import { PerpQuote } from 'common/perps/quote'
-import { log, metrics } from 'shared/utils'
+import { LOCAL_DEV, log, metrics } from 'shared/utils'
 
 // A tick is worthless once the next one lands, so never wait longer than the
 // tick interval. Better to drop a push than to let a wedged API back up the
@@ -48,6 +48,13 @@ const logFailureThrottled = (message: string) => {
  * via isNewerPerpQuote, not on arrival order.
  */
 export const publishPerpQuote = (quote: PerpQuote) => {
+  // A local scheduler must never push at a deployed API. ENV defaults to PROD
+  // when NEXT_PUBLIC_FIREBASE_ENV is unset and the .env.local template ships a
+  // dummy API_SECRET, so without this guard a local tick run POSTs wrong-secret
+  // quotes at the production load balancer once per market per tick. Local
+  // pages stay correct through the client's polling fallback.
+  if (LOCAL_DEV) return
+
   const apiSecret = process.env.API_SECRET
   if (!apiSecret) {
     // Local runs without secrets: polling still keeps the page correct.
@@ -67,6 +74,10 @@ export const publishPerpQuote = (quote: PerpQuote) => {
     signal: controller.signal,
   })
     .then((res) => {
+      // Drain the tiny response body so undici returns the keep-alive
+      // connection to the pool; an unconsumed body pins it until GC and the
+      // scheduler ends up opening a fresh TLS connection per push.
+      void res.arrayBuffer().catch(() => {})
       if (res.ok) {
         metrics.inc('perps/quote_pushes_sent')
         return

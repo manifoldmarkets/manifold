@@ -25,10 +25,13 @@ const PUSH_CONSIDERED_FRESH_MS = 12_000
  * Overlay live market state onto an SSR contract.
  *
  * Price arrives by websocket push on every oracle tick (sub-second), with an
- * uncached poll as a fallback when the socket is down. Before this, the only
- * path was a 15s poll of an endpoint the edge cached for up to another 15s,
- * so the displayed price could trail the executable one by ~30 seconds — at
- * high leverage, a materially different market from the one you close into.
+ * uncached poll as a fallback when the socket is down, and the edge-cached
+ * meta poll as a last-resort producer so the page can never do worse than the
+ * pre-push behavior (see the compatibility note in the meta poll). Before
+ * this, the only path was a 15s poll of an endpoint the edge cached for up to
+ * another 15s, so the displayed price could trail the executable one by ~30
+ * seconds — at high leverage, a materially different market from the one you
+ * close into.
  *
  * The two slices are tracked separately on purpose. They arrive on different
  * cadences from different endpoints, and folding them into one object let a
@@ -72,9 +75,14 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
     },
   })
 
-  // Fallback price poll. Skips entirely while pushes are arriving, so a
-  // healthy socket adds no request load.
+  // Fallback price poll. Skips entirely while pushes are arriving, so on a
+  // fast-tick feed a healthy socket adds no request load; feeds that tick
+  // slower than the freshness window ride this poll between ticks by design.
+  // Resolved markets have a frozen settlement price and never tick again, so
+  // they get no poll at all.
+  const resolved = ssrContract.isResolved || meta?.isResolved === true
   useEffect(() => {
+    if (resolved) return
     let cancelled = false
     const loadQuote = () =>
       api(
@@ -98,11 +106,13 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
       cancelled = true
       clearInterval(id)
     }
-  }, [ssrContract.id, applyQuote])
+  }, [ssrContract.id, applyQuote, resolved])
 
   // Slow slice: resolution, volume, and the admin-tunable config that every
   // open page must converge on (update-perp-config edits leverage and fee
-  // live). Pools/OI/funding ride along as a backstop for the quote path.
+  // live). Pools/OI/funding live here and ONLY here — see the merge note for
+  // why the quote never overrides them. The trade-triggered burst below is
+  // what refreshes pools after the user's own trade.
   useEffect(() => {
     let cancelled = false
     const poll = (fresh: boolean) =>
@@ -115,7 +125,9 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
           if (
             cancelled ||
             market.outcomeType !== 'PERP' ||
-            market.oraclePrice == null
+            market.oraclePrice == null ||
+            market.poolLong == null ||
+            market.poolShort == null
           )
             return
 
@@ -153,6 +165,27 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                     : {}),
                 }
           )
+
+          // Also feed the price fields through the quote pipeline, as the
+          // lowest-priority producer. This is the compatibility path: against
+          // an API that lacks get-perp-quote and the push (mid-deploy, or a
+          // backend rollback), the page degrades to exactly the pre-push
+          // behavior — a 15s poll of an edge-cached body — instead of freezing
+          // at the SSR price and eventually showing a false "trading paused"
+          // banner. The strictly-newer guard in applyQuote means this cached
+          // body can never displace a pushed price.
+          applyQuote({
+            contractId: ssrContract.id,
+            oraclePrice: market.oraclePrice,
+            poolLong: market.poolLong,
+            poolShort: market.poolShort,
+            ...(market.oraclePriceTime != null
+              ? { oraclePriceTime: market.oraclePriceTime }
+              : {}),
+            ...(market.oracleSourceTime != null
+              ? { oracleSourceTime: market.oracleSourceTime }
+              : {}),
+          })
         })
         .catch(() => {})
 
@@ -168,31 +201,22 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
       cancelBurst?.()
       clearInterval(interval)
     }
-  }, [ssrContract.id, ssrContract.isResolved, refreshKey])
-
-  // A trade moves the pools, so refresh the price slice too rather than
-  // waiting for the next tick to correct it.
-  useEffect(() => {
-    if (refreshKey === 0) return
-    return scheduleFreshBurst(() => {
-      api(
-        'get-perp-quote',
-        { contractId: ssrContract.id },
-        { cache: 'no-store' }
-      )
-        .then(applyQuote)
-        .catch(() => {})
-    })
-  }, [ssrContract.id, refreshKey, applyQuote])
+  }, [ssrContract.id, ssrContract.isResolved, refreshKey, applyQuote])
 
   const refresh = () => setRefreshKey((key) => key + 1)
 
-  // Quote wins over meta for the fields they share: it is the fresher source
-  // for price and pools, and only it is push-driven. The SSR baseline is
-  // applied here rather than in applyQuote, which stays dependency-free.
-  // Fields are picked explicitly so the quote's own `contractId` does not leak
-  // onto the contract, and so adding a field to PerpQuote can never silently
-  // start overwriting unrelated contract state.
+  // Quote wins over meta for the PRICE fields only: it is the fresher source
+  // and the only push-driven one. Pools are deliberately NOT taken from the
+  // quote: trades, funding transfers, and liquidity edits all move
+  // poolLong/poolShort WITHOUT advancing oraclePriceTime, so a tick-time pool
+  // snapshot pinned here would shadow the fresher meta poll for the whole gap
+  // between ticks — up to a day on the daily feeds. Meta stays the single
+  // source for pools/OI/funding, which also keeps those inputs the same
+  // vintage for the funding math. Fields are picked explicitly so the quote's
+  // own `contractId` does not leak onto the contract, and so adding a field to
+  // PerpQuote can never silently start overwriting unrelated contract state.
+  // The SSR baseline is applied here rather than in applyQuote, which stays
+  // dependency-free.
   //
   // `oracleSourceTime` is copied even when absent from the quote: source time
   // describes a specific observation, so carrying the previous one forward
@@ -208,8 +232,6 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
           oraclePrice: quote.oraclePrice,
           oraclePriceTime: quote.oraclePriceTime,
           oracleSourceTime: quote.oracleSourceTime,
-          poolLong: quote.poolLong,
-          poolShort: quote.poolShort,
         }
       : {}),
   } as PerpContract
