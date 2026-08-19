@@ -153,15 +153,6 @@ export const normalizeOraclePointBatch = (
 }
 
 /**
- * Median of independently sourced positive values, provided at least one
- * adjacent pair agrees within the configured relative spread.
- *
- * A median alone is unsafe with exactly two sources because one bad source
- * can drag their midpoint arbitrarily. The agreement gate makes a two-source
- * fallback usable while retaining the median's one-outlier resistance when
- * three or more values are available.
- */
-/**
  * Whether two sorted prices are within a divergence tolerance of each other.
  *
  * Multiplicative rather than the obvious `(b - a) / a <= frac`. The
@@ -183,6 +174,20 @@ const BOUNDARY_EPSILON = 1e-9
 const withinTolerance = (lower: number, upper: number, frac: number) =>
   upper <= lower * (1 + frac) * (1 + BOUNDARY_EPSILON)
 
+/**
+ * Median of independently sourced positive values, provided a group of at
+ * least two of them agree with EACH OTHER within the configured relative
+ * spread.
+ *
+ * A median alone is unsafe with exactly two sources, because one bad source
+ * drags their midpoint arbitrarily. The agreement gate makes a two-source
+ * fallback usable while keeping the median's one-outlier resistance when more
+ * values are available.
+ *
+ * "Agree" means the whole group, not merely each value and its neighbour —
+ * see the span check below for why that distinction is load-bearing rather
+ * than pedantic.
+ */
 export const getConsensusMedian = (
   values: readonly number[],
   maxPairDivergenceFrac: number
@@ -227,6 +232,22 @@ export const getConsensusMedian = (
   if (winners.length > 1) return null
 
   const cluster = winners[0]
+  // Neighbour-chaining bounds each STEP, not the cluster. At a 2% tolerance
+  // four sources can chain into one "cluster" spanning 1.02^3 - 1 = 6.12%, and
+  // its median then sits ~3% from the quotes at BOTH ends — a price no venue
+  // reported, published as the mark that liquidations and ADL settle against.
+  // Latency, not malice, produces that ladder, and it does so precisely during
+  // a fast move. Sorted ascending, so checking the endpoints bounds every
+  // interior pair: either the whole cluster agrees, or nothing is published
+  // and the mark ages into the contract's freshness gate.
+  if (
+    !withinTolerance(
+      cluster[0],
+      cluster[cluster.length - 1],
+      maxPairDivergenceFrac
+    )
+  )
+    return null
   const middle = Math.floor(cluster.length / 2)
   const consensus =
     cluster.length % 2 === 1

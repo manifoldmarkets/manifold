@@ -236,6 +236,31 @@ describe('getConsensusMedian', () => {
     ).toBeNull()
   })
 
+  it('refuses a chain whose ends disagree, however short each step is', () => {
+    // Neighbour agreement chains: each step here is exactly 2%, so the old
+    // rule admitted all four as one "cluster" spanning 6.12% and published
+    // 103.02 — a price no venue reported, ~3% from BOTH ends.
+    expect(getConsensusMedian([100, 102, 104.04, 106.1208], 0.02)).toBeNull()
+    // The same shape at BTC scale: a $4,162 spread publishing 70053.6.
+    expect(
+      getConsensusMedian([68000, 69360, 70747.2, 72162.144], 0.02)
+    ).toBeNull()
+    // Three venues is enough to chain past tolerance — the xStocks shape.
+    expect(getConsensusMedian([100, 102, 104.04], 0.02)).toBeNull()
+  })
+
+  it('does not let a chained outlier drag the mark off the agreeing venues', () => {
+    // Two venues printed exactly 68000. The chain used to pull the published
+    // mark $680 above a level two independent sources both reported.
+    expect(getConsensusMedian([68000, 68000, 69360, 70747.2], 0.02)).toBeNull()
+  })
+
+  it('still publishes when four sources genuinely agree', () => {
+    // The guard must not cost availability in normal conditions: real venue
+    // dispersion is ~0.1%, far inside the 2% window.
+    expect(getConsensusMedian([68000, 68001, 68002, 68003], 0.02)).toBe(68001.5)
+  })
+
   it('does not let the epsilon widen the tolerance meaningfully', () => {
     // A hair beyond the boundary must still be rejected: the epsilon exists
     // to cancel float error, not to soften the threshold.
