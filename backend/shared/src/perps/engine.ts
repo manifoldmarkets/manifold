@@ -66,6 +66,7 @@ import {
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import {
   advisoryLockQuery,
+  oracleTickTimeoutsQuery,
   deleteContractPositionsQuery,
   deletePositionsQuery,
   insertFundingEventQuery,
@@ -1481,6 +1482,15 @@ const applyOracleUpdate = (
   }
 }
 
+// Ceiling on a tick's lock wait. Shorter than the tick interval on purpose:
+// if the contract is busy, the right move is to let the NEXT tick apply an
+// up-to-date price rather than apply this one late.
+const ORACLE_TICK_LOCK_TIMEOUT_MS = 1_000
+// Backstop for a single pathological statement (a seq scan under contention,
+// say). Generous next to the lock timeout because legitimate liquidation and
+// ADL work on a busy market is real work, not a wait.
+const ORACLE_TICK_STATEMENT_TIMEOUT_MS = 4_000
+
 export const runOracleUpdate = async (
   contractId: string,
   newPrice: number,
@@ -1488,6 +1498,16 @@ export const runOracleUpdate = async (
   sourceTs?: number
 ): Promise<OracleUpdateResult | null> => {
   return runPerpTransaction(async (pgTrans) => {
+    // Fail fast instead of queueing behind whoever holds the contract lock.
+    // See oracleTickTimeoutsQuery: an unbounded tick took the feed dark for
+    // two minutes, which is a far larger stale-mark window than the interval
+    // between ticks this is protecting.
+    await pgTrans.none(
+      oracleTickTimeoutsQuery(
+        ORACLE_TICK_LOCK_TIMEOUT_MS,
+        ORACLE_TICK_STATEMENT_TIMEOUT_MS
+      )
+    )
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
     const incomingPoint = { price: newPrice, ts, sourceTs }

@@ -9,6 +9,16 @@ import { runOracleUpdate } from 'shared/perps/engine'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
+/** Postgres codes for the two bounds runOracleUpdate sets on itself. */
+const LOCK_NOT_AVAILABLE = '55P03' // lock_timeout
+const QUERY_CANCELED = '57014' // statement_timeout
+
+const isTickTimeout = (err: unknown) =>
+  typeof err === 'object' &&
+  err !== null &&
+  'code' in err &&
+  (err.code === LOCK_NOT_AVAILABLE || err.code === QUERY_CANCELED)
+
 /**
  * Apply a newly published oracle point to every live market on its feed.
  *
@@ -124,9 +134,15 @@ export const applyOraclePointToLivePerps = async (
     } catch (err) {
       // One malformed/contended contract must not leave every other market on
       // the same feed trading against a stale cached price.
-      log.error(
-        `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${persistedPoint.ts}: ${err}`
-      )
+      const message = `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${persistedPoint.ts}: ${err}`
+      // A tick that hit its own lock/statement bound is the design working:
+      // it gave up its slot rather than apply a stale price late, and the next
+      // tick is already due. Logging that at ERROR would page on the healthy
+      // path, and [oracle-feeds] ERROR lines drive the GCP alert. Genuine
+      // staleness is still caught — by the 2-minute feed staleness check and
+      // the in-flight stuck-feed detector, neither of which this silences.
+      if (isTickTimeout(err)) log.warn(message)
+      else log.error(message)
     }
   }
 }
