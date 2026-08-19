@@ -35,6 +35,17 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  // Oracle-tick pushes handed from the scheduler to the API for broadcast.
+  // A sustained gap between these two is the signal that perp pages have
+  // silently fallen back to polling, i.e. that displayed prices are lagging.
+  'perps/quote_pushes_sent': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'perps/quote_push_failures': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'ws/redis_broadcasts_published': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',

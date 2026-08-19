@@ -35,6 +35,7 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
+import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -1301,6 +1302,37 @@ export const API = (_apiTypeCheck = {
         // The engine divides by entry prices and treats <= 0 as invalid;
         // reject junk at the door rather than poisoning the feed.
         price: z.number().finite().positive(),
+      })
+      .strict(),
+  },
+  'get-perp-quote': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // Never edge-cached. This is the price a trader sizes and closes against;
+    // DEFAULT_CACHE_STRATEGY's max-age=5 + stale-while-revalidate=10 can serve
+    // a body 15s old, which at 100x leverage is a materially different market.
+    // See get-perp-positions for the same reasoning applied to positions.
+    cache: 'no-cache',
+    returns: {} as PerpQuote,
+    props: z.object({ contractId: z.string().min(1) }).strict(),
+  },
+  // Scheduler -> API hop that turns an applied oracle tick into a websocket
+  // broadcast. Not called by clients. See perps/publish-perp-quote.ts for why
+  // the scheduler cannot broadcast directly.
+  //
+  // Must stay off the read-replica allowlist in url-map-config.yaml: only the
+  // writer process runs the websocket server, so routing this to a replica
+  // would drop every push without erroring.
+  'internal-perp-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        quote: perpQuoteSchema,
       })
       .strict(),
   },
