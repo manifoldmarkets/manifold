@@ -10,6 +10,7 @@ import {
   isOracleTickTimeout,
   OracleUpdateBounds,
 } from 'shared/perps/oracle-tick-bounds'
+import { publishPerpQuote } from 'shared/perps/publish-perp-quote'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
@@ -149,6 +150,24 @@ export const applyOraclePointToLivePerps = async (
         bounds
       )
       if (!result) continue
+
+      // Push before notifying: notification delivery does its own DB work and
+      // the whole point of this path is that open pages see the new price in
+      // well under a tick. Carries only what the tick authoritatively settled
+      // — price and post-tick pools. Open interest and the funding rate can
+      // also move on a liquidating tick, but this scope only has the pre-tick
+      // contract snapshot for them, so they stay on the polled path rather
+      // than pushing a stale value over a fresh one.
+      publishPerpQuote({
+        contractId: contract.id,
+        oraclePrice: persistedPoint.price,
+        oraclePriceTime: persistedPoint.ts,
+        poolLong: result.poolLongAfter,
+        poolShort: result.poolShortAfter,
+        ...(persistedPoint.sourceTs == null
+          ? {}
+          : { oracleSourceTime: persistedPoint.sourceTs }),
+      })
 
       try {
         await notifyPerpOracleResult(pg, contract, persistedPoint.price, result)

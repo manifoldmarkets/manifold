@@ -28,10 +28,11 @@ import { PerpPositionPanel } from './perp-position-panel'
 import { useLivePerpContract } from './use-live-perp-contract'
 import { usePerpPositions } from './use-perp-positions'
 
-// Poll cadence for live market data. Matches the scheduler's fast tick;
-// there are no websocket broadcasts for oracle updates (the engine runs in
-// the scheduler process, not the API's socket server), so the page polls.
-const POLL_MS = 15_000
+// Re-render cadence for the "last update arrived N ago" freshness label. This
+// is a clock tick, not a data fetch — price itself arrives by websocket push
+// (see useLivePerpContract), so this only needs to be often enough that the
+// relative timestamp does not visibly lag.
+const FRESHNESS_CLOCK_MS = 15_000
 const MAX_TIMEOUT_MS = 2_147_483_647
 
 // Exchange-style tick flash: returns 'up' | 'down' for ~700ms after the
@@ -62,7 +63,7 @@ const useOracleFreshness = (contract: PerpContract) => {
       Number.isFinite(delay) && delay >= 0
         ? setTimeout(update, Math.min(delay + 1, MAX_TIMEOUT_MS))
         : undefined
-    const interval = setInterval(update, POLL_MS)
+    const interval = setInterval(update, FRESHNESS_CLOCK_MS)
     return () => {
       if (timeout !== undefined) clearTimeout(timeout)
       clearInterval(interval)

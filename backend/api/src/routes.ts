@@ -86,6 +86,8 @@ import {
 import { getKnownOracleFeeds } from './get-known-oracle-feeds'
 import { internalWriteOraclePrice } from './internal-write-oracle-price'
 import { getPerpPositions } from './get-perp-positions'
+import { getPerpQuote } from './get-perp-quote'
+import { internalPerpBroadcast } from './internal-perp-broadcast'
 import { getPerpFundingEvents } from './get-perp-funding-events'
 import { getPerpEvents } from './get-perp-events'
 import { deleteGroup } from './delete-group'
@@ -457,6 +459,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-known-oracle-feeds': getKnownOracleFeeds,
   'internal-write-oracle-price': internalWriteOraclePrice,
   'get-perp-positions': getPerpPositions,
+  'get-perp-quote': getPerpQuote,
+  'internal-perp-broadcast': internalPerpBroadcast,
   'get-perp-funding-events': getPerpFundingEvents,
   'get-perp-events': getPerpEvents,
   'get-followed-groups': getFollowedGroups,
