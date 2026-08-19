@@ -63,10 +63,17 @@ import {
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import {
+  runTransactionWithRetries,
+  TransactionRetryOptions,
+} from 'shared/transact-with-retries'
+import {
+  isOracleTickTimeout,
+  OracleUpdateBounds,
+  oracleTickTimeoutsQuery,
+} from 'shared/perps/oracle-tick-bounds'
 import {
   advisoryLockQuery,
-  oracleTickTimeoutsQuery,
   deleteContractPositionsQuery,
   deletePositionsQuery,
   insertFundingEventQuery,
@@ -120,8 +127,10 @@ const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
 // unaffected either way (failed attempts write nothing).
 const PERP_TX_MAX_ATTEMPTS = 8
 const runPerpTransaction = <T>(
-  fn: (pgTrans: SupabaseTransaction) => Promise<T>
-): Promise<T> => runTransactionWithRetries(fn, PERP_TX_MAX_ATTEMPTS)
+  fn: (pgTrans: SupabaseTransaction) => Promise<T>,
+  maxAttempts = PERP_TX_MAX_ATTEMPTS,
+  options?: TransactionRetryOptions
+): Promise<T> => runTransactionWithRetries(fn, maxAttempts, options)
 
 const buildState = (
   contract: PerpContract,
@@ -1482,158 +1491,157 @@ const applyOracleUpdate = (
   }
 }
 
-// Ceiling on a tick's lock wait. Shorter than the tick interval on purpose:
-// if the contract is busy, the right move is to let the NEXT tick apply an
-// up-to-date price rather than apply this one late.
-const ORACLE_TICK_LOCK_TIMEOUT_MS = 1_000
-// Backstop for a single pathological statement (a seq scan under contention,
-// say). Generous next to the lock timeout because legitimate liquidation and
-// ADL work on a busy market is real work, not a wait.
-const ORACLE_TICK_STATEMENT_TIMEOUT_MS = 4_000
-
 export const runOracleUpdate = async (
   contractId: string,
   newPrice: number,
   ts: number,
-  sourceTs?: number
+  sourceTs?: number,
+  /** Fast-tick only. Omit to wait as long as it takes; see OracleUpdateBounds. */
+  bounds?: OracleUpdateBounds
 ): Promise<OracleUpdateResult | null> => {
-  return runPerpTransaction(async (pgTrans) => {
-    // Fail fast instead of queueing behind whoever holds the contract lock.
-    // See oracleTickTimeoutsQuery: an unbounded tick took the feed dark for
-    // two minutes, which is a far larger stale-mark window than the interval
-    // between ticks this is protecting.
-    await pgTrans.none(
-      oracleTickTimeoutsQuery(
-        ORACLE_TICK_LOCK_TIMEOUT_MS,
-        ORACLE_TICK_STATEMENT_TIMEOUT_MS
+  return runPerpTransaction(
+    async (pgTrans) => {
+      // Bounded callers fail fast rather than queue behind whoever holds the
+      // contract lock. Unbounded ones keep the pre-existing behaviour exactly:
+      // no SET LOCAL, no change to how long they may wait.
+      if (bounds)
+        await pgTrans.none(
+          oracleTickTimeoutsQuery(
+            bounds.lockTimeoutMs,
+            bounds.statementTimeoutMs
+          )
+        )
+      const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+      const incomingPoint = { price: newPrice, ts, sourceTs }
+      const currentPoint =
+        contract.oraclePriceTime == null
+          ? null
+          : {
+              price: contract.oraclePrice,
+              ts: contract.oraclePriceTime,
+              sourceTs: contract.oracleSourceTime ?? undefined,
+            }
+      const decision = decideOracleTransition(currentPoint, incomingPoint)
+      if (decision.action === 'reject')
+        throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
+      // Delivery can race even though state writes cannot. Once the contract
+      // lock is held, an older point or exact retry must not touch price, pools,
+      // positions, metrics, or event history.
+      if (decision.action === 'ignore') return null
+
+      const poolLongBefore = state.pool.L
+      const poolShortBefore = state.pool.S
+
+      const appliedTime = Date.now()
+      const applied = applyOracleUpdate(
+        contract,
+        state,
+        newPrice,
+        ts,
+        appliedTime
       )
-    )
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
-    const incomingPoint = { price: newPrice, ts, sourceTs }
-    const currentPoint =
-      contract.oraclePriceTime == null
-        ? null
-        : {
-            price: contract.oraclePrice,
-            ts: contract.oraclePriceTime,
-            sourceTs: contract.oracleSourceTime ?? undefined,
-          }
-    const decision = decideOracleTransition(currentPoint, incomingPoint)
-    if (decision.action === 'reject')
-      throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
-    // Delivery can race even though state writes cannot. Once the contract
-    // lock is held, an older point or exact retry must not touch price, pools,
-    // positions, metrics, or event history.
-    if (decision.action === 'ignore') return null
+      const { upserts, deletes } = diffForWrite(
+        state.positions,
+        applied.finalState.positions
+      )
 
-    const poolLongBefore = state.pool.L
-    const poolShortBefore = state.pool.S
+      const contractPatch = removeUndefinedProps({
+        poolLong: applied.finalState.pool.L,
+        poolShort: applied.finalState.pool.S,
+        ...openInterestPatch(applied.finalState.positions),
+        oraclePrice: newPrice,
+        oraclePriceTime: ts,
+        // null deliberately clears metadata if a newer point does not carry it;
+        // retaining the previous point's source time would misattribute data.
+        oracleSourceTime: sourceTs ?? null,
+        // Price polling is infrastructure activity, not user activity. Only a
+        // liquidation/ADL transition should refresh discovery freshness.
+        lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
+      })
 
-    const appliedTime = Date.now()
-    const applied = applyOracleUpdate(
-      contract,
-      state,
-      newPrice,
-      ts,
-      appliedTime
-    )
+      // Fast path: no liquidations and no ADL means no position changed, so
+      // only the contract's cached price needs writing. Without this, a
+      // sub-minute oracle tick rebuilds user_contract_metrics for every holder
+      // on every price move. Metric rows DO embed unrealized PnL at the oracle
+      // price, but runFunding rebuilds them for all holders unconditionally, so
+      // they stay at worst one funding period stale — the pre-fast-tick cadence.
+      if (
+        upserts.length === 0 &&
+        deletes.length === 0 &&
+        applied.events.length === 0
+      ) {
+        // mergeContractDataQuery ends in `returning *`, so exactly one row comes
+        // back — .none() would throw QueryResultError(notEmpty) and roll back
+        // the whole tick (froze every fast-feed perp at its creation price).
+        await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
+        return {
+          liquidated: [],
+          adlAdjusted: [],
+          adlSettled: [],
+          adlFactorLong: 1,
+          adlFactorShort: 1,
+          poolLongBefore,
+          poolLongAfter: applied.finalState.pool.L,
+          poolShortBefore,
+          poolShortAfter: applied.finalState.pool.S,
+        }
+      }
 
-    const { upserts, deletes } = diffForWrite(
-      state.positions,
-      applied.finalState.positions
-    )
+      const affectedUsers = Array.from(
+        new Set<string>([
+          ...state.positions.map((p) => p.userId),
+          ...applied.finalState.positions.map((p) => p.userId),
+        ])
+      )
 
-    const contractPatch = removeUndefinedProps({
-      poolLong: applied.finalState.pool.L,
-      poolShort: applied.finalState.pool.S,
-      ...openInterestPatch(applied.finalState.positions),
-      oraclePrice: newPrice,
-      oraclePriceTime: ts,
-      // null deliberately clears metadata if a newer point does not carry it;
-      // retaining the previous point's source time would misattribute data.
-      oracleSourceTime: sourceTs ?? null,
-      // Price polling is infrastructure activity, not user activity. Only a
-      // liquidation/ADL transition should refresh discovery freshness.
-      lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
-    })
+      if (applied.adlSettled.length > 0) {
+        await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+      }
+      await payAdlSettlements(pgTrans, contractId, newPrice, applied.adlSettled)
+      if (applied.adlSettled.length > 0) {
+        await assertPerpEscrowBalance(
+          pgTrans,
+          contractId,
+          applied.finalState.pool
+        )
+      }
 
-    // Fast path: no liquidations and no ADL means no position changed, so
-    // only the contract's cached price needs writing. Without this, a
-    // sub-minute oracle tick rebuilds user_contract_metrics for every holder
-    // on every price move. Metric rows DO embed unrealized PnL at the oracle
-    // price, but runFunding rebuilds them for all holders unconditionally, so
-    // they stay at worst one funding period stale — the pre-fast-tick cadence.
-    if (
-      upserts.length === 0 &&
-      deletes.length === 0 &&
-      applied.events.length === 0
-    ) {
-      // mergeContractDataQuery ends in `returning *`, so exactly one row comes
-      // back — .none() would throw QueryResultError(notEmpty) and roll back
-      // the whole tick (froze every fast-feed perp at its creation price).
-      await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
+      const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
+        contract: { ...contract, ...contractPatch } as PerpContract,
+        userIds: affectedUsers,
+        newEvents: applied.events,
+        finalPositions: applied.finalState.positions,
+      })
+
+      await pgTrans.multi(
+        [
+          upsertPositionsQuery(upserts),
+          deletePositionsQuery(contractId, deletes),
+          insertPerpEventsQuery(applied.events),
+          mergeContractDataQuery(contractId, contractPatch),
+          metricsQuery,
+        ].join(';\n')
+      )
+
       return {
-        liquidated: [],
-        adlAdjusted: [],
-        adlSettled: [],
-        adlFactorLong: 1,
-        adlFactorShort: 1,
+        liquidated: applied.liquidated,
+        adlAdjusted: applied.adlAdjusted,
+        adlSettled: applied.adlSettled,
+        adlFactorLong: applied.adlFactorLong,
+        adlFactorShort: applied.adlFactorShort,
         poolLongBefore,
         poolLongAfter: applied.finalState.pool.L,
         poolShortBefore,
         poolShortAfter: applied.finalState.pool.S,
       }
-    }
-
-    const affectedUsers = Array.from(
-      new Set<string>([
-        ...state.positions.map((p) => p.userId),
-        ...applied.finalState.positions.map((p) => p.userId),
-      ])
-    )
-
-    if (applied.adlSettled.length > 0) {
-      await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
-    }
-    await payAdlSettlements(pgTrans, contractId, newPrice, applied.adlSettled)
-    if (applied.adlSettled.length > 0) {
-      await assertPerpEscrowBalance(
-        pgTrans,
-        contractId,
-        applied.finalState.pool
-      )
-    }
-
-    const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
-      contract: { ...contract, ...contractPatch } as PerpContract,
-      userIds: affectedUsers,
-      newEvents: applied.events,
-      finalPositions: applied.finalState.positions,
-    })
-
-    await pgTrans.multi(
-      [
-        upsertPositionsQuery(upserts),
-        deletePositionsQuery(contractId, deletes),
-        insertPerpEventsQuery(applied.events),
-        mergeContractDataQuery(contractId, contractPatch),
-        metricsQuery,
-      ].join(';\n')
-    )
-
-    return {
-      liquidated: applied.liquidated,
-      adlAdjusted: applied.adlAdjusted,
-      adlSettled: applied.adlSettled,
-      adlFactorLong: applied.adlFactorLong,
-      adlFactorShort: applied.adlFactorShort,
-      poolLongBefore,
-      poolLongAfter: applied.finalState.pool.L,
-      poolShortBefore,
-      poolShortAfter: applied.finalState.pool.S,
-    }
-  })
+    },
+    bounds?.maxAttempts,
+    // Only a bounded caller can produce these, and it handles them itself.
+    // Unbounded callers keep ERROR for every failure.
+    bounds ? { isExpectedError: isOracleTickTimeout } : undefined
+  )
 }
 
 // -----------------------------------------------------------------------

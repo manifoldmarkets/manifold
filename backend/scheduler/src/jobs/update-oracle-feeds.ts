@@ -13,6 +13,7 @@ import {
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
+import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 
 // The fast oracle tick (fires every 2s, modeled on sports-live). For each
 // `fast` feed in the registry that is due to be polled:
@@ -320,7 +321,18 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
 
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.
-    await applyOraclePointToLivePerps(pg, feed.id, latestPoint)
+    //
+    // This is the ONLY caller that passes bounds. The fast tick is the one
+    // context where abandoning an apply beats completing it late: the next
+    // tick is seconds away and carries a better price. Every other caller
+    // (hourly update-perps, the daily publishers, the admin write path) must
+    // wait and apply — see OracleUpdateBounds.
+    await applyOraclePointToLivePerps(
+      pg,
+      feed.id,
+      latestPoint,
+      FAST_TICK_ORACLE_BOUNDS
+    )
   } catch (err) {
     log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }

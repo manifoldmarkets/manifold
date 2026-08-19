@@ -17,40 +17,6 @@ import { pgp } from 'shared/supabase/init'
 export const advisoryLockQuery = (contractId: string) =>
   pgp.as.format(`select pg_advisory_xact_lock(hashtext($1))`, [contractId])
 
-/**
- * Bound how long an oracle tick may spend waiting on the database.
- *
- * The scheduler deliberately runs without a statement cap (see
- * ecosystem.config.js), and `advisoryLockQuery` blocks indefinitely. When a
- * long-running writer held the contract lock during the morning batch window,
- * a single tick sat in flight for over two minutes; because dispatch skips a
- * feed while its previous run is outstanding, the feed went completely dark
- * for that whole time and the mark froze while the underlying kept moving.
- *
- * For a tick specifically, waiting is strictly worse than giving up: the price
- * it would eventually apply is stale by however long it waited, and another
- * tick with a fresher price is already due. So bound it and let the next one
- * win. This is safe to abort at any point — the transaction rolls back whole,
- * and decideOracleTransition orders points by timestamp, so a skipped tick
- * costs nothing beyond its own interval.
- *
- * Inlined rather than parameterised because SET LOCAL does not accept bind
- * parameters; both values are floored to integers first so nothing but digits
- * reaches the statement.
- */
-export const oracleTickTimeoutsQuery = (
-  lockTimeoutMs: number,
-  statementTimeoutMs: number
-) => {
-  const lock = Math.floor(lockTimeoutMs)
-  const statement = Math.floor(statementTimeoutMs)
-  if (!(lock > 0) || !(statement > 0))
-    throw new Error(
-      `oracle tick timeouts must be positive durations; got lock=${lockTimeoutMs} statement=${statementTimeoutMs}`
-    )
-  return `set local lock_timeout = ${lock}; set local statement_timeout = ${statement}`
-}
-
 export const selectLatestOraclePriceQuery = (feedId: string) =>
   pgp.as.format(
     `select ts, price, source_ts from oracle_prices where feed_id = $1

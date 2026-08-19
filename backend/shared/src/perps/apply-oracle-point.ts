@@ -6,18 +6,26 @@ import {
 } from 'common/perps/oracle'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { runOracleUpdate } from 'shared/perps/engine'
+import {
+  isOracleTickTimeout,
+  OracleUpdateBounds,
+} from 'shared/perps/oracle-tick-bounds'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
-/** Postgres codes for the two bounds runOracleUpdate sets on itself. */
-const LOCK_NOT_AVAILABLE = '55P03' // lock_timeout
-const QUERY_CANCELED = '57014' // statement_timeout
-
-const isTickTimeout = (err: unknown) =>
-  typeof err === 'object' &&
-  err !== null &&
-  'code' in err &&
-  (err.code === LOCK_NOT_AVAILABLE || err.code === QUERY_CANCELED)
+/**
+ * How far a contract's executable mark may fall behind the feed before a
+ * failed apply is an incident rather than a skipped slot.
+ *
+ * Expressed as a fraction of the contract's own maxOraclePriceAgeMs so the
+ * alert always lands BEFORE the market freezes at that threshold, whatever it
+ * is set to. This is the signal nothing else provides: feed staleness reads
+ * oracle_prices, which the publisher has already written by the time apply
+ * runs, and the stuck-feed detector reads inFlightSince, which is clear
+ * because the poll itself completed. Both stay green while a single contract
+ * silently stops tracking the price it executes against.
+ */
+const APPLICATION_LAG_ALERT_FRACTION = 0.5
 
 /**
  * Apply a newly published oracle point to every live market on its feed.
@@ -30,7 +38,13 @@ const isTickTimeout = (err: unknown) =>
 export const applyOraclePointToLivePerps = async (
   pg: SupabaseDirectClient,
   feedId: string,
-  point: OraclePoint
+  point: OraclePoint,
+  /**
+   * Fast-tick only. Omitted by the daily publishers and the admin write path,
+   * which must wait for the apply rather than abandon it — see
+   * OracleUpdateBounds.
+   */
+  bounds?: OracleUpdateBounds
 ) => {
   const pointRejection = validateBasicOraclePoint(point)
   if (pointRejection) {
@@ -118,7 +132,8 @@ export const applyOraclePointToLivePerps = async (
         contract.id,
         persistedPoint.price,
         persistedPoint.ts,
-        persistedPoint.sourceTs
+        persistedPoint.sourceTs,
+        bounds
       )
       if (!result) continue
 
@@ -135,14 +150,30 @@ export const applyOraclePointToLivePerps = async (
       // One malformed/contended contract must not leave every other market on
       // the same feed trading against a stale cached price.
       const message = `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${persistedPoint.ts}: ${err}`
-      // A tick that hit its own lock/statement bound is the design working:
-      // it gave up its slot rather than apply a stale price late, and the next
-      // tick is already due. Logging that at ERROR would page on the healthy
-      // path, and [oracle-feeds] ERROR lines drive the GCP alert. Genuine
-      // staleness is still caught — by the 2-minute feed staleness check and
-      // the in-flight stuck-feed detector, neither of which this silences.
-      if (isTickTimeout(err)) log.warn(message)
-      else log.error(message)
+      // How far this contract's executable mark now trails the published
+      // point. Measured against the contract's own state, because that — not
+      // the feed's history — is what trades and liquidations settle against.
+      const applicationLag =
+        contract.oraclePriceTime == null
+          ? Number.POSITIVE_INFINITY
+          : persistedPoint.ts - contract.oraclePriceTime
+      const lagBudget =
+        contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION
+
+      // A single bounded tick giving up its slot is the design working, and
+      // the next tick is already due with a better price — that should not
+      // page. But repeated failures walk the mark toward the freshness
+      // threshold with no other alarm attached to it, so escalate on the lag
+      // itself rather than on the cause.
+      if (isOracleTickTimeout(err) && applicationLag < lagBudget) {
+        log.warn(message)
+      } else if (applicationLag >= lagBudget) {
+        log.error(
+          `${message} — executable mark is ${applicationLag}ms behind the feed, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; this market will freeze if it keeps failing`
+        )
+      } else {
+        log.error(message)
+      }
     }
   }
 }
