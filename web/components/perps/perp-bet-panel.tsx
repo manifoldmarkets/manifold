@@ -213,6 +213,12 @@ export const PerpBetPanel = (props: {
     impact: takerFeeImpact,
   })
   const openFee = feeDetails.fee
+  // Price protection sent with the trade: the engine rejects rather than
+  // charges if the authoritative fee exceeds this. 20% + M$1 of headroom
+  // absorbs ordinary pool movement between preview and execution while
+  // still blocking the big divergences (a whale close collapsing the pool,
+  // an admin raising the impact live).
+  const maxFee = Math.ceil((openFee * 1.2 + 1) * 100) / 100
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -287,6 +293,14 @@ export const PerpBetPanel = (props: {
       toast.error('Fee would exceed your margin — reduce leverage or size')
       return
     }
+    if (feeDetails.depthExhausted) {
+      // Mirrors the engine's fail-closed reject: the size fee has no valid
+      // depth to price against, so adding is blocked.
+      toast.error(
+        'Market backing is exhausted relative to your position — close or reduce instead'
+      )
+      return
+    }
     setSubmitting(true)
     try {
       const fingerprint = [
@@ -306,6 +320,7 @@ export const PerpBetPanel = (props: {
         mana: margin,
         leverage: effectiveLeverage,
         idempotencyKey: request.idempotencyKey,
+        maxFee,
       })
       const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
       toast.success(
@@ -473,6 +488,7 @@ export const PerpBetPanel = (props: {
         fee={openFee}
         feeEffectiveBps={feeDetails.effectiveBps}
         feeSizeBps={feeDetails.sizeBps}
+        feeDepthExhausted={feeDetails.depthExhausted}
         poolShareAfter={feeDetails.poolShareAfter}
       />
 
@@ -516,6 +532,9 @@ export const PerpBetPanel = (props: {
           exceedsCapacity ||
           // Engine hard-rejects a fee ≥ margin (guaranteed total loss).
           (marginAmount > 0 && openFee >= marginAmount) ||
+          // Engine fail-closes when the size fee has no depth to price
+          // against (backing exhausted relative to the position).
+          feeDetails.depthExhausted ||
           oracleTradingPaused
         }
         size="lg"
@@ -690,6 +709,9 @@ const StatsGrid = (props: {
   feeEffectiveBps: number
   feeSizeBps: number
   poolShareAfter: number
+  // The size fee could not be priced (net depth exhausted) — the engine will
+  // reject this trade, so surface why while submit is disabled.
+  feeDepthExhausted: boolean
 }) => {
   const {
     direction,
@@ -708,6 +730,7 @@ const StatsGrid = (props: {
     feeEffectiveBps,
     feeSizeBps,
     poolShareAfter,
+    feeDepthExhausted,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
@@ -779,7 +802,7 @@ const StatsGrid = (props: {
             )})`}
             valueClass={
               isLargeShareFee
-                ? 'font-semibold text-amber-600 dark:text-amber-400'
+                ? 'font-semibold text-amber-700 dark:text-amber-400'
                 : undefined
             }
           />
@@ -791,8 +814,10 @@ const StatsGrid = (props: {
             <Row
               className={clsx(
                 'items-center gap-1 text-xs leading-tight',
+                // amber-700 in light mode: amber-600 on canvas-50 is ~2.9:1,
+                // below the 4.5:1 required for text this size.
                 isLargeShareFee
-                  ? 'font-medium text-amber-600 dark:text-amber-400'
+                  ? 'font-medium text-amber-700 dark:text-amber-400'
                   : 'text-ink-400'
               )}
             >
@@ -806,6 +831,12 @@ const StatsGrid = (props: {
           {feeExceedsMargin && (
             <span className="text-scarlet-600 text-xs font-medium leading-tight">
               Fee would exceed your margin — reduce leverage or size.
+            </span>
+          )}
+          {feeDepthExhausted && (
+            <span className="text-scarlet-600 text-xs font-medium leading-tight">
+              This market's backing is exhausted relative to your position —
+              close or reduce instead of adding.
             </span>
           )}
         </Col>

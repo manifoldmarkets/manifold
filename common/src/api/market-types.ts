@@ -679,6 +679,12 @@ export const placePerpTradeSchema = z.object({
   mana: z.number().gt(0),
   leverage: z.number().min(MIN_PERP_LEVERAGE),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
+  // Price protection: reject rather than charge when the fee computed at
+  // execution exceeds this (mana). The fee is state-dependent — pools move
+  // and config is live-tunable — so the previewed fee is not a promise;
+  // this bound is how a caller makes their consent explicit. Optional for
+  // compatibility; the web panel always sends it.
+  maxFee: z.number().min(0).optional(),
 })
 
 export const closePerpPositionSchema = z.object({

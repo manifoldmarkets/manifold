@@ -437,7 +437,14 @@ export const openOrAddPosition = async (
    * event so readers can filter bot flow out of the Trades tab, matching
    * `bets.is_api`. Lives in `data` so no migration is needed; events written
    * before this shipped carry no flag and read as manual. */
-  isApi = false
+  isApi = false,
+  /** Price protection: reject (400) rather than charge when the fee computed
+   * inside the locked transaction exceeds this. The fee is state-dependent
+   * (pools move, config is live-tunable), so the previewed fee is not a
+   * promise — this bound is how a caller makes their consent explicit. Not
+   * part of the idempotency fingerprint: a replay returns the stored result
+   * of a trade that already happened. */
+  maxFee?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
@@ -447,6 +454,8 @@ export const openOrAddPosition = async (
       400,
       `leverage must be a finite number of at least ${MIN_PERP_LEVERAGE}`
     )
+  if (maxFee !== undefined && (!Number.isFinite(maxFee) || maxFee < 0))
+    throw new APIError(400, 'maxFee must be a finite non-negative number')
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -704,6 +713,29 @@ export const openOrAddPosition = async (
       impact: takerFeeImpact,
     })
     const openFee = openFeeDetails.fee
+    // Fail closed when the size fee cannot be priced: the trader's own
+    // contribution exhausts the valid gross pool (a side pool drained below
+    // its holders' cost basis — the margin-cover incident pattern), so the
+    // quote fell back to base-only. Charging base there would hand the
+    // largest holder in a devastated market the CHEAPEST rate, bypassing the
+    // size protection entirely.
+    if (openFeeDetails.depthExhausted)
+      throw new APIError(
+        400,
+        'This market’s backing is exhausted relative to your position — the size fee cannot be priced. Close or reduce instead of adding.'
+      )
+    // Price protection: the fee is state-dependent (pools move, config is
+    // live-tunable), so a caller may bound what they consent to pay; the
+    // check runs on the authoritative fee inside the locked transaction.
+    if (maxFee !== undefined && openFee > maxFee)
+      throw new APIError(
+        400,
+        `Fee protection: this trade's fee is M$${openFee.toFixed(
+          2
+        )}, above your maxFee of M$${maxFee.toFixed(
+          2
+        )}. Refresh and retry to accept the current fee.`
+      )
     // Hard consent floor: a fee that meets or exceeds the margin means the
     // position opens at a guaranteed total loss — always a mistake or an
     // attack, never intent. Reject instead of charging, so no combination of

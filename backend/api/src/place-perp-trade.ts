@@ -15,7 +15,8 @@ import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 export const placePerpTrade: APIHandler<'place-perp-trade'> =
   onlyUsersWhoCanPerformAction('trade', async (body, auth) => {
     assertPerpExposureIncreaseEnabled()
-    const { contractId, direction, mana, leverage, idempotencyKey } = body
+    const { contractId, direction, mana, leverage, idempotencyKey, maxFee } =
+      body
     const isApi = auth.creds.kind === 'key'
     const result = await openOrAddPosition(
       contractId,
@@ -24,7 +25,8 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
       mana,
       leverage,
       idempotencyKey,
-      isApi
+      isApi,
+      maxFee
     )
 
     const { position } = result

@@ -42,14 +42,26 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const [meta, setMeta] = useState<Partial<PerpContract> | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Wall-clock of the last applied push, used to decide whether the fallback
-  // poll needs to run. A ref so arriving ticks don't re-render the tree.
+  // Wall-clock of the last RECEIVED push (applied or not), used to decide
+  // whether the fallback poll needs to run — a rejected replay still proves
+  // the socket is alive. A ref so arriving ticks don't re-render the tree.
   const lastPushAt = useRef(0)
 
-  // Wall-clock of the last applied meta poll body. Compared against
-  // lastPushAt to decide which source's POOLS are fresher (see the merge
-  // below) — receipt order, not tick time, because pools move without
-  // advancing oraclePriceTime.
+  // Wall-clock of the last push that was actually APPLIED (strictly newer
+  // than the retained quote). Compared against lastMetaAt to decide which
+  // source's POOLS are fresher (see the merge below) — receipt order, not
+  // tick time, because pools move without advancing oraclePriceTime. Kept
+  // separate from lastPushAt so a reconnecting socket's replayed OLD quotes
+  // cannot pin the retained quote's stale pools over a newer meta body.
+  const lastAppliedPushAt = useRef(0)
+
+  // oraclePriceTime of the retained quote, mirrored into a ref so the
+  // subscription callback (captured once at subscribe time) can tell whether
+  // an incoming push will apply without reading React state.
+  const latestQuoteTime = useRef<number | undefined>(undefined)
+
+  // Wall-clock of the last applied meta poll body — the other half of the
+  // pool-freshness comparison.
   const lastMetaAt = useRef(0)
 
   // Never rewind. Pushes, fallback polls, and a reconnecting socket's replay
@@ -63,6 +75,9 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   // changes, so a callback closing over changing state would go stale on the
   // wire. The SSR baseline is applied once at merge time instead.
   const applyQuote = useCallback((incoming: PerpQuote) => {
+    if (isNewerPerpQuote(latestQuoteTime.current, incoming.oraclePriceTime)) {
+      latestQuoteTime.current = incoming.oraclePriceTime
+    }
     setQuote((previous) =>
       isNewerPerpQuote(previous?.oraclePriceTime, incoming.oraclePriceTime)
         ? incoming
@@ -77,6 +92,9 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
       const incoming = (msg.data as { quote?: PerpQuote }).quote
       if (!incoming || incoming.contractId !== ssrContract.id) return
       lastPushAt.current = Date.now()
+      if (isNewerPerpQuote(latestQuoteTime.current, incoming.oraclePriceTime)) {
+        lastAppliedPushAt.current = Date.now()
+      }
       applyQuote(incoming)
     },
   })
@@ -242,7 +260,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
     quote != null &&
     isNewerPerpQuote(ssrContract.oraclePriceTime, quote.oraclePriceTime)
   const pushedPoolsAreFresher =
-    quote != null && lastPushAt.current > lastMetaAt.current
+    quote != null && lastAppliedPushAt.current > lastMetaAt.current
   const contract = {
     ...ssrContract,
     ...meta,

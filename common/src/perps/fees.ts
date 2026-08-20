@@ -170,6 +170,13 @@ export type PerpSizeFeeDetails = {
   effectiveBps: number // fee / added notional × 10_000 (0 when nothing added)
   sizeBps: number // size component: effectiveBps − base, clamped ≥ 0
   poolShareAfter: number // N1 / P (0 when the pool depth is degenerate)
+  // True when the size fee SHOULD apply (impact > 0, notional added) but the
+  // net depth is exhausted — the trader's own contribution meets or exceeds
+  // the valid gross pool — so the returned fee is base-only and UNDERPRICED.
+  // Reachable when a side pool is drained below its holders' aggregate cost
+  // basis (the margin-cover incident pattern), where the OI cap can still
+  // show headroom. Chargers must fail closed on it; previews must block.
+  depthExhausted: boolean
 }
 
 /**
@@ -202,7 +209,7 @@ export const perpSizeFeeDetails = (args: {
     notionalAfter > 0
       ? notionalAfter / poolDepth
       : 0
-  return { fee, effectiveBps, sizeBps, poolShareAfter }
+  return { fee, effectiveBps, sizeBps, poolShareAfter, depthExhausted: false }
 }
 
 /**
@@ -226,10 +233,12 @@ export const perpSizeFeeDetails = (args: {
  *     never backs their own claim, so it is not liquidity available to the
  *     position being priced (and it leaves with them at close, closing free).
  *
- * When the trader's contribution exceeds the gross pool (a devastated market
- * that is nominally all their money), depth clamps to 0 and the size term
- * falls back to base-only; the open-interest cap blocks meaningful adds in
- * that state long before the fee matters.
+ * When the trader's contribution meets or exceeds a VALID gross pool, the
+ * size fee has no denominator and cannot be priced — the returned fee is
+ * base-only and `depthExhausted` is set. That state is reachable (a side
+ * pool drained below its holders' aggregate cost basis while the opposing
+ * pool still gives the OI cap headroom), so it must NOT trade at base:
+ * the engine fails closed on the flag and the panel blocks submit.
  */
 export const perpOpenFeeQuote = (args: {
   // Gross backing pool the trade executes against (getPerpBackingPool of the
@@ -266,13 +275,24 @@ export const perpOpenFeeQuote = (args: {
   const poolDepth = Math.max(gross - ownContribution, 0)
   const notionalBefore =
     Number.isFinite(existingSize) && existingSize > 0 ? existingSize : 0
-  return perpSizeFeeDetails({
+  const details = perpSizeFeeDetails({
     notionalBefore,
     notionalAfter: notionalBefore + addedNotional,
     poolDepth,
     baseBps,
     impact,
   })
+  const impactApplies = Number.isFinite(impact) && impact > 0
+  const notionalAdded = Number.isFinite(addedNotional) && addedNotional > 0
+  return {
+    ...details,
+    // Only a VALID gross pool that the trader's own contribution exhausts
+    // counts as exhausted — a degenerate gross (corrupt display data) stays
+    // base-only without the flag, since the engine separately asserts pool
+    // sanity via the escrow check before any mana moves.
+    depthExhausted:
+      impactApplies && notionalAdded && gross > 0 && poolDepth <= 0,
+  }
 }
 
 /**

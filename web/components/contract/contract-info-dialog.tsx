@@ -972,17 +972,22 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
   const { contract } = props
   const [input, setInput] = useState('')
   const [saving, setSaving] = useState(false)
-  const [justSaved, setJustSaved] = useState<number | null>(null)
+  // justSaved bridges the gap until the contract prop reflects the save. It
+  // remembers the stored value AT save time (the baseline) and speaks only
+  // while the prop still shows that stale baseline — ANY movement of the
+  // prop (to the saved value, or to a later change by another admin) retires
+  // it. The naive `justSaved !== stored ? justSaved : stored` form would
+  // resurrect a stale save over another admin's later value and then refuse
+  // to resubmit it via the `parsed === current` guard.
+  const [justSaved, setJustSaved] = useState<{
+    saved: number
+    baseline: number
+  } | null>(null)
   const stored = getPerpTakerFeeImpact(contract)
-  // justSaved only bridges the gap until the contract prop catches up, then
-  // retires — kept as `justSaved !== stored ? justSaved : stored`, a LATER
-  // change by another admin would resurrect the stale justSaved as the
-  // display AND `parsed === current` would refuse to resubmit the very value
-  // that needs restoring.
-  useEffect(() => {
-    if (justSaved != null && justSaved === stored) setJustSaved(null)
-  }, [justSaved, stored])
-  const current = justSaved ?? stored
+  const current =
+    justSaved != null && stored === justSaved.baseline
+      ? justSaved.saved
+      : stored
   const parsed = Number(input)
   const valid =
     input !== '' &&
@@ -998,17 +1003,18 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
         contractId: contract.id,
         takerFeeImpact: parsed,
       })
-      setJustSaved(res.takerFeeImpact)
+      setJustSaved({ saved: res.takerFeeImpact, baseline: stored })
       setInput('')
+      // The response's base, not the possibly-stale prop's — the base may
+      // have just been edited in the sibling input.
+      const poolSizedPct = (res.takerFeeBps + res.takerFeeImpact / 3) / 100
       toast.success(
         res.takerFeeImpact > 0
           ? `Fee size impact is now ${
               res.takerFeeImpact
-            } — a pool-sized position pays ${// The response's base, not the possibly-stale prop's — the
-            // base may have just been edited in the sibling input.
-            (res.takerFeeBps + res.takerFeeImpact / 3).toFixed(
-              1
-            )} bps effective`
+            } — a pool-sized position pays ${poolSizedPct.toFixed(
+              2
+            )}% effective`
           : 'Fee size impact is off — the taker fee is flat at the base'
       )
     } catch (err) {

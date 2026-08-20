@@ -67,6 +67,21 @@ describe('placePerpTradeSchema', () => {
       ).toBe(false)
     }
   })
+
+  it('accepts an optional maxFee price-protection bound, rejecting a negative one', () => {
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: 12.5 })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: 0 })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: -1 })
+        .success
+    ).toBe(false)
+  })
 })
 
 describe('toUltraLiteMarket', () => {

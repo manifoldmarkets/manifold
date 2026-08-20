@@ -529,9 +529,12 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
     expect(dominating.fee).toBeGreaterThan(fresh.fee)
   })
 
-  it('falls back to base-only when the trader is nominally the whole pool', () => {
-    // Own contribution ≥ gross pool clamps the depth to 0; the OI cap blocks
-    // meaningful adds in that devastated state before the fee matters.
+  it('flags exhausted depth so chargers fail closed instead of pricing base-only', () => {
+    // Own contribution ≥ a VALID gross pool: reachable when a side pool is
+    // drained below its holders' aggregate cost basis while the opposing
+    // pool still gives the OI cap headroom. The returned fee is base-only
+    // (underpriced!), so the flag is what makes the engine reject rather
+    // than hand the market's largest holder the cheapest rate.
     const q = perpOpenFeeQuote({
       grossPoolDepth: 10_000,
       existingSize: 50_000,
@@ -542,6 +545,32 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
       impact,
     })
     expect(q.effectiveBps).toBeCloseTo(base, 10)
+    expect(q.depthExhausted).toBe(true)
+    // No flag when the size fee is off, when nothing is added, or for a
+    // healthy fresh trader.
+    expect(oneShotQuote(662_000).depthExhausted).toBe(false)
+    expect(
+      perpOpenFeeQuote({
+        grossPoolDepth: 10_000,
+        existingSize: 50_000,
+        existingCostBasis: 50_000,
+        existingTakerFeeCostBasis: 0,
+        addedNotional: 20_000,
+        baseBps: base,
+        impact: 0,
+      }).depthExhausted
+    ).toBe(false)
+    expect(
+      perpOpenFeeQuote({
+        grossPoolDepth: 10_000,
+        existingSize: 50_000,
+        existingCostBasis: 50_000,
+        existingTakerFeeCostBasis: 0,
+        addedNotional: 0,
+        baseBps: base,
+        impact,
+      }).depthExhausted
+    ).toBe(false)
   })
 
   it('treats corrupt pools and corrupt own-contribution fields as 0 (display path is total)', () => {
@@ -556,6 +585,9 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
         impact,
       })
       expect(q.fee).toBeCloseTo(calcPerpTakerFee(10_000, base), 10)
+      // A corrupt gross is NOT "exhausted" — the engine's escrow assert owns
+      // pool sanity; the flag is reserved for a valid pool the trader fills.
+      expect(q.depthExhausted).toBe(false)
     }
     // Corrupt existing fields normalize to 0 here; the ENGINE separately
     // fail-closes on a corrupt row before pricing (see openOrAddPosition).
