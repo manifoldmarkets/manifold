@@ -642,7 +642,12 @@ type PerpTakerFee = {
   token: 'M$'
   data: {
     direction: 'long' | 'short'
+    // EFFECTIVE rate actually paid (fee / sizeDelta × 10_000). Rows written
+    // before the size-dependent fee carry the configured base here — the two
+    // were equal back then, so the semantics are continuous.
     feeBps: number
+    // Configured base rate at trade time; absent on pre-size-fee rows.
+    feeBase?: number
     sizeDelta: number
   }
 }

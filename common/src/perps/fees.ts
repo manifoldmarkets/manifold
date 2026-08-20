@@ -114,11 +114,15 @@ export const getPerpTakerFeeImpact = (contract: {
  *
  * The integral form makes the fee splitting-proof per account: chopping one
  * big add into many small sequential adds costs exactly the same, because the
- * integral is path-independent in notional. A fresh position of pool-share
- * S = N1/P pays the effective (average) rate `base + (impact/3)·S²` bps —
- * honest sub-10%-of-pool flow pays ~base, pool-sized entries pay multiples of
- * it. The total is intentionally NOT capped at PERP_TAKER_FEE_BPS_MAX; only
- * the base config is.
+ * integral is path-independent in notional. ⚠️ That holds only if P itself
+ * cannot be moved by the trader's own chunks — the pool banks each add's
+ * margin and fee, so P must EXCLUDE the trader's own standing contribution
+ * (see perpOpenFeeQuote, which every fee-charging and fee-previewing caller
+ * goes through). A fresh position of pool-share S = N1/P pays the effective
+ * (average) rate `base + (impact/3)·S²` bps — honest sub-10%-of-pool flow
+ * pays ~base, pool-sized entries pay multiples of it. The total is
+ * intentionally NOT capped at PERP_TAKER_FEE_BPS_MAX; only the base config
+ * is.
  *
  * Computed in share space, (impact/3)·P·(s1³ − s0³), which is algebraically
  * identical but keeps intermediates O(pool) instead of O(notional³).
@@ -131,7 +135,7 @@ export const getPerpTakerFeeImpact = (contract: {
 export const calcPerpSizeFee = (args: {
   notionalBefore: number // N0: existing same-direction notional (0 = fresh)
   notionalAfter: number // N1 = N0 + added notional
-  poolDepth: number // P: pre-trade poolLong + poolShort
+  poolDepth: number // P: external pool depth (see perpOpenFeeQuote)
   baseBps: number // flat base rate (today's takerFeeBps)
   impact: number // size-impact coefficient (contract takerFeeImpact)
 }): number => {
@@ -140,12 +144,13 @@ export const calcPerpSizeFee = (args: {
   if (!Number.isFinite(notionalAfter)) return 0
   const added = notionalAfter - notionalBefore
   if (!Number.isFinite(added) || added <= 0) return 0
-  const base = Number.isFinite(baseBps) && baseBps > 0 ? baseBps : 0
+  // The base term IS the flat fee — delegate so the two can never diverge
+  // (the impact = 0 path must stay identical to the pre-impact flat fee).
+  const baseFee = calcPerpTakerFee(added, baseBps)
   const impact =
     Number.isFinite(args.impact) && args.impact > 0 ? args.impact : 0
-  const baseFee = (base * added) / 10_000
   if (impact <= 0 || !Number.isFinite(poolDepth) || poolDepth <= 0)
-    return Number.isFinite(baseFee) && baseFee > 0 ? baseFee : 0
+    return baseFee
   const shareBefore = notionalBefore / poolDepth
   const shareAfter = notionalAfter / poolDepth
   const impactFee =
@@ -157,8 +162,7 @@ export const calcPerpSizeFee = (args: {
 export type PerpSizeFeeDetails = {
   fee: number // mana charged on this exposure increase
   effectiveBps: number // fee / added notional × 10_000 (0 when nothing added)
-  baseBps: number // flat component of effectiveBps
-  sizeBps: number // size component: effectiveBps − baseBps, clamped ≥ 0
+  sizeBps: number // size component: effectiveBps − base, clamped ≥ 0
   poolShareAfter: number // N1 / P (0 when the pool depth is degenerate)
 }
 
@@ -181,11 +185,10 @@ export const perpSizeFeeDetails = (args: {
       ? notionalAfter - notionalBefore
       : 0
   const effectiveBps = added > 0 && fee > 0 ? (fee / added) * 10_000 : 0
-  const base = Number.isFinite(baseBps) && baseBps > 0 ? baseBps : 0
   // The impact term is ≥ 0, so effective ≥ base whenever a fee was charged;
-  // the min/clamp only absorbs the fee-was-zero cases and float dust.
-  const shownBase = Math.min(base, effectiveBps)
-  const sizeBps = Math.max(0, effectiveBps - shownBase)
+  // the clamp only absorbs the fee-was-zero cases and float dust.
+  const base = Number.isFinite(baseBps) && baseBps > 0 ? baseBps : 0
+  const sizeBps = Math.max(0, effectiveBps - base)
   const poolShareAfter =
     Number.isFinite(poolDepth) &&
     poolDepth > 0 &&
@@ -193,7 +196,77 @@ export const perpSizeFeeDetails = (args: {
     notionalAfter > 0
       ? notionalAfter / poolDepth
       : 0
-  return { fee, effectiveBps, baseBps: shownBase, sizeBps, poolShareAfter }
+  return { fee, effectiveBps, sizeBps, poolShareAfter }
+}
+
+/**
+ * The one fee-input assembly for an exposure increase — the engine charges
+ * from it and the bet panel previews from it, so the state selection can
+ * never drift between them.
+ *
+ * The depth the size term prices against is the pool NET OF the trader's own
+ * standing contribution (their same-direction margin plus the fees they have
+ * already paid into the pool). Two reasons:
+ *
+ *  1. Splitting-proofness for real: the pool banks each add's margin and fee,
+ *     so pricing against the gross pool let sequential adds ride a depth the
+ *     trader deepened themselves — chopping one pool-sized 1× entry into
+ *     chunks cut its size fee ~75%. Netting out the trader's own contribution
+ *     makes the depth invariant across their own adds, so the integral
+ *     telescopes exactly and one open costs the same as any partition of it.
+ *
+ *  2. It prices the right risk: a long's winnings are paid from the SHORT
+ *     pool — the margin a trader posts sits in their own side's pool and
+ *     never backs their own claim, so it is not liquidity available to the
+ *     position being priced (and it leaves with them at close, closing free).
+ *
+ * When the trader's contribution exceeds the gross pool (a devastated market
+ * that is nominally all their money), depth clamps to 0 and the size term
+ * falls back to base-only; the open-interest cap blocks meaningful adds in
+ * that state long before the fee matters.
+ */
+export const perpOpenFeeQuote = (args: {
+  // Gross backing pool the trade executes against (getPerpBackingPool of the
+  // pre-trade pools — for a flip, AFTER the opposite leg's close is applied,
+  // since that payout has already left the pool when the new leg is priced).
+  grossPoolDepth: number
+  // The trader's standing same-direction position; zeros for a fresh open or
+  // the new leg of a flip.
+  existingSize: number
+  existingCostBasis: number
+  existingTakerFeeCostBasis: number
+  addedNotional: number
+  baseBps: number
+  impact: number
+}): PerpSizeFeeDetails => {
+  const {
+    grossPoolDepth,
+    existingSize,
+    existingCostBasis,
+    existingTakerFeeCostBasis,
+    addedNotional,
+    baseBps,
+    impact,
+  } = args
+  const gross =
+    Number.isFinite(grossPoolDepth) && grossPoolDepth > 0 ? grossPoolDepth : 0
+  const ownContribution =
+    (Number.isFinite(existingCostBasis) && existingCostBasis > 0
+      ? existingCostBasis
+      : 0) +
+    (Number.isFinite(existingTakerFeeCostBasis) && existingTakerFeeCostBasis > 0
+      ? existingTakerFeeCostBasis
+      : 0)
+  const poolDepth = Math.max(gross - ownContribution, 0)
+  const notionalBefore =
+    Number.isFinite(existingSize) && existingSize > 0 ? existingSize : 0
+  return perpSizeFeeDetails({
+    notionalBefore,
+    notionalAfter: notionalBefore + addedNotional,
+    poolDepth,
+    baseBps,
+    impact,
+  })
 }
 
 /**

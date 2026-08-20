@@ -115,23 +115,38 @@ to a 5s poll is a mitigation and not a regression: it is only correct because
 the fee exists. Do not remove the fee and keep the fast tick — that combination
 is the worst of both, and it is the one this paragraph originally warned about.
 
-The fee
-is `takerFeeBps` (default 10) of NOTIONAL, charged when a position is opened
-or added to — closing is free, so this is the whole round-trip cost, visible
-up front. Every snipe needs an entry, so an open-only fee taxes each round
-trip exactly once; at 10 bps only oracle moves > 10 bps per tick clear one
-(7 occurrences in the BTC feed's first 31h). Never charged on liquidation,
-ADL, funding, or resolution. The fee is credited to the trader's side
-backing pool, so it recapitalizes the market rather than accruing to the
-platform (tracked in `collectedFees.liquidityFee`), and moves real mana
-(`PERP_TAKER_FEE` txn user → contract) alongside the margin debit, so the
-cash-backing invariant above is preserved. The position tracks its
-cumulative opening fees in `takerFeeCostBasis` (kept separate from margin so
-leverage/liquidation math is untouched), and every user-facing PnL number —
-the position card, close receipts, portfolio metrics, period metrics —
-subtracts it: a fresh position starts at PnL = −fee. Admins tune the rate
-live per market via `update-perp-config` (0 disables); contracts created
-before the field default to 10 bps at trade time.
+The fee is SIZE-DEPENDENT, charged on NOTIONAL when a position is opened or
+added to — closing is free, so this is the whole round-trip cost, visible up
+front. The marginal rate at pool-share `s` is `takerFeeBps + takerFeeImpact
+· s²` bps (defaults 10 and 0), charged as its integral over the added
+notional `[N0, N1]` — see `calcPerpSizeFee` and `perpOpenFeeQuote` in
+`common/src/perps/fees.ts`, which every charging and previewing path goes
+through. `s` is measured against the backing pool NET of the trader's own
+standing contribution (their margin + previously paid fees), which is what
+makes the fee splitting-proof per account: the pool banks each add's margin,
+so pricing against the gross pool would let sequential adds ride a depth the
+trader deepened themselves. A fresh position that is share `S` of that depth
+pays `base + (impact/3)·S²` bps effective — honest sub-10%-of-pool flow pays
+~base while pool-scale entries pay multiples of it, and the TOTAL is
+deliberately uncapped (only the base config is capped at 100 bps). When
+reconciling a `PERP_TAKER_FEE` txn, `data.feeBps` is the EFFECTIVE rate
+actually paid and `data.feeBase` the configured base at trade time — do NOT
+expect fee = base × notional on a market with a nonzero impact. Every snipe
+needs an entry, so an open-only fee taxes each round trip exactly once; at
+the 10 bps base only oracle moves > 10 bps per tick clear one (7 occurrences
+in the BTC feed's first 31h). Never charged on liquidation, ADL, funding, or
+resolution. The fee is credited to the trader's side backing pool, so it
+recapitalizes the market rather than accruing to the platform (tracked in
+`collectedFees.liquidityFee`), and moves real mana (`PERP_TAKER_FEE` txn
+user → contract) alongside the margin debit, so the cash-backing invariant
+above is preserved. The position tracks its cumulative opening fees in
+`takerFeeCostBasis` (kept separate from margin so leverage/liquidation math
+is untouched), and every user-facing PnL number — the position card, close
+receipts, portfolio metrics, period metrics — subtracts it: a fresh position
+starts at PnL = −fee. Admins tune both knobs live per market via
+`update-perp-config` (base 0 disables the flat part, impact 0 the size
+part); contracts created before the fields existed default to base 10 /
+impact 0 at trade time.
 
 ## Funding imbalance
 

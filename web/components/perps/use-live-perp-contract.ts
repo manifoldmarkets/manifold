@@ -46,6 +46,12 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   // poll needs to run. A ref so arriving ticks don't re-render the tree.
   const lastPushAt = useRef(0)
 
+  // Wall-clock of the last applied meta poll body. Compared against
+  // lastPushAt to decide which source's POOLS are fresher (see the merge
+  // below) — receipt order, not tick time, because pools move without
+  // advancing oraclePriceTime.
+  const lastMetaAt = useRef(0)
+
   // Never rewind. Pushes, fallback polls, and a reconnecting socket's replay
   // all race each other, so ordering on the oracle timestamp rather than on
   // arrival is what keeps the displayed price monotonic in market time.
@@ -135,6 +141,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
             market.resolution === 'MKT' || market.resolution === 'CANCEL'
               ? market.resolution
               : undefined
+          lastMetaAt.current = Date.now()
           setMeta((previous) =>
             // Never resurrect a settled market from a cached body.
             (ssrContract.isResolved || previous?.isResolved) &&
@@ -208,18 +215,25 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
 
   const refresh = () => setRefreshKey((key) => key + 1)
 
-  // Quote wins over meta for the PRICE fields only: it is the fresher source
-  // and the only push-driven one. Pools are deliberately NOT taken from the
-  // quote: trades, funding transfers, and liquidity edits all move
-  // poolLong/poolShort WITHOUT advancing oraclePriceTime, so a tick-time pool
-  // snapshot pinned here would shadow the fresher meta poll for the whole gap
-  // between ticks — up to a day on the daily feeds. Meta stays the single
-  // source for pools/OI/funding, which also keeps those inputs the same
-  // vintage for the funding math. Fields are picked explicitly so the quote's
-  // own `contractId` does not leak onto the contract, and so adding a field to
-  // PerpQuote can never silently start overwriting unrelated contract state.
-  // The SSR baseline is applied here rather than in applyQuote, which stays
-  // dependency-free.
+  // Quote wins over meta for the PRICE fields: it is the fresher source and
+  // the only push-driven one. Fields are picked explicitly so the quote's
+  // own `contractId` does not leak onto the contract, and so adding a field
+  // to PerpQuote can never silently start overwriting unrelated contract
+  // state. The SSR baseline is applied here rather than in applyQuote, which
+  // stays dependency-free.
+  //
+  // POOLS are ordered by RECEIPT, not tick time: trades, funding transfers,
+  // and liquidity edits all move poolLong/poolShort WITHOUT advancing
+  // oraclePriceTime, so a tick-time pool snapshot pinned by timestamp would
+  // shadow a fresher meta poll for the whole gap between ticks — up to a day
+  // on the daily feeds. Instead a pushed quote's pools apply only while the
+  // push is more recent than the last applied meta body (quote.ts explicitly
+  // blesses consuming its pools by arrival order). On a fast-tick feed that
+  // replaces the edge-cached meta pools (max-age 5 + swr 10, polled every
+  // 15s) with a ≤tick-old DB read — which matters since the size-dependent
+  // taker fee prices real money off these pools — while on slow feeds and
+  // after the post-trade no-store meta burst, meta immediately wins back.
+  // OI/funding stay meta-only, keeping the funding math's inputs one vintage.
   //
   // `oracleSourceTime` is copied even when absent from the quote: source time
   // describes a specific observation, so carrying the previous one forward
@@ -227,6 +241,8 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const quoteIsFresher =
     quote != null &&
     isNewerPerpQuote(ssrContract.oraclePriceTime, quote.oraclePriceTime)
+  const pushedPoolsAreFresher =
+    quote != null && lastPushAt.current > lastMetaAt.current
   const contract = {
     ...ssrContract,
     ...meta,
@@ -235,6 +251,12 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
           oraclePrice: quote.oraclePrice,
           oraclePriceTime: quote.oraclePriceTime,
           oracleSourceTime: quote.oracleSourceTime,
+        }
+      : {}),
+    ...(pushedPoolsAreFresher && quote != null
+      ? {
+          poolLong: quote.poolLong,
+          poolShort: quote.poolShort,
         }
       : {}),
   } as PerpContract

@@ -41,6 +41,10 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
           liquidationPrice: position.liquidationPrice,
         },
         fee: result.fee,
+        ...(result.feeBps !== undefined ? { feeBps: result.feeBps } : {}),
+        ...(result.poolShareAfter !== undefined
+          ? { poolShareAfter: result.poolShareAfter }
+          : {}),
       },
       continue: async () => {
         // An idempotent replay is not a trade — re-running side effects

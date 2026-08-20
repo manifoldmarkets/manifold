@@ -6,6 +6,7 @@ import {
   creditPerpPoolFee,
   getPerpTakerFeeImpact,
   getPerpTakerFeeBps,
+  perpOpenFeeQuote,
   perpSizeFeeDetails,
   PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_IMPACT_MAX,
@@ -314,8 +315,7 @@ describe('perpSizeFeeDetails', () => {
     const d = perpSizeFeeDetails(args)
     expect(d.fee).toBeCloseTo(calcPerpSizeFee(args), 12)
     expect(d.effectiveBps).toBeCloseTo((d.fee / args.notionalAfter) * 10_000, 8)
-    expect(d.baseBps).toBe(10)
-    expect(d.baseBps + d.sizeBps).toBeCloseTo(d.effectiveBps, 8)
+    expect(args.baseBps + d.sizeBps).toBeCloseTo(d.effectiveBps, 8)
     expect(d.sizeBps).toBeCloseTo(30 * 1.42 ** 2, 6)
     expect(d.poolShareAfter).toBeCloseTo(1.42, 10)
   })
@@ -357,11 +357,12 @@ describe('open path with the size fee (engine composition)', () => {
   const leverage = 1
 
   const runOpenPath = () => {
-    const poolDepth = state.pool.L + state.pool.S
-    const details = perpSizeFeeDetails({
-      notionalBefore: 0,
-      notionalAfter: mana * leverage,
-      poolDepth,
+    const details = perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: mana * leverage,
       baseBps: 10,
       impact: 90,
     })
@@ -415,6 +416,159 @@ describe('open path with the size fee (engine composition)', () => {
     // share = 662k / 466k ≈ 1.42 → ~70 bps effective.
     expect(details.effectiveBps).toBeGreaterThan(70)
     expect(details.effectiveBps).toBeLessThan(71)
+  })
+})
+
+describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
+  const base = 10
+  const impact = 90
+  const initialPool: PerpState = {
+    pool: { L: 250_000, S: 216_000 },
+    positions: [],
+  }
+  const price = 100
+
+  const oneShotQuote = (notional: number) =>
+    perpOpenFeeQuote({
+      grossPoolDepth: initialPool.pool.L + initialPool.pool.S,
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: notional,
+      baseBps: base,
+      impact,
+    })
+
+  it('matches the plain quote for a fresh trader (calibration unchanged)', () => {
+    const q = oneShotQuote(662_000)
+    const d = perpSizeFeeDetails({
+      notionalBefore: 0,
+      notionalAfter: 662_000,
+      poolDepth: 466_000,
+      baseBps: base,
+      impact,
+    })
+    expect(q.fee).toBeCloseTo(d.fee, 10)
+    expect(q.effectiveBps).toBeCloseTo(d.effectiveBps, 10)
+  })
+
+  it('is splitting-proof THROUGH the engine: chunked adds whose margin+fee deepen the pool cost the one-shot fee', () => {
+    // This is the leak netting-out exists to close: openPosition banks each
+    // add's margin (and creditPerpPoolFee its fee) into the trader's side
+    // pool, so pricing against the gross pool let sequential adds ride a
+    // depth the trader deepened themselves (~75% off at 1× continuous).
+    // With the depth net of the trader's own contribution, the chunks must
+    // telescope to exactly the one-shot integral. Leverage 1× is the
+    // worst case (margin = notional deepens the pool fastest).
+    const whole = 662_000
+    const leverage = 1
+    const chunks = [1, 50_000, 12_345.5, 199_653.5, 400_000]
+    expect(chunks.reduce((a, b) => a + b, 0)).toBe(whole)
+
+    let state = initialPool
+    let position: PerpPosition | undefined
+    let totalFee = 0
+    for (const chunkNotional of chunks) {
+      const chunkMana = chunkNotional / leverage
+      const details = perpOpenFeeQuote({
+        grossPoolDepth: state.pool.L + state.pool.S,
+        existingSize: position?.size ?? 0,
+        existingCostBasis: position?.costBasis ?? 0,
+        existingTakerFeeCostBasis: position?.takerFeeCostBasis ?? 0,
+        addedNotional: chunkNotional,
+        baseBps: base,
+        impact,
+      })
+      // Apply the chunk exactly as the engine does, so the NEXT chunk sees
+      // the genuinely deepened pool.
+      const openRes = openPosition(
+        state,
+        'user-1',
+        'contract-1',
+        'long',
+        chunkMana,
+        leverage,
+        price,
+        position,
+        1_700_000_000_000
+      )
+      const accrued = accruePerpPositionTakerFee(
+        openRes.state,
+        openRes.position,
+        details.fee
+      )
+      state = creditPerpPoolFee(accrued.state, 'long', details.fee)
+      position = accrued.position
+      totalFee += details.fee
+    }
+    expect(totalFee).toBeCloseTo(oneShotQuote(whole).fee, 6)
+  })
+
+  it('prices a repeat entry after a full close like a fresh one (no residual discount)', () => {
+    // Closing returns the margin (payout leaves the pool) and deletes the
+    // row, so a re-open prices against the post-close pool with zero own
+    // contribution — cycling cannot manufacture a discount.
+    const q = oneShotQuote(662_000)
+    expect(q.poolShareAfter).toBeCloseTo(662_000 / 466_000, 10)
+  })
+
+  it('escalates, never cheapens, as the trader dominates the pool', () => {
+    // A standing position's margin is subtracted from the depth, so the SAME
+    // added notional costs more for a trader who already dominates the pool
+    // than for a fresh one.
+    const fresh = oneShotQuote(100_000)
+    const dominating = perpOpenFeeQuote({
+      grossPoolDepth: 466_000 + 300_000, // pool banked their 300k margin (1×)
+      existingSize: 300_000,
+      existingCostBasis: 300_000,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 100_000,
+      baseBps: base,
+      impact,
+    })
+    expect(dominating.fee).toBeGreaterThan(fresh.fee)
+  })
+
+  it('falls back to base-only when the trader is nominally the whole pool', () => {
+    // Own contribution ≥ gross pool clamps the depth to 0; the OI cap blocks
+    // meaningful adds in that devastated state before the fee matters.
+    const q = perpOpenFeeQuote({
+      grossPoolDepth: 10_000,
+      existingSize: 50_000,
+      existingCostBasis: 50_000,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 20_000,
+      baseBps: base,
+      impact,
+    })
+    expect(q.effectiveBps).toBeCloseTo(base, 10)
+  })
+
+  it('treats corrupt pools and corrupt own-contribution fields as 0 (display path is total)', () => {
+    for (const badPool of [NaN, Infinity, -1]) {
+      const q = perpOpenFeeQuote({
+        grossPoolDepth: badPool,
+        existingSize: 0,
+        existingCostBasis: 0,
+        existingTakerFeeCostBasis: 0,
+        addedNotional: 10_000,
+        baseBps: base,
+        impact,
+      })
+      expect(q.fee).toBeCloseTo(calcPerpTakerFee(10_000, base), 10)
+    }
+    // Corrupt existing fields normalize to 0 here; the ENGINE separately
+    // fail-closes on a corrupt row before pricing (see openOrAddPosition).
+    const q = perpOpenFeeQuote({
+      grossPoolDepth: 466_000,
+      existingSize: NaN,
+      existingCostBasis: NaN,
+      existingTakerFeeCostBasis: Infinity,
+      addedNotional: 10_000,
+      baseBps: base,
+      impact,
+    })
+    expect(q.fee).toBeCloseTo(oneShotQuote(10_000).fee, 10)
   })
 })
 

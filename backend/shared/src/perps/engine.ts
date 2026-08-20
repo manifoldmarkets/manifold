@@ -21,6 +21,7 @@ import {
   closePosition as closePositionMath,
   computeFundingRate,
   getLeverage,
+  getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPositionValue,
@@ -45,7 +46,7 @@ import {
   creditPerpPoolFee,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
-  perpSizeFeeDetails,
+  perpOpenFeeQuote,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
@@ -473,11 +474,22 @@ export const openOrAddPosition = async (
         return {
           position: parseStoredPosition(response?.position),
           event: rowToStoredEvent(stored),
-          // Events stored before the taker fee existed have no fee field.
+          // Events stored before the taker fee existed have no fee field;
+          // ones stored before the size fee lack the rate/share stamps.
           fee:
             typeof response?.fee === 'number' && Number.isFinite(response.fee)
               ? response.fee
               : 0,
+          feeBps:
+            typeof response?.feeBps === 'number' &&
+            Number.isFinite(response.feeBps)
+              ? response.feeBps
+              : undefined,
+          poolShareAfter:
+            typeof response?.poolShareAfter === 'number' &&
+            Number.isFinite(response.poolShareAfter)
+              ? response.poolShareAfter
+              : undefined,
           isNewUniqueBettor: false,
           // Callers must not re-run trade side effects (bonuses, streaks)
           // for a replay — no trade happened on this request.
@@ -659,14 +671,35 @@ export const openOrAddPosition = async (
     // between here and the debit.
     // Fee inputs: N0 is the user's standing same-direction notional (a flip
     // close removes only the OPPOSITE row, so existingSame is unaffected by
-    // it), and the pool depth is the PRE-trade pool — post flip-close for a
-    // flip, since that is the depth the new leg actually consumes against,
-    // but before this trade's own margin/fee credits, to avoid circularity.
-    const notionalBefore = existingSame?.size ?? 0
-    const openFeeDetails = perpSizeFeeDetails({
-      notionalBefore,
-      notionalAfter: notionalBefore + mana * leverage,
-      poolDepth: workingState.pool.L + workingState.pool.S,
+    // it), and the depth is the PRE-trade pool — post flip-close for a flip,
+    // since that is the depth the new leg actually consumes against, but
+    // before this trade's own margin/fee credits. perpOpenFeeQuote then nets
+    // out the trader's own standing contribution, so sequential adds cannot
+    // self-deepen the depth they are priced against (see its doc).
+    //
+    // Fail closed on a corrupt row: the size fee READS the position (the flat
+    // fee never did), and calcPerpSizeFee's total display guards would
+    // silently reprice a non-finite size to a cheaper fee instead of blocking
+    // the trade.
+    if (
+      existingSame &&
+      (!Number.isFinite(existingSame.size) ||
+        !Number.isFinite(existingSame.costBasis) ||
+        !Number.isFinite(existingSame.takerFeeCostBasis ?? 0))
+    )
+      throw new APIError(
+        500,
+        'Existing position row is corrupt; refusing to price the taker fee'
+      )
+    const openFeeDetails = perpOpenFeeQuote({
+      grossPoolDepth: getPerpBackingPool(
+        workingState.pool.L,
+        workingState.pool.S
+      ),
+      existingSize: existingSame?.size ?? 0,
+      existingCostBasis: existingSame?.costBasis ?? 0,
+      existingTakerFeeCostBasis: existingSame?.takerFeeCostBasis ?? 0,
+      addedNotional: mana * leverage,
       baseBps: takerFeeBps,
       impact: takerFeeImpact,
     })
@@ -766,8 +799,9 @@ export const openOrAddPosition = async (
         leverage,
         fee: openFee,
         // The EFFECTIVE (average) rate this add actually paid — base plus the
-        // integrated size term — not the configured base alone. feeBase,
-        // feeImpact, and poolShareAfter reconstruct it for audit/UI.
+        // integrated size term — not the configured base alone. feeBase and
+        // feeImpact snapshot the config at trade time; poolShareAfter is the
+        // position's share of the (net-of-own) depth it was priced against.
         feeBps: openFeeDetails.effectiveBps,
         feeBase: takerFeeBps,
         feeImpact: takerFeeImpact,
@@ -777,7 +811,12 @@ export const openOrAddPosition = async (
           ? {
               idempotencyKey,
               request: { direction, mana, leverage },
-              response: { position: open.position, fee: openFee },
+              response: {
+                position: open.position,
+                fee: openFee,
+                feeBps: openFeeDetails.effectiveBps,
+                poolShareAfter: openFeeDetails.poolShareAfter,
+              },
             }
           : {}),
       },
@@ -926,6 +965,8 @@ export const openOrAddPosition = async (
       position: open.position,
       event,
       fee: feesCollected,
+      feeBps: openFeeDetails.effectiveBps,
+      poolShareAfter: openFeeDetails.poolShareAfter,
       isNewUniqueBettor,
       replayed: false,
     }

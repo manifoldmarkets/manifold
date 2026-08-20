@@ -10,8 +10,9 @@ import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
-  closePosition,
+  getPerpBackingPool,
   getPerpOpenInterestCapacity,
+  getPositionValue,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
   mergedEntryPrice,
@@ -20,7 +21,7 @@ import {
 import {
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
-  perpSizeFeeDetails,
+  perpOpenFeeQuote,
 } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
@@ -180,47 +181,34 @@ export const PerpBetPanel = (props: {
   const isFlip = !!openDirection && openDirection !== direction
 
   // Open-side taker fee — closing is free, so this is the whole round-trip
-  // cost, shown up front. Mirrors the engine exactly: the marginal rate is
-  // base + takerFeeImpact·(share of pool)² bps, integrated over the added
-  // notional (perpSizeFeeDetails), so an ADD is priced at the cumulative
-  // share (existing size → existing size + new notional), and a flip pays on
-  // the new leg only, against the post-flip-close pool depth.
+  // cost, shown up front. perpOpenFeeQuote is the same input assembly the
+  // engine charges from: an ADD is priced at the cumulative share against a
+  // depth net of the trader's own contribution, and a flip pays on the new
+  // leg only, against the post-flip-close pool depth (the close payout —
+  // exactly getPositionValue — leaves the pool before the new leg is
+  // priced). Accuracy of this preview needs a loaded position (myPosition),
+  // which is why submit is gated on `positions` below.
   const takerFeeBps = getPerpTakerFeeBps(contract)
   const takerFeeImpact = getPerpTakerFeeImpact(contract)
-  const feePoolDepth = useMemo(() => {
-    const current = contract.poolLong + contract.poolShort
-    if (!isFlip || !myPosition) return current
-    try {
-      // The engine auto-closes the opposite side before opening the new leg,
-      // which debits the pools — price the fee against that depth. Only the
-      // pool transition matters here, so the positions list can be empty.
-      const closed = closePosition(
-        {
-          pool: { L: contract.poolLong, S: contract.poolShort },
-          positions: [],
-        },
-        { ...myPosition, contractId: contract.id },
-        price
-      )
-      return closed.state.pool.L + closed.state.pool.S
-    } catch {
-      // Corrupt or transiently inconsistent cached data must not break the
-      // render; the engine remains authoritative at submit.
-      return current
-    }
-  }, [
-    isFlip,
-    myPosition,
+  const grossPoolDepth = getPerpBackingPool(
     contract.poolLong,
-    contract.poolShort,
-    contract.id,
-    price,
-  ])
-  const feeNotionalBefore = isAdd && myPosition ? myPosition.size : 0
-  const feeDetails = perpSizeFeeDetails({
-    notionalBefore: feeNotionalBefore,
-    notionalAfter: feeNotionalBefore + notional,
-    poolDepth: feePoolDepth,
+    contract.poolShort
+  )
+  const feeGrossDepth =
+    isFlip && myPosition
+      ? Math.max(
+          grossPoolDepth -
+            getPositionValue({ ...myPosition, contractId: contract.id }, price),
+          0
+        )
+      : grossPoolDepth
+  const feeDetails = perpOpenFeeQuote({
+    grossPoolDepth: feeGrossDepth,
+    existingSize: isAdd && myPosition ? myPosition.size : 0,
+    existingCostBasis: isAdd && myPosition ? myPosition.costBasis : 0,
+    existingTakerFeeCostBasis:
+      isAdd && myPosition ? myPosition.takerFeeCostBasis : 0,
+    addedNotional: notional,
     baseBps: takerFeeBps,
     impact: takerFeeImpact,
   })
@@ -268,6 +256,13 @@ export const PerpBetPanel = (props: {
     }
     if (!user) {
       toast.error('Sign in to trade')
+      return
+    }
+    if (positions == null) {
+      // The fee (and add/flip detection) is previewed from the shared
+      // positions; before they load, an add would be previewed as a fresh
+      // open and the confirmed fee could be a fraction of the charged one.
+      toast.error('Still loading positions — try again in a moment')
       return
     }
     if (!margin || margin <= 0 || effectiveLeverage <= 0) {
@@ -328,9 +323,14 @@ export const PerpBetPanel = (props: {
         perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
         // Fee distribution telemetry: what rate people actually pay and how
         // big they trade relative to the pool, for tuning takerFeeImpact.
-        fee: openFee,
-        feeBps: feeDetails.effectiveBps,
-        poolShareAfter: feeDetails.poolShareAfter,
+        // ALWAYS the engine's charged values from the trade response, never
+        // the client preview — the preview can lag pools/positions, and this
+        // dataset calibrates the impact coefficient.
+        fee: res.fee,
+        feeBps:
+          res.feeBps ??
+          (notional > 0 && res.fee > 0 ? (res.fee / notional) * 10_000 : 0),
+        poolShareAfter: res.poolShareAfter ?? feeDetails.poolShareAfter,
       })
       // Reflect the trade everywhere on the page (position panel, pools,
       // funding, this panel's open direction) immediately — onTrade bumps
@@ -501,6 +501,9 @@ export const PerpBetPanel = (props: {
         disabled={
           submitting ||
           !user ||
+          // Positions must be loaded before the previewed fee (and add/flip
+          // detection) can be trusted — see the onSubmit gate.
+          positions == null ||
           !!amountError ||
           !margin ||
           margin <= 0 ||
@@ -774,34 +777,43 @@ const StatsGrid = (props: {
                 : undefined
             }
           />
-          {showFeeBreakdown && !isLargeShareFee && (
-            <Row className="text-ink-400 items-center gap-1 text-xs leading-tight">
-              <span>
-                {formatBps(feeEffectiveBps)} bps = {formatBps(feeBaseBps)} base
-                + {formatBps(feeSizeBps)} size (position is{' '}
-                {formatPoolShare(poolShareAfter)} of pool)
-              </span>
-              <SizeFeeWhyTooltip />
-            </Row>
-          )}
-          {isLargeShareFee && (
-            <div className="rounded-md bg-amber-100 px-3 py-2 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-              <Row className="items-center gap-1.5">
-                <span className="text-sm font-bold">
-                  Size fee active: {(feeEffectiveBps / 100).toFixed(2)}%
-                  {feeBaseBps > 0 &&
-                    ` — ${formatFeeMultiple(
-                      feeEffectiveBps / feeBaseBps
-                    )}× the base rate`}
+          {/* ONE breakdown string across both severities — only the styling
+              and the appended warning change with isLargeShareFee, so the
+              copy and number formats cannot fork across the threshold. */}
+          {(showFeeBreakdown || isLargeShareFee) && (
+            <div
+              className={clsx(
+                isLargeShareFee &&
+                  'rounded-md bg-amber-100 px-3 py-2 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+              )}
+            >
+              {isLargeShareFee && (
+                <Row className="items-center gap-1.5">
+                  <span className="text-sm font-bold">
+                    Size fee active: {formatBps(feeEffectiveBps)} bps
+                    {feeBaseBps > 0 &&
+                      ` — ${formatFeeMultiple(
+                        feeEffectiveBps / feeBaseBps
+                      )}× the base rate`}
+                  </span>
+                  <SizeFeeWhyTooltip />
+                </Row>
+              )}
+              <Row
+                className={clsx(
+                  'items-center gap-1 text-xs leading-tight',
+                  isLargeShareFee ? 'mt-0.5' : 'text-ink-400'
+                )}
+              >
+                <span>
+                  {formatBps(feeEffectiveBps)} bps = {formatBps(feeBaseBps)}{' '}
+                  base + {formatBps(feeSizeBps)} size (position is{' '}
+                  {formatPoolShare(poolShareAfter)} of pool).
+                  {isLargeShareFee &&
+                    ' Reduce size or leverage to pay less. Closing stays free.'}
                 </span>
-                <SizeFeeWhyTooltip />
+                {!isLargeShareFee && <SizeFeeWhyTooltip />}
               </Row>
-              <span className="mt-0.5 block text-xs leading-tight">
-                {formatBps(feeBaseBps)} bps base + {formatBps(feeSizeBps)} bps
-                size — this position would be {formatPoolShare(poolShareAfter)}{' '}
-                of the backing pool. Reduce size or leverage to pay less.
-                Closing stays free.
-              </span>
             </div>
           )}
         </Col>

@@ -974,7 +974,15 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
   const [saving, setSaving] = useState(false)
   const [justSaved, setJustSaved] = useState<number | null>(null)
   const stored = getPerpTakerFeeImpact(contract)
-  const current = justSaved != null && justSaved !== stored ? justSaved : stored
+  // justSaved only bridges the gap until the contract prop catches up, then
+  // retires — kept as `justSaved !== stored ? justSaved : stored`, a LATER
+  // change by another admin would resurrect the stale justSaved as the
+  // display AND `parsed === current` would refuse to resubmit the very value
+  // that needs restoring.
+  useEffect(() => {
+    if (justSaved != null && justSaved === stored) setJustSaved(null)
+  }, [justSaved, stored])
+  const current = justSaved ?? stored
   const parsed = Number(input)
   const valid =
     input !== '' &&
@@ -996,9 +1004,11 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
         res.takerFeeImpact > 0
           ? `Fee size impact is now ${
               res.takerFeeImpact
-            } — a pool-sized position pays ${
-              getPerpTakerFeeBps(contract) + res.takerFeeImpact / 3
-            } bps effective`
+            } — a pool-sized position pays ${// The response's base, not the possibly-stale prop's — the
+            // base may have just been edited in the sibling input.
+            (res.takerFeeBps + res.takerFeeImpact / 3).toFixed(
+              1
+            )} bps effective`
           : 'Fee size impact is off — the taker fee is flat at the base'
       )
     } catch (err) {

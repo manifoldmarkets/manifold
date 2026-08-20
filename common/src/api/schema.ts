@@ -1064,6 +1064,12 @@ export const API = (_apiTypeCheck = {
       // Open-side taker fee charged on this call, in mana. Closing is free;
       // a flip pays the fee on its newly opened leg only.
       fee: number
+      // Effective rate actually charged (fee / added notional × 10_000) and
+      // the position's resulting share of the pool depth it was priced
+      // against — the authoritative numbers for bots and analytics. Absent
+      // only on idempotent replays of trades stored before these existed.
+      feeBps?: number
+      poolShareAfter?: number
     },
     props: placePerpTradeSchema,
   },
