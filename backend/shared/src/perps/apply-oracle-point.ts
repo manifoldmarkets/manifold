@@ -15,18 +15,23 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
 /**
- * How far a contract's executable mark may fall behind the feed before a
- * failed apply is an incident rather than a skipped slot.
+ * Contracts we have already paged for in their current stale episode.
  *
- * Expressed as a fraction of the contract's own maxOraclePriceAgeMs so the
- * alert always lands BEFORE the market freezes at that threshold, whatever it
- * is set to. This is the signal nothing else provides: feed staleness reads
- * oracle_prices, which the publisher has already written by the time apply
- * runs, and the stuck-feed detector reads inFlightSince, which is clear
- * because the poll itself completed. Both stay green while a single contract
- * silently stops tracking the price it executes against.
+ * A failing apply pages exactly ONCE — when the mark first crosses
+ * maxOraclePriceAgeMs, the point at which assertFreshOracleForTrading freezes
+ * trading — and stays silent (WARN only) thereafter until an apply succeeds and
+ * clears the flag. So a stall that spans a minute of 2s ticks is one alert, not
+ * thirty, and "nearly stale" never pages at all: the market simply freezes and
+ * unfreezes itself, and the single alert tells an operator to check. Set
+ * maxOraclePriceAgeMs (per contract, via update-perp-config) to move the
+ * freeze/alert point — this is the only staleness signal nothing else provides,
+ * since feed staleness reads oracle_prices (already written by apply time) and
+ * the stuck-feed detector reads inFlightSince (clear once the poll completes).
+ *
+ * Module-level per scheduler process; a restart may re-arm and page once more,
+ * which is acceptable.
  */
-const APPLICATION_LAG_ALERT_FRACTION = 0.5
+const staleAlerted = new Set<string>()
 
 /**
  * Apply a newly published oracle point to every live market on its feed.
@@ -151,6 +156,14 @@ export const applyOraclePointToLivePerps = async (
       )
       if (!result) continue
 
+      // The apply landed: the mark is tracking the feed again. If we paged for
+      // a stall on this contract, note the recovery and re-arm the alert.
+      if (staleAlerted.delete(contract.id)) {
+        log.info(
+          `[oracle-feeds] ${contract.slug}: executable mark recovered and tracking ${feedId} again`
+        )
+      }
+
       // Push before notifying: notification delivery does its own DB work and
       // the whole point of this path is that open pages see the new price in
       // well under a tick. Carries only what the tick authoritatively settled
@@ -193,24 +206,34 @@ export const applyOraclePointToLivePerps = async (
         contract.oraclePriceTime == null
           ? Number.POSITIVE_INFINITY
           : Date.now() - contract.oraclePriceTime
-      const lagBudget =
-        contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION
+      // Frozen = the mark has aged past the point where
+      // assertFreshOracleForTrading stops accepting trades. That, not an
+      // earlier fraction of it, is the only "broken" state worth a page.
+      const frozen = markAge >= contract.maxOraclePriceAgeMs
+      // A caller that ASKED for the tick bounds may treat their own induced
+      // 55P03/57014/40001 as expected; an unbounded caller's timeout came from
+      // somewhere it did not choose and stays a real failure.
+      const expectedSkip = bounds != null && isOracleTickTimeout(err)
 
-      // A single bounded tick giving up its slot is the design working, and
-      // the next tick is already due with a better price — that should not
-      // page. But repeated failures walk the mark toward the freshness
-      // threshold with no other alarm attached to it, so escalate on the age
-      // itself rather than on the cause. Only a caller that ASKED for these
-      // bounds may treat them as expected: an unbounded caller's 57014 came
-      // from somewhere it did not choose, and stays an error.
-      if (bounds != null && isOracleTickTimeout(err) && markAge < lagBudget) {
+      if (expectedSkip && !frozen) {
+        // A bounded tick yielding its slot while the mark is still fresh is the
+        // design working — the next tick is already due with a better price.
+        // Never pages, however many ticks the stall spans.
         log.warn(message)
-      } else if (markAge >= lagBudget) {
-        log.error(
-          `${message} — executable mark is ${markAge}ms old, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; this market will stop trading if it keeps failing`
-        )
+      } else if (staleAlerted.has(contract.id)) {
+        // Already paged once for this episode. Keep a log trail at WARN, but do
+        // not page again until a successful apply clears the flag above.
+        log.warn(message)
       } else {
-        log.error(message)
+        // First real failure of this episode: page exactly once. Either the
+        // market just froze, or an unexpected (non-skip) error hit it while
+        // still fresh — both warrant a look.
+        staleAlerted.add(contract.id)
+        log.error(
+          frozen
+            ? `${message} — executable mark is ${markAge}ms old, past its ${contract.maxOraclePriceAgeMs}ms freshness budget; trading is frozen until an apply succeeds`
+            : message
+        )
       }
     }
   }
