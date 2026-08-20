@@ -45,17 +45,31 @@ const isValidTakerFeeApiBps = (bps: number) =>
  * contracts are schema-validated, but old rows bypass that schema, and a
  * corrupt fee must block trading rather than silently repricing it.
  * `undefined` is the valid pre-fee-contract case (reads as the default).
+ *
+ * `isApi` scopes the API-rate check to the channel that rate governs. A
+ * corrupt `takerFeeApiBps` must fail closed for API flow — falling back to
+ * the base would silently UNDER-charge exactly the flow the rate exists to
+ * price — but it must not halt web opens, which that field never touches.
+ * Without the scope, one bad JSON value in an API-only field takes the whole
+ * market dark for everyone.
  */
-export const assertPerpTakerFeeConfig = (config: {
-  takerFeeBps?: number
-  takerFeeApiBps?: number
-}) => {
+export const assertPerpTakerFeeConfig = (
+  config: {
+    takerFeeBps?: number
+    takerFeeApiBps?: number
+  },
+  isApi = false
+) => {
   const { takerFeeBps, takerFeeApiBps } = config
   if (takerFeeBps !== undefined && !isValidTakerFeeBps(takerFeeBps))
     throw new Error(
       `taker fee must be finite and in [0, ${PERP_TAKER_FEE_BPS_MAX}] bps`
     )
-  if (takerFeeApiBps !== undefined && !isValidTakerFeeApiBps(takerFeeApiBps))
+  if (
+    isApi &&
+    takerFeeApiBps !== undefined &&
+    !isValidTakerFeeApiBps(takerFeeApiBps)
+  )
     throw new Error(
       `API taker fee must be finite and in [0, ${PERP_TAKER_FEE_API_BPS_MAX}] bps`
     )

@@ -1165,6 +1165,10 @@ export const API = (_apiTypeCheck = {
       // Configured API-channel base rate, or null when API trades pay the
       // same base as the web. The engine applies max(takerFeeBps, this).
       takerFeeApiBps: number | null
+      // What an API-key open is actually charged after that max() — equal to
+      // takerFeeBps whenever the configured API rate sits at or below the
+      // base, which makes such a rate a no-op rather than a reduction.
+      effectiveTakerFeeApiBps: number
       maxOraclePriceAgeMs: number
     },
     props: z

@@ -129,9 +129,35 @@ cash-backing invariant above is preserved. The position tracks its
 cumulative opening fees in `takerFeeCostBasis` (kept separate from margin so
 leverage/liquidation math is untouched), and every user-facing PnL number —
 the position card, close receipts, portfolio metrics, period metrics —
-subtracts it: a fresh position starts at PnL = −fee. Admins tune the rate
-live per market via `update-perp-config` (0 disables); contracts created
+subtracts it: a fresh position starts at PnL = −fee. Contracts created
 before the field default to 10 bps at trade time.
+
+**Two channels, two rates.** `takerFeeBps` is the WEB base. Opens
+authenticated with an API key instead pay `max(takerFeeBps, takerFeeApiBps)`
+— see `getPerpEffectiveTakerFeeBps`, which the engine calls with the
+auth-derived `isApi` flag (`auth.creds.kind === 'key'`, never
+client-supplied). Unset or 0 means API flow pays the web base. The `max()`
+is deliberate: a misconfigured API rate below the base can never hand bots a
+discount, but it also means a submitted value at or below the base is a
+silent no-op — `update-perp-config` echoes `effectiveTakerFeeApiBps` so an
+operator can see what will actually be charged. Both rates are tuned live
+per market via `update-perp-config`; setting `takerFeeBps: 0` disables the
+fee for WEB only, and does NOT disable it for API flow while
+`takerFeeApiBps` is set. Closing is free on both channels.
+
+Why per-channel: the 2026-08-19/20 BTC drain was API-key flow (5 API accounts
+were 85% of opening notional over that week against 135 web traders), so a
+flat raise would tax the honest web majority for the bots' edge. A bot can
+still dodge by scripting a session token — this is a raised bar and a clean
+ToS line, not a wall; the structural fix is next-tick execution.
+
+The two rates carry different domains — `PERP_TAKER_FEE_BPS_MAX` = 100,
+`PERP_TAKER_FEE_API_BPS_MAX` = 300 — and neither is validated against
+`maxLeverage`. Because the fee is charged on NOTIONAL, `feeBps × leverage ≥
+10_000` would cost a trader more than the margin they posted, so the engine
+rejects any open whose fee meets or exceeds its margin (`openFee >= mana`).
+That floor is what keeps a fat-fingered rate survivable rather than
+catastrophic; honest settings never approach it.
 
 ## Funding imbalance
 

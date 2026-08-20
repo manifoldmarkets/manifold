@@ -597,7 +597,7 @@ export const openOrAddPosition = async (
     // pools at a measured edge of ~1.5 bps of notional per round trip; every
     // snipe needs an entry, so an open-only fee taxes each round trip once).
     // The fee mana enters escrow with the margin, so ledger = L + S holds.
-    assertPerpTakerFeeConfig(contract)
+    assertPerpTakerFeeConfig(contract, isApi)
     // Channel-selected base: API-key opens pay max(takerFeeBps,
     // takerFeeApiBps) when the API rate is set — the 2026-08-19/20 BTC drain
     // was 100% API-key flow (see getPerpEffectiveTakerFeeBps). The event's
@@ -655,6 +655,25 @@ export const openOrAddPosition = async (
     // The user row is locked FOR UPDATE above, so the balance cannot move
     // between here and the debit.
     const openFee = calcPerpTakerFee(mana * leverage, takerFeeBps)
+    // Hard consent floor: a fee that meets or exceeds the margin means the
+    // position opens at a guaranteed total loss — always a misconfiguration
+    // or an attack, never intent. Reject instead of charging, so no
+    // combination of leverage and configured rate can cost a trader more
+    // than the margin they posted. The fee is charged on NOTIONAL, so this
+    // trips exactly when feeBps × leverage >= 10_000. Honest settings never
+    // reach it (the intended 30 bps API rate would need leverage 334), but
+    // the rate domains are validated independently of maxLeverage, so a
+    // fat-fingered API rate at the top of its [0, 300] range crosses it
+    // above 33x — this is what keeps that misconfiguration survivable.
+    if (openFee >= mana)
+      throw new APIError(
+        400,
+        `This trade's fee (M$${openFee.toFixed(
+          2
+        )}) would meet or exceed its margin (M$${mana.toFixed(
+          2
+        )}) — the position would open at a total loss. Reduce leverage.`
+      )
     const totalDebit = mana + openFee
     const spendableBalance = trader.balance + closePayout
     if (spendableBalance < totalDebit)

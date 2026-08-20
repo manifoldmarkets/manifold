@@ -279,6 +279,7 @@ describe('update-perp-config props', () => {
       'maxFundingRate',
       'maxLeverage',
       'maxOraclePriceAgeMs',
+      'takerFeeApiBps',
       'takerFeeBps',
     ])
   })
@@ -288,6 +289,7 @@ describe('update-perp-config props', () => {
       maxLeverage: 10,
       maxFundingRate: 0.02,
       takerFeeBps: 10,
+      takerFeeApiBps: 30,
       maxOraclePriceAgeMs: 10_000,
     }
     for (const field of optionalFields) {

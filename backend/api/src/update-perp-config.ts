@@ -1,4 +1,7 @@
-import { getPerpTakerFeeBps } from 'common/perps/fees'
+import {
+  getPerpEffectiveTakerFeeBps,
+  getPerpTakerFeeBps,
+} from 'common/perps/fees'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { removeUndefinedProps } from 'common/util/object'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
@@ -74,6 +77,19 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       )
   }
 
+  // What an API-key open will ACTUALLY be charged once max(base, api) is
+  // applied. Echoing the submitted value alone is misleading: a rate at or
+  // below the base is a silent no-op, and with no GET for perp config and no
+  // admin-UI row, this response is the only feedback the operator gets.
+  const nextTakerFeeBps = takerFeeBps ?? getPerpTakerFeeBps(contract)
+  const effectiveTakerFeeApiBps = getPerpEffectiveTakerFeeBps(
+    {
+      takerFeeBps: nextTakerFeeBps,
+      takerFeeApiBps: takerFeeApiBps ?? contract.takerFeeApiBps,
+    },
+    true
+  )
+
   const lastUpdatedTime = Date.now()
   const patch = removeUndefinedProps({
     maxLeverage,
@@ -102,7 +118,11 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     log(
       `admin ${auth.uid} set takerFeeApiBps on ${contract.slug}: ${
         contract.takerFeeApiBps ?? 'unset'
-      } -> ${takerFeeApiBps}`
+      } -> ${takerFeeApiBps} (API opens will pay ${effectiveTakerFeeApiBps} bps${
+        effectiveTakerFeeApiBps !== takerFeeApiBps
+          ? ` — the ${nextTakerFeeBps} bps base is higher, so this value has no effect`
+          : ''
+      })`
     )
   if (maxOraclePriceAgeMs !== undefined)
     log(
@@ -124,8 +144,9 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       success: true as const,
       maxLeverage: maxLeverage ?? contract.maxLeverage,
       maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
-      takerFeeBps: takerFeeBps ?? getPerpTakerFeeBps(contract),
+      takerFeeBps: nextTakerFeeBps,
       takerFeeApiBps: takerFeeApiBps ?? contract.takerFeeApiBps ?? null,
+      effectiveTakerFeeApiBps,
       maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
     },
     continue: async () => {
