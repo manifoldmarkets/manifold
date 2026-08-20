@@ -44,7 +44,7 @@ import {
   assertPerpTakerFeeConfig,
   calcPerpTakerFee,
   creditPerpPoolFee,
-  getPerpTakerFeeBps,
+  getPerpEffectiveTakerFeeBps,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
@@ -598,7 +598,12 @@ export const openOrAddPosition = async (
     // snipe needs an entry, so an open-only fee taxes each round trip once).
     // The fee mana enters escrow with the margin, so ledger = L + S holds.
     assertPerpTakerFeeConfig(contract)
-    const takerFeeBps = getPerpTakerFeeBps(contract)
+    // Channel-selected base: API-key opens pay max(takerFeeBps,
+    // takerFeeApiBps) when the API rate is set — the 2026-08-19/20 BTC drain
+    // was 100% API-key flow (see getPerpEffectiveTakerFeeBps). The event's
+    // feeBps stamp below records the effective base actually charged, and
+    // the isApi flag on the same event says which channel selected it.
+    const takerFeeBps = getPerpEffectiveTakerFeeBps(contract, isApi)
 
     // Auto-close opposite side first, then open on top of the resulting state.
     let workingState: PerpState = state

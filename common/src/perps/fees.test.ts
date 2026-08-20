@@ -3,7 +3,9 @@ import {
   accruePerpPositionTakerFee,
   calcPerpTakerFee,
   creditPerpPoolFee,
+  getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
+  PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_BPS_DEFAULT,
   PERP_TAKER_FEE_BPS_MAX,
 } from './fees'
@@ -37,6 +39,57 @@ describe('getPerpTakerFeeBps', () => {
   })
 })
 
+describe('getPerpEffectiveTakerFeeBps', () => {
+  it('web trades always pay the base, ignoring any API rate', () => {
+    expect(getPerpEffectiveTakerFeeBps({ takerFeeBps: 10 }, false)).toBe(10)
+    expect(
+      getPerpEffectiveTakerFeeBps(
+        { takerFeeBps: 10, takerFeeApiBps: 200 },
+        false
+      )
+    ).toBe(10)
+  })
+
+  it('API trades pay the API rate when it is set and higher', () => {
+    expect(
+      getPerpEffectiveTakerFeeBps({ takerFeeBps: 10, takerFeeApiBps: 40 }, true)
+    ).toBe(40)
+    expect(
+      getPerpEffectiveTakerFeeBps(
+        { takerFeeBps: 10, takerFeeApiBps: PERP_TAKER_FEE_API_BPS_MAX },
+        true
+      )
+    ).toBe(PERP_TAKER_FEE_API_BPS_MAX)
+  })
+
+  it('an API rate below the base can never discount API flow', () => {
+    expect(
+      getPerpEffectiveTakerFeeBps({ takerFeeBps: 50, takerFeeApiBps: 5 }, true)
+    ).toBe(50)
+    expect(
+      getPerpEffectiveTakerFeeBps({ takerFeeBps: 50, takerFeeApiBps: 0 }, true)
+    ).toBe(50)
+  })
+
+  it('missing or corrupt API rate reads as "no separate rate" (display path is total)', () => {
+    expect(getPerpEffectiveTakerFeeBps({ takerFeeBps: 10 }, true)).toBe(10)
+    for (const bad of [NaN, Infinity, -1, PERP_TAKER_FEE_API_BPS_MAX + 1])
+      expect(
+        getPerpEffectiveTakerFeeBps(
+          { takerFeeBps: 10, takerFeeApiBps: bad },
+          true
+        )
+      ).toBe(10)
+  })
+
+  it('defaults the base for pre-fee contracts on both channels', () => {
+    expect(getPerpEffectiveTakerFeeBps({}, false)).toBe(
+      PERP_TAKER_FEE_BPS_DEFAULT
+    )
+    expect(getPerpEffectiveTakerFeeBps({ takerFeeApiBps: 40 }, true)).toBe(40)
+  })
+})
+
 describe('assertPerpTakerFeeConfig', () => {
   it('accepts undefined and the full valid range', () => {
     expect(() => assertPerpTakerFeeConfig({})).not.toThrow()
@@ -44,11 +97,19 @@ describe('assertPerpTakerFeeConfig', () => {
     expect(() =>
       assertPerpTakerFeeConfig({ takerFeeBps: PERP_TAKER_FEE_BPS_MAX })
     ).not.toThrow()
+    expect(() =>
+      assertPerpTakerFeeConfig({ takerFeeApiBps: 0 })
+    ).not.toThrow()
+    expect(() =>
+      assertPerpTakerFeeConfig({ takerFeeApiBps: PERP_TAKER_FEE_API_BPS_MAX })
+    ).not.toThrow()
   })
 
   it('fails closed on corrupt persisted values', () => {
     for (const bad of [NaN, Infinity, -1, PERP_TAKER_FEE_BPS_MAX + 0.001])
       expect(() => assertPerpTakerFeeConfig({ takerFeeBps: bad })).toThrow()
+    for (const bad of [NaN, Infinity, -1, PERP_TAKER_FEE_API_BPS_MAX + 0.001])
+      expect(() => assertPerpTakerFeeConfig({ takerFeeApiBps: bad })).toThrow()
   })
 })
 

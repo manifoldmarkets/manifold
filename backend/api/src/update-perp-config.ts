@@ -25,6 +25,10 @@ import { APIError, APIHandler } from './helpers/endpoint'
 //   round-trip cost), applied to the NEXT open or add. 0 disables. The
 //   schema keeps it inside assertPerpTakerFeeConfig's [0, 100] domain;
 //   outside it the engine fail-closes every trade.
+// - takerFeeApiBps: base fee for API-KEY opens, applied as
+//   max(takerFeeBps, takerFeeApiBps) from the NEXT open or add. Unset or 0
+//   = API pays the web base. Its own wider [0, 300] domain — it prices
+//   hostile bot flow (the 2026-08-19/20 BTC drain was all API-key trades).
 // - maxOraclePriceAgeMs: the age at which the engine stops accepting trades
 //   AND closes against the cached mark. Lowering it is the direct lever on
 //   latency arbitrage — every stale-mark window a bot can trade is bounded by
@@ -43,6 +47,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    takerFeeApiBps,
     maxOraclePriceAgeMs,
   } = body
 
@@ -74,6 +79,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    takerFeeApiBps,
     maxOraclePriceAgeMs,
     lastUpdatedTime,
   })
@@ -92,6 +98,12 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
         contract.slug
       }: ${getPerpTakerFeeBps(contract)} -> ${takerFeeBps}`
     )
+  if (takerFeeApiBps !== undefined)
+    log(
+      `admin ${auth.uid} set takerFeeApiBps on ${contract.slug}: ${
+        contract.takerFeeApiBps ?? 'unset'
+      } -> ${takerFeeApiBps}`
+    )
   if (maxOraclePriceAgeMs !== undefined)
     log(
       `admin ${auth.uid} set maxOraclePriceAgeMs on ${contract.slug}: ${contract.maxOraclePriceAgeMs} -> ${maxOraclePriceAgeMs}`
@@ -103,6 +115,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxLeverage,
       maxFundingRate,
       takerFeeBps,
+      takerFeeApiBps,
       maxOraclePriceAgeMs,
     })
   )
@@ -112,6 +125,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxLeverage: maxLeverage ?? contract.maxLeverage,
       maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
       takerFeeBps: takerFeeBps ?? getPerpTakerFeeBps(contract),
+      takerFeeApiBps: takerFeeApiBps ?? contract.takerFeeApiBps ?? null,
       maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
     },
     continue: async () => {
