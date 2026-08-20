@@ -281,6 +281,12 @@ export const PerpBetPanel = (props: {
       )
       return
     }
+    if (openFee >= marginAmount) {
+      // The engine hard-rejects this too — the position would open at a
+      // guaranteed total loss.
+      toast.error('Fee would exceed your margin — reduce leverage or size')
+      return
+    }
     setSubmitting(true)
     try {
       const fingerprint = [
@@ -508,6 +514,8 @@ export const PerpBetPanel = (props: {
           !margin ||
           margin <= 0 ||
           exceedsCapacity ||
+          // Engine hard-rejects a fee ≥ margin (guaranteed total loss).
+          (marginAmount > 0 && openFee >= marginAmount) ||
           oracleTradingPaused
         }
         size="lg"
@@ -625,14 +633,16 @@ export const formatFundingMana = (absAmount: number) => {
   return `${m}${body}`
 }
 
-// One decimal keeps a small size term visible (10.3 bps at 10% of pool)
-// without implying precision the whale range doesn't need.
-const formatBps = (bps: number) =>
-  Number.isFinite(bps)
-    ? bps >= 100
-      ? Math.round(bps).toString()
-      : bps.toFixed(1)
-    : '0.0'
+// Fees display as PERCENTAGES — traders don't think in bps. Two decimals
+// below 1% keep the base (0.10%) and a small size term legible; larger fees
+// don't need the precision.
+const formatFeePct = (bps: number) => {
+  if (!Number.isFinite(bps) || bps <= 0) return '0%'
+  const pct = bps / 100
+  return `${
+    pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.round(pct)
+  }%`
+}
 
 const formatPoolShare = (share: number) => {
   if (!Number.isFinite(share) || share <= 0) return '0%'
@@ -640,20 +650,12 @@ const formatPoolShare = (share: number) => {
   return `${pct >= 10 ? Math.round(pct) : Number(pct.toFixed(1))}%`
 }
 
-// The fee row turns amber once the position would be half the backing pool —
+// The fee line turns amber once the position would be half the backing pool —
 // well before the convex part of the curve really bites (≥ 100% of pool).
 const LARGE_POOL_SHARE_WARNING = 0.5
 
-// "7.2×" below 10, "36×" above — the leading digits carry the message.
-const formatFeeMultiple = (multiple: number) =>
-  Number.isFinite(multiple)
-    ? multiple >= 10
-      ? Math.round(multiple).toString()
-      : multiple.toFixed(1)
-    : '1'
-
 const SizeFeeWhyTooltip = () => (
-  <InfoTooltip text="Fees scale with your position's share of this market's backing pool — like price impact on an order book, but shown exactly before you trade. Small positions pay just the base rate, and closing is always free.">
+  <InfoTooltip text="Fees scale with your position's share of this market's backing pool — like price impact on an order book, but shown exactly before you trade. Small positions pay just the base rate. Reduce size or leverage to pay less; closing is always free.">
     <span className="text-xs font-medium">why?</span>
   </InfoTooltip>
 )
@@ -711,10 +713,14 @@ const StatsGrid = (props: {
   const [scenariosOpen, setScenariosOpen] = useState(false)
 
   // Show the base/size breakdown only once the size term is visible at
-  // display precision — small trades (< ~10% of pool) read as just the base.
-  const showFeeBreakdown = feeSizeBps >= 0.05
+  // display precision (0.01% at two decimals) — small trades read as just
+  // the base.
+  const showFeeBreakdown = feeSizeBps >= 1
   const isLargeShareFee =
     feeSizeBps > 0 && poolShareAfter >= LARGE_POOL_SHARE_WARNING
+  // Mirrors the engine's hard reject: a fee that meets or exceeds the margin
+  // would open the position at a guaranteed total loss.
+  const feeExceedsMargin = margin > 0 && fee >= margin
 
   const canShowScenarios =
     Number.isFinite(entryPrice) && margin > 0 && leverage > 0
@@ -765,56 +771,42 @@ const StatsGrid = (props: {
         }
       />
       {(feeBaseBps > 0 || feeSizeBps > 0) && (
-        <Col className="gap-1">
+        <Col className="gap-0.5">
           <StatRow
             label="Fee (free to close)"
-            value={`${formatMoneyWithDecimals(fee)} · ${formatBps(
+            value={`${formatMoneyWithDecimals(fee)} (${formatFeePct(
               notional > 0 ? feeEffectiveBps : feeBaseBps
-            )} bps`}
+            )})`}
             valueClass={
               isLargeShareFee
                 ? 'font-semibold text-amber-600 dark:text-amber-400'
                 : undefined
             }
           />
-          {/* ONE breakdown string across both severities — only the styling
-              and the appended warning change with isLargeShareFee, so the
-              copy and number formats cannot fork across the threshold. */}
+          {/* ONE compact breakdown line for both severities — only the color
+              changes with isLargeShareFee, so copy and formats cannot fork
+              across the threshold. The full explanation lives in the "why?"
+              hover to keep the panel small. */}
           {(showFeeBreakdown || isLargeShareFee) && (
-            <div
+            <Row
               className={clsx(
-                isLargeShareFee &&
-                  'rounded-md bg-amber-100 px-3 py-2 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                'items-center gap-1 text-xs leading-tight',
+                isLargeShareFee
+                  ? 'font-medium text-amber-600 dark:text-amber-400'
+                  : 'text-ink-400'
               )}
             >
-              {isLargeShareFee && (
-                <Row className="items-center gap-1.5">
-                  <span className="text-sm font-bold">
-                    Size fee active: {formatBps(feeEffectiveBps)} bps
-                    {feeBaseBps > 0 &&
-                      ` — ${formatFeeMultiple(
-                        feeEffectiveBps / feeBaseBps
-                      )}× the base rate`}
-                  </span>
-                  <SizeFeeWhyTooltip />
-                </Row>
-              )}
-              <Row
-                className={clsx(
-                  'items-center gap-1 text-xs leading-tight',
-                  isLargeShareFee ? 'mt-0.5' : 'text-ink-400'
-                )}
-              >
-                <span>
-                  {formatBps(feeEffectiveBps)} bps = {formatBps(feeBaseBps)}{' '}
-                  base + {formatBps(feeSizeBps)} size (position is{' '}
-                  {formatPoolShare(poolShareAfter)} of pool).
-                  {isLargeShareFee &&
-                    ' Reduce size or leverage to pay less. Closing stays free.'}
-                </span>
-                {!isLargeShareFee && <SizeFeeWhyTooltip />}
-              </Row>
-            </div>
+              <span>
+                {formatFeePct(feeBaseBps)} base + {formatFeePct(feeSizeBps)}{' '}
+                size — position is {formatPoolShare(poolShareAfter)} of pool
+              </span>
+              <SizeFeeWhyTooltip />
+            </Row>
+          )}
+          {feeExceedsMargin && (
+            <span className="text-scarlet-600 text-xs font-medium leading-tight">
+              Fee would exceed your margin — reduce leverage or size.
+            </span>
           )}
         </Col>
       )}

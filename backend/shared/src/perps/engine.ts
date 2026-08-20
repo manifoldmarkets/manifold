@@ -704,6 +704,21 @@ export const openOrAddPosition = async (
       impact: takerFeeImpact,
     })
     const openFee = openFeeDetails.fee
+    // Hard consent floor: a fee that meets or exceeds the margin means the
+    // position opens at a guaranteed total loss — always a mistake or an
+    // attack, never intent. Reject instead of charging, so no combination of
+    // leverage and pool share can cost a trader more than their margin at
+    // the instant they open. (Reachable only at extreme leverage × extreme
+    // pool share; honest configurations never hit it.)
+    if (openFee >= mana)
+      throw new APIError(
+        400,
+        `This trade's fee (M$${openFee.toFixed(
+          2
+        )}) would meet or exceed its margin (M$${mana.toFixed(
+          2
+        )}) — the position would open at a total loss. Reduce leverage, or reduce size relative to the pool.`
+      )
     const totalDebit = mana + openFee
     const spendableBalance = trader.balance + closePayout
     if (spendableBalance < totalDebit)
