@@ -974,16 +974,19 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
   const [saving, setSaving] = useState(false)
   // justSaved bridges the gap until the contract prop reflects the save. It
   // remembers the stored value AT save time (the baseline) and speaks only
-  // while the prop still shows that stale baseline — ANY movement of the
-  // prop (to the saved value, or to a later change by another admin) retires
-  // it. The naive `justSaved !== stored ? justSaved : stored` form would
-  // resurrect a stale save over another admin's later value and then refuse
-  // to resubmit it via the `parsed === current` guard.
+  // while the prop still shows that stale baseline; the effect RETIRES it
+  // permanently on the first prop movement, because display logic alone
+  // would resurrect the bridge if a later admin change happened to restore
+  // the baseline value (save 20 over 0, prop shows 20, someone restores 0 —
+  // without retirement the stale 20 would reappear).
   const [justSaved, setJustSaved] = useState<{
     saved: number
     baseline: number
   } | null>(null)
   const stored = getPerpTakerFeeImpact(contract)
+  useEffect(() => {
+    if (justSaved != null && stored !== justSaved.baseline) setJustSaved(null)
+  }, [justSaved, stored])
   const current =
     justSaved != null && stored === justSaved.baseline
       ? justSaved.saved

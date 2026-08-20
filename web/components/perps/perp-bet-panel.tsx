@@ -214,11 +214,12 @@ export const PerpBetPanel = (props: {
   })
   const openFee = feeDetails.fee
   // Price protection sent with the trade: the engine rejects rather than
-  // charges if the authoritative fee exceeds this. 20% + M$1 of headroom
-  // absorbs ordinary pool movement between preview and execution while
-  // still blocking the big divergences (a whale close collapsing the pool,
-  // an admin raising the impact live).
-  const maxFee = Math.ceil((openFee * 1.2 + 1) * 100) / 100
+  // charges if the authoritative fee exceeds this. The bound is the
+  // DISPLAYED fee plus 1% and a cent of rounding tolerance — pools are at
+  // most a couple of seconds stale here, so honest drift stays inside it,
+  // and the user is never charged meaningfully more than the number they
+  // confirmed. A zero-fee preview authorizes exactly zero.
+  const maxFee = openFee > 0 ? Math.ceil(openFee * 1.01 * 100) / 100 + 0.01 : 0
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -793,7 +794,10 @@ const StatsGrid = (props: {
             : undefined
         }
       />
-      {(feeBaseBps > 0 || feeSizeBps > 0) && (
+      {/* feeDepthExhausted must force the block open: with base = 0 both
+          fee components read zero exactly when the explanation for the
+          disabled submit lives here. */}
+      {(feeBaseBps > 0 || feeSizeBps > 0 || feeDepthExhausted) && (
         <Col className="gap-0.5">
           <StatRow
             label="Fee (free to close)"

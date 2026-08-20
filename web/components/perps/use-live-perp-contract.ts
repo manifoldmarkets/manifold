@@ -47,17 +47,20 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   // the socket is alive. A ref so arriving ticks don't re-render the tree.
   const lastPushAt = useRef(0)
 
-  // Wall-clock of the last push that was actually APPLIED (strictly newer
-  // than the retained quote). Compared against lastMetaAt to decide which
-  // source's POOLS are fresher (see the merge below) — receipt order, not
-  // tick time, because pools move without advancing oraclePriceTime. Kept
-  // separate from lastPushAt so a reconnecting socket's replayed OLD quotes
-  // cannot pin the retained quote's stale pools over a newer meta body.
-  const lastAppliedPushAt = useRef(0)
+  // Wall-clock of the last quote that was actually APPLIED (strictly newer
+  // than the retained quote) — pushes AND fallback polls both count, since a
+  // no-store fallback body carries pools just as fresh as a push. Compared
+  // against lastMetaAt to decide which source's POOLS are fresher (see the
+  // merge below) — receipt order, not tick time, because pools move without
+  // advancing oraclePriceTime. Kept separate from lastPushAt so a
+  // reconnecting socket's replayed OLD quotes cannot pin the retained
+  // quote's stale pools over a newer meta body. (The durable fix is a
+  // server-stamped pool revision shared by push, quote, and meta responses;
+  // until one exists, applied-receipt order is the best available proxy.)
+  const lastAppliedQuoteAt = useRef(0)
 
-  // oraclePriceTime of the retained quote, mirrored into a ref so the
-  // subscription callback (captured once at subscribe time) can tell whether
-  // an incoming push will apply without reading React state.
+  // oraclePriceTime of the retained quote, mirrored into a ref so applyQuote
+  // (captured once, dependency-free) can detect application synchronously.
   const latestQuoteTime = useRef<number | undefined>(undefined)
 
   // Wall-clock of the last applied meta poll body — the other half of the
@@ -77,6 +80,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const applyQuote = useCallback((incoming: PerpQuote) => {
     if (isNewerPerpQuote(latestQuoteTime.current, incoming.oraclePriceTime)) {
       latestQuoteTime.current = incoming.oraclePriceTime
+      lastAppliedQuoteAt.current = Date.now()
     }
     setQuote((previous) =>
       isNewerPerpQuote(previous?.oraclePriceTime, incoming.oraclePriceTime)
@@ -92,9 +96,6 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
       const incoming = (msg.data as { quote?: PerpQuote }).quote
       if (!incoming || incoming.contractId !== ssrContract.id) return
       lastPushAt.current = Date.now()
-      if (isNewerPerpQuote(latestQuoteTime.current, incoming.oraclePriceTime)) {
-        lastAppliedPushAt.current = Date.now()
-      }
       applyQuote(incoming)
     },
   })
@@ -259,11 +260,39 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const quoteIsFresher =
     quote != null &&
     isNewerPerpQuote(ssrContract.oraclePriceTime, quote.oraclePriceTime)
-  const pushedPoolsAreFresher =
-    quote != null && lastAppliedPushAt.current > lastMetaAt.current
+  // Pool overlay requires BOTH: the quote strictly newer than the (live)
+  // ssrContract's tick — a reconnect replay older than the page's own state
+  // must never overwrite its pools — and the applied-quote receipt newer
+  // than the last meta body.
+  const quotePoolsAreFresher =
+    quote != null &&
+    quoteIsFresher &&
+    lastAppliedQuoteAt.current > lastMetaAt.current
+  // The ssrContract prop is LIVE (the contract page subscribes to contract
+  // updates), so an admin config broadcast (update-perp-config bumps
+  // lastUpdatedTime) reaches it within seconds — while the meta body can be
+  // up to ~30s stale. When the prop is newer by lastUpdatedTime, its
+  // live-tunable config must not be masked by meta's older copy: the engine
+  // is already charging with the new values.
+  const propConfigIsNewer =
+    meta?.lastUpdatedTime != null &&
+    ssrContract.lastUpdatedTime != null &&
+    ssrContract.lastUpdatedTime > meta.lastUpdatedTime
   const contract = {
     ...ssrContract,
     ...meta,
+    ...(propConfigIsNewer
+      ? {
+          maxLeverage: ssrContract.maxLeverage,
+          lastUpdatedTime: ssrContract.lastUpdatedTime,
+          ...(ssrContract.takerFeeBps != null
+            ? { takerFeeBps: ssrContract.takerFeeBps }
+            : {}),
+          ...(ssrContract.takerFeeImpact != null
+            ? { takerFeeImpact: ssrContract.takerFeeImpact }
+            : {}),
+        }
+      : {}),
     ...(quoteIsFresher && quote != null
       ? {
           oraclePrice: quote.oraclePrice,
@@ -271,7 +300,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
           oracleSourceTime: quote.oracleSourceTime,
         }
       : {}),
-    ...(pushedPoolsAreFresher && quote != null
+    ...(quotePoolsAreFresher && quote != null
       ? {
           poolLong: quote.poolLong,
           poolShort: quote.poolShort,

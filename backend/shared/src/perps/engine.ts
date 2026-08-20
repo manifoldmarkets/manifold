@@ -629,6 +629,18 @@ export const openOrAddPosition = async (
     const takerFeeBps = getPerpTakerFeeBps(contract)
     const takerFeeImpact = getPerpTakerFeeImpact(contract)
 
+    // On a market with a size-dependent fee, consent is MANDATORY: the fee
+    // varies with live pool state, so a caller who never states a bound can
+    // be charged up to their whole margin by state they never saw (a cached
+    // client, a bot coded against the flat fee). Mirrors the close path's
+    // required expectedOpenedTime. Flat-fee markets stay compatible with
+    // older callers — the fee there is knowable from config alone.
+    if (takerFeeImpact > 0 && maxFee === undefined)
+      throw new APIError(
+        400,
+        'This market charges a size-dependent fee: pass maxFee (in mana) — the most you accept paying — computed from takerFeeBps, takerFeeImpact, and the pools on the market object.'
+      )
+
     // Auto-close opposite side first, then open on top of the resulting state.
     let workingState: PerpState = state
     let closeEvent: PerpEvent | undefined

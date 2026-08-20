@@ -682,8 +682,10 @@ export const placePerpTradeSchema = z.object({
   // Price protection: reject rather than charge when the fee computed at
   // execution exceeds this (mana). The fee is state-dependent — pools move
   // and config is live-tunable — so the previewed fee is not a promise;
-  // this bound is how a caller makes their consent explicit. Optional for
-  // compatibility; the web panel always sends it.
+  // this bound is how a caller makes their consent explicit. Optional here
+  // for flat-fee markets, but the ENGINE requires it whenever the market's
+  // takerFeeImpact is nonzero (mirroring the close path's mandatory
+  // expectedOpenedTime); the web panel always sends it.
   maxFee: z.number().min(0).optional(),
 })
 
