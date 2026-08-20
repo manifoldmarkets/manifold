@@ -11,21 +11,32 @@ import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
   getPerpOpenInterestCapacity,
+  getPositionValue,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
   mergedEntryPrice,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
-import { calcPerpTakerFee, getPerpTakerFeeBps } from 'common/perps/fees'
+import {
+  calculatePerpOpenCashFlow,
+  getPerpTakerFeeBps,
+} from 'common/perps/fees'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { fundingPerPeriod } from 'common/perps/pnl'
+import {
+  fundingPerPeriod,
+  getPerpPriceForUserFacingPnl,
+} from 'common/perps/pnl'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  formatMoneyWithDecimals,
+} from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -177,7 +188,28 @@ export const PerpBetPanel = (props: {
   // round-trip cost, shown up front. Mirrors the engine exactly (fee on
   // deltaSize = margin × leverage); a flip pays it on the new leg only.
   const takerFeeBps = getPerpTakerFeeBps(contract)
-  const openFee = calcPerpTakerFee(notional, takerFeeBps)
+  const flipPayout =
+    isFlip && myPosition
+      ? getPositionValue({ ...myPosition, contractId: contract.id }, price)
+      : 0
+  const cashFlow = calculatePerpOpenCashFlow({
+    balance: user?.balance ?? 0,
+    margin: marginAmount,
+    leverage: effectiveLeverage,
+    feeBps: takerFeeBps,
+    closePayout: flipPayout,
+  })
+  const openFee = cashFlow?.openFee ?? 0
+  const hasTradeAmount = marginAmount > 0 && effectiveLeverage > 0
+  const affordabilityError =
+    user && hasTradeAmount
+      ? !cashFlow
+        ? 'Unable to calculate trade cost'
+        : !cashFlow.isAffordable
+        ? 'Insufficient balance'
+        : undefined
+      : undefined
+  const displayedAmountError = amountError ?? affordabilityError
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -229,6 +261,18 @@ export const PerpBetPanel = (props: {
     }
     if (effectiveLeverage > maxLeverage) {
       toast.error(`Max leverage is ${maxLeverage}×`)
+      return
+    }
+    if (!cashFlow) {
+      toast.error('Unable to calculate trade cost')
+      return
+    }
+    if (!cashFlow.isAffordable) {
+      toast.error(
+        `Insufficient balance: need ${formatMoneyWithDecimals(
+          cashFlow.totalDebit
+        )}, have ${formatMoneyWithDecimals(cashFlow.spendableBalance)}`
+      )
       return
     }
     if (exceedsCapacity && capacity) {
@@ -372,8 +416,9 @@ export const PerpBetPanel = (props: {
           parentClassName="max-w-full"
           amount={margin}
           onChange={setMargin}
-          error={amountError}
+          error={displayedAmountError}
           setError={setAmountError}
+          disregardUserBalance
           disabled={submitting}
           showSlider
           showSliderMarks
@@ -403,7 +448,6 @@ export const PerpBetPanel = (props: {
         direction={direction}
         notional={notional}
         margin={marginAmount}
-        leverage={preview.leverage}
         entryPrice={preview.entryPrice}
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
@@ -446,7 +490,7 @@ export const PerpBetPanel = (props: {
         disabled={
           submitting ||
           !user ||
-          !!amountError ||
+          !!displayedAmountError ||
           !margin ||
           margin <= 0 ||
           exceedsCapacity ||
@@ -552,7 +596,10 @@ const LeverageSlider = (props: {
   )
 }
 
-// Profit tiers shown in the scenario ladder: each is a +r return on margin.
+// Profit tiers shown in the scenario ladder: each is a +r net return on the
+// margin posted for this new position. Add previews are intentionally hidden:
+// defining return on only the new tranche vs the merged position is a separate
+// product choice, and mixing the two produces misleading targets.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
 
 // Adaptive precision so sub-cent per-period funding amounts don't collapse
@@ -571,7 +618,6 @@ const StatsGrid = (props: {
   direction: 'long' | 'short'
   notional: number
   margin: number
-  leverage: number
   entryPrice: number
   liqPrice: number
   priceDecimals: number
@@ -596,7 +642,6 @@ const StatsGrid = (props: {
     direction,
     notional,
     margin,
-    leverage,
     entryPrice,
     liqPrice,
     priceDecimals,
@@ -611,19 +656,33 @@ const StatsGrid = (props: {
   const [scenariosOpen, setScenariosOpen] = useState(false)
 
   const canShowScenarios =
-    Number.isFinite(entryPrice) && margin > 0 && leverage > 0
+    !isAddPreview &&
+    Number.isFinite(entryPrice) &&
+    entryPrice > 0 &&
+    margin > 0 &&
+    notional > 0
 
-  // At leverage ℓ a +r return on margin needs a price move of r/ℓ, so the
-  // target price is entry·(1 ± r/ℓ) and the mana P&L is just r·margin.
+  // Solve for the price that produces the advertised NET profit after the
+  // opening fee. Closing is free; future funding remains unknowable here.
   const scenarios = canShowScenarios
-    ? RETURN_TIERS.map((ret) => ({
-        ret,
-        price:
-          direction === 'long'
-            ? entryPrice * (1 + ret / leverage)
-            : entryPrice * (1 - ret / leverage),
-        pnl: ret * margin,
-      })).filter((s) => Number.isFinite(s.price) && s.price > 0)
+    ? RETURN_TIERS.reduce<{ ret: number; price: number; pnl: number }[]>(
+        (result, ret) => {
+          const pnl = ret * margin
+          const price = getPerpPriceForUserFacingPnl(
+            {
+              direction,
+              size: notional,
+              costBasis: margin,
+              originalCostBasis: margin,
+              takerFeeCostBasis: fee,
+              entryPrice,
+            },
+            pnl
+          )
+          return price === undefined ? result : [...result, { ret, price, pnl }]
+        },
+        []
+      )
     : []
 
   const periodPct = marketFundingRate * 100
@@ -661,7 +720,7 @@ const StatsGrid = (props: {
       {takerFeeBps > 0 && (
         <StatRow
           label={`Fee (${(takerFeeBps / 100).toFixed(2)}%, free to close)`}
-          value={formatMoneyWithDecimals(fee)}
+          value={formatMoneyPrecise(fee)}
         />
       )}
 
@@ -686,7 +745,7 @@ const StatsGrid = (props: {
           {scenariosOpen && (
             <>
               <Row className="text-ink-400 items-baseline text-xs">
-                <span className="flex-1">gain</span>
+                <span className="flex-1">return on margin</span>
                 <span className="w-20 text-right">at price</span>
                 <span className="w-20 text-right">profit</span>
               </Row>

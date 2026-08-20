@@ -42,7 +42,7 @@ import {
 import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
-  calcPerpTakerFee,
+  calculatePerpOpenCashFlow,
   creditPerpPoolFee,
   getPerpTakerFeeBps,
 } from 'common/perps/fees'
@@ -649,10 +649,16 @@ export const openOrAddPosition = async (
     // trader whose mana is all in the position they are flipping out of).
     // The user row is locked FOR UPDATE above, so the balance cannot move
     // between here and the debit.
-    const openFee = calcPerpTakerFee(mana * leverage, takerFeeBps)
-    const totalDebit = mana + openFee
-    const spendableBalance = trader.balance + closePayout
-    if (spendableBalance < totalDebit)
+    const cashFlow = calculatePerpOpenCashFlow({
+      balance: trader.balance,
+      margin: mana,
+      leverage,
+      feeBps: takerFeeBps,
+      closePayout,
+    })
+    if (!cashFlow) throw new APIError(500, 'Perp trade cash flow is invalid')
+    const { openFee, totalDebit, spendableBalance, isAffordable } = cashFlow
+    if (!isAffordable)
       throw new APIError(
         403,
         `Insufficient balance: needed ${totalDebit.toFixed(2)} (${mana} margin${

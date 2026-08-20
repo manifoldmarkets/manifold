@@ -2,6 +2,7 @@ import {
   assertPerpTakerFeeConfig,
   accruePerpPositionTakerFee,
   calcPerpTakerFee,
+  calculatePerpOpenCashFlow,
   creditPerpPoolFee,
   getPerpTakerFeeBps,
   PERP_TAKER_FEE_BPS_DEFAULT,
@@ -76,6 +77,82 @@ describe('calcPerpTakerFee', () => {
     // Closing is free, so the open-side default IS the round-trip cost and
     // must price that out with margin to spare.
     expect(PERP_TAKER_FEE_BPS_DEFAULT).toBeGreaterThan(0.73 * 2)
+  })
+})
+
+describe('calculatePerpOpenCashFlow', () => {
+  const base = {
+    balance: 100,
+    margin: 100,
+    leverage: 100,
+    feeBps: 10,
+  }
+
+  it('includes the opening fee in the required debit', () => {
+    expect(calculatePerpOpenCashFlow(base)).toEqual({
+      notional: 10_000,
+      openFee: 10,
+      totalDebit: 110,
+      spendableBalance: 100,
+      isAffordable: false,
+    })
+  })
+
+  it('rejects a raw-balance maximum when a fractional fee is still due', () => {
+    expect(
+      calculatePerpOpenCashFlow({
+        balance: 10,
+        margin: 10,
+        leverage: 2,
+        feeBps: 10,
+      })
+    ).toEqual({
+      notional: 20,
+      openFee: 0.02,
+      totalDebit: 10.02,
+      spendableBalance: 10,
+      isAffordable: false,
+    })
+  })
+
+  it('lets a free flip payout fund the new margin and fee', () => {
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 0, closePayout: 110 })
+    ).toMatchObject({ spendableBalance: 110, isAffordable: true })
+  })
+
+  it('accepts the exact boundary and preserves zero-fee behavior', () => {
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 109.999 })?.isAffordable
+    ).toBe(false)
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 110 })?.isAffordable
+    ).toBe(true)
+    expect(calculatePerpOpenCashFlow({ ...base, feeBps: 0 })).toMatchObject({
+      openFee: 0,
+      totalDebit: 100,
+      isAffordable: true,
+    })
+  })
+
+  it('fails closed on invalid or overflowing inputs', () => {
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: Number.NaN })
+    ).toBeUndefined()
+    expect(calculatePerpOpenCashFlow({ ...base, margin: 0 })).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({ ...base, leverage: Infinity })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({ ...base, closePayout: -1 })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({
+        ...base,
+        margin: Number.MAX_VALUE,
+        leverage: 2,
+      })
+    ).toBeUndefined()
   })
 })
 

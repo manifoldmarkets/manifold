@@ -134,6 +134,26 @@ export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
+/**
+ * Mana formatting for exact fractional financial values such as PERP fees.
+ * Values of at least 0.01 use cents; smaller non-zero values use two
+ * significant digits so a real debit never collapses to zero.
+ */
+export function formatMoneyPrecise(amount: number) {
+  if (!Number.isFinite(amount)) return ENV_CONFIG.moneyMoniker + '0'
+  const absoluteAmount = Math.abs(amount)
+  if (absoluteAmount === 0) return ENV_CONFIG.moneyMoniker + '0'
+
+  const numberText =
+    absoluteAmount >= 0.01
+      ? absoluteAmount.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : `${Number(absoluteAmount.toPrecision(2))}`
+  return `${amount < 0 ? '-' : ''}${ENV_CONFIG.moneyMoniker}${numberText}`
+}
+
 // Like formatMoney, but avoids collapsing tiny non-zero spends to "Ṁ0".
 // Any positive amount below 1 is shown as Ṁ1 (and any negative amount above
 // -1 as -Ṁ1) so the UI always reflects that mana was actually spent.

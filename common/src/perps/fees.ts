@@ -67,6 +67,57 @@ export const calcPerpTakerFee = (notional: number, feeBps: number): number => {
   return Number.isFinite(fee) && fee > 0 ? fee : 0
 }
 
+export type PerpOpenCashFlow = {
+  notional: number
+  openFee: number
+  totalDebit: number
+  spendableBalance: number
+  isAffordable: boolean
+}
+
+/**
+ * Cash required to open/add a position, including a free close payout when
+ * the trade flips an existing position. Shared by the engine and trade panel
+ * so the preview cannot disagree with the authoritative balance check.
+ */
+export const calculatePerpOpenCashFlow = (params: {
+  balance: number
+  margin: number
+  leverage: number
+  feeBps: number
+  closePayout?: number
+}): PerpOpenCashFlow | undefined => {
+  const { balance, margin, leverage, feeBps, closePayout = 0 } = params
+  if (
+    !Number.isFinite(balance) ||
+    !Number.isFinite(margin) ||
+    margin <= 0 ||
+    !Number.isFinite(leverage) ||
+    leverage <= 0 ||
+    !isValidTakerFeeBps(feeBps) ||
+    !Number.isFinite(closePayout) ||
+    closePayout < 0
+  )
+    return undefined
+
+  const notional = margin * leverage
+  if (!Number.isFinite(notional) || notional <= 0) return undefined
+
+  const openFee = calcPerpTakerFee(notional, feeBps)
+  const totalDebit = margin + openFee
+  const spendableBalance = balance + closePayout
+  if (!Number.isFinite(totalDebit) || !Number.isFinite(spendableBalance))
+    return undefined
+
+  return {
+    notional,
+    openFee,
+    totalDebit,
+    spendableBalance,
+    isAffordable: spendableBalance >= totalDebit,
+  }
+}
+
 /**
  * Credit a collected fee to one side's backing pool. Pure, like the amm.ts
  * transitions: the caller persists the new pool. The fee mana enters
