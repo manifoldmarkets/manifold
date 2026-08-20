@@ -237,6 +237,52 @@ describe('toLiteMarket', () => {
       toLiteMarket({ ...legacyContract, takerFeeBps: 0 }).takerFeeBps
     ).toBe(0)
   })
+
+  it('publishes the rate an API-key open actually pays', () => {
+    // The cohort that reads a market over the API is the cohort charged the
+    // API rate, so the payload must carry it. Publishing only takerFeeBps
+    // told every bot the wrong number.
+    const perp = {
+      id: 'p',
+      creatorId: 'c',
+      creatorUsername: 't',
+      creatorName: 'T',
+      createdTime: 1_700_000_000_000,
+      question: 'Q',
+      slug: 'q',
+      outcomeType: 'PERP',
+      mechanism: 'perp',
+      volume: 0,
+      volume24Hours: 0,
+      isResolved: false,
+      uniqueBettorCount: 0,
+      oraclePrice: 42,
+      poolLong: 100,
+      poolShort: 100,
+      description: '',
+    } as unknown as PerpContract
+
+    // Unset: API pays the web base, and the field mirrors it rather than
+    // going missing — a client should never have to infer the rate.
+    expect(toLiteMarket({ ...perp, takerFeeBps: 10 }).takerFeeApiBps).toBe(10)
+    expect(toFullMarket({ ...perp, takerFeeBps: 10 }).takerFeeApiBps).toBe(10)
+
+    // Set above the base: the published rate is what the engine charges.
+    expect(
+      toLiteMarket({ ...perp, takerFeeBps: 10, takerFeeApiBps: 30 })
+        .takerFeeApiBps
+    ).toBe(30)
+
+    // Set at or below the base: max() means the base still wins, and the
+    // payload must say so rather than echoing a rate nobody is charged.
+    expect(
+      toLiteMarket({ ...perp, takerFeeBps: 50, takerFeeApiBps: 30 })
+        .takerFeeApiBps
+    ).toBe(50)
+
+    // Legacy row with no base: both channels fall back to the default.
+    expect(toLiteMarket(perp).takerFeeApiBps).toBe(PERP_TAKER_FEE_BPS_DEFAULT)
+  })
 })
 
 function getLiteMarket(overrides: Partial<LiteMarket> = {}): LiteMarket {
