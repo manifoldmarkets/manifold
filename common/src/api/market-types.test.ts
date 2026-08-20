@@ -5,6 +5,7 @@ import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import {
   PERP_TAKER_FEE_IMPACT_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_MAX,
   PERP_TAKER_FEE_BPS_DEFAULT,
 } from 'common/perps/fees'
 import {
@@ -326,7 +327,16 @@ describe('update-perp-config props', () => {
       props.safeParse({ contractId: 'c1', takerFeeImpact: -1 }).success
     ).toBe(false)
     expect(
-      props.safeParse({ contractId: 'c1', takerFeeImpact: 10_001 }).success
+      props.safeParse({
+        contractId: 'c1',
+        takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX + 1,
+      }).success
     ).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX,
+      }).success
+    ).toBe(true)
   })
 })

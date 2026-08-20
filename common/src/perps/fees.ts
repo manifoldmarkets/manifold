@@ -32,12 +32,18 @@ export const PERP_TAKER_FEE_BPS_MAX = 100
  * NOT named `k` — the ManiPerp paper already uses k for fundingSensitivity).
  * Shipped at 0 so a deploy changes nothing (the fee stays exactly the flat
  * base); enabled per-contract via update-perp-config once a market is
- * watched live. */
+ * watched live. Launch operating value: 10 (chosen 2026-08-20 so a
+ * 4×-pool-size entry pays ~0.6% effective; deterrence of pool-scale
+ * informed flow leans on the fee<margin reject, the OI cap, and leverage
+ * caps rather than this dial alone). */
 export const PERP_TAKER_FEE_IMPACT_DEFAULT = 0
 
-/** Sanity bound for admin configuration of the impact coefficient. A bound
- * on the CONFIG knob, not on the resulting fee. */
-export const PERP_TAKER_FEE_IMPACT_MAX = 10_000
+/** Sanity bound for admin configuration of the impact coefficient — 10× the
+ * launch operating value of 10, so a fat-fingered config stays survivable
+ * (at 100, even a 4×-pool entry pays ~5.4% effective, and the engine's
+ * fee<margin reject bounds the per-trade damage regardless). A bound on the
+ * CONFIG knob, not on the resulting fee. */
+export const PERP_TAKER_FEE_IMPACT_MAX = 100
 
 const isValidTakerFeeBps = (bps: number) =>
   Number.isFinite(bps) && bps >= 0 && bps <= PERP_TAKER_FEE_BPS_MAX
