@@ -291,7 +291,7 @@ The liquidity in a market is the amount of capital available for traders to trad
 ### How much mana will I get back from subsidising a market?
 
 - You should always expect to lose mana from subsidising a market.
-- Liquidity providers cannot withdraw the mana they have spent to subsidise a market, however, they will receive back some of their mana when the market resolves, if there's any left over.
+- Liquidity providers will receive back some of their mana when the market resolves, if there's any left over.
 - The amount of mana you will get back depends on how much the probability has moved from when you subsidised the market. The more it has moved, the less you will get back.
 
 ### What are loans?
