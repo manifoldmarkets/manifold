@@ -1,4 +1,5 @@
 import {
+  classifyOracleApplyFailure,
   FAST_TICK_ORACLE_BOUNDS,
   isOracleTickTimeout,
   oracleTickTimeoutsQuery,
@@ -95,5 +96,60 @@ describe('oracleTickTimeoutsQuery', () => {
         FAST_TICK_ORACLE_BOUNDS.statementTimeoutMs
       )
     ).toBe('set local lock_timeout = 1000; set local statement_timeout = 4000')
+  })
+})
+
+describe('classifyOracleApplyFailure', () => {
+  const CONTENTION = { code: '55P03' } // lock_timeout
+  const BTC_STALE_AFTER_MS = 2 * 60 * 1000
+  const bounded = true
+
+  it('does not page while a tight trading gate pauses the market', () => {
+    // The regression this exists to prevent. The alert used to fire at half
+    // the contract's maxOraclePriceAgeMs, so tightening that gate from 120s
+    // to 10s would have paged on the third consecutive contended tick —
+    // measured at ~28 times an hour on the BTC feed. Pausing trading on a
+    // 4-second-old mark IS the gate working.
+    const MARK_AGE_PAST_A_10S_GATE = 12_000
+    expect(
+      classifyOracleApplyFailure(
+        CONTENTION,
+        bounded,
+        MARK_AGE_PAST_A_10S_GATE,
+        BTC_STALE_AFTER_MS
+      )
+    ).toBe('warn')
+  })
+
+  it('pages once the mark passes the feed staleness budget', () => {
+    expect(
+      classifyOracleApplyFailure(
+        CONTENTION,
+        bounded,
+        BTC_STALE_AFTER_MS,
+        BTC_STALE_AFTER_MS
+      )
+    ).toBe('error')
+  })
+
+  it('pages immediately on a failure the tick did not induce', () => {
+    // A solvency jam or a corrupt row is an incident at any mark age; only
+    // the contention codes mean "someone else is writing, try next tick".
+    expect(
+      classifyOracleApplyFailure(
+        new Error('insolvent book'),
+        bounded,
+        0,
+        BTC_STALE_AFTER_MS
+      )
+    ).toBe('error')
+  })
+
+  it('pages when an unbounded caller hits a cancellation it never asked for', () => {
+    // update-perps and the daily publishers set no timeouts, so a 55P03 there
+    // came from somewhere else and is a real failure.
+    expect(
+      classifyOracleApplyFailure(CONTENTION, false, 0, BTC_STALE_AFTER_MS)
+    ).toBe('error')
   })
 })
