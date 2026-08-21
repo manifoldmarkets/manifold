@@ -1,4 +1,8 @@
-import { getPerpTakerFeeBps, getPerpTakerFeeImpact } from 'common/perps/fees'
+import {
+  getPerpEffectiveTakerFeeBps,
+  getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
+} from 'common/perps/fees'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { removeUndefinedProps } from 'common/util/object'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
@@ -21,17 +25,20 @@ import { APIError, APIHandler } from './helpers/endpoint'
 //   means up to 2% of the crowded side's positions per hour at full
 //   imbalance. The schema keeps it inside assertPerpFundingConfig's (0, 1)
 //   domain; a value at or above 1 would make every funding tick fail closed.
-// - takerFeeBps: open-side BASE fee on notional (closing is free), applied
-//   to the NEXT open or add. 0 disables. The schema keeps it inside
-//   assertPerpTakerFeeConfig's [0, 100] domain; outside it the engine
-//   fail-closes every trade. Caps the base only — the size-dependent total
-//   is intentionally uncapped.
+// - takerFeeBps: open-side fee on notional (closing is free, so this is the
+//   round-trip cost), applied to the NEXT open or add. 0 disables. The
+//   schema keeps it inside assertPerpTakerFeeConfig's [0, 100] domain;
+//   outside it the engine fail-closes every trade.
+// - takerFeeApiBps: base fee for API-KEY opens, applied as
+//   max(takerFeeBps, takerFeeApiBps) from the NEXT open or add. Unset or 0
+//   = API pays the web base. Its own wider [0, 300] domain — it prices
+//   hostile bot flow (the 2026-08-19/20 BTC drain was all API-key trades).
 // - takerFeeImpact: size-impact coefficient of the fee (marginal rate is
-//   takerFeeBps + takerFeeImpact·(share of pool)² bps, integrated over the
-//   added notional — see calcPerpSizeFee; NOT the paper's k, which is
-//   fundingSensitivity). 0 keeps the fee flat at the base. Applied to the
-//   NEXT open or add; the schema keeps it inside assertPerpTakerFeeConfig's
-//   [0, PERP_TAKER_FEE_IMPACT_MAX] domain.
+//   base + takerFeeImpact·(share of pool)² bps, integrated over the added
+//   notional — see calcPerpSizeFee; NOT the paper's k, which is
+//   fundingSensitivity). 0 keeps the fee flat at whichever base the channel
+//   selected. Applied to the NEXT open or add; the schema keeps it inside
+//   assertPerpTakerFeeConfig's [0, PERP_TAKER_FEE_IMPACT_MAX] domain.
 // - maxOraclePriceAgeMs: the age at which the engine stops accepting trades
 //   AND closes against the cached mark. Lowering it is the direct lever on
 //   latency arbitrage — every stale-mark window a bot can trade is bounded by
@@ -50,6 +57,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    takerFeeApiBps,
     takerFeeImpact,
     maxOraclePriceAgeMs,
   } = body
@@ -62,6 +70,12 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   if (contract.isResolved)
     throw new APIError(403, 'Cannot update a resolved market')
 
+  if (takerFeeImpact !== undefined)
+    log(
+      `admin ${auth.uid} set takerFeeImpact on ${
+        contract.slug
+      }: ${getPerpTakerFeeImpact(contract)} -> ${takerFeeImpact}`
+    )
   if (maxOraclePriceAgeMs !== undefined) {
     const feedDef = getOracleFeed(contract.oracleFeedId)
     if (!feedDef)
@@ -77,11 +91,25 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       )
   }
 
+  // What an API-key open will ACTUALLY be charged once max(base, api) is
+  // applied. Echoing the submitted value alone is misleading: a rate at or
+  // below the base is a silent no-op, and with no GET for perp config and no
+  // admin-UI row, this response is the only feedback the operator gets.
+  const nextTakerFeeBps = takerFeeBps ?? getPerpTakerFeeBps(contract)
+  const effectiveTakerFeeApiBps = getPerpEffectiveTakerFeeBps(
+    {
+      takerFeeBps: nextTakerFeeBps,
+      takerFeeApiBps: takerFeeApiBps ?? contract.takerFeeApiBps,
+    },
+    true
+  )
+
   const lastUpdatedTime = Date.now()
   const patch = removeUndefinedProps({
     maxLeverage,
     maxFundingRate,
     takerFeeBps,
+    takerFeeApiBps,
     takerFeeImpact,
     maxOraclePriceAgeMs,
     lastUpdatedTime,
@@ -101,11 +129,15 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
         contract.slug
       }: ${getPerpTakerFeeBps(contract)} -> ${takerFeeBps}`
     )
-  if (takerFeeImpact !== undefined)
+  if (takerFeeApiBps !== undefined)
     log(
-      `admin ${auth.uid} set takerFeeImpact on ${
-        contract.slug
-      }: ${getPerpTakerFeeImpact(contract)} -> ${takerFeeImpact}`
+      `admin ${auth.uid} set takerFeeApiBps on ${contract.slug}: ${
+        contract.takerFeeApiBps ?? 'unset'
+      } -> ${takerFeeApiBps} (API opens will pay ${effectiveTakerFeeApiBps} bps${
+        effectiveTakerFeeApiBps !== takerFeeApiBps
+          ? ` — the ${nextTakerFeeBps} bps base is higher, so this value has no effect`
+          : ''
+      })`
     )
   if (maxOraclePriceAgeMs !== undefined)
     log(
@@ -118,6 +150,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxLeverage,
       maxFundingRate,
       takerFeeBps,
+      takerFeeApiBps,
       takerFeeImpact,
       maxOraclePriceAgeMs,
     })
@@ -127,7 +160,9 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       success: true as const,
       maxLeverage: maxLeverage ?? contract.maxLeverage,
       maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
-      takerFeeBps: takerFeeBps ?? getPerpTakerFeeBps(contract),
+      takerFeeBps: nextTakerFeeBps,
+      takerFeeApiBps: takerFeeApiBps ?? contract.takerFeeApiBps ?? null,
+      effectiveTakerFeeApiBps,
       takerFeeImpact: takerFeeImpact ?? getPerpTakerFeeImpact(contract),
       maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
     },

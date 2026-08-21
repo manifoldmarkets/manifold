@@ -35,7 +35,10 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
-import { PERP_TAKER_FEE_IMPACT_MAX } from 'common/perps/fees'
+import {
+  PERP_TAKER_FEE_API_BPS_MAX,
+  PERP_TAKER_FEE_IMPACT_MAX,
+} from 'common/perps/fees'
 import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
@@ -1169,6 +1172,13 @@ export const API = (_apiTypeCheck = {
       maxFundingRate: number
       takerFeeBps: number
       takerFeeImpact: number
+      // Configured API-channel base rate, or null when API trades pay the
+      // same base as the web. The engine applies max(takerFeeBps, this).
+      takerFeeApiBps: number | null
+      // What an API-key open is actually charged after that max() — equal to
+      // takerFeeBps whenever the configured API rate sits at or below the
+      // base, which makes such a rate a no-op rather than a reduction.
+      effectiveTakerFeeApiBps: number
       maxOraclePriceAgeMs: number
     },
     props: z
@@ -1193,6 +1203,16 @@ export const API = (_apiTypeCheck = {
           .min(0)
           .max(PERP_TAKER_FEE_IMPACT_MAX)
           .optional(),
+        // Base rate for API-KEY opens only, applied as max(takerFeeBps,
+        // takerFeeApiBps) — it can raise the API channel's rate, never
+        // discount it. 0 (or unset) = API pays the web base. Wider cap than
+        // the web base on purpose: it prices hostile bot flow (see
+        // PERP_TAKER_FEE_API_BPS_MAX).
+        takerFeeApiBps: z
+          .number()
+          .min(0)
+          .max(PERP_TAKER_FEE_API_BPS_MAX)
+          .optional(),
         // How old the executable mark may be before the engine refuses trades
         // and closes. Tunable live because the right value depends on how
         // reliably the feed is actually ticking, which is an operational fact
@@ -1212,6 +1232,7 @@ export const API = (_apiTypeCheck = {
           p.maxFundingRate !== undefined ||
           p.takerFeeBps !== undefined ||
           p.takerFeeImpact !== undefined ||
+          p.takerFeeApiBps !== undefined ||
           p.maxOraclePriceAgeMs !== undefined,
         { message: 'Provide at least one field to update' }
       ),

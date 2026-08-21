@@ -11,8 +11,10 @@ import {
 } from 'common/envs/constants'
 import { getPerpBackingPool } from 'common/perps/amm'
 import {
+  getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import {
@@ -667,15 +669,30 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           Taker fee{' '}
-          <InfoTooltip text="Base fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping. Positions large relative to the pool pay more on top — see fee size impact." />
+          <InfoTooltip text="Fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping." />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeBpsInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}%
-              {getPerpTakerFeeImpact(contract) > 0 ? ' base' : ''} to open
+              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}% to open
+            </span>
+          )}
+        </td>
+      </tr>
+      <tr className={clsx(canEdit && 'bg-purple-500/30')}>
+        <td>
+          API taker fee{' '}
+          <InfoTooltip text="Opens authenticated with an API key pay the higher of this and the web taker fee. Prices bot flow without taxing the web majority. Closing is free on both channels." />
+        </td>
+        <td>
+          {canEdit ? (
+            <TakerFeeApiBpsInput contract={contract} />
+          ) : (
+            <span className="tabular-nums">
+              {(getPerpEffectiveTakerFeeBps(contract, true) / 100).toFixed(2)}%
+              to open
             </span>
           )}
         </td>
@@ -956,6 +973,89 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
         size="2xs"
         color="indigo-outline"
         disabled={!valid || saving || parsed === current}
+        loading={saving}
+        onClick={submit}
+      >
+        Set
+      </Button>
+    </Row>
+  )
+}
+
+// Inline admin editor for a perp's API-CHANNEL taker fee, in basis points of
+// notional. API-key opens pay max(takerFeeBps, takerFeeApiBps), so a value at
+// or below the web base is a no-op rather than a discount — the row shows the
+// EFFECTIVE rate an API open is charged, which is what the engine applies.
+// 0 (or unset) puts API flow back on the web base. Applies to the next open.
+function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState<number | null>(null)
+  const stored = getPerpEffectiveTakerFeeBps(contract, true)
+  const current = justSaved != null && justSaved !== stored ? justSaved : stored
+  const base = getPerpTakerFeeBps(contract)
+  const parsed = Number(input)
+  const valid =
+    input !== '' &&
+    Number.isFinite(parsed) &&
+    parsed >= 0 &&
+    parsed <= PERP_TAKER_FEE_API_BPS_MAX
+
+  const submit = async () => {
+    if (!valid || saving) return
+    setSaving(true)
+    try {
+      const res = await api('update-perp-config', {
+        contractId: contract.id,
+        takerFeeApiBps: parsed,
+      })
+      // The echo is the effective rate, so a submitted value the base
+      // overrides shows up here as the base rather than silently "saving".
+      setJustSaved(res.effectiveTakerFeeApiBps)
+      setInput('')
+      toast.success(
+        res.effectiveTakerFeeApiBps === parsed
+          ? `API taker fee is now ${parsed} bps (${(parsed / 100).toFixed(
+              2
+            )}%) to open`
+          : `Set to ${parsed} bps, but the ${base} bps web base is higher — API opens still pay ${res.effectiveTakerFeeApiBps} bps`
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update API taker fee'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Row className="flex-wrap items-center gap-1.5">
+      <span className="tabular-nums">
+        {current} bps ({(current / 100).toFixed(2)}%)
+      </span>
+      {contract.takerFeeApiBps === undefined && (
+        <span className="text-ink-500 text-xs">(unset — pays web base)</span>
+      )}
+      <input
+        type="number"
+        min={0}
+        max={PERP_TAKER_FEE_API_BPS_MAX}
+        step={1}
+        value={input}
+        disabled={saving}
+        placeholder="New bps"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        className="bg-canvas-0 border-ink-300 h-7 w-20 rounded-md border px-2 text-sm"
+      />
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        disabled={!valid || saving}
         loading={saving}
         onClick={submit}
       >

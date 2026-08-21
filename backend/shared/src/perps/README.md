@@ -186,6 +186,33 @@ starts at PnL = −fee. Admins tune both knobs live per market via
 part); contracts created before the fields existed default to base 10 /
 impact 0 at trade time.
 
+**Two channels, two rates.** `takerFeeBps` is the WEB base. Opens
+authenticated with an API key instead pay `max(takerFeeBps, takerFeeApiBps)`
+— see `getPerpEffectiveTakerFeeBps`, which the engine calls with the
+auth-derived `isApi` flag (`auth.creds.kind === 'key'`, never
+client-supplied). Unset or 0 means API flow pays the web base. The `max()`
+is deliberate: a misconfigured API rate below the base can never hand bots a
+discount, but it also means a submitted value at or below the base is a
+silent no-op — `update-perp-config` echoes `effectiveTakerFeeApiBps` so an
+operator can see what will actually be charged. Both rates are tuned live
+per market via `update-perp-config`; setting `takerFeeBps: 0` disables the
+fee for WEB only, and does NOT disable it for API flow while
+`takerFeeApiBps` is set. Closing is free on both channels.
+
+Why per-channel: the 2026-08-19/20 BTC drain was API-key flow (5 API accounts
+were 85% of opening notional over that week against 135 web traders), so a
+flat raise would tax the honest web majority for the bots' edge. A bot can
+still dodge by scripting a session token — this is a raised bar and a clean
+ToS line, not a wall; the structural fix is next-tick execution.
+
+The two rates carry different domains — `PERP_TAKER_FEE_BPS_MAX` = 100,
+`PERP_TAKER_FEE_API_BPS_MAX` = 300 — and neither is validated against
+`maxLeverage`. Because the fee is charged on NOTIONAL, `feeBps × leverage ≥
+10_000` would cost a trader more than the margin they posted, so the engine
+rejects any open whose fee meets or exceeds its margin (`openFee >= mana`).
+That floor is what keeps a fat-fingered rate survivable rather than
+catastrophic; honest settings never approach it.
+
 ## Funding imbalance
 
 The funding rate is derived from each side's OPEN INTEREST (aggregate open
@@ -194,7 +221,7 @@ notional), not from the backing pools:
 `f = I(max(OI_L, OI_S) / min(OI_L, OI_S)) × f_max`, signed toward the crowded
 side.
 
-The pools hold _margin_, so their ratio only tracks exposure when both sides
+The pools hold *margin*, so their ratio only tracks exposure when both sides
 run comparable leverage. Where they don't, the two disagree in sign, and a
 pool-derived rate pays the crowded side and charges the scarce one — the
 opposite of what funding is for. On 2026-08-08 two of the four live markets

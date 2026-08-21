@@ -46,7 +46,7 @@ import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
   creditPerpPoolFee,
-  getPerpTakerFeeBps,
+  getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeImpact,
   perpOpenFeeQuote,
   perpOwnContributionInputs,
@@ -672,8 +672,16 @@ export const openOrAddPosition = async (
     // charged as its integral over the added notional (calcPerpSizeFee) so
     // chopping one big add into many small ones costs the same. The fee mana
     // enters escrow with the margin, so ledger = L + S holds.
-    assertPerpTakerFeeConfig(contract)
-    const takerFeeBps = getPerpTakerFeeBps(contract)
+    //
+    // Two independent dials feed this, and they compose: the CHANNEL picks
+    // which base rate applies (API-key opens pay max(takerFeeBps,
+    // takerFeeApiBps) when the API rate is set — the 2026-08-19/20 BTC drain
+    // was 100% API-key flow, see getPerpEffectiveTakerFeeBps), and the SIZE
+    // term then scales on top of whichever base was selected. The event's
+    // feeBps stamp records the effective rate actually charged and its isApi
+    // flag says which channel selected the base.
+    assertPerpTakerFeeConfig(contract, isApi)
+    const takerFeeBps = getPerpEffectiveTakerFeeBps(contract, isApi)
     const takerFeeImpact = getPerpTakerFeeImpact(contract)
 
     // On a market with a size-dependent fee, consent is MANDATORY: the fee
@@ -819,9 +827,14 @@ export const openOrAddPosition = async (
     // Hard consent floor: a fee that meets or exceeds the margin means the
     // position opens at a guaranteed total loss — always a mistake or an
     // attack, never intent. Reject instead of charging, so no combination of
-    // leverage and pool share can cost a trader more than their margin at
-    // the instant they open. (Reachable only at extreme leverage × extreme
-    // pool share; honest configurations never hit it.)
+    // leverage, pool share and configured rate can cost a trader more than
+    // their margin at the instant they open. Two ways in: extreme leverage ×
+    // extreme pool share (honest configurations never reach it), and a
+    // fat-fingered CHANNEL rate — the base is charged on NOTIONAL, so a flat
+    // rate alone trips this when feeBps × leverage >= 10_000, which the top
+    // of the API range [0, 300] crosses above 33x. The rate domains are
+    // validated independently of maxLeverage, so this floor is what keeps
+    // that misconfiguration survivable.
     if (openFee >= mana)
       throw new APIError(
         400,

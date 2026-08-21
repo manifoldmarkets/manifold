@@ -14,6 +14,7 @@ import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import {
+  getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
   PERP_TAKER_FEE_IMPACT_MAX,
@@ -97,6 +98,12 @@ export type LiteMarket = {
   // client can price its own fee: the marginal rate is
   // takerFeeBps + takerFeeImpact·(share of pool)² bps (see calcPerpSizeFee).
   takerFeeImpact?: number
+  // What an API-key open is charged, in bps of notional. Equal to
+  // takerFeeBps unless this market prices the API channel separately. The
+  // channel that pays this rate is the one that reads the market over the
+  // API, so publishing only takerFeeBps would tell every bot the wrong
+  // number — and it is the input a client needs to size a trade.
+  takerFeeApiBps?: number
   resolvedOraclePrice?: number
 }
 export type ApiAnswer = Omit<
@@ -243,6 +250,7 @@ export function toLiteMarket(
           maxLeverage: contract.maxLeverage,
           takerFeeBps: getPerpTakerFeeBps(contract),
           takerFeeImpact: getPerpTakerFeeImpact(contract),
+          takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
         }
       : {}),

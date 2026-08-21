@@ -314,6 +314,11 @@ export type Perp = {
   // NOT named k: the paper's k is fundingSensitivity above. Read via
   // getPerpTakerFeeImpact (common/perps/fees), never directly.
   takerFeeImpact?: number
+  // Base taker fee for API-key opens, in bps of notional. Applied as
+  // max(takerFeeBps, takerFeeApiBps) so it can only raise the API channel's
+  // rate, never discount it. Missing = API pays the same base as the web.
+  // Read via getPerpEffectiveTakerFeeBps (common/perps/fees), never directly.
+  takerFeeApiBps?: number
   // ms between funding events: max(1h, feed updatePeriodMs), derived at
   // create time and frozen so later feed-registry changes can't rewrite the
   // economics of open positions. Missing on pre-period contracts = hourly.

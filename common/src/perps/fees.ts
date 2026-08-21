@@ -44,24 +44,44 @@ export const PERP_TAKER_FEE_IMPACT_DEFAULT = 0
  * fee<margin reject bounds the per-trade damage regardless). A bound on the
  * CONFIG knob, not on the resulting fee. */
 export const PERP_TAKER_FEE_IMPACT_MAX = 100
+/** Upper bound for the API-channel base rate: 300 bps = 3% per open. Wider
+ * than the web cap on purpose — it exists to price hostile flow: the
+ * 2026-08-19/20 BTC drain (M$254k/24h, 100% API-key trades) measured bot
+ * captures of 22–30 bps of notional per round trip on average and ~140 bps
+ * on the largest momentum entries, so the ceiling must clear the worst
+ * observed capture with room to spare. */
+export const PERP_TAKER_FEE_API_BPS_MAX = 300
 
 const isValidTakerFeeBps = (bps: number) =>
   Number.isFinite(bps) && bps >= 0 && bps <= PERP_TAKER_FEE_BPS_MAX
 
 const isValidTakerFeeImpact = (impact: number) =>
   Number.isFinite(impact) && impact >= 0 && impact <= PERP_TAKER_FEE_IMPACT_MAX
+const isValidTakerFeeApiBps = (bps: number) =>
+  Number.isFinite(bps) && bps >= 0 && bps <= PERP_TAKER_FEE_API_BPS_MAX
 
 /**
  * Fail-closed guard for the engine, mirroring assertPerpFundingConfig: new
  * contracts are schema-validated, but old rows bypass that schema, and a
  * corrupt fee must block trading rather than silently repricing it.
  * `undefined` is the valid pre-fee-contract case (reads as the default).
+ *
+ * `isApi` scopes the API-rate check to the channel that rate governs. A
+ * corrupt `takerFeeApiBps` must fail closed for API flow — falling back to
+ * the base would silently UNDER-charge exactly the flow the rate exists to
+ * price — but it must not halt web opens, which that field never touches.
+ * Without the scope, one bad JSON value in an API-only field takes the whole
+ * market dark for everyone.
  */
-export const assertPerpTakerFeeConfig = (config: {
-  takerFeeBps?: number
-  takerFeeImpact?: number
-}) => {
-  const { takerFeeBps, takerFeeImpact } = config
+export const assertPerpTakerFeeConfig = (
+  config: {
+    takerFeeBps?: number
+    takerFeeImpact?: number
+    takerFeeApiBps?: number
+  },
+  isApi = false
+) => {
+  const { takerFeeBps, takerFeeImpact, takerFeeApiBps } = config
   if (takerFeeBps !== undefined && !isValidTakerFeeBps(takerFeeBps))
     throw new Error(
       `taker fee must be finite and in [0, ${PERP_TAKER_FEE_BPS_MAX}] bps`
@@ -69,6 +89,14 @@ export const assertPerpTakerFeeConfig = (config: {
   if (takerFeeImpact !== undefined && !isValidTakerFeeImpact(takerFeeImpact))
     throw new Error(
       `taker fee size impact must be finite and in [0, ${PERP_TAKER_FEE_IMPACT_MAX}]`
+    )
+  if (
+    isApi &&
+    takerFeeApiBps !== undefined &&
+    !isValidTakerFeeApiBps(takerFeeApiBps)
+  )
+    throw new Error(
+      `API taker fee must be finite and in [0, ${PERP_TAKER_FEE_API_BPS_MAX}] bps`
     )
 }
 
@@ -85,6 +113,33 @@ export const getPerpTakerFeeBps = (contract: {
   return isValidTakerFeeBps(takerFeeBps)
     ? takerFeeBps
     : PERP_TAKER_FEE_BPS_DEFAULT
+}
+
+/**
+ * The base rate a specific trade pays, selected by auth channel. API-key
+ * trades pay `takerFeeApiBps` when it is set — as `max(base, api)`, so a
+ * misconfigured API rate below the base can never DISCOUNT bot flow — and
+ * the web base otherwise. Missing or invalid `takerFeeApiBps` reads as "no
+ * separate API rate" (total, like getPerpTakerFeeBps: render paths must not
+ * throw; the engine separately fail-closes via assertPerpTakerFeeConfig).
+ *
+ * Why per-channel: the 2026-08-19/20 BTC drain was 100% API-key flow, and a
+ * flat raise taxes the honest web majority for the bots' edge. The channel
+ * check is auth-derived server-side (`auth.creds.kind === 'key'`), never
+ * client-supplied — a bot CAN dodge it by scripting a session token, so this
+ * is a raised bar and a clean ToS line, not a wall; the structural fix is
+ * next-tick execution.
+ */
+export const getPerpEffectiveTakerFeeBps = (
+  contract: { takerFeeBps?: number; takerFeeApiBps?: number },
+  isApi: boolean
+): number => {
+  const base = getPerpTakerFeeBps(contract)
+  if (!isApi) return base
+  const { takerFeeApiBps } = contract
+  if (takerFeeApiBps === undefined || !isValidTakerFeeApiBps(takerFeeApiBps))
+    return base
+  return Math.max(base, takerFeeApiBps)
 }
 
 /** Fee in mana on a notional amount. Returns 0 for any degenerate input. */
