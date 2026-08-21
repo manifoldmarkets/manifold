@@ -6,14 +6,24 @@ import {
   creditPerpPoolFee,
   getPerpTakerFeeImpact,
   getPerpTakerFeeBps,
+  perpMaxFeeFor,
   perpOpenFeeQuote,
+  perpOwnContributionInputs,
   perpSizeFeeDetails,
+  PERP_FEE_SLIPPAGE_BPS,
   PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_IMPACT_MAX,
   PERP_TAKER_FEE_BPS_DEFAULT,
   PERP_TAKER_FEE_BPS_MAX,
 } from './fees'
-import { openPosition, PerpState } from './amm'
+import {
+  assertPerpPositionNumbers,
+  closePosition,
+  getPerpBackingPool,
+  getPositionValue,
+  openPosition,
+  PerpState,
+} from './amm'
 import { isPerpEscrowBalanced } from './escrow'
 import { PerpPosition } from './position'
 
@@ -361,6 +371,7 @@ describe('open path with the size fee (engine composition)', () => {
       grossPoolDepth: state.pool.L + state.pool.S,
       existingSize: 0,
       existingCostBasis: 0,
+      existingPositionValue: 0,
       existingTakerFeeCostBasis: 0,
       addedNotional: mana * leverage,
       baseBps: 10,
@@ -433,6 +444,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
       grossPoolDepth: initialPool.pool.L + initialPool.pool.S,
       existingSize: 0,
       existingCostBasis: 0,
+      existingPositionValue: 0,
       existingTakerFeeCostBasis: 0,
       addedNotional: notional,
       baseBps: base,
@@ -474,6 +486,10 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
         grossPoolDepth: state.pool.L + state.pool.S,
         existingSize: position?.size ?? 0,
         existingCostBasis: position?.costBasis ?? 0,
+        // Fixed mark: every chunk merges at `price`, so entryPrice stays
+        // `price`, π stays 0 and the value equals the cost basis — the cap
+        // is inert and the telescoping is unaffected by it.
+        existingPositionValue: position ? getPositionValue(position, price) : 0,
         existingTakerFeeCostBasis: position?.takerFeeCostBasis ?? 0,
         addedNotional: chunkNotional,
         baseBps: base,
@@ -521,6 +537,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
       grossPoolDepth: 466_000 + 300_000, // pool banked their 300k margin (1×)
       existingSize: 300_000,
       existingCostBasis: 300_000,
+      existingPositionValue: 300_000,
       existingTakerFeeCostBasis: 0,
       addedNotional: 100_000,
       baseBps: base,
@@ -539,6 +556,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
       grossPoolDepth: 10_000,
       existingSize: 50_000,
       existingCostBasis: 50_000,
+      existingPositionValue: 50_000,
       existingTakerFeeCostBasis: 0,
       addedNotional: 20_000,
       baseBps: base,
@@ -554,6 +572,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
         grossPoolDepth: 10_000,
         existingSize: 50_000,
         existingCostBasis: 50_000,
+        existingPositionValue: 50_000,
         existingTakerFeeCostBasis: 0,
         addedNotional: 20_000,
         baseBps: base,
@@ -565,6 +584,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
         grossPoolDepth: 10_000,
         existingSize: 50_000,
         existingCostBasis: 50_000,
+        existingPositionValue: 50_000,
         existingTakerFeeCostBasis: 0,
         addedNotional: 0,
         baseBps: base,
@@ -579,6 +599,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
         grossPoolDepth: badPool,
         existingSize: 0,
         existingCostBasis: 0,
+        existingPositionValue: 0,
         existingTakerFeeCostBasis: 0,
         addedNotional: 10_000,
         baseBps: base,
@@ -595,6 +616,7 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
       grossPoolDepth: 466_000,
       existingSize: NaN,
       existingCostBasis: NaN,
+      existingPositionValue: NaN,
       existingTakerFeeCostBasis: Infinity,
       addedNotional: 10_000,
       baseBps: base,
@@ -676,5 +698,779 @@ describe('accruePerpPositionTakerFee', () => {
         1
       )
     ).toThrow()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Mark-to-market own-contribution netting.
+//
+// `perpOpenFeeQuote` nets the trader's own standing contribution out of the
+// depth. That contribution is `min(costBasis, positionValue) + takerFeeBasis`,
+// NOT the raw cost basis: `costBasis` is the margin POSTED and is never marked
+// to market, while the gross pool has already been reduced by every payout to
+// a closing counterparty. Netting the raw basis deducts mana that has left the
+// pool, and the fee is quadratic in 1/depth, so the error squares.
+// ---------------------------------------------------------------------------
+describe('perpOpenFeeQuote own-contribution is marked to market', () => {
+  const base = 10
+  const entryPrice = 100
+
+  // Build the drawdown through the REAL transitions rather than hand-fed
+  // numbers: two 1x traders, the mark falls, the winner closes — which is what
+  // actually removes mana from the loser's pool.
+  const buildDrawdown = (markAfter: number) => {
+    let state: PerpState = { pool: { L: 50_000, S: 50_000 }, positions: [] }
+
+    // W opens long 200k margin at 1x; flat 10 bps fee (impact was 0 then).
+    const wOpen = openPosition(
+      state,
+      'W',
+      'c1',
+      'long',
+      200_000,
+      1,
+      entryPrice,
+      undefined,
+      1
+    )
+    const wFee = calcPerpTakerFee(200_000, base)
+    const wAccrued = accruePerpPositionTakerFee(
+      wOpen.state,
+      wOpen.position,
+      wFee
+    )
+    state = creditPerpPoolFee(wAccrued.state, 'long', wFee)
+
+    // B opens short 200k margin at 1x.
+    const bOpen = openPosition(
+      state,
+      'B',
+      'c1',
+      'short',
+      200_000,
+      1,
+      entryPrice,
+      undefined,
+      1
+    )
+    const bFee = calcPerpTakerFee(200_000, base)
+    const bAccrued = accruePerpPositionTakerFee(
+      bOpen.state,
+      bOpen.position,
+      bFee
+    )
+    state = creditPerpPoolFee(bAccrued.state, 'short', bFee)
+
+    // The mark falls and B realizes. closePosition debits the LOSER's pool by
+    // the winner's profit, so part of W's posted margin physically leaves.
+    const b = state.positions.find((p) => p.userId === 'B') as PerpPosition
+    state = closePosition(state, b, markAfter).state
+    const w = state.positions.find((p) => p.userId === 'W') as PerpPosition
+    return { state, w }
+  }
+
+  const quoteAdd = (
+    state: PerpState,
+    w: PerpPosition,
+    mark: number,
+    addedNotional: number,
+    impact: number
+  ) =>
+    perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: w.size,
+      existingCostBasis: w.costBasis,
+      existingPositionValue: getPositionValue(w, mark),
+      existingTakerFeeCostBasis: w.takerFeeCostBasis ?? 0,
+      addedNotional,
+      baseBps: base,
+      impact,
+    })
+
+  // The pre-fix expression, kept explicit so the regression is pinned rather
+  // than merely described.
+  const quoteAddNettingRawBasis = (
+    state: PerpState,
+    w: PerpPosition,
+    addedNotional: number,
+    impact: number
+  ) =>
+    perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: w.size,
+      existingCostBasis: w.costBasis,
+      existingPositionValue: w.costBasis,
+      existingTakerFeeCostBasis: w.takerFeeCostBasis ?? 0,
+      addedNotional,
+      baseBps: base,
+      impact,
+    })
+
+  const quoteFresh = (
+    state: PerpState,
+    addedNotional: number,
+    impact: number
+  ) =>
+    perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional,
+      baseBps: base,
+      impact,
+    })
+
+  it('builds the drawdown the fee has to price', () => {
+    const { state, w } = buildDrawdown(60)
+    // B's 80k profit came out of poolLong: 40% of W's posted margin is gone.
+    expect(state.pool.L).toBeCloseTo(170_200, 6)
+    expect(state.pool.S).toBeCloseTo(50_200, 6)
+    expect(state.pool.L + state.pool.S).toBeCloseTo(220_400, 6)
+    expect(w.costBasis).toBe(200_000)
+    expect(w.takerFeeCostBasis).toBe(200)
+    expect(getPositionValue(w, 60)).toBeCloseTo(120_000, 6)
+  })
+
+  it.each([
+    // impact, marked fee, raw-basis fee, fresh-account fee
+    [90, 811.23, 19_488.68, 20.49],
+    [10, 107.91, 2_183.19, 20.05],
+  ])(
+    'prices an underwater add against the mana still in the pool (impact %i)',
+    (impact, marked, rawBasis, fresh) => {
+      const { state, w } = buildDrawdown(60)
+      const add = 20_000
+
+      // depth = 220,400 − (min(200,000, 120,000) + 200) = 100,200
+      const q = quoteAdd(state, w, 60, add, impact)
+      expect(q.fee).toBeCloseTo(marked, 2)
+      expect(q.depthExhausted).toBe(false)
+
+      // The regression: netting the raw basis leaves depth 20,200 instead of
+      // 100,200 and charges ~97% of the M$20,000 margin.
+      const regressed = quoteAddNettingRawBasis(state, w, add, impact)
+      expect(regressed.fee).toBeCloseTo(rawBasis, 2)
+      expect(regressed.fee / q.fee).toBeGreaterThan(20)
+
+      // Still strictly dearer than a fresh account taking the same notional —
+      // the standing position keeps the add on the upper integral segment.
+      const freshQuote = quoteFresh(state, add, impact)
+      expect(freshQuote.fee).toBeCloseTo(fresh, 2)
+      expect(q.fee).toBeGreaterThan(freshQuote.fee)
+      // ...but no longer by the ~1000x the raw basis produced.
+      expect(regressed.fee / freshQuote.fee).toBeGreaterThan(100)
+      expect(q.fee / freshQuote.fee).toBeLessThan(50)
+    }
+  )
+
+  it('caps at cost basis, so a PROFITABLE holder is not over-netted', () => {
+    // Value 260k > costBasis 200k. Unrealized profit is a claim on the
+    // OPPOSING pool, not mana this trader posted, so it must not enlarge the
+    // deduction (which would shrink the depth and overcharge them).
+    const { state, w } = buildDrawdown(60)
+    const capped = perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: w.size,
+      existingCostBasis: w.costBasis,
+      existingPositionValue: 260_000,
+      existingTakerFeeCostBasis: w.takerFeeCostBasis ?? 0,
+      addedNotional: 20_000,
+      baseBps: base,
+      impact: 90,
+    })
+    expect(capped.fee).toBeCloseTo(
+      quoteAddNettingRawBasis(state, w, 20_000, 90).fee,
+      10
+    )
+  })
+
+  it('nets only the fee basis when the position is worth nothing', () => {
+    // Fully underwater: every mana of margin has been paid out, so only the
+    // cash fees the trader paid in are still theirs.
+    const { state, w } = buildDrawdown(60)
+    const q = perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: w.size,
+      existingCostBasis: w.costBasis,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: w.takerFeeCostBasis ?? 0,
+      addedNotional: 20_000,
+      baseBps: base,
+      impact: 90,
+    })
+    // depth = gross − takerFeeCostBasis only.
+    expect(q.fee).toBeCloseTo(183.83, 2)
+    expect(q.fee).toBeGreaterThan(quoteFresh(state, 20_000, 90).fee)
+    expect(q.depthExhausted).toBe(false)
+  })
+
+  it('is inert at a fixed mark, so chunk splitting still telescopes exactly', () => {
+    // π = 0 while the mark never moves, so value === costBasis and the cap
+    // changes nothing — the property the netting exists to guarantee.
+    const price = 100
+    const impact = 90
+    const whole = 400_000
+    const chunks = [1, 37_500, 112_499, 250_000]
+    expect(chunks.reduce((a, b) => a + b, 0)).toBe(whole)
+
+    let state: PerpState = { pool: { L: 250_000, S: 216_000 }, positions: [] }
+    const oneShot = perpOpenFeeQuote({
+      grossPoolDepth: state.pool.L + state.pool.S,
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: whole,
+      baseBps: base,
+      impact,
+    }).fee
+
+    let position: PerpPosition | undefined
+    let total = 0
+    for (const chunk of chunks) {
+      const details = perpOpenFeeQuote({
+        grossPoolDepth: state.pool.L + state.pool.S,
+        existingSize: position?.size ?? 0,
+        existingCostBasis: position?.costBasis ?? 0,
+        existingPositionValue: position ? getPositionValue(position, price) : 0,
+        existingTakerFeeCostBasis: position?.takerFeeCostBasis ?? 0,
+        addedNotional: chunk,
+        baseBps: base,
+        impact,
+      })
+      // The cap is provably inert at every step, not just in aggregate.
+      if (position)
+        expect(getPositionValue(position, price)).toBeCloseTo(
+          position.costBasis,
+          6
+        )
+      const openRes = openPosition(
+        state,
+        'u',
+        'c1',
+        'long',
+        chunk,
+        1,
+        price,
+        position,
+        1
+      )
+      const accrued = accruePerpPositionTakerFee(
+        openRes.state,
+        openRes.position,
+        details.fee
+      )
+      state = creditPerpPoolFee(accrued.state, 'long', details.fee)
+      position = accrued.position
+      total += details.fee
+    }
+    expect(total).toBeCloseTo(oneShot, 6)
+  })
+
+  it('telescopes exactly for an UNDERWATER holder, where the cap is live', () => {
+    // The load-bearing splitting test. Starting flat would make
+    // positionValue === costBasis, so the assertion would pass just as well
+    // against the raw-cost-basis netting it replaced — it would prove nothing
+    // about the new branch. Starting from a drawdown keeps `min` pinned to
+    // positionValue at every step.
+    //
+    // The invariant that makes it telescope is NOT "value equals basis": an
+    // add of margin m raises costBasis by m AND positionValue by m (the new
+    // tranche opens at the mark carrying π = 0, and mergedEntryPrice conserves
+    // the old π), so their DIFFERENCE is constant at the drawdown and the
+    // netted quantity still grows by exactly the margin the pool banked.
+    const mark = 60
+    const impact = 90
+    const { state: start, w: w0 } = buildDrawdown(mark)
+    const drawdown = w0.costBasis - getPositionValue(w0, mark)
+    expect(drawdown).toBeCloseTo(80_000, 6)
+
+    const whole = 20_000
+    const chunks = [1, 4_999, 7_000, 8_000]
+    expect(chunks.reduce((a, b) => a + b, 0)).toBe(whole)
+
+    // Pinned as a literal, not recomputed: comparing the chunked total to a
+    // one-shot from the same helper would agree under a regression too.
+    const oneShot = quoteAdd(start, w0, mark, whole, impact).fee
+    expect(oneShot).toBeCloseTo(811.231907, 6)
+
+    let state = start
+    let position: PerpPosition | undefined = w0
+    let total = 0
+    for (const chunk of chunks) {
+      // The cap is pinned to positionValue for the whole walk, and the
+      // drawdown never moves — this is the property, asserted every step.
+      const value = getPositionValue(position as PerpPosition, mark)
+      expect(value).toBeLessThan((position as PerpPosition).costBasis)
+      expect((position as PerpPosition).costBasis - value).toBeCloseTo(
+        drawdown,
+        6
+      )
+
+      const details = perpOpenFeeQuote({
+        grossPoolDepth: state.pool.L + state.pool.S,
+        existingSize: (position as PerpPosition).size,
+        existingCostBasis: (position as PerpPosition).costBasis,
+        existingPositionValue: value,
+        existingTakerFeeCostBasis:
+          (position as PerpPosition).takerFeeCostBasis ?? 0,
+        addedNotional: chunk,
+        baseBps: base,
+        impact,
+      })
+      const openRes = openPosition(
+        state,
+        'W',
+        'c1',
+        'long',
+        chunk,
+        1,
+        mark,
+        position,
+        1
+      )
+      const accrued = accruePerpPositionTakerFee(
+        openRes.state,
+        openRes.position,
+        details.fee
+      )
+      state = creditPerpPoolFee(accrued.state, 'long', details.fee)
+      position = accrued.position
+      total += details.fee
+    }
+
+    expect(total).toBeCloseTo(oneShot, 6)
+    expect(total).toBeCloseTo(811.231907, 6)
+    // The drawdown survives the whole sequence.
+    expect(
+      (position as PerpPosition).costBasis -
+        getPositionValue(position as PerpPosition, mark)
+    ).toBeCloseTo(drawdown, 6)
+
+    // And the regression is genuinely excluded: netting the raw basis over
+    // the same chunks telescopes too, but to a completely different total.
+    let rawState = start
+    let rawPosition: PerpPosition | undefined = w0
+    let rawTotal = 0
+    for (const chunk of chunks) {
+      const details = perpOpenFeeQuote({
+        grossPoolDepth: rawState.pool.L + rawState.pool.S,
+        existingSize: (rawPosition as PerpPosition).size,
+        existingCostBasis: (rawPosition as PerpPosition).costBasis,
+        existingPositionValue: (rawPosition as PerpPosition).costBasis,
+        existingTakerFeeCostBasis:
+          (rawPosition as PerpPosition).takerFeeCostBasis ?? 0,
+        addedNotional: chunk,
+        baseBps: base,
+        impact,
+      })
+      const openRes = openPosition(
+        rawState,
+        'W',
+        'c1',
+        'long',
+        chunk,
+        1,
+        mark,
+        rawPosition,
+        1
+      )
+      const accrued = accruePerpPositionTakerFee(
+        openRes.state,
+        openRes.position,
+        details.fee
+      )
+      rawState = creditPerpPoolFee(accrued.state, 'long', details.fee)
+      rawPosition = accrued.position
+      rawTotal += details.fee
+    }
+    expect(rawTotal).toBeCloseTo(
+      quoteAddNettingRawBasis(start, w0, whole, impact).fee,
+      6
+    )
+    expect(rawTotal / total).toBeGreaterThan(20)
+  })
+  it('separates true exhaustion from the drawdown that only looked like it', () => {
+    // Deeper drawdown: the winner realizes at 20, so 160k of W's margin has
+    // left poolLong. The RAW basis reads this as exhausted and hard-rejects
+    // the add, even though poolLong alone covers W's whole remaining claim
+    // twice over.
+    const { state, w } = buildDrawdown(20)
+    expect(state.pool.L).toBeCloseTo(90_200, 6)
+    expect(state.pool.L + state.pool.S).toBeCloseTo(140_400, 6)
+    expect(getPositionValue(w, 20)).toBeCloseTo(40_000, 6)
+    expect(state.pool.L).toBeGreaterThan(getPositionValue(w, 20) * 2)
+
+    expect(quoteAddNettingRawBasis(state, w, 20_000, 90).depthExhausted).toBe(
+      true
+    )
+    const q = quoteAdd(state, w, 20, 20_000, 90)
+    expect(q.depthExhausted).toBe(false)
+    expect(q.fee).toBeCloseTo(811.23, 2)
+
+    // Genuine exhaustion still flags: the escrow cannot cover even the
+    // holder's marked claim, so the size fee has no denominator.
+    expect(
+      perpOpenFeeQuote({
+        grossPoolDepth: 10_000,
+        existingSize: 50_000,
+        existingCostBasis: 50_000,
+        existingPositionValue: 50_000,
+        existingTakerFeeCostBasis: 0,
+        addedNotional: 20_000,
+        baseBps: base,
+        impact: 90,
+      }).depthExhausted
+    ).toBe(true)
+  })
+
+  it('never lets an untrustworthy mark buy a discount', () => {
+    // A value we cannot trust falls back to the full cost basis (the old,
+    // strictly HIGHER-fee behaviour). Falling back to 0 would make a corrupt
+    // or omitted mark the cheapest input there is.
+    const { state, w } = buildDrawdown(60)
+    const rawBasisFee = quoteAddNettingRawBasis(state, w, 20_000, 90).fee
+    for (const bad of [NaN, Infinity, -Infinity, -1]) {
+      const q = perpOpenFeeQuote({
+        grossPoolDepth: state.pool.L + state.pool.S,
+        existingSize: w.size,
+        existingCostBasis: w.costBasis,
+        existingPositionValue: bad,
+        existingTakerFeeCostBasis: w.takerFeeCostBasis ?? 0,
+        addedNotional: 20_000,
+        baseBps: base,
+        impact: 90,
+      })
+      expect(q.fee).toBeCloseTo(rawBasisFee, 10)
+      expect(q.fee).toBeGreaterThan(quoteAdd(state, w, 60, 20_000, 90).fee)
+    }
+  })
+
+  it('does not double-subtract the closed leg on a flip', () => {
+    // A flip closes the OPPOSITE side, so there is no standing same-side row:
+    // the payout is already out of the gross depth and the own-contribution
+    // fields are all zero. Subtracting the closed position's value again
+    // would understate the depth and overcharge the new leg.
+    const { state } = buildDrawdown(60)
+    const w = state.positions.find((p) => p.userId === 'W') as PerpPosition
+    const afterClose = closePosition(state, w, 60)
+    const grossAfterClose = afterClose.state.pool.L + afterClose.state.pool.S
+    // The payout that leaves the pool IS getPositionValue — the same quantity
+    // the panel subtracts for a flip preview.
+    expect(afterClose.payout).toBeCloseTo(getPositionValue(w, 60), 6)
+    expect(grossAfterClose).toBeCloseTo(220_400 - afterClose.payout, 6)
+
+    const newLeg = perpOpenFeeQuote({
+      grossPoolDepth: grossAfterClose,
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 20_000,
+      baseBps: base,
+      impact: 90,
+    })
+    // Identical to a fresh account opening the same notional on that pool.
+    expect(newLeg.fee).toBeCloseTo(
+      quoteFresh(afterClose.state, 20_000, 90).fee,
+      10
+    )
+    // Subtracting the closed leg a SECOND time is wrong in both regimes.
+    // Partially: the depth shrinks and the new leg is overcharged.
+    const partiallyOverSubtracted = perpOpenFeeQuote({
+      grossPoolDepth: grossAfterClose,
+      existingSize: 0,
+      existingCostBasis: 60_000,
+      existingPositionValue: 60_000,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 20_000,
+      baseBps: base,
+      impact: 90,
+    })
+    expect(partiallyOverSubtracted.fee).toBeGreaterThan(newLeg.fee)
+
+    // Fully: the depth goes past zero and the quote collapses into the
+    // base-only exhausted fallback — an UNDERcharge that would also trip the
+    // engine's fail-closed reject on a perfectly healthy flip.
+    const fullyOverSubtracted = perpOpenFeeQuote({
+      grossPoolDepth: grossAfterClose,
+      existingSize: 0,
+      existingCostBasis: getPositionValue(w, 60),
+      existingPositionValue: getPositionValue(w, 60),
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 20_000,
+      baseBps: base,
+      impact: 90,
+    })
+    expect(fullyOverSubtracted.depthExhausted).toBe(true)
+    expect(fullyOverSubtracted.fee).toBeCloseTo(
+      calcPerpTakerFee(20_000, base),
+      10
+    )
+    expect(fullyOverSubtracted.fee).toBeLessThan(newLeg.fee)
+  })
+
+  // Why a client must gate on RAW contract/position fields rather than on
+  // Number.isFinite of the derived ones: every helper on this path is
+  // deliberately total, so each launders bad input into a finite-looking
+  // value. The engine throws on all three, so previewing them promises a
+  // trade that cannot succeed.
+  it('launders bad input into finite-looking values, so output checks are not a gate', () => {
+    // Pools: non-finite or negative collapse to 0, not to NaN.
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -1])
+      expect(getPerpBackingPool(bad, 100_000)).toBe(0)
+
+    // Config: out-of-range values read as the platform defaults...
+    expect(getPerpTakerFeeBps({ takerFeeBps: 5_000 })).toBe(
+      PERP_TAKER_FEE_BPS_DEFAULT
+    )
+    expect(getPerpTakerFeeImpact({ takerFeeImpact: 1e9 })).toBe(
+      PERP_TAKER_FEE_IMPACT_DEFAULT
+    )
+    // ...while the engine's own guard rejects the same contract outright.
+    expect(() => assertPerpTakerFeeConfig({ takerFeeBps: 5_000 })).toThrow()
+    expect(() => assertPerpTakerFeeConfig({ takerFeeImpact: 1e9 })).toThrow()
+
+    // Position: a non-positive entryPrice marks as FLAT rather than NaN.
+    const corrupt: PerpPosition = {
+      userId: 'W',
+      contractId: 'c1',
+      direction: 'long',
+      size: 200_000,
+      costBasis: 200_000,
+      originalCostBasis: 200_000,
+      takerFeeCostBasis: 200,
+      entryPrice: 0,
+      leverage: 1,
+      liquidationPrice: 0,
+      openedTime: 1,
+      updatedTime: 1,
+    }
+    expect(getPositionValue(corrupt, 60)).toBe(200_000)
+    expect(Number.isFinite(getPositionValue(corrupt, 60))).toBe(true)
+    expect(() => assertPerpPositionNumbers(corrupt)).toThrow()
+
+    // And the quote built from those laundered inputs looks perfectly
+    // ordinary — a base-only fee with no flag raised. That is the number a
+    // client would otherwise display and derive its maxFee from.
+    const laundered = perpOpenFeeQuote({
+      grossPoolDepth: getPerpBackingPool(Number.NaN, 100_000),
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 20_000,
+      baseBps: getPerpTakerFeeBps({ takerFeeBps: 5_000 }),
+      impact: getPerpTakerFeeImpact({ takerFeeImpact: 1e9 }),
+    })
+    expect(Number.isFinite(laundered.fee)).toBe(true)
+    expect(laundered.depthExhausted).toBe(false)
+    expect(laundered.fee).toBeCloseTo(
+      calcPerpTakerFee(20_000, PERP_TAKER_FEE_BPS_DEFAULT),
+      10
+    )
+  })
+})
+
+// The impure half of the fee inputs. Until this was extracted it lived
+// copy-pasted in engine.ts and perp-bet-panel.tsx and was pinned by NOTHING:
+// substituting `position.costBasis` for `getPositionValue(position, price)` —
+// a complete revert of the mark-to-market fix — type-checked and left the
+// whole suite green while charging 24x the correct fee.
+describe('perpOwnContributionInputs', () => {
+  const price = 60
+  const held: PerpPosition = {
+    userId: 'W',
+    contractId: 'c1',
+    direction: 'long',
+    size: 200_000,
+    costBasis: 200_000,
+    originalCostBasis: 200_000,
+    takerFeeCostBasis: 200,
+    entryPrice: 100,
+    leverage: 1,
+    liquidationPrice: 0,
+    openedTime: 1,
+    updatedTime: 1,
+  }
+
+  it('marks the standing contribution to market rather than reporting the posted margin', () => {
+    const inputs = perpOwnContributionInputs(held, price)
+    expect(inputs).toEqual({
+      existingSize: 200_000,
+      existingCostBasis: 200_000,
+      // 40% underwater: costBasis + π = 200,000 − 80,000.
+      existingPositionValue: 120_000,
+      existingTakerFeeCostBasis: 200,
+    })
+    // The distinction the whole change rests on.
+    expect(inputs.existingPositionValue).not.toBe(held.costBasis)
+    expect(inputs.existingPositionValue).toBe(getPositionValue(held, price))
+  })
+
+  it('feeds the quote the fee the engine actually charges', () => {
+    // End-to-end through the real assembly, on the drawdown fixture's pools.
+    const quoted = perpOpenFeeQuote({
+      grossPoolDepth: 220_400,
+      ...perpOwnContributionInputs(held, price),
+      addedNotional: 20_000,
+      baseBps: 10,
+      impact: 90,
+    })
+    expect(quoted.fee).toBeCloseTo(811.231907, 6)
+
+    // Substituting the posted margin — the pre-fix expression — is a 24x
+    // overcharge that does NOT fail closed: depth stays 20,200 > 0 so
+    // depthExhausted is false, and 19,488.68 < 20,000 so the fee<margin
+    // reject never fires. The trade completes at 97.4% of margin.
+    const reverted = perpOpenFeeQuote({
+      grossPoolDepth: 220_400,
+      existingSize: held.size,
+      existingCostBasis: held.costBasis,
+      existingPositionValue: held.costBasis,
+      existingTakerFeeCostBasis: held.takerFeeCostBasis ?? 0,
+      addedNotional: 20_000,
+      baseBps: 10,
+      impact: 90,
+    })
+    expect(reverted.fee).toBeCloseTo(19_488.679541, 6)
+    expect(reverted.depthExhausted).toBe(false)
+    expect(reverted.fee).toBeLessThan(20_000)
+    expect(reverted.fee / quoted.fee).toBeCloseTo(24.02, 2)
+  })
+
+  it('tracks the mark, so the same position quotes differently as price moves', () => {
+    // Guards against any implementation that ignores `price`.
+    expect(perpOwnContributionInputs(held, 100).existingPositionValue).toBe(
+      200_000
+    )
+    expect(perpOwnContributionInputs(held, 60).existingPositionValue).toBe(
+      120_000
+    )
+    expect(perpOwnContributionInputs(held, 20).existingPositionValue).toBe(
+      40_000
+    )
+  })
+
+  it('is all zeros for a fresh open or a flip’s new leg', () => {
+    // A flip's closed leg has already left grossPoolDepth via its payout, so
+    // it must not be subtracted here as well.
+    expect(perpOwnContributionInputs(undefined, price)).toEqual({
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: 0,
+    })
+  })
+
+  it('treats a missing fee basis as 0 without disturbing the rest', () => {
+    const { takerFeeCostBasis: _omitted, ...noFeeBasis } = held
+    expect(
+      perpOwnContributionInputs(noFeeBasis as PerpPosition, price)
+    ).toMatchObject({
+      existingTakerFeeCostBasis: 0,
+      existingPositionValue: 120_000,
+    })
+  })
+
+  it('propagates a non-finite mark rather than laundering it — the engine rejects on this', () => {
+    expect(
+      Number.isFinite(
+        perpOwnContributionInputs(held, Number.NaN).existingPositionValue
+      )
+    ).toBe(false)
+  })
+})
+
+describe('perpMaxFeeFor (fee slippage band)', () => {
+  it('is the previewed fee plus PERP_FEE_SLIPPAGE_BPS of NOTIONAL', () => {
+    // 10 bps of 500,000 = M$500 of room on top of the quote.
+    expect(perpMaxFeeFor(3_102, 500_000)).toBeCloseTo(3_602, 2)
+    expect(perpMaxFeeFor(789, 500_000)).toBeCloseTo(1_289, 2)
+  })
+
+  it('keeps "free" meaning free — a zero preview authorises exactly zero', () => {
+    // A client whose config is stale (impact just enabled) must not silently
+    // consent to a fee it never displayed.
+    expect(perpMaxFeeFor(0, 500_000)).toBe(0)
+    expect(perpMaxFeeFor(-1, 500_000)).toBe(0)
+    expect(perpMaxFeeFor(Number.NaN, 500_000)).toBe(0)
+  })
+
+  it('degrades to the bare fee when the notional is degenerate', () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY])
+      expect(perpMaxFeeFor(100, bad)).toBeCloseTo(100, 2)
+  })
+
+  it('holds its tolerable pool move as the trade grows, where the old band did not', () => {
+    // The regression this replaces. The old band granted room proportional to
+    // the FEE, but the fee's sensitivity to a pool move grows faster than the
+    // fee does (the impact term goes as 1/depth^2), so the pool move the band
+    // could actually absorb SHRANK as the trade grew — tightest on exactly the
+    // pool-scale entries the impact fee exists to price.
+    const gross = 379_611.25 // live BTC book
+    const feeAt = (notional: number, depth: number, impact: number) => {
+      const s = notional / depth
+      return (notional * 10) / 10_000 + ((impact / 3) * depth * s ** 3) / 10_000
+    }
+    const oldBand = (fee: number) => Math.ceil(fee * 1.01 * 100) / 100 + 0.01
+    // Largest outflow this band survives, as a fraction of the pool.
+    const tolerableDrop = (notional: number, bound: number) => {
+      let lo = gross * 0.3
+      let hi = gross
+      for (let i = 0; i < 300; i++) {
+        const mid = (lo + hi) / 2
+        if (feeAt(notional, mid, 90) > bound) lo = mid
+        else hi = mid
+      }
+      return 1 - hi / gross
+    }
+    const small = 200_000
+    const large = 1_000_000
+    const oldSmall = tolerableDrop(small, oldBand(feeAt(small, gross, 90)))
+    const oldLarge = tolerableDrop(large, oldBand(feeAt(large, gross, 90)))
+    // Old: the bigger trade tolerated LESS drift (~1.09% vs ~0.52%).
+    expect(oldLarge).toBeLessThan(oldSmall)
+    expect(oldLarge).toBeLessThan(0.006)
+
+    const newSmall = tolerableDrop(
+      small,
+      perpMaxFeeFor(feeAt(small, gross, 90), small)
+    )
+    const newLarge = tolerableDrop(
+      large,
+      perpMaxFeeFor(feeAt(large, gross, 90), large)
+    )
+    // New: both absorb far more, and the large trade is no longer the fragile
+    // one by an order of magnitude.
+    expect(newSmall).toBeGreaterThan(oldSmall * 10)
+    expect(newLarge).toBeGreaterThan(oldLarge * 4)
+    // Room granted per unit of size is constant by construction.
+    for (const c of [
+      { notional: small, fee: feeAt(small, gross, 90) },
+      { notional: large, fee: feeAt(large, gross, 90) },
+    ])
+      expect(
+        ((perpMaxFeeFor(c.fee, c.notional) - c.fee) / c.notional) * 10_000
+      ).toBeCloseTo(PERP_FEE_SLIPPAGE_BPS, 1)
+  })
+
+  it('absorbs the pool drift that actually occurs on a live book', () => {
+    // BTC gross 379,611; median 5s outflow M$300, p95 M$39,412. At the launch
+    // impact of 10 a M$500k entry must stay quotable across ordinary drift.
+    const gross = 379_611.25
+    const feeAt = (notional: number, depth: number, impact: number) => {
+      const s = notional / depth
+      return (notional * 10) / 10_000 + ((impact / 3) * depth * s ** 3) / 10_000
+    }
+    const notional = 500_000
+    const quoted = feeAt(notional, gross, 10)
+    const bound = perpMaxFeeFor(quoted, notional)
+    // p95 outflow leaves; the fee must still be inside the band.
+    expect(feeAt(notional, gross - 39_412, 10)).toBeLessThan(bound)
+    // The band is not unlimited: a catastrophic drain still rejects.
+    expect(feeAt(notional, gross - 200_000, 10)).toBeGreaterThan(bound)
   })
 })

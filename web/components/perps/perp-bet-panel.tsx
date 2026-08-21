@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
+  assertPerpPositionNumbers,
   getPerpBackingPool,
   getPerpOpenInterestCapacity,
   getPositionValue,
@@ -19,9 +20,12 @@ import {
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
 import {
+  assertPerpTakerFeeConfig,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
+  perpMaxFeeFor,
   perpOpenFeeQuote,
+  perpOwnContributionInputs,
 } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
@@ -73,9 +77,20 @@ export const PerpBetPanel = (props: {
   // open direction derives from these, so this panel stays consistent with
   // actions taken anywhere without its own fetch. Null while loading.
   positions?: PerpPositionRow[] | null
+  // Rows for this contract that failed row-level sanity. They are excluded
+  // from `positions` (nothing can render or price against them), but the
+  // engine refuses to trade at all for a user who holds one, so the preview
+  // must fail closed rather than quote a fresh open.
+  unsoundPositions?: PerpPositionRow[]
   oracleTradingPaused?: boolean
 }) => {
-  const { contract, onTrade, positions, oracleTradingPaused = false } = props
+  const {
+    contract,
+    onTrade,
+    positions,
+    unsoundPositions,
+    oracleTradingPaused = false,
+  } = props
   const user = useUser()
 
   const [direction, setDirection] = useState<'long' | 'short'>('long')
@@ -186,40 +201,112 @@ export const PerpBetPanel = (props: {
   // depth net of the trader's own contribution, and a flip pays on the new
   // leg only, against the post-flip-close pool depth (the close payout —
   // exactly getPositionValue — leaves the pool before the new leg is
-  // priced). Accuracy of this preview needs a loaded position (myPosition),
-  // which is why submit is gated on `positions` below.
+  // priced). An ADD's netted contribution is marked to market at the same
+  // price the engine uses, so a losing holder is not charged for margin that
+  // has already left the pool. Accuracy of this preview needs a loaded
+  // position (myPosition), which is why submit is gated on `positions`
+  // below.
   const takerFeeBps = getPerpTakerFeeBps(contract)
   const takerFeeImpact = getPerpTakerFeeImpact(contract)
   const grossPoolDepth = getPerpBackingPool(
     contract.poolLong,
     contract.poolShort
   )
+  // Current value of the held position at the trade mark — the SAME quantity
+  // the engine reads under its lock. It plays two different roles depending
+  // on the action, and never both at once:
+  //   - FLIP: it is the payout that leaves the pool before the new leg is
+  //     priced, so it comes off the gross depth.
+  //   - ADD: it caps the trader's own standing contribution that gets netted
+  //     out of that depth (min with costBasis), so margin already paid out to
+  //     winners is not deducted twice over.
+  const myPositionValue = myPosition
+    ? getPositionValue({ ...myPosition, contractId: contract.id }, price)
+    : 0
   const feeGrossDepth =
     isFlip && myPosition
-      ? Math.max(
-          grossPoolDepth -
-            getPositionValue({ ...myPosition, contractId: contract.id }, price),
-          0
-        )
+      ? Math.max(grossPoolDepth - myPositionValue, 0)
       : grossPoolDepth
   const feeDetails = perpOpenFeeQuote({
     grossPoolDepth: feeGrossDepth,
-    existingSize: isAdd && myPosition ? myPosition.size : 0,
-    existingCostBasis: isAdd && myPosition ? myPosition.costBasis : 0,
-    existingTakerFeeCostBasis:
-      isAdd && myPosition ? myPosition.takerFeeCostBasis : 0,
+    // Shared with the engine so the preview cannot derive the trader's own
+    // contribution differently from the charge.
+    ...perpOwnContributionInputs(
+      isAdd && myPosition
+        ? { ...myPosition, contractId: contract.id }
+        : undefined,
+      price
+    ),
     addedNotional: notional,
     baseBps: takerFeeBps,
     impact: takerFeeImpact,
   })
   const openFee = feeDetails.fee
+  // Refuse to preview a fee we don't trust, rather than showing a
+  // plausible-looking number the engine will not charge (and a maxFee derived
+  // from it, which then rejects the trade with an opaque server string).
+  //
+  // The check runs on the RAW contract/position fields, not on the derived
+  // values, because every helper in this path is deliberately TOTAL and
+  // launders bad input into a finite-looking result: getPerpBackingPool
+  // returns 0 for non-finite or negative pools, getPerpTakerFeeBps /
+  // getPerpTakerFeeImpact substitute the platform defaults for out-of-range
+  // config, and getPositionValue returns the raw cost basis when entryPrice
+  // is non-positive (getUnrealizedEquity short-circuits to 0). Checking
+  // Number.isFinite on their OUTPUTS therefore passes in exactly the cases
+  // that matter. The engine, by contrast, throws on all three
+  // (assertPerpTakerFeeConfig, assertUserPerpRowsSound), so previewing them
+  // would promise a trade that cannot succeed.
+  //
+  // The two asserts are the same ones the engine runs, called here rather
+  // than reimplemented so the panel's notion of "valid" cannot drift from the
+  // charging path's.
+  const rawFeeInputsInvalid = useMemo(() => {
+    try {
+      assertPerpTakerFeeConfig(contract)
+      if (myPosition)
+        assertPerpPositionNumbers({ ...myPosition, contractId: contract.id })
+    } catch {
+      return true
+    }
+    // A row the hook filtered out of `positions` is invisible to myPosition,
+    // but the engine still refuses to trade for its owner.
+    if (user && unsoundPositions?.some((r) => r.userId === user.id)) return true
+    return (
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      !Number.isFinite(contract.poolLong) ||
+      contract.poolLong < 0 ||
+      !Number.isFinite(contract.poolShort) ||
+      contract.poolShort < 0
+    )
+  }, [
+    contract.id,
+    contract.poolLong,
+    contract.poolShort,
+    contract.takerFeeBps,
+    contract.takerFeeImpact,
+    myPosition,
+    price,
+    unsoundPositions,
+    user?.id,
+  ])
+  // Raw-field checks are necessary but NOT sufficient: individually finite
+  // inputs can still overflow when combined (two ~1e308 pools sum to
+  // Infinity, which getPerpBackingPool then launders to 0; costBasis plus
+  // equity can do the same). Keep the derived checks alongside them.
+  const feePreviewInvalid =
+    rawFeeInputsInvalid ||
+    !Number.isFinite(contract.poolLong + contract.poolShort) ||
+    !Number.isFinite(grossPoolDepth) ||
+    !Number.isFinite(feeGrossDepth) ||
+    (!!myPosition && !Number.isFinite(myPositionValue)) ||
+    !Number.isFinite(openFee)
   // Price protection sent with the trade: the engine rejects rather than
-  // charges if the authoritative fee exceeds this. The bound is the
-  // DISPLAYED fee plus 1% and a cent of rounding tolerance — pools are at
-  // most a couple of seconds stale here, so honest drift stays inside it,
-  // and the user is never charged meaningfully more than the number they
-  // confirmed. A zero-fee preview authorizes exactly zero.
-  const maxFee = openFee > 0 ? Math.ceil(openFee * 1.01 * 100) / 100 + 0.01 : 0
+  // charges if the authoritative fee exceeds this. The band is the DISPLAYED
+  // fee plus PERP_FEE_SLIPPAGE_BPS of notional — see perpMaxFeeFor for why it
+  // is sized in bps of size rather than as a percentage of the fee.
+  const maxFee = perpMaxFeeFor(openFee, notional)
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -292,6 +379,13 @@ export const PerpBetPanel = (props: {
       // The engine hard-rejects this too — the position would open at a
       // guaranteed total loss.
       toast.error('Fee would exceed your margin — reduce leverage or size')
+      return
+    }
+    if (feePreviewInvalid) {
+      // Mirrors the engine's fail-closed reject on an unpriceable position.
+      toast.error(
+        "Cannot price this trade right now — this market's data can't be read"
+      )
       return
     }
     if (feeDetails.depthExhausted) {
@@ -490,6 +584,7 @@ export const PerpBetPanel = (props: {
         feeEffectiveBps={feeDetails.effectiveBps}
         feeSizeBps={feeDetails.sizeBps}
         feeDepthExhausted={feeDetails.depthExhausted}
+        feePreviewInvalid={feePreviewInvalid}
         poolShareAfter={feeDetails.poolShareAfter}
       />
 
@@ -536,6 +631,9 @@ export const PerpBetPanel = (props: {
           // Engine fail-closes when the size fee has no depth to price
           // against (backing exhausted relative to the position).
           feeDetails.depthExhausted ||
+          // The previewed fee cannot be trusted (non-finite mark, pools, or
+          // position value), so there is nothing for the user to consent to.
+          feePreviewInvalid ||
           oracleTradingPaused
         }
         size="lg"
@@ -713,6 +811,8 @@ const StatsGrid = (props: {
   // The size fee could not be priced (net depth exhausted) — the engine will
   // reject this trade, so surface why while submit is disabled.
   feeDepthExhausted: boolean
+  // A fee input was non-finite, so the quote shown would be meaningless.
+  feePreviewInvalid: boolean
 }) => {
   const {
     direction,
@@ -732,6 +832,7 @@ const StatsGrid = (props: {
     feeSizeBps,
     poolShareAfter,
     feeDepthExhausted,
+    feePreviewInvalid,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
@@ -797,15 +898,24 @@ const StatsGrid = (props: {
       {/* feeDepthExhausted must force the block open: with base = 0 both
           fee components read zero exactly when the explanation for the
           disabled submit lives here. */}
-      {(feeBaseBps > 0 || feeSizeBps > 0 || feeDepthExhausted) && (
+      {(feeBaseBps > 0 ||
+        feeSizeBps > 0 ||
+        feeDepthExhausted ||
+        feePreviewInvalid) && (
         <Col className="gap-0.5">
           <StatRow
             label="Fee (free to close)"
-            value={`${formatMoneyWithDecimals(fee)} (${formatFeePct(
-              notional > 0 ? feeEffectiveBps : feeBaseBps
-            )})`}
+            // Never render a number we don't trust — the scarlet line below
+            // is the whole message in that case.
+            value={
+              feePreviewInvalid
+                ? '—'
+                : `${formatMoneyWithDecimals(fee)} (${formatFeePct(
+                    notional > 0 ? feeEffectiveBps : feeBaseBps
+                  )})`
+            }
             valueClass={
-              isLargeShareFee
+              isLargeShareFee && !feePreviewInvalid
                 ? 'font-semibold text-amber-700 dark:text-amber-400'
                 : undefined
             }
@@ -814,7 +924,7 @@ const StatsGrid = (props: {
               changes with isLargeShareFee, so copy and formats cannot fork
               across the threshold. The full explanation lives in the "why?"
               hover to keep the panel small. */}
-          {(showFeeBreakdown || isLargeShareFee) && (
+          {!feePreviewInvalid && (showFeeBreakdown || isLargeShareFee) && (
             <Row
               className={clsx(
                 'items-center gap-1 text-xs leading-tight',
@@ -832,15 +942,21 @@ const StatsGrid = (props: {
               <SizeFeeWhyTooltip />
             </Row>
           )}
-          {feeExceedsMargin && (
+          {feeExceedsMargin && !feePreviewInvalid && (
             <span className="text-scarlet-600 text-xs font-medium leading-tight">
               Fee would exceed your margin — reduce leverage or size.
             </span>
           )}
-          {feeDepthExhausted && (
+          {feeDepthExhausted && !feePreviewInvalid && (
             <span className="text-scarlet-600 text-xs font-medium leading-tight">
               This market's backing is exhausted relative to your position —
               close or reduce instead of adding.
+            </span>
+          )}
+          {feePreviewInvalid && (
+            <span className="text-scarlet-600 text-xs font-medium leading-tight">
+              This market's data can't be read right now, so the fee can't be
+              quoted and trading is blocked.
             </span>
           )}
         </Col>

@@ -46,7 +46,7 @@ export const PerpHoldersTab = (props: {
   // poll here too so mark price / PnL / positions track the market instead
   // of freezing at page-load values (they used to fetch exactly once).
   const { contract } = useLivePerpContract(props.contract)
-  const holders = usePerpPositions(contract.id)
+  const { positions: holders, unsound } = usePerpPositions(contract.id)
   const [sortKey, setSortKey] = usePersistentInMemoryState<SortKey>(
     'profit',
     `perp-holders-sort-${contract.id}`
@@ -81,8 +81,22 @@ export const PerpHoldersTab = (props: {
   // per side is the market's open interest — the same quantity funding is
   // now derived from. Computed from the rows on screen rather than the
   // contract's denormalized copy so the header always agrees with the list.
-  const longNotional = sumBy(longs, (h) => h.size)
-  const shortNotional = sumBy(shorts, (h) => h.size)
+  //
+  // Rows that failed row-level sanity are excluded from the LIST (nothing can
+  // safely render them) but must still count toward these SUMS:
+  // getPerpOpenInterest sums every row with size > 0 regardless of soundness,
+  // so dropping them here would silently understate open interest and could
+  // flip the summary to "longs only, so no funding is flowing" on a market
+  // that does have shorts.
+  const exposure = [...holders, ...unsound.filter((h) => h.size > 0)]
+  const longNotional = sumBy(
+    exposure.filter((h) => h.direction === 'long'),
+    (h) => h.size
+  )
+  const shortNotional = sumBy(
+    exposure.filter((h) => h.direction === 'short'),
+    (h) => h.size
+  )
 
   // Sorters are descending "most interesting first" except liquidation
   // distance, where the nearest position is the interesting one.

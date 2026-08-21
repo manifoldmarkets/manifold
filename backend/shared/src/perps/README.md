@@ -122,13 +122,51 @@ front. The marginal rate at pool-share `s` is `takerFeeBps + takerFeeImpact
 notional `[N0, N1]` — see `calcPerpSizeFee` and `perpOpenFeeQuote` in
 `common/src/perps/fees.ts`, which every charging and previewing path goes
 through. `s` is measured against the backing pool NET of the trader's own
-standing contribution (their margin + previously paid fees), which is what
-makes the fee splitting-proof per account: the pool banks each add's margin,
-so pricing against the gross pool would let sequential adds ride a depth the
-trader deepened themselves. A fresh position that is share `S` of that depth
+standing contribution, which is what makes the fee splitting-proof per
+account: the pool banks each add's margin, so pricing against the gross pool
+would let sequential adds ride a depth the trader deepened themselves. That
+contribution is `min(costBasis, positionValue) + takerFeeCostBasis` — the
+trader's CLAIM on the pool — what a close would hand back right now — which
+is the same `min` `calculateAvailableCover` and `applyADL` already use, so
+the fee agrees with the solvency math rather than contradicting it. The
+mark-to-market floor matters because `costBasis` never shrinks when a closing
+counterparty is paid out of this trader's side: once that payout happens the
+raw basis deducts mana that really has left the pool, and since the fee is
+quadratic in 1/depth the error squares (measured: a 1× long 40% underwater on
+a market whose counterparty had realized quoted 951× a fresh account's fee
+for the identical added notional, 97.4% of its own margin). The `min` cap
+matters in the other direction — unrealized profit is a claim on the OPPOSING
+pool, not mana this trader posted, so it must not enlarge the deduction.
+⚠️ Note the asymmetry this buys: a MARK MOVE moves no mana (only closes,
+factor-0 ADL and resolution do), so an UNREALIZED drawdown releases part of
+the deduction while every mana is still in the pool — two holders identical
+but for entry price pay ~30% different fees at impact 90. Deliberate (it
+prices the claim, not the history) and bounded by the trader's own posted
+margin, but it is a live calibration question, not a solvency one. The taker-fee basis
+stays outside the `min`, uncapped: those were paid in cash and are not part
+of the position's mark. Splitting-proofness is unaffected: at a fixed mark an
+add of margin `m` raises costBasis AND positionValue by `m`, so
+`costBasis − positionValue` stays constant across a trader's own adds and the
+netted quantity still grows by exactly the margin the pool banked — an
+underwater holder telescopes just as exactly as a flat one. A fresh
+position that is share `S` of that depth
 pays `base + (impact/3)·S²` bps effective — honest sub-10%-of-pool flow pays
 ~base while pool-scale entries pay multiples of it, and the TOTAL is
-deliberately uncapped (only the base config is capped at 100 bps). When
+deliberately uncapped (only the base config is capped at 100 bps).
+
+The fee is DIRECTION-BLIND by design (decided 2026-08-21): it scales purely on
+how much of the pool a position absorbs, so a fresh long and a fresh short of
+the same notional pay exactly the same, whatever the open-interest skew. This
+comes up every time someone notices that on a long-heavy book a new short is
+recapitalising the very pool the longs get paid from (`closePosition` draws a
+long's profit from `poolShort`, and a short's margin and fee are both credited
+there). It is deliberate: imbalance already has two dedicated mechanisms —
+funding, which continuously pays the scarce side, and the OI cap, which hard-
+blocks the crowded one — and making the fee a third would double-subsidise,
+add a gameable dimension (skew the book to unlock a cheaper entry), and break
+the splitting-proof telescoping, which needs a depth that does not move with
+book state. Do not add an open-interest term here without revisiting all
+three. When
 reconciling a `PERP_TAKER_FEE` txn, `data.feeBps` is the EFFECTIVE rate
 actually paid and `data.feeBase` the configured base at trade time — do NOT
 expect fee = base × notional on a market with a nonzero impact. Every snipe
@@ -156,7 +194,7 @@ notional), not from the backing pools:
 `f = I(max(OI_L, OI_S) / min(OI_L, OI_S)) × f_max`, signed toward the crowded
 side.
 
-The pools hold *margin*, so their ratio only tracks exposure when both sides
+The pools hold _margin_, so their ratio only tracks exposure when both sides
 run comparable leverage. Where they don't, the two disagree in sign, and a
 pool-derived rate pays the crowded side and charges the scarce one — the
 opposite of what funding is for. On 2026-08-08 two of the four live markets

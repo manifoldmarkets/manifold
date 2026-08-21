@@ -17,6 +17,8 @@ import {
   applyADL,
   applyFundingWithSolvency,
   assertPerpFundingConfig,
+  assertPerpPositionNumbers,
+  assertPerpStateNumbers,
   assertPerpStateSolvent,
   closePosition as closePositionMath,
   computeFundingRate,
@@ -47,6 +49,7 @@ import {
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
   perpOpenFeeQuote,
+  perpOwnContributionInputs,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
@@ -422,6 +425,45 @@ const diffForWrite = (
   return { upserts, deletes }
 }
 
+/**
+ * Fail closed on a corrupt row belonging to this user BEFORE any code path
+ * reads, closes, or replaces it.
+ *
+ * Scans EVERY row the user holds on this contract, deliberately ignoring the
+ * `size > 0` predicate the callers select with. A row whose size is NaN,
+ * negative, or zero-with-margin does not match that predicate, so it would
+ * slip past a guard applied to the selected rows alone — and then
+ * `openPosition` replaces same-(user, direction) rows WITHOUT re-checking
+ * size, so the malformed row would be silently overwritten and its margin
+ * lost from the position table while the pool still held it.
+ *
+ * Corruption also has to be caught before the position is CLOSED, not after.
+ * Both the close math and the fee quote read entryPrice through
+ * getUnrealizedEquity, which silently returns 0 when entryPrice <= 0: a
+ * corrupt row therefore marks as FLAT and pays out its entire cost basis
+ * wherever the oracle actually is. The post-close assertPerpStateSolvent
+ * cannot save us either, because closePosition has already removed the row
+ * from the state it inspects.
+ *
+ * Rules are shared with assertPerpStateNumbers via assertPerpPositionNumbers
+ * so the two can never drift apart.
+ */
+const assertUserPerpRowsSound = (state: PerpState, userId: string) => {
+  for (const row of state.positions) {
+    if (row.userId !== userId) continue
+    try {
+      assertPerpPositionNumbers(row, `your stored ${row.direction} position`)
+    } catch (error) {
+      throw new APIError(
+        500,
+        `${
+          error instanceof Error ? error.message : String(error)
+        } — refusing to trade against a corrupt position row`
+      )
+    }
+  }
+}
+
 // -----------------------------------------------------------------------
 // open / add
 // -----------------------------------------------------------------------
@@ -589,6 +631,11 @@ export const openOrAddPosition = async (
     // throw a "close your long first" error; the parimutuel AMM doesn't need
     // the one-way restriction, and forcing a separate round-trip is just
     // friction for a flip.
+    // Before the `size > 0` selection below, not after: a malformed size does
+    // not match that predicate but openPositionMath would still replace the
+    // row. See assertUserPerpRowsSound.
+    assertUserPerpRowsSound(state, userId)
+
     const existingOpposite = state.positions.find(
       (p) => p.userId === userId && p.direction !== direction && p.size > 0
     )
@@ -698,39 +745,46 @@ export const openOrAddPosition = async (
     // out the trader's own standing contribution, so sequential adds cannot
     // self-deepen the depth they are priced against (see its doc).
     //
-    // Fail closed on a corrupt row: the size fee READS the position (the flat
-    // fee never did), and calcPerpSizeFee's total display guards would
-    // silently reprice a non-finite size to a cheaper fee instead of blocking
-    // the trade.
-    if (
-      existingSame &&
-      (!Number.isFinite(existingSame.size) ||
-        !Number.isFinite(existingSame.costBasis) ||
-        !Number.isFinite(existingSame.takerFeeCostBasis ?? 0))
-    )
+    // (Row sanity for both held positions was asserted above, before the flip
+    // close — including the entryPrice this mark-to-market read depends on.)
+    // The trader's own standing contribution is netted out of the depth at
+    // the SAME mark this trade executes against, read inside the advisory
+    // lock (`price` is contract.oraclePrice from loadStateForUpdate). Netting
+    // the raw costBasis instead deducts margin that has already been paid out
+    // to closing counterparties, which collapses the denominator for an
+    // underwater holder and — the fee being quadratic in 1/depth — squares
+    // the error. Computed here rather than inside perpOpenFeeQuote so the
+    // authoritative mark can never be a client-supplied or stale one.
+    // Shared with the bet panel's preview so the two cannot derive these
+    // differently. A flip has no standing SAME-side row, so every field is 0
+    // and the opposite leg's payout — already out of workingState.pool — is
+    // never subtracted twice.
+    const ownContribution = perpOwnContributionInputs(existingSame, price)
+    // getPositionValue floors at 0, so the only reachable failure is a
+    // non-finite mark; the message says exactly that rather than implying a
+    // negative value is possible.
+    if (!Number.isFinite(ownContribution.existingPositionValue))
       throw new APIError(
         500,
-        'Existing position row is corrupt; refusing to price the taker fee'
+        'Existing position value is not a finite number; refusing to price the taker fee'
       )
     const openFeeDetails = perpOpenFeeQuote({
       grossPoolDepth: getPerpBackingPool(
         workingState.pool.L,
         workingState.pool.S
       ),
-      existingSize: existingSame?.size ?? 0,
-      existingCostBasis: existingSame?.costBasis ?? 0,
-      existingTakerFeeCostBasis: existingSame?.takerFeeCostBasis ?? 0,
+      ...ownContribution,
       addedNotional: mana * leverage,
       baseBps: takerFeeBps,
       impact: takerFeeImpact,
     })
     const openFee = openFeeDetails.fee
     // Fail closed when the size fee cannot be priced: the trader's own
-    // contribution exhausts the valid gross pool (a side pool drained below
-    // its holders' cost basis — the margin-cover incident pattern), so the
-    // quote fell back to base-only. Charging base there would hand the
-    // largest holder in a devastated market the CHEAPEST rate, bypassing the
-    // size protection entirely.
+    // standing claim (margin still in the pool, marked to market, plus fees
+    // paid) exhausts the valid gross pool — the margin-cover incident
+    // pattern — so the quote fell back to base-only. Charging base there
+    // would hand the largest holder in a devastated market the CHEAPEST
+    // rate, bypassing the size protection entirely.
     if (openFeeDetails.depthExhausted)
       throw new APIError(
         400,
@@ -739,15 +793,29 @@ export const openOrAddPosition = async (
     // Price protection: the fee is state-dependent (pools move, config is
     // live-tunable), so a caller may bound what they consent to pay; the
     // check runs on the authoritative fee inside the locked transaction.
-    if (maxFee !== undefined && openFee > maxFee)
+    if (maxFee !== undefined && openFee > maxFee) {
+      // Speak bps of size, not mana: that is the unit the caller set the bound
+      // in, and it is what makes "the fee moved" legible next to the fee they
+      // were quoted. Measured drift on BTC: pool outflow puts ~0.15% of the
+      // week inside a window that can move a large trade's fee, and only
+      // 0.023% of 5s ticks move the mark more than 30 bps — so this should be
+      // a rare "click again", not a routine wall.
+      const notional = mana * leverage
+      const overageBps =
+        notional > 0 ? ((openFee - maxFee) / notional) * 10_000 : 0
       throw new APIError(
         400,
-        `Fee protection: this trade's fee is M$${openFee.toFixed(
+        `The fee moved while you were deciding: this trade costs M$${openFee.toFixed(
           2
-        )}, above your maxFee of M$${maxFee.toFixed(
+        )} (${openFeeDetails.effectiveBps.toFixed(
+          1
+        )} bps of size), which is ${overageBps.toFixed(
+          1
+        )} bps more than the M$${maxFee.toFixed(
           2
-        )}. Refresh and retry to accept the current fee.`
+        )} you approved. Retry to accept the current fee.`
       )
+    }
     // Hard consent floor: a fee that meets or exceeds the margin means the
     // position opens at a guaranteed total loss — always a mistake or an
     // attack, never intent. Reject instead of charging, so no combination of
@@ -1167,6 +1235,13 @@ export const closePosition = async (
       )
     }
 
+    // Same fail-closed guard as the open path, and for the same reason: the
+    // close math reads entryPrice through getUnrealizedEquity, and
+    // assertPerpStateSolvent below runs on state the row has already left.
+    // Ahead of the `size > 0` selection so a malformed row reports as corrupt
+    // rather than as "no open position".
+    assertUserPerpRowsSound(state, userId)
+
     const position = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
     )
@@ -1551,13 +1626,23 @@ const payAdlSettlements = async (
  * `runOracleUpdate` (scheduler path) and the pre-settlement pass inside
  * `resolvePerp`, so sharing it means we don't commit twice during resolution.
  */
-const applyOracleUpdate = (
+export const applyOracleUpdate = (
   contract: PerpContract,
   state: PerpState,
   newPrice: number,
   ts: number,
   appliedTime: number
 ) => {
+  // Structure first, on the INPUT. Liquidation and ADL both drop or zero
+  // rows, so a malformed row that reaches them is gone by the time the
+  // post-transition assert runs — and that assert then passes on a state the
+  // corrupt row has already left, exactly as it did on the close paths.
+  // Deliberately the numbers-only check, NOT assertPerpStateSolvent: these
+  // two transitions exist to repair legitimate insolvency, so asserting
+  // solvency on their input would fail closed on the states they are here to
+  // fix. Solvency is still asserted on the OUTPUT below.
+  assertPerpStateNumbers(state, newPrice)
+
   const liqRes = processLiquidations(state, newPrice)
   const adlRes = applyADL(liqRes.state, newPrice)
   const finalState = adlRes.state
