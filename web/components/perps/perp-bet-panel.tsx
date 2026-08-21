@@ -26,6 +26,7 @@ import {
   perpMaxFeeFor,
   perpOpenFeeQuote,
   perpOwnContributionInputs,
+  PERP_MAX_FEE_SHARE_OF_MARGIN,
 } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
@@ -375,10 +376,13 @@ export const PerpBetPanel = (props: {
       )
       return
     }
-    if (openFee >= marginAmount) {
-      // The engine hard-rejects this too — the position would open at a
-      // guaranteed total loss.
-      toast.error('Fee would exceed your margin — reduce leverage or size')
+    if (openFee >= marginAmount * PERP_MAX_FEE_SHARE_OF_MARGIN) {
+      // Mirrors the engine's hard reject.
+      toast.error(
+        `Fee would consume ${Math.round(
+          (openFee / marginAmount) * 100
+        )}% of your margin — reduce position size or leverage`
+      )
       return
     }
     if (feePreviewInvalid) {
@@ -626,8 +630,9 @@ export const PerpBetPanel = (props: {
           !margin ||
           margin <= 0 ||
           exceedsCapacity ||
-          // Engine hard-rejects a fee ≥ margin (guaranteed total loss).
-          (marginAmount > 0 && openFee >= marginAmount) ||
+          // Engine hard-rejects a fee at or above this share of margin.
+          (marginAmount > 0 &&
+            openFee >= marginAmount * PERP_MAX_FEE_SHARE_OF_MARGIN) ||
           // Engine fail-closes when the size fee has no depth to price
           // against (backing exhausted relative to the position).
           feeDetails.depthExhausted ||
@@ -843,9 +848,9 @@ const StatsGrid = (props: {
   const showFeeBreakdown = feeSizeBps >= 1
   const isLargeShareFee =
     feeSizeBps > 0 && poolShareAfter >= LARGE_POOL_SHARE_WARNING
-  // Mirrors the engine's hard reject: a fee that meets or exceeds the margin
-  // would open the position at a guaranteed total loss.
-  const feeExceedsMargin = margin > 0 && fee >= margin
+  // Mirrors the engine's hard reject.
+  const feeExceedsMargin =
+    margin > 0 && fee >= margin * PERP_MAX_FEE_SHARE_OF_MARGIN
 
   const canShowScenarios =
     Number.isFinite(entryPrice) && margin > 0 && leverage > 0
@@ -944,7 +949,9 @@ const StatsGrid = (props: {
           )}
           {feeExceedsMargin && !feePreviewInvalid && (
             <span className="text-scarlet-600 text-xs font-medium leading-tight">
-              Fee would exceed your margin — reduce leverage or size.
+              Fee would consume over{' '}
+              {Math.round(PERP_MAX_FEE_SHARE_OF_MARGIN * 100)}% of your margin —
+              reduce position size or leverage.
             </span>
           )}
           {feeDepthExhausted && !feePreviewInvalid && (

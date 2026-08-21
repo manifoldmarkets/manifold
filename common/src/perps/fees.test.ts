@@ -12,6 +12,7 @@ import {
   perpOwnContributionInputs,
   perpSizeFeeDetails,
   PERP_FEE_SLIPPAGE_BPS,
+  PERP_MAX_FEE_SHARE_OF_MARGIN,
   PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_IMPACT_MAX,
@@ -1592,5 +1593,82 @@ describe('perpMaxFeeFor (fee slippage band)', () => {
     expect(feeAt(notional, gross - 39_412, 10)).toBeLessThan(bound)
     // The band is not unlimited: a catastrophic drain still rejects.
     expect(feeAt(notional, gross - 200_000, 10)).toBeGreaterThan(bound)
+  })
+})
+
+describe('PERP_MAX_FEE_SHARE_OF_MARGIN', () => {
+  // The fee is charged on NOTIONAL but bites MARGIN, and leverage is the
+  // multiplier: fee/margin = effectiveBps * leverage / 10_000. These pin the
+  // reachability that justifies the bound, so a later change to the constant
+  // or to maxLeverage has to confront it.
+  const base = 10
+  const impact = 10
+  const effBpsAtShare = (S: number) => base + (impact / 3) * S * S
+  const feeShareOfMargin = (S: number, leverage: number) =>
+    (effBpsAtShare(S) * leverage) / 10_000
+
+  it('is half the margin', () => {
+    expect(PERP_MAX_FEE_SHARE_OF_MARGIN).toBe(0.5)
+  })
+
+  it('costs nothing in false rejections below extreme leverage', () => {
+    // The OI cap (PERP_OPEN_INTEREST_COVER_MULTIPLE = 10, against the
+    // UNRESERVED OPPOSING pool) holds a roughly balanced book to about
+    // S <= 5. At that size the bound is clear through leverage 50 and only
+    // bites at 100.
+    const maxRealisticShare = 5
+    for (const leverage of [1, 3, 10, 20, 50])
+      expect(feeShareOfMargin(maxRealisticShare, leverage)).toBeLessThan(
+        PERP_MAX_FEE_SHARE_OF_MARGIN
+      )
+    expect(feeShareOfMargin(maxRealisticShare, 100)).toBeGreaterThan(
+      PERP_MAX_FEE_SHARE_OF_MARGIN
+    )
+  })
+
+  it('pins the pool share at which each leverage first trips the bound', () => {
+    // Stated explicitly so that raising maxLeverage, or retuning the bound,
+    // has to confront what it makes unreachable.
+    const shareAtBound = (leverage: number) =>
+      Math.sqrt(
+        ((PERP_MAX_FEE_SHARE_OF_MARGIN * 10_000) / leverage - base) /
+          (impact / 3)
+      )
+    expect(shareAtBound(10)).toBeCloseTo(12.12, 2)
+    expect(shareAtBound(20)).toBeCloseTo(8.49, 2)
+    expect(shareAtBound(50)).toBeCloseTo(5.2, 1)
+    expect(shareAtBound(100)).toBeCloseTo(3.46, 2)
+  })
+
+  it('bites exactly where extreme leverage meets extreme size', () => {
+    // 100x on a position 3.5x the backing pool — roughly the largest short
+    // BTC's OI cap allowed on 2026-08-21 — costs 51% of margin, so the bound
+    // catches it. The old 1.0 bound did not.
+    const S = 3.51
+    const share = feeShareOfMargin(S, 100)
+    expect(share).toBeGreaterThan(0.5)
+    expect(share).toBeLessThan(1)
+    expect(share).toBeCloseTo(0.511, 3)
+  })
+
+  it('tightens the fat-fingered channel-rate case', () => {
+    // A flat rate alone (no size term) trips the bound at
+    // leverage >= 0.5 * 10_000 / rate. At the top of the API range that is
+    // 17x, where the old 1.0 bound needed 33x.
+    const topApiRate = 300
+    const leverageAtNewBound =
+      (PERP_MAX_FEE_SHARE_OF_MARGIN * 10_000) / topApiRate
+    const leverageAtOldBound = 10_000 / topApiRate
+    expect(leverageAtNewBound).toBeCloseTo(16.67, 2)
+    expect(leverageAtOldBound).toBeCloseTo(33.33, 2)
+  })
+
+  it('clears the corrected fee but would have caught the pre-fix one', () => {
+    const margin = 20_000
+    // The drawdown fixture's corrected add: M$811.23 on M$20,000 of margin.
+    expect(811.231907 / margin).toBeLessThan(PERP_MAX_FEE_SHARE_OF_MARGIN)
+    // And the pre-fix charge it replaced, which the old bound let through.
+    expect(19_488.679541 / margin).toBeLessThan(1)
+    expect(19_488.679541 / margin).toBeGreaterThan(PERP_MAX_FEE_SHARE_OF_MARGIN)
   })
 })

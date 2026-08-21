@@ -207,9 +207,15 @@ ToS line, not a wall; the structural fix is next-tick execution.
 
 The two rates carry different domains — `PERP_TAKER_FEE_BPS_MAX` = 100,
 `PERP_TAKER_FEE_API_BPS_MAX` = 300 — and neither is validated against
-`maxLeverage`. Because the fee is charged on NOTIONAL, `feeBps × leverage ≥
-10_000` would cost a trader more than the margin they posted, so the engine
-rejects any open whose fee meets or exceeds its margin (`openFee >= mana`).
+`maxLeverage`. Because the fee is charged on NOTIONAL but bites MARGIN —
+`fee / margin = effectiveBps × leverage / 10_000` — the engine rejects any
+open whose fee reaches `PERP_MAX_FEE_SHARE_OF_MARGIN` (0.5) of its own
+margin. That bound covers both routes in: a fat-fingered flat rate (the top
+of the API range crosses it above 17×) and extreme leverage meeting extreme
+size (at impact 10, a position 3.5× the backing pool costs 51% of margin at
+100× — roughly the largest short BTC's OI cap permitted on 2026-08-21). It is
+unreachable at leverage ≤ 50 for any size the OI cap allows on a balanced
+book, so it costs nothing in false rejections.
 That floor is what keeps a fat-fingered rate survivable rather than
 catastrophic; honest settings never approach it.
 
@@ -221,7 +227,7 @@ notional), not from the backing pools:
 `f = I(max(OI_L, OI_S) / min(OI_L, OI_S)) × f_max`, signed toward the crowded
 side.
 
-The pools hold *margin*, so their ratio only tracks exposure when both sides
+The pools hold _margin_, so their ratio only tracks exposure when both sides
 run comparable leverage. Where they don't, the two disagree in sign, and a
 pool-derived rate pays the crowded side and charges the scarce one — the
 opposite of what funding is for. On 2026-08-08 two of the four live markets

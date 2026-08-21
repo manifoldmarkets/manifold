@@ -440,6 +440,32 @@ export const perpOpenFeeQuote = (args: {
   }
 }
 
+/** The most of a trade's own margin the opening fee may consume before the
+ * engine refuses to open at all.
+ *
+ * The fee is charged on NOTIONAL but a trader feels it against MARGIN, and
+ * leverage is the multiplier between the two:
+ *
+ *   fee / margin = effectiveBps × leverage / 10_000
+ *
+ * so a rate that is trivial at low leverage is not at high leverage. At the
+ * launch impact of 10, a pool-sized entry is 13.3 bps — 0.4% of margin at 3×,
+ * but 13.3% at 100×, and a position 3.5× the backing pool costs 51% of margin
+ * at 100×. That last one is reachable today: it is roughly the largest short
+ * BTC's open-interest cap permits.
+ *
+ * Why 0.5 rather than the 1.0 this replaces: at 1.0 the only thing between an
+ * ordinary fee and a catastrophic one was a guaranteed-total-loss check, so a
+ * mispriced fee could take 99% of a margin and still execute (it did — see
+ * perpOpenFeeQuote's note on the pre-mark-to-market netting, which CHARGED
+ * 97.4% of margin rather than rejecting). At 0.5 the bound is unreachable at
+ * leverage ≤ 20 for any size the OI cap permits, so it costs nothing in false
+ * rejections, and it halves the blast radius of whatever the next pricing
+ * surprise turns out to be. It also tightens #4015's fat-fingered-API-rate
+ * case, which crossed the old floor only above 33× and now crosses above 17×.
+ */
+export const PERP_MAX_FEE_SHARE_OF_MARGIN = 0.5
+
 /** Fee slippage a caller accepts between previewing a trade and it executing,
  * in BPS OF THE TRADE'S NOTIONAL — the unit a trader already thinks in for
  * slippage, and the unit the rejection message speaks.

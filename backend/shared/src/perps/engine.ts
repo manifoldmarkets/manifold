@@ -50,6 +50,7 @@ import {
   getPerpTakerFeeImpact,
   perpOpenFeeQuote,
   perpOwnContributionInputs,
+  PERP_MAX_FEE_SHARE_OF_MARGIN,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
@@ -824,25 +825,25 @@ export const openOrAddPosition = async (
         )} you approved. Retry to accept the current fee.`
       )
     }
-    // Hard consent floor: a fee that meets or exceeds the margin means the
-    // position opens at a guaranteed total loss — always a mistake or an
-    // attack, never intent. Reject instead of charging, so no combination of
-    // leverage, pool share and configured rate can cost a trader more than
-    // their margin at the instant they open. Two ways in: extreme leverage ×
-    // extreme pool share (honest configurations never reach it), and a
-    // fat-fingered CHANNEL rate — the base is charged on NOTIONAL, so a flat
-    // rate alone trips this when feeBps × leverage >= 10_000, which the top
-    // of the API range [0, 300] crosses above 33x. The rate domains are
-    // validated independently of maxLeverage, so this floor is what keeps
-    // that misconfiguration survivable.
-    if (openFee >= mana)
+    // Hard consent floor: an opening fee that eats a large share of the
+    // trade's own margin is always a mistake or an attack, never intent, so
+    // reject rather than charge. Two ways in: extreme leverage × extreme pool
+    // share, and a fat-fingered CHANNEL rate — the fee is charged on NOTIONAL,
+    // so fee/margin = effectiveBps × leverage / 10_000 and the rate domains
+    // are validated independently of maxLeverage. This floor is what keeps
+    // both survivable. See PERP_MAX_FEE_SHARE_OF_MARGIN for why the bound is
+    // half the margin rather than all of it.
+    const feeCeiling = mana * PERP_MAX_FEE_SHARE_OF_MARGIN
+    if (openFee >= feeCeiling)
       throw new APIError(
         400,
         `This trade's fee (M$${openFee.toFixed(
           2
-        )}) would meet or exceed its margin (M$${mana.toFixed(
+        )}) would immediately consume ${((openFee / mana) * 100).toFixed(
+          0
+        )}% of its M$${mana.toFixed(
           2
-        )}) — the position would open at a total loss. Reduce leverage, or reduce size relative to the pool.`
+        )} margin. Reduce your position size or leverage.`
       )
     const totalDebit = mana + openFee
     const spendableBalance = trader.balance + closePayout
