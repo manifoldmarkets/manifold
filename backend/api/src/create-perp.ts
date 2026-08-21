@@ -7,7 +7,10 @@ import {
   nativeContractColumnsArray,
 } from 'common/contract'
 import { DEFAULT_CONVERSION_SCORE } from 'common/new-contract'
-import { PERP_TAKER_FEE_BPS_DEFAULT } from 'common/perps/fees'
+import {
+  PERP_TAKER_FEE_BPS_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_DEFAULT,
+} from 'common/perps/fees'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import { removeUndefinedProps } from 'common/util/object'
@@ -76,6 +79,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     subsidyLong,
     subsidyShort,
     takerFeeBps,
+    takerFeeImpact,
   } = body
 
   const totalSubsidy = subsidyLong + subsidyShort
@@ -223,10 +227,11 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       maxFundingRate,
       fundingSensitivity,
       maxOraclePriceAgeMs,
-      // Stamp the resolved value so a later change to the platform default
+      // Stamp the resolved values so a later change to the platform defaults
       // cannot silently rewrite this market's economics (same reasoning as
       // fundingPeriodMs above).
       takerFeeBps: takerFeeBps ?? PERP_TAKER_FEE_BPS_DEFAULT,
+      takerFeeImpact: takerFeeImpact ?? PERP_TAKER_FEE_IMPACT_DEFAULT,
       fundingPeriodMs,
       poolLong: subsidyLong,
       poolShort: subsidyShort,

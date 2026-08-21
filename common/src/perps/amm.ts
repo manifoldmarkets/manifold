@@ -728,7 +728,64 @@ const assertFiniteNumber = (label: string, value: number) => {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite`)
 }
 
-const assertPerpStateNumbers = (state: PerpState, price: number) => {
+/**
+ * Row-level sanity for one stored position. Extracted from
+ * assertPerpStateNumbers (which still calls it, so the two can never drift)
+ * because callers that touch a SINGLE row need the same rules before they act
+ * on it — notably the engine, which must reject a corrupt row BEFORE closing
+ * it or pricing a fee against it. Both operations read entryPrice through
+ * getUnrealizedEquity, which silently returns 0 for a non-positive entry
+ * price: a corrupt row would otherwise mark as flat and pay out its full
+ * cost basis no matter where the oracle actually is.
+ */
+export const assertPerpPositionNumbers = (
+  position: PerpPosition,
+  label = 'position'
+) => {
+  assertFiniteNumber(`${label} size`, position.size)
+  assertFiniteNumber(`${label} cost basis`, position.costBasis)
+  assertFiniteNumber(`${label} original cost basis`, position.originalCostBasis)
+  const takerFeeCostBasis = position.takerFeeCostBasis ?? 0
+  assertFiniteNumber(`${label} taker fee cost basis`, takerFeeCostBasis)
+  assertFiniteNumber(`${label} entry price`, position.entryPrice)
+  assertFiniteNumber(`${label} leverage`, position.leverage)
+  assertFiniteNumber(`${label} liquidation price`, position.liquidationPrice)
+  assertFiniteNumber(`${label} opened time`, position.openedTime)
+  assertFiniteNumber(`${label} updated time`, position.updatedTime)
+
+  if (
+    position.size < 0 ||
+    position.costBasis < 0 ||
+    position.originalCostBasis < 0 ||
+    takerFeeCostBasis < 0
+  )
+    throw new Error(`${label} amounts must be non-negative`)
+  if (position.entryPrice <= 0)
+    throw new Error(`${label} entry price must be positive`)
+
+  if (position.size === 0) {
+    if (position.costBasis !== 0 || position.leverage !== 0)
+      throw new Error(`${label} has margin without active exposure`)
+  } else if (position.costBasis <= 0 || position.leverage <= 0) {
+    throw new Error(`${label} active exposure must have positive margin`)
+  }
+}
+
+/**
+ * Structural / numeric sanity for a whole state: finite non-negative pools, a
+ * positive price, and every row passing assertPerpPositionNumbers.
+ *
+ * Exported separately from assertPerpStateSolvent because the two answer
+ * different questions and belong at different points in a transition.
+ * SOLVENCY is a property the risk transitions are allowed to REPAIR —
+ * processLiquidations and applyADL exist precisely to bring an insolvent book
+ * back to factor 1, so asserting it on their input would fail closed on the
+ * exact states they are there to fix. STRUCTURE is not repairable and must
+ * hold going IN: a malformed row that reaches processLiquidations/applyADL
+ * can be zeroed or removed by them, after which the post-transition assert
+ * inspects a state the corrupt row has already left and passes.
+ */
+export const assertPerpStateNumbers = (state: PerpState, price: number) => {
   assertFiniteNumber('oracle price', price)
   if (price <= 0) throw new Error('oracle price must be positive')
 
@@ -738,39 +795,9 @@ const assertPerpStateNumbers = (state: PerpState, price: number) => {
   if (L < 0 || S < 0) throw new Error('perp pools must be non-negative')
   assertFiniteNumber('total pool', L + S)
 
-  state.positions.forEach((position, index) => {
-    const prefix = `position ${index}`
-    assertFiniteNumber(`${prefix} size`, position.size)
-    assertFiniteNumber(`${prefix} cost basis`, position.costBasis)
-    assertFiniteNumber(
-      `${prefix} original cost basis`,
-      position.originalCostBasis
-    )
-    const takerFeeCostBasis = position.takerFeeCostBasis ?? 0
-    assertFiniteNumber(`${prefix} taker fee cost basis`, takerFeeCostBasis)
-    assertFiniteNumber(`${prefix} entry price`, position.entryPrice)
-    assertFiniteNumber(`${prefix} leverage`, position.leverage)
-    assertFiniteNumber(`${prefix} liquidation price`, position.liquidationPrice)
-    assertFiniteNumber(`${prefix} opened time`, position.openedTime)
-    assertFiniteNumber(`${prefix} updated time`, position.updatedTime)
-
-    if (
-      position.size < 0 ||
-      position.costBasis < 0 ||
-      position.originalCostBasis < 0 ||
-      takerFeeCostBasis < 0
-    )
-      throw new Error(`${prefix} amounts must be non-negative`)
-    if (position.entryPrice <= 0)
-      throw new Error(`${prefix} entry price must be positive`)
-
-    if (position.size === 0) {
-      if (position.costBasis !== 0 || position.leverage !== 0)
-        throw new Error(`${prefix} has margin without active exposure`)
-    } else if (position.costBasis <= 0 || position.leverage <= 0) {
-      throw new Error(`${prefix} active exposure must have positive margin`)
-    }
-  })
+  state.positions.forEach((position, index) =>
+    assertPerpPositionNumbers(position, `position ${index}`)
+  )
 }
 
 /**

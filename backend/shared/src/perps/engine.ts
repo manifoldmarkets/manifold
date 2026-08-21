@@ -17,10 +17,13 @@ import {
   applyADL,
   applyFundingWithSolvency,
   assertPerpFundingConfig,
+  assertPerpPositionNumbers,
+  assertPerpStateNumbers,
   assertPerpStateSolvent,
   closePosition as closePositionMath,
   computeFundingRate,
   getLeverage,
+  getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPositionValue,
@@ -42,9 +45,12 @@ import {
 import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
-  calcPerpTakerFee,
   creditPerpPoolFee,
   getPerpEffectiveTakerFeeBps,
+  getPerpTakerFeeImpact,
+  perpOpenFeeQuote,
+  perpOwnContributionInputs,
+  PERP_MAX_FEE_SHARE_OF_MARGIN,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
@@ -420,6 +426,45 @@ const diffForWrite = (
   return { upserts, deletes }
 }
 
+/**
+ * Fail closed on a corrupt row belonging to this user BEFORE any code path
+ * reads, closes, or replaces it.
+ *
+ * Scans EVERY row the user holds on this contract, deliberately ignoring the
+ * `size > 0` predicate the callers select with. A row whose size is NaN,
+ * negative, or zero-with-margin does not match that predicate, so it would
+ * slip past a guard applied to the selected rows alone — and then
+ * `openPosition` replaces same-(user, direction) rows WITHOUT re-checking
+ * size, so the malformed row would be silently overwritten and its margin
+ * lost from the position table while the pool still held it.
+ *
+ * Corruption also has to be caught before the position is CLOSED, not after.
+ * Both the close math and the fee quote read entryPrice through
+ * getUnrealizedEquity, which silently returns 0 when entryPrice <= 0: a
+ * corrupt row therefore marks as FLAT and pays out its entire cost basis
+ * wherever the oracle actually is. The post-close assertPerpStateSolvent
+ * cannot save us either, because closePosition has already removed the row
+ * from the state it inspects.
+ *
+ * Rules are shared with assertPerpStateNumbers via assertPerpPositionNumbers
+ * so the two can never drift apart.
+ */
+const assertUserPerpRowsSound = (state: PerpState, userId: string) => {
+  for (const row of state.positions) {
+    if (row.userId !== userId) continue
+    try {
+      assertPerpPositionNumbers(row, `your stored ${row.direction} position`)
+    } catch (error) {
+      throw new APIError(
+        500,
+        `${
+          error instanceof Error ? error.message : String(error)
+        } — refusing to trade against a corrupt position row`
+      )
+    }
+  }
+}
+
 // -----------------------------------------------------------------------
 // open / add
 // -----------------------------------------------------------------------
@@ -435,7 +480,14 @@ export const openOrAddPosition = async (
    * event so readers can filter bot flow out of the Trades tab, matching
    * `bets.is_api`. Lives in `data` so no migration is needed; events written
    * before this shipped carry no flag and read as manual. */
-  isApi = false
+  isApi = false,
+  /** Price protection: reject (400) rather than charge when the fee computed
+   * inside the locked transaction exceeds this. The fee is state-dependent
+   * (pools move, config is live-tunable), so the previewed fee is not a
+   * promise — this bound is how a caller makes their consent explicit. Not
+   * part of the idempotency fingerprint: a replay returns the stored result
+   * of a trade that already happened. */
+  maxFee?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
@@ -445,6 +497,8 @@ export const openOrAddPosition = async (
       400,
       `leverage must be a finite number of at least ${MIN_PERP_LEVERAGE}`
     )
+  if (maxFee !== undefined && (!Number.isFinite(maxFee) || maxFee < 0))
+    throw new APIError(400, 'maxFee must be a finite non-negative number')
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -472,11 +526,22 @@ export const openOrAddPosition = async (
         return {
           position: parseStoredPosition(response?.position),
           event: rowToStoredEvent(stored),
-          // Events stored before the taker fee existed have no fee field.
+          // Events stored before the taker fee existed have no fee field;
+          // ones stored before the size fee lack the rate/share stamps.
           fee:
             typeof response?.fee === 'number' && Number.isFinite(response.fee)
               ? response.fee
               : 0,
+          feeBps:
+            typeof response?.feeBps === 'number' &&
+            Number.isFinite(response.feeBps)
+              ? response.feeBps
+              : undefined,
+          poolShareAfter:
+            typeof response?.poolShareAfter === 'number' &&
+            Number.isFinite(response.poolShareAfter)
+              ? response.poolShareAfter
+              : undefined,
           isNewUniqueBettor: false,
           // Callers must not re-run trade side effects (bonuses, streaks)
           // for a replay — no trade happened on this request.
@@ -567,6 +632,11 @@ export const openOrAddPosition = async (
     // throw a "close your long first" error; the parimutuel AMM doesn't need
     // the one-way restriction, and forcing a separate round-trip is just
     // friction for a flip.
+    // Before the `size > 0` selection below, not after: a malformed size does
+    // not match that predicate but openPositionMath would still replace the
+    // row. See assertUserPerpRowsSound.
+    assertUserPerpRowsSound(state, userId)
+
     const existingOpposite = state.positions.find(
       (p) => p.userId === userId && p.direction !== direction && p.size > 0
     )
@@ -588,22 +658,44 @@ export const openOrAddPosition = async (
 
     const price = contract.oraclePrice
 
-    // Taker fee: bps of NOTIONAL when opening or adding, credited to the
-    // trader's side backing pool (subsidy, not platform revenue). Closing is
-    // free — the whole round-trip cost is visible up front, and the position
-    // starts at PnL = −fee via takerFeeCostBasis. Execution happens at the
-    // cached oracle price, and with zero fees that price was a free option
-    // for tick-sniping bots (2026-08-07: ~M$70k drained from the BTC perp
-    // pools at a measured edge of ~1.5 bps of notional per round trip; every
-    // snipe needs an entry, so an open-only fee taxes each round trip once).
-    // The fee mana enters escrow with the margin, so ledger = L + S holds.
-    assertPerpTakerFeeConfig(contract, isApi)
-    // Channel-selected base: API-key opens pay max(takerFeeBps,
+    // Taker fee: size-dependent bps of NOTIONAL when opening or adding,
+    // credited to the trader's side backing pool (subsidy, not platform
+    // revenue). Closing is free — the whole round-trip cost is visible up
+    // front, and the position starts at PnL = −fee via takerFeeCostBasis.
+    // Execution happens at the cached oracle price, and with zero fees that
+    // price was a free option for tick-sniping bots (2026-08-07: ~M$70k
+    // drained from the BTC perp pools at a measured edge of ~1.5 bps of
+    // notional per round trip; every snipe needs an entry, so an open-only
+    // fee taxes each round trip once). The flat base could not tell honest
+    // flow (median ~1% of pool) from pool-sized informed entries (median
+    // ~142% of pool, 2026-08-19), so the marginal rate scales with the
+    // position's share of the backing pool: base + takerFeeImpact·share²,
+    // charged as its integral over the added notional (calcPerpSizeFee) so
+    // chopping one big add into many small ones costs the same. The fee mana
+    // enters escrow with the margin, so ledger = L + S holds.
+    //
+    // Two independent dials feed this, and they compose: the CHANNEL picks
+    // which base rate applies (API-key opens pay max(takerFeeBps,
     // takerFeeApiBps) when the API rate is set — the 2026-08-19/20 BTC drain
-    // was 100% API-key flow (see getPerpEffectiveTakerFeeBps). The event's
-    // feeBps stamp below records the effective base actually charged, and
-    // the isApi flag on the same event says which channel selected it.
+    // was 100% API-key flow, see getPerpEffectiveTakerFeeBps), and the SIZE
+    // term then scales on top of whichever base was selected. The event's
+    // feeBps stamp records the effective rate actually charged and its isApi
+    // flag says which channel selected the base.
+    assertPerpTakerFeeConfig(contract, isApi)
     const takerFeeBps = getPerpEffectiveTakerFeeBps(contract, isApi)
+    const takerFeeImpact = getPerpTakerFeeImpact(contract)
+
+    // On a market with a size-dependent fee, consent is MANDATORY: the fee
+    // varies with live pool state, so a caller who never states a bound can
+    // be charged up to their whole margin by state they never saw (a cached
+    // client, a bot coded against the flat fee). Mirrors the close path's
+    // required expectedOpenedTime. Flat-fee markets stay compatible with
+    // older callers — the fee there is knowable from config alone.
+    if (takerFeeImpact > 0 && maxFee === undefined)
+      throw new APIError(
+        400,
+        'This market charges a size-dependent fee: pass maxFee (in mana) — the most you accept paying — computed from takerFeeBps, takerFeeImpact, and the pools on the market object.'
+      )
 
     // Auto-close opposite side first, then open on top of the resulting state.
     let workingState: PerpState = state
@@ -654,25 +746,104 @@ export const openOrAddPosition = async (
     // trader whose mana is all in the position they are flipping out of).
     // The user row is locked FOR UPDATE above, so the balance cannot move
     // between here and the debit.
-    const openFee = calcPerpTakerFee(mana * leverage, takerFeeBps)
-    // Hard consent floor: a fee that meets or exceeds the margin means the
-    // position opens at a guaranteed total loss — always a misconfiguration
-    // or an attack, never intent. Reject instead of charging, so no
-    // combination of leverage and configured rate can cost a trader more
-    // than the margin they posted. The fee is charged on NOTIONAL, so this
-    // trips exactly when feeBps × leverage >= 10_000. Honest settings never
-    // reach it (the intended 30 bps API rate would need leverage 334), but
-    // the rate domains are validated independently of maxLeverage, so a
-    // fat-fingered API rate at the top of its [0, 300] range crosses it
-    // above 33x — this is what keeps that misconfiguration survivable.
-    if (openFee >= mana)
+    // Fee inputs: N0 is the user's standing same-direction notional (a flip
+    // close removes only the OPPOSITE row, so existingSame is unaffected by
+    // it), and the depth is the PRE-trade pool — post flip-close for a flip,
+    // since that is the depth the new leg actually consumes against, but
+    // before this trade's own margin/fee credits. perpOpenFeeQuote then nets
+    // out the trader's own standing contribution, so sequential adds cannot
+    // self-deepen the depth they are priced against (see its doc).
+    //
+    // (Row sanity for both held positions was asserted above, before the flip
+    // close — including the entryPrice this mark-to-market read depends on.)
+    // The trader's own standing contribution is netted out of the depth at
+    // the SAME mark this trade executes against, read inside the advisory
+    // lock (`price` is contract.oraclePrice from loadStateForUpdate). Netting
+    // the raw costBasis instead deducts margin that has already been paid out
+    // to closing counterparties, which collapses the denominator for an
+    // underwater holder and — the fee being quadratic in 1/depth — squares
+    // the error. Computed here rather than inside perpOpenFeeQuote so the
+    // authoritative mark can never be a client-supplied or stale one.
+    // Shared with the bet panel's preview so the two cannot derive these
+    // differently. A flip has no standing SAME-side row, so every field is 0
+    // and the opposite leg's payout — already out of workingState.pool — is
+    // never subtracted twice.
+    const ownContribution = perpOwnContributionInputs(existingSame, price)
+    // getPositionValue floors at 0, so the only reachable failure is a
+    // non-finite mark; the message says exactly that rather than implying a
+    // negative value is possible.
+    if (!Number.isFinite(ownContribution.existingPositionValue))
+      throw new APIError(
+        500,
+        'Existing position value is not a finite number; refusing to price the taker fee'
+      )
+    const openFeeDetails = perpOpenFeeQuote({
+      grossPoolDepth: getPerpBackingPool(
+        workingState.pool.L,
+        workingState.pool.S
+      ),
+      ...ownContribution,
+      addedNotional: mana * leverage,
+      baseBps: takerFeeBps,
+      impact: takerFeeImpact,
+    })
+    const openFee = openFeeDetails.fee
+    // Fail closed when the size fee cannot be priced: the trader's own
+    // standing claim (margin still in the pool, marked to market, plus fees
+    // paid) exhausts the valid gross pool — the margin-cover incident
+    // pattern — so the quote fell back to base-only. Charging base there
+    // would hand the largest holder in a devastated market the CHEAPEST
+    // rate, bypassing the size protection entirely.
+    if (openFeeDetails.depthExhausted)
+      throw new APIError(
+        400,
+        'This market’s backing is exhausted relative to your position — the size fee cannot be priced. Close or reduce instead of adding.'
+      )
+    // Price protection: the fee is state-dependent (pools move, config is
+    // live-tunable), so a caller may bound what they consent to pay; the
+    // check runs on the authoritative fee inside the locked transaction.
+    if (maxFee !== undefined && openFee > maxFee) {
+      // Speak bps of size, not mana: that is the unit the caller set the bound
+      // in, and it is what makes "the fee moved" legible next to the fee they
+      // were quoted. Measured drift on BTC: pool outflow puts ~0.15% of the
+      // week inside a window that can move a large trade's fee, and only
+      // 0.023% of 5s ticks move the mark more than 30 bps — so this should be
+      // a rare "click again", not a routine wall.
+      const notional = mana * leverage
+      const overageBps =
+        notional > 0 ? ((openFee - maxFee) / notional) * 10_000 : 0
+      throw new APIError(
+        400,
+        `The fee moved while you were deciding: this trade costs M$${openFee.toFixed(
+          2
+        )} (${openFeeDetails.effectiveBps.toFixed(
+          1
+        )} bps of size), which is ${overageBps.toFixed(
+          1
+        )} bps more than the M$${maxFee.toFixed(
+          2
+        )} you approved. Retry to accept the current fee.`
+      )
+    }
+    // Hard consent floor: an opening fee that eats a large share of the
+    // trade's own margin is always a mistake or an attack, never intent, so
+    // reject rather than charge. Two ways in: extreme leverage × extreme pool
+    // share, and a fat-fingered CHANNEL rate — the fee is charged on NOTIONAL,
+    // so fee/margin = effectiveBps × leverage / 10_000 and the rate domains
+    // are validated independently of maxLeverage. This floor is what keeps
+    // both survivable. See PERP_MAX_FEE_SHARE_OF_MARGIN for why the bound is
+    // half the margin rather than all of it.
+    const feeCeiling = mana * PERP_MAX_FEE_SHARE_OF_MARGIN
+    if (openFee >= feeCeiling)
       throw new APIError(
         400,
         `This trade's fee (M$${openFee.toFixed(
           2
-        )}) would meet or exceed its margin (M$${mana.toFixed(
+        )}) would immediately consume ${((openFee / mana) * 100).toFixed(
+          0
+        )}% of its M$${mana.toFixed(
           2
-        )}) — the position would open at a total loss. Reduce leverage.`
+        )} margin. Reduce your position size or leverage.`
       )
     const totalDebit = mana + openFee
     const spendableBalance = trader.balance + closePayout
@@ -698,8 +869,9 @@ export const openOrAddPosition = async (
       now
     )
     // openPositionMath always computes deltaSize = mana * leverage, so the
-    // fee credited here is exactly bps × deltaSize. Checks below run on the
-    // fee-credited state — the one that gets persisted.
+    // fee credited here was priced on exactly this deltaSize (the N0 → N1
+    // integral above). Checks below run on the fee-credited state — the one
+    // that gets persisted.
     const feeAccrued = accruePerpPositionTakerFee(
       openRes.state,
       openRes.position,
@@ -767,13 +939,25 @@ export const openOrAddPosition = async (
         mana,
         leverage,
         fee: openFee,
-        feeBps: takerFeeBps,
+        // The EFFECTIVE (average) rate this add actually paid — base plus the
+        // integrated size term — not the configured base alone. feeBase and
+        // feeImpact snapshot the config at trade time; poolShareAfter is the
+        // position's share of the (net-of-own) depth it was priced against.
+        feeBps: openFeeDetails.effectiveBps,
+        feeBase: takerFeeBps,
+        feeImpact: takerFeeImpact,
+        poolShareAfter: openFeeDetails.poolShareAfter,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,
               request: { direction, mana, leverage },
-              response: { position: open.position, fee: openFee },
+              response: {
+                position: open.position,
+                fee: openFee,
+                feeBps: openFeeDetails.effectiveBps,
+                poolShareAfter: openFeeDetails.poolShareAfter,
+              },
             }
           : {}),
       },
@@ -881,7 +1065,10 @@ export const openOrAddPosition = async (
           token: 'M$',
           data: {
             direction,
-            feeBps: takerFeeBps,
+            // Effective rate actually paid; feeBase is the configured flat
+            // component (they differ once takerFeeImpact > 0 and size matters).
+            feeBps: openFeeDetails.effectiveBps,
+            feeBase: takerFeeBps,
             sizeDelta: open.deltaSize,
           },
         },
@@ -919,6 +1106,8 @@ export const openOrAddPosition = async (
       position: open.position,
       event,
       fee: feesCollected,
+      feeBps: openFeeDetails.effectiveBps,
+      poolShareAfter: openFeeDetails.poolShareAfter,
       isNewUniqueBettor,
       replayed: false,
     }
@@ -1059,6 +1248,13 @@ export const closePosition = async (
           : 'You are banned from trading'
       )
     }
+
+    // Same fail-closed guard as the open path, and for the same reason: the
+    // close math reads entryPrice through getUnrealizedEquity, and
+    // assertPerpStateSolvent below runs on state the row has already left.
+    // Ahead of the `size > 0` selection so a malformed row reports as corrupt
+    // rather than as "no open position".
+    assertUserPerpRowsSound(state, userId)
 
     const position = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
@@ -1444,13 +1640,23 @@ const payAdlSettlements = async (
  * `runOracleUpdate` (scheduler path) and the pre-settlement pass inside
  * `resolvePerp`, so sharing it means we don't commit twice during resolution.
  */
-const applyOracleUpdate = (
+export const applyOracleUpdate = (
   contract: PerpContract,
   state: PerpState,
   newPrice: number,
   ts: number,
   appliedTime: number
 ) => {
+  // Structure first, on the INPUT. Liquidation and ADL both drop or zero
+  // rows, so a malformed row that reaches them is gone by the time the
+  // post-transition assert runs — and that assert then passes on a state the
+  // corrupt row has already left, exactly as it did on the close paths.
+  // Deliberately the numbers-only check, NOT assertPerpStateSolvent: these
+  // two transitions exist to repair legitimate insolvency, so asserting
+  // solvency on their input would fail closed on the states they are here to
+  // fix. Solvency is still asserted on the OUTPUT below.
+  assertPerpStateNumbers(state, newPrice)
+
   const liqRes = processLiquidations(state, newPrice)
   const adlRes = applyADL(liqRes.state, newPrice)
   const finalState = adlRes.state

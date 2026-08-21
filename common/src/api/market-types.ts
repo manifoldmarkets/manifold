@@ -16,6 +16,8 @@ import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
 import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
 import {
@@ -92,6 +94,10 @@ export type LiteMarket = {
   lastFundingTime?: number
   maxLeverage?: number
   takerFeeBps?: number
+  // Size-impact coefficient of the taker fee. Travels with the pools so a
+  // client can price its own fee: the marginal rate is
+  // takerFeeBps + takerFeeImpact·(share of pool)² bps (see calcPerpSizeFee).
+  takerFeeImpact?: number
   // What an API-key open is charged, in bps of notional. Equal to
   // takerFeeBps unless this market prices the API channel separately. The
   // channel that pays this rate is the one that reads the market over the
@@ -243,6 +249,7 @@ export function toLiteMarket(
           lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,
           takerFeeBps: getPerpTakerFeeBps(contract),
+          takerFeeImpact: getPerpTakerFeeImpact(contract),
           takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
         }
@@ -667,6 +674,11 @@ export const createPerpSchema = z.object({
   // the resolved value so later default changes cannot rewrite an existing
   // market's economics.
   takerFeeBps: z.number().min(0).max(100).optional(),
+  // Size-impact coefficient of the taker fee (marginal rate is
+  // takerFeeBps + takerFeeImpact·(share of pool)² bps). Omitted = the
+  // platform default (see PERP_TAKER_FEE_IMPACT_DEFAULT); stamped like
+  // takerFeeBps above.
+  takerFeeImpact: z.number().min(0).max(PERP_TAKER_FEE_IMPACT_MAX).optional(),
 })
 
 export const placePerpTradeSchema = z.object({
@@ -675,6 +687,14 @@ export const placePerpTradeSchema = z.object({
   mana: z.number().gt(0),
   leverage: z.number().min(MIN_PERP_LEVERAGE),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
+  // Price protection: reject rather than charge when the fee computed at
+  // execution exceeds this (mana). The fee is state-dependent — pools move
+  // and config is live-tunable — so the previewed fee is not a promise;
+  // this bound is how a caller makes their consent explicit. Optional here
+  // for flat-fee markets, but the ENGINE requires it whenever the market's
+  // takerFeeImpact is nonzero (mirroring the close path's mandatory
+  // expectedOpenedTime); the web panel always sends it.
+  maxFee: z.number().min(0).optional(),
 })
 
 export const closePerpPositionSchema = z.object({

@@ -308,6 +308,12 @@ export type Perp = {
   // on pre-fee contracts = PERP_TAKER_FEE_BPS_DEFAULT. Read via
   // getPerpTakerFeeBps (common/perps/fees), never directly.
   takerFeeBps?: number
+  // Size-impact coefficient of the taker fee: the marginal rate at
+  // pool-share s is takerFeeBps + takerFeeImpact·s² bps, integrated over the
+  // added notional (see calcPerpSizeFee). Missing or 0 = flat base fee only.
+  // NOT named k: the paper's k is fundingSensitivity above. Read via
+  // getPerpTakerFeeImpact (common/perps/fees), never directly.
+  takerFeeImpact?: number
   // Base taker fee for API-key opens, in bps of notional. Applied as
   // max(takerFeeBps, takerFeeApiBps) so it can only raise the API channel's
   // rate, never discount it. Missing = API pays the same base as the web.

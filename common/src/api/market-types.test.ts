@@ -3,7 +3,11 @@ import { z } from 'zod'
 import { API } from 'common/api/schema'
 import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
-import { PERP_TAKER_FEE_BPS_DEFAULT } from 'common/perps/fees'
+import {
+  PERP_TAKER_FEE_IMPACT_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_MAX,
+  PERP_TAKER_FEE_BPS_DEFAULT,
+} from 'common/perps/fees'
 import {
   createPerpSchema,
   LiteMarket,
@@ -62,6 +66,21 @@ describe('placePerpTradeSchema', () => {
         placePerpTradeSchema.safeParse({ ...base, leverage }).success
       ).toBe(false)
     }
+  })
+
+  it('accepts an optional maxFee price-protection bound, rejecting a negative one', () => {
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: 12.5 })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: 0 })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: -1 })
+        .success
+    ).toBe(false)
   })
 })
 
@@ -182,6 +201,7 @@ describe('toLiteMarket', () => {
       lastFundingTime: 1_700_000_080_000,
       maxLeverage: 10,
       takerFeeBps: 12,
+      takerFeeImpact: 90,
       resolvedOraclePrice: 42,
       description: '',
     } as unknown as PerpContract
@@ -200,10 +220,12 @@ describe('toLiteMarket', () => {
         fundingRate: 0.001,
         lastFundingTime: 1_700_000_080_000,
         takerFeeBps: 12,
+        takerFeeImpact: 90,
         resolvedOraclePrice: 42,
       })
     )
     expect(toFullMarket(contract).takerFeeBps).toBe(12)
+    expect(toFullMarket(contract).takerFeeImpact).toBe(90)
   })
 
   it('projects the effective legacy default while preserving explicit zero', () => {
@@ -236,6 +258,15 @@ describe('toLiteMarket', () => {
     expect(
       toLiteMarket({ ...legacyContract, takerFeeBps: 0 }).takerFeeBps
     ).toBe(0)
+    expect(toLiteMarket(legacyContract).takerFeeImpact).toBe(
+      PERP_TAKER_FEE_IMPACT_DEFAULT
+    )
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeImpact: 0 }).takerFeeImpact
+    ).toBe(0)
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeImpact: 90 }).takerFeeImpact
+    ).toBe(90)
   })
 
   it('publishes the rate an API-key open actually pays', () => {
@@ -327,6 +358,7 @@ describe('update-perp-config props', () => {
       'maxOraclePriceAgeMs',
       'takerFeeApiBps',
       'takerFeeBps',
+      'takerFeeImpact',
     ])
   })
 
@@ -335,6 +367,7 @@ describe('update-perp-config props', () => {
       maxLeverage: 10,
       maxFundingRate: 0.02,
       takerFeeBps: 10,
+      takerFeeImpact: 90,
       takerFeeApiBps: 30,
       maxOraclePriceAgeMs: 10_000,
     }
@@ -350,5 +383,23 @@ describe('update-perp-config props', () => {
 
   it('still rejects a request that changes nothing', () => {
     expect(props.safeParse({ contractId: 'c1' }).success).toBe(false)
+  })
+
+  it('rejects an out-of-bounds takerFeeImpact at the schema', () => {
+    expect(
+      props.safeParse({ contractId: 'c1', takerFeeImpact: -1 }).success
+    ).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX + 1,
+      }).success
+    ).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX,
+      }).success
+    ).toBe(true)
   })
 })

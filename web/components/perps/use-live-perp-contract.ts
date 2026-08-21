@@ -42,9 +42,30 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const [meta, setMeta] = useState<Partial<PerpContract> | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Wall-clock of the last applied push, used to decide whether the fallback
-  // poll needs to run. A ref so arriving ticks don't re-render the tree.
+  // Wall-clock of the last RECEIVED push (applied or not), used to decide
+  // whether the fallback poll needs to run — a rejected replay still proves
+  // the socket is alive. A ref so arriving ticks don't re-render the tree.
   const lastPushAt = useRef(0)
+
+  // Wall-clock of the last quote that was actually APPLIED (strictly newer
+  // than the retained quote) — pushes AND fallback polls both count, since a
+  // no-store fallback body carries pools just as fresh as a push. Compared
+  // against lastMetaAt to decide which source's POOLS are fresher (see the
+  // merge below) — receipt order, not tick time, because pools move without
+  // advancing oraclePriceTime. Kept separate from lastPushAt so a
+  // reconnecting socket's replayed OLD quotes cannot pin the retained
+  // quote's stale pools over a newer meta body. (The durable fix is a
+  // server-stamped pool revision shared by push, quote, and meta responses;
+  // until one exists, applied-receipt order is the best available proxy.)
+  const lastAppliedQuoteAt = useRef(0)
+
+  // oraclePriceTime of the retained quote, mirrored into a ref so applyQuote
+  // (captured once, dependency-free) can detect application synchronously.
+  const latestQuoteTime = useRef<number | undefined>(undefined)
+
+  // Wall-clock of the last applied meta poll body — the other half of the
+  // pool-freshness comparison.
+  const lastMetaAt = useRef(0)
 
   // Never rewind. Pushes, fallback polls, and a reconnecting socket's replay
   // all race each other, so ordering on the oracle timestamp rather than on
@@ -57,6 +78,10 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   // changes, so a callback closing over changing state would go stale on the
   // wire. The SSR baseline is applied once at merge time instead.
   const applyQuote = useCallback((incoming: PerpQuote) => {
+    if (isNewerPerpQuote(latestQuoteTime.current, incoming.oraclePriceTime)) {
+      latestQuoteTime.current = incoming.oraclePriceTime
+      lastAppliedQuoteAt.current = Date.now()
+    }
     setQuote((previous) =>
       isNewerPerpQuote(previous?.oraclePriceTime, incoming.oraclePriceTime)
         ? incoming
@@ -135,6 +160,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
             market.resolution === 'MKT' || market.resolution === 'CANCEL'
               ? market.resolution
               : undefined
+          lastMetaAt.current = Date.now()
           setMeta((previous) =>
             // Never resurrect a settled market from a cached body.
             (ssrContract.isResolved || previous?.isResolved) &&
@@ -162,6 +188,9 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                     : {}),
                   ...(market.takerFeeBps != null
                     ? { takerFeeBps: market.takerFeeBps }
+                    : {}),
+                  ...(market.takerFeeImpact != null
+                    ? { takerFeeImpact: market.takerFeeImpact }
                     : {}),
                 }
           )
@@ -205,18 +234,25 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
 
   const refresh = () => setRefreshKey((key) => key + 1)
 
-  // Quote wins over meta for the PRICE fields only: it is the fresher source
-  // and the only push-driven one. Pools are deliberately NOT taken from the
-  // quote: trades, funding transfers, and liquidity edits all move
-  // poolLong/poolShort WITHOUT advancing oraclePriceTime, so a tick-time pool
-  // snapshot pinned here would shadow the fresher meta poll for the whole gap
-  // between ticks — up to a day on the daily feeds. Meta stays the single
-  // source for pools/OI/funding, which also keeps those inputs the same
-  // vintage for the funding math. Fields are picked explicitly so the quote's
-  // own `contractId` does not leak onto the contract, and so adding a field to
-  // PerpQuote can never silently start overwriting unrelated contract state.
-  // The SSR baseline is applied here rather than in applyQuote, which stays
-  // dependency-free.
+  // Quote wins over meta for the PRICE fields: it is the fresher source and
+  // the only push-driven one. Fields are picked explicitly so the quote's
+  // own `contractId` does not leak onto the contract, and so adding a field
+  // to PerpQuote can never silently start overwriting unrelated contract
+  // state. The SSR baseline is applied here rather than in applyQuote, which
+  // stays dependency-free.
+  //
+  // POOLS are ordered by RECEIPT, not tick time: trades, funding transfers,
+  // and liquidity edits all move poolLong/poolShort WITHOUT advancing
+  // oraclePriceTime, so a tick-time pool snapshot pinned by timestamp would
+  // shadow a fresher meta poll for the whole gap between ticks — up to a day
+  // on the daily feeds. Instead a pushed quote's pools apply only while the
+  // push is more recent than the last applied meta body (quote.ts explicitly
+  // blesses consuming its pools by arrival order). On a fast-tick feed that
+  // replaces the edge-cached meta pools (max-age 5 + swr 10, polled every
+  // 15s) with a ≤tick-old DB read — which matters since the size-dependent
+  // taker fee prices real money off these pools — while on slow feeds and
+  // after the post-trade no-store meta burst, meta immediately wins back.
+  // OI/funding stay meta-only, keeping the funding math's inputs one vintage.
   //
   // `oracleSourceTime` is copied even when absent from the quote: source time
   // describes a specific observation, so carrying the previous one forward
@@ -224,14 +260,50 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const quoteIsFresher =
     quote != null &&
     isNewerPerpQuote(ssrContract.oraclePriceTime, quote.oraclePriceTime)
+  // Pool overlay requires BOTH: the quote strictly newer than the (live)
+  // ssrContract's tick — a reconnect replay older than the page's own state
+  // must never overwrite its pools — and the applied-quote receipt newer
+  // than the last meta body.
+  const quotePoolsAreFresher =
+    quote != null &&
+    quoteIsFresher &&
+    lastAppliedQuoteAt.current > lastMetaAt.current
+  // The ssrContract prop is LIVE (the contract page subscribes to contract
+  // updates), so an admin config broadcast (update-perp-config bumps
+  // lastUpdatedTime) reaches it within seconds — while the meta body can be
+  // up to ~30s stale. When the prop is newer by lastUpdatedTime, its
+  // live-tunable config must not be masked by meta's older copy: the engine
+  // is already charging with the new values.
+  const propConfigIsNewer =
+    meta?.lastUpdatedTime != null &&
+    ssrContract.lastUpdatedTime != null &&
+    ssrContract.lastUpdatedTime > meta.lastUpdatedTime
   const contract = {
     ...ssrContract,
     ...meta,
+    ...(propConfigIsNewer
+      ? {
+          maxLeverage: ssrContract.maxLeverage,
+          lastUpdatedTime: ssrContract.lastUpdatedTime,
+          ...(ssrContract.takerFeeBps != null
+            ? { takerFeeBps: ssrContract.takerFeeBps }
+            : {}),
+          ...(ssrContract.takerFeeImpact != null
+            ? { takerFeeImpact: ssrContract.takerFeeImpact }
+            : {}),
+        }
+      : {}),
     ...(quoteIsFresher && quote != null
       ? {
           oraclePrice: quote.oraclePrice,
           oraclePriceTime: quote.oraclePriceTime,
           oracleSourceTime: quote.oracleSourceTime,
+        }
+      : {}),
+    ...(quotePoolsAreFresher && quote != null
+      ? {
+          poolLong: quote.poolLong,
+          poolShort: quote.poolShort,
         }
       : {}),
   } as PerpContract

@@ -1,6 +1,7 @@
 import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
 } from 'common/perps/fees'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { removeUndefinedProps } from 'common/util/object'
@@ -32,6 +33,12 @@ import { APIError, APIHandler } from './helpers/endpoint'
 //   max(takerFeeBps, takerFeeApiBps) from the NEXT open or add. Unset or 0
 //   = API pays the web base. Its own wider [0, 300] domain — it prices
 //   hostile bot flow (the 2026-08-19/20 BTC drain was all API-key trades).
+// - takerFeeImpact: size-impact coefficient of the fee (marginal rate is
+//   base + takerFeeImpact·(share of pool)² bps, integrated over the added
+//   notional — see calcPerpSizeFee; NOT the paper's k, which is
+//   fundingSensitivity). 0 keeps the fee flat at whichever base the channel
+//   selected. Applied to the NEXT open or add; the schema keeps it inside
+//   assertPerpTakerFeeConfig's [0, PERP_TAKER_FEE_IMPACT_MAX] domain.
 // - maxOraclePriceAgeMs: the age at which the engine stops accepting trades
 //   AND closes against the cached mark. Lowering it is the direct lever on
 //   latency arbitrage — every stale-mark window a bot can trade is bounded by
@@ -51,6 +58,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxFundingRate,
     takerFeeBps,
     takerFeeApiBps,
+    takerFeeImpact,
     maxOraclePriceAgeMs,
   } = body
 
@@ -62,6 +70,12 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   if (contract.isResolved)
     throw new APIError(403, 'Cannot update a resolved market')
 
+  if (takerFeeImpact !== undefined)
+    log(
+      `admin ${auth.uid} set takerFeeImpact on ${
+        contract.slug
+      }: ${getPerpTakerFeeImpact(contract)} -> ${takerFeeImpact}`
+    )
   if (maxOraclePriceAgeMs !== undefined) {
     const feedDef = getOracleFeed(contract.oracleFeedId)
     if (!feedDef)
@@ -96,6 +110,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     maxFundingRate,
     takerFeeBps,
     takerFeeApiBps,
+    takerFeeImpact,
     maxOraclePriceAgeMs,
     lastUpdatedTime,
   })
@@ -136,6 +151,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       maxFundingRate,
       takerFeeBps,
       takerFeeApiBps,
+      takerFeeImpact,
       maxOraclePriceAgeMs,
     })
   )
@@ -147,6 +163,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       takerFeeBps: nextTakerFeeBps,
       takerFeeApiBps: takerFeeApiBps ?? contract.takerFeeApiBps ?? null,
       effectiveTakerFeeApiBps,
+      takerFeeImpact: takerFeeImpact ?? getPerpTakerFeeImpact(contract),
       maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
     },
     continue: async () => {

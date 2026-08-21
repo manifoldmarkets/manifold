@@ -35,7 +35,10 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
-import { PERP_TAKER_FEE_API_BPS_MAX } from 'common/perps/fees'
+import {
+  PERP_TAKER_FEE_API_BPS_MAX,
+  PERP_TAKER_FEE_IMPACT_MAX,
+} from 'common/perps/fees'
 import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
@@ -1064,6 +1067,12 @@ export const API = (_apiTypeCheck = {
       // Open-side taker fee charged on this call, in mana. Closing is free;
       // a flip pays the fee on its newly opened leg only.
       fee: number
+      // Effective rate actually charged (fee / added notional × 10_000) and
+      // the position's resulting share of the pool depth it was priced
+      // against — the authoritative numbers for bots and analytics. Absent
+      // only on idempotent replays of trades stored before these existed.
+      feeBps?: number
+      poolShareAfter?: number
     },
     props: placePerpTradeSchema,
   },
@@ -1162,6 +1171,7 @@ export const API = (_apiTypeCheck = {
       maxLeverage: number
       maxFundingRate: number
       takerFeeBps: number
+      takerFeeImpact: number
       // Configured API-channel base rate, or null when API trades pay the
       // same base as the web. The engine applies max(takerFeeBps, this).
       takerFeeApiBps: number | null
@@ -1179,11 +1189,20 @@ export const API = (_apiTypeCheck = {
         // funding tick fail-closes and the market stops funding entirely.
         maxLeverage: z.number().gt(1).lte(100).optional(),
         maxFundingRate: z.number().gt(0).lt(1).optional(),
-        // Open-side taker fee in bps of notional (closing is free, so this
-        // is the round-trip cost); 0 disables. Bounds match
-        // assertPerpTakerFeeConfig — outside them the engine fail-closes
-        // every trade.
+        // Open-side BASE taker fee in bps of notional (closing is free);
+        // 0 disables. Bounds match assertPerpTakerFeeConfig — outside them
+        // the engine fail-closes every trade. This caps the base only: the
+        // size-dependent total (base + takerFeeImpact·share² marginal) is
+        // intentionally uncapped.
         takerFeeBps: z.number().min(0).max(100).optional(),
+        // Size-impact coefficient of the taker fee (NOT the paper's k —
+        // that is fundingSensitivity). 0 keeps the fee flat at the base.
+        // Bounds match assertPerpTakerFeeConfig.
+        takerFeeImpact: z
+          .number()
+          .min(0)
+          .max(PERP_TAKER_FEE_IMPACT_MAX)
+          .optional(),
         // Base rate for API-KEY opens only, applied as max(takerFeeBps,
         // takerFeeApiBps) — it can raise the API channel's rate, never
         // discount it. 0 (or unset) = API pays the web base. Wider cap than
@@ -1212,6 +1231,7 @@ export const API = (_apiTypeCheck = {
           p.maxLeverage !== undefined ||
           p.maxFundingRate !== undefined ||
           p.takerFeeBps !== undefined ||
+          p.takerFeeImpact !== undefined ||
           p.takerFeeApiBps !== undefined ||
           p.maxOraclePriceAgeMs !== undefined,
         { message: 'Provide at least one field to update' }

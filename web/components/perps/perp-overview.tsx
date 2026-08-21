@@ -85,7 +85,10 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // Single polled positions source shared by the chart overlays, position
   // panel, and bet panel — one request instead of three, and every consumer
   // sees cross-user changes on the poll rather than only on own-trades.
-  const positions = usePerpPositions(contract.id, refreshKey)
+  const { positions, unsound: unsoundPositions } = usePerpPositions(
+    contract.id,
+    refreshKey
+  )
 
   const price = Number(
     contract.isResolved
@@ -214,6 +217,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           contract={contract}
           onTrade={refresh}
           positions={positions}
+          unsoundPositions={unsoundPositions}
           oracleTradingPaused={oracleTradingPaused}
         />
       )}

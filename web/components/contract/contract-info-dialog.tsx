@@ -13,7 +13,9 @@ import { getPerpBackingPool } from 'common/perps/amm'
 import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
   PERP_TAKER_FEE_API_BPS_MAX,
+  PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
@@ -695,6 +697,21 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           )}
         </td>
       </tr>
+      <tr className={clsx(canEdit && 'bg-purple-500/30')}>
+        <td>
+          Fee size impact{' '}
+          <InfoTooltip text="Size coefficient of the taker fee: the marginal rate at pool-share s is base + impact·s² bps, so a fresh position that is share S of the pool pays base + (impact/3)·S² bps on average. 0 = flat base fee only. Small trades pay ~base regardless of the impact." />
+        </td>
+        <td>
+          {canEdit ? (
+            <TakerFeeImpactInput contract={contract} />
+          ) : (
+            <span className="tabular-nums">
+              {formatWithCommas(getPerpTakerFeeImpact(contract))}
+            </span>
+          )}
+        </td>
+      </tr>
       <tr>
         <td>
           Current funding{' '}
@@ -1039,6 +1056,100 @@ function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
         size="2xs"
         color="indigo-outline"
         disabled={!valid || saving}
+        loading={saving}
+        onClick={submit}
+      >
+        Set
+      </Button>
+    </Row>
+  )
+}
+
+// Inline admin editor for a perp's fee size-impact coefficient. The marginal
+// taker fee at pool-share s is base + impact·s² bps; 0 keeps the fee flat at
+// the base. Applies to the next open or add immediately.
+function TakerFeeImpactInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  // justSaved bridges the gap until the contract prop reflects the save. It
+  // remembers the stored value AT save time (the baseline) and speaks only
+  // while the prop still shows that stale baseline; the effect RETIRES it
+  // permanently on the first prop movement, because display logic alone
+  // would resurrect the bridge if a later admin change happened to restore
+  // the baseline value (save 20 over 0, prop shows 20, someone restores 0 —
+  // without retirement the stale 20 would reappear).
+  const [justSaved, setJustSaved] = useState<{
+    saved: number
+    baseline: number
+  } | null>(null)
+  const stored = getPerpTakerFeeImpact(contract)
+  useEffect(() => {
+    if (justSaved != null && stored !== justSaved.baseline) setJustSaved(null)
+  }, [justSaved, stored])
+  const current =
+    justSaved != null && stored === justSaved.baseline
+      ? justSaved.saved
+      : stored
+  const parsed = Number(input)
+  const valid =
+    input !== '' &&
+    Number.isFinite(parsed) &&
+    parsed >= 0 &&
+    parsed <= PERP_TAKER_FEE_IMPACT_MAX
+
+  const submit = async () => {
+    if (!valid || saving || parsed === current) return
+    setSaving(true)
+    try {
+      const res = await api('update-perp-config', {
+        contractId: contract.id,
+        takerFeeImpact: parsed,
+      })
+      setJustSaved({ saved: res.takerFeeImpact, baseline: stored })
+      setInput('')
+      // The response's base, not the possibly-stale prop's — the base may
+      // have just been edited in the sibling input.
+      const poolSizedPct = (res.takerFeeBps + res.takerFeeImpact / 3) / 100
+      toast.success(
+        res.takerFeeImpact > 0
+          ? `Fee size impact is now ${
+              res.takerFeeImpact
+            } — a pool-sized position pays ${poolSizedPct.toFixed(
+              2
+            )}% effective`
+          : 'Fee size impact is off — the taker fee is flat at the base'
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update fee size impact'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Row className="flex-wrap items-center gap-1.5">
+      <span className="tabular-nums">{formatWithCommas(current)}</span>
+      <input
+        type="number"
+        min={0}
+        max={PERP_TAKER_FEE_IMPACT_MAX}
+        step={10}
+        value={input}
+        disabled={saving}
+        placeholder="New impact"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+      />
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        disabled={!valid || saving || parsed === current}
         loading={saving}
         onClick={submit}
       >

@@ -3,12 +3,15 @@ import {
   applyFunding,
   applyFundingWithSolvency,
   assertPerpFundingConfig,
+  assertPerpPositionNumbers,
+  assertPerpStateNumbers,
   assertPerpStateSolvent,
   closePosition,
   computeFundingRate,
   getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
+  getPositionValue,
   getUnrealizedEquity,
   imbalance,
   isLiquidated,
@@ -1041,5 +1044,209 @@ describe('open interest capacity', () => {
     expect(() => getPerpOpenInterestCapacity('long', state, 100)).toThrow(
       'position 0 size must be finite'
     )
+  })
+})
+
+describe('assertPerpPositionNumbers', () => {
+  const sound = (over: Partial<PerpPosition> = {}): PerpPosition => ({
+    userId: 'u',
+    contractId: 'c',
+    direction: 'long',
+    size: 200_000,
+    costBasis: 200_000,
+    originalCostBasis: 200_000,
+    takerFeeCostBasis: 200,
+    entryPrice: 100,
+    leverage: 1,
+    liquidationPrice: 0,
+    openedTime: 1,
+    updatedTime: 1,
+    ...over,
+  })
+
+  it('accepts a sound row', () => {
+    expect(() => assertPerpPositionNumbers(sound())).not.toThrow()
+  })
+
+  it.each([
+    ['entryPrice', { entryPrice: 0 }],
+    ['negative entryPrice', { entryPrice: -100 }],
+    ['non-finite entryPrice', { entryPrice: Number.NaN }],
+    ['non-finite size', { size: Number.POSITIVE_INFINITY }],
+    ['negative costBasis', { costBasis: -1 }],
+    ['zero costBasis with live exposure', { costBasis: 0 }],
+    // The mirror case, and the one a naive "size > 0" filter hides: a row
+    // carrying margin at size 0 is corrupt, not closed. The web hook's
+    // partition depends on this rejecting.
+    ['zero size still carrying margin', { size: 0 }],
+    ['negative originalCostBasis', { originalCostBasis: -1 }],
+    ['negative takerFeeCostBasis', { takerFeeCostBasis: -1 }],
+    ['non-finite takerFeeCostBasis', { takerFeeCostBasis: Number.NaN }],
+    ['non-positive leverage', { leverage: 0 }],
+    ['non-finite liquidationPrice', { liquidationPrice: Number.NaN }],
+  ])('rejects %s', (_label, over) => {
+    expect(() => assertPerpPositionNumbers(sound(over))).toThrow()
+  })
+
+  it('labels the row so a caller can say WHICH position is corrupt', () => {
+    expect(() =>
+      assertPerpPositionNumbers(sound({ entryPrice: 0 }), 'opposite leg')
+    ).toThrow(/opposite leg entry price must be positive/)
+  })
+
+  // Why the engine scans rows IRRESPECTIVE of size, not just the ones its
+  // `size > 0` selection returns.
+  it('replaces a same-direction row regardless of size, so malformed rows must be rejected first', () => {
+    for (const badSize of [Number.NaN, -5, 0]) {
+      const corrupt = sound({ size: badSize })
+      const state: PerpState = {
+        pool: { L: 250_000, S: 250_000 },
+        positions: [corrupt],
+      }
+
+      // The predicate both engine paths select with does NOT match it, so a
+      // guard applied only to the selected rows never sees this row.
+      expect(
+        state.positions.find(
+          (p) => p.userId === 'u' && p.direction === 'long' && p.size > 0
+        )
+      ).toBeUndefined()
+
+      // But openPosition's replacement filter keys on (userId, direction)
+      // ONLY — it never re-checks size — so the trade would overwrite the row
+      // and its 200,000 cost basis would vanish from the position table while
+      // the pool still held the margin.
+      const res = openPosition(
+        state,
+        'u',
+        'c',
+        'long',
+        100,
+        1,
+        100,
+        undefined,
+        1
+      )
+      expect(res.state.positions).toHaveLength(1)
+      expect(res.state.positions[0].costBasis).toBe(100)
+
+      // Hence the guard, which reads every row the user holds.
+      expect(() => assertPerpPositionNumbers(corrupt)).toThrow()
+    }
+  })
+
+  // Why the engine must run this BEFORE closing an opposite leg on a flip.
+  it('catches the corrupt row that would otherwise pay out its full margin', () => {
+    // getUnrealizedEquity short-circuits to 0 when entryPrice <= 0, so a
+    // corrupt row marks as FLAT: closePosition computes pi = 0 and pays
+    // costBasis in full, wherever the oracle actually is. Nothing downstream
+    // catches it either — the close REMOVES the row from state, so the
+    // post-close assertPerpStateSolvent has nothing left to inspect.
+    const corrupt = sound({ entryPrice: 0 })
+    const state: PerpState = {
+      pool: { L: 250_000, S: 250_000 },
+      positions: [corrupt],
+    }
+    const soundAtSameDrawdown = sound()
+    expect(getPositionValue(soundAtSameDrawdown, 20)).toBeCloseTo(40_000, 6)
+    // Same position, corrupt entry price: worth its full basis at any mark.
+    expect(getPositionValue(corrupt, 20)).toBe(200_000)
+
+    const closed = closePosition(state, corrupt, 20)
+    expect(closed.payout).toBe(200_000)
+    expect(closed.state.positions).toHaveLength(0)
+    // The post-close state is "solvent" precisely because the corrupt row is
+    // gone — which is why the guard has to run first.
+    expect(() => assertPerpStateSolvent(closed.state, 20)).not.toThrow()
+    expect(() => assertPerpPositionNumbers(corrupt)).toThrow()
+  })
+})
+
+describe('assertPerpStateNumbers ordering vs the risk transitions', () => {
+  const soundRow = (over: Partial<PerpPosition> = {}): PerpPosition => ({
+    userId: 'u',
+    contractId: 'c',
+    direction: 'long',
+    size: 100_000,
+    costBasis: 10_000,
+    originalCostBasis: 10_000,
+    takerFeeCostBasis: 10,
+    entryPrice: 100,
+    leverage: 10,
+    liquidationPrice: 90,
+    openedTime: 1,
+    updatedTime: 1,
+    ...over,
+  })
+
+  // processLiquidations OVERWRITES size / costBasis / leverage with 0, so a
+  // corruption in any of those three is laundered into a valid zero row.
+  it.each(['size', 'costBasis', 'leverage'] as const)(
+    'rejects a corrupt %s that liquidation would otherwise zero away',
+    (field) => {
+      // A 10x long at entry 100 liquidates at 90; mark 50 is well past it.
+      const corrupt = soundRow({ [field]: Number.NaN })
+      const state: PerpState = {
+        pool: { L: 50_000, S: 50_000 },
+        positions: [corrupt],
+      }
+
+      // Pre-transition: the corruption is visible.
+      expect(() => assertPerpStateNumbers(state, 50)).toThrow()
+
+      // Post-transition: it is not. The row survives but its corrupt field
+      // has been replaced with 0, leaving a structurally valid zero row.
+      const liquidated = processLiquidations(state, 50)
+      expect(liquidated.liquidated).toHaveLength(1)
+      expect(liquidated.state.positions[0]).toMatchObject({
+        size: 0,
+        costBasis: 0,
+        leverage: 0,
+      })
+      expect(() => assertPerpStateNumbers(liquidated.state, 50)).not.toThrow()
+      expect(() => assertPerpStateSolvent(liquidated.state, 50)).not.toThrow()
+    }
+  )
+
+  it('rejects a corrupt row that a factor-zero ADL would otherwise settle away', () => {
+    // ADL removes a profitable position outright when the factor hits 0, so
+    // the same blind spot exists on that transition.
+    const corrupt = soundRow({ originalCostBasis: Number.NaN })
+    const state: PerpState = {
+      pool: { L: 10_000, S: 0 },
+      positions: [corrupt],
+    }
+    expect(() => assertPerpStateNumbers(state, 150)).toThrow()
+
+    const adl = applyADL(state, 150)
+    expect(adl.adlFactorLong).toBe(0)
+    expect(adl.settled).toHaveLength(1)
+    expect(adl.state.positions).toHaveLength(0)
+    // Blind after the fact — the row it would have flagged no longer exists.
+    expect(() => assertPerpStateNumbers(adl.state, 150)).not.toThrow()
+    expect(() => assertPerpStateSolvent(adl.state, 150)).not.toThrow()
+  })
+
+  it('is the numbers check, NOT the solvency check — transitions must still repair insolvency', () => {
+    // The distinction that makes it safe to assert on the INPUT: a legitimately
+    // insolvent book is exactly what liquidation and ADL are for, so asserting
+    // solvency there would fail closed on the states they exist to fix.
+    const underwater = soundRow({
+      direction: 'long',
+      entryPrice: 100,
+      size: 100_000,
+      costBasis: 10_000,
+      leverage: 10,
+    })
+    const insolvent: PerpState = {
+      pool: { L: 10_000, S: 0 },
+      positions: [underwater],
+    }
+    // Structurally sound...
+    expect(() => assertPerpStateNumbers(insolvent, 150)).not.toThrow()
+    // ...but not solvent, and ADL is what repairs that.
+    expect(() => assertPerpStateSolvent(insolvent, 150)).toThrow()
+    const repaired = applyADL(insolvent, 150)
+    expect(() => assertPerpStateSolvent(repaired.state, 150)).not.toThrow()
   })
 })

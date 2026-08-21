@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+
+import { assertPerpPositionNumbers } from 'common/perps/amm'
 import { api } from 'web/lib/api/api'
 
 // One polled source of truth for a perp market's open positions, shared by
@@ -13,8 +15,10 @@ import { api } from 'web/lib/api/api'
 //   the PRE-trade state for several seconds — which mid-interaction reads
 //   as "my trade didn't happen".
 //
-// Returns null until the first response so callers can distinguish
-// "loading" from "no open positions".
+// Returns `{ positions, unsound }`. `positions` is null until the first
+// response so callers can distinguish "loading" from "no open positions";
+// `unsound` carries rows that failed row-level sanity, which no consumer may
+// render but the bet panel must know about (see the filter below).
 
 export type PerpPositionRow = {
   userId: string
@@ -55,8 +59,31 @@ export const scheduleFreshBurst = (load: () => void) => {
   }
 }
 
+/**
+ * STRUCTURAL sanity only — shares assertPerpPositionNumbers with the engine,
+ * so "sound" means the same thing on both sides of the wire.
+ *
+ * Deliberately says nothing about whether the position is OPEN. The two
+ * questions have to stay separate: a cleanly closed row (size, costBasis and
+ * leverage all 0) is perfectly sound but not active, while a row carrying
+ * margin at size 0 is active-looking but corrupt — and folding "size > 0"
+ * into this predicate makes those two indistinguishable, which is how the
+ * zero-with-margin row ended up in neither bucket below.
+ */
+export const isStructurallySoundPositionRow = (row: PerpPositionRow) => {
+  try {
+    assertPerpPositionNumbers({ ...row, contractId: '' })
+  } catch {
+    return false
+  }
+  return true
+}
+
 export const usePerpPositions = (contractId: string, refreshKey = 0) => {
-  const [positions, setPositions] = useState<PerpPositionRow[] | null>(null)
+  const [state, setState] = useState<{
+    positions: PerpPositionRow[]
+    unsound: PerpPositionRow[]
+  } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -68,7 +95,26 @@ export const usePerpPositions = (contractId: string, refreshKey = 0) => {
       )
         .then((rows) => {
           if (cancelled) return
-          setPositions(rows.filter((r) => r.size > 0))
+          // Rows that fail row-level sanity are kept OUT of `positions` (no
+          // consumer can render or price against them) but are NOT discarded:
+          // the engine refuses to trade for a user who holds one
+          // (assertUserPerpRowsSound), so the bet panel has to know the row
+          // exists or it would preview a cheerful fresh-open quote for a
+          // trade that is guaranteed to 500. A plain `size > 0` filter hides
+          // exactly the malformed sizes — NaN, negative, zero-with-margin —
+          // that the engine rejects on.
+          setState({
+            // Renderable: structurally sound AND actually open.
+            positions: rows.filter(
+              (r) => isStructurallySoundPositionRow(r) && r.size > 0
+            ),
+            // Corrupt: structurally unsound, whatever its size. The size is
+            // not a filter here — the engine rejects on structure alone
+            // (assertUserPerpRowsSound scans every row the user holds,
+            // ignoring size for exactly this reason), so any size-based
+            // exclusion would hide a row the engine will refuse to trade on.
+            unsound: rows.filter((r) => !isStructurallySoundPositionRow(r)),
+          })
         })
         .catch(() => {})
     const cancelBurst =
@@ -83,5 +129,7 @@ export const usePerpPositions = (contractId: string, refreshKey = 0) => {
     }
   }, [contractId, refreshKey])
 
-  return positions
+  // `positions` stays null until the first response so callers can tell
+  // "loading" from "no open positions"; `unsound` is empty in both cases.
+  return { positions: state?.positions ?? null, unsound: state?.unsound ?? [] }
 }
