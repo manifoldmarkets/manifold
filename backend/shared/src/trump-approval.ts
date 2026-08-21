@@ -1,8 +1,9 @@
-import * as dayjs from 'dayjs'
-import * as utc from 'dayjs/plugin/utc'
-import * as timezone from 'dayjs/plugin/timezone'
-dayjs.extend(utc)
-dayjs.extend(timezone)
+import {
+  ApprovalPoll,
+  PublishedAverageSeries,
+  hasApproveAnswer,
+  readApprovePct,
+} from 'common/perps/trump-approval'
 
 import { log } from './utils'
 
@@ -14,9 +15,10 @@ import { log } from './utils'
 // is its `end_date` (last day of fielding) — not `created_at`, which is
 // when the poll was published.
 //
-// We compute a daily average as the *unweighted* mean of Approve pct across
-// all polls whose end_date falls within a trailing window ending on the day
-// in question. 14 days is standard for political polling aggregators.
+// This module is the ADAPTER only: it fetches and shapes. How the polls are
+// then windowed and averaged is the published methodology and lives in
+// common/perps/trump-approval.ts, where a UI can read the same rule the
+// oracle prices against.
 
 export type VoteHubPoll = {
   id: string
@@ -28,12 +30,56 @@ export type VoteHubPoll = {
   answers: { choice: string; pct: number }[]
 }
 
-export const TRUMP_APPROVAL_WINDOW_DAYS = 14
 export const TRUMP_INAUGURATION_DATE = '2025-01-21'
 
-// Fetch all Trump approval polls from VoteHub since `startDate` (YYYY-MM-DD).
-// The API returns the full list in one payload (no pagination observed in
-// practice; `total` is included but all items come back).
+const getApprovePct = (poll: VoteHubPoll): number | null => {
+  const pct = readApprovePct(poll?.answers)
+  // Distinguish "no Approve answer" (structural, not newsworthy) from a
+  // percentage that cannot be a percentage. The latter is a provider
+  // data-entry error and worth an ERROR: one pct of 460 against ~20 polls
+  // near 45 moves the unweighted mean ~20 points, which lands inside the
+  // feed's [10,90] plausibility bounds and would price live positions.
+  if (pct == null && hasApproveAnswer(poll?.answers))
+    log.error(
+      `[trump-approval] dropping poll ${poll?.id} with unusable approve pct`
+    )
+  return pct
+}
+
+/**
+ * Fetch every Trump approval poll from VoteHub since `startDate`.
+ *
+ * ONE REQUEST, DELIBERATELY. An earlier revision of this function paged by
+ * `offset`, on the belief that the endpoint truncated silently — the giveaway
+ * being that `items.length` comes back well under the reported `total` (26 of
+ * 37 over 28 days, 57 of 69 over 56, 807 of 995 over the full history). That
+ * was a misreading, and the paging it motivated made things worse rather than
+ * better. What the response body actually does:
+ *
+ *   - `items` is COMPLETE. Verified across six range sizes from 2 polls to
+ *     807: `items.length` always equals the distinct-id count, and the entire
+ *     history since inauguration arrives in a single response.
+ *   - `total` counts a different and larger population than `items` — it does
+ *     not match the item count under any combination of the filters we send,
+ *     including with `in_averages_only=false`. It is not a completeness
+ *     signal, and any check comparing the two fires on every single request.
+ *   - `offset` past the end of `items` does NOT return further rows. It
+ *     returns byte-identical copies of rows already delivered, then empties.
+ *     The "unstable sort producing duplicates" the paging loop deduplicated
+ *     against was an artifact the loop itself created by requesting offsets
+ *     that only existed in `total`'s larger population.
+ *
+ * So there is nothing to page and nothing to reconcile. Do not reintroduce a
+ * loop here on the strength of `items.length < total` alone; confirm first
+ * that distinct ids are actually missing, which so far they never are.
+ *
+ * The real backstop against a future truncation lives in the methodology
+ * rather than here: selectApprovalWindow refuses to publish unless it finds
+ * TRUMP_APPROVAL_MIN_POLLS within TRUMP_APPROVAL_MAX_WINDOW_DAYS. Truncation
+ * would drop the OLDEST polls (responses arrive newest-first), which is
+ * exactly what a widened window reaches for, so a short read surfaces as a
+ * refusal to publish rather than as a quietly wrong average.
+ */
 export const fetchTrumpApprovalPolls = async (
   startDate: string
 ): Promise<VoteHubPoll[]> => {
@@ -67,71 +113,77 @@ export const fetchTrumpApprovalPolls = async (
     items: VoteHubPoll[]
     total: number
   }
+  const items = Array.isArray(body.items) ? body.items : []
+  const distinct = new Set(items.map((poll) => poll?.id)).size
+
+  // Log the oldest date reached, not `total`: coverage of the window we are
+  // about to price is the property that matters, and it is the one a future
+  // truncation would visibly break.
+  const oldest = items.reduce<string | null>(
+    (acc, poll) => (acc == null || poll?.end_date < acc ? poll?.end_date : acc),
+    null
+  )
   log(
-    `fetched ${body.items.length}/${body.total} Trump approval polls from VoteHub (start_date=${startDate})`
+    `fetched ${items.length} Trump approval polls from VoteHub ` +
+      `(start_date=${startDate}, oldest end_date ${oldest ?? 'n/a'})`
   )
-  return body.items
-}
-
-const getApprovePct = (poll: VoteHubPoll): number | null => {
-  const approve = poll.answers.find(
-    (a) => a.choice.toLowerCase() === 'approve'
-  )
-  if (!approve || typeof approve.pct !== 'number') return null
-  // The response is cast, not schema-validated, so a provider data-entry
-  // error arrives as a plain number. Drop implausible percentages rather
-  // than letting one bad row drag the unweighted mean: a single pct of 460
-  // against ~20 polls near 45 moves the average by ~20 points, which lands
-  // inside the feed's [10,90] sanity bounds and would be applied to live
-  // positions as a real price.
-  if (!Number.isFinite(approve.pct) || approve.pct < 0 || approve.pct > 100) {
+  // Distinct ids have always equalled the item count. If that ever changes,
+  // the response really is repeating rows and the assumptions above need
+  // revisiting — so say so loudly rather than silently deduplicating.
+  if (distinct !== items.length)
     log.error(
-      `[trump-approval] dropping poll ${poll.id} with out-of-range approve pct ${approve.pct}`
+      `[trump-approval] VoteHub returned ${items.length} rows but only ${distinct} distinct ids`
     )
-    return null
-  }
-  return approve.pct
+  return items
 }
 
-// Compute a rolling (trailing, unweighted) average of Approve pct for each
-// day in [fromDay, toDay] (inclusive). A poll contributes to day D if its
-// end_date is in (D - windowDays, D] (i.e. the windowDays days ending on D).
-// Days with no polls in the window are omitted.
-export const computeRollingAverages = (
-  polls: VoteHubPoll[],
-  fromDay: string, // YYYY-MM-DD, in America/Los_Angeles
-  toDay: string, // YYYY-MM-DD
-  windowDays: number = TRUMP_APPROVAL_WINDOW_DAYS
-): { ts: number; price: number }[] => {
-  const pollsWithPct = polls
-    .map((p) => ({ endDate: p.end_date, pct: getApprovePct(p) }))
-    .filter((p): p is { endDate: string; pct: number } => p.pct != null)
+/** VoteHub's key for the Trump approval average. */
+export const VOTEHUB_TRUMP_APPROVAL_KEY = 'trump_approval'
 
-  // Iterate CALENDAR dates and derive each day's timestamp fresh:
-  // dayjs.tz(...).add(1, 'day') adds 24 UTC hours, so a loop started in PST
-  // drifts to 1 AM once PDT begins — every summer stamp landed an hour off
-  // midnight and collided with the correctly-stamped daily-job rows.
-  // Window membership compares ISO date strings, which is DST-proof.
-  const points: { ts: number; price: number }[] = []
-  for (
-    let d = dayjs.utc(fromDay);
-    !d.isAfter(dayjs.utc(toDay));
-    d = d.add(1, 'day')
-  ) {
-    const dateStr = d.format('YYYY-MM-DD')
-    const windowStartStr = d
-      .subtract(windowDays - 1, 'day')
-      .format('YYYY-MM-DD')
-    const inWindow = pollsWithPct.filter(
-      (p) => p.endDate >= windowStartStr && p.endDate <= dateStr
-    )
-    if (inWindow.length === 0) continue
-    const avg = inWindow.reduce((sum, p) => sum + p.pct, 0) / inWindow.length
-    points.push({
-      ts: dayjs.tz(dateStr, 'America/Los_Angeles').valueOf(),
-      price: avg,
+/**
+ * Fetch VoteHub's published, time-weighted approval average.
+ *
+ * This is the oracle price. The raw `/polls` feed above is still read, but
+ * only to compute the independent cross-check described in
+ * common/perps/trump-approval.ts — it no longer sets the price.
+ *
+ * Returns the whole series (one entry per day back to inauguration, ~50KB).
+ * There is no "latest only" parameter, and the full payload is small enough
+ * that adding one would be optimising the wrong thing: having the history in
+ * hand is what lets readPublishedApprovalAverage tell "posted late today" from
+ * "stopped updating three days ago".
+ */
+export const fetchTrumpApprovalAverage =
+  async (): Promise<PublishedAverageSeries> => {
+    const url = `https://polling.votehub.com/averages/${VOTEHUB_TRUMP_APPROVAL_KEY}/values`
+
+    const response = await fetch(url, {
+      headers: {
+        accept: '*/*',
+        'user-agent': 'Manifold/1.0 (+https://manifold.markets)',
+      },
+      // Same reasoning as the polls fetch: without an explicit timeout a
+      // slow-trickling body never resolves, the job never finishes, and
+      // croner's `protect` silently skips later firings at WARN severity.
+      signal: AbortSignal.timeout(30_000),
     })
+    if (!response.ok) {
+      throw new Error(
+        `VoteHub averages request failed: ${response.status} ${response.statusText}`
+      )
+    }
+    const body = (await response.json()) as PublishedAverageSeries
+    log(
+      `fetched VoteHub published approval average ` +
+        `(${Object.keys(body ?? {}).length} daily points)`
+    )
+    return body
   }
 
-  return points
-}
+/** Shape VoteHub rows into the methodology's input, dropping unusable ones. */
+export const toApprovalPolls = (polls: VoteHubPoll[]): ApprovalPoll[] =>
+  polls.flatMap((poll) => {
+    const pct = getApprovePct(poll)
+    if (pct == null) return []
+    return [{ endDate: poll.end_date, pct, pollster: poll.pollster }]
+  })
