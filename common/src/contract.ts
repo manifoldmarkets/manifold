@@ -308,6 +308,11 @@ export type Perp = {
   // on pre-fee contracts = PERP_TAKER_FEE_BPS_DEFAULT. Read via
   // getPerpTakerFeeBps (common/perps/fees), never directly.
   takerFeeBps?: number
+  // Base taker fee for API-key opens, in bps of notional. Applied as
+  // max(takerFeeBps, takerFeeApiBps) so it can only raise the API channel's
+  // rate, never discount it. Missing = API pays the same base as the web.
+  // Read via getPerpEffectiveTakerFeeBps (common/perps/fees), never directly.
+  takerFeeApiBps?: number
   // ms between funding events: max(1h, feed updatePeriodMs), derived at
   // create time and frozen so later feed-registry changes can't rewrite the
   // economics of open positions. Missing on pre-period contracts = hourly.
