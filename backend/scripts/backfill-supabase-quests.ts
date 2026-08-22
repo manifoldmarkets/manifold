@@ -8,6 +8,12 @@ import { setQuestScoreValue } from 'common/supabase/set-scores'
 import { QUEST_DETAILS } from 'common/quest'
 import { getReferralCount } from 'common/supabase/referrals'
 import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+// Extend locally: this module-level .tz() used to work only because
+// shared/utils extended the plugins globally as an import side effect.
+dayjs.extend(utc)
+dayjs.extend(timezone)
 const START_OF_WEEK = dayjs()
   .tz('America/Los_Angeles')
   .startOf('week')

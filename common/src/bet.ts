@@ -39,6 +39,14 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
+  // Whether inserting this row advanced a prediction streak: true for an
+  // executed bet or sell, false for an unfilled limit order or an automatic
+  // redemption. Written explicitly either way at insert and never
+  // recomputed — a later maker fill rewrites `amount` but merges into data
+  // and cannot touch this. Absent only on rows predating the field.
+  // Consumed by streakQualifyingActivitySql.
+  streakEligible?: boolean
+
   isRedemption: boolean // true when automatically redeeming shares
   isRebalance?: boolean // true when rebalancing sums-to-one cpmm shares
 

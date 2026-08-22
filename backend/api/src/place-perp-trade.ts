@@ -54,7 +54,12 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
         // stored request.
         if (result.replayed) return
         try {
-          await advancePerpBettingStreak(auth.uid, contractId, isApi)
+          await advancePerpBettingStreak(
+            auth.uid,
+            contractId,
+            isApi,
+            result.event.ts
+          )
         } catch (err) {
           log('perp streak update failed (non-fatal):', err)
         }

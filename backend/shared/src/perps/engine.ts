@@ -1374,7 +1374,7 @@ export const closePosition = async (
       ].join(';\n')
     )
 
-    return { payout, pnl: userPnl, replayed: false }
+    return { payout, pnl: userPnl, replayed: false, eventTs: event.ts }
   })
 }
 
