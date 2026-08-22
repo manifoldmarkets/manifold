@@ -1,0 +1,54 @@
+# Extra excludes for the EAS build archive (uploaded from the repo root on
+# every `eas build`). NOTE: when this file exists, EAS ignores .gitignore
+# entirely — so the .gitignore patterns are re-stated first.
+#
+# Why: EAS honors only a root ignore file, not nested ones (web/.gitignore,
+# native/.gitignore), so local build artifacts (web/.next, native/android
+# Gradle output) were bloating the upload from ~160 MB of sources to 4+ GB.
+# Do NOT add native/google-services.json here — the build needs it, and it
+# only uploads because nested .gitignores are skipped.
+
+# --- from root .gitignore ---
+.DS_Store
+.idea/
+.vercel
+node_modules
+yarn-error.log
+dev
+firebase-debug.log
+dev-mantic-markets-firebase-adminsdk*.json
+mantic-markets-firebase-adminsdk*.json
+.env
+.env.local
+
+# --- from native/.gitignore: Apple key material + build artifacts ---
+# EAS honors only THIS file once it exists, so nested .gitignores never apply and
+# these have to be re-stated or they ride along in the upload. iOS builds use
+# REMOTE credentials ("ios": {} in eas.json), so Apple key material is never a
+# build input and is always safe to drop.
+#
+# NOT excluded on purpose: credentials.json / *.jks / *.keystore. Android sets
+# credentialsSource: "local" on every profile, so those ARE build inputs — adding
+# them here would break Android signing. Keep them out of the repo instead.
+#
+# Also not excluded: native/google-services.json — the build needs it.
+*.p8
+*.p12
+*.mobileprovision
+*.apk
+*.aab
+*.ipa
+native/ios/Manifold/GoogleService-Info.plist
+
+# --- build outputs & caches the EAS worker never needs ---
+.git/
+web/.next/
+web/out/
+web/tsconfig.tsbuildinfo
+native/android/app/build/
+native/android/app/.cxx/
+native/android/build/
+native/android/.gradle/
+native/.expo/
+native/screenshots/
+mani/

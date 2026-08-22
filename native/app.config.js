@@ -1,5 +1,11 @@
 export default ({ config }) => {
-  const otaUpdateVersion = '1.0.0'
+  // BUMP THIS whenever native code changes. This release adds the
+  // react-native-android-widget native module, which index.js require()s on
+  // Android; that module resolves via TurboModuleRegistry.getEnforcing, which
+  // THROWS AT STARTUP if the binary doesn't contain it. Publishing this JS as an
+  // OTA on runtime 1.0.0 would therefore crash every existing Android install on
+  // launch. A new runtime keeps the widget bundle away from old binaries.
+  const otaUpdateVersion = '1.1.0'
 
   return {
     expo: {
@@ -9,7 +15,7 @@ export default ({ config }) => {
       scheme: 'com.markets.manifold',
       newArchEnabled: true,
       jsEngine: 'hermes',
-      version: '2.0.71',
+      version: '2.1.0',
       orientation: 'portrait',
       icon: './assets/logo.png',
       userInterfaceStyle: 'light',
@@ -34,6 +40,40 @@ export default ({ config }) => {
         ],
         ['expo-web-browser'],
         ['expo-apple-authentication'],
+        '@bacons/apple-targets',
+        // Android home-screen streak widget. One resizable widget that renders a
+        // small (≈2x2) or medium (≈4x2) layout based on its size. The render code
+        // + headless update task live in native/widgets/. iOS uses a separate
+        // SwiftUI target (@bacons/apple-targets) — this is Android-only.
+        [
+          'react-native-android-widget',
+          {
+            widgets: [
+              {
+                name: 'Streak',
+                label: 'Manifold Streak',
+                description: 'Keep your Manifold streak alive 🔥',
+                // Default to 2 wide x 1 tall. Some launchers (e.g. Motorola) have
+                // tall grid rows, so 2 rows renders as a huge half-screen tile;
+                // one row is a compact ~square. minHeight is the floor on dense
+                // grids; min == minResize in this lib, so keep min low enough to
+                // let users shrink it.
+                minWidth: '110dp',
+                minHeight: '90dp',
+                targetCellWidth: 2,
+                targetCellHeight: 1,
+                maxResizeWidth: '320dp',
+                maxResizeHeight: '200dp',
+                resizeMode: 'horizontal|vertical',
+                // Re-render every 30 min (the OS minimum) so the widget flips
+                // lit -> pending shortly after midnight PT even with the app
+                // closed. The headless task recomputes state from the stored
+                // snapshot vs. the current time — no network needed.
+                updatePeriodMillis: 1800000,
+              },
+            ],
+          },
+        ],
       ],
       splash: {
         image: './assets/splash.png',
@@ -69,7 +109,7 @@ export default ({ config }) => {
           backgroundColor: '#4337C9',
         },
         package: 'com.markets.manifold',
-        versionCode: 71,
+        versionCode: 72,
         runtimeVersion: otaUpdateVersion,
       },
       ios: {
@@ -78,14 +118,26 @@ export default ({ config }) => {
             'Pictures can be attached to the content you create.',
           ITSAppUsesNonExemptEncryption: false,
         },
+        // Shared App Group: the app writes the streak snapshot the widget reads.
+        // Must match the widget target's entitlement
+        // (targets/widget/expo-target.config.js) and the suiteName in
+        // targets/widget/index.swift. Adding this capability triggers a one-time
+        // EAS credentials re-provision.
+        entitlements: {
+          'com.apple.security.application-groups': [
+            'group.com.markets.manifold',
+          ],
+        },
         supportsTablet: true,
         usesAppleSignIn: true,
         bundleIdentifier: 'com.markets.manifold',
+        // Needed by @bacons/apple-targets to sign the widget extension target.
+        appleTeamId: process.env.APPLE_TEAM_ID || 'RPU7UVLP3Z',
         associatedDomains: [
           'applinks:manifold.markets',
           'webcredentials:manifold.markets',
         ],
-        buildNumber: '1.0.71',
+        buildNumber: '1.0.72',
         runtimeVersion: otaUpdateVersion,
       },
       runtimeVersion: otaUpdateVersion,
