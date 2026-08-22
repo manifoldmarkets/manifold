@@ -367,9 +367,10 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'update-trump-approval',
-      // 5:30am Pacific, then hourly until the day's point is published. The
-      // end hour MUST stay in sync with TRUMP_APPROVAL_LAST_ATTEMPT_HOUR.
-      '0 30 5-23 * * *',
+      // Hourly, around the clock. The feed publishes whenever VoteHub's
+      // average moves, so a fixed daily slot would leave every intraday move
+      // sitting in public view as the next morning's mark.
+      '0 30 * * * *',
       updateTrumpApproval
     ),
     createJob(

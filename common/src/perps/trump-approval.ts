@@ -504,3 +504,60 @@ export const computeApprovalPoint = (
 
   return { ok: true, price, window: selection.window }
 }
+
+/**
+ * How long a published point may stand before we re-publish an unchanged
+ * value purely to prove the feed is alive.
+ *
+ * Publishing only on change is what closes the intraday arbitrage window, but
+ * on its own it would starve the feed during a flat stretch — VoteHub's
+ * average genuinely held 38.4 for three straight days in August 2026 — and
+ * staleness alerting keys on ROW age. So a value that has not moved is
+ * re-stamped twice a day, comfortably inside the feed's 26h staleAfterMs and
+ * the market's 30h maxOraclePriceAgeMs.
+ */
+export const TRUMP_APPROVAL_HEARTBEAT_MS = 12 * 60 * 60 * 1000
+
+export type ApprovalPublishDecision =
+  | { publish: true; reason: 'first' | 'changed' | 'heartbeat' }
+  | { publish: false; reason: string }
+
+/**
+ * Should this reading be written as a new oracle point?
+ *
+ * The old rule published the first usable value of each Pacific day and then
+ * stopped, which left every later move by the source sitting in public view
+ * as the exact next day's mark — the same shape of timing edge this feed was
+ * changed to remove, just relocated from the window to the schedule. So the
+ * job now runs hourly and publishes whenever the value actually moves.
+ *
+ * Prices are compared exactly rather than within an epsilon: the source
+ * publishes to one decimal, so any real move is at least 0.1, and rounding
+ * slack here would silently swallow the smallest genuine moves.
+ */
+export const decideApprovalPublish = (args: {
+  price: number
+  last: { price: number; ts: number } | null
+  now: number
+  heartbeatMs?: number
+}): ApprovalPublishDecision => {
+  const { price, last, now, heartbeatMs = TRUMP_APPROVAL_HEARTBEAT_MS } = args
+
+  if (!Number.isFinite(price))
+    return { publish: false, reason: `invalid price ${price}` }
+  if (!Number.isFinite(now))
+    return { publish: false, reason: `invalid now ${now}` }
+  if (!Number.isFinite(heartbeatMs) || heartbeatMs <= 0)
+    return { publish: false, reason: `invalid heartbeatMs ${heartbeatMs}` }
+  if (!last) return { publish: true, reason: 'first' }
+  if (!Number.isFinite(last.price) || !Number.isFinite(last.ts))
+    return { publish: true, reason: 'first' }
+
+  if (price !== last.price) return { publish: true, reason: 'changed' }
+  if (now - last.ts >= heartbeatMs)
+    return { publish: true, reason: 'heartbeat' }
+  return {
+    publish: false,
+    reason: `unchanged at ${price} since ${new Date(last.ts).toISOString()}`,
+  }
+}

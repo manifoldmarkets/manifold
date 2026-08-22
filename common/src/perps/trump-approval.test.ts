@@ -1,11 +1,13 @@
 import {
   ApprovalPoll,
   PublishedAverageSeries,
+  TRUMP_APPROVAL_HEARTBEAT_MS,
   TRUMP_APPROVAL_MAX_CROSS_CHECK_GAP,
   TRUMP_APPROVAL_MAX_WINDOW_DAYS,
   TRUMP_APPROVAL_MIN_POLLS,
   averageApprovalPct,
   computeApprovalPoint,
+  decideApprovalPublish,
   getApprovalCrossCheckGap,
   hasApproveAnswer,
   isUsableApprovalPoll,
@@ -494,5 +496,91 @@ describe('averageApprovalPct', () => {
   it('returns null rather than NaN on an empty set', () => {
     expect(averageApprovalPct([])).toBeNull()
     expect(averageApprovalPct([poll('2026-08-10', NaN)])).toBeNull()
+  })
+})
+
+describe('decideApprovalPublish', () => {
+  const now = Date.parse('2026-08-22T20:00:00Z')
+
+  it('publishes when there is no prior point', () => {
+    expect(decideApprovalPublish({ price: 38.4, last: null, now })).toEqual({
+      publish: true,
+      reason: 'first',
+    })
+  })
+
+  it('publishes as soon as the source value moves', () => {
+    // The whole point of hourly running: a move at 2pm must not sit in public
+    // view as tomorrow morning's mark.
+    const last = { price: 38.4, ts: now - 60_000 }
+    expect(decideApprovalPublish({ price: 38.5, last, now })).toEqual({
+      publish: true,
+      reason: 'changed',
+    })
+  })
+
+  it('does not republish an unchanged value within the heartbeat', () => {
+    const last = { price: 38.4, ts: now - TRUMP_APPROVAL_HEARTBEAT_MS + 1000 }
+    const decision = decideApprovalPublish({ price: 38.4, last, now })
+
+    expect(decision.publish).toBe(false)
+    expect(decision.reason).toContain('unchanged')
+  })
+
+  it('re-stamps an unchanged value once the heartbeat elapses', () => {
+    // Their average genuinely held 38.4 for three days running; without this
+    // the feed would age past staleAfterMs and pause the engine while the
+    // source was working perfectly.
+    const last = { price: 38.4, ts: now - TRUMP_APPROVAL_HEARTBEAT_MS }
+    expect(decideApprovalPublish({ price: 38.4, last, now })).toEqual({
+      publish: true,
+      reason: 'heartbeat',
+    })
+  })
+
+  it('keeps the heartbeat well inside the feed staleness bound', () => {
+    // staleAfterMs is 26h and the market's maxOraclePriceAgeMs is 30h, so two
+    // heartbeats a day leaves real margin.
+    expect(TRUMP_APPROVAL_HEARTBEAT_MS).toBeLessThan(26 * 60 * 60 * 1000)
+  })
+
+  it('detects a one-decimal move, the smallest the source can express', () => {
+    const last = { price: 38.4, ts: now - 60_000 }
+    expect(decideApprovalPublish({ price: 38.5, last, now }).publish).toBe(true)
+    expect(decideApprovalPublish({ price: 38.4, last, now }).publish).toBe(
+      false
+    )
+  })
+
+  it('treats a corrupt prior point as no prior point', () => {
+    for (const bad of [NaN, Infinity]) {
+      expect(
+        decideApprovalPublish({
+          price: 38.4,
+          last: { price: bad, ts: now },
+          now,
+        })
+      ).toEqual({ publish: true, reason: 'first' })
+      expect(
+        decideApprovalPublish({
+          price: 38.4,
+          last: { price: 38.4, ts: bad },
+          now,
+        })
+      ).toEqual({ publish: true, reason: 'first' })
+    }
+  })
+
+  it('refuses on invalid inputs rather than publishing garbage', () => {
+    expect(decideApprovalPublish({ price: NaN, last: null, now }).publish).toBe(
+      false
+    )
+    expect(
+      decideApprovalPublish({ price: 38.4, last: null, now: NaN }).publish
+    ).toBe(false)
+    expect(
+      decideApprovalPublish({ price: 38.4, last: null, now, heartbeatMs: 0 })
+        .publish
+    ).toBe(false)
   })
 })
