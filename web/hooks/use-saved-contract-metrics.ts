@@ -38,8 +38,12 @@ export const useAllSavedContractMetrics = (
     return metricsByContract[contract.id] as ContractMetric[]
   }
   useEffect(() => {
+    // Logged-out visitors have no saved metrics; skip the per-row recompute and
+    // localStorage write entirely (matters on the feed, which renders many rows).
+    if (!user) return
     setSavedMetrics(updateMetricsWithNewProbs(savedMetrics ?? []))
   }, [
+    user?.id,
     'answers' in contract
       ? JSON.stringify(contract.answers)
       : contract.lastBetTime,
