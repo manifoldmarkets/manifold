@@ -33,6 +33,10 @@ module.exports = {
       { hostname: 'storage.googleapis.com' },
       { hostname: 'picsum.photos' },
       { hostname: '*.giphy.com' },
+      // Sentinel Bio charity logo (common/charity.ts). next/image throws at
+      // runtime on an unlisted hostname, so this is required for the legacy
+      // /old-charity pages, which render every charity's photo.
+      { hostname: 'sentinelbio.org' },
     ],
   },
   turbopack: {
