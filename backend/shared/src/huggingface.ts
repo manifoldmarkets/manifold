@@ -40,16 +40,14 @@ export type HuggingFaceVerification =
 /**
  * Verify that `repo` holds publicly downloadable weights.
  *
- * Click-through gating still counts as public — Llama and Gemma sit behind a
- * licence any member of the public can accept, and the methodology's line is
- * "can anyone get them", not "is the licence tidy". Discretionary gating does
- * NOT: HF's `gated` is a trichotomy, and `"manual"` means the owner approves
- * each request individually, so the public cannot in fact get the weights.
- * Hence the accept-list below — any value HF invents later reads as unresolved
- * rather than silently confirming, per the directionality note above. A private
- * repo does not count either, and neither does a repo with no weight files
- * (tokenizer-only publications are the exact trap Upstage's `solar-pro*` line
- * sets: `solar-pro3-tokenizer` resolves while the weights never shipped).
+ * Gating still counts as public — Llama and Gemma sit behind a licence any
+ * member of the public can accept, and the methodology's line is "can anyone
+ * get them", not "is the licence tidy". See `isPubliclyGettable` below for why
+ * `"manual"` is on the accept side; any value HF invents later reads as
+ * unresolved rather than silently confirming, per the directionality note
+ * above. A private repo does not count, and neither does a repo with no weight
+ * files (tokenizer-only publications are the exact trap Upstage's `solar-pro*`
+ * line sets: `solar-pro3-tokenizer` resolves while the weights never shipped).
  */
 export const verifyHuggingFaceWeights = async (
   repo: string
@@ -122,9 +120,30 @@ export const verifyHuggingFaceWeights = async (
  * An accept-list, not a reject-list, so a value HF adds later ("research",
  * "waitlist", whatever) fails closed into "unresolved" and waits for a human
  * instead of quietly counting on the open side of an executable index.
+ *
+ * `"manual"` is on the list, and that reverses an earlier reading of it. The
+ * argument for excluding it was that the owner approves each request
+ * individually, so the public cannot in fact get the weights. That is not what
+ * the value means in practice for the repos this index actually contains:
+ * Llama and Gemma report `"manual"`, anyone may accept the licence and
+ * download, and the published seed classifies all eleven of them `open:true`
+ * — `meta-llama/Llama-3.3-70B-Instruct`, `google/gemma-3-27b-it`, the Llama 4
+ * pair, and the rest.
+ *
+ * So the two disagreed, and the disagreement had teeth in both directions:
+ * the watcher could never auto-confirm a Llama or Gemma release, putting every
+ * one of them in the review queue on a 48-hour clock; and the nightly
+ * re-verification in `update-classification-audit.ts` reported all eleven
+ * seeded entries as "no longer verifies" on its first run, which is exactly
+ * the kind of standing false alarm that gets an alert ignored.
+ *
+ * The methodology's test is "can anyone get them", and for click-through and
+ * accept-the-licence gating alike the answer is yes. Discretionary gating that
+ * genuinely blocks the public would need a value HF does not currently emit,
+ * and would land on the reject side by default.
  */
 const isPubliclyGettable = (gated: string | boolean | null | undefined) =>
-  gated == null || gated === false || gated === 'auto'
+  gated == null || gated === false || gated === 'auto' || gated === 'manual'
 
 /** Repo ids are `org/name`; the slash is structural and must not be escaped. */
 const encodeRepo = (repo: string) =>

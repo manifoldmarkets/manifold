@@ -1,6 +1,7 @@
 import {
   identifierTokens,
   proposedRepoMatchesModel,
+  repoOwnerMatchesPublisher,
   weightsRepoNameOverlap,
 } from './weights-repo-match'
 
@@ -166,5 +167,71 @@ describe('weightsRepoNameOverlap', () => {
   it('never divides by zero on a degenerate identifier', () => {
     expect(weightsRepoNameOverlap('org/', 'org/Something')).toBe(0)
     expect(weightsRepoNameOverlap('', '')).toBe(0)
+  })
+})
+
+describe('repoOwnerMatchesPublisher', () => {
+  it('rejects the ox-alpha fabrication that cleared every other guard', () => {
+    // Real: created 2026-08-21, 20 files named like weight shards, config
+    // claiming 800B params, README "real ox alpha dataset npnp", built in 24
+    // seconds, while stealth/ox-alpha was entering the ranked window. It is
+    // public, carries .safetensors, and matches the name perfectly.
+    expect(proposedRepoMatchesModel('stealth/ox-alpha', 'brokenshards/ox-alpha')).toBe(
+      true
+    )
+    expect(
+      repoOwnerMatchesPublisher('stealth/ox-alpha', 'brokenshards/ox-alpha')
+    ).toBe(false)
+  })
+
+  it('rejects third-party fine-tunes, quants and distills', () => {
+    const strangers: [string, string][] = [
+      ['openai/gpt-3.5-turbo', 'jondurbin/airoboros-gpt-3.5-turbo-100k-7b'],
+      ['~z-ai/glm-latest', 'drowzeys/keys-latest-GLM-5.2-Quantrio-INT4'],
+      ['qwen/qwen3-max', 'DavidAU/Qwen3.6-27B-Fable-Fusion-711-GGUF'],
+      ['openai/gpt-5.1-codex-max-20251204', 'TeichAI/Qwen3-4B-Codex-Max-Distill'],
+    ]
+    for (const [permaslug, repo] of strangers)
+      expect(repoOwnerMatchesPublisher(permaslug, repo)).toBe(false)
+  })
+
+  it('accepts the org-name decorations publishers actually use', () => {
+    // Every shape observed across the 299 audited classifications.
+    const real: [string, string][] = [
+      ['z-ai/glm-5.2-20260616', 'zai-org/GLM-5.2'],
+      ['cohere/command-r-08-2024', 'CohereLabs/c4ai-command-r-08-2024'],
+      ['cohere/command-a-03-2025', 'CohereForAI/c4ai-command-a-03-2025'],
+      ['minimax/minimax-m1', 'MiniMaxAI/MiniMax-M1-40k'],
+      ['x-ai/grok-2', 'xai-org/grok-2'],
+      ['ai21/jamba-large-1.7', 'ai21labs/AI21-Jamba-Large-1.7'],
+      ['deepseek/deepseek-v4-pro', 'deepseek-ai/DeepSeek-V4-Pro'],
+      ['perplexity/sonar-x', 'perplexity-ai/Sonar-X'],
+      ['meta/muse-glimmer-30b-20260810', 'meta-models/Muse-Glimmer-30B'],
+      ['meituan/longcat-2.0-20260720', 'meituan-longcat/LongCat-2.0'],
+      ['liquid/lfm-2.5-2.6b-20260811', 'LiquidAI/LFM2.5-2.6B'],
+      ['bytedance/ui-tars-1.5-7b', 'ByteDance-Seed/UI-TARS-1.5-7B'],
+      ['moonshotai/kimi-k3-20260715', 'moonshotai/Kimi-K3'],
+      ['mistralai/mistral-large-2512', 'mistralai/Mistral-Large-3-675B-Base-2512'],
+      ['inclusionai/ling-3.0-flash-20260723', 'inclusionAI/Ling-3.0-flash'],
+    ]
+    for (const [permaslug, repo] of real)
+      expect(repoOwnerMatchesPublisher(permaslug, repo)).toBe(true)
+  })
+
+  it('is a recommendation gate, not a verdict — cross-publisher releases fail it', () => {
+    // venice/uncensored genuinely ships from cognitivecomputations. This
+    // returning false must send the model to a human, never mark it closed.
+    expect(
+      repoOwnerMatchesPublisher(
+        'venice/uncensored',
+        'cognitivecomputations/Dolphin-Mistral-24B-Venice-Edition'
+      )
+    ).toBe(false)
+  })
+
+  it('does not crash on degenerate identifiers', () => {
+    expect(repoOwnerMatchesPublisher('', '')).toBe(false)
+    expect(repoOwnerMatchesPublisher('org/', '')).toBe(false)
+    expect(repoOwnerMatchesPublisher('/model', 'owner/repo')).toBe(false)
   })
 })

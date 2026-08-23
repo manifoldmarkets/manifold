@@ -67,6 +67,7 @@ import {
   validateOracleFeedPollPeriods,
 } from './update-oracle-feeds'
 import { updateOpenRouterShare } from './update-openrouter-share'
+import { updateClassificationAudit } from './update-classification-audit'
 import { updateModelClassifications } from './update-model-classifications'
 import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
@@ -268,6 +269,16 @@ export function createJobs(jobSet: SchedulerJobSet) {
       updateModelClassifications
     ),
     // Daily jobs:
+    createJob(
+      'classification-audit',
+      // 03:40 LA — off the 6-hourly classifier cycle above so the two never
+      // contend for the HuggingFace rate limit, and inside the same quiet
+      // window that schedule was chosen for. Daily rather than hourly because
+      // it re-verifies every published classification against a third-party
+      // API and nothing it looks for changes on an hourly timescale.
+      '0 40 3 * * *',
+      updateClassificationAudit
+    ),
     createJob(
       'process-membership-renewals',
       '0 0 8 * * *', // daily at 8:00 AM LA

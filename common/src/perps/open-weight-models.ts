@@ -58,8 +58,32 @@ import { DAY_MS } from '../util/time'
 // a versioned list rather than a live lookup: the index definition must not
 // change silently when a third party edits a metadata field.
 
+// MISSED_BY_RENAME — the failure mode a re-audit on 2026-08-24 actually found.
+//
+// A full re-verification of all 299 published classifications turned up zero
+// rot (every `open` entry still cites a live public repo with weight files)
+// but four models marked closed whose weights were public all along:
+// Kimi K3, Mistral Large 3 2512, Mistral Medium 3.5, Ling-3.0-flash.
+//
+// Three of the four have an EMPTY `hugging_face_id` on OpenRouter, so building
+// the list fell through to the org-catalogue name match — and that match
+// cannot bridge a rename. `mistral-large-2512` and
+// `Mistral-Large-3-675B-Base-2512` share almost no tokens, so a correct repo
+// sitting in the publisher's own org scored zero and the model defaulted to
+// closed. Mistral renames between OpenRouter slug and HF repo routinely, which
+// is why it is two of the four.
+//
+// Every error ran the same direction — open marked closed — so the published
+// index was UNDERSTATED, never inflated. That is not luck: a missing repo is
+// the only way the build can fail, and its default is closed.
+//
+// The fix is not a better matcher. It is that nothing ever re-examined a
+// verdict once written: no job re-verified an existing entry and none diffed
+// against OpenRouter's own metadata, so a wrong entry was permanent. See
+// `update-classification-audit.ts`, which now asserts both nightly.
+
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-08-14'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-24'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -346,7 +370,15 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
   'qwen/qwen3.6-plus-preview': { open: false },
   'anthropic/claude-3-7-sonnet-20250219': { open: false },
   'qwen/qwen3-embedding-8b': { open: true, weights: 'Qwen/Qwen3-Embedding-8B' },
-  'moonshotai/kimi-k3-20260715': { open: false }, // MoonshotAI: Kimi K3
+  // Corrected 2026-08-24 (was `open: false`). OpenRouter's own description
+  // calls it "a 2.8T parameter open-weight multimodal reasoning model" and
+  // declares this repo; it is public, ungated, 96 weight files, 2.7M
+  // downloads, and predates the 2026-08-14 list cut by two months. The
+  // original miss is the rename pattern documented at MISSED_BY_RENAME below.
+  'moonshotai/kimi-k3-20260715': {
+    open: true,
+    weights: 'moonshotai/Kimi-K3',
+  }, // MoonshotAI: Kimi K3
   'google/gemini-2.5-flash-lite-preview-09-2025': { open: false },
   'anthropic/claude-5-fable-20260609': { open: false }, // Anthropic: Claude Fable 5
   'openrouter/hunter-alpha': { open: false },
@@ -437,7 +469,13 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
     open: true,
     weights: 'tngtech/DeepSeek-R1T-Chimera',
   },
-  'inclusionai/ling-3.0-flash-20260723': { open: false }, // Ling-3.0-flash (free)
+  // Corrected 2026-08-24 (was `open: false`). Publisher-declared
+  // `hugging_face_id`; repo is public, ungated, MIT, 24 weight files, created
+  // 2026-08-02 — before the 2026-08-14 list cut.
+  'inclusionai/ling-3.0-flash-20260723': {
+    open: true,
+    weights: 'inclusionAI/Ling-3.0-flash',
+  }, // Ling-3.0-flash (free)
   'openai/gpt-5.2-codex-20260114': { open: false }, // OpenAI: GPT-5.2-Codex
   'moonshotai/kimi-k2': { open: true, weights: 'moonshotai/Kimi-K2-Instruct' }, // MoonshotAI: Kimi K2 0711
   'x-ai/grok-4-07-09': { open: false },
@@ -567,7 +605,14 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
     open: true,
     weights: 'Qwen/Qwen3-235B-A22B-Thinking-2507',
   }, // Qwen: Qwen3 235B A22B Thinking 2507
-  'mistralai/mistral-medium-3.5-20260430': { open: false }, // Mistral: Mistral Medium 3.5
+  // Corrected 2026-08-24 (was `open: false`). Public, ungated, 6 weight files,
+  // 91k downloads, created 2026-03-31. `license:other` is not disqualifying —
+  // the test is whether anyone can download the weights, the same reading that
+  // puts Llama and Gemma on the open side.
+  'mistralai/mistral-medium-3.5-20260430': {
+    open: true,
+    weights: 'mistralai/Mistral-Medium-3.5-128B',
+  }, // Mistral: Mistral Medium 3.5
   'qwen/qwen3-coder-plus': { open: false }, // Qwen: Qwen3 Coder Plus
   'x-ai/grok-4.20-20260309': { open: false }, // xAI: Grok 4.20
   'alibaba/tongyi-deepresearch-30b-a3b': { open: false },
@@ -630,7 +675,13 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
   },
   'tngtech/tng-r1t-chimera': { open: false },
   'openrouter/aurora-alpha': { open: false },
-  'mistralai/mistral-large-2512': { open: false }, // Mistral: Mistral Large 3 2512
+  // Corrected 2026-08-24 (was `open: false`). OpenRouter's description states
+  // it is "released under the Apache 2.0 license"; the repo is public,
+  // ungated, apache-2.0, 272 weight files, created 2025-11-30.
+  'mistralai/mistral-large-2512': {
+    open: true,
+    weights: 'mistralai/Mistral-Large-3-675B-Base-2512',
+  }, // Mistral: Mistral Large 3 2512
   'mistralai/ministral-8b-2512': {
     open: true,
     weights: 'mistralai/Ministral-3-8B-Instruct-2512',

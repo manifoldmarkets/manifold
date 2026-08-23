@@ -1,5 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { proposedRepoMatchesModel } from 'common/perps/weights-repo-match'
+import {
+  proposedRepoMatchesModel,
+  repoOwnerMatchesPublisher,
+} from 'common/perps/weights-repo-match'
 import {
   HuggingFaceVerification,
   searchHuggingFaceModels,
@@ -443,6 +446,28 @@ const finalizeVerdict = async (
       },
       searches,
       rejectedReason: `name mismatch: ${weights}`,
+    }
+
+  // Provenance, after the name check and before verification — verification
+  // would pass, which is the point. A repo can be named like the model and
+  // full of weight files and still be a stranger's: `brokenshards/ox-alpha`
+  // cleared both of those in 24 seconds while the real model was climbing the
+  // rankings. Unresolved rather than closed, because cross-publisher releases
+  // are legitimate (venice/uncensored ships from cognitivecomputations), so
+  // this is a question for a human, not a verdict against the model.
+  if (!repoOwnerMatchesPublisher(permaslug, weights))
+    return {
+      permaslug,
+      verdict: {
+        verdict: 'unresolved',
+        reasoning:
+          `cited ${weights}, which is not published by ${
+            permaslug.replace(/^~/, '').split('/')[0]
+          } — a weights repo under an unrelated account is not evidence, ` +
+          `however it is named — ${reasoning}`,
+      },
+      searches,
+      rejectedReason: `publisher mismatch: ${weights}`,
     }
 
   const confirmation = await verifyHuggingFaceWeights(weights)
