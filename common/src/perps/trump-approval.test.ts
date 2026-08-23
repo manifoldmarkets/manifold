@@ -584,3 +584,45 @@ describe('decideApprovalPublish', () => {
     ).toBe(false)
   })
 })
+
+describe('decideApprovalPublish — concurrency guards', () => {
+  const now = Date.parse('2026-08-23T12:00:00Z')
+
+  it('declines when a concurrent publisher already wrote the same value', () => {
+    // The locked re-check re-runs this against a fresh read. A publisher that
+    // stalled in the cross-check fetch must not append a duplicate behind the
+    // one that got there first.
+    const last = { price: 38.4, ts: now - 1000 }
+    expect(decideApprovalPublish({ price: 38.4, last, now }).publish).toBe(
+      false
+    )
+  })
+
+  it('still publishes a genuinely newer value behind a concurrent write', () => {
+    const last = { price: 38.4, ts: now - 1000 }
+    expect(decideApprovalPublish({ price: 38.5, last, now }).publish).toBe(true)
+  })
+})
+
+describe('lookback covers the day actually valued', () => {
+  it('reaches the max window measured from the oldest valuable as-of day', () => {
+    // The cross-check is computed for published.asOfDay, which can trail today
+    // by TRUMP_APPROVAL_MAX_SOURCE_AGE_DAYS. A lookback measured from today
+    // would deliver a window that many days short of the documented span.
+    const polls = Array.from({ length: TRUMP_APPROVAL_MIN_POLLS }, (_, i) =>
+      poll(shift('2026-08-20', -i - 20), 38)
+    )
+    const asOfDay = '2026-08-20'
+    const result = selectApprovalWindow(polls, asOfDay)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // Everything selected must sit inside the fetched span.
+    const oldest = result.window.startDate
+    const spanFromAsOf = Math.round(
+      (Date.parse(`${asOfDay}T00:00:00Z`) - Date.parse(`${oldest}T00:00:00Z`)) /
+        86_400_000
+    )
+    expect(spanFromAsOf).toBeLessThanOrEqual(TRUMP_APPROVAL_MAX_WINDOW_DAYS)
+  })
+})

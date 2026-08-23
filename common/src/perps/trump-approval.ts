@@ -67,6 +67,15 @@ import { DAY_MS } from '../util/time'
 // reason they were introduced: they stop the CANARY from going haywire during
 // a polling drought and raising a false alarm against a perfectly good
 // published value.
+//
+// Note on funding, since publishing more often changes its timing: the
+// maximum cadence is unchanged, because shouldApplyFunding gates on elapsed
+// time against the contract's own fundingPeriodMs. What changes is that its
+// second condition for slow periods — a new oracle point since the last
+// funding event — is now reliably satisfied, so DELAYED funding events become
+// less likely. Historically that mattered: the 2026-08-14 event due at 21:00
+// PT waited until 04:00 the next day for the first new point, making that
+// interval 26 hours.
 
 /** Trailing window, in whole days, that the index averages over. */
 export const TRUMP_APPROVAL_WINDOW_DAYS = 14

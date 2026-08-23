@@ -104,17 +104,29 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // trading tolerance and alerting are separate thresholds.)
   {
     id: TRUMP_APPROVAL_FEED_ID,
-    description: '14-day rolling Trump approval average (VoteHub polls)',
+    description: "VoteHub's published time-weighted Trump approval average",
     marketCreationEnabled: true,
+    // 'daily' means "own scheduler job, health-checked here only" — it does
+    // NOT mean daily cadence. update-trump-approval polls every 5 minutes
+    // (VoteHub serves Cache-Control: max-age=300) and writes a point only
+    // when the value moves, plus a heartbeat so a flat stretch cannot look
+    // like a dead feed.
     cadence: 'daily',
     minPrice: 10,
     maxPrice: 90,
-    // Corruption is caught at the source: getApprovePct drops any poll
-    // reporting a percentage outside [0,100], which is what would otherwise
-    // drag the unweighted mean far enough to matter while still landing
-    // inside these bounds. A genuine multi-point shift in the average is
-    // news, and the market should trade on it.
+    // Corruption is caught at the source in two places, neither of which is
+    // on the price path any more: readPublishedApprovalAverage rejects a
+    // published average outside (0,100) or staler than
+    // TRUMP_APPROVAL_MAX_SOURCE_AGE_DAYS, and the independent cross-check
+    // refuses to publish a value our own computation disagrees with by more
+    // than TRUMP_APPROVAL_MAX_CROSS_CHECK_GAP. getApprovePct now only
+    // screens polls feeding that cross-check.
     staleAfterMs: 26 * HOUR_MS,
+    // The value changes about once a day even though it is polled every 5
+    // minutes, and this drives the funding period of any NEW market on the
+    // feed (max(1h, updatePeriodMs)). Holding it at a day keeps funding
+    // matched to how often the number actually moves rather than to how
+    // often we look at it. The live market carries its own frozen 24h value.
     updatePeriodMs: DAY_MS,
   },
   {

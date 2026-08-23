@@ -367,10 +367,13 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'update-trump-approval',
-      // Hourly, around the clock. The feed publishes whenever VoteHub's
-      // average moves, so a fixed daily slot would leave every intraday move
-      // sitting in public view as the next morning's mark.
-      '0 30 * * * *',
+      // Every 5 minutes, which is VoteHub's OWN freshness bound: their
+      // averages endpoint serves `Cache-Control: max-age=300`, so polling
+      // faster returns cached bytes rather than a newer number — and it
+      // bounds what any other observer can see too, since they read through
+      // the same cache. Hourly left a 59-minute window in which a move was
+      // publicly visible while the market still traded on the old mark.
+      '0 */5 * * * *',
       updateTrumpApproval
     ),
     createJob(

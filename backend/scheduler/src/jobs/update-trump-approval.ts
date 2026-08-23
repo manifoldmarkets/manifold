@@ -12,6 +12,17 @@ import {
 import { log } from 'shared/utils'
 
 /**
+ * Failures are logged at most this often.
+ *
+ * At a 5-minute cadence an outage that used to produce one line an hour would
+ * produce 288 a day. The feed's own staleness alerting is the durable signal;
+ * these lines exist to say why, so one an hour is plenty. In-memory, so a
+ * scheduler restart re-logs immediately — which is the behaviour you want.
+ */
+const FAILURE_LOG_INTERVAL_MS = HOUR_MS
+let lastFailureLog = 0
+
+/**
  * How long the feed may go without a published point before a failed attempt
  * is an ERROR rather than a retryable blip.
  *
@@ -26,11 +37,17 @@ export const TRUMP_APPROVAL_STALE_ERROR_MS = 20 * HOUR_MS
 // Publishes points for the `trump-approval-rating` feed from VoteHub's
 // published average.
 //
-// Runs HOURLY, around the clock, and publishes whenever the source value
-// moves — see decideApprovalPublish. Publishing once a day, as this job did
-// originally, left every intraday move by the source sitting in public view
-// as the exact next morning's mark: the same timing edge the feed was rebuilt
-// to remove, relocated from the averaging window to the publication schedule.
+// Runs EVERY 5 MINUTES and publishes whenever the source value moves — see
+// decideApprovalPublish. Publishing once a day, as this job did originally,
+// left every intraday move by the source sitting in public view as the exact
+// next morning's mark: the same timing edge the feed was rebuilt to remove,
+// relocated from the averaging window to the publication schedule. Hourly
+// shortened that window without closing it.
+//
+// 5 minutes is VoteHub's own bound, not a guess: their averages endpoint
+// serves `Cache-Control: max-age=300`. Polling faster returns cached bytes
+// rather than a fresher number, and it is the same cache any other observer
+// reads through.
 //
 // The hourly cadence originally existed only as a retry: on 2026-08-14 a
 // single 5:30am HTTP 500 froze the feed for over 26 hours, tripped its
@@ -78,11 +95,16 @@ const reportFailure = async (
   // once an hour for one outage. Escalate only once the feed itself has gone
   // long enough without a point that the next retry is no longer the fix.
   const ageMs = await getAgeOfLatestPoint(pg)
-  if (ageMs == null || ageMs >= TRUMP_APPROVAL_STALE_ERROR_MS)
+  const stale = ageMs == null || ageMs >= TRUMP_APPROVAL_STALE_ERROR_MS
+  // Throttle, but never throttle away the escalation: a feed that has gone
+  // stale is the one thing here worth paging on every time it is observed.
+  if (!stale && Date.now() - lastFailureLog < FAILURE_LOG_INTERVAL_MS) return
+  lastFailureLog = Date.now()
+  if (stale)
     log.error(
       `${message}; last point ${
         ageMs == null ? 'never' : `${Math.round(ageMs / HOUR_MS)}h ago`
       }, feed is going stale`
     )
-  else log.warn(`${message}; retrying next hour`)
+  else log.warn(`${message}; retrying in 5 minutes`)
 }

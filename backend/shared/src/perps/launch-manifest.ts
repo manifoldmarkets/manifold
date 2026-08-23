@@ -121,9 +121,9 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     oracleBehavior: 'scheduled-step',
     requiresSourceAsOf: false,
     gameDesign:
-      'Two-sided political exposure, but the 14-day average is slow and often unchanged between poll releases.',
+      "Two-sided political exposure, but VoteHub's time-weighted average is slow and often unchanged between poll releases.",
     latencyArbitrageRisk:
-      'The daily source update is public and the ingestion schedule is known, allowing a trader to open against the old cached value and close after the step without crossing a funding event.',
+      "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
     recommended: {
       maxLeverage: 3,
       annualMaxFundingRate: 1,
@@ -205,8 +205,10 @@ export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
   },
   {
     jobName: 'update-trump-approval',
-    maxEndAgeMs: 26 * HOUR_MS,
-    maxRunMs: 30 * MINUTE_MS,
+    // Polls every 5 minutes, so a 26h last-success age would have described
+    // a job that had been dead for over 300 consecutive runs.
+    maxEndAgeMs: 30 * MINUTE_MS,
+    maxRunMs: 2 * MINUTE_MS,
   },
 ] as const
 
