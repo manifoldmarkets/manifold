@@ -6,6 +6,7 @@ import {
   basePermaslug,
   classifyModel,
   computeOpenWeightShare,
+  isCompositeSlug,
   newestWindowDates,
   openWeightWindowRange,
   utcDateString,
@@ -410,5 +411,64 @@ describe('the published list', () => {
       if (c.open) expect(`${slug}:${c.weights ?? ''}`).toMatch(/.+\/.+/)
       else expect(c.weights).toBeUndefined()
     }
+  })
+})
+
+describe('composite slugs (routers and floating aliases)', () => {
+  const rows = (entries: [string, string][]) =>
+    entries.map(([model_permaslug, total_tokens]) => ({
+      date: '2026-08-20',
+      model_permaslug,
+      total_tokens,
+    }))
+
+  it('identifies routers and aliases, but not stealth models', () => {
+    expect(isCompositeSlug('openrouter/fusion')).toBe(true)
+    expect(isCompositeSlug('openrouter/auto-beta')).toBe(true)
+    expect(isCompositeSlug('~z-ai/glm-latest')).toBe(true)
+    expect(isCompositeSlug('~openai/gpt-latest')).toBe(true)
+    // Cloaked pre-release models ARE single models and stay classifiable —
+    // no suffix separates them from routers, which is why the list is
+    // explicit. `auto-beta` is a router; `horizon-beta` is a model.
+    expect(isCompositeSlug('openrouter/horizon-beta')).toBe(false)
+    expect(isCompositeSlug('openrouter/owl-alpha')).toBe(false)
+    expect(isCompositeSlug('z-ai/glm-5.3-20260816')).toBe(false)
+  })
+
+  it('keeps them out of both sides instead of halting the feed on them', () => {
+    const classifications = {
+      'a/open-model': { open: true, weights: 'a/Open' },
+      'b/closed-model': { open: false },
+    }
+    const result = computeOpenWeightShare(
+      rows([
+        ['a/open-model', '700'],
+        ['b/closed-model', '300'],
+        ['openrouter/fusion', '500'],
+        ['~z-ai/glm-latest', '100'],
+      ]),
+      1,
+      classifications
+    )
+    // 700 / (700 + 300) — the router and alias touch neither side.
+    expect(result.share).toBe(70)
+    // And critically they are NOT unclassified, which is what would start a
+    // grace clock and eventually halt publication.
+    expect(result.unclassified).toEqual([])
+    expect(result.compositeSlugs).toEqual(['openrouter/fusion', '~z-ai/glm-latest'])
+    expect(result.compositeTokens).toBe(600)
+  })
+
+  it('still treats an unknown ordinary model as unclassified', () => {
+    const result = computeOpenWeightShare(
+      rows([
+        ['a/open-model', '700'],
+        ['newlab/brand-new', '10'],
+      ]),
+      1,
+      { 'a/open-model': { open: true, weights: 'a/Open' } }
+    )
+    expect(result.unclassified).toEqual(['newlab/brand-new'])
+    expect(result.compositeSlugs).toEqual([])
   })
 })

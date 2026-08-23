@@ -139,6 +139,56 @@ export const UNCLASSIFIED_GRACE_WINDOW_MS = 2 * DAY_MS
  */
 export const OTHER_MODEL_KEY = 'other'
 
+/**
+ * OpenRouter slugs that route across models instead of being one.
+ *
+ * `openrouter/fusion` is the clearest: OpenRouter documents it as "a panel of
+ * expert models … analyzes your prompt in parallel, then a judge model
+ * synthesizes their responses", billed as the sum of the underlying
+ * completions. Its tokens are a MIXTURE of open and closed models, so `open`
+ * and `closed` are both false statements about it and either one misattributes
+ * the whole volume.
+ *
+ * An explicit list rather than a pattern, because `openrouter/` is also where
+ * the cloaked pre-release models live and those ARE single models, correctly
+ * classified closed — you cannot download weights for a model nobody has
+ * named. No suffix separates the two: `auto-beta` is a router and
+ * `horizon-beta` is a stealth model.
+ */
+export const ROUTER_MODEL_KEYS = [
+  'openrouter/auto',
+  'openrouter/auto-beta',
+  'openrouter/bodybuilder',
+  'openrouter/free',
+  'openrouter/fusion',
+  'openrouter/pareto-code',
+]
+
+/**
+ * Slugs that are not a single model and so cannot carry a classification.
+ *
+ * Two shapes. Routers, above. And OpenRouter's floating aliases, which carry a
+ * `~` prefix (`~z-ai/glm-latest`, `~openai/gpt-latest`) and resolve to whatever
+ * the publisher's current model is — so their openness changes underneath any
+ * stored answer. `~z-ai/glm-latest` points at GLM 5.3 today, which is closed,
+ * while every earlier GLM is open; a boolean written against the alias would
+ * have been right last month and wrong now, with nothing to notice.
+ *
+ * Excluded from BOTH sides, exactly as `other` is, rather than left
+ * unclassified. Unclassified is the worse failure: it starts a grace clock and
+ * eventually halts the feed, forcing someone to invent a boolean for a thing
+ * that does not have one, under a deadline. Their tokens are accounted for and
+ * logged by the caller so the exclusion can never become a silent drop — see
+ * `compositeTokens`.
+ *
+ * If an alias ever carries enough volume to matter, the fix is to resolve it
+ * through OpenRouter's own `alias_target` field to the model it points at and
+ * classify THAT, not to guess at the alias.
+ */
+export const isCompositeSlug = (permaslug: string): boolean =>
+  permaslug.startsWith('~') ||
+  ROUTER_MODEL_KEYS.includes(basePermaslug(permaslug))
+
 export type ModelClassification = {
   /** True iff the weights are publicly downloadable. */
   open: boolean
@@ -775,6 +825,13 @@ export type OpenWeightShareResult = {
   classifiedTokens: number
   unclassifiedTokens: number
   otherTokens: number
+  /**
+   * Router and floating-alias slugs seen in the window, and their volume.
+   * Excluded from both sides (rule 1b); surfaced so the exclusion is visible
+   * in the logs rather than silently shrinking the denominator.
+   */
+  compositeSlugs: string[]
+  compositeTokens: number
   /** Everything in the payload including `other` and unclassified models. */
   payloadTokens: number
 }
@@ -838,8 +895,10 @@ export const computeOpenWeightShare = (
   let classifiedTokens = 0n
   let unclassifiedTokens = 0n
   let otherTokens = 0n
+  let compositeTokens = 0n
   let payloadTokens = 0n
   const unclassifiedSet: Record<string, true> = {}
+  const compositeSet: Record<string, true> = {}
   const invalidTokenRowSet: Record<string, true> = {}
 
   for (const row of rows) {
@@ -854,6 +913,15 @@ export const computeOpenWeightShare = (
     // denominator, never estimated.
     if (basePermaslug(row.model_permaslug) === OTHER_MODEL_KEY) {
       otherTokens += tokens
+      continue
+    }
+
+    // Rule 1b: routers and floating aliases are not a single model, so no
+    // boolean about them is true. Out of both sides like `other`, and recorded
+    // rather than dropped — the caller logs the slugs and the volume.
+    if (isCompositeSlug(row.model_permaslug)) {
+      compositeSet[basePermaslug(row.model_permaslug)] = true
+      compositeTokens += tokens
       continue
     }
 
@@ -891,6 +959,7 @@ export const computeOpenWeightShare = (
     share,
     dates,
     unclassified: Object.keys(unclassifiedSet).sort(),
+    compositeSlugs: Object.keys(compositeSet).sort(),
     invalidTokenRows,
     // Checked against `other` specifically, not "payload exceeds classified":
     // unclassified tokens also widen that gap, so the loose form would read a
@@ -904,6 +973,7 @@ export const computeOpenWeightShare = (
     classifiedTokens: finiteBigIntTelemetry(classifiedTokens),
     unclassifiedTokens: finiteBigIntTelemetry(unclassifiedTokens),
     otherTokens: finiteBigIntTelemetry(otherTokens),
+    compositeTokens: finiteBigIntTelemetry(compositeTokens),
     payloadTokens: finiteBigIntTelemetry(payloadTokens),
   }
 }
