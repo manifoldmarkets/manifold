@@ -2,6 +2,7 @@ import { applyFunding, computeFundingRate, getPositionValue } from './amm'
 import {
   fundingPerPeriod,
   getPerpPositionTotalCost,
+  getPerpPriceForUserFacingPnl,
   getUserFacingPnl,
   getUserFacingPnlFromPayout,
   getUserFacingPnlPercent,
@@ -81,7 +82,7 @@ describe('getUserFacingPnlFromPayout', () => {
     const position = makePosition('long', { takerFeeCostBasis: 0.5 })
     expect(getPerpPositionTotalCost(position)).toBe(100.5)
     expect(getUserFacingPnl(position, 50)).toBe(-0.5)
-    // Gross close value is 100; a 0.5 close fee leaves a 99.5 payout.
+    // A 99.5 payout after a 0.5 opening fee is a total loss of 1.
     expect(getUserFacingPnlFromPayout(99.5, 100, 0.5)).toBe(-1)
     expect(getUserFacingPnlFromPayout(0, 100, 0.5)).toBe(-100.5)
   })
@@ -102,5 +103,71 @@ describe('getUserFacingPnlFromPayout', () => {
     expect(getPerpPositionTotalCost(position)).toBe(0)
     expect(getUserFacingPnl(position, 60)).toBe(0)
     expect(getUserFacingPnlPercent(position, 60)).toBe(0)
+  })
+})
+
+describe('getPerpPriceForUserFacingPnl', () => {
+  const position = makePosition('long', {
+    size: 10_000,
+    costBasis: 100,
+    originalCostBasis: 100,
+    takerFeeCostBasis: 10,
+    entryPrice: 100,
+    leverage: 100,
+  })
+
+  it('recoups the opening fee before reaching the displayed profit', () => {
+    const longPrice = getPerpPriceForUserFacingPnl(position, 25)
+    const shortPosition = { ...position, direction: 'short' as const }
+    const shortPrice = getPerpPriceForUserFacingPnl(shortPosition, 25)
+
+    expect(longPrice).toBeCloseTo(100.35, 10)
+    expect(shortPrice).toBeCloseTo(99.65, 10)
+    expect(getUserFacingPnl(position, longPrice!)).toBeCloseTo(25, 10)
+    expect(getUserFacingPnl(shortPosition, shortPrice!)).toBeCloseTo(25, 10)
+  })
+
+  it('reduces to the original leverage target when fees are zero', () => {
+    const noFee = { ...position, takerFeeCostBasis: 0 }
+    expect(getPerpPriceForUserFacingPnl(noFee, 25)).toBeCloseTo(100.25, 10)
+    expect(
+      getPerpPriceForUserFacingPnl(
+        { ...noFee, direction: 'short' as const },
+        25
+      )
+    ).toBeCloseTo(99.75, 10)
+  })
+
+  it('accounts for funding-adjusted cost basis', () => {
+    const funded = makePosition('long', {
+      size: 1_000,
+      costBasis: 95,
+      originalCostBasis: 100,
+      takerFeeCostBasis: 1,
+      entryPrice: 100,
+    })
+    const targetPrice = getPerpPriceForUserFacingPnl(funded, 20)
+    expect(targetPrice).toBeCloseTo(102.6, 10)
+    expect(getUserFacingPnl(funded, targetPrice!)).toBeCloseTo(20, 10)
+  })
+
+  it('fails closed on invalid or impossible targets', () => {
+    expect(getPerpPriceForUserFacingPnl(position, Number.NaN)).toBeUndefined()
+    expect(getPerpPriceForUserFacingPnl(position, -1)).toBeUndefined()
+    expect(
+      getPerpPriceForUserFacingPnl({ ...position, size: 0 }, 25)
+    ).toBeUndefined()
+    expect(
+      getPerpPriceForUserFacingPnl(
+        { ...position, takerFeeCostBasis: Number.NaN },
+        25
+      )
+    ).toBeUndefined()
+    expect(
+      getPerpPriceForUserFacingPnl(
+        { ...position, direction: 'short', size: 10 },
+        1_000
+      )
+    ).toBeUndefined()
   })
 })
