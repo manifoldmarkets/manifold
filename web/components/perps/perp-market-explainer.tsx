@@ -143,11 +143,11 @@ function PerpFeesItem(props: { contract: PerpContract }) {
   )
 
   return (
-    <ExplainerItem title="Fees">
-      Opening a position costs {formatFeePct(baseBps)} of its notional (margin ×
-      leverage), paid into this market's backing pool rather than to Manifold.
-      Closing is free. Positions opened through the API — bots — pay{' '}
-      {formatFeePct(apiBps)} to open.{' '}
+    <ExplainerItem title="Fees" scope="this market only">
+      In this market, opening a position costs {formatFeePct(baseBps)} of its
+      notional (margin × leverage), paid into the market's backing pool rather
+      than to Manifold. Closing is free. Positions opened through the API — bots
+      — pay {formatFeePct(apiBps)} to open.{' '}
       {impact > 0 ? (
         <>
           Large positions pay more, like price impact on an exchange: one the
@@ -158,16 +158,31 @@ function PerpFeesItem(props: { contract: PerpContract }) {
       ) : (
         <>The rate is flat — position size does not change it. </>
       )}
-      The exact fee is quoted before you confirm a trade.
+      The exact fee is quoted before you confirm a trade. Fees are set per
+      market, so other perpetuals may differ.
     </ExplainerItem>
   )
 }
 
-function ExplainerItem(props: { title: string; children: ReactNode }) {
-  const { title, children } = props
+function ExplainerItem(props: {
+  title: string
+  // Always-visible qualifier beside the heading (e.g. "this market only") for
+  // sections whose figures are per-market, not platform rules. Inline rather
+  // than a hover tooltip so it cannot be missed and exists on touch devices.
+  scope?: string
+  children: ReactNode
+}) {
+  const { title, scope, children } = props
   return (
     <div>
-      <h3 className="text-ink-800 font-semibold">{title}</h3>
+      <h3 className="text-ink-800 font-semibold">
+        {title}
+        {scope && (
+          <span className="text-ink-500 ml-2 text-xs font-normal italic">
+            — {scope}
+          </span>
+        )}
+      </h3>
       <p className="text-ink-600 mt-0.5 text-sm">{children}</p>
     </div>
   )
