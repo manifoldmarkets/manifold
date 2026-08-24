@@ -9,7 +9,7 @@ import {
   BET_BALANCE_CHANGE_TYPES,
 } from 'common/balance-change'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
@@ -77,11 +77,13 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
   if (txn.category === 'PERP_CLOSE_PAYOUT') {
     const pnlNumber = Number(d.pnl ?? 0)
     const pnl = Number.isFinite(pnlNumber) ? pnlNumber : 0
-    const pnlText = `${pnl >= 0 ? '+' : ''}${formatMoney(pnl)}`
+    // Realised PnL and settlement payouts are fractional; formatMoney would
+    // floor a +M$0.60 close to "+M$0" while the position history shows it.
+    const pnlText = `${pnl >= 0 ? '+' : ''}${formatMoneyPrecise(pnl)}`
     if (d.reason === 'adl') {
       return `Auto-deleveraged ${d.direction} at ${px(
         d.closePrice
-      )} — ${formatMoney(txn.amount)} margin returned, profit ${pnlText}`
+      )} — ${formatMoneyPrecise(txn.amount)} margin returned, profit ${pnlText}`
     }
     const verb =
       d.reason === 'flip'

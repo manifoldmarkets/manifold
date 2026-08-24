@@ -27,7 +27,11 @@ import {
 import { getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
 import { buildArray } from 'common/util/array'
-import { formatMoney, formatWithToken } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  formatWithToken,
+} from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
@@ -1297,18 +1301,18 @@ const ExpandedPerpRow = (props: {
       <Row className="flex-wrap gap-x-8 gap-y-2 text-sm">
         <Col>
           <span className="text-ink-500 text-xs">Position value</span>
-          <span className="font-semibold">{formatMoney(m.payout)}</span>
+          <span className="font-semibold">{formatMoneyPrecise(m.payout)}</span>
         </Col>
         <Col>
           <span className="text-ink-500 text-xs">Amount invested</span>
           <span className="font-semibold">
-            {formatMoney(m.totalAmountInvested)}
+            {formatMoneyPrecise(m.totalAmountInvested)}
           </span>
         </Col>
         <Col>
           <span className="text-ink-500 text-xs">Returned on closes</span>
           <span className="font-semibold">
-            {formatMoney(m.totalAmountSold ?? 0)}
+            {formatMoneyPrecise(m.totalAmountSold ?? 0)}
           </span>
         </Col>
         <Col>
@@ -1320,7 +1324,7 @@ const ExpandedPerpRow = (props: {
             )}
           >
             {m.profit >= 0 ? '+' : ''}
-            {formatMoney(m.profit)}
+            {formatMoneyPrecise(m.profit)}
           </span>
         </Col>
       </Row>
@@ -1370,7 +1374,7 @@ const ExpandedPerpRow = (props: {
                     )}
                   >
                     {pnl >= 0 ? '+' : ''}
-                    {formatMoney(pnl)}
+                    {formatMoneyPrecise(pnl)}
                   </span>
                 )}
               </Row>
@@ -1402,7 +1406,7 @@ const ExpandedPerpRow = (props: {
               </span>
               {e.payout != null && (
                 <span className="text-ink-500">
-                  payout {formatMoney(e.payout)}
+                  payout {formatMoneyPrecise(e.payout)}
                 </span>
               )}
               <span className="text-ink-400 text-xs">

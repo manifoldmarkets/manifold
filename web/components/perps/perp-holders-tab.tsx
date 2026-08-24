@@ -12,7 +12,11 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { formatMoney, formatMoneyShort } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  formatMoneyShort,
+} from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
@@ -351,7 +355,7 @@ const HolderRow = (props: {
         </div>
         <Col className="items-end">
           <span className={pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'}>
-            {formatMoney(pnl)}
+            {formatMoneyPrecise(pnl)}
           </span>
           <span className="text-ink-500 text-xs">
             {formatMoney(holder.size)} notional · {holder.leverage.toFixed(2)}×
