@@ -15,9 +15,12 @@
 // haven't read is its own problem:
 //   - OpenRouter — their dataset terms specify the exact credit line,
 //     including the data's as-of time. Hence `showAsOf`.
-//   - NESO / VoteHub — both publish under an open licence requiring
-//     attribution, but the exact current licence text was NOT read directly.
-//     So they get a credit and a link, and no licence label we can't back up.
+//   - VoteHub — their API documentation states "This API is licensed under
+//     Creative Commons Attribution 4.0 International". Read directly, so it
+//     carries a licence label and a link to the licence deed.
+//   - NESO — publishes under an open licence requiring attribution, but the
+//     exact current licence text was NOT read directly. So it gets a credit
+//     and a link, and no licence label we can't back up.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx) — same self-computed stance as BTC: we quote
@@ -32,6 +35,14 @@ export type OracleAttribution = {
   url?: string
   /** Only set where the licence has actually been verified. */
   licence?: string
+  /**
+   * Canonical URI for that licence, rendered as a link.
+   *
+   * CC BY 4.0 s3(a)(1)(C) asks for a URI or hyperlink to the licence itself
+   * when sharing licensed material, not merely its name — so a bare "CC BY
+   * 4.0" label is an incomplete credit. Set this wherever `licence` is set.
+   */
+  licenceUrl?: string
   /**
    * Render the data's as-of timestamp in the credit line. Set only where the
    * provider's terms ask for it — elsewhere it is noise, and the oracle
@@ -58,6 +69,14 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   'trump-approval-rating': {
     source: 'VoteHub',
     url: 'https://votehub.com',
+    // Stated on VoteHub's API documentation: "This API is licensed under
+    // Creative Commons Attribution 4.0 International." CC BY 4.0 permits
+    // reuse and redistribution, including commercially, on the single
+    // condition that the source is credited. The oracle mirrors their
+    // published average, so this credit IS the compliance, not decoration —
+    // which is why the licence link is required rather than ornamental.
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

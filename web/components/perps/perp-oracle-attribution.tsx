@@ -20,7 +20,7 @@ export const PerpOracleAttribution = (props: {
   // undefined".
   if (!attribution) return null
 
-  const { source, url, licence, showAsOf } = attribution
+  const { source, url, licence, licenceUrl, showAsOf } = attribution
   const validAsOfTime =
     typeof asOfTime === 'number' && Number.isFinite(asOfTime) && asOfTime > 0
       ? asOfTime
@@ -41,7 +41,23 @@ export const PerpOracleAttribution = (props: {
       ) : (
         source
       )}
-      {licence && ` (${licence})`}
+      {licence &&
+        (licenceUrl ? (
+          <>
+            {' ('}
+            <a
+              href={licenceUrl}
+              target="_blank"
+              rel="noopener noreferrer license"
+              className="hover:text-ink-600 underline underline-offset-2"
+            >
+              {licence}
+            </a>
+            {')'}
+          </>
+        ) : (
+          ` (${licence})`
+        ))}
       {showAsOf &&
         (validAsOfTime == null
           ? ', source as-of unavailable.'

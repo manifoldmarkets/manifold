@@ -380,9 +380,13 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'update-trump-approval',
-      // 5:30am Pacific, then hourly until the day's point is published. The
-      // end hour MUST stay in sync with TRUMP_APPROVAL_LAST_ATTEMPT_HOUR.
-      '0 30 5-23 * * *',
+      // Every 5 minutes, which is VoteHub's OWN freshness bound: their
+      // averages endpoint serves `Cache-Control: max-age=300`, so polling
+      // faster returns cached bytes rather than a newer number — and it
+      // bounds what any other observer can see too, since they read through
+      // the same cache. Hourly left a 59-minute window in which a move was
+      // publicly visible while the market still traded on the old mark.
+      '0 */5 * * * *',
       updateTrumpApproval
     ),
     createJob(
