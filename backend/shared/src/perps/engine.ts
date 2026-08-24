@@ -45,6 +45,7 @@ import {
 import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
+  calculatePerpOpenCashFlow,
   creditPerpPoolFee,
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeImpact,
@@ -845,9 +846,22 @@ export const openOrAddPosition = async (
           2
         )} margin. Reduce your position size or leverage.`
       )
-    const totalDebit = mana + openFee
-    const spendableBalance = trader.balance + closePayout
-    if (spendableBalance < totalDebit)
+    // Shared with the bet panel's preview (calculatePerpOpenCashFlow), so the
+    // client's affordability check is exactly this one: margin plus the fee
+    // as priced above, funded by balance plus a flip's free close payout.
+    const cashFlow = calculatePerpOpenCashFlow({
+      balance: trader.balance,
+      margin: mana,
+      openFee,
+      closePayout,
+    })
+    if (!cashFlow)
+      throw new APIError(
+        500,
+        'Perp trade cash flow is invalid; refusing to debit the trader'
+      )
+    const { totalDebit, spendableBalance } = cashFlow
+    if (!cashFlow.isAffordable)
       throw new APIError(
         403,
         `Insufficient balance: needed ${totalDebit.toFixed(2)} (${mana} margin${

@@ -20,7 +20,11 @@ import {
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
-import { formatMoney } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  MONEY_PRECISE_DUST,
+} from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -28,7 +32,6 @@ import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { formatFundingMana } from './perp-bet-panel'
 import { PerpPositionRow, scheduleFreshBurst } from './use-perp-positions'
 
 type Position = {
@@ -150,9 +153,9 @@ export const PerpPositionPanel = (props: {
         expectedOpenedTime: position.openedTime,
       })
       toast.success(
-        `Closed ${direction} — payout ${formatMoney(
+        `Closed ${direction} — payout ${formatMoneyPrecise(
           res.payout
-        )} (profit ${formatMoney(res.pnl)})`
+        )} (profit ${formatMoneyPrecise(res.pnl)})`
       )
       track('sell shares', {
         outcomeType: contract.outcomeType,
@@ -257,7 +260,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 💥 Liquidated {e.direction}
               </span>
               <span className="text-scarlet-600 font-semibold tabular-nums">
-                −{formatMoney(lost)} margin
+                −{formatMoneyPrecise(lost)} margin
               </span>
               <span className="text-ink-500 tabular-nums">
                 at {formatPrice(e.oraclePrice, decimals)}
@@ -277,7 +280,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 Auto-deleveraged {e.direction}
               </span>
               <span className="text-ink-700 tabular-nums">
-                {formatMoney(e.payout ?? 0)} margin returned
+                {formatMoneyPrecise(e.payout ?? 0)} margin returned
               </span>
               <span
                 className={clsx(
@@ -286,7 +289,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 )}
               >
                 Profit {pnl >= 0 ? '+' : ''}
-                {formatMoney(pnl)}
+                {formatMoneyPrecise(pnl)}
               </span>
               <span className="text-ink-500 tabular-nums">
                 at {formatPrice(e.oraclePrice, decimals)}
@@ -307,7 +310,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
               Closed {e.direction}
             </span>
             <span className="text-ink-700 tabular-nums">
-              payout {formatMoney(e.payout ?? 0)}
+              payout {formatMoneyPrecise(e.payout ?? 0)}
             </span>
             <span
               className={clsx(
@@ -316,7 +319,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
               )}
             >
               {pnl >= 0 ? '+' : ''}
-              {formatMoney(pnl)}
+              {formatMoneyPrecise(pnl)}
             </span>
             <span className="text-ink-500 tabular-nums">
               at {formatPrice(e.oraclePrice, decimals)}
@@ -455,7 +458,7 @@ const PositionCard = (props: {
             <div className="text-ink-400 text-xs">Unrealized profit</div>
             <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
               {pnl >= 0 ? '+' : ''}
-              {formatMoney(pnl)}
+              {formatMoneyPrecise(pnl)}
             </div>
             <div className={clsx('text-xs tabular-nums', pnlColor)}>
               {pnl >= 0 ? '+' : ''}
@@ -489,7 +492,7 @@ const PositionCard = (props: {
         {/* One left-aligned sentence — a lone "Funding" label with a
             paragraph-length value right-aligned across the card read as two
             disconnected columns. */}
-        {fundingMana !== 0 && (
+        {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
           <div className="-mt-1 text-sm">
             <span
               className={clsx(
@@ -498,7 +501,7 @@ const PositionCard = (props: {
               )}
             >
               {fundingMana > 0 ? 'Earning ' : 'Paying '}
-              {formatFundingMana(Math.abs(fundingMana))}/
+              {formatMoneyPrecise(Math.abs(fundingMana))}/
               {fundingPeriodUnit(fundingPeriodMs)}{' '}
               {fundingMana > 0 ? 'from funding' : 'in funding'}
             </span>

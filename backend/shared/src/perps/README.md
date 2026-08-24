@@ -180,11 +180,22 @@ user → contract) alongside the margin debit, so the cash-backing invariant
 above is preserved. The position tracks its cumulative opening fees in
 `takerFeeCostBasis` (kept separate from margin so leverage/liquidation math
 is untouched), and every user-facing PnL number — the position card, close
-receipts, portfolio metrics, period metrics — subtracts it: a fresh position
-starts at PnL = −fee. Admins tune both knobs live per market via
-`update-perp-config` (base 0 disables the flat part, impact 0 the size
-part); contracts created before the fields existed default to base 10 /
-impact 0 at trade time.
+receipts, portfolio metrics, period metrics, and the trade panel's profit
+ladder (`getPerpPriceForUserFacingPnl` solves for the price at which that
+PnL reaches a target, so each tier is net of the fee and agrees with the
+card) — subtracts it: a fresh position starts at PnL = −fee. Admins tune
+both knobs live per market via `update-perp-config` (base 0 disables the
+flat part, impact 0 the size part); contracts created before the fields
+existed default to base 10 / impact 0 at trade time.
+
+The fee also changes what a trade COSTS to place: the debit is margin plus
+fee, and on a flip the closed leg's free payout may fund it. Both the engine's
+`Insufficient balance` reject and the trade panel's client-side check go
+through `calculatePerpOpenCashFlow` in `common/src/perps/fees.ts` with the
+quoted fee as an input (never recomputed from bps), so the preview cannot
+disagree with the charge. The panel therefore opts out of `BuyAmountInput`'s
+margin-only balance check (`disregardUserBalance`) — that check both passed a
+max-balance open the fee makes unaffordable and blocked a payout-funded flip.
 
 **Two channels, two rates.** `takerFeeBps` is the WEB base. Opens
 authenticated with an API key instead pay `max(takerFeeBps, takerFeeApiBps)`

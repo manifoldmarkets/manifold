@@ -527,6 +527,61 @@ export const perpOwnContributionInputs = (
   existingTakerFeeCostBasis: standingSame?.takerFeeCostBasis ?? 0,
 })
 
+export type PerpOpenCashFlow = {
+  /** Margin plus opening fee: the mana that leaves the trader's balance. */
+  totalDebit: number
+  /** Balance plus a flip's free close payout — what can fund the debit. */
+  spendableBalance: number
+  isAffordable: boolean
+}
+
+/**
+ * Cash required to open/add a position and whether the trader can fund it.
+ * Shared by the engine's authoritative check and the bet panel's preview so
+ * the two cannot disagree — the panel used to validate margin against raw
+ * balance alone, which let a max-balance open through to a server 403 once
+ * the fee was added, and blocked a payout-funded flip the engine accepts.
+ *
+ * The fee is an INPUT, not recomputed here: it is whatever perpOpenFeeQuote
+ * priced for this trade (size-dependent, channel-dependent), so this helper
+ * stays correct however the fee schedule evolves. `closePayout` is the free
+ * close of an opposite-side position on a flip — the engine credits it
+ * before debiting the new leg, so it may fund the new margin and fee (a
+ * trader whose mana is all in the position they are flipping out of).
+ *
+ * Fails closed (undefined) on any non-finite or negative input so a corrupt
+ * balance or fee can never read as affordable.
+ */
+export const calculatePerpOpenCashFlow = (params: {
+  balance: number
+  margin: number
+  openFee: number
+  closePayout?: number
+}): PerpOpenCashFlow | undefined => {
+  const { balance, margin, openFee, closePayout = 0 } = params
+  if (
+    !Number.isFinite(balance) ||
+    !Number.isFinite(margin) ||
+    margin <= 0 ||
+    !Number.isFinite(openFee) ||
+    openFee < 0 ||
+    !Number.isFinite(closePayout) ||
+    closePayout < 0
+  )
+    return undefined
+
+  const totalDebit = margin + openFee
+  const spendableBalance = balance + closePayout
+  if (!Number.isFinite(totalDebit) || !Number.isFinite(spendableBalance))
+    return undefined
+
+  return {
+    totalDebit,
+    spendableBalance,
+    isAffordable: spendableBalance >= totalDebit,
+  }
+}
+
 /**
  * Credit a collected fee to one side's backing pool. Pure, like the amm.ts
  * transitions: the caller persists the new pool. The fee mana enters

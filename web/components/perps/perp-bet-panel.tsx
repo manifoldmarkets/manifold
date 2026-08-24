@@ -8,7 +8,6 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   assertPerpPositionNumbers,
   getPerpBackingPool,
@@ -21,6 +20,7 @@ import {
 } from 'common/perps/amm'
 import {
   assertPerpTakerFeeConfig,
+  calculatePerpOpenCashFlow,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
   perpMaxFeeFor,
@@ -34,9 +34,16 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { fundingPerPeriod } from 'common/perps/pnl'
+import {
+  fundingPerPeriod,
+  getPerpPriceForUserFacingPnl,
+} from 'common/perps/pnl'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  MONEY_PRECISE_DUST,
+} from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -308,6 +315,38 @@ export const PerpBetPanel = (props: {
   // fee plus PERP_FEE_SLIPPAGE_BPS of notional — see perpMaxFeeFor for why it
   // is sized in bps of size rather than as a percentage of the fee.
   const maxFee = perpMaxFeeFor(openFee, notional)
+
+  // Affordability, through the same helper the engine's 403 runs: the debit
+  // is margin PLUS the fee quoted above, and a flip's free close payout —
+  // myPositionValue, the same amount that leaves the pool — may fund it.
+  // BuyAmountInput's own check (margin ≤ raw balance) is switched off via
+  // disregardUserBalance because it is wrong in both directions here: it
+  // passes a max-balance open the fee makes unaffordable (server 403), and
+  // blocks a payout-funded flip the engine accepts.
+  const flipPayout = isFlip && myPosition ? myPositionValue : 0
+  const cashFlow =
+    marginAmount > 0
+      ? calculatePerpOpenCashFlow({
+          balance: user?.balance ?? 0,
+          margin: marginAmount,
+          openFee,
+          closePayout: flipPayout,
+        })
+      : undefined
+  // Judged only once positions are loaded — before that a flip previews as a
+  // fresh open with no payout to fund it, which would flash "Insufficient
+  // balance" at exactly the trader it should not (submit is separately gated
+  // on positions == null). An unpriceable fee already blocks submit with its
+  // own message, so it is not double-reported here.
+  const affordabilityError =
+    user && positions != null && marginAmount > 0 && !feePreviewInvalid
+      ? !cashFlow
+        ? 'Unable to calculate trade cost'
+        : !cashFlow.isAffordable
+        ? 'Insufficient balance'
+        : undefined
+      : undefined
+  const displayedAmountError = amountError ?? affordabilityError
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -397,6 +436,22 @@ export const PerpBetPanel = (props: {
       // depth to price against, so adding is blocked.
       toast.error(
         'Market backing is exhausted relative to your position — close or reduce instead'
+      )
+      return
+    }
+    if (!cashFlow || !cashFlow.isAffordable) {
+      // Mirrors the engine's 403 (same helper, same inputs), itemised the
+      // same way so the two messages can never tell different stories.
+      toast.error(
+        cashFlow
+          ? `Insufficient balance: need ${formatMoneyPrecise(
+              cashFlow.totalDebit
+            )} (${formatMoney(marginAmount)} margin${
+              openFee > 0 ? ` + ${formatMoneyPrecise(openFee)} fee` : ''
+            }), have ${formatMoneyPrecise(cashFlow.spendableBalance)}${
+              flipPayout > 0 ? ' including the flipped position' : ''
+            }`
+          : 'Unable to calculate trade cost'
       )
       return
     }
@@ -544,8 +599,11 @@ export const PerpBetPanel = (props: {
           parentClassName="max-w-full"
           amount={margin}
           onChange={setMargin}
-          error={amountError}
+          error={displayedAmountError}
           setError={setAmountError}
+          // Balance is validated against margin + fee (and a flip's payout)
+          // above, not against margin alone.
+          disregardUserBalance
           disabled={submitting}
           showSlider
           showSliderMarks
@@ -575,7 +633,6 @@ export const PerpBetPanel = (props: {
         direction={direction}
         notional={notional}
         margin={marginAmount}
-        leverage={preview.leverage}
         entryPrice={preview.entryPrice}
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
@@ -626,7 +683,7 @@ export const PerpBetPanel = (props: {
           // Positions must be loaded before the previewed fee (and add/flip
           // detection) can be trusted — see the onSubmit gate.
           positions == null ||
-          !!amountError ||
+          !!displayedAmountError ||
           !margin ||
           margin <= 0 ||
           exceedsCapacity ||
@@ -741,20 +798,10 @@ const LeverageSlider = (props: {
   )
 }
 
-// Profit tiers shown in the scenario ladder: each is a +r return on margin.
+// Profit tiers shown in the scenario ladder: each is a +r NET return on the
+// cash committed to this new position (margin + opening fee) — the same base
+// the position card's percentage uses, so the two agree at the target price.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
-
-// Adaptive precision so sub-cent per-period funding amounts don't collapse
-// to "0.00". Shared with the position card's funding row.
-export const formatFundingMana = (absAmount: number) => {
-  const m = ENV_CONFIG.moneyMoniker
-  if (!(absAmount > 0)) return `${m}0`
-  const body =
-    absAmount >= 0.01
-      ? absAmount.toFixed(2)
-      : `${Number(absAmount.toPrecision(2))}`
-  return `${m}${body}`
-}
 
 // Fees display as PERCENTAGES — traders don't think in bps. Two decimals
 // below 1% keep the base (0.10%) and a small size term legible; larger fees
@@ -787,7 +834,6 @@ const StatsGrid = (props: {
   direction: 'long' | 'short'
   notional: number
   margin: number
-  leverage: number
   entryPrice: number
   liqPrice: number
   priceDecimals: number
@@ -823,7 +869,6 @@ const StatsGrid = (props: {
     direction,
     notional,
     margin,
-    leverage,
     entryPrice,
     liqPrice,
     priceDecimals,
@@ -852,28 +897,51 @@ const StatsGrid = (props: {
   const feeExceedsMargin =
     margin > 0 && fee >= margin * PERP_MAX_FEE_SHARE_OF_MARGIN
 
+  // Add previews are hidden on purpose: `margin` is the new tranche but
+  // entryPrice describes the merged position, so a "+25% on margin" target
+  // would mix two bases. Defining return for an add is a product decision.
   const canShowScenarios =
-    Number.isFinite(entryPrice) && margin > 0 && leverage > 0
+    !isAddPreview &&
+    !feePreviewInvalid &&
+    Number.isFinite(entryPrice) &&
+    entryPrice > 0 &&
+    margin > 0 &&
+    notional > 0
 
-  // At leverage ℓ a +r return on margin needs a price move of r/ℓ, so the
-  // target price is entry·(1 ± r/ℓ) and the mana P&L is just r·margin.
+  // Solve for the price at which the position's user-facing PnL — the number
+  // the position card will show, net of the opening fee — reaches +r of the
+  // cash committed. The base is margin + fee, the same denominator the card's
+  // percentage uses (getUserFacingPnlPercent), so at the solved price the
+  // card reads exactly "+r%" and exactly this mana profit. Without the fee
+  // this is the familiar entry·(1 ± r/ℓ); with it the target sits further
+  // out, so the ladder no longer promises a profit the card would then
+  // report as smaller. Closing is free; future funding remains unknowable
+  // here (and is called out below).
   const scenarios = canShowScenarios
-    ? RETURN_TIERS.map((ret) => ({
-        ret,
-        price:
-          direction === 'long'
-            ? entryPrice * (1 + ret / leverage)
-            : entryPrice * (1 - ret / leverage),
-        pnl: ret * margin,
-      })).filter((s) => Number.isFinite(s.price) && s.price > 0)
+    ? RETURN_TIERS.flatMap((ret) => {
+        const pnl = ret * (margin + fee)
+        const price = getPerpPriceForUserFacingPnl(
+          {
+            direction,
+            size: notional,
+            costBasis: margin,
+            originalCostBasis: margin,
+            takerFeeCostBasis: fee,
+            entryPrice,
+          },
+          pnl
+        )
+        return price === undefined ? [] : [{ ret, price, pnl }]
+      })
     : []
 
   const periodPct = marketFundingRate * 100
-  const paysFunding = fundingManaPerPeriod < 0
-  const earnsFunding = fundingManaPerPeriod > 0
+  // Dust from a near-balanced pool would otherwise read "-Ṁ0/hr".
+  const paysFunding = fundingManaPerPeriod <= -MONEY_PRECISE_DUST
+  const earnsFunding = fundingManaPerPeriod >= MONEY_PRECISE_DUST
   const fundingValue = `${
     paysFunding ? '-' : earnsFunding ? '+' : ''
-  }${formatFundingMana(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
+  }${formatMoneyPrecise(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
     fundingPeriodMs
   )} · ${periodPct >= 0 ? '+' : ''}${periodPct.toFixed(3)}%`
 
@@ -915,7 +983,7 @@ const StatsGrid = (props: {
             value={
               feePreviewInvalid
                 ? '—'
-                : `${formatMoneyWithDecimals(fee)} (${formatFeePct(
+                : `${formatMoneyPrecise(fee)} (${formatFeePct(
                     notional > 0 ? feeEffectiveBps : feeBaseBps
                   )})`
             }
@@ -990,7 +1058,7 @@ const StatsGrid = (props: {
           {scenariosOpen && (
             <>
               <Row className="text-ink-400 items-baseline text-xs">
-                <span className="flex-1">gain</span>
+                <span className="flex-1">return</span>
                 <span className="w-20 text-right">at price</span>
                 <span className="w-20 text-right">profit</span>
               </Row>
@@ -1003,7 +1071,7 @@ const StatsGrid = (props: {
                     {formatPrice(s.price, priceDecimals)}
                   </span>
                   <span className="w-20 text-right font-medium text-teal-600">
-                    +{formatMoneyWithDecimals(s.pnl)}
+                    +{formatMoneyPrecise(s.pnl)}
                   </span>
                 </Row>
               ))}

@@ -3,6 +3,7 @@ import {
   accruePerpPositionTakerFee,
   calcPerpSizeFee,
   calcPerpTakerFee,
+  calculatePerpOpenCashFlow,
   creditPerpPoolFee,
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeImpact,
@@ -744,6 +745,105 @@ describe('perpOpenFeeQuote (net-of-own-contribution depth)', () => {
       impact,
     })
     expect(q.fee).toBeCloseTo(oneShotQuote(10_000).fee, 10)
+  })
+})
+
+describe('calculatePerpOpenCashFlow', () => {
+  const base = { balance: 100, margin: 100, openFee: 10 }
+
+  it('includes the opening fee in the required debit', () => {
+    expect(calculatePerpOpenCashFlow(base)).toEqual({
+      totalDebit: 110,
+      spendableBalance: 100,
+      isAffordable: false,
+    })
+  })
+
+  it('rejects a raw-balance maximum when a fractional fee is still due', () => {
+    // margin == balance used to pass the client check and 403 server-side.
+    expect(
+      calculatePerpOpenCashFlow({ balance: 10, margin: 10, openFee: 0.02 })
+    ).toEqual({
+      totalDebit: 10.02,
+      spendableBalance: 10,
+      isAffordable: false,
+    })
+  })
+
+  it('takes the fee as priced rather than recomputing it', () => {
+    // A size-dependent or API-channel fee is whatever perpOpenFeeQuote
+    // produced — the helper must not assume notional × bps.
+    const quoted = perpOpenFeeQuote({
+      grossPoolDepth: 1_000,
+      existingSize: 0,
+      existingCostBasis: 0,
+      existingPositionValue: 0,
+      existingTakerFeeCostBasis: 0,
+      addedNotional: 2_000,
+      baseBps: 10,
+      impact: 10,
+    }).fee
+    expect(quoted).toBeGreaterThan(calcPerpTakerFee(2_000, 10))
+    expect(
+      calculatePerpOpenCashFlow({ balance: 200, margin: 200, openFee: quoted })
+    ).toMatchObject({ totalDebit: 200 + quoted })
+  })
+
+  it('lets a free flip payout fund the new margin and fee', () => {
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 0, closePayout: 110 })
+    ).toMatchObject({ spendableBalance: 110, isAffordable: true })
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 0, closePayout: 109.99 })
+        ?.isAffordable
+    ).toBe(false)
+  })
+
+  it('accepts the exact boundary and preserves zero-fee behavior', () => {
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 109.999 })?.isAffordable
+    ).toBe(false)
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: 110 })?.isAffordable
+    ).toBe(true)
+    expect(calculatePerpOpenCashFlow({ ...base, openFee: 0 })).toMatchObject({
+      totalDebit: 100,
+      isAffordable: true,
+    })
+  })
+
+  it('fails closed on invalid or overflowing inputs', () => {
+    expect(
+      calculatePerpOpenCashFlow({ ...base, balance: Number.NaN })
+    ).toBeUndefined()
+    expect(calculatePerpOpenCashFlow({ ...base, margin: 0 })).toBeUndefined()
+    expect(calculatePerpOpenCashFlow({ ...base, margin: -1 })).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({ ...base, openFee: -0.01 })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({ ...base, openFee: Number.POSITIVE_INFINITY })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({ ...base, closePayout: -1 })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({ ...base, closePayout: Number.NaN })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({
+        ...base,
+        margin: Number.MAX_VALUE,
+        openFee: Number.MAX_VALUE,
+      })
+    ).toBeUndefined()
+    expect(
+      calculatePerpOpenCashFlow({
+        ...base,
+        balance: Number.MAX_VALUE,
+        closePayout: Number.MAX_VALUE,
+      })
+    ).toBeUndefined()
   })
 })
 
