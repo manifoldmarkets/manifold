@@ -38,7 +38,11 @@ import {
   fundingPerPeriod,
   getPerpPriceForUserFacingPnl,
 } from 'common/perps/pnl'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import {
+  formatFeePct,
+  formatPrice,
+  inferPriceDecimals,
+} from 'common/perps/format'
 import {
   formatMoney,
   formatMoneyPrecise,
@@ -802,17 +806,6 @@ const LeverageSlider = (props: {
 // cash committed to this new position (margin + opening fee) — the same base
 // the position card's percentage uses, so the two agree at the target price.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
-
-// Fees display as PERCENTAGES — traders don't think in bps. Two decimals
-// below 1% keep the base (0.10%) and a small size term legible; larger fees
-// don't need the precision.
-const formatFeePct = (bps: number) => {
-  if (!Number.isFinite(bps) || bps <= 0) return '0%'
-  const pct = bps / 100
-  return `${
-    pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.round(pct)
-  }%`
-}
 
 const formatPoolShare = (share: number) => {
   if (!Number.isFinite(share) || share <= 0) return '0%'

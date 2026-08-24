@@ -1,13 +1,28 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { PerpContract } from 'common/contract'
+import {
+  getPerpEffectiveTakerFeeBps,
+  getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
+  perpFreshPositionFeeBps,
+} from 'common/perps/fees'
+import { formatFeePct } from 'common/perps/format'
+import { formatWithCommas } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { PERP_MARKET_BADGE_CLASS } from './perp-market-badge'
 
-export function PerpMarketExplainer(props: { className?: string }) {
-  const { className } = props
+export function PerpMarketExplainer(props: {
+  // When given, the explainer quotes THIS market's live settings (fees,
+  // leverage cap) instead of only describing the mechanism — only admins can
+  // change them, but every trader needs to be able to read them.
+  contract?: PerpContract
+  className?: string
+}) {
+  const { contract, className } = props
   const [open, setOpen] = useState(false)
 
   return (
@@ -64,7 +79,16 @@ export function PerpMarketExplainer(props: { className?: string }) {
             price, your position closes and you can lose all the margin you
             posted. Profitable positions may also be auto-deleveraged if market
             backing becomes insufficient.
+            {contract && Number.isFinite(contract.maxLeverage) && (
+              <>
+                {' '}
+                This market allows up to{' '}
+                {formatWithCommas(contract.maxLeverage)}× leverage.
+              </>
+            )}
           </ExplainerItem>
+
+          {contract && <PerpFeesItem contract={contract} />}
 
           <ExplainerItem title="Funding while you hold">
             At each funding interval, the more crowded side pays the other side.
@@ -82,6 +106,14 @@ export function PerpMarketExplainer(props: { className?: string }) {
             until a fresh, valid update arrives.
           </ExplainerItem>
 
+          {contract && (
+            <p className="text-ink-500 text-xs">
+              Every setting for this market — leverage cap, funding cap, and
+              fees — is listed under the ··· menu → See info. Only Manifold
+              admins can change them.
+            </p>
+          )}
+
           <div className="border-primary-200 bg-primary-50 text-ink-700 dark:border-primary-800 dark:bg-primary-900/20 rounded-md border p-3 text-sm">
             <span className="font-semibold">League scoring:</span> For now,
             perpetual-market profit and loss appear in your portfolio but do not
@@ -90,6 +122,44 @@ export function PerpMarketExplainer(props: { className?: string }) {
         </Col>
       </Modal>
     </>
+  )
+}
+
+// The fee schedule in a trader's terms: what opening costs on the web and via
+// the API, that closing is free, and — when the size term is on — what a
+// pool-sized entry actually pays, so `takerFeeImpact` is never just a bare
+// coefficient. Worked numbers come from perpFreshPositionFeeBps, which reads
+// the same math the engine charges.
+function PerpFeesItem(props: { contract: PerpContract }) {
+  const { contract } = props
+  const baseBps = getPerpTakerFeeBps(contract)
+  const apiBps = getPerpEffectiveTakerFeeBps(contract, true)
+  const impact = getPerpTakerFeeImpact(contract)
+  const poolSizedFee = formatFeePct(
+    perpFreshPositionFeeBps({ baseBps, impact, poolShare: 1 })
+  )
+  const fourTimesPoolFee = formatFeePct(
+    perpFreshPositionFeeBps({ baseBps, impact, poolShare: 4 })
+  )
+
+  return (
+    <ExplainerItem title="Fees">
+      Opening a position costs {formatFeePct(baseBps)} of its notional (margin ×
+      leverage), paid into this market's backing pool rather than to Manifold.
+      Closing is free. Positions opened through the API — bots — pay{' '}
+      {formatFeePct(apiBps)} to open.{' '}
+      {impact > 0 ? (
+        <>
+          Large positions pay more, like price impact on an exchange: one the
+          size of this market's whole backing pool pays about {poolSizedFee},
+          and one four times the pool about {fourTimesPoolFee}. Small positions
+          pay just the base rate.{' '}
+        </>
+      ) : (
+        <>The rate is flat — position size does not change it. </>
+      )}
+      The exact fee is quoted before you confirm a trade.
+    </ExplainerItem>
   )
 }
 

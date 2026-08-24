@@ -40,3 +40,15 @@ export const formatCountdown = (ms: number): string => {
   if (ms < 2 * HOUR) return `${Math.max(1, Math.ceil(ms / MINUTE))}m`
   return `${Math.round(ms / HOUR)}h`
 }
+
+// Fees display as PERCENTAGES — traders don't think in bps. Two decimals
+// below 1% keep the base (0.10%) and a small size term legible; larger fees
+// don't need the precision. Shared by the bet panel's quote, the market info
+// dialog, and the perp explainer so one fee never reads two ways.
+export const formatFeePct = (bps: number) => {
+  if (!Number.isFinite(bps) || bps <= 0) return '0%'
+  const pct = bps / 100
+  return `${
+    pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.round(pct)
+  }%`
+}
