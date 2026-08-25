@@ -21,6 +21,7 @@ import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
+import { useNativeQuestSync } from 'web/hooks/use-native-quest-sync'
 
 type NativeContextType = {
   isNative: boolean
@@ -43,6 +44,9 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
     'native-platform-v2'
   )
   const [version, setVersion] = usePersistentLocalState('', 'native-version')
+
+  // Push quest completion to the streak widget (native only, once per session).
+  useNativeQuestSync(privateUser?.id, isNative)
 
   useEffect(() => {
     postMessageToNative('startedListening', {})
