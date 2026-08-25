@@ -293,6 +293,65 @@ export const perpFreshPositionFeeBps = (args: {
   }).effectiveBps
 }
 
+/** Pool shares the reader-facing fee examples are worked at. A pool-sized
+ * entry is the intuitive unit ("as big as the market backing it"); 4x is the
+ * calibration reference the impact default was chosen against (see
+ * PERP_TAKER_FEE_IMPACT_DEFAULT). Named so the explainer, the info dialog and
+ * that comment cannot drift to different examples. */
+export const PERP_FEE_EXAMPLE_POOL_SHARES = [1, 4] as const
+
+export type PerpFeeScheduleSummary = {
+  baseBps: number // web open rate
+  apiBps: number // API-key open rate (>= base; equals base when unset)
+  /** True when the API channel actually costs more. When false, quoting the
+   * API rate separately tells the reader nothing and reads as a bug. */
+  apiDiffers: boolean
+  impact: number
+  hasSizeTerm: boolean
+  /** Effective rates for a FRESH position at each example pool share, per
+   * channel. The size term stacks on whichever base the CHANNEL selected —
+   * the engine picks the base first and then scales — so the web figures are
+   * simply wrong for an API open and both must be available to render. */
+  poolSizedBps: number
+  fourTimesPoolBps: number
+  apiPoolSizedBps: number
+  apiFourTimesPoolBps: number
+}
+
+/**
+ * A market's fee schedule reduced to the numbers a reader needs, derived in
+ * ONE place so the perp explainer and the market info dialog cannot quote the
+ * same market two different ways. Every figure routes through
+ * perpFreshPositionFeeBps -> perpSizeFeeDetails, i.e. the math the engine
+ * charges from.
+ *
+ * Total, like the getters it composes: corrupt legacy config reads as the
+ * defaults rather than throwing inside a React render.
+ */
+export const perpFeeScheduleSummary = (contract: {
+  takerFeeBps?: number
+  takerFeeApiBps?: number
+  takerFeeImpact?: number
+}): PerpFeeScheduleSummary => {
+  const baseBps = getPerpTakerFeeBps(contract)
+  const apiBps = getPerpEffectiveTakerFeeBps(contract, true)
+  const impact = getPerpTakerFeeImpact(contract)
+  const [poolShare, bigShare] = PERP_FEE_EXAMPLE_POOL_SHARES
+  const at = (b: number, share: number) =>
+    perpFreshPositionFeeBps({ baseBps: b, impact, poolShare: share })
+  return {
+    baseBps,
+    apiBps,
+    apiDiffers: apiBps > baseBps,
+    impact,
+    hasSizeTerm: impact > 0,
+    poolSizedBps: at(baseBps, poolShare),
+    fourTimesPoolBps: at(baseBps, bigShare),
+    apiPoolSizedBps: at(apiBps, poolShare),
+    apiFourTimesPoolBps: at(apiBps, bigShare),
+  }
+}
+
 /**
  * The one fee-input assembly for an exposure increase — the engine charges
  * from it and the bet panel previews from it, so the state selection can

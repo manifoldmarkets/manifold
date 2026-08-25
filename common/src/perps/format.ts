@@ -45,10 +45,20 @@ export const formatCountdown = (ms: number): string => {
 // below 1% keep the base (0.10%) and a small size term legible; larger fees
 // don't need the precision. Shared by the bet panel's quote, the market info
 // dialog, and the perp explainer so one fee never reads two ways.
+//
+// A positive rate NEVER renders as "0%". Two decimals bottom out at 0.5 bps,
+// and a fee schedule is exactly the place a reader must not be told that
+// something costing money is free — sub-0.01% reads as "<0.01%" instead.
+// (Reachable: takerFeeBps is z.number().min(0).max(100) with no .int(), and
+// a base of 0 with a small impact term prices a pool-sized entry at 0.33 bps.)
+//
+// The 1%/10% cutovers are taken on the ROUNDED value, so 9.99% cannot print
+// as "10.0%" while 10.05% prints as "10%".
 export const formatFeePct = (bps: number) => {
   if (!Number.isFinite(bps) || bps <= 0) return '0%'
   const pct = bps / 100
-  return `${
-    pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.round(pct)
-  }%`
+  if (pct < 0.005) return '<0.01%'
+  if (Number(pct.toFixed(2)) < 1) return `${pct.toFixed(2)}%`
+  if (Number(pct.toFixed(1)) < 10) return `${pct.toFixed(1)}%`
+  return `${Math.round(pct)}%`
 }
