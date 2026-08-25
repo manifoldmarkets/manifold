@@ -1,29 +1,28 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
-import {
-  getPerpEffectiveTakerFeeBps,
-  getPerpTakerFeeBps,
-  getPerpTakerFeeImpact,
-  perpFreshPositionFeeBps,
-} from 'common/perps/fees'
+import { perpFeeScheduleSummary } from 'common/perps/fees'
 import { formatFeePct } from 'common/perps/format'
-import { formatWithCommas } from 'common/util/format'
+import { formatNumber } from 'common/util/format'
 import { ReactNode, useState } from 'react'
+import { useUser } from 'web/hooks/use-user'
 
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { PERP_MARKET_BADGE_CLASS } from './perp-market-badge'
 
 export function PerpMarketExplainer(props: {
-  // When given, the explainer quotes THIS market's live settings (fees,
-  // leverage cap) instead of only describing the mechanism — only admins can
-  // change them, but every trader needs to be able to read them.
-  contract?: PerpContract
+  // The explainer quotes THIS market's live settings (fees, leverage cap)
+  // rather than only describing the mechanism — only admins can change them,
+  // but every trader needs to be able to read them. Required: there is one
+  // call site and it always has the contract, so an optional prop would only
+  // buy an unreachable, fee-less rendering of the modal.
+  contract: PerpContract
   className?: string
 }) {
   const { contract, className } = props
   const [open, setOpen] = useState(false)
+  const user = useUser()
 
   return (
     <>
@@ -79,16 +78,19 @@ export function PerpMarketExplainer(props: {
             price, your position closes and you can lose all the margin you
             posted. Profitable positions may also be auto-deleveraged if market
             backing becomes insufficient.
-            {contract && Number.isFinite(contract.maxLeverage) && (
+            {Number.isFinite(contract.maxLeverage) && (
               <>
                 {' '}
                 This market allows up to{' '}
-                {formatWithCommas(contract.maxLeverage)}× leverage.
+                {formatNumber(contract.maxLeverage, {
+                  maximumFractionDigits: 2,
+                })}
+                × leverage.
               </>
             )}
           </ExplainerItem>
 
-          {contract && <PerpFeesItem contract={contract} />}
+          <PerpFeesItem contract={contract} />
 
           <ExplainerItem title="Funding while you hold">
             At each funding interval, the more crowded side pays the other side.
@@ -106,13 +108,18 @@ export function PerpMarketExplainer(props: {
             until a fresh, valid update arrives.
           </ExplainerItem>
 
-          {contract && (
-            <p className="text-ink-500 text-xs">
-              Every setting for this market — leverage cap, funding cap, and
-              fees — is listed under the ··· menu → See info. Only Manifold
-              admins can change them.
-            </p>
-          )}
+          <p className="text-ink-500 text-xs">
+            Every setting for this market — leverage cap, funding cap, and fees
+            — is listed in the market info panel
+            {/* HeaderActions (the only route to that panel) is `!user &&
+                'hidden md:flex'` on both of its containers, so a signed-out
+                reader on a phone has no ··· menu to point at. Mirror that
+                exact condition rather than naming a route they cannot see. */}
+            <span className={clsx(!user && 'hidden md:inline')}>
+              , under the ··· menu → See info
+            </span>
+            . Only Manifold admins can change them.
+          </p>
 
           <div className="border-primary-200 bg-primary-50 text-ink-700 dark:border-primary-800 dark:bg-primary-900/20 rounded-md border p-3 text-sm">
             <span className="font-semibold">League scoring:</span> For now,
@@ -128,32 +135,50 @@ export function PerpMarketExplainer(props: {
 // The fee schedule in a trader's terms: what opening costs on the web and via
 // the API, that closing is free, and — when the size term is on — what a
 // pool-sized entry actually pays, so `takerFeeImpact` is never just a bare
-// coefficient. Worked numbers come from perpFreshPositionFeeBps, which reads
-// the same math the engine charges.
+// coefficient. Every figure comes from perpFeeScheduleSummary, which reads the
+// same math the engine charges and is shared with the market info dialog.
 function PerpFeesItem(props: { contract: PerpContract }) {
-  const { contract } = props
-  const baseBps = getPerpTakerFeeBps(contract)
-  const apiBps = getPerpEffectiveTakerFeeBps(contract, true)
-  const impact = getPerpTakerFeeImpact(contract)
-  const poolSizedFee = formatFeePct(
-    perpFreshPositionFeeBps({ baseBps, impact, poolShare: 1 })
-  )
-  const fourTimesPoolFee = formatFeePct(
-    perpFreshPositionFeeBps({ baseBps, impact, poolShare: 4 })
-  )
+  const {
+    baseBps,
+    apiBps,
+    apiDiffers,
+    hasSizeTerm,
+    poolSizedBps,
+    fourTimesPoolBps,
+    apiPoolSizedBps,
+    apiFourTimesPoolBps,
+  } = perpFeeScheduleSummary(props.contract)
 
   return (
     <ExplainerItem title="Fees" scope="this market only">
       In this market, opening a position costs {formatFeePct(baseBps)} of its
       notional (margin × leverage), paid into the market's backing pool rather
-      than to Manifold. Closing is free. Positions opened through the API — bots
-      — pay {formatFeePct(apiBps)} to open.{' '}
-      {impact > 0 ? (
+      than to Manifold. Closing is free.{' '}
+      {/* The surcharge is selected by auth channel — the server checks
+          `auth.creds.kind === 'key'`, not whether the caller is a bot — so
+          session-authenticated automation pays the web rate and any API-key
+          caller pays this one. Say what is actually true of the reader.
+          Suppressed entirely when the two rates are equal: announcing a
+          separate rate identical to the one just quoted reads as a bug. */}
+      {apiDiffers && (
+        <>Positions opened with an API key pay {formatFeePct(apiBps)}. </>
+      )}
+      {hasSizeTerm ? (
         <>
           Large positions pay more, like price impact on an exchange: one the
-          size of this market's whole backing pool pays about {poolSizedFee},
-          and one four times the pool about {fourTimesPoolFee}. Small positions
-          pay just the base rate.{' '}
+          size of this market's whole backing pool pays about{' '}
+          {formatFeePct(poolSizedBps)}, and one four times the pool about{' '}
+          {formatFeePct(fourTimesPoolBps)}.{' '}
+          {/* The size term stacks on whichever base the CHANNEL selected, so
+              the web figures understate an API open — on BTC at base 10 / API
+              30 / impact 10 a pool-sized API entry pays 0.33%, not 0.13%. */}
+          {apiDiffers && (
+            <>
+              Through the API those are {formatFeePct(apiPoolSizedBps)} and{' '}
+              {formatFeePct(apiFourTimesPoolBps)}.{' '}
+            </>
+          )}
+          Small positions pay just the base rate.{' '}
         </>
       ) : (
         <>The rate is flat — position size does not change it. </>

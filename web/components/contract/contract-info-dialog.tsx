@@ -14,7 +14,7 @@ import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
-  perpFreshPositionFeeBps,
+  perpFeeScheduleSummary,
   PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
@@ -604,22 +604,20 @@ function PerpStatsRows(props: { contract: PerpContract }) {
   // Fee settings are admin-edited but reader-visible: every row below renders
   // read-only for non-admins, and the size-impact coefficient is translated
   // into what a pool-sized entry actually pays so the number means something.
-  const takerFeeBps = getPerpTakerFeeBps(contract)
-  const takerFeeImpact = getPerpTakerFeeImpact(contract)
-  const poolSizedFee = formatFeePct(
-    perpFreshPositionFeeBps({
-      baseBps: takerFeeBps,
-      impact: takerFeeImpact,
-      poolShare: 1,
-    })
-  )
-  const fourTimesPoolFee = formatFeePct(
-    perpFreshPositionFeeBps({
-      baseBps: takerFeeBps,
-      impact: takerFeeImpact,
-      poolShare: 4,
-    })
-  )
+  // Derived by the same shared helper the perp explainer uses, so the two
+  // surfaces cannot quote this market two different ways.
+  const fees = perpFeeScheduleSummary(contract)
+  const takerFeeBps = fees.baseBps
+  const takerFeeImpact = fees.impact
+  const poolSizedFee = formatFeePct(fees.poolSizedBps)
+  const fourTimesPoolFee = formatFeePct(fees.fourTimesPoolBps)
+  const apiPoolSizedFee = formatFeePct(fees.apiPoolSizedBps)
+  const apiFourTimesPoolFee = formatFeePct(fees.apiFourTimesPoolBps)
+  // The size term stacks on whichever base the CHANNEL selected, so the web
+  // figures understate an API-key open whenever the API rate is higher.
+  const apiSizeNote = fees.apiDiffers
+    ? ` Through the API those are ${apiPoolSizedFee} and ${apiFourTimesPoolFee}.`
+    : ''
   const price =
     contract.resolution === 'MKT'
       ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
@@ -708,15 +706,14 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           API taker fee{' '}
-          <InfoTooltip text="Rate for positions opened through the API (bots). API opens pay the higher of this and the web taker fee, so automated flow is priced without taxing manual traders. Closing is free on both channels." />
+          <InfoTooltip text="Rate for opens authenticated with an API key — the server selects it from the credential, not from whether the caller looks like a bot, so session-authenticated automation still pays the web rate. API opens pay the higher of this and the web taker fee, and the size term (if any) stacks on top of it. Closing is free on both channels." />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeApiBpsInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {formatFeePct(getPerpEffectiveTakerFeeBps(contract, true))} to
-              open
+              {formatFeePct(fees.apiBps)} to open
             </span>
           )}
         </td>
@@ -727,7 +724,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           <InfoTooltip
             text={
               takerFeeImpact > 0
-                ? `Positions that are large relative to this market's backing pool pay a higher opening fee, like price impact on an exchange. Small positions pay just the base taker fee; a position the size of the whole pool pays about ${poolSizedFee}, and one four times the pool about ${fourTimesPoolFee}. The exact fee is quoted before you confirm. (Marginal rate at pool-share s is base + impact·s² bps; a fresh position of share S averages base + impact/3·S².)`
+                ? `Positions that are large relative to this market's backing pool pay a higher opening fee, like price impact on an exchange. Small positions pay just the base taker fee; a position the size of the whole pool pays about ${poolSizedFee}, and one four times the pool about ${fourTimesPoolFee}.${apiSizeNote} The exact fee is quoted before you confirm. (Marginal rate at pool-share s is base + impact·s² bps; a fresh position of share S averages base + impact/3·S².)`
                 : 'Size coefficient of the taker fee. At 0 the fee is flat: every position pays the base taker fee regardless of how large it is relative to the backing pool. When set above 0, positions large relative to the pool pay more (marginal rate at pool-share s is base + impact·s² bps).'
             }
           />
@@ -742,7 +739,9 @@ function PerpStatsRows(props: { contract: PerpContract }) {
                 {' '}
                 ·{' '}
                 {takerFeeImpact > 0
-                  ? `pool-sized entry pays ~${poolSizedFee}`
+                  ? fees.apiDiffers
+                    ? `pool-sized entry pays ~${poolSizedFee} on the web, ~${apiPoolSizedFee} via API`
+                    : `pool-sized entry pays ~${poolSizedFee}`
                   : 'flat fee, size does not matter'}
               </span>
             </span>
