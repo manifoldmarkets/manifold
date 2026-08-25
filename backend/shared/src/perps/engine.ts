@@ -140,6 +140,35 @@ const runPerpTransaction = <T>(
   options?: TransactionRetryOptions
 ): Promise<T> => runTransactionWithRetries(fn, maxAttempts, options)
 
+/**
+ * A trade rejected for a reason the CALLER caused is not an engine fault.
+ *
+ * transactWithRetries logs every failed attempt at ERROR unless told
+ * otherwise, so a market correctly refusing a trade bills as an incident —
+ * eight lines per request, one per attempt. The 2026-08-22 feed latch produced
+ * 1,404 ERROR lines from `Oracle feed is stale`, which is the fail-closed gate
+ * doing exactly its job; it buried the real signal and inflated every
+ * error-rate dashboard for the duration.
+ *
+ * Scoped to 4xx: a 5xx from this engine (a corrupt token, a broken escrow
+ * invariant) is a genuine fault and must stay at ERROR.
+ *
+ * A wrapper rather than an argument at each call site, because passing options
+ * makes the call three-argument, which stops prettier hugging the callback and
+ * reindents both entire function bodies — a 1,600-line diff for a behavioural
+ * change worth twenty. Deliberately NOT the default for runPerpTransaction:
+ * runFunding is system-initiated, so a 4xx there is a genuine fault.
+ */
+const isClientFaultError = (err: unknown) =>
+  err instanceof APIError && err.code >= 400 && err.code < 500
+
+const runTradeTransaction = <T>(
+  fn: (pgTrans: SupabaseTransaction) => Promise<T>
+): Promise<T> =>
+  runPerpTransaction(fn, PERP_TX_MAX_ATTEMPTS, {
+    isExpectedError: isClientFaultError,
+  })
+
 const buildState = (
   contract: PerpContract,
   positions: PerpPosition[]
@@ -501,7 +530,7 @@ export const openOrAddPosition = async (
   if (maxFee !== undefined && (!Number.isFinite(maxFee) || maxFee < 0))
     throw new APIError(400, 'maxFee must be a finite non-negative number')
 
-  return runPerpTransaction(async (pgTrans) => {
+  return runTradeTransaction(async (pgTrans) => {
     if (idempotencyKey) {
       const stored = await getIdempotentEvent(
         pgTrans,
@@ -1151,7 +1180,7 @@ export const closePosition = async (
     throw new APIError(400, 'Invalid expected PERP position opening time')
   }
 
-  return runPerpTransaction(async (pgTrans) => {
+  return runTradeTransaction(async (pgTrans) => {
     if (idempotencyKey) {
       const stored = await getIdempotentEvent(
         pgTrans,

@@ -7,6 +7,7 @@ import {
 } from 'common/perps/xstocks'
 
 import { log } from './utils'
+import { anySignal } from './abort-signals'
 
 // USD prices for tokenized equities (xStocks by Backed Finance), composited
 // across the free, no-auth, US-accessible venues where the tokens actually
@@ -84,10 +85,27 @@ export const XSTOCK_SPECS = {
   },
 } as const satisfies Record<string, XStockSpec>
 
-const fetchJson = async (url: string): Promise<unknown> => {
+/**
+ * Combine the caller's cancellation with this adapter's own budget.
+ *
+ * The adapter timeout stays authoritative for a slow venue. The caller's
+ * signal exists so the oracle tick can actually CANCEL a fetch it has given up
+ * waiting on — without it, a racing deadline abandons the promise while the
+ * socket stays open, and a permanently hung venue leaks one orphan per poll
+ * forever.
+ */
+const withFetchTimeout = (signal: AbortSignal | undefined) =>
+  signal
+    ? anySignal(signal, AbortSignal.timeout(FETCH_TIMEOUT_MS))
+    : AbortSignal.timeout(FETCH_TIMEOUT_MS)
+
+const fetchJson = async (
+  url: string,
+  signal?: AbortSignal
+): Promise<unknown> => {
   const res = await fetch(url, {
     headers: { 'user-agent': 'Manifold/1.0 (+https://manifold.markets)' },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: withFetchTimeout(signal),
   })
   if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
   return res.json()
@@ -95,26 +113,30 @@ const fetchJson = async (url: string): Promise<unknown> => {
 
 type XStockSource = {
   name: string
-  fetchPrice: () => Promise<number>
+  fetchPrice: (signal?: AbortSignal) => Promise<number>
 }
 
 const buildSources = (spec: XStockSpec): XStockSource[] => {
   const sources: XStockSource[] = [
     {
       name: 'jupiter',
-      fetchPrice: async () =>
+      fetchPrice: async (signal) =>
         readJupiterRawUsdPrice(
-          await fetchJson(`https://lite-api.jup.ag/price/v3?ids=${spec.mint}`),
+          await fetchJson(
+            `https://lite-api.jup.ag/price/v3?ids=${spec.mint}`,
+            signal
+          ),
           spec.mint,
           spec.unitMode
         ),
     },
     {
       name: 'gate',
-      fetchPrice: async () =>
+      fetchPrice: async (signal) =>
         readGateTickerMid(
           await fetchJson(
-            `https://api.gateio.ws/api/v4/spot/tickers?currency_pair=${spec.gatePair}`
+            `https://api.gateio.ws/api/v4/spot/tickers?currency_pair=${spec.gatePair}`,
+            signal
           )
         ),
     },
@@ -123,10 +145,11 @@ const buildSources = (spec: XStockSpec): XStockSource[] => {
     const symbol = spec.mexcSymbol
     sources.push({
       name: 'mexc',
-      fetchPrice: async () =>
+      fetchPrice: async (signal) =>
         readMexcBookTickerMid(
           await fetchJson(
-            `https://api.mexc.com/api/v3/ticker/bookTicker?symbol=${symbol}`
+            `https://api.mexc.com/api/v3/ticker/bookTicker?symbol=${symbol}`,
+            signal
           )
         ),
     })
@@ -135,12 +158,13 @@ const buildSources = (spec: XStockSpec): XStockSource[] => {
 }
 
 export const fetchXStockUsdPrice = async (
-  spec: XStockSpec
+  spec: XStockSpec,
+  signal?: AbortSignal
 ): Promise<{ ts: number; price: number } | null> => {
   const sources = buildSources(spec)
   const results = await Promise.allSettled(
     sources.map(async (s) => {
-      const price = await s.fetchPrice()
+      const price = await s.fetchPrice(signal)
       if (!Number.isFinite(price) || price <= 0)
         throw new Error(`${s.name}: bad price ${price}`)
       return price

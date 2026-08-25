@@ -115,3 +115,48 @@ export const oracleTickTimeoutsQuery = (
     )
   return `set local lock_timeout = ${lock}; set local statement_timeout = ${statement}`
 }
+
+/**
+ * Incident threshold used when a feed is not in the registry. Registry feeds
+ * carry their own `staleAfterMs`; this only covers the impossible case of a
+ * contract pointing at a feed that no longer exists.
+ */
+export const DEFAULT_MARK_STALE_ALERT_MS = 2 * 60 * 1000
+
+export type OracleApplySeverity = 'warn' | 'error'
+
+/**
+ * Severity for a failed apply of an oracle point to one contract.
+ *
+ * The threshold is the FEED's staleness budget, deliberately NOT a fraction of
+ * the contract's `maxOraclePriceAgeMs`. Those two numbers answer different
+ * questions and are now an order of magnitude apart:
+ *
+ *   - `maxOraclePriceAgeMs` is a trading gate. Tightening it to ~10s is the
+ *     point of the gate — the market pauses for a few seconds rather than
+ *     letting anyone execute against a mark a latency bot already knows is
+ *     wrong. That pause is the control WORKING, several times an hour, and
+ *     must not page anyone.
+ *   - `staleAfterMs` is the incident budget: silence this long means the feed
+ *     or the engine is actually broken.
+ *
+ * Deriving the alert from the trading gate coupled them, so tightening the
+ * gate to 10s would have made every third consecutive contended tick an ERROR
+ * — pages proportional to how well the gate was doing its job.
+ *
+ * A bounded tick giving up its slot is expected: the next tick is seconds away
+ * with a better price. Anything else — a genuine engine failure, or a mark
+ * that has aged past the feed's own incident budget — is not.
+ */
+export const classifyOracleApplyFailure = (
+  err: unknown,
+  /** Whether the caller passed OracleUpdateBounds, i.e. asked for the timeouts. */
+  bounded: boolean,
+  /** Wall-clock age of the mark this contract executes against. */
+  markAgeMs: number,
+  /** The feed's `staleAfterMs`. */
+  markStaleAlertMs: number
+): OracleApplySeverity => {
+  if (markAgeMs >= markStaleAlertMs) return 'error'
+  return bounded && isOracleTickTimeout(err) ? 'warn' : 'error'
+}

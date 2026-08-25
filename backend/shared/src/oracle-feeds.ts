@@ -79,12 +79,16 @@ export type OracleFeedDef = {
    * holders too). Trade it off against the source's rate limits: poll faster
    * than the source publishes and you spend quota for no new information. */
   pollPeriodMs?: number
-  fetchLatest?: () => Promise<{ ts: number; price: number } | null>
+  fetchLatest?: (
+    signal?: AbortSignal
+  ) => Promise<{ ts: number; price: number } | null>
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
    * sampler, so the tick upserts the whole window (idempotent on ts). */
-  fetchRecent?: () => Promise<{ ts: number; price: number }[]>
+  fetchRecent?: (
+    signal?: AbortSignal
+  ) => Promise<{ ts: number; price: number }[]>
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
@@ -164,7 +168,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
     // wait on up to three venues, so round AWAY from more load, not toward it.
     pollPeriodMs: 16_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
+    fetchLatest: (signal) => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX, signal),
   },
   {
     id: QQQX_USD_FEED_ID,
@@ -179,7 +183,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
     // wait on up to three venues, so round AWAY from more load, not toward it.
     pollPeriodMs: 16_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
+    fetchLatest: (signal) => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX, signal),
   },
   {
     id: GLDX_USD_FEED_ID,
@@ -194,7 +198,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
     // wait on up to three venues, so round AWAY from more load, not toward it.
     pollPeriodMs: 16_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
+    fetchLatest: (signal) => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX, signal),
   },
   {
     id: NVDAX_USD_FEED_ID,
@@ -209,7 +213,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
     // wait on up to three venues, so round AWAY from more load, not toward it.
     pollPeriodMs: 16_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
+    fetchLatest: (signal) => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX, signal),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into

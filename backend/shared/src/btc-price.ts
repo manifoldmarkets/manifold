@@ -1,6 +1,7 @@
 import { getConsensusMedian } from 'common/perps/oracle'
 
 import { log } from './utils'
+import { anySignal } from './abort-signals'
 
 // BTC/USD spot from four independent, free, no-auth, US-accessible exchanges.
 // (Binance is deliberately absent: api.binance.com geo-blocks US IPs, which
@@ -42,10 +43,27 @@ import { log } from './utils'
 const FETCH_TIMEOUT_MS = 1_200
 const MAX_SOURCE_DIVERGENCE_FRAC = 0.02
 
-const fetchJson = async (url: string): Promise<unknown> => {
+/**
+ * Combine the caller's cancellation with this adapter's own budget.
+ *
+ * The adapter timeout stays authoritative for a slow venue. The caller's
+ * signal exists so the oracle tick can actually CANCEL a fetch it has given up
+ * waiting on — without it, a racing deadline abandons the promise while the
+ * socket stays open, and a permanently hung venue leaks one orphan per poll
+ * forever.
+ */
+const withFetchTimeout = (signal: AbortSignal | undefined) =>
+  signal
+    ? anySignal(signal, AbortSignal.timeout(FETCH_TIMEOUT_MS))
+    : AbortSignal.timeout(FETCH_TIMEOUT_MS)
+
+const fetchJson = async (
+  url: string,
+  signal?: AbortSignal
+): Promise<unknown> => {
   const res = await fetch(url, {
     headers: { 'user-agent': 'Manifold/1.0 (+https://manifold.markets)' },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: withFetchTimeout(signal),
   })
   if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
   return res.json()
@@ -93,41 +111,47 @@ const readGeminiPrice = (body: unknown) => {
 
 type BtcSource = {
   name: string
-  fetchPrice: () => Promise<number>
+  fetchPrice: (signal?: AbortSignal) => Promise<number>
 }
 
 const SOURCES: BtcSource[] = [
   {
     name: 'coinbase',
-    fetchPrice: async () => {
+    fetchPrice: async (signal) => {
       const body = await fetchJson(
-        'https://api.coinbase.com/v2/prices/BTC-USD/spot'
+        'https://api.coinbase.com/v2/prices/BTC-USD/spot',
+        signal
       )
       return readCoinbasePrice(body)
     },
   },
   {
     name: 'kraken',
-    fetchPrice: async () => {
+    fetchPrice: async (signal) => {
       const body = await fetchJson(
-        'https://api.kraken.com/0/public/Ticker?pair=XBTUSD'
+        'https://api.kraken.com/0/public/Ticker?pair=XBTUSD',
+        signal
       )
       return readKrakenPrice(body)
     },
   },
   {
     name: 'bitstamp',
-    fetchPrice: async () => {
+    fetchPrice: async (signal) => {
       const body = await fetchJson(
-        'https://www.bitstamp.net/api/v2/ticker/btcusd/'
+        'https://www.bitstamp.net/api/v2/ticker/btcusd/',
+        signal
       )
       return readBitstampPrice(body)
     },
   },
   {
     name: 'gemini',
-    fetchPrice: async () => {
-      const body = await fetchJson('https://api.gemini.com/v1/pubticker/btcusd')
+    fetchPrice: async (signal) => {
+      const body = await fetchJson(
+        'https://api.gemini.com/v1/pubticker/btcusd',
+        signal
+      )
       return readGeminiPrice(body)
     },
   },
@@ -157,13 +181,15 @@ export const getBtcConsensusPrice = (
     maxDivergenceFrac
   )
 
-export const fetchBtcUsdSpot = async (): Promise<{
+export const fetchBtcUsdSpot = async (
+  signal?: AbortSignal
+): Promise<{
   ts: number
   price: number
 } | null> => {
   const results = await Promise.allSettled(
     SOURCES.map(async (s) => {
-      const price = await s.fetchPrice()
+      const price = await s.fetchPrice(signal)
       if (!Number.isFinite(price) || price <= 0)
         throw new Error(`${s.name}: bad price ${price}`)
       return price

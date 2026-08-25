@@ -6,8 +6,10 @@ import {
 } from 'common/perps/oracle'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { runOracleUpdate } from 'shared/perps/engine'
+import { getOracleFeed } from 'shared/oracle-feeds'
 import {
-  isOracleTickTimeout,
+  classifyOracleApplyFailure,
+  DEFAULT_MARK_STALE_ALERT_MS,
   OracleUpdateBounds,
 } from 'shared/perps/oracle-tick-bounds'
 import { publishPerpQuote } from 'shared/perps/publish-perp-quote'
@@ -15,18 +17,31 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
 /**
- * How far a contract's executable mark may fall behind the feed before a
- * failed apply is an incident rather than a skipped slot.
+ * Contracts we have already paged for in their current stale episode.
  *
- * Expressed as a fraction of the contract's own maxOraclePriceAgeMs so the
- * alert always lands BEFORE the market freezes at that threshold, whatever it
- * is set to. This is the signal nothing else provides: feed staleness reads
- * oracle_prices, which the publisher has already written by the time apply
- * runs, and the stuck-feed detector reads inFlightSince, which is clear
- * because the poll itself completed. Both stay green while a single contract
- * silently stops tracking the price it executes against.
+ * A failing apply pages exactly ONCE per episode and stays silent (WARN only)
+ * thereafter, until an apply succeeds and clears the flag. So a stall spanning
+ * a minute of 2s ticks is one alert, not thirty.
+ *
+ * The page fires when the mark goes DARK — past the feed's own staleAfterMs —
+ * NOT when the market freezes at maxOraclePriceAgeMs. Those were the same
+ * threshold until the BTC gate was tightened to ~10s; see
+ * classifyOracleApplyFailure for why they must not be. A market that pauses for
+ * a few seconds is the gate working, several times an hour, and nobody needs to
+ * hear about it; a mark that has not advanced in two minutes is broken.
+ *
+ * This is the only staleness signal nothing else provides, since feed staleness
+ * reads oracle_prices (already written by apply time) and the stuck-feed
+ * detector reads inFlightSince (clear once the poll completes).
+ *
+ * Module-level per scheduler process; a restart may re-arm and page once more,
+ * which is acceptable.
  */
-const APPLICATION_LAG_ALERT_FRACTION = 0.5
+const staleAlerted = new Set<string>()
+
+/** The feed's own incident budget; see classifyOracleApplyFailure. */
+const getMarkStaleAlertMs = (feedId: string) =>
+  getOracleFeed(feedId)?.staleAfterMs ?? DEFAULT_MARK_STALE_ALERT_MS
 
 /**
  * Apply a newly published oracle point to every live market on its feed.
@@ -45,8 +60,16 @@ export const applyOraclePointToLivePerps = async (
    * which must wait for the apply rather than abandon it — see
    * OracleUpdateBounds.
    */
-  bounds?: OracleUpdateBounds
+  bounds?: OracleUpdateBounds,
+  /**
+   * Optional progress callback. The fast tick passes one so a poll that never
+   * settles can still say which step it stopped on; every other caller omits
+   * it. A callback rather than a log, so the 2s tick does not emit a line per
+   * phase per feed forever.
+   */
+  onPhase?: (phase: string) => void
 ) => {
+  const phase = (p: string) => onPhase?.(p)
   const pointRejection = validateBasicOraclePoint(point)
   if (pointRejection) {
     throw new Error(
@@ -57,6 +80,7 @@ export const applyOraclePointToLivePerps = async (
   // The database row is the published source of truth. INSERT ... DO NOTHING
   // can lose a same-timestamp race, so never execute against the caller's value
   // until it matches the immutable row that actually won.
+  phase('apply:read-stored-point')
   const stored = await pg.oneOrNone<{
     ts: string
     price: number | string
@@ -96,6 +120,7 @@ export const applyOraclePointToLivePerps = async (
       }`
     )
 
+  phase('apply:read-live-contracts')
   const rows = await pg.manyOrNone<{ data: PerpContract }>(
     `select data from contracts
      where mechanism = 'perp'
@@ -142,6 +167,7 @@ export const applyOraclePointToLivePerps = async (
     }
 
     try {
+      phase(`apply:runOracleUpdate(${contract.slug})`)
       const result = await runOracleUpdate(
         contract.id,
         persistedPoint.price,
@@ -151,6 +177,14 @@ export const applyOraclePointToLivePerps = async (
       )
       if (!result) continue
 
+      // The apply landed: the mark is tracking the feed again. If we paged for
+      // a stall on this contract, note the recovery and re-arm the alert.
+      if (staleAlerted.delete(contract.id)) {
+        log.info(
+          `[oracle-feeds] ${contract.slug}: executable mark recovered and tracking ${feedId} again`
+        )
+      }
+
       // Push before notifying: notification delivery does its own DB work and
       // the whole point of this path is that open pages see the new price in
       // well under a tick. Carries only what the tick authoritatively settled
@@ -158,6 +192,7 @@ export const applyOraclePointToLivePerps = async (
       // also move on a liquidating tick, but this scope only has the pre-tick
       // contract snapshot for them, so they stay on the polled path rather
       // than pushing a stale value over a fresh one.
+      phase(`apply:publishQuote(${contract.slug})`)
       publishPerpQuote({
         contractId: contract.id,
         oraclePrice: persistedPoint.price,
@@ -170,6 +205,7 @@ export const applyOraclePointToLivePerps = async (
       })
 
       try {
+        phase(`apply:notify(${contract.slug})`)
         await notifyPerpOracleResult(pg, contract, persistedPoint.price, result)
       } catch (err) {
         // The price transition is already committed. Notification delivery
@@ -193,24 +229,39 @@ export const applyOraclePointToLivePerps = async (
         contract.oraclePriceTime == null
           ? Number.POSITIVE_INFINITY
           : Date.now() - contract.oraclePriceTime
-      const lagBudget =
-        contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION
+      // Dark = the mark has not advanced for the FEED's whole staleness
+      // budget. Deliberately NOT maxOraclePriceAgeMs: crossing that only
+      // pauses trading, which is the gate doing its job.
+      const markStaleAlertMs = getMarkStaleAlertMs(feedId)
+      const dark = markAge >= markStaleAlertMs
 
-      // A single bounded tick giving up its slot is the design working, and
-      // the next tick is already due with a better price — that should not
-      // page. But repeated failures walk the mark toward the freshness
-      // threshold with no other alarm attached to it, so escalate on the age
-      // itself rather than on the cause. Only a caller that ASKED for these
-      // bounds may treat them as expected: an unbounded caller's 57014 came
-      // from somewhere it did not choose, and stays an error.
-      if (bounds != null && isOracleTickTimeout(err) && markAge < lagBudget) {
+      if (
+        classifyOracleApplyFailure(
+          err,
+          bounds != null,
+          markAge,
+          markStaleAlertMs
+        ) === 'warn'
+      ) {
+        // A bounded tick yielding its slot is the design working — the next
+        // tick is already due with a better price. Never pages, however many
+        // ticks the stall spans, and whether or not the market paused along
+        // the way.
         log.warn(message)
-      } else if (markAge >= lagBudget) {
-        log.error(
-          `${message} — executable mark is ${markAge}ms old, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; this market will stop trading if it keeps failing`
-        )
+      } else if (staleAlerted.has(contract.id)) {
+        // Already paged once for this episode. Keep a log trail at WARN, but do
+        // not page again until a successful apply clears the flag above.
+        log.warn(message)
       } else {
-        log.error(message)
+        // First real failure of this episode: page exactly once. Either the
+        // mark has gone dark, or an unexpected (non-skip) error hit it — both
+        // warrant a look.
+        staleAlerted.add(contract.id)
+        log.error(
+          dark
+            ? `${message} — executable mark is ${markAge}ms old, past this feed's ${markStaleAlertMs}ms staleness budget; ${contract.slug} stopped accepting trades once it passed ${contract.maxOraclePriceAgeMs}ms and stays frozen until an apply succeeds`
+            : message
+        )
       }
     }
   }
