@@ -60,8 +60,16 @@ export const applyOraclePointToLivePerps = async (
    * which must wait for the apply rather than abandon it — see
    * OracleUpdateBounds.
    */
-  bounds?: OracleUpdateBounds
+  bounds?: OracleUpdateBounds,
+  /**
+   * Optional progress callback. The fast tick passes one so a poll that never
+   * settles can still say which step it stopped on; every other caller omits
+   * it. A callback rather than a log, so the 2s tick does not emit a line per
+   * phase per feed forever.
+   */
+  onPhase?: (phase: string) => void
 ) => {
+  const phase = (p: string) => onPhase?.(p)
   const pointRejection = validateBasicOraclePoint(point)
   if (pointRejection) {
     throw new Error(
@@ -72,6 +80,7 @@ export const applyOraclePointToLivePerps = async (
   // The database row is the published source of truth. INSERT ... DO NOTHING
   // can lose a same-timestamp race, so never execute against the caller's value
   // until it matches the immutable row that actually won.
+  phase('apply:read-stored-point')
   const stored = await pg.oneOrNone<{
     ts: string
     price: number | string
@@ -111,6 +120,7 @@ export const applyOraclePointToLivePerps = async (
       }`
     )
 
+  phase('apply:read-live-contracts')
   const rows = await pg.manyOrNone<{ data: PerpContract }>(
     `select data from contracts
      where mechanism = 'perp'
@@ -157,6 +167,7 @@ export const applyOraclePointToLivePerps = async (
     }
 
     try {
+      phase(`apply:runOracleUpdate(${contract.slug})`)
       const result = await runOracleUpdate(
         contract.id,
         persistedPoint.price,
@@ -181,6 +192,7 @@ export const applyOraclePointToLivePerps = async (
       // also move on a liquidating tick, but this scope only has the pre-tick
       // contract snapshot for them, so they stay on the polled path rather
       // than pushing a stale value over a fresh one.
+      phase(`apply:publishQuote(${contract.slug})`)
       publishPerpQuote({
         contractId: contract.id,
         oraclePrice: persistedPoint.price,
@@ -193,6 +205,7 @@ export const applyOraclePointToLivePerps = async (
       })
 
       try {
+        phase(`apply:notify(${contract.slug})`)
         await notifyPerpOracleResult(pg, contract, persistedPoint.price, result)
       } catch (err) {
         // The price transition is already committed. Notification delivery

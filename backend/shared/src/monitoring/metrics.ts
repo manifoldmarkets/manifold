@@ -46,6 +46,35 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  // Oracle poll health, per feed. The dispatcher's in-flight guard is
+  // in-process state with no external view: updateOracleFeeds returns as soon
+  // as it has dispatched, so both scheduler_info.last_end_time and the
+  // perps_oracle_tick_heartbeat dead-man stay green through a feed being
+  // completely dark. These are that view.
+  //
+  // Read them together. inflight_age alone reads 0 once a wedged feed has
+  // exhausted its budget and stopped polling — green exactly when it is
+  // darkest. last_success_age_ms is the one that cannot lie.
+  'perps/oracle_poll_inflight_age_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/oracle_poll_outstanding_abandoned': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/oracle_poll_refused': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/oracle_poll_last_success_age_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/oracle_poll_total_abandoned': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
   'ws/redis_broadcasts_published': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
