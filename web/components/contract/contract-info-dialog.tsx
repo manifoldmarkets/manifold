@@ -14,7 +14,6 @@ import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
-  perpFeeScheduleSummary,
   PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
@@ -28,10 +27,11 @@ import {
   formatFeePct,
   formatPrice,
   inferPriceDecimals,
+  perpFeeScheduleSummary,
 } from 'common/perps/format'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
-import { formatWithCommas } from 'common/util/format'
+import { formatNumber, formatWithCommas } from 'common/util/format'
 import { YEAR_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
@@ -597,6 +597,16 @@ export const Stats = (props: {
   )
 }
 
+// formatWithCommas floors, and both of these settings are validated as plain
+// numbers (maxLeverage is z.number().gt(1).lte(100), takerFeeImpact
+// z.number().min(0).max(100) — neither is .int(), and the leverage input ships
+// step={0.5}). Flooring turned a 2.5x cap into "2x" and an active 0.5 impact
+// into "0", i.e. "size does not matter" on a market where it does.
+const formatLeverage = (value: number) =>
+  formatNumber(value, { maximumFractionDigits: 2 })
+const formatImpact = (value: number) =>
+  formatNumber(value, { maximumFractionDigits: 2 })
+
 function PerpStatsRows(props: { contract: PerpContract }) {
   const { contract } = props
   const isAdmin = useAdmin()
@@ -666,7 +676,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           {canEdit ? (
             <MaxLeverageInput contract={contract} />
           ) : Number.isFinite(contract.maxLeverage) ? (
-            `${formatWithCommas(contract.maxLeverage)}×`
+            `${formatLeverage(contract.maxLeverage)}×`
           ) : (
             '—'
           )}
@@ -733,14 +743,17 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           {canEdit ? (
             <TakerFeeImpactInput contract={contract} />
           ) : (
-            <span className="tabular-nums">
-              {formatWithCommas(takerFeeImpact)}
+            // The Table is `table-fixed ... sm:whitespace-nowrap`, so this
+            // cell must opt back into wrapping (`!` beats the sm: variant) or
+            // the two-channel hint runs outside the modal.
+            <span className="!whitespace-normal tabular-nums">
+              {formatImpact(takerFeeImpact)}
               <span className="text-ink-500 text-xs">
                 {' '}
                 ·{' '}
                 {takerFeeImpact > 0
                   ? fees.apiDiffers
-                    ? `pool-sized entry pays ~${poolSizedFee} on the web, ~${apiPoolSizedFee} via API`
+                    ? `pool-sized: ~${poolSizedFee} web / ~${apiPoolSizedFee} API`
                     : `pool-sized entry pays ~${poolSizedFee}`
                   : 'flat fee, size does not matter'}
               </span>
@@ -919,7 +932,7 @@ function MaxLeverageInput(props: { contract: PerpContract }) {
   return (
     <Row className="items-center gap-2">
       <span className="tabular-nums">
-        {Number.isFinite(current) ? `${formatWithCommas(current)}×` : '—'}
+        {Number.isFinite(current) ? `${formatLeverage(current)}×` : '—'}
       </span>
       <input
         type="number"
@@ -1167,7 +1180,7 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
 
   return (
     <Row className="flex-wrap items-center gap-1.5">
-      <span className="tabular-nums">{formatWithCommas(current)}</span>
+      <span className="tabular-nums">{formatImpact(current)}</span>
       <input
         type="number"
         min={0}

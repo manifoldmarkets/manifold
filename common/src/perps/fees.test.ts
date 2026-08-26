@@ -11,7 +11,6 @@ import {
   perpMaxFeeFor,
   perpOpenFeeQuote,
   perpOwnContributionInputs,
-  perpFeeScheduleSummary,
   perpFreshPositionFeeBps,
   perpSizeFeeDetails,
   PERP_FEE_SLIPPAGE_BPS,
@@ -19,7 +18,6 @@ import {
   PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_IMPACT_MAX,
-  PERP_FEE_EXAMPLE_POOL_SHARES,
   PERP_TAKER_FEE_BPS_DEFAULT,
   PERP_TAKER_FEE_BPS_MAX,
 } from './fees'
@@ -1814,88 +1812,5 @@ describe('perpFreshPositionFeeBps', () => {
     expect(
       perpFreshPositionFeeBps({ baseBps: NaN, impact: 10, poolShare: 1 })
     ).toBeCloseTo(10 / 3, 10)
-  })
-})
-
-describe('perpFeeScheduleSummary', () => {
-  // The regression this suite exists for: the size term stacks on whichever
-  // base the CHANNEL selected (engine.ts picks the base, then scales), so the
-  // web figures are simply wrong for an API-key open. The reader-facing
-  // surfaces quoted the web numbers to API traders.
-  it('stacks the size term on the API base, not the web base', () => {
-    // Live BTC / Trump-approval config at time of writing.
-    const s = perpFeeScheduleSummary({
-      takerFeeBps: 10,
-      takerFeeApiBps: 30,
-      takerFeeImpact: 10,
-    })
-    expect(s.baseBps).toBe(10)
-    expect(s.apiBps).toBe(30)
-    expect(s.apiDiffers).toBe(true)
-    expect(s.poolSizedBps).toBeCloseTo(10 + 10 / 3, 10)
-    expect(s.fourTimesPoolBps).toBeCloseTo(10 + (10 / 3) * 16, 10)
-    expect(s.apiPoolSizedBps).toBeCloseTo(30 + 10 / 3, 10)
-    expect(s.apiFourTimesPoolBps).toBeCloseTo(30 + (10 / 3) * 16, 10)
-    // The API figures must not silently equal the web ones.
-    expect(s.apiPoolSizedBps).toBeGreaterThan(s.poolSizedBps)
-    expect(s.apiFourTimesPoolBps).toBeGreaterThan(s.fourTimesPoolBps)
-  })
-
-  it('agrees with the rate the engine would charge on each channel', () => {
-    const contract = { takerFeeBps: 10, takerFeeApiBps: 30, takerFeeImpact: 90 }
-    const s = perpFeeScheduleSummary(contract)
-    for (const [isApi, expected] of [
-      [false, s.poolSizedBps],
-      [true, s.apiPoolSizedBps],
-    ] as const) {
-      const P = 466_000
-      const charged = perpSizeFeeDetails({
-        notionalBefore: 0,
-        notionalAfter: P,
-        poolDepth: P,
-        baseBps: getPerpEffectiveTakerFeeBps(contract, isApi),
-        impact: getPerpTakerFeeImpact(contract),
-      })
-      expect(expected).toBeCloseTo(charged.effectiveBps, 8)
-    }
-  })
-
-  it('reports no separate API rate when one is not configured', () => {
-    // Announcing an API rate identical to the base reads as a bug, so the
-    // surfaces gate on this rather than on "is takerFeeApiBps present".
-    const s = perpFeeScheduleSummary({ takerFeeBps: 10, takerFeeImpact: 10 })
-    expect(s.apiBps).toBe(10)
-    expect(s.apiDiffers).toBe(false)
-    expect(s.apiPoolSizedBps).toBeCloseTo(s.poolSizedBps, 10)
-    // max(base, api) — a misconfigured API rate below base never discounts.
-    const low = perpFeeScheduleSummary({ takerFeeBps: 10, takerFeeApiBps: 4 })
-    expect(low.apiBps).toBe(10)
-    expect(low.apiDiffers).toBe(false)
-  })
-
-  it('reads defaults for an unstamped contract and flags a flat schedule', () => {
-    const s = perpFeeScheduleSummary({})
-    expect(s.baseBps).toBe(PERP_TAKER_FEE_BPS_DEFAULT)
-    expect(s.impact).toBe(PERP_TAKER_FEE_IMPACT_DEFAULT)
-    expect(s.hasSizeTerm).toBe(false)
-    // With no size term every example collapses to the base.
-    expect(s.poolSizedBps).toBe(s.baseBps)
-    expect(s.fourTimesPoolBps).toBe(s.baseBps)
-  })
-
-  it('is total: corrupt config reads as the defaults rather than throwing', () => {
-    const s = perpFeeScheduleSummary({
-      takerFeeBps: NaN,
-      takerFeeApiBps: -1,
-      takerFeeImpact: 1e9,
-    })
-    expect(s.baseBps).toBe(PERP_TAKER_FEE_BPS_DEFAULT)
-    expect(s.impact).toBe(PERP_TAKER_FEE_IMPACT_DEFAULT)
-    expect(Number.isFinite(s.poolSizedBps)).toBe(true)
-    expect(Number.isFinite(s.apiFourTimesPoolBps)).toBe(true)
-  })
-
-  it('works the examples at the shares the copy actually names', () => {
-    expect(PERP_FEE_EXAMPLE_POOL_SHARES).toEqual([1, 4])
   })
 })

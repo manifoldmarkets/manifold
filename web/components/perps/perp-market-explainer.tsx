@@ -1,8 +1,7 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
-import { perpFeeScheduleSummary } from 'common/perps/fees'
-import { formatFeePct } from 'common/perps/format'
+import { formatFeePct, perpFeeScheduleSummary } from 'common/perps/format'
 import { formatNumber } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -110,15 +109,17 @@ export function PerpMarketExplainer(props: {
 
           <p className="text-ink-500 text-xs">
             Every setting for this market — leverage cap, funding cap, and fees
-            — is listed in the market info panel
-            {/* HeaderActions (the only route to that panel) is `!user &&
-                'hidden md:flex'` on both of its containers, so a signed-out
-                reader on a phone has no ··· menu to point at. Mirror that
-                exact condition rather than naming a route they cannot see. */}
+            — is set per market, and only Manifold admins can change them.
+            {/* ContractInfoDialog is reachable ONLY through HeaderActions, and
+                both of its containers are `!user && 'hidden md:flex'` — so a
+                signed-out reader on a phone has no route to that panel at all.
+                Point at it only under the exact condition that renders it;
+                the sentence above is complete and true without this. */}
             <span className={clsx(!user && 'hidden md:inline')}>
-              , under the ··· menu → See info
+              {' '}
+              The full list is in the market info panel, under the ··· menu →
+              See info.
             </span>
-            . Only Manifold admins can change them.
           </p>
 
           <div className="border-primary-200 bg-primary-50 text-ink-700 dark:border-primary-800 dark:bg-primary-900/20 rounded-md border p-3 text-sm">
