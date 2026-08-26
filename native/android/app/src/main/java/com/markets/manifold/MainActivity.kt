@@ -1,6 +1,7 @@
 package com.markets.manifold
 import expo.modules.splashscreen.SplashScreenManager
 
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 
@@ -13,6 +14,10 @@ import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Keep phones portrait. The manifest no longer declares an orientation lock
+    // (Play flags that, and Android 16+ ignores it on large screens — where this
+    // call is likewise ignored, so tablets and foldables stay rotatable).
+    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.

@@ -16,11 +16,14 @@ export default ({ config }) => {
       newArchEnabled: true,
       jsEngine: 'hermes',
       version: '2.1.0',
-      orientation: 'default',
+      // On Android the manifest lock this writes is stripped again by
+      // withAndroidPlayAdvisoryFixes; phones stay portrait via MainActivity.
+      orientation: 'portrait',
       icon: './assets/logo.png',
       userInterfaceStyle: 'light',
       plugins: [
         './plugins/withAndroidVerifiedLinksWorkaround',
+        './plugins/withAndroidPlayAdvisoryFixes',
         'expo-font',
         [
           'expo-notifications',

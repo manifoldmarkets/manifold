@@ -21,7 +21,6 @@ import Constants from 'expo-constants'
 import 'expo-dev-client'
 import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
-import * as ScreenOrientation from 'expo-screen-orientation'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import * as StoreReview from 'expo-store-review'
@@ -57,15 +56,6 @@ Sentry.init({
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync()
-
-// The manifest no longer locks orientation (Android 16+ ignores manifest locks on
-// large screens and Play flags them), so lock phones to portrait at runtime instead.
-// This is a no-op on >=600dp displays under Android 16+, i.e. tablets stay rotatable.
-if (Platform.OS === 'android') {
-  ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(
-    (e) => log('Failed to lock orientation', e)
-  )
-}
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
 // "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
 // Then, set the native url in the app on the user settings page: http://192.168.1.229:3000/
