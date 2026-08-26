@@ -88,6 +88,12 @@ export const CustomWebview = (props: {
             {...sharedWebViewProps}
             style={styles.webView}
             onLoadStart={() => onNavigate(null)}
+            // Restore trust only from a SUCCESSFUL, committed load. onLoad fires
+            // only from onLoadingFinish; onNavigationStateChange also fires for
+            // the provisional navigation-START event (on iOS with loading still
+            // false), which would restore a Manifold URL while the external
+            // document is still active, and onLoadEnd also fires on errors.
+            onLoad={(e) => onNavigate(e.nativeEvent.url)}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -98,14 +104,6 @@ export const CustomWebview = (props: {
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onNavigationStateChange={(state) => {
-              // Trust is cleared at every navigation start (onLoadStart, above)
-              // and only re-established here on a committed load. Skipping the
-              // in-progress (loading) events means the trusted URL is set only
-              // once the new document has actually loaded — never a provisional
-              // or still-loading external page.
-              if (!state.loading) onNavigate(state.url)
-            }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)
@@ -126,6 +124,12 @@ export const CustomWebview = (props: {
             {...sharedWebViewProps}
             style={styles.webView}
             onLoadStart={() => onNavigate(null)}
+            // Restore trust only from a SUCCESSFUL, committed load. onLoad fires
+            // only from onLoadingFinish; onNavigationStateChange also fires for
+            // the provisional navigation-START event (on iOS with loading still
+            // false), which would restore a Manifold URL while the external
+            // document is still active, and onLoadEnd also fires on errors.
+            onLoad={(e) => onNavigate(e.nativeEvent.url)}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -136,14 +140,6 @@ export const CustomWebview = (props: {
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onNavigationStateChange={(state) => {
-              // Trust is cleared at every navigation start (onLoadStart, above)
-              // and only re-established here on a committed load. Skipping the
-              // in-progress (loading) events means the trusted URL is set only
-              // once the new document has actually loaded — never a provisional
-              // or still-loading external page.
-              if (!state.loading) onNavigate(state.url)
-            }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)
