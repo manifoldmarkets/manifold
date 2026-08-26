@@ -34,9 +34,10 @@ export const CustomWebview = (props: {
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
-  // Reports the URL the WebView navigates to (including third-party pages such
-  // as iDenfy), so the app can avoid posting credentials into them.
-  onNavigate: (url: string) => void
+  // Reports the WebView's committed URL (including third-party pages such as
+  // iDenfy), so the app can avoid posting credentials into them. Called with
+  // null at navigation start to clear trust until the next load commits.
+  onNavigate: (url: string | null) => void
   display: boolean
 }) => {
   const {
@@ -86,6 +87,7 @@ export const CustomWebview = (props: {
           <WebView
             {...sharedWebViewProps}
             style={styles.webView}
+            onLoadStart={() => onNavigate(null)}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -97,9 +99,11 @@ export const CustomWebview = (props: {
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
             onNavigationStateChange={(state) => {
-              // Only trust a committed navigation. onNavigationStateChange also
-              // fires at navigation START (loading=true), before the request is
-              // allowed, so a provisional load must not update the trusted URL.
+              // Trust is cleared at every navigation start (onLoadStart, above)
+              // and only re-established here on a committed load. Skipping the
+              // in-progress (loading) events means the trusted URL is set only
+              // once the new document has actually loaded — never a provisional
+              // or still-loading external page.
               if (!state.loading) onNavigate(state.url)
             }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
@@ -121,6 +125,7 @@ export const CustomWebview = (props: {
           <WebView
             {...sharedWebViewProps}
             style={styles.webView}
+            onLoadStart={() => onNavigate(null)}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -132,9 +137,11 @@ export const CustomWebview = (props: {
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
             onNavigationStateChange={(state) => {
-              // Only trust a committed navigation. onNavigationStateChange also
-              // fires at navigation START (loading=true), before the request is
-              // allowed, so a provisional load must not update the trusted URL.
+              // Trust is cleared at every navigation start (onLoadStart, above)
+              // and only re-established here on a committed load. Skipping the
+              // in-progress (loading) events means the trusted URL is set only
+              // once the new document has actually loaded — never a provisional
+              // or still-loading external page.
               if (!state.loading) onNavigate(state.url)
             }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}

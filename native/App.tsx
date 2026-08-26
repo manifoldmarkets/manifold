@@ -729,7 +729,9 @@ const App = () => {
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
           onNavigate={(url) => {
-            webviewUrl.current = url
+            // null (navigation start) leaves an empty string, which isManifoldUrl
+            // treats as untrusted until the next load commits.
+            webviewUrl.current = url ?? ''
           }}
         />
       </SafeAreaView>

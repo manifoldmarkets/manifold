@@ -216,14 +216,18 @@ export function AuthProvider(props: {
               return null
             }),
           ])
-          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
-          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
-
           // The fetches above can outlive the user they were for: a sign-out or
           // an account switch may have landed while they were in flight. If so,
-          // this callback is stale — committing it would push the old user back
-          // to the native app (via onAuthLoad -> 'users'), so drop it.
+          // this callback is stale — drop it BEFORE any global side effect.
+          // updateSupabaseAuth in particular installs a token into the shared
+          // Supabase REST/realtime client, so a stale callback would otherwise
+          // leave Supabase authenticated as the old user while Firebase/UI are
+          // the new one. Committing it would also push the old user back to the
+          // native app (via onAuthLoad -> 'users').
           if (auth.currentUser?.uid !== fbUser.uid) return
+
+          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
+          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
           if (!user || !privateUser) {
             const deviceToken = ensureDeviceToken()
