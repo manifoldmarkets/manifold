@@ -407,10 +407,30 @@ describe('the published list', () => {
   })
 
   it('cites public weights for every open model and none for closed ones', () => {
+    // Assert on `weights` itself. The previous form interpolated the slug and
+    // matched the pair against /.+\/.+/ — which the slug's OWN slash satisfies,
+    // so it passed for an open entry citing nothing at all. Three comments in
+    // this package describe it as the invariant that keeps an unevidenced open
+    // call out of the list, so it needs to actually check.
     for (const [slug, c] of Object.entries(OPEN_WEIGHT_MODELS)) {
-      if (c.open) expect(`${slug}:${c.weights ?? ''}`).toMatch(/.+\/.+/)
-      else expect(c.weights).toBeUndefined()
+      if (c.open) {
+        expect([slug, typeof c.weights]).toEqual([slug, 'string'])
+        expect([slug, (c.weights ?? '').trim()]).not.toEqual([slug, ''])
+        // owner/repo, and the owner is not the empty string
+        expect([slug, c.weights]).toEqual([slug, expect.stringMatching(/^[^/\s]+\/[^/\s]+$/)])
+      } else {
+        expect([slug, c.weights]).toEqual([slug, undefined])
+      }
     }
+  })
+
+  it('that invariant actually fails on an unevidenced open entry', () => {
+    // Guards the guard: if this ever passes, the assertion above went vacuous
+    // again.
+    const bad = { open: true } as (typeof OPEN_WEIGHT_MODELS)[string]
+    expect(() =>
+      expect(['x/y', typeof bad.weights]).toEqual(['x/y', 'string'])
+    ).toThrow()
   })
 })
 

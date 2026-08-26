@@ -174,6 +174,41 @@ export const proposedRepoMatchesModel = (
   weightsRepoNameOverlap(permaslug, repo) >= WEIGHTS_REPO_MATCH_THRESHOLD
 
 /**
+ * Publisher -> the HuggingFace org(s) they actually publish weights under.
+ *
+ * An explicit map rather than a prefix rule, and that is the whole point.
+ * Prefix matching looks like it captures the pattern — `z-ai` publishes as
+ * `zai-org`, `cohere` as `CohereLabs` — but "org name starts with the
+ * publisher's name" is a namespace ANYONE can enter. HuggingFace org names are
+ * first-come, so `openai-community` already satisfies it for every `openai/*`
+ * model, and `anthropic-fan` or `qwenfake` would too. That is the same
+ * first-come-name-grab the fabricated `brokenshards/ox-alpha` repo exploited,
+ * just one level up, and it is not worth reintroducing to save a map entry.
+ *
+ * Measured against the 175 open classifications carrying a weights repo: 86
+ * match their publisher's org exactly and 36 need one of the 12 decorations
+ * below. Nothing else is required, so the map is small and stays checkable.
+ */
+const PUBLISHER_HF_ORGS: Record<string, string[]> = {
+  ai21: ['ai21labs'],
+  bytedance: ['bytedanceseed'],
+  cohere: ['coherelabs', 'cohereforai'],
+  deepseek: ['deepseekai'],
+  liquid: ['liquidai'],
+  meituan: ['meituanlongcat'],
+  meta: ['metamodels', 'metallama'],
+  minimax: ['minimaxai'],
+  perplexity: ['perplexityai'],
+  stepfun: ['stepfunai'],
+  xai: ['xaiorg'],
+  xiaomi: ['xiaomimimo'],
+  zai: ['zaiorg'],
+}
+
+const normalizeOrg = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+/**
  * Is `repo` owned by the model's own publisher?
  *
  * The name check above asks whether a repo is named like the model. That is
@@ -192,27 +227,25 @@ export const proposedRepoMatchesModel = (
  * `jondurbin/airoboros-gpt-3.5-turbo-100k-7b` for `openai/gpt-3.5-turbo`, a
  * stranger's INT4 quant for `~z-ai/glm-latest`.
  *
- * Matching is deliberately loose about suffixes because HuggingFace org names
- * decorate the publisher's name rather than replace it: `z-ai` publishes as
- * `zai-org`, `cohere` as `CohereLabs`, `minimax` as `MiniMaxAI`, `x-ai` as
- * `xai-org`, `ai21` as `ai21labs`. Prefix agreement in either direction covers
- * every such pair observed across the 299 audited classifications.
+ * Exact match or a listed decoration, nothing fuzzier. See PUBLISHER_HF_ORGS
+ * for why a prefix rule is not safe here.
  *
- * A false result must NOT be read as "closed". Cross-publisher releases are
- * real — `venice/uncensored`'s weights live in `cognitivecomputations/` by
- * arrangement — so this gates whether a repo may be RECOMMENDED automatically,
- * and a failure sends the model to a human rather than deciding against it.
+ * An unlisted publisher returns false, which costs a human one look rather than
+ * admitting a namespace squatter — and a false result must NOT be read as
+ * "closed" in any case. Cross-publisher releases are real: `venice/uncensored`
+ * ships from `cognitivecomputations/` by arrangement and is deliberately absent
+ * from the map. This gates whether a repo may be RECOMMENDED automatically; a
+ * failure sends the model to a human rather than deciding against it.
  */
 export const repoOwnerMatchesPublisher = (
   permaslug: string,
   repo: string
 ): boolean => {
-  const normalize = (value: string) =>
-    value.toLowerCase().replace(/[^a-z0-9]/g, '')
   // `~` prefixes OpenRouter's floating aliases (`~z-ai/glm-latest`) and is not
   // part of the publisher's name.
-  const publisher = normalize(permaslug.replace(/^~/, '').split('/')[0] ?? '')
-  const owner = normalize(repo.split('/')[0] ?? '')
+  const publisher = normalizeOrg(permaslug.replace(/^~/, '').split('/')[0] ?? '')
+  const owner = normalizeOrg(repo.split('/')[0] ?? '')
   if (!publisher || !owner) return false
-  return owner.startsWith(publisher) || publisher.startsWith(owner)
+  if (owner === publisher) return true
+  return (PUBLISHER_HF_ORGS[publisher] ?? []).includes(owner)
 }

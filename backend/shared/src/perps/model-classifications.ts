@@ -80,11 +80,20 @@ export const resolveModelClassifications = async (
       else pendingUnclassified.push(slug)
       continue
     }
-    // The seed list is the published methodology and is version-stamped onto
-    // every point the oracle writes, so an override of a seeded model would
-    // make that stamp a lie. `setModelClassification` refuses to write one;
-    // this enforces the same invariant on read, which also covers the rows
-    // `upsertClassification` wrote automatically before the seed caught up.
+    // The seed list is the published methodology, so an override of a seeded
+    // model would change what the index means without going through the file
+    // where the reasoning is recorded. `setModelClassification` refuses to
+    // write one; this enforces the same invariant on read, which also covers
+    // the rows `upsertClassification` wrote automatically before the seed
+    // caught up.
+    //
+    // NB: `OPEN_WEIGHT_LIST_VERSION` is NOT stored with the points. It goes
+    // into the insert log line only — `oracle_prices` is
+    // (feed_id, ts, price, source_ts, published_at). So there is no per-point
+    // record of which list version priced it, and a published point cannot be
+    // attributed to a version after the fact. Do not reason as if there were
+    // one; it matters most when deciding whether a corrected classification
+    // should cause historical points to be recomputed.
     if (OPEN_WEIGHT_MODELS[slug]) continue
     classifications[slug] = row.open
       ? { open: true, weights: row.weights ?? undefined }

@@ -95,6 +95,40 @@ const describesOpenness = (description: string | null) => {
   return OPENNESS_PHRASES.find((phrase) => haystack.includes(phrase)) ?? null
 }
 
+/**
+ * Did this verification fail because the repo is genuinely not public, or
+ * because we could not reach HuggingFace?
+ *
+ * The distinction is the difference between a finding and noise. A network
+ * blip, a 5xx, or a rate-limit answer produces `confirmed: false` exactly like
+ * a withdrawn repo does — and reporting those as "no longer verifies" would
+ * put every open model in the warn on a bad night, which is how an alert stops
+ * being read. Only reasons that assert something about the repo count as rot.
+ */
+const isTransportFailure = (reason: string) =>
+  reason.startsWith('fetch failed') ||
+  /not public: (?:5\d\d|429|408)/.test(reason)
+
+/**
+ * Verify without letting one bad response end the night.
+ *
+ * `verifyHuggingFaceWeights` catches fetch rejections but not a malformed body
+ * — `await res.json()` throws on a truncated or HTML response, which HF serves
+ * during incidents. Unwrapped, that propagated out of the loop and discarded
+ * every finding gathered so far, including ones already confirmed.
+ */
+const safeVerify = async (repo: string) => {
+  try {
+    return await verifyHuggingFaceWeights(repo)
+  } catch (err) {
+    return {
+      confirmed: false as const,
+      repo,
+      reason: `fetch failed: ${err}`,
+    }
+  }
+}
+
 export const updateClassificationAudit = async () => {
   try {
     await runClassificationAudit()
@@ -103,7 +137,7 @@ export const updateClassificationAudit = async () => {
   }
 }
 
-const runClassificationAudit = async () => {
+export const runClassificationAudit = async () => {
   const pg = createSupabaseDirectClient()
   const { classifications } = await resolveModelClassifications(pg)
   const catalog = await fetchOpenRouterCatalog()
@@ -115,6 +149,7 @@ const runClassificationAudit = async () => {
   const contradicted: string[] = []
   let openChecked = 0
   let closedChecked = 0
+  let unreachable = 0
 
   for (const [permaslug, verdict] of Object.entries(classifications)) {
     const seeded = !!OPEN_WEIGHT_MODELS[permaslug]
@@ -129,11 +164,14 @@ const runClassificationAudit = async () => {
         rot.push(`${permaslug} [${origin}] — open with no weights repo cited`)
         continue
       }
-      const result = await verifyHuggingFaceWeights(verdict.weights)
-      if (!result.confirmed)
-        rot.push(
-          `${permaslug} [${origin}] — ${verdict.weights} no longer verifies: ${result.reason}`
-        )
+      const result = await safeVerify(verdict.weights)
+      if (!result.confirmed) {
+        if (isTransportFailure(result.reason)) unreachable++
+        else
+          rot.push(
+            `${permaslug} [${origin}] — ${verdict.weights} no longer verifies: ${result.reason}`
+          )
+      }
       continue
     }
 
@@ -145,7 +183,7 @@ const runClassificationAudit = async () => {
     // finding if the repo actually carries public weights — a declared but
     // empty or withdrawn repo agrees with us, it does not contradict us.
     if (entry.huggingFaceId) {
-      const result = await verifyHuggingFaceWeights(entry.huggingFaceId)
+      const result = await safeVerify(entry.huggingFaceId)
       if (result.confirmed) {
         contradicted.push(
           `${permaslug} [${origin}] — we say closed, OpenRouter declares ` +
@@ -188,8 +226,19 @@ const runClassificationAudit = async () => {
         `OpenRouter metadata — review at /admin/model-classifications:\n  ` +
         contradicted.join('\n  ')
     )
+  // Said out loud rather than folded into the findings: a night where most
+  // repos were unreachable is a night that proved nothing, and "no
+  // disagreements" would read as a clean bill of health.
+  if (unreachable > 0)
+    log.warn(
+      `[classification-audit] ${unreachable}/${openChecked} open verdict(s) could not be ` +
+        `re-checked (HuggingFace unreachable) — not counted as rot`
+    )
   if (rot.length === 0 && contradicted.length === 0)
-    log(`[classification-audit] no disagreements`)
+    log(
+      `[classification-audit] no disagreements` +
+        (unreachable > 0 ? ` (${unreachable} unverifiable)` : '')
+    )
 
-  return { rot, contradicted, openChecked, closedChecked }
+  return { rot, contradicted, openChecked, closedChecked, unreachable }
 }

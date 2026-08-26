@@ -132,10 +132,14 @@ export const setModelClassification: APIHandler<
   const permaslug = basePermaslug(body.permaslug.trim())
   const { open, weights } = body
 
-  // The seed list is the published methodology and is version-stamped on every
-  // point the oracle writes. Silently overriding an entry from an admin form
-  // would make the stamp a lie, so a genuine reclassification has to go
-  // through the file — which is also where the reasoning gets recorded.
+  // The seed list is the published methodology. Silently overriding an entry
+  // from an admin form would change what the index means, so a genuine
+  // reclassification has to go through the file — which is also where the
+  // reasoning gets recorded.
+  //
+  // (An earlier comment here said the version is "stamped on every point the
+  // oracle writes". It is not: the version reaches the insert LOG line only,
+  // and `oracle_prices` has no version column.)
   if (OPEN_WEIGHT_MODELS[permaslug])
     throw new APIError(
       400,

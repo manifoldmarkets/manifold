@@ -271,12 +271,18 @@ export function createJobs(jobSet: SchedulerJobSet) {
     // Daily jobs:
     createJob(
       'classification-audit',
-      // 03:40 LA — off the 6-hourly classifier cycle above so the two never
-      // contend for the HuggingFace rate limit, and inside the same quiet
-      // window that schedule was chosen for. Daily rather than hourly because
-      // it re-verifies every published classification against a third-party
-      // API and nothing it looks for changes on an hourly timescale.
-      '0 40 3 * * *',
+      // 06:40 LA. NOT 03:40, which an earlier revision picked while claiming it
+      // sat in the "same quiet window" as the schedule above — it is the exact
+      // opposite. That comment defines the window to AVOID as 00:00-04:30 LA
+      // (the 08:00 UTC API restart and the ~10:00-11:30 UTC scheduler memory
+      // pressure, mapped through both DST offsets), which 03:40 is inside.
+      //
+      // 06:40 clears it in PDT and PST alike, and sits between the 05:15 and
+      // 11:15 firings of the classifier above so the two never contend for the
+      // HuggingFace rate limit. Daily rather than hourly because it re-verifies
+      // every published classification against a third-party API and nothing it
+      // looks for changes on an hourly timescale.
+      '0 40 6 * * *',
       updateClassificationAudit
     ),
     createJob(

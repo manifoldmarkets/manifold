@@ -1,8 +1,13 @@
 # Open-weight classification queue — 2026-08-21 sweep
 
-120 models had accumulated in the review queue. 111 are now adjudicated
-(1 by admin through the tool, 110 by `backend/scripts/classify-pending-models.ts`).
-9 are deliberately left pending, because they have no truthful boolean.
+120 models had accumulated in the review queue. Verdicts were derived for 110
+of them (below); **they were never applied** — see "Still open". Only 1 was
+actually adjudicated, by an admin through the tool. 9 are deliberately left
+pending, because they have no truthful boolean.
+
+> ⚠️ This section is a 2026-08-21 research record, not a description of live
+> state. The script it refers to was never committed and does not exist in any
+> git ref.
 
 ## Method used for the 110
 
@@ -99,7 +104,7 @@ against prod, and a standing false alarm is how an alert gets ignored.
 
 ### New — the audit that did not exist
 
-`update-classification-audit.ts`, nightly at 03:40 LA, plus
+`update-classification-audit.ts`, nightly at 06:40 LA, plus
 `backend/scripts/run-classification-audit.ts` to run it on demand. Read-only;
 it raises flags, never writes a verdict.
 
@@ -118,16 +123,23 @@ to closed, because cross-publisher releases are real.
 
 ## Still open
 
-- **120 pending classifications are still unapplied.**
-  `backend/scripts/classify-pending-models.ts --apply` has never been run — the
-  run was blocked by a permission prompt. Dry run was clean.
+- **~120 pending classifications are still unapplied.** There is NO script for
+  this in the repo. An earlier session wrote `classify-pending-models.ts` with
+  110 verdicts embedded, but it was never committed and is not on disk or in any
+  git ref — do not go looking for it, and do not assume its verdicts are still
+  current, because the pending set has churned since. Clearing the queue means
+  re-deriving the verdicts and either clicking them through
+  `/admin/model-classifications` or writing a fresh one-off script.
 - **Index impact of the four corrections is unquantified.** Needs the rankings
   dataset, i.e. `OPENROUTER_API_KEY` from Secret Manager.
 - **Whether to recompute historical points.** The four errors predate the list
   cut, so this is a correction rather than a forward-dated reclassification.
   That is a decision about what the market settled on, not a technical one.
-- **Deploy.** The audit job is scheduler-side; it needs a `scheduler-perps`
-  deploy to start running.
+- **Deploy: `prod main`, NOT `prod perps`.** `classification-audit` is not in
+  `PERP_JOB_NAMES` (which is only `update-perps`, `update-oracle-feeds`,
+  `update-openrouter-share`, `update-trump-approval`), so it runs on the `main`
+  scheduler instance — same as `update-model-classifications`. Deploying
+  `perps` would leave the audit permanently un-run while looking shipped.
 
 ---
 
@@ -186,9 +198,10 @@ nightly watcher can *never* auto-confirm a Llama or Gemma release, and every
 one will land in the review queue on a 48-hour clock — which is a
 manufactured outage waiting for the next Llama launch.
 
-`classify-pending-models.ts` uses its own verifier that accepts `manual` and
-records the gating value in the evidence, so it matches the list it writes
-into. That is a local fix for one script, not a resolution.
+The (uncommitted, now-lost) `classify-pending-models.ts` used its own verifier
+that accepted `manual`, so it matched the list it wrote into. That was a local
+fix for one script, not a resolution — the real one landed in
+`isPubliclyGettable`, above.
 
 **Decide one policy and apply it in both places.** If `manual` is open, widen
 `isPubliclyGettable` and let the watcher auto-classify Llama/Gemma. If it is

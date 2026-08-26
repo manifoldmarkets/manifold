@@ -117,6 +117,25 @@ export const OPEN_WEIGHT_WINDOW_DAYS = 7
 export const UNCLASSIFIED_TOKEN_SHARE_CAP = 0.01
 
 /**
+ * How much of the classified token pool may sit in router/alias slugs before
+ * the index refuses to publish, as composite tokens over classified tokens.
+ *
+ * These are excluded from both sides by design (see isCompositeSlug), and
+ * unlike an unclassified model nothing else bounds them — no grace clock, no
+ * adjudication, no alert. Without a cap a router that grew into real volume
+ * would quietly shrink the denominator forever and the published number would
+ * stop describing the population the methodology names.
+ *
+ * NEEDS CALIBRATION, like UNCLASSIFIED_TOKEN_SHARE_CAP. No router or alias has
+ * ever entered the ranked window, so there is no measured base rate to size
+ * this against; 2% is chosen only as "clearly past a rounding decision" and
+ * should be revisited the first time `compositeSlugs` is non-empty on a real
+ * tick. It is deliberately looser than the unclassified cap because exclusion
+ * here is the CORRECT treatment rather than a temporary gap awaiting a human.
+ */
+export const COMPOSITE_TOKEN_SHARE_CAP = 0.02
+
+/**
  * How long a below-cap unknown may keep publishing before the index halts on
  * it anyway, measured from when the catalog watcher first saw the model.
  *
@@ -1027,6 +1046,8 @@ export type OpenWeightPublicationOptions = {
   expectedDays?: number
   /** Override the cap; 0 restores the old halt-on-any-unknown behaviour. */
   unclassifiedShareCap?: number
+  /** Bound on router/alias tokens; defaults to COMPOSITE_TOKEN_SHARE_CAP. */
+  compositeShareCap?: number
   /**
    * Unknowns that have been unclassified for longer than the operator's grace
    * window. Present here they halt the index regardless of how small they are:
@@ -1053,6 +1074,7 @@ export const validateOpenWeightPublication = (
   const {
     expectedDays = OPEN_WEIGHT_WINDOW_DAYS,
     unclassifiedShareCap = UNCLASSIFIED_TOKEN_SHARE_CAP,
+    compositeShareCap = COMPOSITE_TOKEN_SHARE_CAP,
     expiredUnclassified = [],
   } = options
 
@@ -1098,6 +1120,28 @@ export const validateOpenWeightPublication = (
     result.share > 100
   )
     return { ok: false, reason: `invalid share ${result.share}` }
+
+  // Composite slugs leave the denominator without ever being adjudicated, so
+  // unlike an unclassified model nothing else bounds them: no grace clock, no
+  // U/C cap. At small volume that is the intended trade (see isCompositeSlug).
+  // Past this cap it stops being a rounding decision — the index would be
+  // reporting a share of a materially different population than the
+  // methodology claims — so it halts and someone resolves the alias through
+  // `alias_target` or reconsiders the router.
+  if (
+    result.classifiedTokens > 0 &&
+    result.compositeTokens / result.classifiedTokens > compositeShareCap
+  )
+    return {
+      ok: false,
+      reason:
+        `composite (router/alias) slugs are ${(
+          (result.compositeTokens / result.classifiedTokens) *
+          100
+        ).toFixed(2)}% of classified tokens, over the ${(
+          compositeShareCap * 100
+        ).toFixed(2)}% cap: ${result.compositeSlugs.join(', ')}`,
+    }
 
   if (result.unclassified.length === 0) return { ok: true, share: result.share }
 
