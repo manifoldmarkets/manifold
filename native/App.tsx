@@ -199,10 +199,17 @@ const App = () => {
     pendingAuthPosts.current.forEach((timer) => clearTimeout(timer))
     pendingAuthPosts.current = []
   }
+  // Whether a wanted handoff post was dropped because the WebView was on an
+  // untrusted URL at fire time. Trust is cleared for the whole document load,
+  // so on a slow connection every timer below can fire inside that window —
+  // this flag lets the next committed Manifold page re-arm the handoff (see
+  // onNavigate) instead of silently stranding the web client logged out.
+  const authPostDropped = useRef(false)
 
   // Sends the saved user to the web client to make the log in process faster
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
     cancelPendingAuthPosts()
+    authPostDropped.current = false
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
     const timeouts = [100, 500, 1000, 3000]
@@ -211,7 +218,10 @@ const App = () => {
         // Stale: native signed out or switched accounts since this was queued.
         if (fbUserRef.current?.uid !== user.uid) return
         // Never post credentials into a third-party page.
-        if (!isManifoldUrl(webviewUrl.current)) return
+        if (!isManifoldUrl(webviewUrl.current)) {
+          authPostDropped.current = true
+          return
+        }
         communicateWithWebview('nativeFbUser', user)
       }, timeout)
     )
@@ -622,6 +632,7 @@ const App = () => {
   const signOutUsers = async (errorMessage: string) => {
     authGeneration.current += 1
     cancelPendingAuthPosts()
+    authPostDropped.current = false
     try {
       await auth.signOut()
     } catch (err) {
@@ -732,6 +743,18 @@ const App = () => {
             // null (navigation start) leaves an empty string, which isManifoldUrl
             // treats as untrusted until the next load commits.
             webviewUrl.current = url ?? ''
+            // A slow initial load can outlast the whole retry ladder while
+            // trust is cleared; if that dropped a wanted post, re-arm the
+            // handoff now that one of our pages has committed. The web side
+            // no-ops when the user already matches, so re-sends are idempotent.
+            if (
+              url &&
+              authPostDropped.current &&
+              fbUserRef.current &&
+              isManifoldUrl(url)
+            ) {
+              sendWebviewAuthInfo(fbUserRef.current)
+            }
           }}
         />
       </SafeAreaView>
