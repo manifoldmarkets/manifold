@@ -174,10 +174,16 @@ const App = () => {
   // the WebView to iDenfy's hosted page (boosts go to Stripe), and
   // WebView.postMessage dispatches into whichever document is loaded — so the
   // credential handoff below must only ever be posted into our own pages.
+  // Set only from committed navigations (see CustomWebview's onNavigate), never
+  // from a provisional one — a navigation START fires before the request is even
+  // allowed, so an external page could otherwise be marked trusted while it is
+  // still the active document.
   const webviewUrl = useRef(baseUri)
+  // Full-origin match (scheme + host + port), not just host: a page served over
+  // http://manifold.markets or a look-alike subdomain must not read as ours.
   const isManifoldUrl = (url: string) => {
     try {
-      return new URL(url).host === new URL(baseUri).host
+      return new URL(url).origin === new URL(baseUri).origin
     } catch {
       return false
     }
@@ -430,6 +436,10 @@ const App = () => {
 
   const handleMessageFromWebview = async ({ nativeEvent }: any) => {
     const { data } = nativeEvent
+    // The origin of the document that sent this message. Auth-sensitive handlers
+    // gate on it so a third-party page loaded in the WebView (iDenfy, Stripe)
+    // can't drive the credential handoff.
+    const messageUrl = nativeEvent.url as string | undefined
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
     // We handle auth with a custom screen, so if the user sees a login button on the client, we're out of sync
     if (type === 'loginClicked') {
@@ -525,13 +535,16 @@ const App = () => {
           const generation = authGeneration.current
           // We don't actually use the firebase auth for anything right now, but in case we do in the future...
           await setFirebaseUserViaJson(fbUser, app)
-          // A sign-out landed while this echo was being applied. The echo must
-          // not win: the re-sign above re-armed the handoff, and persisting the
-          // user below would resurrect the credential the sign-out just cleared.
+          // A sign-out landed while this echo was being applied, so it is stale.
+          // Don't persist it, and undo the re-sign above — but ONLY if this stale
+          // user is still the current firebase user. If a newer account signed in
+          // during the await, leaving it alone is what keeps a global signOut from
+          // clearing the account the user actually chose.
           if (generation !== authGeneration.current) {
-            await signOutUsers(
-              'Error undoing a users echo that raced a sign-out'
-            )
+            if (auth.currentUser?.uid === fbUser.uid)
+              await signOutUsers(
+                'Error undoing a users echo that raced a sign-out'
+              )
             return
           }
           await storeData('user', fbUser)
@@ -559,7 +572,9 @@ const App = () => {
     } else if (type === 'startedListening') {
       log('Client started listening')
       listeningToNative.current = true
-      if (fbUser) sendWebviewAuthInfo(fbUser)
+      // Only re-hand credentials to a sender that is actually one of our pages.
+      if (fbUser && (!messageUrl || isManifoldUrl(messageUrl)))
+        sendWebviewAuthInfo(fbUser)
       // Deliver any notification that arrived during cold start
       if (pendingNotification.current) {
         const { notification, destination } = pendingNotification.current

@@ -96,7 +96,12 @@ export const CustomWebview = (props: {
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onNavigationStateChange={(state) => onNavigate(state.url)}
+            onNavigationStateChange={(state) => {
+              // Only trust a committed navigation. onNavigationStateChange also
+              // fires at navigation START (loading=true), before the request is
+              // allowed, so a provisional load must not update the trusted URL.
+              if (!state.loading) onNavigate(state.url)
+            }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)
@@ -126,7 +131,12 @@ export const CustomWebview = (props: {
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onNavigationStateChange={(state) => onNavigate(state.url)}
+            onNavigationStateChange={(state) => {
+              // Only trust a committed navigation. onNavigationStateChange also
+              // fires at navigation START (loading=true), before the request is
+              // allowed, so a provisional load must not update the trusted URL.
+              if (!state.loading) onNavigate(state.url)
+            }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)

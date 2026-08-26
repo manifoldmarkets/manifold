@@ -54,14 +54,14 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
   )
   const [version, setVersion] = usePersistentLocalState('', NATIVE_VERSION_KEY)
 
-  // The native app re-sends 'nativeFbUser' on a retry schedule. Applying the
-  // same user twice concurrently makes Firebase fire onIdTokenChanged twice —
-  // a duplicate user load, and for a brand-new account a duplicate createUser —
-  // so coalesce posts for the same user onto the application already in flight.
-  const fbUserHandoff = useRef<{
-    uid: string
-    promise: Promise<unknown>
-  } | null>(null)
+  // The native app re-sends 'nativeFbUser' on a retry schedule, and can send
+  // different users in quick succession (an account switch). setFirebaseUserViaJson
+  // awaits a token refresh before it commits, so running two concurrently is a
+  // race: the slower one can commit last and win, restoring the wrong account.
+  // Serialize every application onto one chain so they commit in arrival order
+  // (the last-arrived user wins) and same-user retries collapse to a no-op once
+  // that user is current.
+  const fbUserHandoffChain = useRef<Promise<unknown>>(Promise.resolve())
 
   // Push quest completion to the streak widget (native only, once per session).
   useNativeQuestSync(privateUser?.id, isNative)
@@ -98,21 +98,16 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
       if (type === 'nativeFbUser') {
         console.log('received nativeFbUser')
         const user = data as FirebaseUser
-        if (auth.currentUser?.email !== user.email) {
-          const inFlight = fbUserHandoff.current
-          if (inFlight?.uid === user.uid) {
-            await inFlight.promise
-          } else {
-            const promise = setFirebaseUserViaJson(user, app, true).finally(
-              () => {
-                if (fbUserHandoff.current?.promise === promise)
-                  fbUserHandoff.current = null
-              }
-            )
-            fbUserHandoff.current = { uid: user.uid, promise }
-            await promise
-          }
+        // Re-check currentUser at execution time (not now): by the time this link
+        // runs, an earlier one may have already made this user current, so the
+        // retry collapses to a no-op.
+        const apply = async () => {
+          if (auth.currentUser?.email === user.email) return
+          await setFirebaseUserViaJson(user, app, true)
         }
+        const next = fbUserHandoffChain.current.then(apply, apply)
+        fbUserHandoffChain.current = next
+        await next
       } else if (type === 'pushNotificationPermissionStatus') {
         const { status } =
           data as MesageTypeMap['pushNotificationPermissionStatus']

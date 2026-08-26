@@ -219,6 +219,12 @@ export function AuthProvider(props: {
           // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
           if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
+          // The fetches above can outlive the user they were for: a sign-out or
+          // an account switch may have landed while they were in flight. If so,
+          // this callback is stale — committing it would push the old user back
+          // to the native app (via onAuthLoad -> 'users'), so drop it.
+          if (auth.currentUser?.uid !== fbUser.uid) return
+
           if (!user || !privateUser) {
             const deviceToken = ensureDeviceToken()
             const adminToken = getAdminToken()
@@ -229,6 +235,7 @@ export function AuthProvider(props: {
               visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
 
+            if (auth.currentUser?.uid !== fbUser.uid) return
             onAuthLoad(fbUser, newUser.user, newUser.privateUser)
           } else {
             onAuthLoad(fbUser, user, privateUser)
