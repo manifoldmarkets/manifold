@@ -16,7 +16,7 @@ export default ({ config }) => {
       newArchEnabled: true,
       jsEngine: 'hermes',
       version: '2.1.0',
-      orientation: 'portrait',
+      orientation: 'default',
       icon: './assets/logo.png',
       userInterfaceStyle: 'light',
       plugins: [

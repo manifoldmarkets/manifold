@@ -3449,6 +3449,11 @@ expo-notifications@~0.32.12:
     expo-application "~7.0.7"
     expo-constants "~18.0.9"
 
+expo-screen-orientation@~9.0.9:
+  version "9.0.9"
+  resolved "https://registry.yarnpkg.com/expo-screen-orientation/-/expo-screen-orientation-9.0.9.tgz#74ed82582006f72106b7165512cdfc01367433ba"
+  integrity sha512-UTU745XoqBvQJkZ820GTfMuOxlkppYqaeQ+x0wdu44cyrZiZugqe+egFF2+zC+SaxgAltU5EuO8GIj9xSF+YMw==
+
 expo-server@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/expo-server/-/expo-server-1.0.1.tgz"
