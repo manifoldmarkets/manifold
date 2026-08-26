@@ -24,6 +24,7 @@ export default ({ config }) => {
       plugins: [
         './plugins/withAndroidVerifiedLinksWorkaround',
         './plugins/withAndroidPlayAdvisoryFixes',
+        './plugins/withAndroidCameraForKyc',
         'expo-font',
         [
           'expo-notifications',
