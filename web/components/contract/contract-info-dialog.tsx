@@ -25,6 +25,7 @@ import {
 } from 'common/perps/funding'
 import {
   formatFeePct,
+  formatFeePctApprox,
   formatPrice,
   inferPriceDecimals,
   perpFeeScheduleSummary,
@@ -623,6 +624,8 @@ function PerpStatsRows(props: { contract: PerpContract }) {
   const fourTimesPoolFee = formatFeePct(fees.fourTimesPoolBps)
   const apiPoolSizedFee = formatFeePct(fees.apiPoolSizedBps)
   const apiFourTimesPoolFee = formatFeePct(fees.apiFourTimesPoolBps)
+  const poolSizedApprox = formatFeePctApprox(fees.poolSizedBps)
+  const apiPoolSizedApprox = formatFeePctApprox(fees.apiPoolSizedBps)
   // The size term stacks on whichever base the CHANNEL selected, so the web
   // figures understate an API-key open whenever the API rate is higher.
   const apiSizeNote = fees.apiDiffers
@@ -753,8 +756,8 @@ function PerpStatsRows(props: { contract: PerpContract }) {
                 ·{' '}
                 {takerFeeImpact > 0
                   ? fees.apiDiffers
-                    ? `pool-sized: ~${poolSizedFee} web / ~${apiPoolSizedFee} API`
-                    : `pool-sized entry pays ~${poolSizedFee}`
+                    ? `pool-sized: ${poolSizedApprox} web / ${apiPoolSizedApprox} API`
+                    : `pool-sized entry pays ${poolSizedApprox}`
                   : 'flat fee, size does not matter'}
               </span>
             </span>
@@ -986,9 +989,9 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
       setJustSaved(res.takerFeeBps)
       setInput('')
       toast.success(
-        `Taker fee is now ${res.takerFeeBps} bps (${(
-          res.takerFeeBps / 100
-        ).toFixed(2)}%) to open`
+        `Taker fee is now ${res.takerFeeBps} bps (${formatFeePct(
+          res.takerFeeBps
+        )}) to open`
       )
     } catch (err) {
       toast.error(
@@ -1002,7 +1005,7 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
   return (
     <Row className="flex-wrap items-center gap-1.5">
       <span className="tabular-nums">
-        {current} bps ({(current / 100).toFixed(2)}%)
+        {current} bps ({formatFeePct(current)})
       </span>
       <input
         type="number"
@@ -1065,9 +1068,9 @@ function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
       setInput('')
       toast.success(
         res.effectiveTakerFeeApiBps === parsed
-          ? `API taker fee is now ${parsed} bps (${(parsed / 100).toFixed(
-              2
-            )}%) to open`
+          ? `API taker fee is now ${parsed} bps (${formatFeePct(
+              parsed
+            )}) to open`
           : `Set to ${parsed} bps, but the ${base} bps web base is higher — API opens still pay ${res.effectiveTakerFeeApiBps} bps`
       )
     } catch (err) {
@@ -1082,7 +1085,7 @@ function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
   return (
     <Row className="flex-wrap items-center gap-1.5">
       <span className="tabular-nums">
-        {current} bps ({(current / 100).toFixed(2)}%)
+        {current} bps ({formatFeePct(current)})
       </span>
       {contract.takerFeeApiBps === undefined && (
         <span className="text-ink-500 text-xs">(unset — pays web base)</span>
@@ -1159,14 +1162,19 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
       setInput('')
       // The response's base, not the possibly-stale prop's — the base may
       // have just been edited in the sibling input.
-      const poolSizedPct = (res.takerFeeBps + res.takerFeeImpact / 3) / 100
+      // Read the shared summary rather than restating base + impact/3 here:
+      // duplicated market math is exactly how the two reader surfaces drifted.
+      const { poolSizedBps } = perpFeeScheduleSummary({
+        takerFeeBps: res.takerFeeBps,
+        takerFeeImpact: res.takerFeeImpact,
+      })
       toast.success(
         res.takerFeeImpact > 0
           ? `Fee size impact is now ${
               res.takerFeeImpact
-            } — a pool-sized position pays ${poolSizedPct.toFixed(
-              2
-            )}% effective`
+            } — a pool-sized position pays ${formatFeePct(
+              poolSizedBps
+            )} effective`
           : 'Fee size impact is off — the taker fee is flat at the base'
       )
     } catch (err) {

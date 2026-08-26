@@ -1,5 +1,6 @@
 import {
   formatFeePct,
+  formatFeePctApprox,
   perpFeeScheduleSummary,
   PERP_FEE_EXAMPLE_POOL_SHARES,
 } from './format'
@@ -47,6 +48,22 @@ describe('formatFeePct', () => {
   it('keeps large rates whole', () => {
     expect(formatFeePct(1500)).toBe('15%')
     expect(formatFeePct(10_000)).toBe('100%')
+  })
+})
+
+describe('formatFeePctApprox', () => {
+  it('marks a normal figure as approximate', () => {
+    expect(formatFeePctApprox(13.333333333333332)).toBe('~0.13%')
+    expect(formatFeePctApprox(490)).toBe('~4.9%')
+    expect(formatFeePctApprox(0)).toBe('~0%')
+  })
+
+  it('never doubles the hedge on an inequality', () => {
+    // The bug: callers wrote `~${formatFeePct(x)}` and got "~<0.01%".
+    expect(formatFeePct(1 / 3)).toBe('<0.01%')
+    expect(formatFeePctApprox(1 / 3)).toBe('<0.01%')
+    expect(formatFeePctApprox(0.4)).toBe('<0.01%')
+    expect(formatFeePctApprox(1 / 3)).not.toContain('~')
   })
 })
 

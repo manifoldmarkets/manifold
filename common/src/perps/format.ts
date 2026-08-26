@@ -70,6 +70,18 @@ export const formatFeePct = (bps: number) => {
   return `${Math.round(pct)}%`
 }
 
+/**
+ * formatFeePct for a slot that wants to mark the figure as approximate.
+ * formatFeePct already returns an INEQUALITY below display precision
+ * ("<0.01%"), which states its own imprecision — prefixing "~" there produced
+ * the malformed "~<0.01%". Callers use this instead of writing the tilde (or
+ * the word "about") themselves, so no surface has to remember the case.
+ */
+export const formatFeePctApprox = (bps: number) => {
+  const pct = formatFeePct(bps)
+  return pct.startsWith('<') ? pct : `~${pct}`
+}
+
 /** Pool shares the reader-facing fee examples are worked at. A pool-sized
  * entry is the intuitive unit ("as big as the market backing it"); 4x is the
  * calibration reference the impact default was chosen against (see

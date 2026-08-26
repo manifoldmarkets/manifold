@@ -1,7 +1,11 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
-import { formatFeePct, perpFeeScheduleSummary } from 'common/perps/format'
+import {
+  formatFeePct,
+  formatFeePctApprox,
+  perpFeeScheduleSummary,
+} from 'common/perps/format'
 import { formatNumber } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -167,16 +171,16 @@ function PerpFeesItem(props: { contract: PerpContract }) {
       {hasSizeTerm ? (
         <>
           Large positions pay more, like price impact on an exchange: one the
-          size of this market's whole backing pool pays about{' '}
-          {formatFeePct(poolSizedBps)}, and one four times the pool about{' '}
-          {formatFeePct(fourTimesPoolBps)}.{' '}
+          size of this market's whole backing pool pays{' '}
+          {formatFeePctApprox(poolSizedBps)}, and one four times the pool{' '}
+          {formatFeePctApprox(fourTimesPoolBps)}.{' '}
           {/* The size term stacks on whichever base the CHANNEL selected, so
               the web figures understate an API open — on BTC at base 10 / API
               30 / impact 10 a pool-sized API entry pays 0.33%, not 0.13%. */}
           {apiDiffers && (
             <>
-              Through the API those are {formatFeePct(apiPoolSizedBps)} and{' '}
-              {formatFeePct(apiFourTimesPoolBps)}.{' '}
+              Through the API those are {formatFeePctApprox(apiPoolSizedBps)}{' '}
+              and {formatFeePctApprox(apiFourTimesPoolBps)}.{' '}
             </>
           )}
           Small positions pay just the base rate.{' '}
