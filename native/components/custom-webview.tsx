@@ -34,6 +34,9 @@ export const CustomWebview = (props: {
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
+  // Reports the URL the WebView navigates to (including third-party pages such
+  // as iDenfy), so the app can avoid posting credentials into them.
+  onNavigate: (url: string) => void
   display: boolean
 }) => {
   const {
@@ -43,6 +46,7 @@ export const CustomWebview = (props: {
     setHasLoadedWebView,
     handleMessageFromWebview,
     handleExternalLink,
+    onNavigate,
     display,
   } = props
 
@@ -92,6 +96,7 @@ export const CustomWebview = (props: {
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
+            onNavigationStateChange={(state) => onNavigate(state.url)}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)
@@ -121,6 +126,7 @@ export const CustomWebview = (props: {
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
+            onNavigationStateChange={(state) => onNavigate(state.url)}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)

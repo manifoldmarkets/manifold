@@ -11,13 +11,19 @@ import {
   setIsNativeOld,
 } from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { createContext, useContext, useEffect } from 'react'
+import { createContext, useContext, useEffect, useRef } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'client-common/hooks/use-event'
 import { auth } from 'web/lib/firebase/users'
 import { User as FirebaseUser } from 'firebase/auth'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
+import {
+  IS_NATIVE_V2_KEY,
+  MesageTypeMap,
+  NATIVE_PLATFORM_V2_KEY,
+  NATIVE_VERSION_KEY,
+  nativeToWebMessageType,
+} from 'common/native-message'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -38,12 +44,24 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
   const { children } = props
   const router = useRouter()
   const privateUser = usePrivateUser()
-  const [isNative, setIsNative] = usePersistentLocalState(false, 'is-native-v2')
+  const [isNative, setIsNative] = usePersistentLocalState(
+    false,
+    IS_NATIVE_V2_KEY
+  )
   const [platform, setPlatform] = usePersistentLocalState(
     '',
-    'native-platform-v2'
+    NATIVE_PLATFORM_V2_KEY
   )
-  const [version, setVersion] = usePersistentLocalState('', 'native-version')
+  const [version, setVersion] = usePersistentLocalState('', NATIVE_VERSION_KEY)
+
+  // The native app re-sends 'nativeFbUser' on a retry schedule. Applying the
+  // same user twice concurrently makes Firebase fire onIdTokenChanged twice —
+  // a duplicate user load, and for a brand-new account a duplicate createUser —
+  // so coalesce posts for the same user onto the application already in flight.
+  const fbUserHandoff = useRef<{
+    uid: string
+    promise: Promise<unknown>
+  } | null>(null)
 
   // Push quest completion to the streak widget (native only, once per session).
   useNativeQuestSync(privateUser?.id, isNative)
@@ -80,8 +98,21 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
       if (type === 'nativeFbUser') {
         console.log('received nativeFbUser')
         const user = data as FirebaseUser
-        if (auth.currentUser?.email !== user.email)
-          await setFirebaseUserViaJson(user, app, true)
+        if (auth.currentUser?.email !== user.email) {
+          const inFlight = fbUserHandoff.current
+          if (inFlight?.uid === user.uid) {
+            await inFlight.promise
+          } else {
+            const promise = setFirebaseUserViaJson(user, app, true).finally(
+              () => {
+                if (fbUserHandoff.current?.promise === promise)
+                  fbUserHandoff.current = null
+              }
+            )
+            fbUserHandoff.current = { uid: user.uid, promise }
+            await promise
+          }
+        }
       } else if (type === 'pushNotificationPermissionStatus') {
         const { status } =
           data as MesageTypeMap['pushNotificationPermissionStatus']

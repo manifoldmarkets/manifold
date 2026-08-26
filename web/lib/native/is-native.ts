@@ -1,4 +1,8 @@
-import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
+import {
+  IS_NATIVE_KEY,
+  NATIVE_INFO_LOCAL_KEYS,
+  PLATFORM_KEY,
+} from 'common/native-message'
 import { PrivateUser } from 'common/user'
 import { uniq } from 'lodash'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
@@ -24,16 +28,24 @@ const getNativeInfo = () => {
   return { isNative: isNative === 'true', platform }
 }
 
-// A bare localStorage.clear() on logout also drops the native flags, which the
-// WebView only re-injects on a full page load. Until then getIsNative() reads
-// false, so postMessageToNative() silently no-ops and firebaseLogin() falls
-// through to signInWithPopup — which Google refuses to serve inside an Android
-// WebView, leaving a login button that does nothing at all.
+// The logout path clears localStorage wholesale, which also drops the native
+// flags. The legacy is-native/native-platform pair mostly survives that anyway
+// (getNativeInfo falls back to sessionStorage, and the WebView re-injects them
+// on every page load), but the v2 keys behind useNativeInfo() live only in
+// localStorage and are re-written only from a ?nativePlatform= query — which an
+// in-app reload of a client-side route doesn't carry. Carry all of them across
+// the clear so the page keeps rendering as native.
 export const clearLocalStoragePreservingNativeInfo = () => {
   if (typeof window === 'undefined') return
   const { isNative, platform } = getNativeInfo()
+  const preserved = NATIVE_INFO_LOCAL_KEYS.map(
+    (key) => [key, safeLocalStorage?.getItem(key) ?? null] as const
+  )
   localStorage.clear()
   if (isNative) setIsNativeOld(true, platform ?? '')
+  preserved.forEach(([key, value]) => {
+    if (value !== null) safeLocalStorage?.setItem(key, value)
+  })
 }
 
 export const setIsNativeOld = (isNative: boolean, platform: string) => {

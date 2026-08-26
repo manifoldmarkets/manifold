@@ -2,15 +2,13 @@ import { User as FirebaseUser } from '@firebase/auth'
 import { AuthPage } from 'components/auth-page'
 import { Splash } from 'components/splash'
 import React, { useEffect } from 'react'
-import WebView from 'react-native-webview'
 
 export const SplashAuth = (props: {
-  webview: React.RefObject<WebView | undefined>
   hasLoadedWebView: boolean
   fbUser: FirebaseUser | null
   isConnected: boolean
 }) => {
-  const { isConnected, hasLoadedWebView, fbUser, webview } = props
+  const { isConnected, hasLoadedWebView, fbUser } = props
 
   useEffect(() => {
     if (!isConnected) {
@@ -23,7 +21,7 @@ export const SplashAuth = (props: {
   }
 
   if (!fbUser) {
-    return <AuthPage webview={webview} />
+    return <AuthPage />
   }
 
   // This shouldn't happen as App.tsx handles this case

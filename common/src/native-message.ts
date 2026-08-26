@@ -63,6 +63,17 @@ export type webToNativeMessageType =
   | 'pinStreakWidget'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
+// localStorage keys behind the web client's useNativeInfo() (written by
+// web/components/native-message-provider.tsx). Listed here so a localStorage
+// wipe on logout can carry them across; keep in sync with that provider.
+export const IS_NATIVE_V2_KEY = 'is-native-v2'
+export const NATIVE_PLATFORM_V2_KEY = 'native-platform-v2'
+export const NATIVE_VERSION_KEY = 'native-version'
+export const NATIVE_INFO_LOCAL_KEYS = [
+  IS_NATIVE_V2_KEY,
+  NATIVE_PLATFORM_V2_KEY,
+  NATIVE_VERSION_KEY,
+]
 
 // Streak snapshot sent to the native app, which mirrors it into a shared App
 // Group container for the home/lock-screen streak widget to read. All times are

@@ -1,4 +1,5 @@
 const {
+  AndroidConfig,
   createRunOncePlugin,
   withAndroidManifest,
 } = require('@expo/config-plugins')
@@ -22,47 +23,53 @@ const OPTIONAL_FEATURES = [
  *
  * Identity verification navigates the webview to iDenfy's hosted page, which
  * captures the ID document and selfie via `navigator.mediaDevices.getUserMedia()`.
- * react-native-webview handles that in `RNCWebChromeClient.onPermissionRequest`
- * by mapping RESOURCE_VIDEO_CAPTURE -> Manifest.permission.CAMERA and calling
- * `requestPermissions`. If the app never declares CAMERA, Android denies it
- * *without showing a dialog*, the webview calls `request.deny()`, and
- * getUserMedia rejects — so the user gets a dead camera and is never prompted.
+ * react-native-webview maps that to the CAMERA runtime permission; if the app
+ * never declares it, Android denies it *without showing a dialog* and the user
+ * gets a dead camera and is never prompted.
  *
  * iOS is unaffected: NSCameraUsageDescription is declared and
  * react-native-webview defaults `mediaCapturePermissionGrantStatus` to prompt.
  *
- * This lives in a config plugin rather than `android.permissions` in
- * app.config.js + a hand-edit for the <uses-feature> tags, so that the whole
- * fix is in one place and survives both the non-clean `expo prebuild` the build
- * scripts run and a `prebuild --clean`.
+ * Kept in one plugin (rather than `android.permissions` + a hand-edit for the
+ * <uses-feature> tags) so the whole fix survives both the non-clean
+ * `expo prebuild` the build scripts run and a `prebuild --clean`.
  *
  * @type {ConfigPlugin}
  */
 const withAndroidCameraForKyc = (config) => {
   return withAndroidManifest(config, (config) => {
-    const { manifest } = config.modResults
+    const androidManifest = config.modResults
+    const { manifest } = androidManifest
 
-    manifest['uses-permission'] = manifest['uses-permission'] || []
-    if (
-      !manifest['uses-permission'].some(
-        (p) => p.$?.['android:name'] === CAMERA_PERMISSION
-      )
-    ) {
-      manifest['uses-permission'].push({
-        $: { 'android:name': CAMERA_PERMISSION },
-      })
-    }
+    AndroidConfig.Permissions.ensurePermission(
+      androidManifest,
+      CAMERA_PERMISSION
+    )
+    // Keep the permission list in a stable order so a clean prebuild and the
+    // checked-in manifest agree.
+    manifest['uses-permission'].sort((a, b) =>
+      String(a.$?.['android:name']).localeCompare(String(b.$?.['android:name']))
+    )
 
-    manifest['uses-feature'] = manifest['uses-feature'] || []
+    const features = manifest['uses-feature'] || []
     for (const name of OPTIONAL_FEATURES) {
-      if (
-        !manifest['uses-feature'].some((f) => f.$?.['android:name'] === name)
-      ) {
-        manifest['uses-feature'].push({
+      if (!features.some((f) => f.$?.['android:name'] === name)) {
+        features.push({
           $: { 'android:name': name, 'android:required': 'false' },
         })
       }
     }
+    // The XML writer emits keys in insertion order; place <uses-feature> right
+    // after <uses-permission> rather than after </application>, so a clean
+    // prebuild produces the same file as the checked-in one.
+    const ordered = {}
+    for (const key of Object.keys(manifest)) {
+      if (key === 'uses-feature') continue
+      ordered[key] = manifest[key]
+      if (key === 'uses-permission') ordered['uses-feature'] = features
+    }
+    if (!ordered['uses-feature']) ordered['uses-feature'] = features
+    androidManifest.manifest = ordered
 
     return config
   })

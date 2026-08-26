@@ -97,9 +97,17 @@ const App = () => {
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  // Auth.currentUser didn't update, so we track the state manually. This used to
-  // run in the render body, which registered a fresh listener — never
-  // unsubscribed — on every single render.
+  // Mirror of fbUser for callbacks that outlive the render they were created in
+  // (the auth handoff timers below): a ref reads the latest value, a closure
+  // reads the value from when it was scheduled.
+  const fbUserRef = useRef<FirebaseUser | null>(fbUser)
+  useEffect(() => {
+    fbUserRef.current = fbUser
+  }, [fbUser])
+  // Bumped on every native sign-out, so async work that started before the
+  // sign-out can tell it has been superseded.
+  const authGeneration = useRef(0)
+  // Auth.currentUser didn't update, so we track the state manually.
   useEffect(
     () => auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null)),
     []
@@ -162,27 +170,57 @@ const App = () => {
     clearData('lastNotificationIds') // no longer used, clear them from local storage
   }, [])
 
+  // The URL the WebView currently has loaded. Identity verification navigates
+  // the WebView to iDenfy's hosted page (boosts go to Stripe), and
+  // WebView.postMessage dispatches into whichever document is loaded — so the
+  // credential handoff below must only ever be posted into our own pages.
+  const webviewUrl = useRef(baseUri)
+  const isManifoldUrl = (url: string) => {
+    try {
+      return new URL(url).host === new URL(baseUri).host
+    } catch {
+      return false
+    }
+  }
+
+  // Pending 'nativeFbUser' posts, kept so a sign-out (or a switch to another
+  // account) can cancel them. A late post would otherwise hand the OLD user back
+  // to the web, which re-signs it in and echoes it to native as 'users' —
+  // undoing the sign-out, and for accounts the web auto-logs-out (banned or
+  // deleted) doing so forever.
+  const pendingAuthPosts = useRef<ReturnType<typeof setTimeout>[]>([])
+  const cancelPendingAuthPosts = () => {
+    pendingAuthPosts.current.forEach((timer) => clearTimeout(timer))
+    pendingAuthPosts.current = []
+  }
+
   // Sends the saved user to the web client to make the log in process faster
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
+    cancelPendingAuthPosts()
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
     const timeouts = [100, 500, 1000, 3000]
-    timeouts.forEach((timeout) => {
+    pendingAuthPosts.current = timeouts.map((timeout) =>
       setTimeout(() => {
+        // Stale: native signed out or switched accounts since this was queued.
+        if (fbUserRef.current?.uid !== user.uid) return
+        // Never post credentials into a third-party page.
+        if (!isManifoldUrl(webviewUrl.current)) return
         communicateWithWebview('nativeFbUser', user)
       }, timeout)
-    })
+    )
   }
 
-  // This handoff is the ONLY channel by which the web client learns about a
-  // native sign-in, and a dropped message strands the user on a logged-out page
-  // whose login button signs them back out of native — an unrecoverable loop.
-  // A fresh sign-in used to get a single un-retried post from AuthPage (a
-  // component the sign-in itself unmounts), while only the restore-from-storage
-  // path got the retries. Run it on every uid change so both paths get them.
-  // Re-sends are cheap: the web side no-ops when the email already matches.
+  // This handoff is the channel by which the web client learns about a native
+  // sign-in, and a dropped message strands the user on a logged-out page whose
+  // login button signs them back out of native — an unrecoverable loop. A fresh
+  // sign-in used to get a single un-retried post from AuthPage (a component the
+  // sign-in itself unmounts), while only the restore-from-storage path got the
+  // retries. Run it on every uid change so both paths get them; the web side
+  // no-ops when the email already matches.
   useEffect(() => {
     if (fbUser) sendWebviewAuthInfo(fbUser)
+    return cancelPendingAuthPosts
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fbUser?.uid])
 
@@ -467,7 +505,10 @@ const App = () => {
       // Android only: show the system "add widget to home screen" dialog via our
       // native module. No-op on iOS (no such API) and on older builds that
       // predate the module (NativeModules.WidgetPin is then undefined).
-      if (Platform.OS === 'android' && NativeModules.WidgetPin?.pinStreakWidget) {
+      if (
+        Platform.OS === 'android' &&
+        NativeModules.WidgetPin?.pinStreakWidget
+      ) {
         try {
           await NativeModules.WidgetPin.pinStreakWidget()
         } catch (e) {
@@ -481,9 +522,18 @@ const App = () => {
         const fbUserAndPrivateUser = JSON.parse(payload)
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           const fbUser = fbUserAndPrivateUser.fbUser as FirebaseUser
-          // log('Signing in fb user from webview cache')
+          const generation = authGeneration.current
           // We don't actually use the firebase auth for anything right now, but in case we do in the future...
           await setFirebaseUserViaJson(fbUser, app)
+          // A sign-out landed while this echo was being applied. The echo must
+          // not win: the re-sign above re-armed the handoff, and persisting the
+          // user below would resurrect the credential the sign-out just cleared.
+          if (generation !== authGeneration.current) {
+            await signOutUsers(
+              'Error undoing a users echo that raced a sign-out'
+            )
+            return
+          }
           await storeData('user', fbUser)
           // Refresh the streak widget from the API on each (re)auth / app open.
           if (fbUser.uid) syncStreakFromApi(fbUser.uid)
@@ -555,6 +605,8 @@ const App = () => {
   }
 
   const signOutUsers = async (errorMessage: string) => {
+    authGeneration.current += 1
+    cancelPendingAuthPosts()
     try {
       await auth.signOut()
     } catch (err) {
@@ -649,7 +701,6 @@ const App = () => {
           hidden={false}
         />
         <SplashAuth
-          webview={webview}
           hasLoadedWebView={hasLoadedWebView}
           fbUser={fbUser}
           isConnected={isConnected}
@@ -662,6 +713,9 @@ const App = () => {
           setHasLoadedWebView={setHasLoadedWebView}
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
+          onNavigate={(url) => {
+            webviewUrl.current = url
+          }}
         />
       </SafeAreaView>
       {/*<ExportLogsButton />*/}
