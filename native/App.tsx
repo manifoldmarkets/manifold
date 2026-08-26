@@ -97,8 +97,13 @@ const App = () => {
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  // Auth.currentUser didn't update, so we track the state manually
-  auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
+  // Auth.currentUser didn't update, so we track the state manually. This used to
+  // run in the render body, which registered a fresh listener — never
+  // unsubscribed — on every single render.
+  useEffect(
+    () => auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null)),
+    []
+  )
 
   // Whose data the widget currently holds: stamped when a sync starts, nulled on
   // sign-out. Deliberately a ref, not `fbUser` — syncStreakFromApi is re-created
@@ -146,7 +151,8 @@ const App = () => {
     if (!user) return
     log('Got user from storage:', user.email)
     setFbUser(user)
-    sendWebviewAuthInfo(user)
+    // sendWebviewAuthInfo is driven by the uid effect below, which this setFbUser
+    // triggers — no need to call it here too.
     if (user.uid) syncStreakFromApi(user.uid)
     await setFirebaseUserViaJson(user, app)
   }
@@ -167,6 +173,18 @@ const App = () => {
       }, timeout)
     })
   }
+
+  // This handoff is the ONLY channel by which the web client learns about a
+  // native sign-in, and a dropped message strands the user on a logged-out page
+  // whose login button signs them back out of native — an unrecoverable loop.
+  // A fresh sign-in used to get a single un-retried post from AuthPage (a
+  // component the sign-in itself unmounts), while only the restore-from-storage
+  // path got the retries. Run it on every uid change so both paths get them.
+  // Re-sends are cheap: the web side no-ops when the email already matches.
+  useEffect(() => {
+    if (fbUser) sendWebviewAuthInfo(fbUser)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fbUser?.uid])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(() => {
@@ -377,6 +395,17 @@ const App = () => {
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
     // We handle auth with a custom screen, so if the user sees a login button on the client, we're out of sync
     if (type === 'loginClicked') {
+      // The web client only shows a login button when it thinks nobody is signed
+      // in. If native still holds a session at that point, the handoff above
+      // never landed — that's the login loop, seen from this side. We still sign
+      // out (the user asked to log in, and this may be a deliberate account
+      // switch), but record it so we can tell how often it actually happens.
+      if (fbUser) {
+        Sentry.captureMessage(
+          'Web requested login while native was still signed in',
+          { level: 'warning', tags: { authFlow: 'login-loop-suspected' } }
+        )
+      }
       await signOutUsers('Error on sign out before sign in')
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {

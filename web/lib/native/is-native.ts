@@ -24,6 +24,18 @@ const getNativeInfo = () => {
   return { isNative: isNative === 'true', platform }
 }
 
+// A bare localStorage.clear() on logout also drops the native flags, which the
+// WebView only re-injects on a full page load. Until then getIsNative() reads
+// false, so postMessageToNative() silently no-ops and firebaseLogin() falls
+// through to signInWithPopup — which Google refuses to serve inside an Android
+// WebView, leaving a login button that does nothing at all.
+export const clearLocalStoragePreservingNativeInfo = () => {
+  if (typeof window === 'undefined') return
+  const { isNative, platform } = getNativeInfo()
+  localStorage.clear()
+  if (isNative) setIsNativeOld(true, platform ?? '')
+}
+
 export const setIsNativeOld = (isNative: boolean, platform: string) => {
   const local = safeLocalStorage
   const ss = safeSessionStorage

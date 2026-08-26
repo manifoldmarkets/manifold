@@ -1,5 +1,5 @@
 'use client'
-import { createContext, ReactNode, useEffect, useState } from 'react'
+import { createContext, ReactNode, useEffect, useRef, useState } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth, firebaseLogout } from 'web/lib/firebase/users'
@@ -21,6 +21,7 @@ import {
   nativeSetStreak,
   nativeSignOut,
 } from 'web/lib/native/native-messages'
+import { clearLocalStoragePreservingNativeInfo } from 'web/lib/native/is-native'
 import { streakBonusPerDay } from 'common/native-message'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
@@ -100,6 +101,9 @@ export function AuthProvider(props: {
     PrivateUser | undefined
   >(serverUser ? serverUser.privateUser : undefined)
   const [authLoaded, setAuthLoaded] = useState(false)
+  // Whether this page session has ever observed a signed-in Firebase user. Gates
+  // the sign-out we forward to the native app — see the null branch below.
+  const sawFbUser = useRef(false)
 
   const authUser = !user
     ? user
@@ -201,6 +205,7 @@ export function AuthProvider(props: {
       auth,
       async (fbUser) => {
         if (fbUser) {
+          sawFbUser.current = true
           setUserCookie(fbUser.toJSON())
 
           const [user, privateUser, supabaseJwt] = await Promise.all([
@@ -233,9 +238,20 @@ export function AuthProvider(props: {
           setUserCookie(undefined)
           setUser(null)
           setPrivateUser(undefined)
-          nativeSignOut()
+          // Only propagate a sign-out we actually watched happen. Firebase fires
+          // this observer with null once on init whenever nothing is persisted,
+          // which inside the native WebView usually just means "the native
+          // session hasn't been handed over yet" — and telling native to sign
+          // out there makes it erase its stored credential and bounce the user
+          // to the login screen. Deliberate logouts are unaffected:
+          // firebaseLogout() calls nativeSignOut() itself.
+          if (sawFbUser.current) {
+            sawFbUser.current = false
+            nativeSignOut()
+          }
           // Clear local storage only if we were signed in, otherwise we'll clear referral info
-          if (safeLocalStorage?.getItem(CACHED_USER_KEY)) localStorage.clear()
+          if (safeLocalStorage?.getItem(CACHED_USER_KEY))
+            clearLocalStoragePreservingNativeInfo()
         }
       },
       (e) => {

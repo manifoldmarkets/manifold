@@ -1,4 +1,5 @@
 import { signInWithCredential } from '@firebase/auth'
+import * as Sentry from '@sentry/react-native'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { log } from 'components/logger'
 import { Text } from 'components/text'
@@ -46,21 +47,27 @@ export const AuthPage = (props: {
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
-    try {
-      if (response?.type === 'success') {
-        const { id_token } = response.params
-        const credential = GoogleAuthProvider.credential(id_token)
-        signInWithCredential(auth, credential).then((result) => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params
+      const credential = GoogleAuthProvider.credential(id_token)
+      // The old try/catch here could never fire: the failure modes are all async
+      // rejections (auth/user-disabled for a banned account, network failures,
+      // account-exists-with-different-credential), which fell through as
+      // unhandled rejections and dropped the user back on this screen in silence.
+      signInWithCredential(auth, credential)
+        .then((result) => {
           const fbUser = result.user.toJSON()
-          if (webview.current) {
-            webview.current.postMessage(
-              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-            )
-          }
+          webview.current?.postMessage(
+            JSON.stringify({ type: 'nativeFbUser', data: fbUser })
+          )
         })
-      }
-    } catch (err) {
-      log('[google sign in] Error : ', err)
+        .catch((err) => reportSignInFailure('google sign in', err))
+    } else if (response?.type === 'error') {
+      reportSignInFailure(
+        'google auth request',
+        response.error ??
+          new Error(response.errorCode ?? 'Google sign-in failed')
+      )
     }
     setLoading(false)
   }, [response])
@@ -84,7 +91,9 @@ export const AuthPage = (props: {
         JSON.stringify({ type: 'nativeFbUser', data: fbUser })
       )
     } catch (error: any) {
-      log('login with apple error:', error)
+      // Backing out of the Apple sheet isn't a failure worth reporting.
+      if (error?.code !== 'ERR_REQUEST_CANCELED')
+        reportSignInFailure('apple sign in', error)
     }
     setLoading(false)
   }
@@ -197,6 +206,32 @@ export const AuthPage = (props: {
       </View>
     </View>
   )
+}
+
+// Sign-in failures used to be swallowed entirely: `log()` compiles to a no-op in
+// prod builds, so a user whose sign-in failed just landed back on this screen
+// with no explanation, no way to report it, and no signal to us. Tell them, and
+// tell Sentry.
+function reportSignInFailure(context: string, error: unknown) {
+  log(`[${context}] Error:`, error)
+  Sentry.captureException(error, { tags: { authFlow: context } })
+  Alert.alert('Could not sign in', signInErrorMessage(error))
+}
+
+function signInErrorMessage(error: unknown) {
+  const { code, message } = (error ?? {}) as { code?: string; message?: string }
+  switch (code) {
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Email info@manifold.markets if you think that is a mistake.'
+    case 'auth/network-request-failed':
+      return "We couldn't reach Manifold. Check your connection and try again."
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email using a different sign-in method. Try the other sign-in option.'
+    default:
+      return `${
+        message ?? 'Something went wrong.'
+      }\n\nIf this keeps happening, email info@manifold.markets.`
+  }
 }
 
 function useAppleAuthentication() {
