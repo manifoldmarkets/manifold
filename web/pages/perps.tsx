@@ -895,7 +895,7 @@ const RecentActivity = (props: {
                   <span className="text-ink-900 font-mono font-semibold">
                     {tickerOf(contract)}
                   </span>
-                  {closing && e.pnl != null && (
+                  {closing && e.pnl != null && Math.abs(e.pnl) >= 0.5 && (
                     <>
                       {' '}
                       <span
