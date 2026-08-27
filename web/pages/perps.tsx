@@ -619,7 +619,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
                 onSelect={setSelectedId}
               />
             </div>
-            <Col className="min-w-0 gap-4">
+            <Col className="min-w-0 gap-4 xl:row-span-2">
               {HUB_FEATURES.positions && !!myPositions?.length && (
                 <YourPositions
                   positions={myPositions}
@@ -642,14 +642,18 @@ export default function PerpsPage(props: { perps: Contract[] }) {
                 markets={related[selected.id]}
                 perpIds={new Set(contracts.map((c) => c.id))}
               />
-              {HUB_FEATURES.activity && (
+            </Col>
+            {/* Under the terminal on desktop (the rail spans both rows), last
+                on mobile: it is the widest-reading card and the least urgent. */}
+            {HUB_FEATURES.activity && (
+              <div className="min-w-0 xl:col-start-1">
                 <RecentActivity
                   events={activity}
                   contracts={open}
                   onSelect={selectRow}
                 />
-              )}
-            </Col>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
