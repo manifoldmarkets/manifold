@@ -129,7 +129,8 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // renders that data and the NESO credit is a licence obligation.
 
   // Tokenized-equity (xStocks) feeds. Corruption is caught at the source —
-  // fetchXStockUsdPrice requires cross-venue agreement, like BTC — so bounds
+  // fetchXStockUsdPrice requires cross-pool agreement, like BTC's
+  // cross-exchange agreement — so bounds
   // here only reject unit-confused garbage (a cents-denominated or
   // percent-scaled value), not fast moves. Uniform wide bounds on purpose:
   // the four tokens trade in the $200–800 range today and a genuine 10×
@@ -139,17 +140,16 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // without paging while still bounding how old an executable price can get
   // (markets pause at the same threshold via maxOraclePriceAgeMs).
   //
-  // All four poll on every tick (2s), like BTC. The sources make that free:
+  // All four poll on every tick (2s), like BTC. The source makes that free:
   // the on-chain pools for every token arrive in ONE RPC call per tick
-  // (30/min against the public node's 600/min), and Gate is one call per
-  // token per tick (4 per 2s against its 200 per 10s). They were pinned at
-  // 16s while the on-chain vote came from Jupiter, whose keyless tier is
+  // (30/min against the public node's 600/min). They were pinned at 16s
+  // while the on-chain vote came from Jupiter, whose keyless tier is
   // 30 req/min — that source is gone (see xstocks-price.ts), and with it
   // the constraint.
   {
     id: SPYX_USD_FEED_ID,
     description:
-      'SPYx/USD (tokenized S&P 500 ETF), median of on-chain pools and Gate',
+      'SPYx/USD (tokenized S&P 500 ETF), median of its Solana USDC pools',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
@@ -162,7 +162,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: QQQX_USD_FEED_ID,
     description:
-      'QQQx/USD (tokenized Nasdaq-100 ETF), median of on-chain pools and Gate',
+      'QQQx/USD (tokenized Nasdaq-100 ETF), median of its Solana USDC pools',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
@@ -175,7 +175,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: GLDX_USD_FEED_ID,
     description:
-      'GLDx/USD (tokenized gold ETF), median of on-chain pools and Gate',
+      'GLDx/USD (tokenized gold ETF), median of its Solana USDC pools',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
@@ -188,7 +188,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: NVDAX_USD_FEED_ID,
     description:
-      'NVDAx/USD (tokenized Nvidia), median of on-chain pools and Gate',
+      'NVDAx/USD (tokenized Nvidia), median of its Solana USDC pools',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,

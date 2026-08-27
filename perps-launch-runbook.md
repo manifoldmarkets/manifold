@@ -73,7 +73,7 @@ protect the pools when the trader is flat at the funding timestamp.
 | Feed                           | Day-one game design                           | Execution risk                                                                               |
 | ------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | BTC/USD                        | Best fit: continuous and genuinely two-sided  | Exchange prices can lead the 5-second poll                                                   |
-| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided          | Pools and Gate can lead the 2-second poll; books far thinner than BTC                        |
+| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided          | Pools can lead the 2-second poll; liquidity far thinner than BTC                             |
 | Trump approval                 | Coherent politics theses, but slow            | Public daily step plus known scheduler timing                                                |
 | OpenRouter open-weight share   | Two-sided index with coherent adoption theses | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 
@@ -81,7 +81,9 @@ protect the pools when the trader is flat at the funding timestamp.
 
 Each xStocks feed reads its token's two or three deepest USDC pools straight
 from Solana account state (`XSTOCK_SPECS[...].pools`, decoded in
-`common/src/perps/solana-pools.ts`) plus Gate's spot book. The pool set is
+`common/src/perps/solana-pools.ts`). Nothing else: Jupiter, MEXC and Gate
+were all removed on 2026-08-27 because each came with terms (rate-limited
+licence; commercial-use and automated-access prohibitions). The pool set is
 PINNED by address on purpose — an oracle must not follow liquidity to whatever
 pool an aggregator happens to list — so it can go stale when liquidity
 migrates. Re-probe after any issuer or venue announcement, and whenever a
@@ -104,9 +106,14 @@ tick is inside the public node's limits, but it is documented as not for
 production, so put a keyed provider first once one exists.
 
 The Token-2022 dividend multiplier no longer needs watching for feed
-correctness: pools and Gate both trade the raw token, so every source is in
-the same unit. The raw token drifting above the ETF by accrued dividends is
-the instrument's economics, not a feed error.
+correctness: every pool trades the raw token, so every source is in the same
+unit. The raw token drifting above the ETF by accrued dividends is the
+instrument's economics, not a feed error.
+
+Two consequences of being chain-only, both accepted: the feeds are
+denominated in USDC (a USDC depeg would move all four together), and
+`backend/scripts/backfill-xstocks-oracle.ts` still seeds history from Gate
+candles — re-point or retire it before it is run again.
 
 Do not treat more frequent identical timestamps, larger pools, or a higher
 funding cap as fixes. Durable options are trade-time source refresh, a
