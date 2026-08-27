@@ -23,10 +23,13 @@
 //     and a link, and no licence label we can't back up.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
-//   - xStocks (SPYx/QQQx/GLDx) — same self-computed stance as BTC: we quote
-//     public venue prices for a crypto TOKEN, so no index-provider data is
-//     republished. "xStocks" is named so readers know what instrument the
-//     price belongs to; the venue credits are transparency, not obligation.
+//   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
+//     price is decoded by us from the token's Solana pool accounts, which
+//     are public chain state that no one licenses, so nothing is consumed
+//     under anyone's terms, let alone republished. (Jupiter, MEXC and Gate
+//     were removed as sources on 2026-08-27 precisely because each came with
+//     terms.) "xStocks" is named so readers know what instrument the price
+//     belongs to; the pool credits are transparency, not obligation.
 
 export type OracleAttribution = {
   /** Display name of the data provider. */
@@ -82,19 +85,19 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',
   },
   'spyx-usd': {
-    source: 'Jupiter, Gate & MEXC (SPYx by Backed xStocks)',
+    source: 'Raydium & Orca pools on Solana (SPYx by Backed xStocks)',
     url: 'https://xstocks.fi',
   },
   'qqqx-usd': {
-    source: 'Jupiter & Gate (QQQx by Backed xStocks)',
+    source: 'Raydium pools on Solana (QQQx by Backed xStocks)',
     url: 'https://xstocks.fi',
   },
   'gldx-usd': {
-    source: 'Jupiter & Gate (GLDx by Backed xStocks)',
+    source: 'Raydium & Orca pools on Solana (GLDx by Backed xStocks)',
     url: 'https://xstocks.fi',
   },
   'nvdax-usd': {
-    source: 'Jupiter, Gate & MEXC (NVDAx by Backed xStocks)',
+    source: 'Raydium & Orca pools on Solana (NVDAx by Backed xStocks)',
     url: 'https://xstocks.fi',
   },
 }

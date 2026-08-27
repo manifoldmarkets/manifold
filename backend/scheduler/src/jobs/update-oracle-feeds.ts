@@ -30,9 +30,9 @@ import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 // previous one is still running, so awaiting every due feed together would
 // let any one slow source hold the whole run across the next tick. With
 // xStocks on the same job that is a live regression of this file's purpose —
-// their adapter waits on up to three venues at a 5s timeout each and they
-// come due every third BTC firing, so one hanging Jupiter request would push
-// BTC's interval to 10s exactly when the mark is moving. The per-feed
+// their adapter waits on an RPC node (1.5s timeout), so one hanging request
+// would push BTC's interval out exactly when the mark is moving. The
+// per-feed
 // in-flight guard below is a strictly finer-grained `protect`: it still
 // prevents a feed from stacking on ITSELF, without coupling feeds to each
 // other.
