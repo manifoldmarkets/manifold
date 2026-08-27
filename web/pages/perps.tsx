@@ -895,9 +895,11 @@ const RecentActivity = (props: {
                   {closing && e.pnl != null && (
                     <>
                       {' '}
+                      {/* Not font-mono: the moniker glyph is missing from
+                          the mono stack. */}
                       <span
                         className={clsx(
-                          'font-mono tabular-nums',
+                          'font-semibold tabular-nums',
                           e.pnl >= 0
                             ? 'text-teal-600 dark:text-teal-400'
                             : 'text-scarlet-600 dark:text-scarlet-400'
@@ -1434,6 +1436,9 @@ const Terminal = (props: {
               </span>
             </Row>
           )}
+          {HUB_FEATURES.liquidations && (
+            <LiquidationProximity positions={positions} price={price} />
+          )}
         </Col>
         <Link
           href={contractPath(contract)}
@@ -1572,6 +1577,67 @@ const Terminal = (props: {
         oracleTradingPaused={oracleTradingPaused}
       />
     </Col>
+  )
+}
+
+// How much open interest is within a small move of being liquidated, per
+// side — from the public positions the terminal already polls. A big number
+// here is a fragile side: a modest move cascades. Rendered only when there
+// is something inside the band, so quiet markets show nothing.
+const LIQUIDATION_BAND = 0.03
+const LiquidationProximity = (props: {
+  positions:
+    | { direction: 'long' | 'short'; size: number; liquidationPrice: number }[]
+    | null
+  price: number
+}) => {
+  const { positions, price } = props
+  const near = useMemo(() => {
+    if (!positions || !(price > 0)) return null
+    let longs = 0
+    let shorts = 0
+    for (const p of positions) {
+      if (!Number.isFinite(p.liquidationPrice)) continue
+      const d = (p.liquidationPrice - price) / price
+      if (p.direction === 'long' && d < 0 && d >= -LIQUIDATION_BAND)
+        longs += p.size
+      if (p.direction === 'short' && d > 0 && d <= LIQUIDATION_BAND)
+        shorts += p.size
+    }
+    return { longs, shorts }
+  }, [positions, price])
+  if (!near || (near.longs <= 0 && near.shorts <= 0)) return null
+  return (
+    <Tooltip
+      text={`Open interest whose liquidation price is within ${
+        LIQUIDATION_BAND * 100
+      }% of the current price. If the price moves that far, these positions are force-closed — which pushes it further.`}
+    >
+      <Row className="text-ink-500 flex-wrap items-center gap-x-1.5 text-xs">
+        <span>Within {LIQUIDATION_BAND * 100}% of liquidation:</span>
+        {near.longs > 0 && (
+          <Row className="items-center gap-1">
+            <TokenNumber
+              amount={near.longs}
+              numberType="short"
+              className="font-mono font-semibold text-teal-700 dark:text-teal-400"
+            />
+            <span>of longs below</span>
+          </Row>
+        )}
+        {near.longs > 0 && near.shorts > 0 && <span>·</span>}
+        {near.shorts > 0 && (
+          <Row className="items-center gap-1">
+            <TokenNumber
+              amount={near.shorts}
+              numberType="short"
+              className="text-scarlet-700 dark:text-scarlet-400 font-mono font-semibold"
+            />
+            <span>of shorts above</span>
+          </Row>
+        )}
+      </Row>
+    </Tooltip>
   )
 }
 
