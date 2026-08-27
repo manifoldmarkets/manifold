@@ -1159,6 +1159,111 @@ struct ManiView: View {
 
 // MARK: - Views
 
+// MARK: - Lock-screen crane
+
+// The Manifold crane as a SOLID silhouette, in the 24×24 coordinate space of
+// the brand mark (web/public/logo.svg). The SVG is line art — thirteen strokes
+// that enclose the bird's facets; these are the outer vertices of that union,
+// walked beak → head → neck → wing → body → tail, so a single fill gives one
+// origami crane with no internal fold lines. Vertex D (9.796, 18.548) sits on
+// C–A and is omitted. Pure vector: the lock accessories must never use a
+// UIImage (see `circular` — the proven infinite-shimmer culprit).
+private let craneOutline: [(Double, Double)] = [
+  (5.24854, 17.0952),  // A  body, left corner (base of the neck)
+  (4.47389, 8.85643),  // K  beak, lower corner (on the neck's back edge)
+  (2.0, 9.0818),       // J  beak tip
+  (4.27398, 6.52755),  // E  top of the head
+  (8.65369, 11.6611),  // N  wing, rear base (on the neck fold)
+  (10.971, 5.0),       // M  wing tip
+  (12.9451, 11.1603),  // L  wing, front base (on the body's top edge)
+  (18.7175, 6.80301),  // B  body, top-right corner
+  (16.3935, 13.8147),  // G  tail base (on the body's right edge)
+  (22.0, 12.638),      // F  tail tip
+  (14.3444, 20.0),     // C  body, bottom corner
+]
+// Bounding box of the outline above (x 2…22, y 5…20).
+private let craneBox = CGRect(x: 2, y: 5, width: 20, height: 15)
+
+// Where the streak number sits inside the silhouette, in logo units: centre,
+// font size, and the width cap the measured text is shrunk to (so "8888" — or
+// a 5-digit streak — still lands inside the bird). The body is the only place
+// with room, so the size steps down with the digit count: ~21 / 17 / 12 / 9 pt
+// for 1–4 digits at the iPhone's 50pt circle (a fifth larger on the 58pt one).
+// Each slot is the largest a grid search found that keeps ≥ 0.5 unit (≈1.2pt
+// at 50pt) of solid crane around the whole glyph box (0.62em/digit, 0.705em
+// cap height — SF Rounded Heavy's upper bounds), so the knocked-out digits
+// never bleed through the silhouette's edge.
+private struct CraneNumberSlot {
+  let cx: Double, cy: Double, font: Double, maxWidth: Double
+}
+private func craneNumberSlot(digits: Int) -> CraneNumberSlot {
+  switch digits {
+  case ...1: return CraneNumberSlot(cx: 12.6, cy: 14.8, font: 9.0, maxWidth: 5.6)
+  case 2:    return CraneNumberSlot(cx: 11.4, cy: 14.4, font: 7.2, maxWidth: 8.9)
+  case 3:    return CraneNumberSlot(cx: 10.8, cy: 14.2, font: 5.4, maxWidth: 10.0)
+  default:   return CraneNumberSlot(cx: 10.8, cy: 14.0, font: 4.0, maxWidth: 9.9)
+  }
+}
+
+// The lock-screen circular face: the crane fills the circle, and the streak
+// number is knocked OUT of its body (the wallpaper shows through the digits)
+// once you've bet today. While today is still open the crane is an outline
+// with the number inside — Duolingo's hollow-vs-filled flame, on our bird. The
+// lock screen renders accessories in vibrant (monochrome) mode, so only shape
+// and alpha carry: solid white crane, transparent digits. `streak == nil`
+// draws the empty outline (logged out / no data).
+struct CraneCircularView: View {
+  let streak: Int?
+  let solid: Bool
+
+  var body: some View {
+    Canvas { ctx, size in
+      let s = min(size.width / craneBox.width, size.height / craneBox.height)
+      let ox = (size.width - craneBox.width * s) / 2 - craneBox.minX * s
+      let oy = (size.height - craneBox.height * s) / 2 - craneBox.minY * s
+      func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * s + ox, y: y * s + oy) }
+
+      var crane = Path()
+      crane.move(to: pt(craneOutline[0].0, craneOutline[0].1))
+      for v in craneOutline.dropFirst() { crane.addLine(to: pt(v.0, v.1)) }
+      crane.closeSubpath()
+
+      // Size the number for its slot, then shrink to the slot's width cap from
+      // a real measurement (so "1111" and "8888" both land inside the body).
+      var number: Text? = nil
+      var numberAt = CGPoint.zero
+      if let n = streak {
+        let str = "\(n)"
+        let slot = craneNumberSlot(digits: str.count)
+        var font = slot.font * s
+        let probe = ctx.resolve(Text(str).font(.system(size: font, weight: .heavy, design: .rounded)))
+        let width = probe.measure(in: CGSize(width: 10_000, height: 10_000)).width
+        if width > slot.maxWidth * s { font *= slot.maxWidth * s / width }
+        number = Text(str).font(.system(size: font, weight: .heavy, design: .rounded))
+        numberAt = pt(slot.cx, slot.cy)
+      }
+
+      if solid {
+        // Fill + knockout inside one transparency layer, so destinationOut
+        // punches the digits out of the crane only — never the wallpaper.
+        ctx.drawLayer { layer in
+          layer.fill(crane, with: .color(.white))
+          if let number = number {
+            layer.blendMode = .destinationOut
+            layer.draw(number, at: numberAt, anchor: .center)
+          }
+        }
+      } else {
+        ctx.stroke(crane, with: .color(.white),
+                   style: StrokeStyle(lineWidth: 0.85 * s, lineCap: .round, lineJoin: .round))
+        if let number = number {
+          ctx.draw(number.foregroundColor(.white), at: numberAt, anchor: .center)
+        }
+      }
+    }
+  }
+}
+
 struct StreakWidgetEntryView: View {
   @Environment(\.widgetFamily) var family
   var entry: StreakEntry
@@ -1252,24 +1357,13 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Lock screen — circular: ring fills white once you've bet today; flame or ice
-  // in the middle. Emoji + vector ONLY — a UIImage here is the proven
-  // infinite-shimmer culprit on lock accessories (see the live accessories below).
+  // Lock screen — circular: the same crane face as the live path (vector
+  // Canvas only — a UIImage here is the proven infinite-shimmer culprit on lock
+  // accessories, see `circular`).
   private var simpleCircular: some View {
     let d = snapshot()
     let state = d.map { computeState($0, now: Date()) } ?? .pending
-    let done = state == .lit
-    return ZStack {
-      if state == .frozen {
-        Text("🧊").font(.system(size: 38)).opacity(0.32)
-        circularFrost
-      } else {
-        Text("🔥").font(.system(size: 38)).opacity(0.18)
-      }
-      Text(d.map { "\($0.streak)" } ?? "0")
-        .font(.system(size: 22, weight: .bold)).lineLimit(1).minimumScaleFactor(0.4).padding(3)
-    }
-    .overlay(Circle().strokeBorder(.white.opacity(done ? 0.95 : 0.18), lineWidth: done ? 3 : 2))
+    return craneCircular(streak: d?.streak, state: state)
   }
 
   // Lock screen — rectangular: streak + static status line (no countdown).
@@ -1538,12 +1632,9 @@ struct StreakWidgetEntryView: View {
 
   // NO AccessoryWidgetBackground here or in `circular` — it was the suspected
   // culprit in the earlier blank-widget failure, and the simple path proved
-  // fine without it. Emoji instead of the crane Image (see `circular`).
+  // fine without it. The empty outlined crane: a streak waiting to be filled.
   private var loggedOutCircular: some View {
-    ZStack {
-      Text("🔥").font(.system(size: 24)).grayscale(1).opacity(0.5)
-    }
-    .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 2))
+    craneCircular(streak: nil, state: .pending)
   }
 
   private var loggedOutRectangular: some View {
@@ -1774,34 +1865,34 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Lock screen — circular. Ring fills ONLY when you've actually bet today.
+  // Lock screen — circular. The solid Manifold crane with the streak knocked
+  // out of its body ONLY once you've actually bet today; an outlined crane with
+  // the number inside while today is open (plus frost specks under a freeze).
   // (No AccessoryWidgetBackground — see loggedOutCircular. And NO UIImage
   // crane on ANY lock accessory: after a bet flipped the state to lit, the
   // lock widgets shimmered — the crane Image was the only non-emoji element
-  // on that path, while the emoji-only frozen path rendered fine. Emoji only.)
+  // on that path, while the emoji-only frozen path rendered fine. The crane
+  // here is a vector Canvas path, the same drawing route as Mani.)
   private var circular: some View {
-    let done = entry.state == .lit
-    return ZStack {
-      if entry.state == .frozen {
-        Text("🧊").font(.system(size: 40)).opacity(0.32)
-        circularFrost
-      } else {
-        Text("🔥").font(.system(size: 40)).opacity(0.3)
-      }
-      Text("\(entry.streak)")
-        .font(.system(size: 22, weight: .bold)).lineLimit(1).minimumScaleFactor(0.4).padding(3)
-    }
-    .overlay(
-      Circle().strokeBorder(.white.opacity(done ? 0.95 : 0.18), lineWidth: done ? 3 : 2)
-    )
+    craneCircular(streak: entry.streak, state: entry.state)
   }
 
+  private func craneCircular(streak: Int?, state: StreakState) -> some View {
+    ZStack {
+      // 2pt inset keeps the beak tip (the outline's farthest point from centre)
+      // inside the circle, outline stroke included.
+      CraneCircularView(streak: streak, solid: state == .lit).padding(2)
+      if state == .frozen { circularFrost }
+    }
+  }
+
+  // Frost specks in the gaps the crane leaves at the circle's edge (above the
+  // tail, below the neck) — clear of the outline at both 50pt and 58pt.
   private var circularFrost: some View {
     ZStack {
-      Text("❄").font(.system(size: 8)).foregroundColor(.white).opacity(0.7).offset(x: -17, y: -16)
-      Text("❄").font(.system(size: 7)).foregroundColor(.white).opacity(0.6).offset(x: 15, y: 14)
-      Text("·").font(.system(size: 7)).foregroundColor(.white).opacity(0.6).offset(x: 15, y: -13)
-      Text("·").font(.system(size: 7)).foregroundColor(.white).opacity(0.6).offset(x: -14, y: 15)
+      Text("❄").font(.system(size: 8)).foregroundColor(.white).opacity(0.7).offset(x: 20, y: -10)
+      Text("❄").font(.system(size: 7)).foregroundColor(.white).opacity(0.6).offset(x: -17, y: 17)
+      Text("·").font(.system(size: 7)).foregroundColor(.white).opacity(0.6).offset(x: 21, y: 9)
     }
   }
 
