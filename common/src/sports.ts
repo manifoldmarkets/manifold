@@ -40,6 +40,51 @@ export interface TournamentConfig {
   stageLiquidityTiers: StageLiquidityTiers
 }
 
+// ─── Sports calendar ─────────────────────────────────────────────────────────
+
+export type SportId =
+  | 'nfl'
+  | 'cfb'
+  | 'f1'
+  | 'tdf'
+  | 'soccer'
+  | 'mlb'
+  | 'nba'
+  | 'wnba'
+
+export type SportsCalendarStatus = 'upcoming' | 'active' | 'completed' | 'cancelled'
+
+/**
+ * One entry in the `sportsCalendar` Firestore collection.
+ * Represents a phase/window for a competition (e.g. "NFL Regular Season 2026–27",
+ * "NFL Wild Card Weekend"). The scheduler reads this collection to decide when to
+ * create and resolve markets. Document IDs are deterministic slugs:
+ * `${competitionId}-${phaseSlug}` so re-seeding is idempotent.
+ */
+export interface SportsCalendarEntry {
+  sport: SportId
+  /** Human-readable competition name, e.g. "NFL Regular Season 2026–27" */
+  competition: string
+  /** Stable slug, e.g. "nfl-regular-2026" — ties entries for one competition together */
+  competitionId: string
+  /** Phase within the competition, e.g. "Regular Season", "Wild Card", "Week 1" */
+  phase: string
+  /** ISO date YYYY-MM-DD */
+  startDate: string
+  /** ISO date YYYY-MM-DD */
+  endDate: string
+  /** Scheduler should auto-create markets for games in this window */
+  autoCreate: boolean
+  /** Scheduler should auto-resolve markets when games finish */
+  autoResolve: boolean
+  status: SportsCalendarStatus
+  notes?: string
+  /** Reason a human overrode the defaults, e.g. a postponement */
+  overrideReason?: string
+  updatedAt: number
+  updatedBy?: string
+}
+
 // ─── Resolution helpers ──────────────────────────────────────────────────────
 
 /**
