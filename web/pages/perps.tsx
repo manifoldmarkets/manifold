@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
+import { Answer } from 'common/answer'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
@@ -308,6 +309,42 @@ const useRelatedMarkets = (perps: PerpContract[]) => {
   }, [idKey])
 
   return byPerp
+}
+
+// get-related-markets-by-group returns contracts without their answers, so a
+// multiple-choice row had nothing to show. markets-by-ids attaches answers;
+// hydrate just those rows, one batched request per new set of ids.
+const answersOf = (c: Contract): Answer[] | undefined =>
+  (c as { answers?: Answer[] }).answers
+
+const useAnswersFor = (contracts: Contract[]) => {
+  const [byId, setById] = useState<Record<string, Contract>>({})
+  const key = contracts
+    .filter(
+      (c) =>
+        c.outcomeType === 'MULTIPLE_CHOICE' &&
+        !answersOf(c)?.length &&
+        !byId[c.id]
+    )
+    .map((c) => c.id)
+    .join(',')
+  useEffect(() => {
+    if (!key) return
+    let cancelled = false
+    api('markets-by-ids', { ids: key.split(',') })
+      .then((res) => {
+        if (cancelled) return
+        setById((prev) => ({
+          ...prev,
+          ...Object.fromEntries(res.map((c) => [c.id, c])),
+        }))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [key])
+  return byId
 }
 
 // Warm every chart once the page is up, most-traded first, so switching in
@@ -1307,6 +1344,7 @@ const RelatedMarkets = (props: {
         !isNearCertain(c)
     )
     .slice(0, 6)
+  const hydrated = useAnswersFor(picks)
   const primaryTopic =
     topics.find((t) => !t.endsWith('-default')) ?? topics[0] ?? 'this'
   const createUrl =
@@ -1348,10 +1386,7 @@ const RelatedMarkets = (props: {
               <span className="text-ink-700 line-clamp-2 text-sm">
                 {c.question}
               </span>
-              <ContractStatusLabel
-                contract={c}
-                className="shrink-0 text-sm font-semibold"
-              />
+              <RelatedStat contract={hydrated[c.id] ?? c} />
             </Link>
           ))
         )}
@@ -1364,6 +1399,35 @@ const RelatedMarkets = (props: {
         Create a market about {topicLabel(primaryTopic)}
       </Link>
     </Col>
+  )
+}
+
+// Binary markets get the usual %; multiple-choice markets show the leading
+// answer and its chance, which says more in a one-line row than a stacked
+// bar would. Falls back to the shared status label for everything else.
+const RelatedStat = (props: { contract: Contract }) => {
+  const { contract } = props
+  if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+    // Ladder markets ("Bitcoin price in 2026?") carry answers that already
+    // resolved YES at 100%; the live question is the top answer still open.
+    const answers = answersOf(contract)?.filter((a) => !a.resolution)
+    if (!answers?.length)
+      return <span className="text-ink-400 shrink-0 text-xs">multi</span>
+    const top = [...answers].sort((a, b) => b.prob - a.prob)[0]
+    return (
+      <span className="flex max-w-[45%] shrink-0 items-baseline gap-1.5">
+        <span className="text-ink-500 truncate text-xs">{top.text}</span>
+        <span className="text-ink-900 text-sm font-semibold">
+          {Math.round(top.prob * 100)}%
+        </span>
+      </span>
+    )
+  }
+  return (
+    <ContractStatusLabel
+      contract={contract}
+      className="shrink-0 text-sm font-semibold"
+    />
   )
 }
 
