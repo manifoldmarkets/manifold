@@ -2,7 +2,11 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
+import { useRouter } from 'next/router'
 import { Answer } from 'common/answer'
+import { APIResponse } from 'common/api/schema'
+import { getUserFacingPnl, getUserFacingPnlPercent } from 'common/perps/pnl'
+import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
@@ -363,6 +367,40 @@ const useAnswersFor = (contracts: Contract[]) => {
   return byId
 }
 
+// The viewer's open positions across every perp: one request per market,
+// refreshed every 30s. Null while loading or signed out; [] when flat.
+type MyPosition = APIResponse<'get-perp-positions'>[number] & {
+  contractId: string
+}
+const useMyPositions = (userId: string | undefined, perps: PerpContract[]) => {
+  const [rows, setRows] = useState<MyPosition[] | null>(null)
+  const key = perps.map((c) => c.id).join(',')
+  useEffect(() => {
+    if (!userId || !key) {
+      setRows(null)
+      return
+    }
+    let cancelled = false
+    const load = () =>
+      Promise.all(
+        key.split(',').map((contractId) =>
+          api('get-perp-positions', { contractId, userId })
+            .then((rs) => rs.map((r) => ({ ...r, contractId })))
+            .catch(() => [] as MyPosition[])
+        )
+      ).then((all) => {
+        if (!cancelled) setRows(all.flat())
+      })
+    load()
+    const interval = setInterval(load, 2 * POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [userId, key])
+  return rows
+}
+
 // Warm every chart once the page is up, most-traded first, so switching in
 // the terminal never shows a loading state. Sequential: one feed at a time
 // keeps this from competing with the visible chart's own fetch.
@@ -411,6 +449,17 @@ export default function PerpsPage(props: { perps: Contract[] }) {
 
   const week = useWeekSeries(open)
   const related = useRelatedMarkets(open)
+  const user = useUser()
+  // `?as=<userId>` previews the positions card as another user — positions
+  // are public (the holders tab lists them), so this leaks nothing, and it
+  // lets the card be reviewed without an account that holds perps.
+  const router = useRouter()
+  const previewAs =
+    typeof router.query.as === 'string' ? router.query.as : undefined
+  const myPositions = useMyPositions(
+    HUB_FEATURES.positions ? previewAs ?? user?.id : undefined,
+    open
+  )
   usePrefetchCharts(open)
 
   // The flagship (most traded) market is the landing chart.
@@ -528,6 +577,13 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               />
             </div>
             <Col className="min-w-0 gap-4">
+              {HUB_FEATURES.positions && !!myPositions?.length && (
+                <YourPositions
+                  positions={myPositions}
+                  contracts={open}
+                  onSelect={selectRow}
+                />
+              )}
               <Watchlist
                 contracts={sorted}
                 week={week}
@@ -588,6 +644,111 @@ const Stat = (props: { label: string; amount?: number; value?: string }) => (
     )}
   </Col>
 )
+
+// The reason a trader reopens the page: how are my trades doing, across all
+// markets, at a glance. Side, leverage, size, P&L, and how far the price
+// is from liquidation. Click a row to load that market.
+const YourPositions = (props: {
+  positions: MyPosition[]
+  contracts: PerpContract[]
+  onSelect: (id: string) => void
+}) => {
+  const { positions, contracts, onSelect } = props
+  const rows = positions
+    .map((p) => {
+      const contract = contracts.find((c) => c.id === p.contractId)
+      if (!contract) return null
+      const price = Number(contract.oraclePrice)
+      const position = p as unknown as PerpPosition
+      const pnl = getUserFacingPnl(position, price)
+      const pnlPct = getUserFacingPnlPercent(position, price)
+      const liqDistance =
+        Number.isFinite(p.liquidationPrice) && price > 0
+          ? (p.liquidationPrice - price) / price
+          : undefined
+      return { p, contract, pnl, pnlPct, liqDistance }
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort((a, b) => b.p.size - a.p.size)
+  if (rows.length === 0) return null
+  const totalPnl = rows.reduce((sum, r) => sum + r.pnl, 0)
+
+  return (
+    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+      <Row className="border-ink-200 dark:border-ink-300 items-center justify-between border-b px-3 py-2">
+        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+          Your positions
+        </span>
+        <Row className="items-center gap-1 text-xs">
+          <span className="text-ink-400">P&L</span>
+          <TokenNumber
+            amount={totalPnl}
+            numberType="short"
+            className={clsx(
+              'font-mono font-semibold tabular-nums',
+              totalPnl >= 0
+                ? 'text-teal-600 dark:text-teal-400'
+                : 'text-scarlet-600 dark:text-scarlet-400'
+            )}
+          />
+        </Row>
+      </Row>
+      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+        {rows.map(({ p, contract, pnl, pnlPct, liqDistance }) => {
+          const long = p.direction === 'long'
+          return (
+            <button
+              key={`${p.contractId}-${p.direction}`}
+              onClick={() => onSelect(contract.id)}
+              className="hover:bg-canvas-50 grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2 text-left"
+            >
+              <span className="text-ink-900 truncate font-mono text-sm font-bold">
+                {tickerOf(contract)}
+              </span>
+              <Col className="min-w-0 gap-0.5">
+                <Row className="items-center gap-1.5 text-xs">
+                  <span
+                    className={clsx(
+                      'rounded px-1 font-mono font-semibold uppercase',
+                      long
+                        ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400'
+                        : 'bg-scarlet-500/10 text-scarlet-700 dark:text-scarlet-400'
+                    )}
+                  >
+                    {p.direction} {Math.round(p.leverage)}×
+                  </span>
+                  <TokenNumber
+                    amount={p.size}
+                    numberType="short"
+                    className="text-ink-600 font-mono tabular-nums"
+                  />
+                </Row>
+                {liqDistance !== undefined && (
+                  <span className="text-ink-400 text-xs">
+                    liquidates at {pct(liqDistance)} from here
+                  </span>
+                )}
+              </Col>
+              <Col className="items-end">
+                <TokenNumber
+                  amount={pnl}
+                  numberType="short"
+                  className={clsx(
+                    'font-mono text-sm font-semibold tabular-nums',
+                    pnl >= 0
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-scarlet-600 dark:text-scarlet-400'
+                  )}
+                />
+                <ChangeLabel change={pnlPct} className="text-xs" />
+              </Col>
+            </button>
+          )
+        })}
+      </Col>
+    </Col>
+  )
+}
 
 // The page's one-line answer to "what happened while I was away": the
 // market with the largest 24h move, in either direction. Click to load it.
