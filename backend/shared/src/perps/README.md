@@ -299,9 +299,11 @@ Feed adapters live next to it:
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
 - `xstocks-price.ts` — tokenized-equity USD prices (SPYx/QQQx/GLDx/NVDAx,
-  xStocks by Backed), consensus median across Jupiter/Gate/MEXC venue quotes. Pure
-  response parsing lives in `common/src/perps/xstocks.ts` (unit-tested,
-  including the raw-vs-rebase-scaled unit trap).
+  xStocks by Backed), consensus median across each token's on-chain USDC
+  pools (Raydium/Orca account state fetched via `solana-rpc.ts`, decoded in
+  `common/src/perps/solana-pools.ts`) and Gate's spot book
+  (`common/src/perps/xstocks.ts`). Both readers are unit-tested against
+  captured responses.
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
 - `openrouter-tokens.ts` — trailing seven-day open-weight share of classified
   top-50 OpenRouter model traffic.

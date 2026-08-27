@@ -139,76 +139,63 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // without paging while still bounding how old an executable price can get
   // (markets pause at the same threshold via maxOraclePriceAgeMs).
   //
-  // All four stay on the tick's old 15s poll rather than following BTC to 5s.
-  // A round costs 4 Jupiter calls (one per token), 4 Gate and 2 MEXC; at 5s
-  // that is 48/min against Jupiter's keyless lite tier, which is close enough
-  // to its limit that a 429 is likely — and a 429 drops QQQx or GLDx below
-  // getConsensusMedian's two-source minimum, skipping the tick entirely. A
-  // stalled feed pauses its market, which is a far worse outcome than a mark
-  // that is 15s old. Nothing here is being sniped yet either: these markets
-  // do not exist until after this deploys, so there is no measured edge to
-  // price against, unlike BTC. To move them to 5s later, batch the Jupiter
-  // leg first — its price v3 endpoint takes comma-separated ids, so all four
-  // tokens collapse into one call.
+  // All four poll on every tick (2s), like BTC. The sources make that free:
+  // the on-chain pools for every token arrive in ONE RPC call per tick
+  // (30/min against the public node's 600/min), and Gate is one call per
+  // token per tick (4 per 2s against its 200 per 10s). They were pinned at
+  // 16s while the on-chain vote came from Jupiter, whose keyless tier is
+  // 30 req/min — that source is gone (see xstocks-price.ts), and with it
+  // the constraint.
   {
     id: SPYX_USD_FEED_ID,
     description:
-      'SPYx/USD (tokenized S&P 500 ETF), median of Jupiter/Gate/MEXC',
+      'SPYx/USD (tokenized S&P 500 ETF), median of on-chain pools and Gate',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 16_000,
-    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
-    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
-    // wait on up to three venues, so round AWAY from more load, not toward it.
-    pollPeriodMs: 16_000,
+    updatePeriodMs: 2_000,
+    pollPeriodMs: 2_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
   },
   {
     id: QQQX_USD_FEED_ID,
-    description: 'QQQx/USD (tokenized Nasdaq-100 ETF), Jupiter+Gate agreement',
+    description:
+      'QQQx/USD (tokenized Nasdaq-100 ETF), median of on-chain pools and Gate',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 16_000,
-    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
-    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
-    // wait on up to three venues, so round AWAY from more load, not toward it.
-    pollPeriodMs: 16_000,
+    updatePeriodMs: 2_000,
+    pollPeriodMs: 2_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
   },
   {
     id: GLDX_USD_FEED_ID,
-    description: 'GLDx/USD (tokenized gold ETF), Jupiter+Gate agreement',
+    description:
+      'GLDx/USD (tokenized gold ETF), median of on-chain pools and Gate',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 16_000,
-    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
-    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
-    // wait on up to three venues, so round AWAY from more load, not toward it.
-    pollPeriodMs: 16_000,
+    updatePeriodMs: 2_000,
+    pollPeriodMs: 2_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
   },
   {
     id: NVDAX_USD_FEED_ID,
-    description: 'NVDAx/USD (tokenized Nvidia), median of Jupiter/Gate/MEXC',
+    description:
+      'NVDAx/USD (tokenized Nvidia), median of on-chain pools and Gate',
     marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 10,
     maxPrice: 50_000,
     staleAfterMs: 5 * MINUTE_MS,
-    updatePeriodMs: 16_000,
-    // 16s, not 15s: pollPeriodMs must be a whole number of ORACLE_TICK_PERIOD_MS
-    // ticks or isPollDue rounds it down (15s would run at 14s). These adapters
-    // wait on up to three venues, so round AWAY from more load, not toward it.
-    pollPeriodMs: 16_000,
+    updatePeriodMs: 2_000,
+    pollPeriodMs: 2_000,
     fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather

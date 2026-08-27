@@ -70,36 +70,43 @@ fee. A trader can observe a public source before Manifold ingests it, trade
 against the old cached value, and exit after the update. Funding does not
 protect the pools when the trader is flat at the funding timestamp.
 
-| Feed                         | Day-one game design                          | Execution risk                                                                               |
-| ---------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| BTC/USD                      | Best fit: continuous and genuinely two-sided | Exchange prices can lead the 5-second poll                                                   |
-| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided       | Venue prices can lead the 15-second poll; books far thinner than BTC                         |
-| Trump approval               | Coherent politics theses, but slow           | Public daily step plus known scheduler timing                                                |
-| OpenRouter open-weight share | Two-sided index with coherent adoption theses | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
+| Feed                           | Day-one game design                           | Execution risk                                                                               |
+| ------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| BTC/USD                        | Best fit: continuous and genuinely two-sided  | Exchange prices can lead the 5-second poll                                                   |
+| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided          | Pools and Gate can lead the 2-second poll; books far thinner than BTC                        |
+| Trump approval                 | Coherent politics theses, but slow            | Public daily step plus known scheduler timing                                                |
+| OpenRouter open-weight share   | Two-sided index with coherent adoption theses | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 
-### xStocks multiplier watch (ongoing, post-launch)
+### xStocks on-chain sources (ongoing, post-launch)
 
-Every xStocks mint carries a Token-2022 `scaledUiAmountConfig` with a LIVE
-update authority. `XSTOCK_SPECS.unitMode` records which ones are currently
-rebasing (SPYx, QQQx, NVDAx) versus sitting at multiplier 1 (GLDx, verified
-on-chain 2026-08-18) — it is an assertion about today's multiplier, not about
-the mint.
-
-The parser fails closed if a Jupiter response ever contradicts a `static`
-declaration. It CANNOT catch the case where the multiplier changes and Jupiter
-reports no scaled metadata at all, which would silently reintroduce the
-wrong-unit price the fee-era mark depends on. So check periodically, and after
-any issuer announcement:
+Each xStocks feed reads its token's two or three deepest USDC pools straight
+from Solana account state (`XSTOCK_SPECS[...].pools`, decoded in
+`common/src/perps/solana-pools.ts`) plus Gate's spot book. The pool set is
+PINNED by address on purpose — an oracle must not follow liquidity to whatever
+pool an aggregator happens to list — so it can go stale when liquidity
+migrates. Re-probe after any issuer or venue announcement, and whenever a
+feed starts logging `no venue pair agreed` more than a few times a day:
 
 ```powershell
-# multiplier / newMultiplier for the four mints; GLDx must read exactly 1
-solana account <GLDX_MINT> --output json-compact --url mainnet-beta
+# every pool for a mint, with liquidity and 24h volume
+curl.exe -s https://api.dexscreener.com/token-pairs/v1/solana/<MINT>
 ```
 
-If GLDx's multiplier leaves 1, flip its `unitMode` to `rebasing` **only after**
-confirming Jupiter populates `usdPricePrescaled` for it — flipping while
-Jupiter omits the field fails closed on every tick and, on a two-source feed,
-takes the feed permanently dark.
+Add a pool that is deeper than one listed; drop one whose liquidity has left.
+The reader fails closed (NaN, source skipped) on a wrong program owner, a
+wrong pair, a Raydium pool whose stored decimals disagree with the spec, zero
+in-range liquidity, or a sqrt-price/tick pair that cannot both be right — so
+a stale or mistyped address costs a vote, never a wrong price.
+
+RPC endpoints come from `SOLANA_RPC_URLS` (comma-separated, tried in order);
+the public mainnet node is always the final fallback. One batched call per
+tick is inside the public node's limits, but it is documented as not for
+production, so put a keyed provider first once one exists.
+
+The Token-2022 dividend multiplier no longer needs watching for feed
+correctness: pools and Gate both trade the raw token, so every source is in
+the same unit. The raw token drifting above the ETF by accrued dividends is
+the instrument's economics, not a feed error.
 
 Do not treat more frequent identical timestamps, larger pools, or a higher
 funding cap as fixes. Durable options are trade-time source refresh, a
