@@ -44,10 +44,13 @@ const revalidate = 60
 // revalidate with no list to maintain.
 export async function getStaticProps() {
   try {
+    // outcome_type is indexed (partial index over non-binary types);
+    // mechanism is not, and a sequential scan of contracts trips the anon
+    // role's statement timeout.
     const { data, error } = await db
       .from('contracts')
       .select(contractFields)
-      .eq('mechanism', 'perp')
+      .eq('outcome_type', 'PERP')
       .order('created_time', { ascending: true })
     if (error) throw error
     const perps = (data ?? [])
@@ -58,8 +61,10 @@ export async function getStaticProps() {
       .map((c) => ({ ...c, description: '' }))
     return { props: { perps }, revalidate }
   } catch (e) {
+    // Throw rather than publish an empty board: on a failed revalidation
+    // Next keeps serving the last good page and retries next request.
     console.error('perps page getStaticProps failed', e)
-    return { props: { perps: [] }, revalidate }
+    throw e
   }
 }
 
@@ -403,12 +408,12 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               </a>
             </div>
           </Col>
-          <Row className="divide-ink-200 dark:divide-ink-300 gap-0 divide-x">
+          <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">
             <Stat label="24h volume" amount={stats.volume24h} />
             <Stat label="Open interest" amount={stats.openInterest} />
             <Stat label="Traders" value={stats.traders.toLocaleString()} />
             <Stat label="Markets" value={String(open.length)} />
-          </Row>
+          </div>
         </Row>
 
         {selected ? (
@@ -464,7 +469,7 @@ const SectionHeader = (props: { title: string }) => (
 // Mana amounts render through TokenNumber (coin icon + number) rather than
 // the text moniker: the monospace stack has no glyph for it.
 const Stat = (props: { label: string; amount?: number; value?: string }) => (
-  <Col className="px-4 first:pl-0 last:pr-0">
+  <Col className="sm:px-4 sm:first:pl-0 sm:last:pr-0">
     <div className="text-ink-400 text-[11px] uppercase tracking-wider">
       {props.label}
     </div>
@@ -645,6 +650,144 @@ const TickerItem = (props: {
 }
 
 // ---------------------------------------------------------------------------
+// Lean history. Funding events don't record open interest, but the funding
+// rate is a pure function of the OI imbalance (common/perps/amm
+// computeFundingRate), so each event's rate inverts exactly to the long
+// share of open interest at that tick. That gives "which way was the money
+// leaning" over time from data that already exists, in the one unit users
+// actually read — no funding-rate chart needed.
+
+// Inverse of computeFundingRate: magnitude m = |rate| / fMax, and with
+// x = low/high, m = (1-x)/(1-x+kx)  =>  x = (1-m)/(1-m+mk); the heavier
+// side's share is 1/(1+x). A zero rate means balanced (or no OI at all).
+const longShareFromRate = (rate: number, k: number, fMax: number) => {
+  if (!Number.isFinite(rate) || rate === 0 || !(fMax > 0) || !(k > 0))
+    return 0.5
+  const m = Math.min(Math.abs(rate) / fMax, 0.999999)
+  const x = (1 - m) / (1 - m + m * k)
+  const highShare = 1 / (1 + x)
+  return rate > 0 ? highShare : 1 - highShare
+}
+
+const useLeanHistory = (contract: PerpContract) => {
+  const [points, setPoints] = useState<
+    { ts: number; longShare: number }[] | null
+  >(null)
+  useEffect(() => {
+    let cancelled = false
+    setPoints(null)
+    api('get-perp-funding-events', {
+      contractId: contract.id,
+      since: Date.now() - 7 * DAY_MS,
+      limit: 500,
+    })
+      .then((events) => {
+        if (cancelled) return
+        setPoints(
+          events
+            .filter((e) => Number.isFinite(e.ts))
+            .map((e) => ({
+              ts: e.ts,
+              longShare: longShareFromRate(
+                e.fundingRate,
+                contract.fundingSensitivity,
+                contract.maxFundingRate
+              ),
+            }))
+            .sort((a, b) => a.ts - b.ts)
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setPoints([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [contract.id, contract.fundingSensitivity, contract.maxFundingRate])
+  return points
+}
+
+// Long share of open interest over the last week: a line around a 50%
+// midline, teal above (net long), scarlet below (net short). Ends on the
+// live lean so it agrees with the badge beside it.
+const LeanHistory = (props: { contract: PerpContract }) => {
+  const { contract } = props
+  const history = useLeanHistory(contract)
+  const live = leanOf(contract)
+  const points = useMemo(() => {
+    const pts = history ? [...history] : []
+    if (live) pts.push({ ts: Date.now(), longShare: live.longShare })
+    return pts
+  }, [history, live?.longShare])
+  if (!history || points.length < 2) return null
+
+  const W = 100
+  const H = 32
+  const x0 = points[0].ts
+  const xr = points[points.length - 1].ts - x0 || 1
+  const px = (p: { ts: number }) => ((p.ts - x0) / xr) * W
+  const py = (p: { longShare: number }) => H - p.longShare * H
+  const line = points
+    .map(
+      (p, i) => `${i === 0 ? 'M' : 'L'}${px(p).toFixed(2)},${py(p).toFixed(2)}`
+    )
+    .join(' ')
+  const area = `${line} L${W},${H / 2} L0,${H / 2} Z`
+  const clipId = `lean-clip-${contract.id}`
+  const nowLong = points[points.length - 1].longShare >= 0.5
+  return (
+    <Tooltip text="Share of open interest that is long, last 7 days. Above the line: net long. Below: net short.">
+      <Col className="items-start gap-0.5 sm:items-end">
+        <div className="text-ink-500 text-xs">Lean, 7 days</div>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          className="h-8 w-36"
+          aria-label="Long share of open interest over the last 7 days"
+        >
+          <defs>
+            <clipPath id={`${clipId}-top`}>
+              <rect x={0} y={0} width={W} height={H / 2} />
+            </clipPath>
+            <clipPath id={`${clipId}-bottom`}>
+              <rect x={0} y={H / 2} width={W} height={H / 2} />
+            </clipPath>
+          </defs>
+          <line
+            x1={0}
+            x2={W}
+            y1={H / 2}
+            y2={H / 2}
+            className="stroke-ink-300"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+            strokeDasharray="2 2"
+          />
+          <path
+            d={area}
+            className="fill-teal-500/25"
+            clipPath={`url(#${clipId}-top)`}
+          />
+          <path
+            d={area}
+            className="fill-scarlet-500/25"
+            clipPath={`url(#${clipId}-bottom)`}
+          />
+          <path
+            d={line}
+            fill="none"
+            className={nowLong ? 'stroke-teal-500' : 'stroke-scarlet-500'}
+            strokeWidth={1.5}
+            vectorEffect="non-scaling-stroke"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Col>
+    </Tooltip>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Terminal: the selected market's chart, with trading folded away until asked
 // for so the chart is the view.
 
@@ -674,8 +817,10 @@ const Terminal = (props: {
 }) => {
   const { all, week, onSelect } = props
   const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
-  const positions = usePerpPositions(contract.id, refreshKey)
-  const [mode, setMode] = useState<'price' | 'funding'>('price')
+  const { positions, unsound: unsoundPositions } = usePerpPositions(
+    contract.id,
+    refreshKey
+  )
   const [tradeOpen, setTradeOpen] = useState(false)
   const oracleTradingPaused = useOracleTradingPaused(contract)
 
@@ -725,8 +870,9 @@ const Terminal = (props: {
           </Row>
           {lean && (
             <Row className="items-center gap-2 text-sm">
+              <LeanBadge contract={contract} />
               <span className="text-ink-600">
-                Traders lean{' '}
+                traders lean{' '}
                 <span
                   className={clsx(
                     'font-semibold',
@@ -737,10 +883,6 @@ const Terminal = (props: {
                 >
                   {lean.dir === 'long' ? 'up' : 'down'}
                 </span>
-              </span>
-              <LeanBadge contract={contract} />
-              <span className="text-ink-400 text-xs">
-                of open interest is {lean.dir}
               </span>
             </Row>
           )}
@@ -804,20 +946,7 @@ const Terminal = (props: {
             )}
           </Col>
         </Row>
-        <Row className="border-ink-200 dark:border-ink-300 overflow-hidden rounded-md border text-sm">
-          {(['price', 'funding'] as const).map((m) => (
-            <button
-              key={m}
-              className={clsx(
-                'px-3 py-1 capitalize',
-                mode === m ? 'bg-primary-500 text-white' : 'text-ink-700'
-              )}
-              onClick={() => setMode(m)}
-            >
-              {m}
-            </button>
-          ))}
-        </Row>
+        <LeanHistory contract={contract} />
       </Row>
 
       {oracleTradingPaused && (
@@ -829,7 +958,7 @@ const Terminal = (props: {
         </div>
       )}
 
-      <PerpChart contract={contract} mode={mode} positions={positions} />
+      <PerpChart contract={contract} mode="price" positions={positions} />
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
         asOfTime={contract.oracleSourceTime}
@@ -850,6 +979,7 @@ const Terminal = (props: {
             contract={contract}
             onTrade={refresh}
             positions={positions}
+            unsoundPositions={unsoundPositions}
             oracleTradingPaused={oracleTradingPaused}
           />
         </Col>
@@ -993,7 +1123,7 @@ const WatchRow = (props: {
       onClick={onSelect}
       aria-current={selected}
       className={clsx(
-        'grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-3 py-2 text-left transition-colors',
+        'grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors sm:gap-x-3',
         selected ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-canvas-50'
       )}
     >
@@ -1006,10 +1136,11 @@ const WatchRow = (props: {
         >
           {tickerOf(contract)}
         </span>
+        {/* No room for it beside four numeric columns on the thinnest phones. */}
         <MiniSpark
           series={series}
           change={change}
-          className="h-6 w-16 shrink-0"
+          className="hidden h-6 w-16 shrink-0 min-[360px]:block"
         />
       </Row>
       <span
