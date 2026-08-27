@@ -6,7 +6,14 @@ import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { contractFields, convertContract } from 'common/supabase/contracts'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { fromNow } from 'client-common/lib/time'
+import { nextFundingTimes } from 'common/perps/chart-projections'
+import {
+  formatCountdown,
+  formatPrice,
+  inferPriceDecimals,
+} from 'common/perps/format'
+import { useIsClient } from 'web/hooks/use-is-client'
 import {
   fundingPeriodUnit,
   getFundingPeriodMs,
@@ -249,13 +256,24 @@ const useWeekSeries = (perps: PerpContract[]) => {
   return byId
 }
 
-const weekChange = (series: WeekSeries | undefined, c: PerpContract) => {
+// Change from the first point inside the window to the live price (not the
+// last hourly bucket). The week series is hourly, so a 24h window reads the
+// point nearest to a day ago.
+const changeSince = (
+  series: WeekSeries | undefined,
+  c: PerpContract,
+  windowMs: number
+) => {
   if (!series || series.length < 2) return undefined
-  const first = series[0].price
-  // Measure to the live price, not the last hourly bucket.
+  const cutoff = Date.now() - windowMs
+  const start = series.find((p) => p.ts >= cutoff) ?? series[0]
+  if (start === series[series.length - 1]) return undefined
   const last = Number(c.oraclePrice) || series[series.length - 1].price
-  return first > 0 ? last / first - 1 : undefined
+  return start.price > 0 ? last / start.price - 1 : undefined
 }
+
+const weekChange = (series: WeekSeries | undefined, c: PerpContract) =>
+  changeSince(series, c, 7 * DAY_MS)
 
 // Related markets per perp, via the group-overlap endpoint behind the contract
 // page's related-questions rail: everything sharing a topic with the perp,
@@ -417,8 +435,11 @@ export default function PerpsPage(props: { perps: Contract[] }) {
         </Row>
 
         {selected ? (
-          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
-            <div className="min-w-0 xl:col-span-2">
+          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+            {/* Fixed-width rail: a third of the grid was only ~330px at the
+                xl breakpoint, not enough for a ticker, sparkline, price,
+                change and lean side by side. */}
+            <div className="min-w-0">
               <Terminal
                 key={selected.id}
                 contract={selected}
@@ -875,6 +896,19 @@ const Terminal = (props: {
     (contract.openInterestShort ?? 0) > 0
   const lean = leanOf(contract)
   const change = weekChange(week, contract)
+  const dayChange = changeSince(week, contract, DAY_MS)
+  // Countdown and "updated ago" are Date.now()-derived: client-only so the
+  // server render can't hydrate against a different clock.
+  const isClient = useIsClient()
+  const nextFunding = isClient
+    ? nextFundingTimes(
+        contract.lastFundingTime,
+        Date.now(),
+        1,
+        periodMs,
+        contract.createdTime
+      )[0]
+    : undefined
 
   return (
     <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
@@ -951,6 +985,18 @@ const Terminal = (props: {
             >
               {displayPrice(contract)}
             </div>
+            {isClient && typeof contract.oraclePriceTime === 'number' && (
+              <div className="text-ink-400 text-xs">
+                {/* Clamped: scheduler stamps can run a few seconds ahead of
+                    the browser clock, which would read "in a few seconds". */}
+                updated{' '}
+                {fromNow(Math.min(contract.oraclePriceTime, Date.now()))}
+              </div>
+            )}
+          </Col>
+          <Col>
+            <div className="text-ink-500 text-xs">24 hours</div>
+            <ChangeLabel change={dayChange} className="text-xl font-semibold" />
           </Col>
           <Col>
             <div className="text-ink-500 text-xs">7 days</div>
@@ -979,6 +1025,11 @@ const Terminal = (props: {
                   <span className="text-ink-400 text-sm font-normal">
                     /{fundingPeriodUnit(periodMs)}
                   </span>
+                  <div className="text-ink-400 text-xs font-normal">
+                    {rate > 0 ? 'longs pay' : 'shorts pay'}
+                    {nextFunding !== undefined &&
+                      ` · next in ${formatCountdown(nextFunding - Date.now())}`}
+                  </div>
                 </div>
               </Tooltip>
             ) : (
@@ -1071,27 +1122,13 @@ const Watchlist = (props: {
 
   return (
     <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
-      <div className="border-ink-200 dark:border-ink-300 grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b px-3 py-2 text-[11px] font-medium">
-        <SortHeader
-          {...header}
-          label="Market"
-          sortKey="volume"
-          className="text-left"
-        />
-        <SortHeader {...header} label="Price" className="text-right" />
-        <SortHeader
-          {...header}
-          label="7d"
-          sortKey="change"
-          className="text-right"
-        />
-        <SortHeader
-          {...header}
-          label="Lean"
-          sortKey="lean"
-          className="text-right"
-        />
-      </div>
+      <Row className="border-ink-200 dark:border-ink-300 items-center justify-between border-b px-3 py-2 text-[11px] font-medium">
+        <SortHeader {...header} label="Market" sortKey="volume" />
+        <Row className="gap-3">
+          <SortHeader {...header} label="7d" sortKey="change" />
+          <SortHeader {...header} label="Lean" sortKey="lean" />
+        </Row>
+      </Row>
       <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
         {visible.map((c) => (
           <WatchRow
@@ -1161,41 +1198,46 @@ const WatchRow = (props: {
   const flash = useTickFlash(price)
   const change = weekChange(series, contract)
   return (
+    // Two lines per market so nothing has to share a line with the price:
+    //   BTC     ~~~~    $80,150.68
+    //   Bitcoin price     +11.4%  ▼ 62%
     <button
       onClick={onSelect}
       aria-current={selected}
       className={clsx(
-        'grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors sm:gap-x-3',
+        'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 px-3 py-2 text-left transition-colors',
         selected ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-canvas-50'
       )}
     >
-      <Row className="min-w-0 items-center gap-2">
+      <Col className="min-w-0">
         <span
           className={clsx(
-            'w-12 shrink-0 font-mono text-sm font-bold',
+            'font-mono text-sm font-bold',
             selected ? 'text-primary-600 dark:text-primary-400' : 'text-ink-900'
           )}
         >
           {tickerOf(contract)}
         </span>
-        {/* No room for it beside four numeric columns on the thinnest phones. */}
-        <MiniSpark
-          series={series}
-          change={change}
-          className="hidden h-6 w-16 shrink-0 min-[360px]:block"
-        />
-      </Row>
-      <span
-        className={clsx(
-          'text-ink-900 font-mono text-sm tabular-nums transition-colors duration-700',
-          flash === 'up' && 'text-teal-500 duration-0',
-          flash === 'down' && 'text-scarlet-500 duration-0'
-        )}
-      >
-        {displayPrice(contract)}
-      </span>
-      <ChangeLabel change={change} className="text-sm" />
-      <LeanBadge contract={contract} />
+        <span className="text-ink-500 truncate text-xs">
+          {contract.question}
+        </span>
+      </Col>
+      <MiniSpark series={series} change={change} className="h-7 w-14" />
+      <Col className="items-end gap-0.5">
+        <span
+          className={clsx(
+            'text-ink-900 font-mono text-sm tabular-nums transition-colors duration-700',
+            flash === 'up' && 'text-teal-500 duration-0',
+            flash === 'down' && 'text-scarlet-500 duration-0'
+          )}
+        >
+          {displayPrice(contract)}
+        </span>
+        <Row className="items-center gap-1.5">
+          <ChangeLabel change={change} className="text-xs" />
+          {leanOf(contract) && <LeanBadge contract={contract} />}
+        </Row>
+      </Col>
     </button>
   )
 }
