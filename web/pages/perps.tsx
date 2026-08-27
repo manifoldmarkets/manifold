@@ -49,6 +49,22 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 
 const revalidate = 60
 
+// Switches for the additions layered onto the v1 hub. Each also landed as
+// its own commit, but flipping one here is the one-line way to try the page
+// without it.
+const HUB_FEATURES = {
+  /** "Top mover" in the header stats strip. */
+  topMover: true,
+  /** 24h / 7d toggle on the watchlist change column. */
+  changeWindow: true,
+  /** "Your positions" rail card when signed in. */
+  positions: true,
+  /** Cross-market recent-activity feed in the rail. */
+  activity: true,
+  /** Liquidation-proximity line in the terminal header. */
+  liquidations: true,
+}
+
 // Perps are created unlisted and flipped public at launch, so the search APIs
 // can't enumerate them — the anon supabase client can, since contracts RLS is
 // public-read. That keeps this page automated: any perp shows up on the next
@@ -372,6 +388,8 @@ const usePrefetchCharts = (perps: PerpContract[]) => {
 // Page
 
 type SortKey = 'change' | 'volume' | 'lean' | 'funding'
+type ChangeWindow = '24h' | '7d'
+const windowMs = (w: ChangeWindow) => (w === '24h' ? DAY_MS : 7 * DAY_MS)
 
 // Watchlist column template, shared by the header and every row so the
 // columns line up: ticker · sparkline · price · change · lean. The sparkline
@@ -425,11 +443,12 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     key: 'change',
     desc: true,
   })
+  const [changeWindow, setChangeWindow] = useState<ChangeWindow>('7d')
   const sortValue = (c: PerpContract): number => {
     switch (sort.key) {
       case 'change': {
         // Biggest movers first, whichever direction.
-        const change = weekChange(week[c.id], c)
+        const change = changeSince(week[c.id], c, windowMs(changeWindow))
         return change === undefined ? -Infinity : Math.abs(change)
       }
       case 'volume':
@@ -488,6 +507,9 @@ export default function PerpsPage(props: { perps: Contract[] }) {
             <Stat label="Open interest" amount={stats.openInterest} />
             <Stat label="Traders" value={stats.traders.toLocaleString()} />
             <Stat label="Markets" value={String(open.length)} />
+            {HUB_FEATURES.topMover && (
+              <TopMover contracts={open} week={week} onSelect={selectRow} />
+            )}
           </div>
         </Row>
 
@@ -512,6 +534,8 @@ export default function PerpsPage(props: { perps: Contract[] }) {
                 selectedId={selected.id}
                 sort={sort}
                 onSort={toggleSort}
+                changeWindow={changeWindow}
+                onChangeWindow={setChangeWindow}
                 onSelect={setSelectedId}
               />
               <RelatedMarkets
@@ -564,6 +588,38 @@ const Stat = (props: { label: string; amount?: number; value?: string }) => (
     )}
   </Col>
 )
+
+// The page's one-line answer to "what happened while I was away": the
+// market with the largest 24h move, in either direction. Click to load it.
+const TopMover = (props: {
+  contracts: PerpContract[]
+  week: Record<string, WeekSeries>
+  onSelect: (id: string) => void
+}) => {
+  const { contracts, week, onSelect } = props
+  let best: { contract: PerpContract; change: number } | undefined
+  for (const c of contracts) {
+    const change = changeSince(week[c.id], c, DAY_MS)
+    if (change === undefined) continue
+    if (!best || Math.abs(change) > Math.abs(best.change))
+      best = { contract: c, change }
+  }
+  if (!best) return null
+  return (
+    <Col className="sm:px-4 sm:first:pl-0 sm:last:pr-0">
+      <div className="text-ink-400 text-[11px] uppercase tracking-wider">
+        Top mover 24h
+      </div>
+      <button
+        onClick={() => onSelect(best!.contract.id)}
+        className="hover:bg-canvas-50 -mx-1 flex items-baseline gap-1.5 rounded px-1 text-left font-mono text-lg font-semibold tabular-nums"
+      >
+        <span className="text-ink-900">{tickerOf(best.contract)}</span>
+        <ChangeLabel change={best.change} className="text-lg font-semibold" />
+      </button>
+    </Col>
+  )
+}
 
 const ChangeLabel = (props: {
   change: number | undefined
@@ -1181,9 +1237,20 @@ const Watchlist = (props: {
   selectedId: string
   sort: { key: SortKey; desc: boolean }
   onSort: (key: SortKey) => void
+  changeWindow: ChangeWindow
+  onChangeWindow: (w: ChangeWindow) => void
   onSelect: (id: string) => void
 }) => {
-  const { contracts, week, selectedId, sort, onSort, onSelect } = props
+  const {
+    contracts,
+    week,
+    selectedId,
+    sort,
+    onSort,
+    changeWindow,
+    onChangeWindow,
+    onSelect,
+  } = props
   const [showAll, setShowAll] = useState(false)
   const visible = showAll ? contracts : contracts.slice(0, DEFAULT_ROWS)
   const hidden = contracts.length - visible.length
@@ -1200,12 +1267,47 @@ const Watchlist = (props: {
         <SortHeader {...header} label="Market" sortKey="volume" />
         <span className="hidden min-[360px]:block" />
         <SortHeader {...header} label="Price" className="text-right" />
-        <SortHeader
-          {...header}
-          label="7d"
-          sortKey="change"
-          className="text-right"
-        />
+        {HUB_FEATURES.changeWindow ? (
+          // The change column doubles as the window switch: click the
+          // inactive window to switch to it (and sort by it), click the
+          // active one to flip sort direction.
+          <span className="flex justify-end gap-1.5">
+            {(['24h', '7d'] as const).map((w) => {
+              const isWindow = changeWindow === w
+              const active = isWindow && sort.key === 'change'
+              return (
+                <button
+                  key={w}
+                  onClick={() => {
+                    if (isWindow) onSort('change')
+                    else {
+                      onChangeWindow(w)
+                      if (sort.key !== 'change') onSort('change')
+                    }
+                  }}
+                  className={clsx(
+                    'hover:text-ink-700 uppercase tracking-wider',
+                    isWindow ? 'text-ink-800' : 'text-ink-400'
+                  )}
+                >
+                  {w}
+                  {active && (
+                    <span className="ml-0.5 text-[9px]">
+                      {sort.desc ? '▼' : '▲'}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </span>
+        ) : (
+          <SortHeader
+            {...header}
+            label="7d"
+            sortKey="change"
+            className="text-right"
+          />
+        )}
         <SortHeader
           {...header}
           label="Lean"
@@ -1219,6 +1321,7 @@ const Watchlist = (props: {
             key={c.id}
             contract={c}
             series={week[c.id]}
+            changeWindow={changeWindow}
             selected={c.id === selectedId}
             onSelect={() => onSelect(c.id)}
           />
@@ -1274,13 +1377,14 @@ const SortHeader = (props: {
 const WatchRow = (props: {
   contract: PerpContract
   series: WeekSeries | undefined
+  changeWindow: ChangeWindow
   selected: boolean
   onSelect: () => void
 }) => {
-  const { contract, series, selected, onSelect } = props
+  const { contract, series, changeWindow, selected, onSelect } = props
   const price = Number(contract.oraclePrice)
   const flash = useTickFlash(price)
-  const change = weekChange(series, contract)
+  const change = changeSince(series, contract, windowMs(changeWindow))
   return (
     // One aligned grid row per market — the header uses the same template,
     // so every column lines up like a table. The full question is the hover
