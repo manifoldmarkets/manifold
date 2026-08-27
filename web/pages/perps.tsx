@@ -40,7 +40,9 @@ import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribut
 import { PerpPositionPanel } from 'web/components/perps/perp-position-panel'
 import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract'
 import { usePerpPositions } from 'web/components/perps/use-perp-positions'
+import { Avatar } from 'web/components/widgets/avatar'
 import { TokenNumber } from 'web/components/widgets/token-number'
+import { formatMoneyShort } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
@@ -401,6 +403,46 @@ const useMyPositions = (userId: string | undefined, perps: PerpContract[]) => {
   return rows
 }
 
+// Recent trades across every perp, newest first: one request per market,
+// merged, refreshed every 30s. API-key (bot) trades and funding ticks are
+// excluded — this is the human tape.
+type ActivityEvent = APIResponse<'get-perp-events'>[number] & {
+  contractId: string
+}
+const ACTIVITY_TYPES = new Set(['open', 'add', 'close', 'liquidation', 'adl'])
+const useRecentActivity = (perps: PerpContract[]) => {
+  const [events, setEvents] = useState<ActivityEvent[] | null>(null)
+  const key = perps.map((c) => c.id).join(',')
+  useEffect(() => {
+    if (!key) return
+    let cancelled = false
+    const load = () =>
+      Promise.all(
+        key.split(',').map((contractId) =>
+          api('get-perp-events', { contractId, limit: 12, excludeApi: true })
+            .then((rs) => rs.map((r) => ({ ...r, contractId })))
+            .catch(() => [] as ActivityEvent[])
+        )
+      ).then((all) => {
+        if (cancelled) return
+        setEvents(
+          all
+            .flat()
+            .filter((e) => ACTIVITY_TYPES.has(e.eventType) && e.userId)
+            .sort((a, b) => b.ts - a.ts)
+            .slice(0, 30)
+        )
+      })
+    load()
+    const interval = setInterval(load, 2 * POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [key])
+  return events
+}
+
 // Warm every chart once the page is up, most-traded first, so switching in
 // the terminal never shows a loading state. Sequential: one feed at a time
 // keeps this from competing with the visible chart's own fetch.
@@ -449,6 +491,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
 
   const week = useWeekSeries(open)
   const related = useRelatedMarkets(open)
+  const activity = useRecentActivity(HUB_FEATURES.activity ? open : [])
   const user = useUser()
   // `?as=<userId>` previews the positions card as another user — positions
   // are public (the holders tab lists them), so this leaks nothing, and it
@@ -599,6 +642,13 @@ export default function PerpsPage(props: { perps: Contract[] }) {
                 markets={related[selected.id]}
                 perpIds={new Set(contracts.map((c) => c.id))}
               />
+              {HUB_FEATURES.activity && (
+                <RecentActivity
+                  events={activity}
+                  contracts={open}
+                  onSelect={selectRow}
+                />
+              )}
             </Col>
           </div>
         ) : (
@@ -746,6 +796,142 @@ const YourPositions = (props: {
           )
         })}
       </Col>
+    </Col>
+  )
+}
+
+const ACTIVITY_VERB: Record<string, string> = {
+  open: 'opened',
+  add: 'added to',
+  close: 'closed',
+  liquidation: 'was liquidated on',
+  adl: 'was deleveraged on',
+}
+
+// The human tape: who did what, across all markets. Liquidations are the
+// interesting rows — a run of them on one side means that side is crowded
+// and fragile — so they get the accent color.
+const RecentActivity = (props: {
+  events: ActivityEvent[] | null
+  contracts: PerpContract[]
+  onSelect: (id: string) => void
+}) => {
+  const { events, contracts, onSelect } = props
+  const [showAll, setShowAll] = useState(false)
+  const isClient = useIsClient()
+  const rows = (events ?? [])
+    .map((e) => ({ e, contract: contracts.find((c) => c.id === e.contractId) }))
+    .filter(
+      (r): r is { e: ActivityEvent; contract: PerpContract } => !!r.contract
+    )
+  const visible = showAll ? rows : rows.slice(0, 8)
+  return (
+    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+      <Row className="border-ink-200 dark:border-ink-300 items-baseline justify-between border-b px-3 py-2">
+        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+          Recent activity
+        </span>
+        <span className="text-ink-400 text-xs">all markets</span>
+      </Row>
+      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+        {events === null ? (
+          <Col className="gap-2 p-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-canvas-50 h-5 animate-pulse rounded" />
+            ))}
+          </Col>
+        ) : rows.length === 0 ? (
+          <div className="text-ink-400 p-3 text-sm">No trades yet.</div>
+        ) : (
+          visible.map(({ e, contract }) => {
+            const liquidated = e.eventType === 'liquidation'
+            const closing =
+              e.eventType === 'close' || liquidated || e.eventType === 'adl'
+            return (
+              <button
+                key={e.id}
+                onClick={() => onSelect(contract.id)}
+                className="hover:bg-canvas-50 flex items-center gap-2 px-3 py-2 text-left text-xs"
+              >
+                <Avatar
+                  username={e.username ?? undefined}
+                  avatarUrl={e.avatarUrl ?? undefined}
+                  size="xs"
+                  noLink
+                />
+                <span className="text-ink-600 min-w-0 flex-1 leading-snug">
+                  <span className="text-ink-900 font-medium">
+                    {e.userName ?? e.username ?? 'Someone'}
+                  </span>{' '}
+                  <span
+                    className={
+                      liquidated
+                        ? 'text-scarlet-600 dark:text-scarlet-400 font-medium'
+                        : undefined
+                    }
+                  >
+                    {ACTIVITY_VERB[e.eventType]}
+                  </span>{' '}
+                  {e.leverage != null && !closing && (
+                    <span className="font-mono">
+                      {Math.round(e.leverage)}×{' '}
+                    </span>
+                  )}
+                  {e.direction && (
+                    <span
+                      className={clsx(
+                        'font-semibold',
+                        e.direction === 'long'
+                          ? 'text-teal-600 dark:text-teal-400'
+                          : 'text-scarlet-600 dark:text-scarlet-400'
+                      )}
+                    >
+                      {e.direction}
+                    </span>
+                  )}{' '}
+                  <span className="text-ink-900 font-mono font-semibold">
+                    {tickerOf(contract)}
+                  </span>
+                  {closing && e.pnl != null && (
+                    <>
+                      {' '}
+                      <span
+                        className={clsx(
+                          'font-mono tabular-nums',
+                          e.pnl >= 0
+                            ? 'text-teal-600 dark:text-teal-400'
+                            : 'text-scarlet-600 dark:text-scarlet-400'
+                        )}
+                      >
+                        {e.pnl >= 0 ? '+' : '−'}
+                        {formatMoneyShort(Math.abs(e.pnl))}
+                      </span>
+                    </>
+                  )}
+                </span>
+                <Col className="shrink-0 items-end">
+                  <TokenNumber
+                    amount={Math.abs(e.sizeDelta)}
+                    numberType="short"
+                    className="text-ink-700 font-mono tabular-nums"
+                  />
+                  <span className="text-ink-400 whitespace-nowrap">
+                    {isClient ? fromNow(e.ts) : ''}
+                  </span>
+                </Col>
+              </button>
+            )
+          })
+        )}
+      </Col>
+      {rows.length > 8 && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
+        >
+          {showAll ? 'Show fewer' : `Show ${rows.length}`}
+        </button>
+      )}
     </Col>
   )
 }
