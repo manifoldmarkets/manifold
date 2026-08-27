@@ -23,6 +23,13 @@
 // reader cross-checks the two independent encodings of the same fact that
 // both layouts carry — sqrt price and current tick — and fails closed when
 // they disagree. See readPoolSpotPrice.
+//
+// No BigInt anywhere, on purpose: backend/shared's jest transpiles this file
+// under an ES2017 target (its tsconfig), where BigInt literals do not
+// compile. The u128 fields are read as doubles instead — exact for the
+// liquidity zero-check and accurate to 2^-53 relative for the sqrt price,
+// against a tick cross-check tolerance of 5e-4 — and base58 is the classic
+// byte-array long division.
 
 export type PoolKind = 'raydium-clmm' | 'orca-whirlpool'
 
@@ -40,9 +47,11 @@ export type DecodedPool = {
   /** Raydium stores both mints' decimals in the pool account; Orca does not. */
   decimals0?: number
   decimals1?: number
-  /** In-range liquidity (L). Zero means nothing backs the current price. */
-  liquidity: bigint
-  sqrtPriceX64: bigint
+  /** In-range liquidity (L), as a double. Zero means nothing backs the
+   * current price; the magnitude is otherwise not used. */
+  liquidity: number
+  /** Q64.64 sqrt price as a double (2^-53 relative precision). */
+  sqrtPriceX64: number
   tickCurrent: number
 }
 
@@ -105,30 +114,41 @@ const BASE58_ALPHABET =
   '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 /** Base58 (Bitcoin alphabet) encoding, as Solana renders public keys. Kept
- * local rather than pulled from a dependency: it is a dozen lines and this
- * package has no Solana deps to share it with. */
+ * local rather than pulled from a dependency: it is twenty lines and this
+ * package has no Solana deps to share it with. Byte-array long division, so
+ * it needs no BigInt (see the module note). */
 export const toBase58 = (bytes: Uint8Array): string => {
-  let n = 0n
-  for (const byte of bytes) n = (n << 8n) | BigInt(byte)
-  let encoded = ''
-  while (n > 0n) {
-    encoded = BASE58_ALPHABET[Number(n % 58n)] + encoded
-    n /= 58n
+  // Base-58 digits, least significant first.
+  const digits: number[] = []
+  for (let i = 0; i < bytes.length; i++) {
+    let carry = bytes[i]
+    for (let j = 0; j < digits.length; j++) {
+      carry += digits[j] * 256
+      digits[j] = carry % 58
+      carry = Math.floor(carry / 58)
+    }
+    while (carry > 0) {
+      digits.push(carry % 58)
+      carry = Math.floor(carry / 58)
+    }
   }
   let leadingZeros = 0
-  for (const byte of bytes) {
-    if (byte !== 0) break
+  while (leadingZeros < bytes.length && bytes[leadingZeros] === 0)
     leadingZeros++
-  }
+  let encoded = ''
+  for (let i = digits.length - 1; i >= 0; i--)
+    encoded += BASE58_ALPHABET[digits[i]]
   return '1'.repeat(leadingZeros) + encoded
 }
 
 const readPubkey = (data: Uint8Array, offset: number) =>
   toBase58(data.subarray(offset, offset + 32))
 
-const readU128LE = (data: Uint8Array, offset: number): bigint => {
-  let value = 0n
-  for (let i = 15; i >= 0; i--) value = (value << 8n) | BigInt(data[offset + i])
+/** Little-endian u128 as a double. Summed most-significant byte first so the
+ * rounding happens once at the low end rather than accumulating. */
+const readU128LE = (data: Uint8Array, offset: number): number => {
+  let value = 0
+  for (let i = 15; i >= 0; i--) value = value * 256 + data[offset + i]
   return value
 }
 
@@ -216,11 +236,11 @@ export const readPoolSpotPrice = (input: PoolPriceInput): number => {
   const decimals1 = baseIs0 ? input.quoteDecimals : input.baseDecimals
   if (pool.decimals0 != null && pool.decimals0 !== decimals0) return Number.NaN
   if (pool.decimals1 != null && pool.decimals1 !== decimals1) return Number.NaN
-  if (pool.liquidity === 0n) return Number.NaN
+  if (!(pool.liquidity > 0)) return Number.NaN
 
   // Q64.64 -> float loses nothing that matters: the mantissa keeps 53 bits
   // of a value that only needs ~1e-9 relative precision to price a share.
-  const sqrt = Number(pool.sqrtPriceX64) / 2 ** 64
+  const sqrt = pool.sqrtPriceX64 / 2 ** 64
   const rawPrice1Per0 = sqrt * sqrt
   const ratioToTick = rawPrice1Per0 / Math.pow(1.0001, pool.tickCurrent)
   if (!(ratioToTick >= TICK_CHECK_MIN && ratioToTick <= TICK_CHECK_MAX))

@@ -130,8 +130,9 @@ describe('decodeRaydiumClmmPool', () => {
     expect(pool!.mint1).toBe(USDC_MINT)
     expect(pool!.decimals0).toBe(8)
     expect(pool!.decimals1).toBe(6)
-    expect(pool!.liquidity).toBe(3229829665810n)
-    expect(pool!.sqrtPriceX64).toBe(51318695986973038345n)
+    expect(pool!.liquidity).toBe(3229829665810)
+    // 51318695986973038345, scaled to a literal that is exact as a double
+    expect(pool!.sqrtPriceX64 / 1e10).toBeCloseTo(5131869598.6973, 3)
     expect(pool!.tickCurrent).toBe(20464)
   })
 
@@ -148,8 +149,9 @@ describe('decodeOrcaWhirlpool', () => {
     expect(pool!.mint0).toBe(SPYX_MINT)
     expect(pool!.mint1).toBe(USDC_MINT)
     expect(pool!.decimals0).toBeUndefined()
-    expect(pool!.liquidity).toBe(557670354425n)
-    expect(pool!.sqrtPriceX64).toBe(51338793976598037400n)
+    expect(pool!.liquidity).toBe(557670354425)
+    // 51338793976598037400, scaled to a literal that is exact as a double
+    expect(pool!.sqrtPriceX64 / 1e10).toBeCloseTo(5133879397.6598, 3)
     expect(pool!.tickCurrent).toBe(20472)
   })
 
