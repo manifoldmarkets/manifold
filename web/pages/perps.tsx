@@ -14,11 +14,14 @@ import {
   inferPriceDecimals,
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { getPerpTakerFeeBps } from 'common/perps/fees'
 import {
+  fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
+import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer'
 import { getOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
@@ -366,6 +369,14 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     open.find((c) => c.id === selectedId) ??
     open.find((c) => c.id === flagshipId) ??
     open[0]
+  // Ticker clicks can happen from anywhere on the page: select and bring
+  // the terminal into view (its scroll margin clears the pinned tape).
+  const selectRow = (id: string) => {
+    setSelectedId(id)
+    document
+      .getElementById('perp-terminal')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
     key: 'change',
@@ -373,8 +384,11 @@ export default function PerpsPage(props: { perps: Contract[] }) {
   })
   const sortValue = (c: PerpContract): number => {
     switch (sort.key) {
-      case 'change':
-        return weekChange(week[c.id], c) ?? -Infinity
+      case 'change': {
+        // Biggest movers first, whichever direction.
+        const change = weekChange(week[c.id], c)
+        return change === undefined ? -Infinity : Math.abs(change)
+      }
       case 'volume':
         return c.volume24Hours ?? 0
       case 'lean':
@@ -408,7 +422,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
         description="Leveraged long and short markets on live numbers — Bitcoin, stocks, approval ratings and more. No expiry date."
         url="/perps"
       />
-      <TickerTape contracts={sorted} week={week} />
+      <TickerTape contracts={sorted} week={week} onSelect={selectRow} />
 
       <Col className="w-full gap-8 px-3 py-5 sm:px-6">
         <Row className="flex-wrap items-end justify-between gap-4">
@@ -470,7 +484,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
           </div>
         )}
 
-        <Explainer />
+        <Explainer contract={selected} />
 
         <Suggestions />
       </Col>
@@ -611,16 +625,19 @@ const MiniSpark = (props: {
   )
 }
 
+// Pinned to the top while scrolling; the terminal's scroll-margin accounts
+// for its height so ticker clicks land the chart just below it.
 const TickerTape = (props: {
   contracts: PerpContract[]
   week: Record<string, WeekSeries>
+  onSelect: (id: string) => void
 }) => {
-  const { contracts, week } = props
+  const { contracts, week, onSelect } = props
   if (contracts.length === 0) return null
   const items = [...contracts, ...contracts]
   const duration = Math.max(24, contracts.length * 9)
   return (
-    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 group relative overflow-hidden whitespace-nowrap border-b">
+    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 group sticky top-0 z-20 overflow-hidden whitespace-nowrap border-b">
       <style>{`
         @keyframes perps-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @media (prefers-reduced-motion: reduce) { .perps-marquee { animation: none !important } }
@@ -630,7 +647,12 @@ const TickerTape = (props: {
         style={{ animation: `perps-marquee ${duration}s linear infinite` }}
       >
         {items.map((c, i) => (
-          <TickerItem key={c.id + i} contract={c} series={week[c.id]} />
+          <TickerItem
+            key={c.id + i}
+            contract={c}
+            series={week[c.id]}
+            onSelect={() => onSelect(c.id)}
+          />
         ))}
       </div>
     </div>
@@ -640,14 +662,15 @@ const TickerTape = (props: {
 const TickerItem = (props: {
   contract: PerpContract
   series: WeekSeries | undefined
+  onSelect: () => void
 }) => {
-  const { contract, series } = props
+  const { contract, series, onSelect } = props
   const price = Number(contract.oraclePrice)
   const flash = useTickFlash(price)
   const change = weekChange(series, contract)
   return (
-    <Link
-      href={contractPath(contract)}
+    <button
+      onClick={onSelect}
       className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
     >
       <span className="text-ink-900 font-mono font-semibold">
@@ -666,7 +689,7 @@ const TickerItem = (props: {
         <ChangeLabel change={change} className="text-xs" />
       )}
       {leanOf(contract) && <LeanBadge contract={contract} />}
-    </Link>
+    </button>
   )
 }
 
@@ -911,7 +934,10 @@ const Terminal = (props: {
     : undefined
 
   return (
-    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
+    <Col
+      id="perp-terminal"
+      className="border-ink-200 dark:border-ink-300 bg-canvas-0 scroll-mt-12 gap-4 rounded-xl border p-4 sm:p-5"
+    >
       {/* Below xl the watchlist sits under the chart, so give phones and
           tablets a switcher up here. */}
       <Row className="-mx-1 gap-1.5 overflow-x-auto px-1 pb-1 xl:hidden">
@@ -1529,39 +1555,82 @@ const Suggestions = () => {
   )
 }
 
-const Explainer = () => {
-  const items: { title: string; body: string }[] = [
+// The market page's own explainer (single source of truth, via
+// PerpExplainerContent) next to the selected market's actual parameters —
+// the abstract rules on the left, what they mean for THIS market on the
+// right.
+const Explainer = (props: { contract: PerpContract | undefined }) => {
+  const { contract } = props
+  return (
+    <Col id="perps-explainer" className="scroll-mt-12 gap-3">
+      <SectionHeader title="What are perps?" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
+          <PerpExplainerContent hideHeading />
+        </Col>
+        {contract && <MarketParameters contract={contract} />}
+      </div>
+    </Col>
+  )
+}
+
+const MarketParameters = (props: { contract: PerpContract }) => {
+  const { contract } = props
+  const maxLev = contract.maxLeverage
+  const periodMs = getFundingPeriodMs(contract)
+  const feeBps = getPerpTakerFeeBps(contract)
+  const rows: { label: string; value: string; note: string }[] = [
     {
-      title: 'Oracle price',
-      body: 'Each market tracks a number from an outside source — a coin price, a poll average, a usage statistic. Longs gain when it rises, shorts when it falls. Trades execute at the latest oracle update, which can lag the source.',
+      label: 'Max leverage',
+      value: `${maxLev}×`,
+      note: `At ${maxLev}×, a ${(100 / maxLev).toFixed(
+        maxLev >= 50 ? 1 : 0
+      )}% move against you liquidates the position. Lower leverage, more room.`,
     },
     {
-      title: 'Leverage and liquidation',
-      body: 'Leverage multiplies exposure: 100 mana at 5× controls 500 mana of exposure. If the oracle reaches your liquidation price the position closes and the margin you posted is gone. Profitable positions can also be auto-deleveraged if market backing runs short.',
+      label: 'Fee',
+      value: `${(feeBps / 100).toFixed(2)}%`,
+      note: 'Of position size, charged once when you open or add. Closing is free. Fees go into the market’s backing, not to Manifold.',
     },
     {
-      title: 'Funding',
-      body: 'At each funding interval the more crowded side pays the other. Funding adds to or takes from your margin while you hold; the current rate and next payment show above the chart.',
+      label: 'Funding',
+      value: `every ${fundingPeriodNoun(periodMs)}`,
+      note: 'The more crowded side pays the other. The current rate and the next payment are shown above the chart.',
     },
     {
-      title: 'No expiry',
-      body: 'A position stays open until you close it, it is liquidated or auto-deleveraged, or Manifold settles the market. Perp profit and loss show in your portfolio but do not count toward leagues for now.',
+      label: 'Oracle',
+      value: `pauses after ${formatCountdown(contract.maxOraclePriceAgeMs)}`,
+      note: 'Trades execute at the latest accepted oracle price. If the feed goes quiet for longer than this, opening and closing pause until it recovers.',
     },
   ]
   return (
-    <Col id="perps-explainer" className="scroll-mt-4 gap-3">
-      <SectionHeader title="What are perps?" />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {items.map((item) => (
-          <div
-            key={item.title}
-            className="border-ink-200 dark:border-ink-300 bg-canvas-0 rounded-xl border p-4"
-          >
-            <div className="text-ink-900 font-semibold">{item.title}</div>
-            <p className="text-ink-600 mt-1 text-sm">{item.body}</p>
-          </div>
+    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+      <Row className="border-ink-200 dark:border-ink-300 items-baseline gap-2 border-b px-4 py-2.5">
+        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+          This market
+        </span>
+        <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
+          {tickerOf(contract)}
+        </span>
+      </Row>
+      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+        {rows.map((r) => (
+          <Col key={r.label} className="gap-0.5 px-4 py-3">
+            <Row className="items-baseline justify-between gap-3">
+              <span className="text-ink-900 text-sm font-semibold">
+                {r.label}
+              </span>
+              <span className="text-ink-900 font-mono text-sm tabular-nums">
+                {r.value}
+              </span>
+            </Row>
+            <p className="text-ink-500 text-xs">{r.note}</p>
+          </Col>
         ))}
-      </div>
+        <div className="px-4 py-3">
+          <PerpOracleAttribution feedId={contract.oracleFeedId} />
+        </div>
+      </Col>
     </Col>
   )
 }
