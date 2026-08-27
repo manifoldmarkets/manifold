@@ -34,6 +34,10 @@ export const CustomWebview = (props: {
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
+  // Reports the WebView's committed URL (including third-party pages such as
+  // iDenfy), so the app can avoid posting credentials into them. Called with
+  // null at navigation start to clear trust until the next load commits.
+  onNavigate: (url: string | null) => void
   display: boolean
 }) => {
   const {
@@ -43,6 +47,7 @@ export const CustomWebview = (props: {
     setHasLoadedWebView,
     handleMessageFromWebview,
     handleExternalLink,
+    onNavigate,
     display,
   } = props
 
@@ -82,6 +87,13 @@ export const CustomWebview = (props: {
           <WebView
             {...sharedWebViewProps}
             style={styles.webView}
+            onLoadStart={() => onNavigate(null)}
+            // Restore trust only from a SUCCESSFUL, committed load. onLoad fires
+            // only from onLoadingFinish; onNavigationStateChange also fires for
+            // the provisional navigation-START event (on iOS with loading still
+            // false), which would restore a Manifold URL while the external
+            // document is still active, and onLoadEnd also fires on errors.
+            onLoad={(e) => onNavigate(e.nativeEvent.url)}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -111,6 +123,13 @@ export const CustomWebview = (props: {
           <WebView
             {...sharedWebViewProps}
             style={styles.webView}
+            onLoadStart={() => onNavigate(null)}
+            // Restore trust only from a SUCCESSFUL, committed load. onLoad fires
+            // only from onLoadingFinish; onNavigationStateChange also fires for
+            // the provisional navigation-START event (on iOS with loading still
+            // false), which would restore a Manifold URL while the external
+            // document is still active, and onLoadEnd also fires on errors.
+            onLoad={(e) => onNavigate(e.nativeEvent.url)}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)

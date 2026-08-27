@@ -97,8 +97,21 @@ const App = () => {
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  // Auth.currentUser didn't update, so we track the state manually
-  auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
+  // Mirror of fbUser for callbacks that outlive the render they were created in
+  // (the auth handoff timers below): a ref reads the latest value, a closure
+  // reads the value from when it was scheduled.
+  const fbUserRef = useRef<FirebaseUser | null>(fbUser)
+  useEffect(() => {
+    fbUserRef.current = fbUser
+  }, [fbUser])
+  // Bumped on every native sign-out, so async work that started before the
+  // sign-out can tell it has been superseded.
+  const authGeneration = useRef(0)
+  // Auth.currentUser didn't update, so we track the state manually.
+  useEffect(
+    () => auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null)),
+    []
+  )
 
   // Whose data the widget currently holds: stamped when a sync starts, nulled on
   // sign-out. Deliberately a ref, not `fbUser` — syncStreakFromApi is re-created
@@ -146,7 +159,8 @@ const App = () => {
     if (!user) return
     log('Got user from storage:', user.email)
     setFbUser(user)
-    sendWebviewAuthInfo(user)
+    // sendWebviewAuthInfo is driven by the uid effect below, which this setFbUser
+    // triggers — no need to call it here too.
     if (user.uid) syncStreakFromApi(user.uid)
     await setFirebaseUserViaJson(user, app)
   }
@@ -156,17 +170,75 @@ const App = () => {
     clearData('lastNotificationIds') // no longer used, clear them from local storage
   }, [])
 
+  // The URL the WebView currently has loaded. Identity verification navigates
+  // the WebView to iDenfy's hosted page (boosts go to Stripe), and
+  // WebView.postMessage dispatches into whichever document is loaded — so the
+  // credential handoff below must only ever be posted into our own pages.
+  // Set only from committed navigations (see CustomWebview's onNavigate), never
+  // from a provisional one — a navigation START fires before the request is even
+  // allowed, so an external page could otherwise be marked trusted while it is
+  // still the active document.
+  const webviewUrl = useRef(baseUri)
+  // Full-origin match (scheme + host + port), not just host: a page served over
+  // http://manifold.markets or a look-alike subdomain must not read as ours.
+  const isManifoldUrl = (url: string) => {
+    try {
+      return new URL(url).origin === new URL(baseUri).origin
+    } catch {
+      return false
+    }
+  }
+
+  // Pending 'nativeFbUser' posts, kept so a sign-out (or a switch to another
+  // account) can cancel them. A late post would otherwise hand the OLD user back
+  // to the web, which re-signs it in and echoes it to native as 'users' —
+  // undoing the sign-out, and for accounts the web auto-logs-out (banned or
+  // deleted) doing so forever.
+  const pendingAuthPosts = useRef<ReturnType<typeof setTimeout>[]>([])
+  const cancelPendingAuthPosts = () => {
+    pendingAuthPosts.current.forEach((timer) => clearTimeout(timer))
+    pendingAuthPosts.current = []
+  }
+  // Whether a wanted handoff post was dropped because the WebView was on an
+  // untrusted URL at fire time. Trust is cleared for the whole document load,
+  // so on a slow connection every timer below can fire inside that window —
+  // this flag lets the next committed Manifold page re-arm the handoff (see
+  // onNavigate) instead of silently stranding the web client logged out.
+  const authPostDropped = useRef(false)
+
   // Sends the saved user to the web client to make the log in process faster
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
+    cancelPendingAuthPosts()
+    authPostDropped.current = false
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
     const timeouts = [100, 500, 1000, 3000]
-    timeouts.forEach((timeout) => {
+    pendingAuthPosts.current = timeouts.map((timeout) =>
       setTimeout(() => {
+        // Stale: native signed out or switched accounts since this was queued.
+        if (fbUserRef.current?.uid !== user.uid) return
+        // Never post credentials into a third-party page.
+        if (!isManifoldUrl(webviewUrl.current)) {
+          authPostDropped.current = true
+          return
+        }
         communicateWithWebview('nativeFbUser', user)
       }, timeout)
-    })
+    )
   }
+
+  // This handoff is the channel by which the web client learns about a native
+  // sign-in, and a dropped message strands the user on a logged-out page whose
+  // login button signs them back out of native — an unrecoverable loop. A fresh
+  // sign-in used to get a single un-retried post from AuthPage (a component the
+  // sign-in itself unmounts), while only the restore-from-storage path got the
+  // retries. Run it on every uid change so both paths get them; the web side
+  // no-ops when the email already matches.
+  useEffect(() => {
+    if (fbUser) sendWebviewAuthInfo(fbUser)
+    return cancelPendingAuthPosts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fbUser?.uid])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(() => {
@@ -374,9 +446,24 @@ const App = () => {
 
   const handleMessageFromWebview = async ({ nativeEvent }: any) => {
     const { data } = nativeEvent
+    // The origin of the document that sent this message. Auth-sensitive handlers
+    // gate on it so a third-party page loaded in the WebView (iDenfy, Stripe)
+    // can't drive the credential handoff.
+    const messageUrl = nativeEvent.url as string | undefined
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
     // We handle auth with a custom screen, so if the user sees a login button on the client, we're out of sync
     if (type === 'loginClicked') {
+      // The web client only shows a login button when it thinks nobody is signed
+      // in. If native still holds a session at that point, the handoff above
+      // never landed — that's the login loop, seen from this side. We still sign
+      // out (the user asked to log in, and this may be a deliberate account
+      // switch), but record it so we can tell how often it actually happens.
+      if (fbUser) {
+        Sentry.captureMessage(
+          'Web requested login while native was still signed in',
+          { level: 'warning', tags: { authFlow: 'login-loop-suspected' } }
+        )
+      }
       await signOutUsers('Error on sign out before sign in')
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
@@ -438,7 +525,10 @@ const App = () => {
       // Android only: show the system "add widget to home screen" dialog via our
       // native module. No-op on iOS (no such API) and on older builds that
       // predate the module (NativeModules.WidgetPin is then undefined).
-      if (Platform.OS === 'android' && NativeModules.WidgetPin?.pinStreakWidget) {
+      if (
+        Platform.OS === 'android' &&
+        NativeModules.WidgetPin?.pinStreakWidget
+      ) {
         try {
           await NativeModules.WidgetPin.pinStreakWidget()
         } catch (e) {
@@ -452,9 +542,21 @@ const App = () => {
         const fbUserAndPrivateUser = JSON.parse(payload)
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           const fbUser = fbUserAndPrivateUser.fbUser as FirebaseUser
-          // log('Signing in fb user from webview cache')
+          const generation = authGeneration.current
           // We don't actually use the firebase auth for anything right now, but in case we do in the future...
           await setFirebaseUserViaJson(fbUser, app)
+          // A sign-out landed while this echo was being applied, so it is stale.
+          // Don't persist it, and undo the re-sign above — but ONLY if this stale
+          // user is still the current firebase user. If a newer account signed in
+          // during the await, leaving it alone is what keeps a global signOut from
+          // clearing the account the user actually chose.
+          if (generation !== authGeneration.current) {
+            if (auth.currentUser?.uid === fbUser.uid)
+              await signOutUsers(
+                'Error undoing a users echo that raced a sign-out'
+              )
+            return
+          }
           await storeData('user', fbUser)
           // Refresh the streak widget from the API on each (re)auth / app open.
           if (fbUser.uid) syncStreakFromApi(fbUser.uid)
@@ -480,7 +582,9 @@ const App = () => {
     } else if (type === 'startedListening') {
       log('Client started listening')
       listeningToNative.current = true
-      if (fbUser) sendWebviewAuthInfo(fbUser)
+      // Only re-hand credentials to a sender that is actually one of our pages.
+      if (fbUser && (!messageUrl || isManifoldUrl(messageUrl)))
+        sendWebviewAuthInfo(fbUser)
       // Deliver any notification that arrived during cold start
       if (pendingNotification.current) {
         const { notification, destination } = pendingNotification.current
@@ -526,6 +630,9 @@ const App = () => {
   }
 
   const signOutUsers = async (errorMessage: string) => {
+    authGeneration.current += 1
+    cancelPendingAuthPosts()
+    authPostDropped.current = false
     try {
       await auth.signOut()
     } catch (err) {
@@ -620,7 +727,6 @@ const App = () => {
           hidden={false}
         />
         <SplashAuth
-          webview={webview}
           hasLoadedWebView={hasLoadedWebView}
           fbUser={fbUser}
           isConnected={isConnected}
@@ -633,6 +739,23 @@ const App = () => {
           setHasLoadedWebView={setHasLoadedWebView}
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
+          onNavigate={(url) => {
+            // null (navigation start) leaves an empty string, which isManifoldUrl
+            // treats as untrusted until the next load commits.
+            webviewUrl.current = url ?? ''
+            // A slow initial load can outlast the whole retry ladder while
+            // trust is cleared; if that dropped a wanted post, re-arm the
+            // handoff now that one of our pages has committed. The web side
+            // no-ops when the user already matches, so re-sends are idempotent.
+            if (
+              url &&
+              authPostDropped.current &&
+              fbUserRef.current &&
+              isManifoldUrl(url)
+            ) {
+              sendWebviewAuthInfo(fbUserRef.current)
+            }
+          }}
         />
       </SafeAreaView>
       {/*<ExportLogsButton />*/}
