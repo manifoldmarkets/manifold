@@ -23,7 +23,7 @@ import {
   getPerpFundingRate,
 } from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoneyShort } from 'common/util/format'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { median } from 'common/util/math'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -1353,27 +1353,33 @@ export const PerpChart = (props: {
         )}
       </div>
       {mode === 'price' && overlays.liqs && liqProximity && (
-        <span className="text-ink-500 text-xs">
-          Within {LIQ_PROXIMITY_BAND * 100}% of liquidation:{' '}
+        <Row className="text-ink-500 flex-wrap items-center gap-x-1 text-xs">
+          <span>Within {LIQ_PROXIMITY_BAND * 100}% of liquidation:</span>
           {liqProximity.longs > 0 && (
             <>
-              <span className="font-semibold text-teal-700 dark:text-teal-400">
-                {formatMoneyShort(liqProximity.longs)}
-              </span>{' '}
-              of longs below
+              <TokenNumber
+                amount={liqProximity.longs}
+                numberType="short"
+                className="font-semibold text-teal-700 dark:text-teal-400"
+              />
+              <span>of longs below</span>
             </>
           )}
-          {liqProximity.longs > 0 && liqProximity.shorts > 0 && ' · '}
+          {liqProximity.longs > 0 && liqProximity.shorts > 0 && <span>·</span>}
           {liqProximity.shorts > 0 && (
             <>
-              <span className="text-scarlet-700 dark:text-scarlet-400 font-semibold">
-                {formatMoneyShort(liqProximity.shorts)}
-              </span>{' '}
-              of shorts above
+              <TokenNumber
+                amount={liqProximity.shorts}
+                numberType="short"
+                className="text-scarlet-700 dark:text-scarlet-400 font-semibold"
+              />
+              <span>of shorts above.</span>
             </>
           )}
-          . A move that far force-closes them, pushing the price further.
-        </span>
+          <span>
+            A move that far force-closes them, pushing the price further.
+          </span>
+        </Row>
       )}
       {mode === 'funding' && (
         <span className="text-ink-400 text-xs">

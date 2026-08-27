@@ -42,7 +42,6 @@ import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract
 import { usePerpPositions } from 'web/components/perps/use-perp-positions'
 import { Avatar } from 'web/components/widgets/avatar'
 import { TokenNumber } from 'web/components/widgets/token-number'
-import { formatMoneyShort } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
@@ -899,18 +898,19 @@ const RecentActivity = (props: {
                   {closing && e.pnl != null && (
                     <>
                       {' '}
-                      {/* Not font-mono: the moniker glyph is missing from
-                          the mono stack. */}
                       <span
                         className={clsx(
-                          'font-semibold tabular-nums',
+                          'inline-flex items-center font-semibold tabular-nums',
                           e.pnl >= 0
                             ? 'text-teal-600 dark:text-teal-400'
                             : 'text-scarlet-600 dark:text-scarlet-400'
                         )}
                       >
                         {e.pnl >= 0 ? '+' : '−'}
-                        {formatMoneyShort(Math.abs(e.pnl))}
+                        <TokenNumber
+                          amount={Math.abs(e.pnl)}
+                          numberType="short"
+                        />
                       </span>
                     </>
                   )}
