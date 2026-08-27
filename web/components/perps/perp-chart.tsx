@@ -23,6 +23,7 @@ import {
   getPerpFundingRate,
 } from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { formatMoneyShort } from 'common/util/format'
 import { median } from 'common/util/math'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -128,6 +129,9 @@ const MIN_FRAME_POINTS = 4
 // the diamond guard (rightly) suppresses them; slow feeds that starve a
 // one-day window fall back to All automatically.
 const DEFAULT_TIMEFRAME: Timeframe = '1D'
+// Fraction of the current price within which a liquidation price counts as
+// "close", for the summary line under the Liquidations overlay.
+const LIQ_PROXIMITY_BAND = 0.03
 
 // ---------------------------------------------------------------------------
 // Series cache. A hub page that swaps the mounted contract re-runs the
@@ -411,6 +415,25 @@ export const PerpChart = (props: {
   ])
 
   const allPositions = useMemo(() => positions ?? [], [positions])
+  // Open notional on each side whose liquidation price is within a small
+  // move of the current price — the number behind the liquidation bands.
+  // A big figure here is a fragile side: a move that far force-closes it,
+  // which pushes the price further the same way.
+  const liqProximity = useMemo(() => {
+    const price = Number(contract.oraclePrice)
+    if (!(price > 0)) return null
+    let longs = 0
+    let shorts = 0
+    for (const p of allPositions) {
+      if (!Number.isFinite(p.liquidationPrice)) continue
+      const d = (p.liquidationPrice - price) / price
+      if (p.direction === 'long' && d < 0 && d >= -LIQ_PROXIMITY_BAND)
+        longs += p.size
+      if (p.direction === 'short' && d > 0 && d <= LIQ_PROXIMITY_BAND)
+        shorts += p.size
+    }
+    return longs > 0 || shorts > 0 ? { longs, shorts } : null
+  }, [allPositions, contract.oraclePrice])
   const userPositions = useMemo(
     () => (user ? allPositions.filter((p) => p.userId === user.id) : []),
     [allPositions, user?.id]
@@ -1329,6 +1352,29 @@ export const PerpChart = (props: {
           </div>
         )}
       </div>
+      {mode === 'price' && overlays.liqs && liqProximity && (
+        <span className="text-ink-500 text-xs">
+          Within {LIQ_PROXIMITY_BAND * 100}% of liquidation:{' '}
+          {liqProximity.longs > 0 && (
+            <>
+              <span className="font-semibold text-teal-700 dark:text-teal-400">
+                {formatMoneyShort(liqProximity.longs)}
+              </span>{' '}
+              of longs below
+            </>
+          )}
+          {liqProximity.longs > 0 && liqProximity.shorts > 0 && ' · '}
+          {liqProximity.shorts > 0 && (
+            <>
+              <span className="text-scarlet-700 dark:text-scarlet-400 font-semibold">
+                {formatMoneyShort(liqProximity.shorts)}
+              </span>{' '}
+              of shorts above
+            </>
+          )}
+          . A move that far force-closes them, pushing the price further.
+        </span>
+      )}
       {mode === 'funding' && (
         <span className="text-ink-400 text-xs">
           {fundingPoints.length === 0

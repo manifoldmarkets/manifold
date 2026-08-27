@@ -67,8 +67,6 @@ const HUB_FEATURES = {
   positions: true,
   /** Cross-market recent-activity feed in the rail. */
   activity: true,
-  /** Liquidation-proximity line in the terminal header. */
-  liquidations: true,
 }
 
 // Perps are created unlisted and flipped public at launch, so the search APIs
@@ -475,7 +473,7 @@ const windowMs = (w: ChangeWindow) => (w === '24h' ? DAY_MS : 7 * DAY_MS)
 // columns line up: ticker · sparkline · price · change · lean. The sparkline
 // column drops out below 360px.
 const WATCH_GRID =
-  'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.75rem] min-[360px]:grid-cols-[3.25rem_3.5rem_minmax(0,1fr)_3.25rem_3.75rem]'
+  'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.75rem] min-[360px]:grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.5rem_3.75rem]'
 const DEFAULT_ROWS = 5
 
 export default function PerpsPage(props: { perps: Contract[] }) {
@@ -837,7 +835,9 @@ const RecentActivity = (props: {
         </span>
         <span className="text-ink-400 text-xs">all markets</span>
       </Row>
-      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+      {/* One line per event, two columns on wide screens: eight events in
+          four lines instead of eight tall rows. */}
+      <div className="divide-ink-200 dark:divide-ink-300 grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0">
         {events === null ? (
           <Col className="gap-2 p-3">
             {[0, 1, 2].map((i) => (
@@ -855,15 +855,15 @@ const RecentActivity = (props: {
               <button
                 key={e.id}
                 onClick={() => onSelect(contract.id)}
-                className="hover:bg-canvas-50 flex items-center gap-2 px-3 py-2 text-left text-xs"
+                className="hover:bg-canvas-50 border-ink-200 dark:border-ink-300 flex items-center gap-2 px-3 py-1.5 text-left text-xs sm:border-b"
               >
                 <Avatar
                   username={e.username ?? undefined}
                   avatarUrl={e.avatarUrl ?? undefined}
-                  size="xs"
+                  size="2xs"
                   noLink
                 />
-                <span className="text-ink-600 min-w-0 flex-1 leading-snug">
+                <span className="text-ink-600 min-w-0 flex-1 truncate leading-snug">
                   <span className="text-ink-900 font-medium">
                     {e.userName ?? e.username ?? 'Someone'}
                   </span>{' '}
@@ -915,21 +915,19 @@ const RecentActivity = (props: {
                     </>
                   )}
                 </span>
-                <Col className="shrink-0 items-end">
-                  <TokenNumber
-                    amount={Math.abs(e.sizeDelta)}
-                    numberType="short"
-                    className="text-ink-700 font-mono tabular-nums"
-                  />
-                  <span className="text-ink-400 whitespace-nowrap">
-                    {isClient ? fromNow(e.ts) : ''}
-                  </span>
-                </Col>
+                <TokenNumber
+                  amount={Math.abs(e.sizeDelta)}
+                  numberType="short"
+                  className="text-ink-700 shrink-0 font-mono tabular-nums"
+                />
+                <span className="text-ink-400 w-14 shrink-0 whitespace-nowrap text-right">
+                  {isClient ? fromNow(e.ts).replace(' ago', '') : ''}
+                </span>
               </button>
             )
           })
         )}
-      </Col>
+      </div>
       {rows.length > 8 && (
         <button
           onClick={() => setShowAll((v) => !v)}
@@ -1440,9 +1438,6 @@ const Terminal = (props: {
               </span>
             </Row>
           )}
-          {HUB_FEATURES.liquidations && (
-            <LiquidationProximity positions={positions} price={price} />
-          )}
         </Col>
         <Link
           href={contractPath(contract)}
@@ -1584,67 +1579,6 @@ const Terminal = (props: {
   )
 }
 
-// How much open interest is within a small move of being liquidated, per
-// side — from the public positions the terminal already polls. A big number
-// here is a fragile side: a modest move cascades. Rendered only when there
-// is something inside the band, so quiet markets show nothing.
-const LIQUIDATION_BAND = 0.03
-const LiquidationProximity = (props: {
-  positions:
-    | { direction: 'long' | 'short'; size: number; liquidationPrice: number }[]
-    | null
-  price: number
-}) => {
-  const { positions, price } = props
-  const near = useMemo(() => {
-    if (!positions || !(price > 0)) return null
-    let longs = 0
-    let shorts = 0
-    for (const p of positions) {
-      if (!Number.isFinite(p.liquidationPrice)) continue
-      const d = (p.liquidationPrice - price) / price
-      if (p.direction === 'long' && d < 0 && d >= -LIQUIDATION_BAND)
-        longs += p.size
-      if (p.direction === 'short' && d > 0 && d <= LIQUIDATION_BAND)
-        shorts += p.size
-    }
-    return { longs, shorts }
-  }, [positions, price])
-  if (!near || (near.longs <= 0 && near.shorts <= 0)) return null
-  return (
-    <Tooltip
-      text={`Open interest whose liquidation price is within ${
-        LIQUIDATION_BAND * 100
-      }% of the current price. If the price moves that far, these positions are force-closed — which pushes it further.`}
-    >
-      <Row className="text-ink-500 flex-wrap items-center gap-x-1.5 text-xs">
-        <span>Within {LIQUIDATION_BAND * 100}% of liquidation:</span>
-        {near.longs > 0 && (
-          <Row className="items-center gap-1">
-            <TokenNumber
-              amount={near.longs}
-              numberType="short"
-              className="font-mono font-semibold text-teal-700 dark:text-teal-400"
-            />
-            <span>of longs below</span>
-          </Row>
-        )}
-        {near.longs > 0 && near.shorts > 0 && <span>·</span>}
-        {near.shorts > 0 && (
-          <Row className="items-center gap-1">
-            <TokenNumber
-              amount={near.shorts}
-              numberType="short"
-              className="text-scarlet-700 dark:text-scarlet-400 font-mono font-semibold"
-            />
-            <span>of shorts above</span>
-          </Row>
-        )}
-      </Row>
-    </Tooltip>
-  )
-}
-
 // ---------------------------------------------------------------------------
 // Watchlist: every open perp, sortable, top rows only until expanded.
 
@@ -1682,7 +1616,6 @@ const Watchlist = (props: {
         )}
       >
         <SortHeader {...header} label="Market" sortKey="volume" />
-        <span className="hidden min-[360px]:block" />
         <SortHeader {...header} label="Price" className="text-right" />
         {HUB_FEATURES.changeWindow ? (
           // The change column doubles as the window switch: click the
@@ -1725,6 +1658,7 @@ const Watchlist = (props: {
             className="text-right"
           />
         )}
+        <span className="hidden min-[360px]:block" />
         <SortHeader
           {...header}
           label="Lean"
@@ -1824,11 +1758,6 @@ const WatchRow = (props: {
       >
         {tickerOf(contract)}
       </span>
-      <MiniSpark
-        series={series}
-        change={change}
-        className="hidden h-6 w-14 min-[360px]:block"
-      />
       <span
         className={clsx(
           'text-ink-900 truncate text-right font-mono text-sm tabular-nums transition-colors duration-700',
@@ -1839,6 +1768,11 @@ const WatchRow = (props: {
         {displayPrice(contract)}
       </span>
       <ChangeLabel change={change} className="text-right text-xs" />
+      <MiniSpark
+        series={series}
+        change={change}
+        className="hidden h-6 w-14 min-[360px]:block"
+      />
       <span className="flex justify-end">
         <LeanBadge contract={contract} />
       </span>
