@@ -733,8 +733,11 @@ const LeanHistory = (props: { contract: PerpContract }) => {
     )
     .join(' ')
   const area = `${line} L${W},${H / 2} L0,${H / 2} Z`
-  const clipId = `lean-clip-${contract.id}`
-  const nowLong = points[points.length - 1].longShare >= 0.5
+  const id = `lean-${contract.id}`
+  // Theme colors as SVG paint: the palette vars hold "r g b" triplets (see
+  // tailwind.config), so they stay correct in dark mode.
+  const yes = (shade: number) => `rgb(var(--color-yes-${shade}))`
+  const no = (shade: number) => `rgb(var(--color-no-${shade}))`
   return (
     <Tooltip text="Share of open interest that is long, last 7 days. Above the line: net long. Below: net short.">
       <Col className="items-start gap-0.5 sm:items-end">
@@ -746,12 +749,51 @@ const LeanHistory = (props: { contract: PerpContract }) => {
           aria-label="Long share of open interest over the last 7 days"
         >
           <defs>
-            <clipPath id={`${clipId}-top`}>
+            <clipPath id={`${id}-top`}>
               <rect x={0} y={0} width={W} height={H / 2} />
             </clipPath>
-            <clipPath id={`${clipId}-bottom`}>
+            <clipPath id={`${id}-bottom`}>
               <rect x={0} y={H / 2} width={W} height={H / 2} />
             </clipPath>
+            {/* Vertical gradients in viewBox units: green fading in above
+                the midline, red fading in below, so the color says which
+                side AND how far. */}
+            <linearGradient
+              id={`${id}-stroke`}
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={0}
+              x2={0}
+              y2={H}
+            >
+              <stop offset="0" stopColor={yes(600)} />
+              <stop offset="0.42" stopColor={yes(400)} />
+              <stop offset="0.5" stopColor="rgb(var(--color-ink-400))" />
+              <stop offset="0.58" stopColor={no(400)} />
+              <stop offset="1" stopColor={no(600)} />
+            </linearGradient>
+            <linearGradient
+              id={`${id}-fill-top`}
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={0}
+              x2={0}
+              y2={H / 2}
+            >
+              <stop offset="0" stopColor={yes(500)} stopOpacity={0.45} />
+              <stop offset="1" stopColor={yes(500)} stopOpacity={0.04} />
+            </linearGradient>
+            <linearGradient
+              id={`${id}-fill-bottom`}
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={H / 2}
+              x2={0}
+              y2={H}
+            >
+              <stop offset="0" stopColor={no(500)} stopOpacity={0.04} />
+              <stop offset="1" stopColor={no(500)} stopOpacity={0.45} />
+            </linearGradient>
           </defs>
           <line
             x1={0}
@@ -765,18 +807,18 @@ const LeanHistory = (props: { contract: PerpContract }) => {
           />
           <path
             d={area}
-            className="fill-teal-500/25"
-            clipPath={`url(#${clipId}-top)`}
+            fill={`url(#${id}-fill-top)`}
+            clipPath={`url(#${id}-top)`}
           />
           <path
             d={area}
-            className="fill-scarlet-500/25"
-            clipPath={`url(#${clipId}-bottom)`}
+            fill={`url(#${id}-fill-bottom)`}
+            clipPath={`url(#${id}-bottom)`}
           />
           <path
             d={line}
             fill="none"
-            className={nowLong ? 'stroke-teal-500' : 'stroke-scarlet-500'}
+            stroke={`url(#${id}-stroke)`}
             strokeWidth={1.5}
             vectorEffect="non-scaling-stroke"
             strokeLinejoin="round"
