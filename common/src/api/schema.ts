@@ -1,3 +1,4 @@
+import { PerpSuggestion } from '../perps/suggestion'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
@@ -1404,6 +1405,44 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().min(1),
         userId: z.string().min(1).optional(),
+      })
+      .strict(),
+  },
+  'get-perp-suggestions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Signed-in viewers get their own hasVoted in the same response.
+    preferAuth: true,
+    cache: 'no-store',
+    returns: [] as PerpSuggestion[],
+    props: z
+      .object({
+        limit: z.coerce.number().int().positive().max(100).optional(),
+      })
+      .strict(),
+  },
+  'create-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as PerpSuggestion,
+    props: z
+      .object({
+        name: z.string().min(1).max(200),
+        dataSource: z.string().max(1000).optional(),
+      })
+      .strict(),
+  },
+  'vote-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { votes: number },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        remove: z.boolean().optional(),
       })
       .strict(),
   },

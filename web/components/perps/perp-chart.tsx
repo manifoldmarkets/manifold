@@ -129,6 +129,100 @@ const MIN_FRAME_POINTS = 4
 // one-day window fall back to All automatically.
 const DEFAULT_TIMEFRAME: Timeframe = '1D'
 
+// ---------------------------------------------------------------------------
+// Series cache. A hub page that swaps the mounted contract re-runs the
+// cadence probe and the frame fetch on every switch — a visible
+// "Loading chart…" even when switching back to a market seen seconds ago.
+// Resolved responses are kept for a short TTL keyed by feed and frame, and
+// the component reads them synchronously on mount, so a cached switch draws
+// on the first paint. `prefetchPerpChart` primes the cache. Live ticks are
+// appended on top of the fetched series regardless, so a slightly stale
+// series is never stale on screen.
+type SeriesPoint = { ts: number; price: number }
+const SERIES_CACHE_TTL_MS = 5 * MINUTE_MS
+const seriesCache = new Map<string, { at: number; points: SeriesPoint[] }>()
+const seriesInflight = new Map<string, Promise<SeriesPoint[]>>()
+// Only successful probes are cached; a null (too few points) is cheap to
+// re-ask and may resolve once the feed has history.
+const cadenceCache = new Map<string, number>()
+
+const seriesKey = (feedId: string, frame: Timeframe) => `${feedId}|${frame}`
+
+const getCachedSeries = (feedId: string, frame: Timeframe) => {
+  const hit = seriesCache.get(seriesKey(feedId, frame))
+  return hit && Date.now() - hit.at < SERIES_CACHE_TTL_MS ? hit.points : null
+}
+
+const fetchFrameSeries = (
+  feedId: string,
+  frame: Timeframe
+): Promise<SeriesPoint[]> => {
+  const key = seriesKey(feedId, frame)
+  const cached = getCachedSeries(feedId, frame)
+  if (cached) return Promise.resolve(cached)
+  const inflight = seriesInflight.get(key)
+  if (inflight) return inflight
+  const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[frame]
+  const request = api('get-oracle-price-series', {
+    feedId,
+    limit: 5000,
+    since: windowMs ? Date.now() - windowMs : undefined,
+    bucketSeconds,
+  })
+    .then((res) => {
+      const points = res.filter(
+        (p) => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0
+      )
+      seriesCache.set(key, { at: Date.now(), points })
+      return points
+    })
+    .finally(() => seriesInflight.delete(key))
+  seriesInflight.set(key, request)
+  return request
+}
+
+const probeCadence = (feedId: string): Promise<number | null> => {
+  const cached = cadenceCache.get(feedId)
+  if (cached !== undefined) return Promise.resolve(cached)
+  return api('get-oracle-price-series', { feedId, limit: 8 })
+    .then((res) => {
+      if (res.length < 2) return null
+      const dts = res.slice(1).map((p, i) => p.ts - res[i].ts)
+      const m = median(dts)
+      const cadence = Number.isFinite(m) && m > 0 ? m : null
+      if (cadence !== null) cadenceCache.set(feedId, cadence)
+      return cadence
+    })
+    .catch(() => null)
+}
+
+const frameEligibleFor = (
+  frame: Timeframe,
+  cadenceMs: number | null | undefined
+) =>
+  frame === 'ALL' ||
+  (typeof cadenceMs === 'number' &&
+    TIMEFRAME_MS[frame] / cadenceMs >= MIN_FRAME_POINTS)
+
+/**
+ * Warm the cadence probe and the landing-frame series for a contract so a
+ * later mount of PerpChart draws without a loading state. Safe to call for
+ * every market on a hub page; in-flight requests are shared with any chart
+ * already fetching the same thing.
+ */
+export const prefetchPerpChart = async (contract: PerpContract) => {
+  const feedId = contract.oracleFeedId
+  if (!feedId) return
+  const cadence = await probeCadence(feedId)
+  const frame = frameEligibleFor(DEFAULT_TIMEFRAME, cadence)
+    ? DEFAULT_TIMEFRAME
+    : 'ALL'
+  const points = await fetchFrameSeries(feedId, frame)
+  if (points.length < MIN_FRAME_POINTS && frame !== 'ALL') {
+    await fetchFrameSeries(feedId, 'ALL')
+  }
+}
+
 type OverlayGeometry = {
   now: number
   horizon: number
@@ -156,10 +250,8 @@ export const PerpChart = (props: {
 }) => {
   const { contract, mode, height = 240, positions } = props
   const user = useUser()
-  const [oraclePoints, setOraclePoints] = useState<Point[]>([])
   const [fundingPoints, setFundingPoints] = useState<Point[]>([])
   const [livePoints, setLivePoints] = useState<Point[]>([])
-  const [loading, setLoading] = useState(true)
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
   const [hoveredMark, setHoveredMark] = useState<ProjectionPoint | null>(null)
   const [hoveredCarryEnd, setHoveredCarryEnd] = useState(false)
@@ -179,28 +271,29 @@ export const PerpChart = (props: {
   // undefined = probe in flight; null = unavailable. Waiting for the probe
   // prevents a persisted short frame from firing a wasteful All request
   // before we know whether that frame is valid for this feed.
-  const [cadenceMs, setCadenceMs] = useState<number | null>()
+  const [cadenceMs, setCadenceMs] = useState<number | null | undefined>(() =>
+    cadenceCache.get(contract.oracleFeedId)
+  )
   useEffect(() => {
     let cancelled = false
-    setCadenceMs(undefined)
-    api('get-oracle-price-series', { feedId: contract.oracleFeedId, limit: 8 })
-      .then((res) => {
-        if (cancelled) return
-        if (res.length < 2) {
-          setCadenceMs(null)
-          return
-        }
-        const dts = res.slice(1).map((p, i) => p.ts - res[i].ts)
-        const m = median(dts)
-        setCadenceMs(Number.isFinite(m) && m > 0 ? m : null)
-      })
-      .catch(() => {
-        if (!cancelled) setCadenceMs(null)
-      })
+    setCadenceMs(cadenceCache.get(contract.oracleFeedId))
+    probeCadence(contract.oracleFeedId).then((cadence) => {
+      if (!cancelled) setCadenceMs(cadence)
+    })
     return () => {
       cancelled = true
     }
   }, [contract.oracleFeedId])
+  // Seed from the cache so a remount of an already-fetched feed and frame
+  // paints the series immediately instead of a loading placeholder.
+  const initialCached = getCachedSeries(
+    contract.oracleFeedId,
+    frameEligibleFor(timeframe, cadenceMs) ? timeframe : 'ALL'
+  )
+  const [oraclePoints, setOraclePoints] = useState<Point[]>(
+    () => initialCached?.map((p) => ({ ts: p.ts, value: p.price })) ?? []
+  )
+  const [loading, setLoading] = useState(!initialCached)
   // A frame is offered only when the feed's cadence puts enough points in
   // its window to draw a real line — a 30-min feed has 2-3 points in an
   // hour, and a two-point "chart" is junk. Until the probe answers (or if
@@ -242,48 +335,42 @@ export const PerpChart = (props: {
       }
     }
     if (mode === 'price') {
-      setOraclePoints([])
-      const fetchSeries = (frame: Timeframe) => {
-        const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[frame]
-        return api('get-oracle-price-series', {
-          feedId: contract.oracleFeedId,
-          limit: 5000,
-          since: windowMs ? Date.now() - windowMs : undefined,
-          bucketSeconds,
-        })
+      const feedId = contract.oracleFeedId
+      const cached = getCachedSeries(feedId, activeFrame)
+      if (
+        cached &&
+        (cached.length >= MIN_FRAME_POINTS || activeFrame === 'ALL')
+      ) {
+        // Cache hit: set data and clear loading in the same effect so React
+        // batches them and never commits a loading render.
+        setOraclePoints(cached.map((p) => ({ ts: p.ts, value: p.price })))
+        setLoading(false)
+      } else {
+        setOraclePoints([])
+        fetchFrameSeries(feedId, activeFrame)
+          .then(async (validPoints) => {
+            // Cadence gating keeps systematically-starved frames unselectable,
+            // but a data gap (feed outage, freshly created feed) can still
+            // empty an eligible window. Refetching All keeps the series
+            // populated so the All view — and the sparse window itself —
+            // still have something honest to draw.
+            const fellBack =
+              validPoints.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
+            const points = fellBack
+              ? await fetchFrameSeries(feedId, 'ALL')
+              : validPoints
+            if (cancelled) return
+            setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
+            // Keep the selected control honest: once the short window falls
+            // back to all history, label it All and stop re-filtering the
+            // fallback back into the same starved window.
+            if (fellBack) setTimeframe('ALL')
+          })
+          .catch(() => {
+            if (!cancelled) setOraclePoints([])
+          })
+          .finally(() => !cancelled && setLoading(false))
       }
-      fetchSeries(activeFrame)
-        .then(async (res) => {
-          // Cadence gating keeps systematically-starved frames unselectable,
-          // but a data gap (feed outage, freshly created feed) can still
-          // empty an eligible window. Refetching All keeps the series
-          // populated so the All view — and the sparse window itself —
-          // still have something honest to draw.
-          const validPoints = res.filter(
-            (p) =>
-              Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0
-          )
-          const fellBack =
-            validPoints.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
-          const points = fellBack
-            ? (await fetchSeries('ALL')).filter(
-                (p) =>
-                  Number.isFinite(p.ts) &&
-                  Number.isFinite(p.price) &&
-                  p.price > 0
-              )
-            : validPoints
-          if (cancelled) return
-          setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
-          // Keep the selected control honest: once the short window falls
-          // back to all history, label it All and stop re-filtering the
-          // fallback back into the same starved window.
-          if (fellBack) setTimeframe('ALL')
-        })
-        .catch(() => {
-          if (!cancelled) setOraclePoints([])
-        })
-        .finally(() => !cancelled && setLoading(false))
     } else {
       setFundingPoints([])
       api('get-perp-funding-events', {

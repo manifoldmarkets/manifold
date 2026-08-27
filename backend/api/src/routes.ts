@@ -90,6 +90,11 @@ import { getPerpQuote } from './get-perp-quote'
 import { internalPerpBroadcast } from './internal-perp-broadcast'
 import { getPerpFundingEvents } from './get-perp-funding-events'
 import { getPerpEvents } from './get-perp-events'
+import {
+  createPerpSuggestion,
+  getPerpSuggestions,
+  votePerpSuggestion,
+} from './perp-suggestions'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
 import { dismissmodalert } from './dismiss-mod-alert'
@@ -463,6 +468,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'internal-perp-broadcast': internalPerpBroadcast,
   'get-perp-funding-events': getPerpFundingEvents,
   'get-perp-events': getPerpEvents,
+  'get-perp-suggestions': getPerpSuggestions,
+  'create-perp-suggestion': createPerpSuggestion,
+  'vote-perp-suggestion': votePerpSuggestion,
   'get-followed-groups': getFollowedGroups,
   'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,

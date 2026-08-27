@@ -1,0 +1,1352 @@
+import clsx from 'clsx'
+import Link from 'next/link'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
+import { getDisplayProbability } from 'common/calculate'
+import { Contract, PerpContract, contractPath } from 'common/contract'
+import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
+import { contractFields, convertContract } from 'common/supabase/contracts'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import {
+  fundingPeriodUnit,
+  getFundingPeriodMs,
+  getPerpFundingRate,
+} from 'common/perps/funding'
+import { getOracleFreshness } from 'common/perps/oracle'
+import { DAY_MS, YEAR_MS } from 'common/util/time'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { SEO } from 'web/components/SEO'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { PerpBetPanel } from 'web/components/perps/perp-bet-panel'
+import { PerpChart, prefetchPerpChart } from 'web/components/perps/perp-chart'
+import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribution'
+import { PerpPositionPanel } from 'web/components/perps/perp-position-panel'
+import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract'
+import { usePerpPositions } from 'web/components/perps/use-perp-positions'
+import { TokenNumber } from 'web/components/widgets/token-number'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
+import { PerpSuggestion } from 'common/perps/suggestion'
+import { Button } from 'web/components/buttons/button'
+import { Input } from 'web/components/widgets/input'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin } from 'web/lib/firebase/users'
+
+const revalidate = 60
+
+// Perps are created unlisted and flipped public at launch, so the search APIs
+// can't enumerate them — the anon supabase client can, since contracts RLS is
+// public-read. That keeps this page automated: any perp shows up on the next
+// revalidate with no list to maintain.
+export async function getStaticProps() {
+  try {
+    const { data, error } = await db
+      .from('contracts')
+      .select(contractFields)
+      .eq('mechanism', 'perp')
+      .order('created_time', { ascending: true })
+    if (error) throw error
+    const perps = (data ?? [])
+      .map(convertContract)
+      .filter((c) => c.mechanism === 'perp' && !c.deleted)
+      // Perp descriptions carry the full oracle methodology — pages of text
+      // the page never renders. Strip them from the static payload.
+      .map((c) => ({ ...c, description: '' }))
+    return { props: { perps }, revalidate }
+  } catch (e) {
+    console.error('perps page getStaticProps failed', e)
+    return { props: { perps: [] }, revalidate }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Display helpers
+
+// Tickers, keyed by the stable oracle feed id (same reasoning as
+// ORACLE_TICK_DECORATIONS: never infer a label from a renameable question).
+// Unknown feeds fall back to the feed id's leading segment, so a new perp is
+// merely unglamorous until someone adds a line here, never broken.
+const FEED_TICKERS: Record<string, string> = {
+  'btc-usd': 'BTC',
+  'trump-approval-rating': 'TRUMP',
+  'openrouter-open-weight-share': 'OPENW',
+  'spyx-usd': 'SPYx',
+  'qqqx-usd': 'QQQx',
+  'nvdax-usd': 'NVDAx',
+  'gldx-usd': 'GLDx',
+  'uk-grid-carbon': 'UKCO2',
+}
+
+const tickerOf = (c: PerpContract) =>
+  FEED_TICKERS[c.oracleFeedId ?? ''] ??
+  (c.oracleFeedId ?? c.slug).split('-')[0].toUpperCase().slice(0, 6)
+
+const PERCENT_FEEDS = new Set([
+  'trump-approval-rating',
+  'openrouter-open-weight-share',
+])
+
+const displayPrice = (c: PerpContract) => {
+  const price = Number(
+    c.isResolved ? c.resolvedOraclePrice ?? c.oraclePrice : c.oraclePrice
+  )
+  if (!Number.isFinite(price)) return '—'
+  const feedId = c.oracleFeedId ?? ''
+  const prefix = feedId.endsWith('-usd') ? '$' : ''
+  const suffix = PERCENT_FEEDS.has(feedId) ? '%' : ''
+  return prefix + formatPrice(price, inferPriceDecimals([price])) + suffix
+}
+
+// Human label for a topic slug: strip the '-default' suffix of catch-all
+// groups and randomized group-id suffixes (e.g. 'sp500-p9Q6AzO68S'), fix
+// casing on known acronyms/brands.
+const TOPIC_CASING: Record<string, string> = {
+  ai: 'AI',
+  us: 'US',
+  uk: 'UK',
+  usd: 'USD',
+  openrouter: 'OpenRouter',
+  sp500: 'S&P 500',
+  qqq: 'QQQ',
+}
+const topicLabel = (slug: string) =>
+  slug
+    .replace(/-default$/, '')
+    .split('-')
+    .filter((w) => !(w.length >= 8 && /\d/.test(w) && /[A-Z]/.test(w)))
+    .map((w) => TOPIC_CASING[w] ?? (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ')
+
+// A related market that is already ~decided adds nothing to the list.
+const isNearCertain = (c: Contract) => {
+  if (c.outcomeType !== 'BINARY') return false
+  const p = getDisplayProbability(c)
+  return p > 0.95 || p < 0.05
+}
+
+// Which way the money leans: the share of open interest on the heavier side.
+// This is the closest thing a perp has to "Manifold's forecast" — it is what
+// traders are actually positioned for, and it is what funding punishes.
+const leanOf = (c: PerpContract) => {
+  const long = c.openInterestLong ?? 0
+  const short = c.openInterestShort ?? 0
+  const total = long + short
+  if (total <= 0) return null
+  const longShare = long / total
+  return {
+    dir: longShare >= 0.5 ? ('long' as const) : ('short' as const),
+    share: longShare >= 0.5 ? longShare : 1 - longShare,
+    longShare,
+  }
+}
+
+const pct = (x: number, digits = 1) =>
+  `${x > 0 ? '+' : ''}${(x * 100).toFixed(digits)}%`
+
+// Exchange-style tick flash: 'up' | 'down' for ~700ms after a change.
+const useTickFlash = (value: number) => {
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null)
+  const prev = useRef(value)
+  useEffect(() => {
+    if (value === prev.current || !Number.isFinite(value)) return
+    setFlash(value > prev.current ? 'up' : 'down')
+    prev.current = value
+    const t = setTimeout(() => setFlash(null), 700)
+    return () => clearTimeout(t)
+  }, [value])
+  return flash
+}
+
+// ---------------------------------------------------------------------------
+// Live data
+
+// One batched poll for the whole page. Matches the 15s scheduler cadence used
+// by useLivePerpContract; same never-rewind guards.
+const POLL_MS = 15_000
+
+const usePerpBoard = (initial: PerpContract[]) => {
+  const [contracts, setContracts] = useState(initial)
+  const idKey = initial.map((c) => c.id).join(',')
+
+  useEffect(() => {
+    const ids = idKey ? idKey.split(',') : []
+    if (ids.length === 0) return
+    let cancelled = false
+    const poll = () =>
+      api('markets-by-ids', { ids })
+        .then((fetched) => {
+          if (cancelled) return
+          const byId = new Map(fetched.map((m) => [m.id, m]))
+          setContracts((prev) =>
+            prev.map((c) => {
+              const m = byId.get(c.id)
+              if (!m || m.mechanism !== 'perp') return c
+              if ((m.oraclePriceTime ?? 0) < (c.oraclePriceTime ?? 0)) return c
+              if (c.isResolved && !m.isResolved) return c
+              return { ...c, ...m } as PerpContract
+            })
+          )
+        })
+        .catch(() => {})
+    poll()
+    const interval = setInterval(poll, POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [idKey])
+
+  return contracts
+}
+
+// Seven days of hourly oracle prices per perp: drives the 7d change (the
+// default sort), the watchlist sparklines, and the ticker. One request per
+// market at hourly resolution is far cheaper than the five-minute series
+// the contract-card sparkline pulls, and hourly is plenty for a week.
+type WeekSeries = { ts: number; price: number }[]
+const useWeekSeries = (perps: PerpContract[]) => {
+  const [byId, setById] = useState<Record<string, WeekSeries>>({})
+  const key = perps.map((c) => `${c.id}:${c.oracleFeedId}`).join(',')
+
+  useEffect(() => {
+    if (!key) return
+    let cancelled = false
+    const pairs = key.split(',').map((s) => s.split(':') as [string, string])
+    Promise.all(
+      pairs.map(([id, feedId]) =>
+        api('get-oracle-price-series', {
+          feedId,
+          since: Date.now() - 7 * DAY_MS,
+          bucketSeconds: 3600,
+          limit: 400,
+        })
+          .then((res) => [
+            id,
+            res
+              .filter((p) => Number.isFinite(p.price) && p.price > 0)
+              .sort((a, b) => a.ts - b.ts),
+          ])
+          .catch(() => [id, [] as WeekSeries])
+      )
+    ).then((entries) => {
+      if (!cancelled)
+        setById(Object.fromEntries(entries as [string, WeekSeries][]))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [key])
+
+  return byId
+}
+
+const weekChange = (series: WeekSeries | undefined, c: PerpContract) => {
+  if (!series || series.length < 2) return undefined
+  const first = series[0].price
+  // Measure to the live price, not the last hourly bucket.
+  const last = Number(c.oraclePrice) || series[series.length - 1].price
+  return first > 0 ? last / first - 1 : undefined
+}
+
+// Related markets per perp, via the group-overlap endpoint behind the contract
+// page's related-questions rail: everything sharing a topic with the perp,
+// ranked by importance.
+const useRelatedMarkets = (perps: PerpContract[]) => {
+  const [byPerp, setByPerp] = useState<Record<string, Contract[]>>({})
+  const idKey = perps.map((c) => c.id).join(',')
+
+  useEffect(() => {
+    const ids = idKey ? idKey.split(',') : []
+    if (ids.length === 0) return
+    let cancelled = false
+    Promise.all(
+      ids.map((contractId) =>
+        api('get-related-markets-by-group', {
+          contractId,
+          limit: 30,
+          offset: 0,
+        })
+          .then((r) => [contractId, r.groupContracts] as const)
+          .catch(() => [contractId, [] as Contract[]] as const)
+      )
+    ).then((entries) => {
+      if (!cancelled) setByPerp(Object.fromEntries(entries))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [idKey])
+
+  return byPerp
+}
+
+// Warm every chart once the page is up, most-traded first, so switching in
+// the terminal never shows a loading state. Sequential: one feed at a time
+// keeps this from competing with the visible chart's own fetch.
+const usePrefetchCharts = (perps: PerpContract[]) => {
+  const idKey = perps.map((c) => c.id).join(',')
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      for (const c of perps) {
+        if (cancelled) return
+        await prefetchPerpChart(c).catch(() => {})
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idKey])
+}
+
+// ---------------------------------------------------------------------------
+// Page
+
+type SortKey = 'change' | 'volume' | 'lean' | 'funding'
+const DEFAULT_ROWS = 5
+
+export default function PerpsPage(props: { perps: Contract[] }) {
+  const initial = useMemo(
+    () =>
+      props.perps.filter(
+        (c): c is PerpContract => c.mechanism === 'perp' && !c.deleted
+      ),
+    [props.perps]
+  )
+  const contracts = usePerpBoard(initial)
+  const open = contracts.filter((c) => !c.isResolved)
+
+  const week = useWeekSeries(open)
+  const related = useRelatedMarkets(open)
+  usePrefetchCharts(open)
+
+  // The flagship (most traded) market is the landing chart.
+  const flagshipId = useMemo(
+    () =>
+      [...initial]
+        .filter((c) => !c.isResolved)
+        .sort(
+          (a, b) =>
+            (b.volume24Hours ?? 0) - (a.volume24Hours ?? 0) ||
+            (b.volume ?? 0) - (a.volume ?? 0)
+        )[0]?.id,
+    [initial]
+  )
+  const [selectedId, setSelectedId] = useState<string>()
+  const selected =
+    open.find((c) => c.id === selectedId) ??
+    open.find((c) => c.id === flagshipId) ??
+    open[0]
+
+  const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
+    key: 'change',
+    desc: true,
+  })
+  const sortValue = (c: PerpContract): number => {
+    switch (sort.key) {
+      case 'change':
+        return weekChange(week[c.id], c) ?? -Infinity
+      case 'volume':
+        return c.volume24Hours ?? 0
+      case 'lean':
+        return leanOf(c)?.longShare ?? -Infinity
+      case 'funding':
+        return getPerpFundingRate(c)
+    }
+  }
+  const sorted = [...open].sort((a, b) => {
+    const d = sortValue(b) - sortValue(a)
+    // Unranked (no data) always sinks regardless of direction.
+    if (!Number.isFinite(d)) return sortValue(a) === -Infinity ? 1 : -1
+    return sort.desc ? d : -d
+  })
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => ({ key, desc: s.key === key ? !s.desc : true }))
+
+  const stats = {
+    volume24h: open.reduce((sum, c) => sum + (c.volume24Hours ?? 0), 0),
+    openInterest: open.reduce(
+      (sum, c) => sum + (c.openInterestLong ?? 0) + (c.openInterestShort ?? 0),
+      0
+    ),
+    traders: open.reduce((sum, c) => sum + (c.uniqueBettorCount ?? 0), 0),
+  }
+
+  return (
+    <Page trackPageView="perps page" className="!col-span-10">
+      <SEO
+        title="Perpetuals"
+        description="Leveraged long and short markets on live numbers — Bitcoin, stocks, approval ratings and more. No expiry date."
+        url="/perps"
+      />
+      <TickerTape contracts={sorted} week={week} />
+
+      <Col className="w-full gap-8 px-3 py-5 sm:px-6">
+        <Row className="flex-wrap items-end justify-between gap-4">
+          <Col className="gap-1">
+            <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
+              Perpetuals
+            </h1>
+            <div className="text-ink-600 text-sm sm:text-base">
+              Go long or short on a live number, with leverage. No expiry date.{' '}
+              <a
+                href="#perps-explainer"
+                className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
+              >
+                How perps work ↓
+              </a>
+            </div>
+          </Col>
+          <Row className="divide-ink-200 dark:divide-ink-300 gap-0 divide-x">
+            <Stat label="24h volume" amount={stats.volume24h} />
+            <Stat label="Open interest" amount={stats.openInterest} />
+            <Stat label="Traders" value={stats.traders.toLocaleString()} />
+            <Stat label="Markets" value={String(open.length)} />
+          </Row>
+        </Row>
+
+        {selected ? (
+          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
+            <div className="min-w-0 xl:col-span-2">
+              <Terminal
+                key={selected.id}
+                contract={selected}
+                all={sorted}
+                week={week[selected.id]}
+                onSelect={setSelectedId}
+              />
+            </div>
+            <Col className="min-w-0 gap-4">
+              <Watchlist
+                contracts={sorted}
+                week={week}
+                selectedId={selected.id}
+                sort={sort}
+                onSort={toggleSort}
+                onSelect={setSelectedId}
+              />
+              <RelatedMarkets
+                perp={selected}
+                markets={related[selected.id]}
+                perpIds={new Set(contracts.map((c) => c.id))}
+              />
+            </Col>
+          </div>
+        ) : (
+          <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
+            No open perpetual markets right now.
+          </div>
+        )}
+
+        <Explainer />
+
+        <Suggestions />
+      </Col>
+    </Page>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Pieces
+
+const SectionHeader = (props: { title: string }) => (
+  <div className="text-ink-400 text-xs font-semibold uppercase tracking-widest">
+    {props.title}
+  </div>
+)
+
+// Mana amounts render through TokenNumber (coin icon + number) rather than
+// the text moniker: the monospace stack has no glyph for it.
+const Stat = (props: { label: string; amount?: number; value?: string }) => (
+  <Col className="px-4 first:pl-0 last:pr-0">
+    <div className="text-ink-400 text-[11px] uppercase tracking-wider">
+      {props.label}
+    </div>
+    {props.amount !== undefined ? (
+      <TokenNumber
+        amount={props.amount}
+        numberType="short"
+        className="text-ink-900 font-mono text-lg font-semibold tabular-nums"
+      />
+    ) : (
+      <div className="text-ink-900 font-mono text-lg font-semibold tabular-nums">
+        {props.value}
+      </div>
+    )}
+  </Col>
+)
+
+const ChangeLabel = (props: {
+  change: number | undefined
+  className?: string
+}) => {
+  const { change, className } = props
+  if (change === undefined)
+    return <span className={clsx('text-ink-400', className)}>—</span>
+  return (
+    <span
+      className={clsx(
+        'font-mono tabular-nums',
+        change > 0
+          ? 'text-teal-600 dark:text-teal-400'
+          : change < 0
+          ? 'text-scarlet-600 dark:text-scarlet-400'
+          : 'text-ink-500',
+        className
+      )}
+    >
+      {pct(change)}
+    </span>
+  )
+}
+
+// "▲ 62%": the heavier side of open interest and its share.
+const LeanBadge = (props: { contract: PerpContract; className?: string }) => {
+  const lean = leanOf(props.contract)
+  if (!lean)
+    return <span className={clsx('text-ink-400', props.className)}>—</span>
+  const long = lean.dir === 'long'
+  return (
+    <Tooltip
+      text={`${Math.round(lean.share * 100)}% of open interest is ${
+        lean.dir
+      } — traders are positioned for ${long ? 'up' : 'down'}`}
+    >
+      <span
+        className={clsx(
+          'inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-xs font-semibold tabular-nums',
+          long
+            ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400'
+            : 'bg-scarlet-500/10 text-scarlet-700 dark:text-scarlet-400',
+          props.className
+        )}
+      >
+        {long ? '▲' : '▼'} {Math.round(lean.share * 100)}%
+      </span>
+    </Tooltip>
+  )
+}
+
+// Tiny polyline sparkline drawn from the shared hourly week series — no
+// fetch of its own.
+const MiniSpark = (props: {
+  series: WeekSeries | undefined
+  change: number | undefined
+  className?: string
+}) => {
+  const { series, change, className } = props
+  if (!series || series.length < 2)
+    return <div className={clsx('bg-canvas-50 rounded', className)} />
+  const xs = series.map((p) => p.ts)
+  const ys = series.map((p) => p.price)
+  const x0 = xs[0]
+  const xr = xs[xs.length - 1] - x0 || 1
+  const yMin = Math.min(...ys)
+  const yr = Math.max(...ys) - yMin || 1
+  const path = series
+    .map(
+      (p, i) =>
+        `${i === 0 ? 'M' : 'L'}${(((p.ts - x0) / xr) * 100).toFixed(2)},${(
+          28 -
+          ((p.price - yMin) / yr) * 24 -
+          2
+        ).toFixed(2)}`
+    )
+    .join(' ')
+  return (
+    <svg
+      viewBox="0 0 100 28"
+      preserveAspectRatio="none"
+      className={clsx(
+        change === undefined || change === 0
+          ? 'text-ink-400'
+          : change > 0
+          ? 'text-teal-500'
+          : 'text-scarlet-500',
+        className
+      )}
+      aria-hidden
+    >
+      <path
+        d={path}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        vectorEffect="non-scaling-stroke"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+const TickerTape = (props: {
+  contracts: PerpContract[]
+  week: Record<string, WeekSeries>
+}) => {
+  const { contracts, week } = props
+  if (contracts.length === 0) return null
+  const items = [...contracts, ...contracts]
+  const duration = Math.max(24, contracts.length * 9)
+  return (
+    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 group relative overflow-hidden whitespace-nowrap border-b">
+      <style>{`
+        @keyframes perps-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        @media (prefers-reduced-motion: reduce) { .perps-marquee { animation: none !important } }
+      `}</style>
+      <div
+        className="perps-marquee inline-block py-1.5 group-hover:[animation-play-state:paused]"
+        style={{ animation: `perps-marquee ${duration}s linear infinite` }}
+      >
+        {items.map((c, i) => (
+          <TickerItem key={c.id + i} contract={c} series={week[c.id]} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const TickerItem = (props: {
+  contract: PerpContract
+  series: WeekSeries | undefined
+}) => {
+  const { contract, series } = props
+  const price = Number(contract.oraclePrice)
+  const flash = useTickFlash(price)
+  const change = weekChange(series, contract)
+  return (
+    <Link
+      href={contractPath(contract)}
+      className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
+    >
+      <span className="text-ink-900 font-mono font-semibold">
+        {tickerOf(contract)}
+      </span>
+      <span
+        className={clsx(
+          'text-ink-700 font-mono tabular-nums transition-colors duration-700',
+          flash === 'up' && 'text-teal-500 duration-0',
+          flash === 'down' && 'text-scarlet-500 duration-0'
+        )}
+      >
+        {displayPrice(contract)}
+      </span>
+      {change !== undefined && (
+        <ChangeLabel change={change} className="text-xs" />
+      )}
+      {leanOf(contract) && <LeanBadge contract={contract} />}
+    </Link>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Terminal: the selected market's chart, with trading folded away until asked
+// for so the chart is the view.
+
+const useOracleTradingPaused = (contract: PerpContract) => {
+  // Client-only: Date.now() on the server would hydrate differently.
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => {
+    setNow(Date.now())
+    const id = setInterval(() => setNow(Date.now()), POLL_MS)
+    return () => clearInterval(id)
+  }, [contract.oraclePriceTime])
+  if (now == null || PERPS_SKIP_ORACLE_FRESHNESS) return false
+  return (
+    getOracleFreshness(
+      contract.oraclePriceTime,
+      contract.maxOraclePriceAgeMs,
+      now
+    ).status !== 'fresh'
+  )
+}
+
+const Terminal = (props: {
+  contract: PerpContract
+  all: PerpContract[]
+  week: WeekSeries | undefined
+  onSelect: (id: string) => void
+}) => {
+  const { all, week, onSelect } = props
+  const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
+  const positions = usePerpPositions(contract.id, refreshKey)
+  const [mode, setMode] = useState<'price' | 'funding'>('price')
+  const [tradeOpen, setTradeOpen] = useState(false)
+  const oracleTradingPaused = useOracleTradingPaused(contract)
+
+  const price = Number(contract.oraclePrice)
+  const flash = useTickFlash(price)
+  const rate = getPerpFundingRate(contract)
+  const periodMs = getFundingPeriodMs(contract)
+  const hasOI =
+    (contract.openInterestLong ?? 0) > 0 ||
+    (contract.openInterestShort ?? 0) > 0
+  const lean = leanOf(contract)
+  const change = weekChange(week, contract)
+
+  return (
+    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
+      {/* Below xl the watchlist sits under the chart, so give phones and
+          tablets a switcher up here. */}
+      <Row className="-mx-1 gap-1.5 overflow-x-auto px-1 pb-1 xl:hidden">
+        {all.map((c) => {
+          const active = c.id === contract.id
+          return (
+            <button
+              key={c.id}
+              onClick={() => onSelect(c.id)}
+              className={clsx(
+                'shrink-0 rounded-md border px-2.5 py-1 font-mono text-xs font-semibold transition-colors',
+                active
+                  ? 'bg-primary-500 border-primary-500 text-white'
+                  : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
+              )}
+            >
+              {tickerOf(c)}
+            </button>
+          )
+        })}
+      </Row>
+
+      <Row className="flex-wrap items-start justify-between gap-3">
+        <Col className="min-w-0 gap-1">
+          <Row className="items-baseline gap-3">
+            <span className="text-primary-600 dark:text-primary-400 font-mono text-xl font-bold">
+              {tickerOf(contract)}
+            </span>
+            <span className="text-ink-900 truncate text-lg font-medium">
+              {contract.question}
+            </span>
+          </Row>
+          {lean && (
+            <Row className="items-center gap-2 text-sm">
+              <span className="text-ink-600">
+                Traders lean{' '}
+                <span
+                  className={clsx(
+                    'font-semibold',
+                    lean.dir === 'long'
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-scarlet-600 dark:text-scarlet-400'
+                  )}
+                >
+                  {lean.dir === 'long' ? 'up' : 'down'}
+                </span>
+              </span>
+              <LeanBadge contract={contract} />
+              <span className="text-ink-400 text-xs">
+                of open interest is {lean.dir}
+              </span>
+            </Row>
+          )}
+        </Col>
+        <Link
+          href={contractPath(contract)}
+          className="text-primary-600 hover:text-primary-500 dark:text-primary-400 flex shrink-0 items-center gap-1 text-sm"
+        >
+          Full market page
+          <ExternalLinkIcon className="h-4 w-4" />
+        </Link>
+      </Row>
+
+      <Row className="flex-wrap items-end justify-between gap-3">
+        <Row className="flex-wrap items-baseline gap-x-5 gap-y-2 sm:gap-x-8">
+          <Col>
+            <div className="text-ink-500 text-xs">Oracle price</div>
+            <div
+              className={clsx(
+                'font-mono text-2xl font-semibold tabular-nums transition-colors duration-700 sm:text-3xl',
+                flash === 'up' && 'text-teal-500 duration-0',
+                flash === 'down' && 'text-scarlet-500 duration-0'
+              )}
+            >
+              {displayPrice(contract)}
+            </div>
+          </Col>
+          <Col>
+            <div className="text-ink-500 text-xs">7 days</div>
+            <ChangeLabel change={change} className="text-xl font-semibold" />
+          </Col>
+          <Col>
+            <div className="text-ink-500 text-xs">Funding</div>
+            {hasOI && rate !== 0 ? (
+              <Tooltip
+                text={`${
+                  rate > 0 ? 'Longs pay shorts' : 'Shorts pay longs'
+                } every ${fundingPeriodUnit(periodMs)} · annualized ${
+                  rate > 0 ? '+' : ''
+                }${(rate * (YEAR_MS / periodMs) * 100).toFixed(0)}%/yr`}
+              >
+                <div
+                  className={clsx(
+                    'font-mono text-xl font-semibold tabular-nums',
+                    rate > 0
+                      ? 'text-scarlet-600 dark:text-scarlet-400'
+                      : 'text-teal-600 dark:text-teal-400'
+                  )}
+                >
+                  {rate > 0 ? '+' : ''}
+                  {(rate * 100).toFixed(3)}%
+                  <span className="text-ink-400 text-sm font-normal">
+                    /{fundingPeriodUnit(periodMs)}
+                  </span>
+                </div>
+              </Tooltip>
+            ) : (
+              <div className="text-ink-400 font-mono text-xl font-semibold">
+                —
+              </div>
+            )}
+          </Col>
+        </Row>
+        <Row className="border-ink-200 dark:border-ink-300 overflow-hidden rounded-md border text-sm">
+          {(['price', 'funding'] as const).map((m) => (
+            <button
+              key={m}
+              className={clsx(
+                'px-3 py-1 capitalize',
+                mode === m ? 'bg-primary-500 text-white' : 'text-ink-700'
+              )}
+              onClick={() => setMode(m)}
+            >
+              {m}
+            </button>
+          ))}
+        </Row>
+      </Row>
+
+      {oracleTradingPaused && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+        >
+          Oracle update delayed — trading is paused until a fresh price arrives.
+        </div>
+      )}
+
+      <PerpChart contract={contract} mode={mode} positions={positions} />
+      <PerpOracleAttribution
+        feedId={contract.oracleFeedId}
+        asOfTime={contract.oracleSourceTime}
+      />
+
+      {tradeOpen ? (
+        <Col className="gap-3">
+          <Row className="items-center justify-between">
+            <SectionHeader title={`Trade ${tickerOf(contract)}`} />
+            <button
+              className="text-ink-500 hover:text-ink-700 text-xs"
+              onClick={() => setTradeOpen(false)}
+            >
+              Hide
+            </button>
+          </Row>
+          <PerpBetPanel
+            contract={contract}
+            onTrade={refresh}
+            positions={positions}
+            oracleTradingPaused={oracleTradingPaused}
+          />
+        </Col>
+      ) : (
+        <Row className="gap-2">
+          <button
+            onClick={() => setTradeOpen(true)}
+            className="flex-1 rounded-md bg-teal-600 py-2 font-semibold text-white hover:bg-teal-500"
+          >
+            Long ↑
+          </button>
+          <button
+            onClick={() => setTradeOpen(true)}
+            className="bg-scarlet-600 hover:bg-scarlet-500 flex-1 rounded-md py-2 font-semibold text-white"
+          >
+            Short ↓
+          </button>
+        </Row>
+      )}
+      <PerpPositionPanel
+        contract={contract}
+        onAction={refresh}
+        refreshKey={refreshKey}
+        positions={positions}
+        oracleTradingPaused={oracleTradingPaused}
+      />
+    </Col>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Watchlist: every open perp, sortable, top rows only until expanded.
+
+const Watchlist = (props: {
+  contracts: PerpContract[]
+  week: Record<string, WeekSeries>
+  selectedId: string
+  sort: { key: SortKey; desc: boolean }
+  onSort: (key: SortKey) => void
+  onSelect: (id: string) => void
+}) => {
+  const { contracts, week, selectedId, sort, onSort, onSelect } = props
+  const [showAll, setShowAll] = useState(false)
+  const visible = showAll ? contracts : contracts.slice(0, DEFAULT_ROWS)
+  const hidden = contracts.length - visible.length
+  const header = { sort, onSort }
+
+  return (
+    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+      <div className="border-ink-200 dark:border-ink-300 grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b px-3 py-2 text-[11px] font-medium">
+        <SortHeader
+          {...header}
+          label="Market"
+          sortKey="volume"
+          className="text-left"
+        />
+        <SortHeader {...header} label="Price" className="text-right" />
+        <SortHeader
+          {...header}
+          label="7d"
+          sortKey="change"
+          className="text-right"
+        />
+        <SortHeader
+          {...header}
+          label="Lean"
+          sortKey="lean"
+          className="text-right"
+        />
+      </div>
+      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+        {visible.map((c) => (
+          <WatchRow
+            key={c.id}
+            contract={c}
+            series={week[c.id]}
+            selected={c.id === selectedId}
+            onSelect={() => onSelect(c.id)}
+          />
+        ))}
+      </Col>
+      {(hidden > 0 || showAll) && (
+        <button
+          onClick={() => setShowAll((s) => !s)}
+          className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
+        >
+          {showAll ? 'Show fewer' : `Show all ${contracts.length}`}
+        </button>
+      )}
+    </Col>
+  )
+}
+
+const SortHeader = (props: {
+  label: string
+  sortKey?: SortKey
+  className?: string
+  sort: { key: SortKey; desc: boolean }
+  onSort: (key: SortKey) => void
+}) => {
+  const { label, sortKey, className, sort, onSort } = props
+  const active = sortKey !== undefined && sort.key === sortKey
+  const content = (
+    <>
+      {label}
+      {active && (
+        <span className="ml-0.5 text-[9px]">{sort.desc ? '▼' : '▲'}</span>
+      )}
+    </>
+  )
+  return sortKey ? (
+    <button
+      onClick={() => onSort(sortKey)}
+      className={clsx(
+        'hover:text-ink-700 uppercase tracking-wider',
+        active ? 'text-ink-800' : 'text-ink-400',
+        className
+      )}
+    >
+      {content}
+    </button>
+  ) : (
+    <span className={clsx('text-ink-400 uppercase tracking-wider', className)}>
+      {content}
+    </span>
+  )
+}
+
+const WatchRow = (props: {
+  contract: PerpContract
+  series: WeekSeries | undefined
+  selected: boolean
+  onSelect: () => void
+}) => {
+  const { contract, series, selected, onSelect } = props
+  const price = Number(contract.oraclePrice)
+  const flash = useTickFlash(price)
+  const change = weekChange(series, contract)
+  return (
+    <button
+      onClick={onSelect}
+      aria-current={selected}
+      className={clsx(
+        'grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-3 py-2 text-left transition-colors',
+        selected ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-canvas-50'
+      )}
+    >
+      <Row className="min-w-0 items-center gap-2">
+        <span
+          className={clsx(
+            'w-12 shrink-0 font-mono text-sm font-bold',
+            selected ? 'text-primary-600 dark:text-primary-400' : 'text-ink-900'
+          )}
+        >
+          {tickerOf(contract)}
+        </span>
+        <MiniSpark
+          series={series}
+          change={change}
+          className="h-6 w-16 shrink-0"
+        />
+      </Row>
+      <span
+        className={clsx(
+          'text-ink-900 font-mono text-sm tabular-nums transition-colors duration-700',
+          flash === 'up' && 'text-teal-500 duration-0',
+          flash === 'down' && 'text-scarlet-500 duration-0'
+        )}
+      >
+        {displayPrice(contract)}
+      </span>
+      <ChangeLabel change={change} className="text-sm" />
+      <LeanBadge contract={contract} />
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Related markets for the selected perp, with the create prompt.
+
+const RelatedMarkets = (props: {
+  perp: PerpContract
+  markets: Contract[] | undefined
+  perpIds: Set<string>
+}) => {
+  const { perp, markets, perpIds } = props
+  const topics = perp.groupSlugs ?? []
+  const picks = (markets ?? [])
+    .filter(
+      (c) =>
+        !perpIds.has(c.id) &&
+        c.mechanism !== 'perp' &&
+        !c.isResolved &&
+        !isNearCertain(c)
+    )
+    .slice(0, 6)
+  const primaryTopic =
+    topics.find((t) => !t.endsWith('-default')) ?? topics[0] ?? 'this'
+  const createUrl =
+    '/create?params=' +
+    encodeURIComponent(
+      JSON.stringify({ groupSlugs: topics, rand: perp.id.slice(0, 6) })
+    )
+  return (
+    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+      <Row className="border-ink-200 dark:border-ink-300 items-baseline gap-2 border-b px-3 py-2">
+        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+          Related
+        </span>
+        <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
+          {tickerOf(perp)}
+        </span>
+        <span className="text-ink-500 truncate text-xs">
+          {topics.slice(0, 3).map(topicLabel).join(' · ')}
+        </span>
+      </Row>
+      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+        {markets === undefined ? (
+          <Col className="gap-2 p-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-canvas-50 h-5 animate-pulse rounded" />
+            ))}
+          </Col>
+        ) : picks.length === 0 ? (
+          <div className="text-ink-400 p-3 text-sm">
+            No related markets yet.
+          </div>
+        ) : (
+          picks.map((c) => (
+            <Link
+              key={c.id}
+              href={contractPath(c)}
+              className="hover:bg-canvas-50 flex items-center justify-between gap-3 px-3 py-2"
+            >
+              <span className="text-ink-700 line-clamp-2 text-sm">
+                {c.question}
+              </span>
+              <ContractStatusLabel
+                contract={c}
+                className="shrink-0 text-sm font-semibold"
+              />
+            </Link>
+          ))
+        )}
+      </Col>
+      <Link
+        href={createUrl}
+        className="text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20 border-ink-200 dark:border-ink-300 flex items-center justify-center gap-1 border-t px-3 py-2 text-sm font-medium"
+      >
+        <PlusIcon className="h-4 w-4" />
+        Create a market about {topicLabel(primaryTopic)}
+      </Link>
+    </Col>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Suggest a perpetual market: name + optional data source, one upvote per
+// user. The list is what the team pulls from when picking the next launch.
+
+const isUrl = (s: string) => /^https?:\/\/\S+$/i.test(s)
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+const Suggestions = () => {
+  const user = useUser()
+  const {
+    data,
+    error: loadError,
+    setData,
+    refresh,
+  } = useAPIGetter('get-perp-suggestions', { limit: 100 })
+  const [name, setName] = useState('')
+  const [source, setSource] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string>()
+  const [showAll, setShowAll] = useState(false)
+
+  const submit = async () => {
+    if (!user) {
+      firebaseLogin()
+      return
+    }
+    setSubmitting(true)
+    setError(undefined)
+    try {
+      await api('create-perp-suggestion', {
+        name,
+        dataSource: source.trim() || undefined,
+      })
+      setName('')
+      setSource('')
+      refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const vote = async (s: PerpSuggestion) => {
+    if (!user) {
+      firebaseLogin()
+      return
+    }
+    const remove = s.hasVoted
+    // Optimistic flip; the refresh below reconciles.
+    setData((prev) =>
+      prev?.map((x) =>
+        x.id === s.id
+          ? { ...x, hasVoted: !remove, votes: x.votes + (remove ? -1 : 1) }
+          : x
+      )
+    )
+    try {
+      await api('vote-perp-suggestion', { suggestionId: s.id, remove })
+    } finally {
+      refresh()
+    }
+  }
+
+  const list = data ?? []
+  const visible = showAll ? list : list.slice(0, 8)
+
+  return (
+    <Col id="perps-suggest" className="scroll-mt-4 gap-3">
+      <SectionHeader title="Suggest a perpetual market" />
+      <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 grid grid-cols-1 gap-0 overflow-hidden rounded-xl border lg:grid-cols-5">
+        <Col className="border-ink-200 dark:border-ink-300 gap-3 border-b p-4 lg:col-span-2 lg:border-b-0 lg:border-r">
+          <div className="text-ink-900 font-semibold">
+            What would you trade?
+          </div>
+          <p className="text-ink-600 text-sm">
+            We can only launch a perp on a number we can measure reliably. The
+            suggestions with the best shot come with a free, public data source
+            that updates at least hourly — an API, or a page we can read without
+            logging in.
+          </p>
+          <Col className="gap-1">
+            <label htmlFor="perp-suggest-name" className="text-ink-500 text-xs">
+              Market name
+            </label>
+            <Input
+              id="perp-suggest-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. US 10-year Treasury yield"
+              maxLength={80}
+              className="w-full"
+            />
+          </Col>
+          <Col className="gap-1">
+            <label
+              htmlFor="perp-suggest-source"
+              className="text-ink-500 text-xs"
+            >
+              Data source <span className="text-ink-400">(optional)</span>
+            </label>
+            <Input
+              id="perp-suggest-source"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="Link to a free source that updates often"
+              maxLength={300}
+              className="w-full"
+            />
+          </Col>
+          {error && <div className="text-scarlet-500 text-sm">{error}</div>}
+          <Button
+            color="indigo"
+            size="sm"
+            disabled={submitting || name.trim().length < 3}
+            onClick={submit}
+          >
+            {user ? 'Suggest it' : 'Sign in to suggest'}
+          </Button>
+        </Col>
+        <Col className="lg:col-span-3">
+          <Row className="border-ink-200 dark:border-ink-300 items-baseline justify-between border-b px-4 py-2">
+            <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+              Suggested
+            </span>
+            <span className="text-ink-400 text-xs">
+              Upvote what you'd trade
+            </span>
+          </Row>
+          <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+            {data === undefined && loadError ? (
+              <div className="text-ink-400 p-4 text-sm">
+                Suggestions are unavailable right now.
+              </div>
+            ) : data === undefined ? (
+              <Col className="gap-2 p-4">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-canvas-50 h-5 animate-pulse rounded"
+                  />
+                ))}
+              </Col>
+            ) : list.length === 0 ? (
+              <div className="text-ink-400 p-4 text-sm">
+                Nothing suggested yet — be the first.
+              </div>
+            ) : (
+              visible.map((s) => (
+                <Row key={s.id} className="items-center gap-3 px-4 py-2">
+                  <button
+                    onClick={() => vote(s)}
+                    aria-pressed={s.hasVoted}
+                    aria-label={s.hasVoted ? 'Remove upvote' : 'Upvote'}
+                    className={clsx(
+                      'flex w-12 shrink-0 flex-col items-center rounded-md border py-1 font-mono text-xs font-semibold leading-tight transition-colors',
+                      s.hasVoted
+                        ? 'border-primary-500 bg-primary-500 text-white'
+                        : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
+                    )}
+                  >
+                    <span>▲</span>
+                    <span>{s.votes}</span>
+                  </button>
+                  <Col className="min-w-0">
+                    <span className="text-ink-900 truncate text-sm font-medium">
+                      {s.name}
+                    </span>
+                    {s.dataSource &&
+                      (isUrl(s.dataSource) ? (
+                        <a
+                          href={s.dataSource}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-ink-400 hover:text-primary-500 truncate text-xs"
+                        >
+                          {hostOf(s.dataSource)}
+                        </a>
+                      ) : (
+                        <span className="text-ink-400 truncate text-xs">
+                          {s.dataSource}
+                        </span>
+                      ))}
+                  </Col>
+                </Row>
+              ))
+            )}
+          </Col>
+          {list.length > visible.length || showAll ? (
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
+            >
+              {showAll ? 'Show fewer' : `Show all ${list.length}`}
+            </button>
+          ) : null}
+        </Col>
+      </div>
+    </Col>
+  )
+}
+
+const Explainer = () => {
+  const items: { title: string; body: string }[] = [
+    {
+      title: 'Oracle price',
+      body: 'Each market tracks a number from an outside source — a coin price, a poll average, a usage statistic. Longs gain when it rises, shorts when it falls. Trades execute at the latest oracle update, which can lag the source.',
+    },
+    {
+      title: 'Leverage and liquidation',
+      body: 'Leverage multiplies exposure: 100 mana at 5× controls 500 mana of exposure. If the oracle reaches your liquidation price the position closes and the margin you posted is gone. Profitable positions can also be auto-deleveraged if market backing runs short.',
+    },
+    {
+      title: 'Funding',
+      body: 'At each funding interval the more crowded side pays the other. Funding adds to or takes from your margin while you hold; the current rate and next payment show above the chart.',
+    },
+    {
+      title: 'No expiry',
+      body: 'A position stays open until you close it, it is liquidated or auto-deleveraged, or Manifold settles the market. Perp profit and loss show in your portfolio but do not count toward leagues for now.',
+    },
+  ]
+  return (
+    <Col id="perps-explainer" className="scroll-mt-4 gap-3">
+      <SectionHeader title="What are perps?" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => (
+          <div
+            key={item.title}
+            className="border-ink-200 dark:border-ink-300 bg-canvas-0 rounded-xl border p-4"
+          >
+            <div className="text-ink-900 font-semibold">{item.title}</div>
+            <p className="text-ink-600 mt-1 text-sm">{item.body}</p>
+          </div>
+        ))}
+      </div>
+    </Col>
+  )
+}
