@@ -335,6 +335,12 @@ const usePrefetchCharts = (perps: PerpContract[]) => {
 // Page
 
 type SortKey = 'change' | 'volume' | 'lean' | 'funding'
+
+// Watchlist column template, shared by the header and every row so the
+// columns line up: ticker · sparkline · price · change · lean. The sparkline
+// column drops out below 360px.
+const WATCH_GRID =
+  'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.75rem] min-[360px]:grid-cols-[3.25rem_3.5rem_minmax(0,1fr)_3.25rem_3.75rem]'
 const DEFAULT_ROWS = 5
 
 export default function PerpsPage(props: { perps: Contract[] }) {
@@ -1148,13 +1154,28 @@ const Watchlist = (props: {
 
   return (
     <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
-      <Row className="border-ink-200 dark:border-ink-300 items-center justify-between border-b px-3 py-2 text-[11px] font-medium">
+      <div
+        className={clsx(
+          WATCH_GRID,
+          'border-ink-200 dark:border-ink-300 border-b px-3 py-2 text-[11px] font-medium'
+        )}
+      >
         <SortHeader {...header} label="Market" sortKey="volume" />
-        <Row className="gap-3">
-          <SortHeader {...header} label="7d" sortKey="change" />
-          <SortHeader {...header} label="Lean" sortKey="lean" />
-        </Row>
-      </Row>
+        <span className="hidden min-[360px]:block" />
+        <SortHeader {...header} label="Price" className="text-right" />
+        <SortHeader
+          {...header}
+          label="7d"
+          sortKey="change"
+          className="text-right"
+        />
+        <SortHeader
+          {...header}
+          label="Lean"
+          sortKey="lean"
+          className="text-right"
+        />
+      </div>
       <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
         {visible.map((c) => (
           <WatchRow
@@ -1224,46 +1245,45 @@ const WatchRow = (props: {
   const flash = useTickFlash(price)
   const change = weekChange(series, contract)
   return (
-    // Two lines per market so nothing has to share a line with the price:
-    //   BTC     ~~~~    $80,150.68
-    //   Bitcoin price     +11.4%  ▼ 62%
+    // One aligned grid row per market — the header uses the same template,
+    // so every column lines up like a table. The full question is the hover
+    // title; the ticker is the label.
     <button
       onClick={onSelect}
       aria-current={selected}
+      title={contract.question}
       className={clsx(
-        'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 px-3 py-2 text-left transition-colors',
+        WATCH_GRID,
+        'px-3 py-2 text-left transition-colors',
         selected ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-canvas-50'
       )}
     >
-      <Col className="min-w-0">
-        <span
-          className={clsx(
-            'font-mono text-sm font-bold',
-            selected ? 'text-primary-600 dark:text-primary-400' : 'text-ink-900'
-          )}
-        >
-          {tickerOf(contract)}
-        </span>
-        <span className="text-ink-500 truncate text-xs">
-          {contract.question}
-        </span>
-      </Col>
-      <MiniSpark series={series} change={change} className="h-7 w-14" />
-      <Col className="items-end gap-0.5">
-        <span
-          className={clsx(
-            'text-ink-900 font-mono text-sm tabular-nums transition-colors duration-700',
-            flash === 'up' && 'text-teal-500 duration-0',
-            flash === 'down' && 'text-scarlet-500 duration-0'
-          )}
-        >
-          {displayPrice(contract)}
-        </span>
-        <Row className="items-center gap-1.5">
-          <ChangeLabel change={change} className="text-xs" />
-          {leanOf(contract) && <LeanBadge contract={contract} />}
-        </Row>
-      </Col>
+      <span
+        className={clsx(
+          'truncate font-mono text-sm font-bold',
+          selected ? 'text-primary-600 dark:text-primary-400' : 'text-ink-900'
+        )}
+      >
+        {tickerOf(contract)}
+      </span>
+      <MiniSpark
+        series={series}
+        change={change}
+        className="hidden h-6 w-14 min-[360px]:block"
+      />
+      <span
+        className={clsx(
+          'text-ink-900 truncate text-right font-mono text-sm tabular-nums transition-colors duration-700',
+          flash === 'up' && 'text-teal-500 duration-0',
+          flash === 'down' && 'text-scarlet-500 duration-0'
+        )}
+      >
+        {displayPrice(contract)}
+      </span>
+      <ChangeLabel change={change} className="text-right text-xs" />
+      <span className="flex justify-end">
+        <LeanBadge contract={contract} />
+      </span>
     </button>
   )
 }
