@@ -7,6 +7,7 @@ import {
   perpFeeScheduleSummary,
 } from 'common/perps/format'
 import { formatNumber } from 'common/util/format'
+import Link from 'next/link'
 import { ReactNode, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 
@@ -81,9 +82,17 @@ export function PerpExplainerContent(props: {
     <>
       <div>
         {!hideHeading && (
-          <h2 className="text-primary-700 text-xl font-semibold">
-            How perpetual markets work
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-primary-700 text-xl font-semibold">
+              How perpetual markets work
+            </h2>
+            <Link
+              href="/perps"
+              className="text-primary-600 hover:text-primary-500 dark:text-primary-400 shrink-0 text-sm"
+            >
+              All perpetual markets →
+            </Link>
+          </div>
         )}
         <p className={clsx('text-ink-600', !hideHeading && 'mt-1')}>
           Perpetual markets let you take a leveraged long or short position on a
