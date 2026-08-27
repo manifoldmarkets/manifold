@@ -6,12 +6,17 @@ export default ({ config }) => {
   // OTA on runtime 1.0.0 would therefore crash every existing Android install on
   // launch. A new runtime keeps the widget bundle away from old binaries.
   const otaUpdateVersion = '1.1.0'
+  // LOCAL TEST OVERRIDE — DO NOT COMMIT: routes builds to a personal EAS
+  // project (set EAS_OWNER + EAS_PROJECT_ID in eas.json) for device testing.
+  const owner = process.env.EAS_OWNER || 'iansp'
+  const projectId =
+    process.env.EAS_PROJECT_ID || '0ce454fc-3885-4eab-88b6-787b1691973b'
 
   return {
     expo: {
       name: 'Manifold',
       slug: 'manifold-markets',
-      owner: 'iansp',
+      owner,
       scheme: 'com.markets.manifold',
       newArchEnabled: true,
       jsEngine: 'hermes',
@@ -90,7 +95,7 @@ export default ({ config }) => {
       platforms: ['ios', 'android'],
       updates: {
         fallbackToCacheTimeout: 0,
-        url: 'https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b',
+        url: `https://u.expo.dev/${projectId}`,
       },
       android: {
         intentFilters: [
@@ -149,7 +154,7 @@ export default ({ config }) => {
         ...config?.extra,
         eas: {
           ...config?.extra?.eas,
-          projectId: '0ce454fc-3885-4eab-88b6-787b1691973b',
+          projectId,
           NATIVE_BUILD_TYPE: process.env.NATIVE_BUILD_TYPE,
           NEXT_PUBLIC_FIREBASE_ENV: process.env.NEXT_PUBLIC_FIREBASE_ENV,
         },
