@@ -429,22 +429,29 @@ const PositionCard = (props: {
       : 'text-ink-900'
 
   return (
+    // The card renders at very different widths — full column on the
+    // market page, a phone with large text, the hub's terminal — so its type
+    // steps on the card's own width (@container), in rem so a user's larger
+    // text setting counts as less room. Below that, the header wraps and the
+    // number column can shrink: a flex item's default min-width is its
+    // content, so two wide numbers used to push the P&L block clean out of
+    // the card (overflow-hidden then clipped it).
     <Col
       className={clsx(
-        'border-ink-200 bg-canvas-0 relative overflow-hidden rounded-lg border'
+        'border-ink-200 bg-canvas-0 @container relative overflow-hidden rounded-lg border'
       )}
     >
       <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
       <Col className="gap-3 p-4 pl-5">
         {/* Header: side + leverage badge, then PnL */}
-        <Row className="items-start justify-between gap-2">
-          <Col className="gap-0.5">
+        <Row className="flex-wrap items-start justify-between gap-x-3 gap-y-1">
+          <Col className="min-w-0 gap-0.5">
             <Row className="items-center gap-2">
               <span className={clsx('font-semibold capitalize', accentText)}>
                 {p.direction} {formatLeverage(p.leverage)}×
               </span>
             </Row>
-            <div className="text-ink-900 text-2xl font-bold tabular-nums">
+            <div className="text-ink-900 @xs:text-xl @sm:text-2xl text-lg font-bold tabular-nums">
               {formatMoney(p.size)}
               <span className="text-ink-400 ml-1.5 text-sm font-normal">
                 notional
@@ -454,9 +461,16 @@ const PositionCard = (props: {
               {formatMoney(p.originalCostBasis)} margin
             </div>
           </Col>
-          <Col className="items-end">
-            <div className="text-ink-400 text-xs">Unrealized profit</div>
-            <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
+          <Col className="ml-auto shrink-0 items-end">
+            <div className="text-ink-400 whitespace-nowrap text-xs">
+              Unrealized profit
+            </div>
+            <div
+              className={clsx(
+                '@xs:text-lg @sm:text-xl text-base font-bold tabular-nums',
+                pnlColor
+              )}
+            >
               {pnl >= 0 ? '+' : ''}
               {formatMoneyPrecise(pnl)}
             </div>
@@ -468,7 +482,7 @@ const PositionCard = (props: {
         </Row>
 
         {/* Price stats grid */}
-        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3 text-sm">
+        <div className="border-ink-200 @xs:text-sm grid grid-cols-3 gap-2 border-t pt-3 text-xs">
           <PriceStat
             label="Entry"
             value={formatPrice(p.entryPrice, priceDecimals)}
