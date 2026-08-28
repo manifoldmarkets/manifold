@@ -1264,6 +1264,47 @@ struct CraneCircularView: View {
   }
 }
 
+// The crane silhouette fitted (aspect-preserved, centred) into `size`, plus
+// the scale it was drawn at (pt per logo unit) for stroke widths.
+private func cranePath(in size: CGSize) -> (path: Path, scale: CGFloat) {
+  let s = min(size.width / craneBox.width, size.height / craneBox.height)
+  let ox = (size.width - craneBox.width * s) / 2 - craneBox.minX * s
+  let oy = (size.height - craneBox.height * s) / 2 - craneBox.minY * s
+  var p = Path()
+  p.move(to: CGPoint(x: craneOutline[0].0 * s + ox, y: craneOutline[0].1 * s + oy))
+  for v in craneOutline.dropFirst() {
+    p.addLine(to: CGPoint(x: v.0 * s + ox, y: v.1 * s + oy))
+  }
+  p.closeSubpath()
+  return (p, s)
+}
+
+// The crane on its own, no number — the glyph beside the text on the lock
+// rectangular widget, in the circular face's language: solid once you've bet
+// today, hollow while today is still open (pending / frozen / logged out).
+// Lock-screen only; the home widgets keep their flame. Vector Canvas, never a
+// UIImage (see `circular`).
+struct CraneGlyphView: View {
+  let solid: Bool
+
+  var body: some View {
+    Canvas { ctx, size in
+      // Inset so the outline's stroke (half of it lies outside the path) and
+      // its round joins stay inside the canvas.
+      let inset: CGFloat = 1.5
+      let (crane, s) = cranePath(in: CGSize(width: size.width - 2 * inset,
+                                            height: size.height - 2 * inset))
+      ctx.translateBy(x: inset, y: inset)
+      if solid {
+        ctx.fill(crane, with: .color(.white))
+      } else {
+        ctx.stroke(crane, with: .color(.white),
+                   style: StrokeStyle(lineWidth: 1.0 * s, lineCap: .round, lineJoin: .round))
+      }
+    }
+  }
+}
+
 struct StreakWidgetEntryView: View {
   @Environment(\.widgetFamily) var family
   var entry: StreakEntry
@@ -1371,7 +1412,7 @@ struct StreakWidgetEntryView: View {
     let d = snapshot()
     let state = d.map { computeState($0, now: Date()) } ?? .pending
     HStack(spacing: 10) {
-      Text(state == .frozen ? "🧊" : "🔥").font(.system(size: 26))
+      rectangularCrane(solid: state == .lit)
       VStack(alignment: .leading, spacing: 1) {
         Text(d.map { "\($0.streak)-day streak" } ?? "Start a streak")
           .font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
@@ -1639,7 +1680,7 @@ struct StreakWidgetEntryView: View {
 
   private var loggedOutRectangular: some View {
     HStack(spacing: 10) {
-      Text("🔥").font(.system(size: 24)).grayscale(1)
+      rectangularCrane(solid: false)
       VStack(alignment: .leading, spacing: 1) {
         Text("Start a streak")
           .font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
@@ -1896,10 +1937,18 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Lock screen — rectangular (no trailing logo; full-width text)
+  // The crane beside the rectangular widget's text: 4:3, sized to the emoji it
+  // replaced. Solid once today's bet is in, hollow otherwise — same as the
+  // circular face.
+  private func rectangularCrane(solid: Bool) -> some View {
+    CraneGlyphView(solid: solid).frame(width: 36, height: 27)
+  }
+
+  // Lock screen — rectangular (no trailing logo; full-width text). The crane
+  // replaces the 🔥/🧊 — the status line already says lit / frozen.
   private var rectangular: some View {
     HStack(spacing: 10) {
-      Text(emoji(for: entry.state)).font(.system(size: 26))
+      rectangularCrane(solid: entry.state == .lit)
       VStack(alignment: .leading, spacing: 1) {
         Text("\(entry.streak)-day streak")
           .font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
