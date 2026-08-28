@@ -36,7 +36,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
       <Link
         href={user ? '/home' : '/'}
         className={clsx(
-          'group flex w-full flex-row items-center gap-0.5 px-1 outline-none',
+          'group flex w-full flex-row items-center gap-2 outline-none',
           className
         )}
       >
@@ -44,13 +44,13 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
           <JesterHatLogoSvg className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12" />
         ) : (
           <LogoIcon
-            className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12 dark:stroke-white"
+            className="h-11 w-11 shrink-0 transition-transform duration-300 group-hover:scale-105"
             aria-hidden
           />
         )}
         <div
           className={clsx(
-            'text-xl font-semibold tracking-[0.10em] text-primary-700 dark:text-primary-700'
+            'text-[1.05rem] font-bold tracking-[0.18em] text-[#91caff]'
           )}
         >
           {'SAGE'}

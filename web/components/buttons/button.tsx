@@ -49,7 +49,7 @@ const sizeClasses = {
 }
 
 export const baseButtonClasses =
-  'font-md inline-flex items-center justify-center rounded-md ring-inset transition-colors disabled:cursor-not-allowed text-center'
+  'font-md inline-flex items-center justify-center rounded-xl ring-inset transition-all duration-200 disabled:cursor-not-allowed text-center'
 
 const solid = 'disabled:bg-ink-300 text-white'
 export const outline =

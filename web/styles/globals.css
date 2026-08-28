@@ -583,41 +583,338 @@ text {
 }
 
 
+
 /* SAGE SUMCOIN BRAND SHELL */
-.sage-sidebar {
-  background:
-    linear-gradient(
-      180deg,
-      rgb(var(--color-canvas-50)) 0%,
-      rgb(var(--color-canvas-0)) 58%
-    );
-  border-right: 1px solid rgb(var(--color-primary-500) / 0.16);
+
+:root {
+  --sage-bg: #010711;
+  --sage-bg-2: #020d1d;
+  --sage-panel: #05172d;
+  --sage-panel-2: #082442;
+  --sage-panel-3: #0a3159;
+
+  --sage-blue: #0878ff;
+  --sage-blue-bright: #299dff;
+  --sage-cyan: #61c9ff;
+
+  --sage-text: #f3f9ff;
+  --sage-muted: #80a7cc;
+  --sage-line: rgba(69, 159, 255, 0.20);
 }
 
-.dark .sage-sidebar {
-  background:
-    radial-gradient(
-      circle at 15% 0%,
-      rgb(var(--color-primary-400) / 0.16),
-      transparent 32%
-    ),
-    linear-gradient(
-      180deg,
-      rgb(5 25 52) 0%,
-      rgb(var(--color-canvas-0)) 48%,
-      rgb(1 8 20) 100%
-    );
-  box-shadow:
-    inset -1px 0 0 rgb(var(--color-primary-500) / 0.12),
-    12px 0 35px rgb(0 35 90 / 0.10);
-}
-
+/* Overall page */
 .dark body {
+  background: var(--sage-bg);
+}
+
+.sage-app-shell {
   background:
     radial-gradient(
-      circle at 45% -10%,
-      rgb(var(--color-primary-400) / 0.07),
-      transparent 36rem
+      circle at 74% -18%,
+      rgba(18, 112, 255, 0.18),
+      transparent 34rem
     ),
-    rgb(var(--color-canvas-0));
+    radial-gradient(
+      circle at 28% 10%,
+      rgba(41, 157, 255, 0.07),
+      transparent 28rem
+    ),
+    linear-gradient(
+      180deg,
+      #020b19 0%,
+      #010711 68%
+    );
+}
+
+/* Sidebar */
+.sage-sidebar {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 20% 0%,
+      rgba(41, 157, 255, 0.24),
+      transparent 18rem
+    ),
+    linear-gradient(
+      180deg,
+      #06264a 0%,
+      #04182f 30%,
+      #020d1d 70%,
+      #010915 100%
+    );
+  border-right: 1px solid rgba(67, 160, 255, 0.25);
+  box-shadow:
+    inset -1px 0 0 rgba(88, 182, 255, 0.06),
+    18px 0 55px rgba(0, 20, 55, 0.22);
+}
+
+.sage-sidebar::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 54px;
+  width: 1px;
+  height: 130px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(75, 181, 255, 0.85),
+    transparent
+  );
+}
+
+/* Main application surface */
+.sage-main {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 28% 0%,
+      rgba(31, 128, 255, 0.10),
+      transparent 30rem
+    ),
+    linear-gradient(
+      180deg,
+      rgba(3, 14, 31, 0.98) 0%,
+      rgba(1, 8, 19, 0.98) 70%
+    );
+}
+
+@media (min-width: 1024px) {
+  .sage-main {
+    border-top-left-radius: 28px;
+    box-shadow:
+      inset 1px 0 0 rgba(69, 159, 255, 0.10),
+      -16px 0 42px rgba(0, 12, 35, 0.13);
+  }
+}
+
+/* Navigation */
+.sage-nav-item {
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+  border: 1px solid transparent;
+}
+
+.sage-nav-item-idle {
+  color: #82aad1;
+}
+
+.sage-nav-item-idle:hover {
+  color: #d8eeff;
+  background: rgba(24, 102, 185, 0.18);
+  border-color: rgba(62, 156, 255, 0.12);
+  transform: translateX(2px);
+}
+
+.sage-nav-item-active {
+  color: white;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(6, 104, 255, 0.68),
+      rgba(30, 137, 255, 0.25)
+    );
+  border-color: rgba(91, 185, 255, 0.38);
+  box-shadow:
+    inset 3px 0 0 #39b4ff,
+    0 7px 24px rgba(0, 88, 220, 0.15);
+}
+
+.sage-nav-icon {
+  color: #65a8e8;
+  background: rgba(52, 145, 235, 0.08);
+}
+
+.sage-nav-icon-active {
+  color: #a9ddff;
+  background: rgba(94, 196, 255, 0.18);
+}
+
+/* Sign-up card */
+.sage-signup-panel {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(11, 67, 126, 0.42),
+      rgba(4, 27, 55, 0.48)
+    );
+  border: 1px solid rgba(69, 166, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(150, 217, 255, 0.06),
+    0 12px 32px rgba(0, 13, 34, 0.18);
+}
+
+.sage-signup-copy {
+  color: #759bc1;
+  font-size: 0.82rem;
+  line-height: 1.25rem;
+}
+
+.sage-sumtoshi-bonus {
+  margin: 2px 0;
+  color: #78d0ff;
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+}
+
+/* Search and sticky market controls */
+.sage-search-header {
+  margin-top: 3px;
+  padding: 10px 12px 12px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(4, 22, 45, 0.95),
+      rgba(3, 16, 34, 0.90)
+    );
+  border: 1px solid rgba(65, 153, 245, 0.15);
+  border-top-color: rgba(96, 189, 255, 0.22);
+  border-radius: 18px;
+  box-shadow:
+    0 12px 36px rgba(0, 9, 25, 0.22),
+    inset 0 1px 0 rgba(123, 207, 255, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+.sage-search-input {
+  height: 52px !important;
+  color: #eef8ff !important;
+  background: rgba(3, 20, 42, 0.94) !important;
+  border: 1px solid rgba(63, 157, 255, 0.34) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(140, 211, 255, 0.04),
+    0 6px 24px rgba(0, 8, 24, 0.16) !important;
+}
+
+.sage-search-input:hover {
+  border-color: rgba(86, 182, 255, 0.58) !important;
+}
+
+.sage-search-input:focus {
+  border-color: #299dff !important;
+  box-shadow:
+    0 0 0 3px rgba(8, 120, 255, 0.14),
+    0 8px 28px rgba(0, 66, 150, 0.18) !important;
+}
+
+.sage-search-input::placeholder {
+  color: #527ba6 !important;
+}
+
+/* Topic navigation */
+.sage-topic-bar {
+  border-bottom: 1px solid rgba(64, 151, 241, 0.13);
+}
+
+.sage-topic-bar button,
+.sage-topic-bar a {
+  padding: 6px 10px;
+  border-radius: 9px;
+  transition: all 150ms ease;
+}
+
+.sage-topic-bar button:hover,
+.sage-topic-bar a:hover {
+  color: #c7e8ff !important;
+  background: rgba(26, 112, 205, 0.16);
+}
+
+.sage-topic-bar a {
+  background-image: none !important;
+  background-color: rgba(11, 81, 159, 0.26) !important;
+  border-color: rgba(69, 165, 255, 0.22) !important;
+}
+
+/* Filter controls */
+.sage-filter-selected {
+  color: white !important;
+  background:
+    linear-gradient(
+      105deg,
+      #075fff,
+      #128dff 58%,
+      #43b8ff
+    ) !important;
+  border: 1px solid rgba(127, 207, 255, 0.28);
+  box-shadow: 0 5px 16px rgba(0, 92, 235, 0.23);
+}
+
+.sage-filter-idle {
+  color: #83a9ce !important;
+  background: rgba(12, 48, 86, 0.58) !important;
+  border: 1px solid rgba(69, 145, 218, 0.12);
+}
+
+.sage-filter-idle:hover {
+  color: #d6edff !important;
+  background: rgba(18, 76, 137, 0.70) !important;
+  border-color: rgba(75, 170, 255, 0.28);
+}
+
+/* Individual market cards */
+.sage-market-row {
+  position: relative;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(8, 34, 66, 0.48),
+      rgba(3, 17, 35, 0.18)
+    );
+  border: 1px solid rgba(68, 143, 218, 0.075);
+  transition:
+    background 170ms ease,
+    border-color 170ms ease,
+    transform 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.sage-market-row:hover,
+.sage-market-row:focus-visible {
+  background:
+    linear-gradient(
+      100deg,
+      rgba(9, 54, 102, 0.72),
+      rgba(4, 27, 55, 0.55)
+    ) !important;
+  border-color: rgba(71, 169, 255, 0.30);
+  transform: translateY(-1px);
+  box-shadow:
+    0 9px 25px rgba(0, 16, 42, 0.20),
+    inset 3px 0 0 rgba(53, 174, 255, 0.58);
+}
+
+.sage-market-row-highlighted {
+  background:
+    linear-gradient(
+      100deg,
+      rgba(8, 98, 205, 0.40),
+      rgba(5, 38, 76, 0.50)
+    ) !important;
+  border-color: rgba(82, 185, 255, 0.34);
+}
+
+/* Scrollbar follows Sumcoin theme */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #010914;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #0b3f75;
+  border: 2px solid #010914;
+  border-radius: 999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #1160a8;
 }

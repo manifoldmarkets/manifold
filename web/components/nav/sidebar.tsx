@@ -217,9 +217,9 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('sage-sidebar flex h-screen flex-col', className)}
+      className={clsx('sage-sidebar flex h-screen flex-col px-3', className)}
     >
-      <ManifoldLogo className="pb-3 pt-6" />
+      <ManifoldLogo className="px-2 pb-5 pt-7" />
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
@@ -228,7 +228,7 @@ export default function Sidebar(props: {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
-      <ul className="m-0 mb-4 flex list-none flex-col gap-1 p-0">
+      <ul className="m-0 mb-4 flex list-none flex-col gap-2 p-0">
         {navOptions.map((item) => (
           <li key={item.name}>
             {item.name === 'Shop' && isAprilFools() ? (
@@ -285,7 +285,7 @@ export default function Sidebar(props: {
               buttonContent={(open) => (
                 <div
                   className={clsx(
-                    'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
+                    'group flex min-h-[46px] w-full items-center rounded-xl px-3.5 py-2.5 text-sm font-semibold',
                     open
                       ? 'bg-ink-200 text-ink-900'
                       : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700'

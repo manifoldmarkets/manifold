@@ -46,7 +46,7 @@ export const SearchInput = (props: {
         onBlur={trackCallback('search', { query: value })}
         placeholder={placeholder ?? 'Search'}
         autoFocus={autoFocus}
-        className={clsx('w-full', hasQuery && 'pr-10')}
+        className={clsx('sage-search-input w-full', hasQuery && 'pr-10')}
         showSearchIcon
       />
       {hasQuery && (

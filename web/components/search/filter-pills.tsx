@@ -16,9 +16,9 @@ import { LiteGroup } from 'common/group'
 import { User } from 'common/user'
 
 export const minimalistIndigoSelectedClass =
-  'bg-primary-500 hover:bg-primary-600 text-white font-semibold ring-1 ring-inset ring-primary-300/40 shadow-sm dark:bg-primary-600 dark:hover:bg-primary-700 dark:text-white'
+  'sage-filter-selected text-white font-semibold'
 export const unselectedClass =
-  'bg-canvas-50 hover:bg-primary-100 text-ink-600 dark:bg-canvas-100/60 dark:hover:bg-primary-100 dark:text-ink-800'
+  'sage-filter-idle text-[#87a9ca]'
 
 export function FilterPill(props: {
   selected: boolean
@@ -43,7 +43,7 @@ export function FilterPill(props: {
       role={props.role as any}
       aria-checked={props.role === 'radio' ? selected : undefined}
       className={clsx(
-        'flex shrink-0 select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
+        'flex shrink-0 select-none flex-row items-center whitespace-nowrap rounded-xl px-3.5 py-1.5 text-sm outline-none transition-all',
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
         type === 'spice'
           ? selected
@@ -210,7 +210,7 @@ export function DropdownPill(props: {
   return (
     <div
       className={clsx(
-        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-3 pr-1 text-sm outline-none transition-colors',
+        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-xl py-1.5 pl-3 pr-2 text-sm outline-none transition-all',
         color === 'indigo'
           ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
           : color === 'light-gray'

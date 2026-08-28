@@ -16,15 +16,12 @@ export type NavItem = {
   alwaysShowName?: boolean
   prefetch?: boolean
   children?: React.ReactNode
-  /** Optional secondary label rendered next to `name` (hidden on very narrow viewports). */
   subLabel?: string
-  /** Optional class applied to the nav item container (e.g. for tighter padding). */
   itemClassName?: string
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const { item, currentPage } = props
-
   const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
   const queryCleanedHref =
     (item.href?.includes('?') ? item.href.split('?')[0] : item.href) ?? ''
@@ -32,6 +29,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     queryCleanedHref.split('/').length > 2
       ? '/' + queryCleanedHref.split('/')[1]
       : queryCleanedHref
+
   const isCurrentPage =
     currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
 
@@ -41,11 +39,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   }
 
   const sidebarClass = clsx(
-    isCurrentPage
-      ? 'bg-primary-100 text-primary-900 ring-1 ring-inset ring-primary-500/30 shadow-[inset_3px_0_0_rgb(var(--color-primary-500))]'
-      : 'text-ink-600 hover:bg-primary-100/70 hover:text-primary-800',
-    'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
-    'focus-visible:bg-primary-100 outline-none'
+    'sage-nav-item group flex min-h-[46px] w-full items-center rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none',
+    isCurrentPage ? 'sage-nav-item-active' : 'sage-nav-item-idle',
+    item.itemClassName
   )
 
   const sidebarItem = (
@@ -53,16 +49,16 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       {item.icon && (
         <item.icon
           className={clsx(
-            isCurrentPage
-              ? 'text-primary-700'
-              : 'text-primary-700/70 group-hover:text-primary-700',
-            '  -ml-1 mr-3 h-6 w-6 flex-shrink-0',
+            'sage-nav-icon -ml-0.5 mr-3 h-7 w-7 flex-shrink-0 rounded-lg p-1',
+            isCurrentPage && 'sage-nav-icon-active',
             item.iconClassName
           )}
           aria-hidden="true"
         />
       )}
+
       <span className="truncate">{item.children ?? item.name}</span>
+
       {item.external && (
         <ExternalLinkIcon className="ml-2 h-4 w-4" aria-hidden="true" />
       )}
@@ -83,11 +79,11 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         {sidebarItem}
       </Link>
     )
-  } else {
-    return (
-      <button type="button" onClick={onClick} className={sidebarClass}>
-        {sidebarItem}
-      </button>
-    )
   }
+
+  return (
+    <button type="button" onClick={onClick} className={sidebarClass}>
+      {sidebarItem}
+    </button>
+  )
 }

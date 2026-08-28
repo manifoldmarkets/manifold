@@ -224,7 +224,7 @@ export function ContractRow(props: {
   )
 
   return (
-    <Col className=" w-full sm:mb-0.5">
+    <Col className="w-full sm:mb-2">
       <Link
         href={contractPath(contract)}
         onClick={(e) => {
@@ -240,10 +240,10 @@ export function ContractRow(props: {
           e.preventDefault()
         }}
         className={clsx(
-          'flex w-full flex-col p-2 text-base outline-none transition-colors sm:rounded-md',
+          'sage-market-row flex w-full flex-col px-3 py-3 text-base outline-none sm:rounded-2xl',
           highlighted
-            ? 'bg-primary-100'
-            : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100'
+            ? 'sage-market-row-highlighted'
+            : ''
         )}
       >
         <div className="flex w-full flex-col items-start justify-between gap-1 sm:flex-row sm:gap-0">

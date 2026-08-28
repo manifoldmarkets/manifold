@@ -69,7 +69,7 @@ export function Page(props: {
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
-          'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12',
+          'sage-app-shell text-ink-1000 mx-auto min-h-screen w-full max-w-none lg:grid lg:grid-cols-12',
           isMobile && isIOS && 'page-scroll-container' // Add scrollable container only on iOS
         )}
       >
@@ -86,11 +86,11 @@ export function Page(props: {
         {hideSidebar ? (
           <div className="lg:col-span-2 lg:flex" />
         ) : (
-          <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex" />
+          <Sidebar className="sticky top-0 hidden self-start lg:col-span-2 lg:flex" />
         )}
         <main
           id="main-content"
-          className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
+          className={clsx('sage-main col-span-10 flex min-w-0 flex-1 flex-col px-4 pb-12 pt-4 sm:px-6 lg:px-8 xl:px-10', className)}
         >
           {banner}
           {user && <BanBanner bans={bans} />}

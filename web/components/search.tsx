@@ -527,10 +527,10 @@ export function Search(props: SearchProps) {
 
   return (
     <Col className="w-full">
-      <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
+      <Col className={clsx('sage-search-header sticky top-0 z-20', headerClassName)}>
         <Col className="mb-2">
           {showTopicsFilterPills && (
-            <Row className="border-ink-100 dark:border-ink-200 items-baseline gap-4 border-b pb-2">
+            <Row className="sage-topic-bar items-center gap-2 pb-2">
               <button
                 className={clsx(
                   'shrink-0 font-medium',

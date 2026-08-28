@@ -8,14 +8,18 @@ import { Row } from 'web/components/layout/row'
 
 export const SidebarSignUpButton = (props: { className?: string }) => {
   const { className } = props
-
   return (
-    <Col className={clsx('mt-4', className)}>
+    <Col
+      className={clsx(
+        'sage-signup-panel mt-5 rounded-2xl p-3',
+        className
+      )}
+    >
       <Button
         color="gradient"
         size="xl"
         onClick={firebaseLogin}
-        className="w-full"
+        className="w-full !rounded-xl !py-3"
       >
         Sign up
       </Button>
@@ -26,7 +30,6 @@ export const SidebarSignUpButton = (props: { className?: string }) => {
 
 export const SignUpButton = (props: { className?: string }) => {
   const { className } = props
-
   return (
     <Button
       color="gradient"
@@ -45,7 +48,7 @@ export const GoogleSignInButton = (props: { onClick: () => any }) => {
       onClick={props.onClick}
       color={'gradient-pink'}
       size={'lg'}
-      className=" whitespace-nowrap  shadow-sm outline-2 "
+      className="whitespace-nowrap shadow-sm outline-2"
     >
       <Row className={'items-center gap-2 p-2'}>
         <img
