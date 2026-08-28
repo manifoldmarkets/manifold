@@ -275,8 +275,8 @@ export default function PressPage() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             <AssetCard
               title="Mana Symbol"
-              src="/mana.svg"
-              downloadPath="/mana.svg"
+              src="/sumcoin-logo.png"
+              downloadPath="/sumcoin-logo.png"
               bgColor="bg-canvas-0"
             />
             <AssetCard

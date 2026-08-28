@@ -729,7 +729,7 @@ function ManaSupplyTab(props: {
       <Spacer h={8} />
       <Title>Active Balances</Title>
       <p className="text-ink-500">
-        Sum of mana balances held by users who were active in the last 30 days.
+        Sum of Sumtoshi's balances held by users who were active in the last 30 days.
       </p>
       {activeUserManaStats.length > 0 && (
         <DailyChart

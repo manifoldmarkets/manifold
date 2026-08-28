@@ -87,7 +87,7 @@ export default function LinkPage(props: {
         </p>
 
         <Row className="items-baseline justify-between">
-          <Subtitle>Your Manalinks</Subtitle>
+          <Subtitle>Your Sumtoshi'slinks</Subtitle>
           <Row className="text-ink-500 items-center gap-4 text-sm">
             Show claimed links
             <ShortToggle on={showDisabled} setOn={setShowDisabled} />

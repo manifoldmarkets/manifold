@@ -57,7 +57,7 @@ export default function AdminPage() {
             setOn={setTogglesEnabled}
             disabled={false}
           />
-          <span>Mana trading: {manaStatus ? 'Enabled' : 'Disabled'}</span>
+          <span>Sumtoshi's trading: {manaStatus ? 'Enabled' : 'Disabled'}</span>
           <ShortToggle
             on={manaStatus}
             setOn={() => toggleStatus('MANA')}

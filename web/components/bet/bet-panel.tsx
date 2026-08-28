@@ -1113,7 +1113,7 @@ export const BuyPanelBody = (
           <Row className="mt-5 items-start justify-between text-sm">
             <Row className={''}>
               <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
-                Your mana balance
+                Your Sumtoshi's balance
               </span>
               <span className="text-ink-600 font-semibold">
                 <MoneyDisplay

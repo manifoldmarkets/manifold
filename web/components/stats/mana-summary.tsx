@@ -17,7 +17,7 @@ type DateAndCategoriesToTotals = { date: string } & {
 
 const categoryToLabel = {
   total_value: 'total mana (-loans)',
-  balance: 'mana balance',
+  balance: 'Sumtoshi's balance',
   spice_balance: 'spice balance',
   investment_value: 'invested',
   loan_total: 'loans',

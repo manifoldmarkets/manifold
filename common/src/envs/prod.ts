@@ -82,7 +82,7 @@ export const PROD_CONFIG: EnvConfig = {
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: 'Ṁ',
+  moneyMoniker: "Sumtoshi's",
   spiceMoniker: 'P',
   bettor: 'trader',
   verbPastBet: 'traded',

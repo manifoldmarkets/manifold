@@ -619,7 +619,7 @@ export function SportsBetPanel({
           <Row className="items-center justify-between">
             <span className="text-ink-400 text-sm">
               {user
-                ? `Your mana balance ${formatMoney(user.balance)}`
+                ? `Your Sumtoshi's balance ${formatMoney(user.balance)}`
                 : 'Sign in to place bets'}
             </span>
             {match.marketUrl && (

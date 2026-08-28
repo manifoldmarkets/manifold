@@ -327,7 +327,7 @@ const ManaDescription = (props: { disabled?: boolean }) => (
   <div className="flex gap-4">
     <ManaCoin className={clsx('text-7xl', props.disabled && 'grayscale')} />
     <Col>
-      <div className="text-lg font-semibold">Get Mana</div>
+      <div className="text-lg font-semibold">Get Sumtoshi's</div>
       <div className="text-ink-700 flex flex-wrap gap-x-1 text-sm">
         Redeem {SWEEPIES_NAME} at
         <span>

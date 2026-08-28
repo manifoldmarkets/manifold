@@ -864,7 +864,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'LEAGUE_PRIZE':
       return 'League prize'
     case 'MANA_PURCHASE':
-      return 'Mana purchase'
+      return 'Sumtoshi's purchase'
     case 'MARKET_BOOST_REDEEM':
       return 'Claim boost'
     case 'SIGNUP_BONUS':
