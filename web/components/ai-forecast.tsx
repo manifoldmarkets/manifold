@@ -1207,7 +1207,7 @@ export function AIForecast({
     <Col className="mb-8 gap-2 px-1 sm:gap-3 sm:px-4 sm:pt-8">
       <Col className={hideTitle ? 'hidden' : ''}>
         <div className="text-primary-600 text-2xl font-normal sm:text-3xl">
-          Manifold AI Dashboard
+          SAGE AI Dashboard
         </div>
       </Col>
 

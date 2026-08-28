@@ -82,7 +82,7 @@ export default function ReferralsPage() {
     <Page trackPageView={'referrals'} className="p-3">
       <SEO
         title="Refer a friend"
-        description={`Invite new users to Manifold and earn up to ${formatMoney(
+        description={`Invite new users to SAGE and earn up to ${formatMoney(
           REFERRAL_AMOUNT
         )} per friend who signs up, places a trade, and verifies their identity.`}
         url="/referrals"
@@ -104,7 +104,7 @@ export default function ReferralsPage() {
             </Row>
 
             <p className="mb-6 max-w-md text-white/90">
-              Invite friends to join Manifold and earn{' '}
+              Invite friends to join SAGE and earn{' '}
               <span className="font-semibold text-white">
                 {formatMoney(REFERRAL_BET_BONUS)}
               </span>{' '}
@@ -177,7 +177,7 @@ export default function ReferralsPage() {
             <HowItWorksStep
               number={2}
               title="Friend signs up"
-              description="Your friend creates a Manifold account using your link."
+              description="Your friend creates a SAGE account using your link."
             />
             <HowItWorksStep
               number={3}
@@ -276,7 +276,7 @@ function ReferralsReducedBanner({ isDenied }: { isDenied: boolean }) {
               Identity verification was unsuccessful, so you earn a reduced 0.2x
               referral bonus. Subscribe to{' '}
               <Link href="/membership" className="font-semibold underline">
-                Manifold Plus
+                SAGE Plus
               </Link>{' '}
               to earn the full amount, or email{' '}
               <a
@@ -306,7 +306,7 @@ function ReferralsReducedBanner({ isDenied }: { isDenied: boolean }) {
               You earn a reduced 0.2x referral bonus right now. Verify your
               identity or subscribe to{' '}
               <Link href="/membership" className="font-semibold underline">
-                Manifold Plus
+                SAGE Plus
               </Link>{' '}
               to earn the full {formatMoney(REFERRAL_BET_BONUS)} +{' '}
               {formatMoney(REFERRAL_VERIFY_BONUS)} per friend.

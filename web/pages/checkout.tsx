@@ -667,7 +667,7 @@ export default function CheckoutPage() {
     <Page trackPageView="checkout page">
       <SEO
         title="Buy mana"
-        description="Buy mana to trade in your favorite questions on Manifold"
+        description="Buy mana to trade in your favorite questions on SAGE"
         url="/checkout"
         image="/buy-mana-graphics/100k.png"
       />

@@ -168,7 +168,7 @@ export function OgElection(props: OgElectionProps) {
             className="text-2xl font-thin uppercase text-indigo-700"
             style={{ fontFamily: 'var(--font-main), Figtree-light' }}
           >
-            Manifold
+            SAGE
           </span>
         </div>
         <span className="flex text-sm text-gray-500">Live election odds</span>

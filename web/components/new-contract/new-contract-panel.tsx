@@ -1485,7 +1485,7 @@ export function NewContractPanel(props: {
 
         {/* Footer */}
         <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-0 text-sm">
-          <span>© Manifold Markets, Inc.</span>
+          <span>© SAGE, Inc.</span>
           <span>•</span>
           <a
             href="https://manifold.markets/terms"

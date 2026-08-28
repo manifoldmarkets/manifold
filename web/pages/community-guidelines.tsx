@@ -89,7 +89,7 @@ const SECTIONS = [
   },
   {
     title: 'Prize Drawings',
-    description: 'FAQs for Manifold Prize Drawings',
+    description: 'FAQs for SAGE Prize Drawings',
     icon: GiftIcon,
     href: '/community-guidelines/prize-drawings-faq',
   },
@@ -100,14 +100,14 @@ export default function CommunityGuidelinesPage() {
     <Page trackPageView="community guidelines page" className="!col-span-7">
       <SEO
         title="Community Guidelines"
-        description="Manifold community guidelines to keep the market fair and fun."
+        description="SAGE community guidelines to keep the market fair and fun."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <h1 className="text-primary-500 text-4xl font-bold">
           Community Guidelines
         </h1>
         <p className="text-ink-600 mt-3 text-lg">
-          Manifold keeps moderation minimal and trusts you to act in good faith.
+          SAGE keeps moderation minimal and trusts you to act in good faith.
           These guidelines protect the quality of the platform, not micromanage
           it.
         </p>

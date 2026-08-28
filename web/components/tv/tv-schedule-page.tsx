@@ -31,12 +31,12 @@ export function TVSchedulePage(props: {
   return (
     <Page trackPageView="tv page" className="p-4">
       <SEO
-        title="Manifold TV"
+        title="SAGE TV"
         description={`${capitalize(
           TRADE_TERM
-        )} on live video streams with Manifold TV`}
+        )} on live video streams with SAGE TV`}
       />
-      <Title>Manifold TV</Title>
+      <Title>SAGE TV</Title>
 
       <div>
         {capitalize(TRADE_TERM)} on live video streams with your friends!

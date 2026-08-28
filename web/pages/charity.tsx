@@ -377,8 +377,8 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
     return (
       <Page trackPageView={'charity giveaway'}>
         <SEO
-          title="Manifold Charity Giveaway"
-          description="Enter the Manifold Charity Giveaway to help your favorite charity win a cash donation from Manifold."
+          title="SAGE Charity Giveaway"
+          description="Enter the SAGE Charity Giveaway to help your favorite charity win a cash donation from SAGE."
           url="/charity"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
@@ -419,10 +419,10 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
       <SEO
         title={
           giveaway.giveawayNum
-            ? `Manifold Charity Giveaway #${giveaway.giveawayNum}`
-            : 'Manifold Charity Giveaway'
+            ? `SAGE Charity Giveaway #${giveaway.giveawayNum}`
+            : 'SAGE Charity Giveaway'
         }
-        description={`Help your favorite charity win $${giveaway.prizeAmountUsd.toLocaleString()} from Manifold. Convert mana into entries to boost their odds.`}
+        description={`Help your favorite charity win $${giveaway.prizeAmountUsd.toLocaleString()} from SAGE. Convert mana into entries to boost their odds.`}
         url={giveawayNum ? `/charity/${giveaway.giveawayNum}` : '/charity'}
       />
 
@@ -434,7 +434,7 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
             <Row className="items-center gap-3">
               <FaHeart className="h-8 w-8 text-emerald-500" />
               <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-                Manifold Charity Giveaway
+                SAGE Charity Giveaway
               </h1>
             </Row>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
@@ -482,7 +482,7 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
             </div>
           </div>
           <p className="text-ink-600 text-lg leading-relaxed">
-            Manifold is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
+            SAGE is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
             charity—you decide which one. Convert mana into entries to boost a
             charity's odds, and when the giveaway ends, we'll draw one lucky
             entry to determine the winning charity.
@@ -560,7 +560,7 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
               Admins can't participate
             </h3>
             <p className="text-ink-600 mt-1 text-sm">
-              To keep the giveaway fair, Manifold admins aren't eligible to get
+              To keep the giveaway fair, SAGE admins aren't eligible to get
               entries.
             </p>
           </div>

@@ -13,7 +13,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
     >
       <SEO
         title="Community Guidelines — Prize Drawing Rules"
-        description="Official rules for Manifold Prize Drawings."
+        description="Official rules for SAGE Prize Drawings."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -30,9 +30,9 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         <p className="text-ink-600 mt-3 text-lg">
           Official rules governing{' '}
           <Link href="/prize" className="text-primary-500 underline">
-            Manifold Prize Drawings
+            SAGE Prize Drawings
           </Link>
-          , operated by Manifold Markets, Inc.
+          , operated by SAGE, Inc.
         </p>
 
         <GuidelinesSearch />
@@ -42,7 +42,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
             Sponsor
           </h2>
           <p className="text-ink-700 mt-3">
-            Manifold Markets, Inc., 425 Divisadero St, San Francisco, CA 94117.
+            SAGE, Inc., 425 Divisadero St, San Francisco, CA 94117.
           </p>
         </div>
 
@@ -56,7 +56,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
               Be at least 18 years old and the age of majority in your
               jurisdiction
             </li>
-            <li>Have a valid Manifold account in good standing</li>
+            <li>Have a valid SAGE account in good standing</li>
             <li>
               Not be a resident of a restricted territory (certain U.S. states,
               Canadian provinces, and countries — see the{' '}
@@ -71,7 +71,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
               for the complete list)
             </li>
             <li>
-              Not be an employee or family member of Manifold, or previously
+              Not be an employee or family member of SAGE, or previously
               banned from the platform
             </li>
           </ul>
@@ -154,7 +154,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
             <li>Market manipulation or collusion</li>
             <li>Providing false information</li>
             <li>Using a VPN to circumvent geographic restrictions</li>
-            <li>Any violation of Manifold's Terms of Service</li>
+            <li>Any violation of SAGE's Terms of Service</li>
           </ul>
         </div>
 
@@ -163,7 +163,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
             Liability
           </h2>
           <p className="text-ink-700 mt-3">
-            Manifold's liability is limited to the prize value or $100,
+            SAGE's liability is limited to the prize value or $100,
             whichever is less. Disputes are resolved through binding arbitration
             in San Francisco. See the full rules for complete terms.
           </p>

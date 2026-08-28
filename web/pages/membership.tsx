@@ -144,8 +144,8 @@ export default function SupporterPage() {
   return (
     <Page trackPageView="supporter page" className="p-3">
       <SEO
-        title="Manifold Membership"
-        description="Unlock premium benefits with Manifold Plus, Pro, or Premium"
+        title="SAGE Membership"
+        description="Unlock premium benefits with SAGE Plus, Pro, or Premium"
         url="/membership"
       />
 
@@ -208,7 +208,7 @@ export default function SupporterPage() {
                       .textColor
                   )}
                 >
-                  Manifold{' '}
+                  SAGE{' '}
                   {
                     SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier]
                       .name
@@ -246,7 +246,7 @@ export default function SupporterPage() {
             ) : (
               <Col className="hidden items-end gap-0.5 sm:flex">
                 <span className="text-ink-600 text-sm font-medium">
-                  Support Manifold
+                  Support SAGE
                 </span>
                 <span className="text-ink-500 text-xs">
                   Unlock premium benefits
@@ -348,7 +348,7 @@ export default function SupporterPage() {
                   tier={purchasedTier}
                   animate={purchasedTier === 'premium'}
                 />{' '}
-                Manifold {SUPPORTER_TIERS[purchasedTier].name}
+                SAGE {SUPPORTER_TIERS[purchasedTier].name}
               </>
             )}{' '}
             member!
@@ -397,7 +397,7 @@ export default function SupporterPage() {
           </Col>
 
           <Button color="amber" onClick={() => setShowCelebration(false)}>
-            Continue to Manifold
+            Continue to SAGE
           </Button>
         </Col>
       </Modal>

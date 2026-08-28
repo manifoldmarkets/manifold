@@ -13,7 +13,7 @@ export default function CommunityGuidelinesCreatorGuidePage() {
     >
       <SEO
         title="Community Guidelines — Creator Guide"
-        description="Tips for running great markets on Manifold: clear criteria, fair close dates, and clean resolution."
+        description="Tips for running great markets on SAGE: clear criteria, fair close dates, and clean resolution."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -39,7 +39,7 @@ export default function CommunityGuidelinesCreatorGuidePage() {
             Market types
           </h2>
           <p className="text-ink-700 mt-3">
-            Manifold has six question types. Pick the one that fits your
+            SAGE has six question types. Pick the one that fits your
             question most naturally — the right type makes resolution cleaner
             and trading more meaningful.
           </p>

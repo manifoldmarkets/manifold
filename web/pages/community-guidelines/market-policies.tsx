@@ -144,7 +144,7 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             </li>
             <li>Low-quality non-predictive markets</li>
             <li>
-              Markets designed to harvest or redistribute Manifold bonuses
+              Markets designed to harvest or redistribute SAGE bonuses
             </li>
             <li>
               Markets designed to defraud users — these will typically be N/A'd
@@ -169,7 +169,7 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             <li>Spam</li>
             <li>Media depicting self-harm or suicide</li>
             <li>
-              Markets designed to exploit the Manifold codebase or abuse bugs
+              Markets designed to exploit the SAGE codebase or abuse bugs
             </li>
             <li>
               Markets that incentivize violating another platform's terms of
@@ -232,7 +232,7 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
               those cases.
             </li>
             <li>
-              Manifold can't force a creator to resolve a market if they leave
+              SAGE can't force a creator to resolve a market if they leave
               the platform or go inactive.
             </li>
           </ul>

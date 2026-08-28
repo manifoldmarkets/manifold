@@ -752,7 +752,7 @@ export default function ShopPage() {
     <Page trackPageView="shop page" className="!col-span-7">
       <SEO
         title="Shop"
-        description="Spend your mana in the Manifold shop"
+        description="Spend your mana in the SAGE shop"
         url="/shop"
       />
       {/* Confetti on purchase */}
@@ -1724,7 +1724,7 @@ function MerchItemCard(props: {
             <p className="text-blue-700 dark:text-blue-300">
               After confirming, you'll enter your shipping address. Your address
               is sent directly to our fulfillment partner and{' '}
-              <strong>not stored</strong> by Manifold.
+              <strong>not stored</strong> by SAGE.
             </p>
           </div>
 
@@ -1745,7 +1745,7 @@ function MerchItemCard(props: {
           <div className="text-lg font-semibold">Shipping Address</div>
           <p className="text-ink-500 text-sm">
             Enter your shipping details. This info is sent directly to our
-            fulfillment partner and not stored by Manifold.
+            fulfillment partner and not stored by SAGE.
           </p>
 
           <Col className="gap-3">
@@ -2285,7 +2285,7 @@ function SupporterCard(props: {
                     filter: 'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))',
                   }}
                 />
-                <span className="text-lg font-bold">Manifold Membership</span>
+                <span className="text-lg font-bold">SAGE Membership</span>
               </Row>
               <span className="text-primary-600 text-sm font-medium group-hover:underline">
                 {isSupporter
@@ -2356,7 +2356,7 @@ function SupporterCard(props: {
                         SUPPORTER_TIERS[hoveredTier].textColor
                       )}
                     >
-                      Manifold {SUPPORTER_TIERS[hoveredTier].name}
+                      SAGE {SUPPORTER_TIERS[hoveredTier].name}
                     </span>
                   ) : isSupporter ? (
                     <span
@@ -2365,7 +2365,7 @@ function SupporterCard(props: {
                         SUPPORTER_TIERS[currentTier].textColor
                       )}
                     >
-                      Manifold {SUPPORTER_TIERS[currentTier].name}
+                      SAGE {SUPPORTER_TIERS[currentTier].name}
                     </span>
                   ) : (
                     <span className="text-ink-500 text-sm">
@@ -2719,7 +2719,7 @@ function SupporterModal(props: {
                           SUPPORTER_TIERS[activeTier].textColor
                         )}
                       >
-                        Manifold {SUPPORTER_TIERS[activeTier].name}
+                        SAGE {SUPPORTER_TIERS[activeTier].name}
                       </span>
                       {currentEntitlement?.grantedTime && (
                         <span className="text-ink-400 text-xs">
@@ -2787,7 +2787,7 @@ function SupporterModal(props: {
                           SUPPORTER_TIERS[activeTier].textColor
                         )}
                       >
-                        Manifold {SUPPORTER_TIERS[activeTier].name}
+                        SAGE {SUPPORTER_TIERS[activeTier].name}
                       </span>
                     </Col>
                   </Row>
@@ -2795,7 +2795,7 @@ function SupporterModal(props: {
                   {/* Right: Tagline - hidden on small screens */}
                   <Col className="hidden items-end gap-0.5 sm:flex">
                     <span className="text-ink-600 text-sm font-medium">
-                      Manifold Membership
+                      SAGE Membership
                     </span>
                     <span className="text-ink-500 text-xs">
                       Unlock premium benefits

@@ -90,7 +90,7 @@ export default function TopicPage(props: {
     >
       <SEO
         title={topic.name}
-        description={`${removeEmojis(topic.name)} odds on Manifold`}
+        description={`${removeEmojis(topic.name)} odds on SAGE`}
         url={groupPath(topic.slug)}
         ogProps={{
           props: {

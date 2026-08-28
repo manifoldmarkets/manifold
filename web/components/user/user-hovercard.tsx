@@ -340,7 +340,7 @@ const FetchUserHovercardContent = forwardRef(
 const APRIL_FOOLS_AD_COPY = [
   'Hot singles in your probability space',
   "You won't BELIEVE this market's resolution",
-  'Manifold Pro: because your predictions deserve better (and so do we)',
+  'SAGE Pro: because your predictions deserve better (and so do we)',
 ]
 
 function FakeAdBanner({ userId }: { userId: string }) {

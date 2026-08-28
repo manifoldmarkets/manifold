@@ -60,17 +60,17 @@
     --color-canvas-50: 244 243 251;
     --color-canvas-100: 210 212 224;
 
-    --color-primary-50: 238 242 255;
-    --color-primary-100: 224 231 255;
-    --color-primary-200: 199 210 254;
-    --color-primary-300: 165 180 252;
-    --color-primary-400: 129 140 248;
-    --color-primary-500: 99 102 241;
-    --color-primary-600: 79 70 229;
-    --color-primary-700: 67 56 202;
-    --color-primary-800: 55 48 163;
-    --color-primary-900: 49 46 129;
-    --color-primary-950: 30 27 75;
+    --color-primary-50: 239 246 255;
+    --color-primary-100: 219 234 254;
+    --color-primary-200: 191 219 254;
+    --color-primary-300: 147 197 253;
+    --color-primary-400: 96 165 250;
+    --color-primary-500: 37 99 235;
+    --color-primary-600: 29 78 216;
+    --color-primary-700: 30 64 175;
+    --color-primary-800: 30 58 138;
+    --color-primary-900: 23 37 84;
+    --color-primary-950: 15 23 42;
 
     --color-no-50: 255 243 241;
     --color-no-100: 255 235 231;
@@ -117,17 +117,17 @@
     --color-canvas-50: 30 41 59;
     --color-canvas-100: 51 65 85;
 
-    --color-primary-950: 238 242 255;
-    --color-primary-900: 224 231 255;
-    --color-primary-800: 199 210 254;
-    --color-primary-700: 165 180 252;
-    --color-primary-600: 129 140 248;
-    --color-primary-500: 99 102 241;
-    --color-primary-400: 79 70 229;
-    --color-primary-300: 67 56 202;
-    --color-primary-200: 55 48 163;
-    --color-primary-100: 49 46 129;
-    --color-primary-50: 30 27 75;
+    --color-primary-950: 239 246 255;
+    --color-primary-900: 219 234 254;
+    --color-primary-800: 191 219 254;
+    --color-primary-700: 147 197 253;
+    --color-primary-600: 96 165 250;
+    --color-primary-500: 37 99 235;
+    --color-primary-400: 29 78 216;
+    --color-primary-300: 30 64 175;
+    --color-primary-200: 30 58 138;
+    --color-primary-100: 23 37 84;
+    --color-primary-50: 15 23 42;
 
     --color-no-950: 255 243 241;
     --color-no-900: 255 235 231;

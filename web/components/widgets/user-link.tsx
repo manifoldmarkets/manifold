@@ -355,7 +355,7 @@ export function UserBadge(props: {
 // Show a special checkmark next to Core team members
 function CoreBadge() {
   return (
-    <Tooltip text="I work on Manifold!" placement="right">
+    <Tooltip text="I work on SAGE!" placement="right">
       <Foldy
         className="stoke-indigo-700 h-4 w-4 stroke-1 hover:rotate-12 dark:stroke-indigo-300"
         aria-hidden
@@ -420,7 +420,7 @@ function MarketCreatorBadge() {
   )
 }
 
-// Show a star for Manifold Supporters with tier-appropriate color
+// Show a star for SAGE Supporters with tier-appropriate color
 // Note: Premium animation only appears on hovercard, not inline
 function SupporterBadge({
   entitlements,
@@ -436,7 +436,7 @@ function SupporterBadge({
   const showAnimation = animate && tier === 'premium'
 
   return (
-    <Tooltip text={`Manifold ${tierConfig.name}`} placement="right">
+    <Tooltip text={`SAGE ${tierConfig.name}`} placement="right">
       <span className="relative inline-flex translate-y-[1px] items-center">
         <FaStar
           className={clsx(

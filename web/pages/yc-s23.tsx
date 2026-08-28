@@ -28,7 +28,7 @@ export async function getStaticProps() {
     term: '',
     // yc-s23
     topicSlug: 'yc-s23',
-    // Manifold
+    // SAGE
     creatorId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
     limit: 1000,
   }).catch(() => [])

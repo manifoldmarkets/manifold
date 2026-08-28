@@ -227,7 +227,7 @@ export function PrivateMessagesList() {
             No messages yet
           </h3>
           <p className="text-ink-500 mb-4 text-center text-sm">
-            Start a conversation with someone on Manifold
+            Start a conversation with someone on SAGE
           </p>
         </Col>
       ) : (

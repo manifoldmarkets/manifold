@@ -31,7 +31,7 @@ export default function LabsPage() {
       </div>
       <LabSection>
         <LabCard
-          title="💌 Manifold.love"
+          title="💌 SAGE.love"
           description="Crowd source your long term matches!"
           href="https://manifold.love"
         />
@@ -79,7 +79,7 @@ export default function LabsPage() {
           href="/VersusBot?tab=questions"
         />
         <LabCard
-          title="🎴 Manifold: The Gambling"
+          title="🎴 SAGE: The Gambling"
           description="Match each question to its creator"
           href="/cards"
         />

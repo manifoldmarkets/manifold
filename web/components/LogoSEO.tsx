@@ -4,7 +4,7 @@ export function LogoSEO() {
   const orgData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Manifold Markets',
+    name: 'SAGE',
     url: 'https://manifold.markets',
     logo: 'https://manifold.markets/logo.svg',
     description: 'Create your own prediction market. Unfold the future.',

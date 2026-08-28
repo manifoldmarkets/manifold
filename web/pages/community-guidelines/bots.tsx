@@ -14,7 +14,7 @@ export default function CommunityGuidelinesBotsPage() {
     >
       <SEO
         title="Community Guidelines — Bots"
-        description="Rules for running bot accounts on Manifold: how to mark an account as a bot, what changes, and what's expected."
+        description="Rules for running bot accounts on SAGE: how to mark an account as a bot, what changes, and what's expected."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -29,7 +29,7 @@ export default function CommunityGuidelinesBotsPage() {
         </div>
 
         <p className="text-ink-600 mt-3 text-lg">
-          Automated accounts are welcome on Manifold — they help keep markets
+          Automated accounts are welcome on SAGE — they help keep markets
           liquid and well-calibrated. The rules below exist so bot activity is
           clearly labelled and doesn't crowd out humans in bonuses and leagues.
         </p>

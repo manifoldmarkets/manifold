@@ -10,7 +10,7 @@ import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 export const PerpOracleAttribution = (props: {
   feedId: string | undefined
-  /** Provider-declared source timestamp, not Manifold's observation time. */
+  /** Provider-declared source timestamp, not SAGE's observation time. */
   asOfTime?: number | null
   className?: string
 }) => {

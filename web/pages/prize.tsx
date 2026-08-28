@@ -353,8 +353,8 @@ export default function SweepstakesPage() {
     return (
       <Page trackPageView={'prize-drawing'}>
         <SEO
-          title="Manifold Prize Drawing"
-          description="Win real USDC in Manifold's prize drawing. No purchase necessary."
+          title="SAGE Prize Drawing"
+          description="Win real USDC in SAGE's prize drawing. No purchase necessary."
           url="/prize"
           image="/prize-drawing-og.png"
         />
@@ -363,7 +363,7 @@ export default function SweepstakesPage() {
             <Row className="items-center gap-3">
               <FaGift className="h-8 w-8 text-teal-500" />
               <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-                Manifold Prize Drawing
+                SAGE Prize Drawing
               </h1>
             </Row>
             <p className="text-ink-600 text-lg leading-relaxed">
@@ -381,8 +381,8 @@ export default function SweepstakesPage() {
     return (
       <Page trackPageView={'prize-drawing'}>
         <SEO
-          title="Manifold Prize Drawing"
-          description="Win real USDC in Manifold's prize drawing. No purchase necessary."
+          title="SAGE Prize Drawing"
+          description="Win real USDC in SAGE's prize drawing. No purchase necessary."
           url="/prize"
           image="/prize-drawing-og.png"
         />
@@ -423,10 +423,10 @@ export default function SweepstakesPage() {
       <SEO
         title={
           sweepstakes.sweepstakesNum
-            ? `Manifold Prize Drawing #${sweepstakes.sweepstakesNum}`
-            : 'Manifold Prize Drawing'
+            ? `SAGE Prize Drawing #${sweepstakes.sweepstakesNum}`
+            : 'SAGE Prize Drawing'
         }
-        description={`Win $${totalPrizePool.toLocaleString()} in USDC in Manifold's prize drawing. No purchase necessary.`}
+        description={`Win $${totalPrizePool.toLocaleString()} in USDC in SAGE's prize drawing. No purchase necessary.`}
         url={sweepstakesNum ? `/prize/${sweepstakes.sweepstakesNum}` : '/prize'}
         image="/prize-drawing-og.png"
       />
@@ -439,7 +439,7 @@ export default function SweepstakesPage() {
             <Row className="items-center gap-3">
               <FaGift className="h-8 w-8 text-teal-500" />
               <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-                Manifold Prize Drawing
+                SAGE Prize Drawing
               </h1>
             </Row>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
@@ -711,7 +711,7 @@ export default function SweepstakesPage() {
             >
               Prize Drawing FAQ
             </a>
-            . By participating, you agree to Manifold's{' '}
+            . By participating, you agree to SAGE's{' '}
             <a
               href="https://docs.manifold.markets/prize-rules"
               target="_blank"
@@ -872,7 +872,7 @@ function AnnouncePrizeDrawingSection(props: {
             <div className="text-ink-900 text-sm font-medium">{title}</div>
             <div className="text-ink-700 mt-0.5 text-sm">{body}</div>
             <div className="text-ink-400 mt-1 text-xs">
-              from Manifold Markets
+              from SAGE
             </div>
           </div>
         </div>

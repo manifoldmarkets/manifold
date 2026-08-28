@@ -53,7 +53,7 @@ export default function CommunityGuidelinesLeaguesPage() {
     >
       <SEO
         title="Community Guidelines — Leagues"
-        description="How Manifold leagues work, how scoring is calculated, and rules around prize eligibility."
+        description="How SAGE leagues work, how scoring is calculated, and rules around prize eligibility."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -68,7 +68,7 @@ export default function CommunityGuidelinesLeaguesPage() {
         </div>
 
         <p className="text-ink-600 mt-3 text-lg">
-          Leagues are Manifold's monthly competitive ladder. You're sorted into
+          Leagues are SAGE's monthly competitive ladder. You're sorted into
           a division at the start of each season, and your profit on ranked
           markets determines your rank — and your prize.
         </p>

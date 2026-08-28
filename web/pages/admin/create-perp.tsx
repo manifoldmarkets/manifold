@@ -209,7 +209,7 @@ export default function AdminCreatePerpPage() {
     }
     if (launchCreatorUnauthorized) {
       toast.error(
-        'Sign in as the official Manifold account to create a launch PERP.'
+        'Sign in as the official SAGE account to create a launch PERP.'
       )
       return
     }
@@ -394,7 +394,7 @@ export default function AdminCreatePerpPage() {
                     </Row>
                     {launchCreatorUnauthorized && (
                       <p className="text-scarlet-700 mt-2 font-semibold">
-                        Sign in as the official Manifold account. Residual
+                        Sign in as the official SAGE account. Residual
                         backing returns to the market creator, so another admin
                         cannot create this launch feed.
                       </p>

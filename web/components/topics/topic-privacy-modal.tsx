@@ -66,6 +66,6 @@ export const PRIVACY_STATUS_ITEMS = {
     bigIcon: <LockClosedIcon className="h-6 w-6" />,
     status: 'Private',
     descriptor:
-      'The content in this topic is not viewable by the public. Only approved users can see this topic. Manifold devs may view for development reasons.',
+      'The content in this topic is not viewable by the public. Only approved users can see this topic. SAGE devs may view for development reasons.',
   },
 }

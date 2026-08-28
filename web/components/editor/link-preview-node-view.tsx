@@ -87,7 +87,7 @@ export const insertLinkPreviews = async (
       .filter((link) => !linkPreviewDismissed[key + link])
       .map(async (link) => {
         try {
-          // Manifold market URLs become inline contract-mention widgets
+          // SAGE market URLs become inline contract-mention widgets
           // (same as typing % and picking from the dropdown).
           const manifold = matchManifoldMarketUrl(link)
           if (manifold) {

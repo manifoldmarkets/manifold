@@ -52,7 +52,7 @@ export default function ManachanPage() {
     <Page trackPageView={'manachan page'}>
       <SEO
         title="Mana-chan speaks!"
-        description="Mana-chan is Manifold's official anime spokesgirl"
+        description="Mana-chan is SAGE's official anime spokesgirl"
         image="/manachan.png"
       />
 
@@ -66,7 +66,7 @@ export default function ManachanPage() {
           className="self-center"
         />
         <div>
-          Mana-chan is Manifold's official anime spokesgirl...but she is very
+          Mana-chan is SAGE's official anime spokesgirl...but she is very
           shy and doesn't know what to say. For{' '}
           {formatMoney(MANACHAN_TWEET_COST)}, you can tell her what to{' '}
           <a

@@ -14,8 +14,8 @@ export default function DiscordBot() {
   return (
     <Page trackPageView={'discord bot page'}>
       <SEO
-        title={'Manifold Discord Bot'}
-        description={'Add the Manifold Discord Bot to your server!'}
+        title={'SAGE Discord Bot'}
+        description={'Add the SAGE Discord Bot to your server!'}
       />
       <Col className={'w-full items-center '}>
         <Col className={'bg-canvas-0 gap-3 p-4'}>
@@ -44,7 +44,7 @@ export default function DiscordBot() {
           </Col>
           <Row className={'text-primary-700 text-xl'}>What is it?</Row>
           <span className={'mx-4'}>
-            The Manifold Discord Bot allows you to trade, search, and create
+            The SAGE Discord Bot allows you to trade, search, and create
             prediction markets right from your discord server. It supports
             trading via Zoomer-friendly emoji reactions! This is how it looks:
           </span>
@@ -52,7 +52,7 @@ export default function DiscordBot() {
             <img
               src={'/discord-ss.png'}
               className={'image m-2 rounded-lg object-cover'}
-              alt={`Discord chat message from Manifold Bot containing an embedded link to a prediction market, then four unlabeled buttons, and finally six discord reactions to ${TRADE_TERM} 5 yes, 10 yes, 25 yes, or ${TRADE_TERM} 5 no, 10 no, 25 no.`}
+              alt={`Discord chat message from SAGE Bot containing an embedded link to a prediction market, then four unlabeled buttons, and finally six discord reactions to ${TRADE_TERM} 5 yes, 10 yes, 25 yes, or ${TRADE_TERM} 5 no, 10 no, 25 no.`}
             />
           </Row>
           <Row className={'text-primary-700 text-xl'}>How can I get it?</Row>

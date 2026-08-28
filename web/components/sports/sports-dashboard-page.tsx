@@ -963,7 +963,7 @@ export function SportsDashboardPage({
         }
       `}</style>
       <Head>
-        <title>{title} | Manifold</title>
+        <title>{title} | SAGE</title>
       </Head>
       <Col
         ref={topRef}

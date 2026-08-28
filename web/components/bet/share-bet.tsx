@@ -57,7 +57,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
       <div className="flex items-center justify-center pb-4 pt-5">
         <div className="flex items-center gap-2">
           <LogoIcon className="-mt-2 h-14 w-14 text-white" />
-          <span className="text-3xl text-white">MANIFOLD</span>
+          <span className="text-3xl text-white">SAGE</span>
         </div>
       </div>
 

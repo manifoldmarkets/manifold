@@ -35,7 +35,7 @@ export function OgMarket(props: OgCardProps) {
         backgroundImage: 'linear-gradient(to bottom, #4338ca, #818cf8)',
       }}
     >
-      {/* Manifold logo */}
+      {/* SAGE logo */}
       <div className="mx-auto flex items-center">
         <Logo stroke="#ffffff" width={48} height={48} />
 
@@ -43,7 +43,7 @@ export function OgMarket(props: OgCardProps) {
           className="ml-0.5 text-3xl font-thin uppercase text-white"
           style={{ fontFamily: 'var(--font-main), Figtree-light' }}
         >
-          Manifold
+          SAGE
         </span>
       </div>
       <div className="m-4 mt-1 flex flex-col rounded-lg bg-white px-6 py-4 pb-10 text-black shadow-lg">

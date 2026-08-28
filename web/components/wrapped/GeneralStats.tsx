@@ -62,7 +62,7 @@ export function IntroSlide(props: { goToNextPage: () => void; user: User }) {
         )}
       >
         <h1 className="font-christmas bg-gradient-to-r from-red-400 via-green-300 to-red-400 bg-clip-text text-6xl font-bold text-transparent drop-shadow-lg sm:text-7xl">
-          Manifold
+          SAGE
         </h1>
         <h1 className="font-christmas mt-2 bg-gradient-to-r from-green-300 via-red-400 to-green-300 bg-clip-text text-7xl font-bold text-transparent drop-shadow-lg sm:text-8xl">
           Wrapped
@@ -220,7 +220,7 @@ export function OutroSlide(props: { goToPrevPage: () => void; user: User }) {
             'text-white shadow-lg hover:scale-105 hover:shadow-xl'
           )}
         >
-          🏠 Back to Manifold
+          🏠 Back to SAGE
         </a>
       </Col>
       <NavButtons

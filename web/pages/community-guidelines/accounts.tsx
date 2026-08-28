@@ -126,7 +126,7 @@ export default function CommunityGuidelinesAccountsPage() {
               leaderboard position.
             </li>
             <li>
-              Exploiting Manifold bugs, breaking laws, or violating terms of
+              Exploiting SAGE bugs, breaking laws, or violating terms of
               service.
             </li>
           </ul>
@@ -140,7 +140,7 @@ export default function CommunityGuidelinesAccountsPage() {
             Insider trading
           </h2>
           <p className="text-ink-700 mt-3">
-            Manifold actually encourages trading on private information — this
+            SAGE actually encourages trading on private information — this
             is how markets get more accurate. As long as you didn't have a prior
             duty to keep that information private (to your employer, to the
             person who told you, or via a public commitment made on the market),

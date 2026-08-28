@@ -224,8 +224,8 @@ export function AddWidgetPrompt() {
           </Row>
           <span className="text-ink-600 text-sm">
             {isIOS
-              ? 'Long-press your home screen, tap + (or Edit → Add Widget), then search "Manifold".'
-              : 'Add the Manifold streak widget so your streak and quests are one glance away.'}
+              ? 'Long-press your home screen, tap + (or Edit → Add Widget), then search "SAGE".'
+              : 'Add the SAGE streak widget so your streak and quests are one glance away.'}
           </span>
         </>
       )}

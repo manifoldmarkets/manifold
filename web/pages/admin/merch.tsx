@@ -497,7 +497,7 @@ function OrderRow(props: {
           {order.printfulOrderId ?? '—'}
         </div>
         <div>
-          <span className="text-ink-500">Manifold:</span>{' '}
+          <span className="text-ink-500">SAGE:</span>{' '}
           {order.txnId ? `manifold-${order.txnId}` : '—'}
         </div>
       </td>

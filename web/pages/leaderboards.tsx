@@ -181,7 +181,7 @@ export default function Leaderboards() {
     <Page trackPageView={'leaderboards'}>
       <SEO
         title="Leaderboards"
-        description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
+        description={`SAGE's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
 
@@ -200,7 +200,7 @@ export default function Leaderboards() {
             </Link>
           </Row>
           <p className="text-ink-500 text-sm">
-            All-time top traders on Manifold
+            All-time top traders on SAGE
           </p>
         </Col>
 

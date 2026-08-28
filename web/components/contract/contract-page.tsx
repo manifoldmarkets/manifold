@@ -236,7 +236,7 @@ export function ContractPageContent(props: ContractParams) {
             className="flex items-center gap-1 text-indigo-700 dark:text-white"
           >
             <LogoIcon className="h-8 w-8 stroke-indigo-700 dark:stroke-white" />
-            <span className="text-lg font-thin">MANIFOLD</span>
+            <span className="text-lg font-thin">SAGE</span>
           </Link>
           <SignUpButton />
         </Row>

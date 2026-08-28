@@ -14,7 +14,7 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
     >
       <SEO
         title="Community Guidelines — Comment Guidelines"
-        description="Rules for discussion and comments on Manifold markets."
+        description="Rules for discussion and comments on SAGE markets."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -29,7 +29,7 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
         </div>
 
         <p className="text-ink-600 mt-3 text-lg">
-          Manifold supports open discussion. The following types of comments may
+          SAGE supports open discussion. The following types of comments may
           be hidden, deleted, or result in a ban.
         </p>
 

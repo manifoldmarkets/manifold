@@ -415,7 +415,7 @@ export default function TodoPage() {
                                                     },
                                                   },
                                                 ],
-                                                text: 'Created from Manifold todo',
+                                                text: 'Created from SAGE todo',
                                               },
                                             ],
                                           },

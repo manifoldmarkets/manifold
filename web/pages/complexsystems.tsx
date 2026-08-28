@@ -49,8 +49,8 @@ export default function ComplexSystems(
   return (
     <Page trackPageView="Complex Systems page">
       <SEO
-        title="Complex Systems Manifold"
-        description="Complex Systems on Manifold."
+        title="Complex Systems SAGE"
+        description="Complex Systems on SAGE."
         url="/complexsystems"
       />
       <PromotionalPanel

@@ -68,10 +68,10 @@ const WhatIsManifold = ({
   <ExpandSection
     title={
       <>
-        <GoGraph className="mr-2  " /> What is Manifold?
+        <GoGraph className="mr-2  " /> What is SAGE?
       </>
     }
-    onClick={() => onClick('What is Manifold?')}
+    onClick={() => onClick('What is SAGE?')}
   >
     <AboutManifold />
   </ExpandSection>
@@ -87,7 +87,7 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
     onClick={() => onClick('Are our forecasts accurate?')}
   >
     <div className="pb-2">
-      Yes! Manifold is{' '}
+      Yes! SAGE is{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
@@ -109,7 +109,7 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
         outperformed all other prediction market platforms {''}
       </a>
       and were in line with FiveThirtyEight’s performance. Many people who don't
-      like {TRADING_TERM} still use Manifold to get reliable news.
+      like {TRADING_TERM} still use SAGE to get reliable news.
     </div>
     <div></div>
   </ExpandSection>
@@ -131,7 +131,7 @@ const PlayMoney = ({
   >
     <div className="pb-2">
       Mana ({ENV_CONFIG.moneyMoniker}) is the play-money currency used to bet on
-      Manifold. It cannot be converted to cash. All users start with{' '}
+      SAGE. It cannot be converted to cash. All users start with{' '}
       {formatMoney(1000)} for free.
     </div>
     <div className="pb-2">
@@ -157,7 +157,7 @@ const CashPrizes = ({
     onClick={() => onClick('How do I win cash prizes?')}
   >
     <div className="pb-2">
-      Manifold runs regular prize drawings where you can win real USDC.
+      SAGE runs regular prize drawings where you can win real USDC.
     </div>
     <div className="pb-2">
       No purchase necessary—you can claim a free entry once per drawing. Winners

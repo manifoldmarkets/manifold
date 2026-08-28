@@ -545,7 +545,7 @@ export const PushNotificationsBanner = (props: {
     <Row className="text-ink-700 bg-ink-100 items-center justify-center gap-2 rounded-md p-2 text-sm">
       <span className={''}>
         Mobile push notifications are disabled. To enable them, go to your
-        phone's notification settings and turn them on for Manifold. Then tap
+        phone's notification settings and turn them on for SAGE. Then tap
         this button ➡️
       </span>
       <Button

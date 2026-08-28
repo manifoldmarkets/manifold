@@ -115,7 +115,7 @@ export function PushNotificationsModal(props: {
         </span>
         {!showHowToEnableInSettings && (
           <span className={'text-ink-700'}>
-            Get the most out of Manifold: replies, breaking market news, and
+            Get the most out of SAGE: replies, breaking market news, and
             direct messages.
           </span>
         )}
@@ -123,7 +123,7 @@ export function PushNotificationsModal(props: {
           <Col className={'justify-between gap-2'}>
             <Col className={'gap-1 text-lg'}>
               <span>1. Go to your settings</span>
-              <span>3. Search & tap Manifold</span>
+              <span>3. Search & tap SAGE</span>
               <span>2. Tap Notifications</span>
               <span>4. Tap Allow Notifications</span>
               {bonusEligible && (

@@ -544,7 +544,7 @@ export function LoansModal(props: {
                   Upgrade to unlock margin loans
                 </h3>
                 <p className="text-ink-600 max-w-sm text-sm">
-                  Margin loans are available to all Manifold members. Upgrade to
+                  Margin loans are available to all SAGE members. Upgrade to
                   borrow against your positions and leverage your trading.
                 </p>
               </Col>

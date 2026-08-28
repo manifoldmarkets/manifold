@@ -29,7 +29,7 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <p className="text-ink-600 mt-3 text-lg">
-          Manifold Mods are community members who help keep markets accurate,
+          SAGE Mods are community members who help keep markets accurate,
           resolve disputes, and maintain a healthy environment. This page
           explains who they are, what they can do, and how to get their help.
         </p>
@@ -39,7 +39,7 @@ export default function CommunityGuidelinesModerationPage() {
         <div className="border-ink-200 bg-canvas-50 mt-4 rounded-xl border-2 p-5">
           <p className="text-ink-700 text-sm">
             Note: Mod alerts and temporary bans are a normal part of how
-            Manifold handles guideline violations — they're not a permanent mark
+            SAGE handles guideline violations — they're not a permanent mark
             against you. Think of them as a nudge rather than a punishment.
             Repeat or serious violations are treated differently.
           </p>
@@ -62,7 +62,7 @@ export default function CommunityGuidelinesModerationPage() {
             Who Mods are
           </h2>
           <p className="text-ink-700 mt-3">
-            Mods are active Manifold users selected by the community manager.
+            Mods are active SAGE users selected by the community manager.
             New Mods are considered when needed. Candidates are expected to be
             open-minded, fair, active on the platform, and willing to engage
             with Discord's #mod-help channel and the @mods site tag.

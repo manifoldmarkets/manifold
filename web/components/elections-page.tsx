@@ -23,7 +23,7 @@ export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
   'Who will win the Presidential Election?'
 
 // Topic tags for the bottom feed, so visitors can sort the election markets by
-// race/subject from this page. Each slug is a real Manifold group with a healthy
+// race/subject from this page. Each slug is a real SAGE group with a healthy
 // number of open markets (verified against prod). The first entry is the default
 // view: the 2026 Midterms tag — tightly scoped to this page's focus, rather than
 // the much broader "us-politics", which pulled in a lot of off-topic markets.

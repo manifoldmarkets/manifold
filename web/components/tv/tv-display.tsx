@@ -88,7 +88,7 @@ export function TVDisplay(props: {
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO
-        title={`${stream?.title} on Manifold TV`}
+        title={`${stream?.title} on SAGE TV`}
         description={`Watch the stream and ${TRADE_TERM} on ${contract.question}`}
         url={`/tv/${stream?.id}`}
         image={contract.coverImageUrl}
@@ -97,7 +97,7 @@ export function TVDisplay(props: {
         <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
           <iframe
             src={streamSrc}
-            title="Manifold Live video"
+            title="SAGE Live video"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="bg-canvas-0 h-[300px] w-full lg:h-[500px]"

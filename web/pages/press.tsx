@@ -27,7 +27,7 @@ export default function PressPage() {
   const badges: BadgeInfo[] = [
     {
       title: 'Core Team',
-      description: 'Manifold team members',
+      description: 'SAGE team members',
       icon: (
         <Foldy
           className="h-5 w-5 stroke-indigo-700 dark:stroke-indigo-300"
@@ -113,14 +113,14 @@ export default function PressPage() {
     <Page trackPageView={'press page'} className="!col-span-7">
       <SEO
         title="Press Kit"
-        description="Download Manifold Markets brand assets, logos, fonts, and marketing materials for press and media use."
+        description="Download SAGE brand assets, logos, fonts, and marketing materials for press and media use."
         url="/press"
       />
 
       <Col className="p-4 pb-12">
         <Title className="mb-2">Press Kit</Title>
         <p className="text-ink-600 mb-4 text-lg">
-          Brand assets and marketing materials for Manifold Markets
+          Brand assets and marketing materials for SAGE
         </p>
         <div className="bg-primary-100 border-primary-300 text-primary-800 mb-6 rounded-lg border p-4">
           <p className="text-sm">
@@ -129,7 +129,7 @@ export default function PressPage() {
           </p>
         </div>
 
-        {/* MANIFOLD Brand Wordmark */}
+        {/* SAGE Brand Wordmark */}
         <div className="bg-canvas-0 mb-8 flex flex-col gap-6 rounded-lg border p-8">
           <div className="flex flex-col gap-4">
             <h3 className="text-ink-800 text-lg font-semibold">
@@ -141,7 +141,7 @@ export default function PressPage() {
                 strokeWidth="0.6"
               />
               <div className="text-3xl font-thin text-indigo-700 md:text-6xl">
-                MANIFOLD
+                SAGE
               </div>
             </div>
             <p className="text-ink-500 text-center text-sm">
@@ -159,7 +159,7 @@ export default function PressPage() {
                 strokeWidth="0.6"
               />
               <div className="text-3xl font-thin text-white md:text-6xl">
-                MANIFOLD
+                SAGE
               </div>
             </div>
             <p className="text-ink-500 text-center text-sm">
@@ -214,7 +214,7 @@ export default function PressPage() {
                 />
                 <div className="bg-canvas-50 rounded-lg border p-4">
                   <p className="text-ink-600 text-sm">
-                    <strong>Wordmark Usage:</strong> The "MANIFOLD" wordmark
+                    <strong>Wordmark Usage:</strong> The "SAGE" wordmark
                     uses <strong>Figtree Thin (weight 300)</strong>. For proper
                     sizing, use{' '}
                     <code className="bg-ink-100 rounded px-1">font-thin</code>{' '}
@@ -237,7 +237,7 @@ export default function PressPage() {
                 />
                 <FontExample
                   name="Major Mono Display"
-                  sample="MANIFOLD MARKETS"
+                  sample="SAGE MARKETS"
                   fontFamily="font-mono"
                   downloadPath="/fonts/MajorMonoDisplay-Regular.ttf"
                 />
@@ -650,7 +650,7 @@ function YesNoButtonShowcase() {
       <div className="flex flex-col items-center gap-8">
         <div className="w-full">
           <p className="text-ink-600 mb-4 text-center">
-            Manifold's signature Yes/No button design
+            SAGE's signature Yes/No button design
           </p>
           <p className="text-ink-500 mb-2 text-center text-xs">
             Drag the edges to resize (both buttons mirror each other)
@@ -857,7 +857,7 @@ function MockMarket() {
     'Who will win the 2025 MLB World Series MVP?'
   )
   const [probability, setProbability] = useState(52)
-  const [creatorName, setCreatorName] = useState('Manifold')
+  const [creatorName, setCreatorName] = useState('SAGE')
   const [volume, setVolume] = useState('27k')
   const [traders, setTraders] = useState('1.7k')
   const [scale, setScale] = useState(100)
@@ -1195,7 +1195,7 @@ function MockMarket() {
               />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-ink-600 mb-1 text-sm">Manifold Markets</div>
+              <div className="text-ink-600 mb-1 text-sm">SAGE</div>
               <h2 className="text-ink-1000 text-2xl font-semibold leading-tight">
                 {question}
               </h2>
@@ -1390,13 +1390,13 @@ function MockMarket() {
                       })}
                     </svg>
 
-                    {/* Manifold watermark */}
+                    {/* SAGE watermark */}
                     <div className="pointer-events-none absolute bottom-2 left-3 flex items-center gap-1.5 opacity-40">
                       <LogoIcon
                         className="stroke-ink-600 h-4 w-4"
                         strokeWidth="0.6"
                       />
-                      <span className="text-ink-600 text-xs">MANIFOLD</span>
+                      <span className="text-ink-600 text-xs">SAGE</span>
                     </div>
 
                     {/* Time period buttons */}
@@ -1575,7 +1575,7 @@ function MiniMockMarket() {
     'Will this be the best press kit ever created?'
   )
   const [probability, setProbability] = useState(87)
-  const [creatorName, setCreatorName] = useState('Manifold')
+  const [creatorName, setCreatorName] = useState('SAGE')
   const [volume, setVolume] = useState('1,234')
   const [traders, setTraders] = useState('56')
   const [scale, setScale] = useState(100)

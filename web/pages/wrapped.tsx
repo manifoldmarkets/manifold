@@ -138,10 +138,10 @@ export default function WrappedPage() {
   return (
     <>
       <Head>
-        <title>Manifold Wrapped 2025 🎄</title>
+        <title>SAGE Wrapped 2025 🎄</title>
         <meta
           name="description"
-          content="Your year in predictions - Manifold Wrapped 2025"
+          content="Your year in predictions - SAGE Wrapped 2025"
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

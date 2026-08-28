@@ -716,7 +716,7 @@ function ManaSupplyTab(props: {
               <>
                 &Delta; mana_supply_stats.total_value
                 <br />
-                minus net sum txns to or from Manifold
+                minus net sum txns to or from SAGE
               </>
             }
           />
@@ -740,10 +740,10 @@ function ManaSupplyTab(props: {
         />
       )}
       <Spacer h={8} />
-      <Title>Transactions from Manifold</Title>
+      <Title>Transactions from SAGE</Title>
       <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
       <Spacer h={8} />
-      <Title>Transactions to Manifold</Title>
+      <Title>Transactions to SAGE</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
       <BonusSummary txnSummaryStats={toBankSummaryMana} days={days} />
     </Col>

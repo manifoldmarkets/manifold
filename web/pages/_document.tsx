@@ -1,5 +1,4 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import { ENV_CONFIG } from 'common/envs/constants'
 import Script from 'next/script'
 
 export default function Document() {
@@ -16,7 +15,7 @@ export default function Document() {
           }`}
       </style>
       <Head>
-        <link rel="icon" href={ENV_CONFIG.faviconPath} />
+        <link rel="icon" type="image/svg+xml" href="/sage-mark.svg" />
         <Script src="/init-theme.js" strategy="beforeInteractive" />
       </Head>
       <body className="bg-canvas-0 text-ink-1000">

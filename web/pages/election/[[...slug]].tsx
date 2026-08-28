@@ -33,7 +33,7 @@ export default function Elections(props: ElectionsPageProps) {
           `revalidate`, so it can't drift from what's on the page. The map
           fills are its fallback visual if the control markets go missing. */}
       <SEO
-        title="Manifold Elections"
+        title="SAGE Elections"
         description="Live prediction market odds on US elections — the 2028 presidential race and the 2026 midterms"
         ogProps={{
           props: {

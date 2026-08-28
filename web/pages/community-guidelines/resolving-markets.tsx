@@ -14,7 +14,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
     >
       <SEO
         title="Community Guidelines — Resolving Markets"
-        description="Guidelines for resolving markets correctly and promptly on Manifold."
+        description="Guidelines for resolving markets correctly and promptly on SAGE."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -64,14 +64,14 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
             id="when-manifold-can-override"
             className="text-ink-1000 text-xl font-semibold"
           >
-            When Manifold can override you
+            When SAGE can override you
           </h2>
           <p className="text-ink-700 mt-3">
             Creators typically have final say, but not always:
           </p>
           <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
             <li>
-              Manifold or Mods may resolve your market if unambiguous criteria
+              SAGE or Mods may resolve your market if unambiguous criteria
               have been met and you're unresponsive.
             </li>
             <li>
@@ -81,7 +81,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
               position will review.
             </li>
             <li>
-              Manifold reserves the right to re-resolve any market resolved
+              SAGE reserves the right to re-resolve any market resolved
               fraudulently — including markets created before this policy.
             </li>
             <li>

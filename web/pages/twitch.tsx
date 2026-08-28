@@ -38,7 +38,7 @@ export default function TwitchLandingPage() {
   return (
     <Page trackPageView={'twitch landing page'}>
       <SEO
-        title="Manifold on Twitch"
+        title="SAGE on Twitch"
         description={`Get more out of Twitch with play-money ${TRADING_TERM} questions.`}
       />
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
@@ -158,12 +158,12 @@ function TwitchPlaysManifoldMarkets(props: {
       <Col className="gap-4">
         <Subtitle text="How it works" />
         <div>
-          Similar to Twitch channel point predictions, Manifold allows you to
+          Similar to Twitch channel point predictions, SAGE allows you to
           create a play-money prediction markets on any question you like and
           feature it in your stream.
         </div>
         <div>
-          The key difference is that Manifold's questions function more like a
+          The key difference is that SAGE's questions function more like a
           stock market and viewers can buy and sell shares over the course of
           the event and not just at the start. The question will eventually
           resolve to yes or no at which point the winning shareholders will
@@ -405,7 +405,7 @@ function SetUpBot(props: {
         <img
           src="/twitch-bot-obs-screenshot.jpg"
           className="rounded-md border-l border-r border-t shadow-md"
-          alt='screenshot of a stream with a game on the right and Manifold console on the right above chat. The console says "Resolve market", the market name, YES NO N/A buttons, a resolve button, and an unfeature market button.'
+          alt='screenshot of a stream with a game on the right and SAGE console on the right above chat. The console says "Resolve market", the market name, YES NO N/A buttons, a resolve button, and an unfeature market button.'
         />
         To add the bot to your stream make sure you have logged in then follow
         the steps below.

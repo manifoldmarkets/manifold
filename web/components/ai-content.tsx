@@ -131,7 +131,7 @@ export function AiContent() {
       content: (
         <Col className="mb-8 px-1">
           <div className="pb-2 pt-3">
-            Manifold has partnered with AI Digest to bring you high quality
+            SAGE has partnered with AI Digest to bring you high quality
             markets on AI benchmarks and indicators in 2025.{' '}
             <a
               href="https://ai2025.org"

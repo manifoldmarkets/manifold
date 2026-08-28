@@ -66,7 +66,7 @@ export default function AIDashboard({
   return (
     <Page trackPageView="ai dashboard">
       <SEO
-        title="Manifold AI Forecast"
+        title="SAGE AI Forecast"
         description="Live prediction market odds on artificial intelligence progress"
         image="/ai.png"
       />

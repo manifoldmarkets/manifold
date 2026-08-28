@@ -6,7 +6,7 @@ export const Footer = ({ showAbout = false }: { showAbout?: boolean }) => (
     role="contentinfo"
     className="text-ink-400 mb-4 mt-8 w-full text-center text-sm"
   >
-    © Manifold Markets, Inc.
+    © SAGE
     <span className="mx-2">&bull;</span>
     {showAbout && (
       <>

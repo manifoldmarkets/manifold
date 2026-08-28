@@ -59,7 +59,7 @@ export const replaceUrlWithTitleLink = (
     .run()
 }
 
-// Replace a pasted Manifold market URL with an inline contract-mention node
+// Replace a pasted SAGE market URL with an inline contract-mention node
 // (the same widget produced by typing `%` and picking from the dropdown).
 export const replaceManifoldUrlWithMention = async (
   editor: Editor,

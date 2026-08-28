@@ -20,7 +20,7 @@ export const FeeDisplay = (props: {
       <InfoTooltip
         text={`${(amount ? (100 * totalFees) / amount : 0).toFixed(
           2
-        )}% fee. Goes to Manifold. Fees range from 0% to 7% of your ${TRADE_TERM} amount increasing the more unlikely your ${TRADE_TERM} is to pay out.`}
+        )}% fee. Goes to SAGE. Fees range from 0% to 7% of your ${TRADE_TERM} amount increasing the more unlikely your ${TRADE_TERM} is to pay out.`}
         className="text-ink-600 ml-1 mt-0.5"
         size="sm"
       />

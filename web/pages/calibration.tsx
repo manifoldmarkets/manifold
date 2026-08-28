@@ -82,7 +82,7 @@ export default function CalibrationPage(props: {
     <Page trackPageView={'platform calibration page'}>
       <SEO
         title={`Platform calibration`}
-        description="Manifold's overall track record"
+        description="SAGE's overall track record"
       />
 
       {/* Subtle background gradient */}
@@ -99,7 +99,7 @@ export default function CalibrationPage(props: {
             Calibration
           </h1>
           <p className="text-ink-600 max-w-2xl text-lg leading-relaxed">
-            Explore how Manifold's predictions compare to real-world outcomes.
+            Explore how SAGE's predictions compare to real-world outcomes.
             Our track record demonstrates the power of collective forecasting.
           </p>
         </div>
@@ -161,7 +161,7 @@ export default function CalibrationPage(props: {
             <CaseStudyCard
               title="Predicting SBF fraud"
               contract={sbfMarket}
-              description="Manifold had a market stable between 5-10% that SBF would be convicted of a felony 1-month before there was any news about it. It then immediately reacted correctly to rumors before any official statements were made."
+              description="SAGE had a market stable between 5-10% that SBF would be convicted of a felony 1-month before there was any news about it. It then immediately reacted correctly to rumors before any official statements were made."
             />
 
             {/* 2022 Midterms - Text Only */}
@@ -172,7 +172,7 @@ export default function CalibrationPage(props: {
                   2022 US Midterm Elections
                 </h3>
                 <p className="text-ink-600 text-sm leading-relaxed">
-                  Manifold{' '}
+                  SAGE{' '}
                   <a
                     className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 underline transition-colors"
                     target="_blank"

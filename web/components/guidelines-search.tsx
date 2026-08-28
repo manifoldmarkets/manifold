@@ -80,7 +80,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   },
   {
     page: 'Resolving Markets',
-    section: 'When Manifold can override you',
+    section: 'When SAGE can override you',
     text: 'manifold mods override unresponsive ambiguous disputed traders cede decision position fraudulent re-resolve n/a ambiguity',
     href: '/community-guidelines/resolving-markets#when-manifold-can-override',
   },

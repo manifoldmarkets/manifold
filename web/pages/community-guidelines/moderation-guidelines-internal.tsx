@@ -10,7 +10,7 @@ export default function ModerationGuidelinesInternalPage() {
     <Page trackPageView="moderation guidelines page" className="!col-span-7">
       <SEO
         title="Moderation Guidelines"
-        description="How Manifold mods are expected to act, decide, and escalate."
+        description="How SAGE mods are expected to act, decide, and escalate."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -25,7 +25,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <p className="text-ink-600 mt-3 text-lg">
-          How Manifold mods are expected to act, decide, and escalate. Published
+          How SAGE mods are expected to act, decide, and escalate. Published
           so the community can see the same playbook the mods follow. For
           user-facing moderation info — what mods do, how to request help, how
           to appeal — see the{' '}
@@ -58,7 +58,7 @@ export default function ModerationGuidelinesInternalPage() {
               technicalities or oversights.
             </li>
             <li>
-              Stay active on Manifold and check #mod-help in Discord regularly.
+              Stay active on SAGE and check #mod-help in Discord regularly.
             </li>
             <li>Work collaboratively with the team and other mods.</li>
           </ul>
@@ -70,7 +70,7 @@ export default function ModerationGuidelinesInternalPage() {
             <li>Not wanting to do the work</li>
             <li>Extended inactivity</li>
             <li>
-              Being consistently negative toward Manifold, staff, or users — we
+              Being consistently negative toward SAGE, staff, or users — we
               have high tolerance here and will warn first
             </li>
             <li>A communication style that consistently creates conflict</li>
@@ -272,8 +272,8 @@ export default function ModerationGuidelinesInternalPage() {
           </p>
           <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
             <li>
-              Markets by Tomek, NathanYoung, Gigacasting, the Manifold Markets
-              account, and Manifold staff can be resolved as soon as criteria
+              Markets by Tomek, NathanYoung, Gigacasting, the SAGE
+              account, and SAGE staff can be resolved as soon as criteria
               are met.
             </li>
             <li>If the creator is inactive, you may resolve.</li>

@@ -539,7 +539,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
               fill="currentColor"
               fontWeight={100}
             >
-              MANIFOLD
+              SAGE
             </text>
           </g>
         )}

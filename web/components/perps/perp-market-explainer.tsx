@@ -52,7 +52,7 @@ export function PerpMarketExplainer(props: { className?: string }) {
           </div>
 
           <ExplainerItem title="Oracle price">
-            This market uses Manifold's latest accepted update from the source
+            This market uses SAGE's latest accepted update from the source
             shown below the chart. Long positions benefit when the value rises;
             short positions benefit when it falls. Oracle updates can lag the
             source.
@@ -74,7 +74,7 @@ export function PerpMarketExplainer(props: { className?: string }) {
 
           <ExplainerItem title="No expiry">
             Your position stays open until you close it, it is liquidated or
-            auto-deleveraged, or Manifold settles the market.
+            auto-deleveraged, or SAGE settles the market.
           </ExplainerItem>
 
           <ExplainerItem title="Stale feeds">

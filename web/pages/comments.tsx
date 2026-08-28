@@ -25,7 +25,7 @@ export default function CommentsPage() {
             content: <Comments justLikes={false} key={'claude'} />,
           },
           {
-            title: `Manifold's favorites`,
+            title: `SAGE's favorites`,
             content: <Comments justLikes={true} key={'likes'} />,
             prerender: true,
           },

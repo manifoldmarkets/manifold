@@ -14,7 +14,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
     >
       <SEO
         title="Community Guidelines — Prize Drawing FAQ"
-        description="Frequently asked questions about Manifold Prize Drawings."
+        description="Frequently asked questions about SAGE Prize Drawings."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link
@@ -29,7 +29,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
         </div>
 
         <p className="text-ink-600 mt-3 text-lg">
-          Manifold runs periodic prize drawings where you can win real money
+          SAGE runs periodic prize drawings where you can win real money
           (paid in USDC) just by being an active predictor on the platform.
         </p>
 
@@ -65,7 +65,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
               Must be in an eligible location — many countries and US states are
               restricted (see below)
             </li>
-            <li>Cannot be a Manifold employee or immediate family member</li>
+            <li>Cannot be a SAGE employee or immediate family member</li>
           </ul>
         </div>
 
@@ -102,7 +102,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
           </p>
           <p className="text-ink-700 mt-3">
             Winners have 5 calendar days to reply with a crypto wallet address.
-            If no address is provided within the claim period, Manifold may
+            If no address is provided within the claim period, SAGE may
             forfeit the prize and either select an alternate winner or donate
             the amount to charity.
           </p>
@@ -117,11 +117,11 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
             and Trust Wallet are commonly used options.
           </p>
           <p className="text-ink-700 mt-3 font-medium">
-            Manifold will never ask for your private key, seed phrase, or
-            recovery phrase. Anyone asking for these is not Manifold.
+            SAGE will never ask for your private key, seed phrase, or
+            recovery phrase. Anyone asking for these is not SAGE.
           </p>
           <p className="text-ink-700 mt-3">
-            Manifold has not issued any cryptocurrency token — any promotion of
+            SAGE has not issued any cryptocurrency token — any promotion of
             such is fraudulent.
           </p>
         </div>

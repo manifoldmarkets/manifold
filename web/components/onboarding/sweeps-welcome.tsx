@@ -76,7 +76,7 @@ export function SweepsWelcomePage() {
       <Image
         src="/welcome/manifold-example.gif"
         className="my-4 w-full max-w-xl self-center object-contain"
-        alt={'Manifold example animation'}
+        alt={'SAGE example animation'}
         width={200}
         height={100}
       />
@@ -88,11 +88,11 @@ export function SweepsCoinsPage() {
   return (
     <>
       <div className="text-primary-700 text-center text-2xl font-normal">
-        How Manifold works
+        How SAGE works
       </div>
 
       <span className="mt-4 md:mt-6">
-        Manifold has 2 coins that you can {TRADE_TERM} with:
+        SAGE has 2 coins that you can {TRADE_TERM} with:
       </span>
       <span className="coin-offset relative ml-[1.1em] mt-4 inline-flex items-center md:mt-6">
         <ManaCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
@@ -129,7 +129,7 @@ export function SweepsCoinsPage() {
         <PlaceholderGraph className="text-ink-300 h-28" />
       </Col>
       <div className="text-ink-500 my-2 text-xs">
-        You must be 18+ to participate. Manifold is free to play, no purchase
+        You must be 18+ to participate. SAGE is free to play, no purchase
         required.
       </div>
     </>

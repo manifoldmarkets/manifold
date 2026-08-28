@@ -14,7 +14,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
     >
       <SEO
         title="Community Guidelines — Running a Market"
-        description="Guidelines for creating and managing markets on Manifold."
+        description="Guidelines for creating and managing markets on SAGE."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link

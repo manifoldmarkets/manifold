@@ -650,8 +650,8 @@ function AchievementsSection(props: { userId: string }) {
     },
     {
       id: 'totalReferrals',
-      title: 'Manifold Hype Man',
-      desc: 'Friends you brought to Manifold.',
+      title: 'SAGE Hype Man',
+      desc: 'Friends you brought to SAGE.',
       fmt: () => formatWithCommas(data.totalReferrals),
     },
     {

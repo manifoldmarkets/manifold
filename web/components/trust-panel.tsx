@@ -58,7 +58,7 @@ export const ManipulationAndHype = ({
       >
         Scott Alexander's failed manipulation attempt
       </a>{' '}
-      on Manifold.
+      on SAGE.
     </div>
   </ExpandSection>
 )

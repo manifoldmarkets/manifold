@@ -14,7 +14,7 @@ export default function CommunityGuidelinesPlatformConductPage() {
     >
       <SEO
         title="Community Guidelines — Platform Conduct"
-        description="Platform conduct standards for Manifold users."
+        description="Platform conduct standards for SAGE users."
       />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <Link

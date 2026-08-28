@@ -92,7 +92,7 @@ export function UserReviewsModal(props: {
         <Row className="-mt-4 mb-4 gap-1">
           <RatingDisplay
             title="Rating"
-            tooltip={`Manifold's weighted rating`}
+            tooltip={`SAGE's weighted rating`}
             rating={rating}
             className="w-1/2"
             ratingClassName={'text-primary-600'}

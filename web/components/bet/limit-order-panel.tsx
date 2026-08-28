@@ -558,7 +558,7 @@ export default function LimitOrderPanel(props: {
                     payout
                     {isCashContract && (
                       <InfoTooltip
-                        text="Manifold takes a 10% cut of profits on sweepstakes markets."
+                        text="SAGE takes a 10% cut of profits on sweepstakes markets."
                         className="text-ink-600 ml-1 mt-0.5"
                         size="sm"
                       />
