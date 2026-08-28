@@ -49,7 +49,9 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
           />
         )}
         <div
-          className={clsx('text-xl font-thin text-primary-600 dark:text-white')}
+          className={clsx(
+            'text-xl font-semibold tracking-[0.10em] text-primary-700 dark:text-primary-700'
+          )}
         >
           {'SAGE'}
         </div>

@@ -217,7 +217,7 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex h-screen flex-col', className)}
+      className={clsx('sage-sidebar flex h-screen flex-col', className)}
     >
       <ManifoldLogo className="pb-3 pt-6" />
 

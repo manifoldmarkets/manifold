@@ -169,7 +169,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         {/* set safari overscroll/address bar to canvas-0. TODO: change based on site theme preference */}
         <meta
           name="theme-color"
-          content="#1e293b"
+          content="#020b1a"
           media="(prefers-color-scheme: dark)"
         />
         <meta

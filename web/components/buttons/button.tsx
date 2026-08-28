@@ -82,7 +82,10 @@ export function buttonClass(size: SizeType, color: ColorType) {
     ],
     color === 'violet' && [solid, 'bg-violet-500 hover:bg-violet-700'],
     color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
-    color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
+    color === 'indigo' && [
+      solid,
+      'bg-primary-500 hover:bg-primary-600 shadow-sm shadow-blue-900/10',
+    ],
     color === 'primary-outline' && [
       outline,
       'text-primary-600 hover:bg-primary-600',
@@ -90,7 +93,10 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'gray' &&
       'bg-ink-300 text-ink-900 disabled:bg-ink-200 disabled:text-ink-500 hover:bg-ink-200 dark:enabled:hover:bg-ink-400 hover:text-ink-1000',
     color === 'gray-outline' && [outline, 'text-ink-600 hover:bg-ink-500'],
-    color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
+    color === 'gradient' && [
+      gradient,
+      'from-[#104BFF] via-[#247CFF] to-[#62B5FF] shadow-[0_7px_22px_rgba(37,99,235,0.28)] hover:brightness-110',
+    ],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
     color === 'pink' && [solid, 'bg-fuchsia-500 hover:bg-fuchsia-600'],
     color === 'gray-white' &&

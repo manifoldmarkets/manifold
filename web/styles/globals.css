@@ -43,34 +43,34 @@
   }
   :root {
     --color-ink-0: 255 255 255;
-    --color-ink-50: 248 251 255;
-    --color-ink-100: 232 241 252;
-    --color-ink-200: 210 225 245;
-    --color-ink-300: 174 199 232;
-    --color-ink-400: 128 164 207;
-    --color-ink-500: 83 123 171;
-    --color-ink-600: 54 89 135;
-    --color-ink-700: 35 64 105;
-    --color-ink-800: 22 47 83;
-    --color-ink-900: 12 34 64;
-    --color-ink-950: 6 21 42;
+    --color-ink-50: 246 249 254;
+    --color-ink-100: 234 241 251;
+    --color-ink-200: 214 226 243;
+    --color-ink-300: 184 205 231;
+    --color-ink-400: 143 171 208;
+    --color-ink-500: 100 135 180;
+    --color-ink-600: 69 104 143;
+    --color-ink-700: 46 75 112;
+    --color-ink-800: 27 53 84;
+    --color-ink-900: 16 36 62;
+    --color-ink-950: 7 22 42;
     --color-ink-1000: 0 0 0;
 
-    --color-canvas-0: 252 253 255;
-    --color-canvas-50: 241 247 255;
-    --color-canvas-100: 220 232 248;
+    --color-canvas-0: 251 253 255;
+    --color-canvas-50: 239 246 255;
+    --color-canvas-100: 219 234 254;
 
-    --color-primary-50: 239 245 255;
-    --color-primary-100: 219 233 255;
-    --color-primary-200: 188 215 255;
-    --color-primary-300: 143 188 255;
-    --color-primary-400: 90 151 255;
-    --color-primary-500: 45 99 241;
-    --color-primary-600: 31 82 220;
-    --color-primary-700: 24 66 190;
-    --color-primary-800: 24 56 150;
-    --color-primary-900: 22 48 117;
-    --color-primary-950: 13 28 73;
+    --color-primary-50: 239 246 255;
+    --color-primary-100: 219 234 254;
+    --color-primary-200: 191 219 254;
+    --color-primary-300: 147 197 253;
+    --color-primary-400: 96 165 250;
+    --color-primary-500: 37 99 235;
+    --color-primary-600: 29 78 216;
+    --color-primary-700: 30 64 175;
+    --color-primary-800: 30 58 138;
+    --color-primary-900: 23 37 84;
+    --color-primary-950: 15 23 42;
 
     --color-no-50: 255 243 241;
     --color-no-100: 255 235 231;
@@ -100,34 +100,34 @@
     color-scheme: dark;
 
     --color-ink-1000: 255 255 255;
-    --color-ink-950: 248 251 255;
-    --color-ink-900: 232 241 252;
-    --color-ink-800: 210 225 245;
-    --color-ink-700: 174 199 232;
-    --color-ink-600: 128 164 207;
-    --color-ink-500: 83 123 171;
-    --color-ink-400: 54 89 135;
-    --color-ink-300: 35 64 105;
-    --color-ink-200: 22 47 83;
-    --color-ink-100: 12 34 64;
-    --color-ink-50: 6 21 42;
+    --color-ink-950: 248 252 255;
+    --color-ink-900: 226 239 255;
+    --color-ink-800: 195 219 248;
+    --color-ink-700: 155 191 235;
+    --color-ink-600: 105 155 207;
+    --color-ink-500: 70 117 169;
+    --color-ink-400: 45 83 130;
+    --color-ink-300: 27 61 105;
+    --color-ink-200: 14 45 84;
+    --color-ink-100: 8 31 63;
+    --color-ink-50: 4 20 43;
     --color-ink-0: 0 0 0;
 
-    --color-canvas-0: 5 18 36;
-    --color-canvas-50: 9 29 55;
-    --color-canvas-100: 18 49 85;
+    --color-canvas-0: 2 11 26;
+    --color-canvas-50: 6 22 44;
+    --color-canvas-100: 11 43 82;
 
-    --color-primary-950: 239 245 255;
-    --color-primary-900: 219 233 255;
-    --color-primary-800: 188 215 255;
-    --color-primary-700: 143 188 255;
-    --color-primary-600: 90 151 255;
-    --color-primary-500: 45 99 241;
-    --color-primary-400: 31 82 220;
-    --color-primary-300: 24 66 190;
-    --color-primary-200: 24 56 150;
-    --color-primary-100: 22 48 117;
-    --color-primary-50: 13 28 73;
+    --color-primary-950: 239 246 255;
+    --color-primary-900: 219 234 254;
+    --color-primary-800: 191 219 254;
+    --color-primary-700: 147 197 253;
+    --color-primary-600: 96 165 250;
+    --color-primary-500: 37 99 235;
+    --color-primary-400: 29 78 216;
+    --color-primary-300: 30 64 175;
+    --color-primary-200: 30 58 138;
+    --color-primary-100: 23 47 101;
+    --color-primary-50: 7 28 63;
 
     --color-no-950: 255 243 241;
     --color-no-900: 255 235 231;
@@ -580,4 +580,44 @@ text {
   inset: 0;
   border-radius: 6px;
   background: inherit;
+}
+
+
+/* SAGE SUMCOIN BRAND SHELL */
+.sage-sidebar {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--color-canvas-50)) 0%,
+      rgb(var(--color-canvas-0)) 58%
+    );
+  border-right: 1px solid rgb(var(--color-primary-500) / 0.16);
+}
+
+.dark .sage-sidebar {
+  background:
+    radial-gradient(
+      circle at 15% 0%,
+      rgb(var(--color-primary-400) / 0.16),
+      transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(5 25 52) 0%,
+      rgb(var(--color-canvas-0)) 48%,
+      rgb(1 8 20) 100%
+    );
+  box-shadow:
+    inset -1px 0 0 rgb(var(--color-primary-500) / 0.12),
+    12px 0 35px rgb(0 35 90 / 0.10);
+}
+
+.dark body {
+  background:
+    radial-gradient(
+      circle at 45% -10%,
+      rgb(var(--color-primary-400) / 0.07),
+      transparent 36rem
+    ),
+    rgb(var(--color-canvas-0));
 }

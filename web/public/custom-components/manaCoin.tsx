@@ -1,14 +1,12 @@
 import clsx from 'clsx'
-import { ENV_CONFIG } from 'common/envs/constants'
-import Image from 'next/image'
 
 export function ManaCoin(props: { className?: string }) {
   const { className } = props
   return (
     <img
-      src="/mana.svg"
-      alt={ENV_CONFIG.moneyMoniker}
-      className={clsx('inline-block', className)}
+      src="/sumcoin-logo.png"
+      alt="SUM"
+      className={clsx('inline-block rounded-full', className)}
       style={{
         width: '1em',
         height: '1em',
