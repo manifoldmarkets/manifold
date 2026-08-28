@@ -15,7 +15,7 @@ export default function Document() {
           }`}
       </style>
       <Head>
-        <link rel="icon" type="image/svg+xml" href="/sage-mark.svg" />
+        <link rel="icon" type="image/svg+xml" href="/sumcoin-logo.png" />
         <Script src="/init-theme.js" strategy="beforeInteractive" />
       </Head>
       <body className="bg-canvas-0 text-ink-1000">
