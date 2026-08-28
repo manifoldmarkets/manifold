@@ -23,6 +23,14 @@ import { chunk } from 'lodash'
 // Computing first and writing second keeps the semantics identical and holds
 // the row lock for the length of a keyed update instead of the length of the
 // aggregation.
+//
+// The write takes its row locks in id order and skips rows someone else holds
+// (score-contracts pre-locks in id order for the same reason — an unordered
+// batch write deadlocked against other multi-row contracts writers). Skipping
+// means the write never waits, so it can neither deadlock nor sit on a lock it
+// already holds — a perp's included — while a bet or oracle tick finishes on
+// another row. A skipped contract keeps last hour's score and is rescored on
+// the next run.
 export async function calculateConversionScore() {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
@@ -39,7 +47,7 @@ export async function calculateConversionScore() {
   let processed = 0
   for (const chunk of chunks) {
     const scores = await pg
-      .manyOrNone<{ id: string; score: number | string }>(
+      .manyOrNone<{ id: string; score: string }>(
         `
         with card_viewers as (
           select contract_id, coalesce(count(distinct user_id), 0) as uniques
@@ -115,7 +123,7 @@ export async function calculateConversionScore() {
                   *
               (($2+coalesce(pe.uniques, 0) * 1.0) / (coalesce(nullif(pv.uniques,0), pe.uniques,0)+$3)),
               1.0 / 4
-            ) end as score
+            ) end::text as score
         from contracts c
            left join recent_card_enjoyers rce on c.id = rce.contract_id
            left join recent_card_viewers rcv on c.id = rcv.contract_id
@@ -138,25 +146,49 @@ export async function calculateConversionScore() {
         return null
       })
 
-    // A null score would blank a column the feed ranks on. The expression
-    // above coalesces every input, so this only ever drops a row that a future
-    // edit broke — and dropping it leaves the previous score in place.
+    // The score travels as text: conversion_score is an unconstrained numeric,
+    // and the default numeric parser (parseFloat) would round the server-side
+    // value through a double on the way back. Number() is only used to check
+    // it — a non-finite score would blank a column the feed ranks on. The
+    // expression above coalesces every input, so this only ever drops a row
+    // that a future edit broke, and dropping it leaves the previous score.
     const writable = (scores ?? []).filter((row) =>
       Number.isFinite(Number(row.score))
     )
-    if (writable.length > 0)
-      await pg
-        .none(
-          `update contracts c
-           set conversion_score = v.score
-           from (select unnest($1::text[]) as id, unnest($2::numeric[]) as score) v
-           where c.id = v.id`,
-          [writable.map((row) => row.id), writable.map((row) => row.score)]
-        )
+    if (writable.length > 0) {
+      const written = await pg
+        .tx(async (tx) => {
+          const lockedIds = new Set(
+            await tx.map(
+              `select id from contracts
+               where id = any ($1)
+               order by id
+               for update skip locked`,
+              [writable.map((row) => row.id)],
+              (row) => row.id as string
+            )
+          )
+          const rows = writable.filter((row) => lockedIds.has(row.id))
+          if (rows.length > 0)
+            await tx.none(
+              `update contracts c
+               set conversion_score = v.score
+               from (select unnest($1::text[]) as id, unnest($2::numeric[]) as score) v
+               where c.id = v.id`,
+              [rows.map((row) => row.id), rows.map((row) => row.score)]
+            )
+          return rows.length
+        })
         .catch((e) => {
           log('Error on set conversion scores', e)
-          return null
+          return 0
         })
+      const skipped = writable.length - written
+      if (skipped > 0)
+        log(
+          `Skipped ${skipped} contracts whose rows were locked; they keep their previous conversion score until the next run.`
+        )
+    }
 
     processed += chunk.length
     log(`Finished processing conversion scores for ${processed} contracts.`)
