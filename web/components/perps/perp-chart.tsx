@@ -251,8 +251,12 @@ export const PerpChart = (props: {
   // bands cluster everyone's liq prices, and the user's own rows drive the
   // your-position lines. Null while loading.
   positions?: OpenPosition[] | null
+  // Extra classes for the plot container only (not the chip row above or
+  // the captions below) — the perps hub uses it to bleed the plot to the
+  // screen edges on phones.
+  plotClassName?: string
 }) => {
-  const { contract, mode, height = 240, positions } = props
+  const { contract, mode, height = 240, positions, plotClassName } = props
   const user = useUser()
   const [fundingPoints, setFundingPoints] = useState<Point[]>([])
   const [livePoints, setLivePoints] = useState<Point[]>([])
@@ -890,7 +894,11 @@ export const PerpChart = (props: {
           </Row>
         </Row>
       )}
-      <div className="relative" style={{ height }} ref={containerRef}>
+      <div
+        className={clsx('relative', plotClassName)}
+        style={{ height }}
+        ref={containerRef}
+      >
         <svg
           ref={svgRef}
           width="100%"

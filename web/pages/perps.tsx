@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 import { Answer } from 'common/answer'
@@ -1204,8 +1204,8 @@ const useLeanHistory = (contract: PerpContract) => {
 // Long share of open interest over the last week: a line around a 50%
 // midline, teal above (net long), scarlet below (net short). Ends on the
 // live lean so it agrees with the badge beside it.
-const LeanHistory = (props: { contract: PerpContract }) => {
-  const { contract } = props
+const LeanHistory = (props: { contract: PerpContract; className?: string }) => {
+  const { contract, className } = props
   const history = useLeanHistory(contract)
   const live = leanOf(contract)
   const points = useMemo(() => {
@@ -1233,13 +1233,16 @@ const LeanHistory = (props: { contract: PerpContract }) => {
   const yes = (shade: number) => `rgb(var(--color-yes-${shade}))`
   const no = (shade: number) => `rgb(var(--color-no-${shade}))`
   return (
-    <Tooltip text="Share of open interest that is long, last 7 days. Above the line: net long. Below: net short.">
-      <Col className="items-start gap-0.5 sm:items-end">
+    <Tooltip
+      text="Share of open interest that is long, last 7 days. Above the line: net long. Below: net short."
+      className={className}
+    >
+      <Col className="items-end gap-0.5">
         <div className="text-ink-500 text-xs">Lean, 7 days</div>
         <svg
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
-          className="h-8 w-36"
+          className="h-8 w-32 sm:w-36"
           aria-label="Long share of open interest over the last 7 days"
         >
           <defs>
@@ -1345,6 +1348,38 @@ const useOracleTradingPaused = (contract: PerpContract) => {
   )
 }
 
+// On phones the card's gutter + border + padding cost the chart ~40px of a
+// 360px screen. While the card is the thing on screen — it spans the
+// upper-middle of the viewport — it slides out to the screen edges and the
+// plot inside bleeds edge to edge; scrolling past it slides it back in.
+// The band starts below the card's resting position on a fresh load so
+// the page doesn't animate on mount.
+const useMobileBleed = (ref: RefObject<HTMLElement>) => {
+  const [bleed, setBleed] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const phone = window.matchMedia('(max-width: 639px)')
+    let inBand = false
+    const update = () => setBleed(inBand && phone.matches)
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        inBand = entry.isIntersecting
+        update()
+      },
+      // Root shrinks to the 30%–40% band of the viewport height.
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+    )
+    io.observe(el)
+    phone.addEventListener('change', update)
+    return () => {
+      io.disconnect()
+      phone.removeEventListener('change', update)
+    }
+  }, [ref])
+  return bleed
+}
+
 const Terminal = (props: {
   contract: PerpContract
   all: PerpContract[]
@@ -1352,6 +1387,8 @@ const Terminal = (props: {
   onSelect: (id: string) => void
 }) => {
   const { all, week, onSelect } = props
+  const cardRef = useRef<HTMLDivElement>(null)
+  const bleed = useMobileBleed(cardRef)
   const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
   const { positions, unsound: unsoundPositions } = usePerpPositions(
     contract.id,
@@ -1386,7 +1423,13 @@ const Terminal = (props: {
   return (
     <Col
       id="perp-terminal"
-      className="border-ink-200 dark:border-ink-300 bg-canvas-0 scroll-mt-12 gap-4 rounded-xl border p-4 sm:p-5"
+      ref={cardRef}
+      className={clsx(
+        'border-ink-200 dark:border-ink-300 bg-canvas-0 scroll-mt-12 gap-4 border p-4 transition-[margin,border-radius] duration-300 ease-out sm:p-5',
+        // rounded-xl sits after rounded-none in Tailwind's output, so the
+        // two can't be stacked — pick one.
+        bleed ? '-mx-3 rounded-none border-x-0' : 'rounded-xl'
+      )}
     >
       {/* Below xl the watchlist sits under the chart, so give phones and
           tablets a switcher up here. */}
@@ -1448,8 +1491,13 @@ const Terminal = (props: {
         </Link>
       </Row>
 
-      <Row className="flex-wrap items-end justify-between gap-3">
-        <Row className="flex-wrap items-baseline gap-x-5 gap-y-2 sm:gap-x-8">
+      {/* Phones: a two-row grid — price · 24h · 7d over funding · lean —
+          so nothing wraps onto a third line. From sm up the stats are one
+          flex row with the lean sparkline pushed to the right; the inner
+          Row dissolves (display: contents) below sm so its stats become
+          grid cells directly. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-3">
+        <Row className="flex-wrap items-baseline gap-x-5 gap-y-2 max-sm:contents sm:gap-x-8">
           <Col>
             <div className="text-ink-500 text-xs">Oracle price</div>
             <div
@@ -1501,7 +1549,7 @@ const Terminal = (props: {
                   <span className="text-ink-400 text-sm font-normal">
                     /{fundingPeriodUnit(periodMs)}
                   </span>
-                  <div className="text-ink-400 text-xs font-normal">
+                  <div className="text-ink-400 font-sans text-[11px] font-normal leading-4">
                     {rate > 0 ? 'longs pay' : 'shorts pay'}
                     {nextFunding !== undefined &&
                       ` · next in ${formatCountdown(nextFunding - Date.now())}`}
@@ -1515,8 +1563,11 @@ const Terminal = (props: {
             )}
           </Col>
         </Row>
-        <LeanHistory contract={contract} />
-      </Row>
+        <LeanHistory
+          contract={contract}
+          className="max-sm:col-span-2 max-sm:self-end max-sm:justify-self-end"
+        />
+      </div>
 
       {oracleTradingPaused && (
         <div
@@ -1527,7 +1578,15 @@ const Terminal = (props: {
         </div>
       )}
 
-      <PerpChart contract={contract} mode="price" positions={positions} />
+      <PerpChart
+        contract={contract}
+        mode="price"
+        positions={positions}
+        plotClassName={clsx(
+          'transition-[margin] duration-300 ease-out',
+          bleed && '-mx-4'
+        )}
+      />
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
         asOfTime={contract.oracleSourceTime}
