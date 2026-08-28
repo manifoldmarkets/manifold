@@ -165,6 +165,30 @@ describe('perpFeeScheduleSummary', () => {
       formatFeePct(s.fourTimesPoolBps)
     )
     expect(s.apiDiffers).toBe(false) // ...but there is nothing to SAY
+    expect(s.apiBaseDiffers).toBe(false)
+    expect(s.apiPoolSizedDiffers).toBe(false)
+    expect(s.apiSizeExamplesDiffer).toBe(false)
+  })
+
+  it('gates each slot on the pair that slot actually prints', () => {
+    // base 100 / API 101 / impact 27 separates ONLY at 4x. A surface showing
+    // just the base, or just the pool-sized pair, would repeat itself while
+    // apiDiffers is legitimately true — which is how the info dialog's
+    // compact row shipped "~1.1% web / ~1.1% API".
+    const s = perpFeeScheduleSummary({
+      takerFeeBps: 100,
+      takerFeeApiBps: 101,
+      takerFeeImpact: 27,
+    })
+    expect(formatFeePct(s.baseBps)).toBe(formatFeePct(s.apiBps))
+    expect(formatFeePct(s.poolSizedBps)).toBe(formatFeePct(s.apiPoolSizedBps))
+    expect(formatFeePct(s.fourTimesPoolBps)).not.toBe(
+      formatFeePct(s.apiFourTimesPoolBps)
+    )
+    expect(s.apiBaseDiffers).toBe(false)
+    expect(s.apiPoolSizedDiffers).toBe(false)
+    expect(s.apiSizeExamplesDiffer).toBe(true) // the 4x pair carries it
+    expect(s.apiDiffers).toBe(true)
   })
 
   it('speaks up as soon as one rendered figure separates', () => {
@@ -174,8 +198,30 @@ describe('perpFeeScheduleSummary', () => {
       takerFeeImpact: 10,
     })
     expect(s.apiDiffers).toBe(true)
+    expect(s.apiBaseDiffers).toBe(true)
+    expect(s.apiPoolSizedDiffers).toBe(true)
+    expect(s.apiSizeExamplesDiffer).toBe(true)
     expect(formatFeePct(s.apiPoolSizedBps)).not.toBe(
       formatFeePct(s.poolSizedBps)
     )
+  })
+
+  it('carries the API rate into a summary built from a save response', () => {
+    // The impact-save toast built its summary WITHOUT takerFeeApiBps, so the
+    // helper read apiBps = base and the toast quoted the web figure as if it
+    // applied to everyone.
+    const withApi = perpFeeScheduleSummary({
+      takerFeeBps: 10,
+      takerFeeApiBps: 30,
+      takerFeeImpact: 10,
+    })
+    const withoutApi = perpFeeScheduleSummary({
+      takerFeeBps: 10,
+      takerFeeImpact: 10,
+    })
+    expect(formatFeePct(withApi.apiPoolSizedBps)).toBe('0.33%')
+    expect(formatFeePct(withoutApi.apiPoolSizedBps)).toBe('0.13%')
+    expect(withApi.apiPoolSizedDiffers).toBe(true)
+    expect(withoutApi.apiPoolSizedDiffers).toBe(false)
   })
 })

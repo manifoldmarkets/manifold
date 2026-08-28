@@ -92,14 +92,19 @@ export const PERP_FEE_EXAMPLE_POOL_SHARES = [1, 4] as const
 export type PerpFeeScheduleSummary = {
   baseBps: number // web open rate
   apiBps: number // API-key open rate (>= base; equals base when unset)
-  /** Whether the API channel is worth a sentence of its own — true only when
-   * it costs more AND that difference SURVIVES formatting. Comparing raw bps
-   * is not enough: base 10 vs API 10.1 is a real difference the engine
-   * charges, but every figure it produces renders identically at display
-   * precision, so saying it twice reads as a bug rather than as information.
-   * Gated here, not at each call site, so all surfaces agree on when to
-   * speak. */
+  /** Is the API channel worth mentioning AT ALL — it costs more AND that
+   * shows up somewhere once formatted. Comparing raw bps is not enough: base
+   * 10 vs API 10.1 is a real difference the engine charges, but every figure
+   * it produces renders identically, so saying it twice reads as a bug. */
   apiDiffers: boolean
+  /** Per-SLOT versions of the same question. A surface must gate on the pair
+   * it actually prints, not on `apiDiffers`: base 100 / API 101 / impact 27
+   * separates only at 4x, so a row showing just the base ("1.0% vs 1.0%") or
+   * just the pool-sized pair ("~1.1% vs ~1.1%") would repeat itself while
+   * `apiDiffers` is legitimately true. */
+  apiBaseDiffers: boolean
+  apiPoolSizedDiffers: boolean
+  apiSizeExamplesDiffer: boolean
   impact: number
   hasSizeTerm: boolean
   /** Effective rates for a FRESH position at each example pool share, per
@@ -141,14 +146,20 @@ export const perpFeeScheduleSummary = (contract: {
   const fourTimesPoolBps = at(baseBps, bigShare)
   const apiPoolSizedBps = at(apiBps, poolShare)
   const apiFourTimesPoolBps = at(apiBps, bigShare)
-  const rendersIdentically =
-    formatFeePct(baseBps) === formatFeePct(apiBps) &&
-    formatFeePct(poolSizedBps) === formatFeePct(apiPoolSizedBps) &&
-    formatFeePct(fourTimesPoolBps) === formatFeePct(apiFourTimesPoolBps)
+  const costsMore = apiBps > baseBps
+  const separates = (a: number, b: number) =>
+    costsMore && formatFeePct(a) !== formatFeePct(b)
+  const apiBaseDiffers = separates(baseBps, apiBps)
+  const apiPoolSizedDiffers = separates(poolSizedBps, apiPoolSizedBps)
+  const apiFourTimesDiffers = separates(fourTimesPoolBps, apiFourTimesPoolBps)
+  const apiSizeExamplesDiffer = apiPoolSizedDiffers || apiFourTimesDiffers
   return {
     baseBps,
     apiBps,
-    apiDiffers: apiBps > baseBps && !rendersIdentically,
+    apiDiffers: apiBaseDiffers || apiSizeExamplesDiffer,
+    apiBaseDiffers,
+    apiPoolSizedDiffers,
+    apiSizeExamplesDiffer,
     impact,
     hasSizeTerm: impact > 0,
     poolSizedBps,

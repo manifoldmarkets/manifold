@@ -146,7 +146,8 @@ function PerpFeesItem(props: { contract: PerpContract }) {
   const {
     baseBps,
     apiBps,
-    apiDiffers,
+    apiBaseDiffers,
+    apiSizeExamplesDiffer,
     hasSizeTerm,
     poolSizedBps,
     fourTimesPoolBps,
@@ -165,7 +166,7 @@ function PerpFeesItem(props: { contract: PerpContract }) {
           caller pays this one. Say what is actually true of the reader.
           Suppressed entirely when the two rates are equal: announcing a
           separate rate identical to the one just quoted reads as a bug. */}
-      {apiDiffers && (
+      {apiBaseDiffers && (
         <>Positions opened with an API key pay {formatFeePct(apiBps)}. </>
       )}
       {hasSizeTerm ? (
@@ -177,7 +178,7 @@ function PerpFeesItem(props: { contract: PerpContract }) {
           {/* The size term stacks on whichever base the CHANNEL selected, so
               the web figures understate an API open — on BTC at base 10 / API
               30 / impact 10 a pool-sized API entry pays 0.33%, not 0.13%. */}
-          {apiDiffers && (
+          {apiSizeExamplesDiffer && (
             <>
               Through the API those are {formatFeePctApprox(apiPoolSizedBps)}{' '}
               and {formatFeePctApprox(apiFourTimesPoolBps)}.{' '}

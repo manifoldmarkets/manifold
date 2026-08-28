@@ -620,15 +620,16 @@ function PerpStatsRows(props: { contract: PerpContract }) {
   const fees = perpFeeScheduleSummary(contract)
   const takerFeeBps = fees.baseBps
   const takerFeeImpact = fees.impact
-  const poolSizedFee = formatFeePct(fees.poolSizedBps)
-  const fourTimesPoolFee = formatFeePct(fees.fourTimesPoolBps)
   const apiPoolSizedFee = formatFeePct(fees.apiPoolSizedBps)
   const apiFourTimesPoolFee = formatFeePct(fees.apiFourTimesPoolBps)
+  // Approx forms wherever the copy hedges: formatFeePct returns "<0.01%"
+  // below display precision, and "about <0.01%" / "~<0.01%" doubles it.
   const poolSizedApprox = formatFeePctApprox(fees.poolSizedBps)
+  const fourTimesPoolApprox = formatFeePctApprox(fees.fourTimesPoolBps)
   const apiPoolSizedApprox = formatFeePctApprox(fees.apiPoolSizedBps)
   // The size term stacks on whichever base the CHANNEL selected, so the web
   // figures understate an API-key open whenever the API rate is higher.
-  const apiSizeNote = fees.apiDiffers
+  const apiSizeNote = fees.apiSizeExamplesDiffer
     ? ` Through the API those are ${apiPoolSizedFee} and ${apiFourTimesPoolFee}.`
     : ''
   const price =
@@ -737,7 +738,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           <InfoTooltip
             text={
               takerFeeImpact > 0
-                ? `Positions that are large relative to this market's backing pool pay a higher opening fee, like price impact on an exchange. Small positions pay just the base taker fee; a position the size of the whole pool pays about ${poolSizedFee}, and one four times the pool about ${fourTimesPoolFee}.${apiSizeNote} The exact fee is quoted before you confirm. (Marginal rate at pool-share s is base + impact·s² bps; a fresh position of share S averages base + impact/3·S².)`
+                ? `Positions that are large relative to this market's backing pool pay a higher opening fee, like price impact on an exchange. Small positions pay just the base taker fee; a position the size of the whole pool pays ${poolSizedApprox}, and one four times the pool ${fourTimesPoolApprox}.${apiSizeNote} The exact fee is quoted before you confirm. (Marginal rate at pool-share s is base + impact·s² bps; a fresh position of share S averages base + impact/3·S².)`
                 : 'Size coefficient of the taker fee. At 0 the fee is flat: every position pays the base taker fee regardless of how large it is relative to the backing pool. When set above 0, positions large relative to the pool pay more (marginal rate at pool-share s is base + impact·s² bps).'
             }
           />
@@ -755,7 +756,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
                 {' '}
                 ·{' '}
                 {takerFeeImpact > 0
-                  ? fees.apiDiffers
+                  ? fees.apiPoolSizedDiffers
                     ? `pool-sized: ${poolSizedApprox} web / ${apiPoolSizedApprox} API`
                     : `pool-sized entry pays ${poolSizedApprox}`
                   : 'flat fee, size does not matter'}
@@ -1164,17 +1165,26 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
       // have just been edited in the sibling input.
       // Read the shared summary rather than restating base + impact/3 here:
       // duplicated market math is exactly how the two reader surfaces drifted.
-      const { poolSizedBps } = perpFeeScheduleSummary({
+      const saved = perpFeeScheduleSummary({
         takerFeeBps: res.takerFeeBps,
+        // Without this the summary reads apiBps = base and the toast quotes
+        // the WEB figure as if it applied to everyone — at base 10 / API 30 /
+        // impact 10 it said 0.13% when an API open pays 0.33%.
+        takerFeeApiBps: res.takerFeeApiBps ?? undefined,
         takerFeeImpact: res.takerFeeImpact,
       })
+      // Gated on the pool-sized pair specifically: that is the only pair this
+      // sentence shows.
+      const apiPart = saved.apiPoolSizedDiffers
+        ? ` on the web, ${formatFeePct(saved.apiPoolSizedBps)} via API`
+        : ''
       toast.success(
         res.takerFeeImpact > 0
           ? `Fee size impact is now ${
               res.takerFeeImpact
             } — a pool-sized position pays ${formatFeePct(
-              poolSizedBps
-            )} effective`
+              saved.poolSizedBps
+            )} effective${apiPart}`
           : 'Fee size impact is off — the taker fee is flat at the base'
       )
     } catch (err) {
