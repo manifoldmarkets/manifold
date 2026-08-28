@@ -11,7 +11,11 @@ export default ({ config }) => {
     expo: {
       name: 'Manifold',
       slug: 'manifold-markets',
-      owner: 'iansp',
+      // The Expo project moved from Ian's personal account to the org on
+      // 2026-08-28. A transfer PRESERVES the project id, so projectId and
+      // updates.url below are unchanged and still match what every shipped
+      // binary embedded — do not "fix" them to a new id.
+      owner: 'manifold-markets',
       scheme: 'com.markets.manifold',
       newArchEnabled: true,
       jsEngine: 'hermes',
