@@ -49,6 +49,10 @@ native/android/app/build/
 native/android/app/.cxx/
 native/android/build/
 native/android/.gradle/
+# Machine-local Android SDK path. Gitignored, but .easignore replaces .gitignore
+# entirely, so without this it rides along and the Linux build worker's Gradle
+# reads a Windows sdk.dir and fails with "SDK location not found".
+native/android/local.properties
 native/.expo/
 native/screenshots/
 mani/
