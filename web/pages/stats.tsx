@@ -968,7 +968,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
 
   const tierColors: Record<string, string> = {
     basic: 'text-gray-500',
-    plus: 'text-indigo-500',
+    plus: 'text-primary-500',
     premium: 'text-amber-500',
   }
 

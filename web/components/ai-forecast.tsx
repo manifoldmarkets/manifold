@@ -393,7 +393,7 @@ function getGradient(type: string, isText = true) {
     case 'benchmark':
       return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`
     case 'featured-graph':
-      return `${textPrefix}bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 dark:from-indigo-400 dark:via-indigo-500 dark:to-indigo-600`
+      return `${textPrefix}bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`
     case 'prize':
       return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`
     case 'misuse':
@@ -428,7 +428,7 @@ function getCardBgColor(className: string) {
         return 'bg-fuchsia-50 dark:bg-fuchsia-800/30'
       }
       if (className.includes('featured-graph')) {
-        return 'bg-indigo-50 dark:bg-indigo-800/30'
+        return 'bg-primary-50 dark:bg-primary-800/30'
       }
       if (className.includes('misuse')) {
         return 'bg-rose-50 dark:bg-rose-800/30'
@@ -1095,7 +1095,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
             />
           </div>
         ) : (
-          <div className="flex h-[250px] items-center justify-center rounded-lg bg-indigo-100/50 dark:bg-indigo-800/20">
+          <div className="flex h-[250px] items-center justify-center rounded-lg bg-primary-100/50 dark:bg-primary-800/20">
             <div className="text-ink-500 animate-pulse">
               Loading chart data...
             </div>

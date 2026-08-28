@@ -138,7 +138,7 @@ export function PushNotificationsModal(props: {
             <Button
               size={'xl'}
               className={'mt-4'}
-              color={'indigo-outline'}
+              color={'primary-outline'}
               onClick={() => {
                 postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
                 setOpen(false)

@@ -31,7 +31,7 @@ export function AddPostBoostButton(props: { post: TopLevelPost }) {
     <>
       <Button
         onClick={() => setShowPurchase(true)}
-        color={boosted ? 'indigo-outline' : 'gradient-pink'}
+        color={boosted ? 'primary-outline' : 'gradient-pink'}
         className={'w-28'}
         data-boost-button
       >
@@ -162,7 +162,7 @@ function PostBoostPurchaseModal(props: {
           {isAdminOrMod && (
             <Row className="gap-2">
               <Button
-                color="indigo-outline"
+                color="primary-outline"
                 onClick={handleAdminFreeBoost}
                 loading={loading === 'admin-free'}
                 disabled={!!loading}

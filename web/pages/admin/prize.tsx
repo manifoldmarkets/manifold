@@ -492,7 +492,7 @@ function StatusSelector(props: {
           'border-green-200 bg-green-50 text-green-700',
         currentStatus === 'rejected' && 'border-red-200 bg-red-50 text-red-700',
         currentStatus === 'opted_out' &&
-          'border-indigo-200 bg-indigo-50 text-indigo-700',
+          'border-primary-200 bg-primary-50 text-primary-700',
         currentStatus === null && 'border-ink-200 bg-canvas-50 text-ink-500',
         disabled && 'cursor-not-allowed opacity-50'
       )}

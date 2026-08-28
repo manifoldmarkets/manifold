@@ -470,7 +470,7 @@ function CommunityTab({
             </button>
             <button
               onClick={() => setShowAdd(true)}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
+              className="rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700"
             >
               + Add market
             </button>
@@ -745,7 +745,7 @@ function OfficialDescEditor({
             if (editor) onSave(editor.getJSON())
           }}
           disabled={saving || !editor}
-          className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+          className="rounded bg-primary-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

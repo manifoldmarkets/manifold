@@ -101,7 +101,7 @@ const ChartPositionCard = (props: {
     <Col
       className={clsx(
         'w-[175px] cursor-pointer rounded-md border-2 p-2 transition-colors',
-        hovered ? 'border-indigo-600' : 'dark:border-ink-500 border-ink-200'
+        hovered ? 'border-primary-600' : 'dark:border-ink-500 border-ink-200'
       )}
       ref={ref}
       onMouseOver={() => setHoveredPosition?.(position)}

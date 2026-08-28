@@ -274,7 +274,7 @@ export const CyberMondayBanner = () => {
   if (!showBanner) return null
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-blue-950 via-indigo-900 to-violet-950 py-3 transition-colors"
+      className="items-center bg-gradient-to-r from-blue-950 via-primary-900 to-violet-950 py-3 transition-colors"
       link="/add-funds"
       target="_self"
       setShowBanner={hideBanner}
@@ -343,7 +343,7 @@ export const PrizeDrawingBanner = () => {
   if (!showBanner) return null
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-amber-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:to-indigo-200 dark:from-amber-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:to-indigo-900/50"
+      className="items-center bg-gradient-to-r from-amber-100 to-primary-100 py-2 transition-colors hover:from-amber-200 hover:to-primary-200 dark:from-amber-900/30 dark:to-primary-900/30 dark:hover:from-amber-900/50 dark:hover:to-primary-900/50"
       link="/prize"
       target="_self"
       setShowBanner={hideBanner}
@@ -392,7 +392,7 @@ export const PrizeDrawing2Banner = () => {
   if (!showBanner) return null
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-indigo-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
+      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-primary-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-primary-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-primary-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
       link="/prize/2"
       target="_self"
       setShowBanner={hideBanner}

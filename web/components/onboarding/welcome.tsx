@@ -448,7 +448,7 @@ function TopicsPage(props: {
           Previous
         </Button>
         <Button
-          color={selectedTopics.length > 2 ? 'indigo' : 'indigo-outline'}
+          color={selectedTopics.length > 2 ? 'indigo' : 'primary-outline'}
           onClick={closeDialog}
           loading={isLoading}
         >

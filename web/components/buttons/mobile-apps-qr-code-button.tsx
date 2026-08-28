@@ -12,7 +12,7 @@ export const MobileAppsQRCodeButton = () => {
   return (
     <>
       <Button
-        color="indigo-outline"
+        color="primary-outline"
         onClick={() => {
           setIsModalOpen(true)
           track('banner click get app')

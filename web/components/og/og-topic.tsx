@@ -15,7 +15,7 @@ export function OgTopic(props: OgTopicProps) {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col items-stretch bg-indigo-700 px-6 py-4"
+      className="relative flex h-full w-full flex-col items-stretch bg-primary-700 px-6 py-4"
       style={{
         backgroundImage: 'linear-gradient(to bottom, #4338ca, #818cf8)',
       }}

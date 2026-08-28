@@ -58,7 +58,7 @@ export function TierSelector({
                 'border-gray-500 bg-gray-100 shadow-[0_0_8px_rgba(107,114,128,0.5),0_0_16px_rgba(107,114,128,0.3)] dark:bg-gray-800/50 dark:shadow-[0_0_12px_rgba(156,163,175,0.4),0_0_20px_rgba(156,163,175,0.2)]',
               isSelected &&
                 tier === 'plus' &&
-                'animate-glow-indigo border-indigo-500 bg-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.6),0_0_24px_rgba(99,102,241,0.4)] dark:bg-indigo-900/40 dark:shadow-[0_0_16px_rgba(129,140,248,0.5),0_0_32px_rgba(129,140,248,0.3)]',
+                'animate-glow-indigo border-primary-500 bg-primary-100 shadow-[0_0_12px_rgba(99,102,241,0.6),0_0_24px_rgba(99,102,241,0.4)] dark:bg-primary-900/40 dark:shadow-[0_0_16px_rgba(129,140,248,0.5),0_0_32px_rgba(129,140,248,0.3)]',
               isSelected &&
                 tier === 'premium' &&
                 'animate-glow-amber border-amber-500 bg-amber-100/80 shadow-[0_0_16px_rgba(245,158,11,0.6),0_0_32px_rgba(245,158,11,0.4)] dark:bg-amber-900/30 dark:shadow-[0_0_20px_rgba(251,191,36,0.5),0_0_40px_rgba(251,191,36,0.25)]',
@@ -68,7 +68,7 @@ export function TierSelector({
                 'border-gray-400 bg-gray-50 shadow-[0_0_0_2px_rgba(156,163,175,0.25)] dark:bg-gray-900/30',
               isHoveredOnly &&
                 tier === 'plus' &&
-                'border-indigo-400 bg-indigo-50 shadow-[0_0_0_2px_rgba(129,140,248,0.3),0_2px_8px_rgba(99,102,241,0.15)] dark:bg-indigo-950/30',
+                'border-primary-400 bg-primary-50 shadow-[0_0_0_2px_rgba(129,140,248,0.3),0_2px_8px_rgba(99,102,241,0.15)] dark:bg-primary-950/30',
               isHoveredOnly &&
                 tier === 'premium' &&
                 'border-amber-400 bg-amber-50 shadow-[0_0_0_2px_rgba(251,191,36,0.3),0_2px_12px_rgba(245,158,11,0.2)] dark:bg-amber-950/30',
@@ -84,7 +84,7 @@ export function TierSelector({
                     className={clsx(
                       'absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[10px] font-bold text-white',
                       tier === 'basic' && 'bg-gray-500',
-                      tier === 'plus' && 'bg-indigo-500',
+                      tier === 'plus' && 'bg-primary-500',
                       tier === 'premium' && 'bg-amber-500'
                     )}
                   >
@@ -92,7 +92,7 @@ export function TierSelector({
                   </div>
                 )}
                 {tier === 'plus' && !isCurrentTier && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-indigo-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary-500 px-2 py-0.5 text-[10px] font-bold text-white">
                     POPULAR
                   </div>
                 )}

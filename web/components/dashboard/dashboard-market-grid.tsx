@@ -253,7 +253,7 @@ export function DashboardMarketGrid({
                   </button>
                   <button
                     onClick={() => setShowAdd(true)}
-                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
+                    className="rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700"
                   >
                     + Add market
                   </button>
@@ -274,7 +274,7 @@ export function DashboardMarketGrid({
                 {editMode && (
                   <button
                     onClick={() => setShowAddPoll(true)}
-                    className="text-xs font-medium text-indigo-500 transition-colors hover:text-indigo-700"
+                    className="text-xs font-medium text-primary-500 transition-colors hover:text-primary-700"
                   >
                     + Add poll
                   </button>

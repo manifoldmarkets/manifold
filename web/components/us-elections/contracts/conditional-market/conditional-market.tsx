@@ -239,7 +239,7 @@ export const BinaryBetButton = (props: { contract: BinaryContract }) => {
 
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         className="bg-primary-50 h-fit w-fit"
         onClick={(e) => {
           e.stopPropagation()

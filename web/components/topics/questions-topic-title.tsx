@@ -47,7 +47,7 @@ export const QuestionsTopicTitle = forwardRef(
 
           {!TOPIC_IDS_YOU_CANT_FOLLOW.includes(topic.id) && (
             <Button
-              color={isFollowing ? 'indigo' : 'indigo-outline'}
+              color={isFollowing ? 'indigo' : 'primary-outline'}
               className="gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium shadow-sm"
               loading={loading}
               disabled={loading || !user || isFollowing === undefined}

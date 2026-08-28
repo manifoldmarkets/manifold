@@ -375,7 +375,7 @@ export default function AdminCreatePerpPage() {
                       <Button
                         type="button"
                         size="xs"
-                        color="indigo-outline"
+                        color="primary-outline"
                         onClick={applyLaunchRecommendation}
                       >
                         Apply launch recommendation

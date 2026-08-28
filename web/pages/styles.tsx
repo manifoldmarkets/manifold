@@ -84,8 +84,8 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading}>
           indigo
         </Button>
-        <Button disabled={disabled} loading={loading} color="indigo-outline">
-          indigo-outline
+        <Button disabled={disabled} loading={loading} color="primary-outline">
+          primary-outline
         </Button>
         <Button disabled={disabled} loading={loading} color="gradient">
           gradient
@@ -168,7 +168,7 @@ function ButtonSection() {
 function ToggleSection() {
   const [on, setOn] = useState(false)
   const [choice, setChoice] = useState('TRINARY')
-  const [color, setColor] = useState('indigo-dark')
+  const [color, setColor] = useState('primary-dark')
   const [disabled, setDisabled] = useState(false)
 
   return (
@@ -199,7 +199,7 @@ function ToggleSection() {
           onChange={(e) => setColor(e.target.value)}
           disabled={disabled}
         >
-          <option>indigo-dark</option>
+          <option>primary-dark</option>
           <option>indigo</option>
           <option>red</option>
           <option>green</option>

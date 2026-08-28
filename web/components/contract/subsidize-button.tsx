@@ -24,7 +24,7 @@ export function SubsidizeButton(props: {
       <Button
         onClick={() => setOpen(true)}
         size="md"
-        color="indigo-outline"
+        color="primary-outline"
         className={clsx(className, 'group')}
       >
         Add Liquidity

@@ -16,7 +16,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
   const { isNative } = useNativeInfo()
   return (
     <Link
-      className={clsx(buttonClass('sm', 'indigo-outline'))}
+      className={clsx(buttonClass('sm', 'primary-outline'))}
       href={href}
       onClick={trackCallback('duplicate market')}
       target={getLinkTarget(href, true, isNative)}

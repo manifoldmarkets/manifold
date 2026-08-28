@@ -199,7 +199,7 @@ function UserCalibrationContent({ user }: { user: User }) {
 
       {/* Calibration Chart */}
       <Card className="overflow-hidden">
-        <div className="border-ink-200 border-b bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-5 dark:from-indigo-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
+        <div className="border-ink-200 border-b bg-gradient-to-r from-primary-500/10 via-purple-500/10 to-pink-500/10 p-5 dark:from-primary-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
           <h2 className="text-ink-900 text-xl font-bold">Calibration Chart</h2>
           <p className="text-ink-500 mt-1 text-sm">
             When you {TRADE_TERM} YES at X%, how often does the market resolve
@@ -255,11 +255,11 @@ function UserCalibrationContent({ user }: { user: User }) {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3 rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 dark:border-indigo-800/30 dark:from-indigo-950/30 dark:to-purple-950/30">
-                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+              <div className="mt-6 space-y-3 rounded-xl border border-primary-200/50 bg-gradient-to-r from-primary-50 to-purple-50 p-4 dark:border-primary-800/30 dark:from-primary-950/30 dark:to-purple-950/30">
+                <p className="text-sm font-semibold text-primary-700 dark:text-primary-300">
                   How to read this chart
                 </p>
-                <div className="space-y-2 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
+                <div className="space-y-2 text-sm leading-relaxed text-primary-900 dark:text-primary-200">
                   <p>
                     Each dot represents your {TRADE_TERM}s at a specific
                     probability. The <strong>X-axis</strong> shows the market
@@ -279,7 +279,7 @@ function UserCalibrationContent({ user }: { user: User }) {
                     when these are <em>below</em> the diagonal — the market
                     resolved YES less often than the price implied.
                   </p>
-                  <p className="text-indigo-700 dark:text-indigo-300">
+                  <p className="text-primary-700 dark:text-primary-300">
                     <strong>Good trading</strong> = green dots above the line,
                     red dots below. The further from the diagonal, the more edge
                     you had at that probability.
@@ -504,7 +504,7 @@ function UserCalibrationChart({
             L ${xScale(0)} ${yScale(0)}
             Z
           `}
-          className="fill-indigo-500/10 dark:fill-indigo-500/10"
+          className="fill-primary-500/10 dark:fill-primary-500/10"
         />
 
         {/* Diagonal reference line */}
@@ -513,7 +513,7 @@ function UserCalibrationChart({
           y1={yScale(0)}
           x2={xScale(1)}
           y2={yScale(1)}
-          className="stroke-indigo-400 dark:stroke-indigo-400/60"
+          className="stroke-primary-400 dark:stroke-primary-400/60"
           strokeWidth={2}
           strokeDasharray="8 4"
         />

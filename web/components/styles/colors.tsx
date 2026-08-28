@@ -64,17 +64,17 @@ export const ColorSection = () => {
           <Swatch color="bg-primary-950" />
         </Section>
         <Section label="Indigo">
-          <Swatch color="bg-indigo-50" />
-          <Swatch color="bg-indigo-100" />
-          <Swatch color="bg-indigo-200" />
-          <Swatch color="bg-indigo-300" />
-          <Swatch color="bg-indigo-400" />
-          <Swatch color="bg-indigo-500" />
-          <Swatch color="bg-indigo-600" />
-          <Swatch color="bg-indigo-700" />
-          <Swatch color="bg-indigo-800" />
-          <Swatch color="bg-indigo-900" />
-          <Swatch color="bg-indigo-950" />
+          <Swatch color="bg-primary-50" />
+          <Swatch color="bg-primary-100" />
+          <Swatch color="bg-primary-200" />
+          <Swatch color="bg-primary-300" />
+          <Swatch color="bg-primary-400" />
+          <Swatch color="bg-primary-500" />
+          <Swatch color="bg-primary-600" />
+          <Swatch color="bg-primary-700" />
+          <Swatch color="bg-primary-800" />
+          <Swatch color="bg-primary-900" />
+          <Swatch color="bg-primary-950" />
         </Section>
         <Section label="Teal">
           <Swatch color="bg-teal-50" />

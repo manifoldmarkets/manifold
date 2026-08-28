@@ -138,7 +138,7 @@ export function MultipleChoiceAnswers(props: {
         <Row className="justify-end gap-2">
           {question && outcomeType === 'MULTIPLE_CHOICE' && (
             <Button
-              color="indigo-outline"
+              color="primary-outline"
               size="xs"
               loading={isGeneratingAnswers}
               onClick={generateAnswers}

@@ -229,7 +229,7 @@ export function PollPanel(props: {
         return (
           <AnswerBar
             key={option.id}
-            color={'#818cf8'} // indigo-400
+            color={'#818cf8'} // primary-400
             prob={prob}
             resolvedProb={
               contract.isResolved &&
@@ -274,7 +274,7 @@ export function PollPanel(props: {
                 {!hasVoted && votingOpen && pollType !== 'single' && (
                   <Button
                     size="2xs"
-                    color={isSelected ? 'indigo' : 'indigo-outline'}
+                    color={isSelected ? 'indigo' : 'primary-outline'}
                     className="!ring-1"
                     onClick={(e) => {
                       e.preventDefault()
@@ -453,7 +453,7 @@ export function VoteButton(props: {
       }}
       size="2xs"
       loading={loading}
-      color="indigo-outline"
+      color="primary-outline"
       className="!ring-1"
       disabled={disabled}
     >

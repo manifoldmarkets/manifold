@@ -901,7 +901,7 @@ function MaxLeverageInput(props: { contract: PerpContract }) {
       />
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         disabled={!valid || saving || parsed === current}
         loading={saving}
         onClick={submit}
@@ -971,7 +971,7 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
       />
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         disabled={!valid || saving || parsed === current}
         loading={saving}
         onClick={submit}
@@ -1054,7 +1054,7 @@ function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
       />
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         disabled={!valid || saving}
         loading={saving}
         onClick={submit}
@@ -1148,7 +1148,7 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
       />
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         disabled={!valid || saving || parsed === current}
         loading={saving}
         onClick={submit}
@@ -1226,7 +1226,7 @@ function MaxFundingRateInput(props: { contract: PerpContract }) {
       />
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         disabled={!valid || saving || parsed === current}
         loading={saving}
         onClick={submit}
@@ -1320,7 +1320,7 @@ function AddPerpSubsidyInput(props: { contract: PerpContract }) {
         />
         <Button
           size="2xs"
-          color="indigo-outline"
+          color="primary-outline"
           disabled={!valid || saving}
           loading={saving}
           onClick={submit}

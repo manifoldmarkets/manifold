@@ -35,7 +35,7 @@ export function SweepVerifySection(props: { className?: string }) {
   if (user === null || privateUser === null) {
     return (
       <div
-        className={`relative rounded-lg bg-gradient-to-b from-indigo-800 to-indigo-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
+        className={`relative rounded-lg bg-gradient-to-b from-primary-800 to-primary-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
       >
         <RainingCoins />
         <Col className="mb-8 mt-12 items-center gap-4">
@@ -84,7 +84,7 @@ export function SweepVerifySection(props: { className?: string }) {
 
   return (
     <div
-      className={`relative rounded-lg bg-gradient-to-b from-indigo-800 to-indigo-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
+      className={`relative rounded-lg bg-gradient-to-b from-primary-800 to-primary-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
     >
       <RainingCoins />
       <Col className="mb-8 mt-12 gap-4">

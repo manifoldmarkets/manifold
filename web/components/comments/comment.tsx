@@ -319,7 +319,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     >
       {isPinned && (
         <Link
-          className="self-center text-xs text-gray-400 hover:text-indigo-400 hover:underline"
+          className="self-center text-xs text-gray-400 hover:text-primary-400 hover:underline"
           href={`#${comment.id}`}
         >
           View original context

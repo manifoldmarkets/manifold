@@ -517,7 +517,7 @@ export function BinaryBetButton(props: {
       <>
         <Button
           size="2xs"
-          color={'indigo-outline'}
+          color={'primary-outline'}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()

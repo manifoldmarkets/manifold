@@ -119,7 +119,7 @@ export function BenefitsTable({
                           tier === 'basic' &&
                             'border-gray-400 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
                           tier === 'plus' &&
-                            'border-indigo-400 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
+                            'border-primary-400 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200',
                           tier === 'premium' &&
                             'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200'
                         )}
@@ -192,7 +192,7 @@ export function BenefitsTable({
                         'bg-gray-100 dark:bg-gray-700/40',
                       isActiveTier &&
                         tier === 'plus' &&
-                        'bg-indigo-100 dark:bg-indigo-800/30',
+                        'bg-primary-100 dark:bg-primary-800/30',
                       isActiveTier &&
                         tier === 'premium' &&
                         'bg-amber-100/80 dark:bg-amber-800/25',
@@ -315,7 +315,7 @@ export function BenefitsTable({
                             'bg-gray-100 dark:bg-gray-700/40',
                           isActiveTier &&
                             tier === 'plus' &&
-                            'bg-indigo-100 dark:bg-indigo-800/30',
+                            'bg-primary-100 dark:bg-primary-800/30',
                           isActiveTier &&
                             tier === 'premium' &&
                             'bg-amber-100/80 dark:bg-amber-800/25',

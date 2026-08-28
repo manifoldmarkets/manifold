@@ -1409,7 +1409,7 @@ function MerchItemCard(props: {
             'relative flex flex-1 flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
             outOfStock || alreadyPurchased
               ? 'opacity-75'
-              : 'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-indigo-200/50 group-hover:ring-2 group-hover:ring-indigo-500 dark:group-hover:shadow-indigo-900/30'
+              : 'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-primary-200/50 group-hover:ring-2 group-hover:ring-primary-500 dark:group-hover:shadow-primary-900/30'
           )}
         >
           {outOfStock && (
@@ -1496,7 +1496,7 @@ function MerchItemCard(props: {
                   className={clsx(
                     'h-2 w-2 rounded-full transition-all',
                     currentImageIndex === idx
-                      ? 'w-4 bg-indigo-500'
+                      ? 'w-4 bg-primary-500'
                       : 'bg-white/70 hover:bg-white'
                   )}
                 />
@@ -1547,7 +1547,7 @@ function MerchItemCard(props: {
                   className={clsx(
                     'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedColor === color
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300'
                       : 'border-ink-200 hover:border-ink-400 text-ink-700'
                   )}
                 >
@@ -1572,7 +1572,7 @@ function MerchItemCard(props: {
                   className={clsx(
                     'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedSize === variant.size
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300'
                       : 'border-ink-200 hover:border-ink-400 text-ink-700'
                   )}
                 >
@@ -1702,7 +1702,7 @@ function MerchItemCard(props: {
                         key={row.size}
                         className={
                           selectedSize === row.size
-                            ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                            ? 'bg-primary-50 dark:bg-primary-950/30'
                             : ''
                         }
                       >
@@ -1756,7 +1756,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, name: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <input
               type="text"
@@ -1765,7 +1765,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address1: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <input
               type="text"
@@ -1774,7 +1774,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address2: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <input
               type="text"
@@ -1783,7 +1783,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, city: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:hidden"
             />
             <Row className="w-full gap-3">
               <input
@@ -1793,7 +1793,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, city: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:block"
               />
               <input
                 type="text"
@@ -1803,7 +1803,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, state: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:w-24 sm:flex-none"
               />
               <input
                 type="text"
@@ -1812,7 +1812,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, zip: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:w-24 sm:flex-none"
               />
             </Row>
             <p className="text-ink-500 -mt-1 text-xs">
@@ -1832,7 +1832,7 @@ function MerchItemCard(props: {
                 setShippingRates(null)
                 setSelectedShipping(null)
               }}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -1852,7 +1852,7 @@ function MerchItemCard(props: {
                       taxNumber: e.target.value,
                     }))
                   }
-                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <p className="text-ink-500 text-xs">
                   <span className="font-medium">{taxIdConfig.label}:</span>{' '}
@@ -1874,7 +1874,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, email: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               {emailRequired ? (
                 <p className="text-ink-500 text-xs">
@@ -1897,7 +1897,7 @@ function MerchItemCard(props: {
 
           {!shippingRates && (
             <Button
-              color="indigo-outline"
+              color="primary-outline"
               onClick={handleGetShippingRates}
               loading={fetchingRates}
               disabled={!canGetRates}
@@ -1924,7 +1924,7 @@ function MerchItemCard(props: {
                     className={clsx(
                       'flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all',
                       selectedShipping?.id === rate.id
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30'
                         : 'border-ink-200 hover:border-ink-400'
                     )}
                   >
@@ -2168,7 +2168,7 @@ function AdminTestingTools(props: {
           type="checkbox"
           checked={showHidden}
           onChange={(e) => setShowHidden(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+          className="h-4 w-4 rounded border-gray-300 text-primary-600"
         />
         <span className="text-ink-600 text-sm">Show hidden items</span>
       </label>
@@ -2233,7 +2233,7 @@ function SupporterCard(props: {
             'shadow-[0_0_12px_rgba(107,114,128,0.4)] dark:shadow-[0_0_12px_rgba(156,163,175,0.3)]',
           !hoveredTier &&
             currentTier === 'plus' &&
-            'animate-glow-indigo-subtle shadow-[0_0_16px_rgba(99,102,241,0.5)] dark:shadow-[0_0_16px_rgba(129,140,248,0.4)]',
+            'animate-glow-primary-subtle shadow-[0_0_16px_rgba(99,102,241,0.5)] dark:shadow-[0_0_16px_rgba(129,140,248,0.4)]',
           !hoveredTier &&
             currentTier === 'premium' &&
             'animate-glow-amber-subtle shadow-[0_0_20px_rgba(245,158,11,0.5)] dark:shadow-[0_0_20px_rgba(251,191,36,0.4)]',
@@ -2254,7 +2254,7 @@ function SupporterCard(props: {
             hoveredTier === 'basic' &&
               'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-40',
             hoveredTier === 'plus' &&
-              'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-40',
+              'bg-gradient-to-r from-primary-400 via-primary-300 to-primary-400 opacity-60 dark:from-primary-500/50 dark:via-primary-400/50 dark:to-primary-500/50 dark:opacity-40',
             hoveredTier === 'premium' &&
               'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-50',
             // When not hovering, show owned tier's border color
@@ -2263,7 +2263,7 @@ function SupporterCard(props: {
               'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-50 group-hover:opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-30 dark:group-hover:opacity-40',
             !hoveredTier &&
               currentTier === 'plus' &&
-              'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-50 group-hover:opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-30 dark:group-hover:opacity-40',
+              'bg-gradient-to-r from-primary-400 via-primary-300 to-primary-400 opacity-50 group-hover:opacity-60 dark:from-primary-500/50 dark:via-primary-400/50 dark:to-primary-500/50 dark:opacity-30 dark:group-hover:opacity-40',
             !hoveredTier &&
               currentTier === 'premium' &&
               'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-30 dark:group-hover:opacity-50',
@@ -2329,7 +2329,7 @@ function SupporterCard(props: {
                             (hoveredTier ?? currentTier) === 'basic' &&
                               'text-gray-400',
                             (hoveredTier ?? currentTier) === 'plus' &&
-                              'text-indigo-500',
+                              'text-primary-500',
                             (hoveredTier ?? currentTier) === 'premium' &&
                               'text-amber-500'
                           )}
@@ -2417,7 +2417,7 @@ function SupporterCard(props: {
                         'border-gray-400 bg-gray-50 dark:bg-gray-900/30',
                       isCurrentUserTier &&
                         tier === 'plus' &&
-                        'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-200/50 dark:bg-indigo-950/30',
+                        'border-primary-400 bg-primary-50 shadow-md shadow-primary-200/50 dark:bg-primary-950/30',
                       isCurrentUserTier &&
                         tier === 'premium' &&
                         'border-amber-400 bg-amber-50 shadow-lg shadow-amber-200/50 dark:bg-amber-950/30',
@@ -2429,7 +2429,7 @@ function SupporterCard(props: {
                       !isCurrentUserTier &&
                         isHovered &&
                         tier === 'plus' &&
-                        'border-indigo-400 bg-indigo-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-indigo-950/30',
+                        'border-primary-400 bg-primary-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-primary-950/30',
                       !isCurrentUserTier &&
                         isHovered &&
                         tier === 'premium' &&
@@ -2450,7 +2450,7 @@ function SupporterCard(props: {
                         className={clsx(
                           'h-4 w-4',
                           tier === 'basic' && 'text-gray-400',
-                          tier === 'plus' && 'text-indigo-500',
+                          tier === 'plus' && 'text-primary-500',
                           tier === 'premium' && 'text-amber-500'
                         )}
                         style={
@@ -2597,7 +2597,7 @@ function SupporterModal(props: {
                     className={clsx(
                       'inline h-4 w-4',
                       purchasedTier === 'basic' && 'text-gray-400',
-                      purchasedTier === 'plus' && 'text-indigo-500',
+                      purchasedTier === 'plus' && 'text-primary-500',
                       purchasedTier === 'premium' && 'text-amber-500'
                     )}
                   />
@@ -2704,7 +2704,7 @@ function SupporterModal(props: {
                             className={clsx(
                               'h-4 w-4 transition-colors duration-150',
                               activeTier === 'basic' && 'text-gray-400',
-                              activeTier === 'plus' && 'text-indigo-500',
+                              activeTier === 'plus' && 'text-primary-500',
                               activeTier === 'premium' && 'text-amber-500'
                             )}
                           />
@@ -2772,7 +2772,7 @@ function SupporterModal(props: {
                             className={clsx(
                               'h-4 w-4 transition-colors duration-150',
                               activeTier === 'basic' && 'text-gray-400',
-                              activeTier === 'plus' && 'text-indigo-500',
+                              activeTier === 'plus' && 'text-primary-500',
                               activeTier === 'premium' && 'text-amber-500'
                             )}
                           />
@@ -3054,7 +3054,7 @@ function GoldenBorderPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm" />
         <Avatar
@@ -3073,7 +3073,7 @@ function ManaAuraPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <div
           className="absolute -inset-1.5 animate-pulse rounded-full opacity-80 blur-md"
@@ -3098,7 +3098,7 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <BlackHoleSvg
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -3126,7 +3126,7 @@ function FireItemPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative h-fit w-fit">
         <style>{`
           @keyframes preview-ember-1 {
@@ -3313,7 +3313,7 @@ function BadAuraPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 opacity-75 blur-sm" />
         <Avatar
@@ -3332,7 +3332,7 @@ function AngelWingsPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative isolate">
         <AngelWingSvg
           className="absolute top-1/2 -translate-y-1/2"
@@ -3364,7 +3364,7 @@ function MonoclePreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3391,7 +3391,7 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3418,7 +3418,7 @@ function DisguisePreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3441,7 +3441,7 @@ function ThoughtBubblePreview(props: {
   const bgColor = isYes ? 'bg-green-500' : 'bg-red-500'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3488,7 +3488,7 @@ function ArrowPreview(props: {
   const isUp = direction === 'up'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3516,7 +3516,7 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3589,7 +3589,7 @@ function RedCapStylePreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="w-full items-center">
         <button
           onClick={cyclePrev}
@@ -3682,7 +3682,7 @@ function BlueCapStylePreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="w-full items-center">
         <button
           onClick={cyclePrev}
@@ -3775,7 +3775,7 @@ function GreenCapStylePreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="w-full items-center">
         <button
           onClick={cyclePrev}
@@ -3868,7 +3868,7 @@ function BlackCapStylePreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="w-full items-center">
         <button
           onClick={cyclePrev}
@@ -3917,7 +3917,7 @@ function BullHornsPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3957,7 +3957,7 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -3996,7 +3996,7 @@ function SantaHatPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -4026,7 +4026,7 @@ function BunnyEarsPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -4094,7 +4094,7 @@ function CatEarsStylePreview(props: {
   const showWhiskers = previewIndex === 1
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="w-full items-center">
         <button
           onClick={cyclePrev}
@@ -4234,7 +4234,7 @@ function CrownPreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="w-full items-center">
         <button
           onClick={cyclePrev}
@@ -4276,7 +4276,7 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -4285,7 +4285,7 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
           noLink
         />
         <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-          <LuGraduationCap className="h-5 w-5 text-indigo-500 drop-shadow-[0_0_4px_rgba(99,102,241,0.5)]" />
+          <LuGraduationCap className="h-5 w-5 text-primary-500 drop-shadow-[0_0_4px_rgba(99,102,241,0.5)]" />
         </div>
       </div>
     </div>
@@ -4468,7 +4468,7 @@ function HatPreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -4498,7 +4498,7 @@ function StreakFreezePreview(props: {
   const isAtPurchaseMax = currentFreezes >= maxPurchasable
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Row className="flex-wrap items-center justify-center gap-x-2 gap-y-1">
         <span className="text-ink-600 text-xs sm:text-sm">Your freezes:</span>
         <Row className="items-center gap-1.5">
@@ -4524,7 +4524,7 @@ function StreakFreezePreview(props: {
 
 function PampuSkinPreview() {
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <Col className="items-center gap-2">
         <span className="text-ink-500 text-xs">Your YES button becomes:</span>
         <Row className="items-center gap-2">
@@ -4550,7 +4550,7 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
   const username = user?.username ?? 'username'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400 transition-shadow duration-500 group-hover:shadow-[0_0_25px_rgba(167,139,250,0.7)]">
         <div className="px-3 py-2">
           <Row className="items-start justify-between">
@@ -4591,7 +4591,7 @@ function HovercardSpinningBorderPreview(props: {
   const username = user?.username ?? 'username'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="hovercard-spinning-border bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md">
         <div className="px-3 py-2">
           <Row className="items-start justify-between">
@@ -4690,7 +4690,7 @@ export function HovercardBackgroundPreview(props: {
     },
     oracle: {
       bg: 'radial-gradient(ellipse at top, #1a1a3e 0%, #0a0a1e 50%, #000010 100%)',
-      textColor: 'text-indigo-50',
+      textColor: 'text-primary-50',
     },
     'trading-floor': {
       bg: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
@@ -5055,7 +5055,7 @@ export function HovercardBackgroundPreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div
         className={clsx(
           'relative w-44 origin-center scale-[0.85] divide-y divide-white/20 rounded-md shadow-lg ring-1 ring-white/10',
@@ -5102,7 +5102,7 @@ function GoldenFollowButtonPreview(props: { user: User | null | undefined }) {
   const username = user?.username ?? 'username'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-lg ring-1 ring-black/5">
         <div className="px-3 py-2">
           <Row className="items-start justify-between">
@@ -5183,7 +5183,7 @@ function CustomYesButtonPreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <span className="text-ink-500 text-xs">Your YES button becomes:</span>
       <Row className="w-full items-center">
         <button
@@ -5249,7 +5249,7 @@ function CustomNoButtonPreview(props: {
   }
 
   return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50">
       <span className="text-ink-500 text-xs">Your NO button becomes:</span>
       <Row className="w-full items-center">
         <button
@@ -5653,7 +5653,7 @@ function ShopItemCard(props: {
           ref={cardRef}
           className={clsx(
             'relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
-            justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
+            justPurchased && 'ring-2 ring-primary-500 ring-offset-2',
             !justPurchased &&
               'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:ring-2',
             !justPurchased &&
@@ -5661,7 +5661,7 @@ function ShopItemCard(props: {
               'group-hover:shadow-amber-200/50 group-hover:ring-amber-500 dark:group-hover:shadow-amber-900/30',
             !justPurchased &&
               !isPremiumItem &&
-              'group-hover:shadow-indigo-200/50 group-hover:ring-indigo-500 dark:group-hover:shadow-indigo-900/30',
+              'group-hover:shadow-primary-200/50 group-hover:ring-primary-500 dark:group-hover:shadow-primary-900/30',
             isPremiumItem &&
               'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
           )}
@@ -5673,7 +5673,7 @@ function ShopItemCard(props: {
           {purchasing && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80">
               <div className="flex flex-col items-center gap-2">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
                 <span className="text-ink-600 text-xs">Purchasing...</span>
               </div>
             </div>
@@ -5697,7 +5697,7 @@ function ShopItemCard(props: {
                     'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
                     isPremiumItem
                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                      : 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300'
                   )}
                 >
                   OWNED
@@ -5844,7 +5844,7 @@ function ShopItemCard(props: {
                       onChange={handleToggle}
                       className="peer sr-only"
                     />
-                    <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-gray-600" />
+                    <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-primary-600 peer-checked:after:translate-x-full dark:bg-gray-600" />
                     <span className="text-ink-700 ml-2 text-sm">
                       {isEnabled ? 'Enabled' : 'Disabled'}
                     </span>
@@ -5883,7 +5883,7 @@ function ShopItemCard(props: {
                   ) : (
                     <Button
                       size="xs"
-                      color="indigo-outline"
+                      color="primary-outline"
                       disabled={!user}
                       onClick={() => setShowConfirmModal(true)}
                     >

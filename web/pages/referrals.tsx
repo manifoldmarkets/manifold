@@ -90,7 +90,7 @@ export default function ReferralsPage() {
 
       <Col className="mx-auto w-full max-w-xl gap-6">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg sm:p-8">
           {/* Background decorations */}
           <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
@@ -417,7 +417,7 @@ function ReferralsList(props: {
                     REFERRAL_VERIFY_BONUS
                   )} more when they do.`}
                 >
-                  <span className="cursor-default rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                  <span className="cursor-default rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
                     Verify pending
                   </span>
                 </Tooltip>

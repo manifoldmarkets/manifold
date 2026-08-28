@@ -147,7 +147,7 @@ export default function Journeys() {
           {bannedUsers.length} more that are banned. Showing users created:{' '}
           {hoursFromNow}h ago.
           <Button
-            color={'indigo-outline'}
+            color={'primary-outline'}
             size={'xs'}
             onClick={() => {
               setHoursFromNowQ((hoursFromNow + 1).toString())

@@ -2,7 +2,7 @@ import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 
 const colorClasses = {
-  'indigo-dark':
+  'primary-dark':
     'text-ink-500 hover:bg-primary-100 hover:text-ink-700 aria-checked:bg-primary-500 aria-checked:text-white',
   indigo:
     'text-ink-500 hover:bg-ink-50 aria-checked:bg-primary-100 aria-checked:text-primary-900',
@@ -41,7 +41,7 @@ export function ChoicesToggleGroup(props: {
     disabled,
     disabledOptions,
     choicesMap,
-    color = 'indigo-dark',
+    color = 'primary-dark',
     className,
     children,
     toggleClassName,

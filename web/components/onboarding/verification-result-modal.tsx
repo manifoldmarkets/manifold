@@ -145,7 +145,7 @@ function UnverifiedContent({ onClose }: { onClose: () => void }) {
         Your identity verification is being processed. This usually takes a few
         minutes. We'll update your status once the review is complete.
       </div>
-      <Button onClick={onClose} color="indigo-outline" className="mt-4 w-full">
+      <Button onClick={onClose} color="primary-outline" className="mt-4 w-full">
         Continue
       </Button>
     </>

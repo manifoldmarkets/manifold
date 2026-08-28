@@ -206,7 +206,7 @@ export const RegisterUserForm = (props: {
           <Row className="p-4">
             <Col>
               <Row className="items-center">
-                <span className="mr-2 text-indigo-600">
+                <span className="mr-2 text-primary-600">
                   <CheckCircleIcon className="h-6 w-6" />
                 </span>
                 <span>
@@ -219,7 +219,7 @@ export const RegisterUserForm = (props: {
           <Row className="p-4">
             <Col>
               <Row className="items-center">
-                <span className="mr-2 text-indigo-600">
+                <span className="mr-2 text-primary-600">
                   <CheckCircleIcon className="h-6 w-6" />
                 </span>
                 <span>
@@ -232,7 +232,7 @@ export const RegisterUserForm = (props: {
           <Row className="p-4">
             <Col>
               <Row className="items-center">
-                <span className="mr-2 text-indigo-600">
+                <span className="mr-2 text-primary-600">
                   <CheckCircleIcon className="h-6 w-6" />
                 </span>
                 <span>
@@ -471,7 +471,7 @@ export const RegisterUserForm = (props: {
               {error === ID_ERROR_MSG ? (
                 <Button
                   onClick={() => setPage('documents')}
-                  color={'indigo-outline'}
+                  color={'primary-outline'}
                 >
                   Upload documents instead
                 </Button>
@@ -528,7 +528,7 @@ export const RegisterUserForm = (props: {
         </span>
         <BottomRow>
           <Button
-            color={'indigo-outline'}
+            color={'primary-outline'}
             loading={loading}
             onClick={async () => {
               setLoading(true)

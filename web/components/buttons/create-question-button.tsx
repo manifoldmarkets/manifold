@@ -12,7 +12,7 @@ export const CreateQuestionButton = (props: {
     <Link
       href="/create"
       className={clsx(
-        buttonClass(size ?? 'xl', color ?? 'indigo-outline'),
+        buttonClass(size ?? 'xl', color ?? 'primary-outline'),
         'whitespace-nowrap',
         className
       )}

@@ -110,7 +110,7 @@ export const HouseBettor = (props: {
 
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         className="bg-primary-50"
         onClick={(e) => {
           e.stopPropagation()
@@ -481,7 +481,7 @@ export const BuyPanelBody = (props: {
       </Col>
 
       <YourOrders
-        className="mt-2 rounded-lg bg-indigo-200/10 py-4"
+        className="mt-2 rounded-lg bg-primary-200/10 py-4"
         contract={contract}
         bets={unfilledBetsMatchingAnswer}
       />

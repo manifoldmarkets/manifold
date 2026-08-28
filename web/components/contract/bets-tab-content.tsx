@@ -467,7 +467,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
           ) : (
             <div
               key={item.id}
-              className="rounded-lg border border-purple-200 bg-gradient-to-r from-pink-100 via-purple-100 to-indigo-100 px-3 py-2.5 dark:border-purple-800/50 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-indigo-900/30 sm:px-4 sm:py-3"
+              className="rounded-lg border border-purple-200 bg-gradient-to-r from-pink-100 via-purple-100 to-primary-100 px-3 py-2.5 dark:border-purple-800/50 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-primary-900/30 sm:px-4 sm:py-3"
             >
               <FeedLiquidity
                 liquidity={item.lp}

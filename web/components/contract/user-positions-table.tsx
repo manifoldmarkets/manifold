@@ -577,7 +577,7 @@ const BinaryUserPositionsTable = memo(
                       position={position}
                       colorClassName={
                         isBinaryMulti(contract)
-                          ? 'text-indigo-500'
+                          ? 'text-primary-500'
                           : 'text-teal-500'
                       }
                       currentUser={currentUser}

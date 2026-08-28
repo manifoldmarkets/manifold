@@ -82,7 +82,7 @@ const BADGE_COLORS = [
   'bg-pink-500 text-white',
   'bg-cyan-400 text-cyan-900',
   'bg-orange-500 text-white',
-  'bg-indigo-500 text-white',
+  'bg-primary-500 text-white',
   'bg-emerald-500 text-white',
   'bg-rose-500 text-white',
   'bg-yellow-300 text-yellow-900',

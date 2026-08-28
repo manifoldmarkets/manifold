@@ -19,7 +19,7 @@ export function TrendingMidtermsCarousel(props: { contracts: Contract[] }) {
           contract={contract}
           showGraph
           trackingPostfix="election trending"
-          className="mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20"
+          className="mb-8 min-w-[332px] shadow-xl shadow-primary-500/20"
         />
       ))}
     </Carousel>

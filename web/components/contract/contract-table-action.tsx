@@ -89,7 +89,7 @@ export function BetButton(props: {
       <>
         <Button
           size="2xs"
-          color={'indigo-outline'}
+          color={'primary-outline'}
           aria-label={`${capitalize(TRADE_TERM)} on ${
             questionTitle ?? contract.question
           }`}

@@ -119,8 +119,8 @@ export function USElectionsPage(
           <Col className="gap-0.5">
             <Row className="text-primary-700 w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
               <span className="relative h-4 w-4">
-                <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-                <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
+                <span className="block h-4 w-4 animate-pulse rounded-full bg-primary-500/40" />
+                <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-primary-500" />
               </span>
               Trending
             </Row>

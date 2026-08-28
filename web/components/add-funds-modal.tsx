@@ -120,7 +120,7 @@ export function PriceTile(props: {
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
-        'ring-indigo-600',
+        'ring-primary-600',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
       )}
       type={'submit'}
@@ -167,7 +167,7 @@ export function PriceTile(props: {
       <div
         className={clsx(
           'w-full rounded-b px-4 py-1 text-lg font-semibold text-white sm:text-xl',
-          'bg-indigo-600'
+          'bg-primary-600'
         )}
       >
         Buy ${priceInDollars}

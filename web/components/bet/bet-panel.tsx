@@ -882,7 +882,7 @@ export const BuyPanelBody = (
                             }
                           >
                             {slippageProtection ? (
-                              <LockClosedIcon className="h-4 w-4 text-indigo-300 hover:text-indigo-400" />
+                              <LockClosedIcon className="h-4 w-4 text-primary-300 hover:text-primary-400" />
                             ) : (
                               <LockOpenIcon className="text-ink-500 hover:text-ink-600 h-4 w-4" />
                             )}

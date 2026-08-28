@@ -356,7 +356,7 @@ export const MultiNumericDateSection = (props: {
             />
             <Button
               className="hidden whitespace-nowrap sm:inline-flex"
-              color="indigo-outline"
+              color="primary-outline"
               onClick={generateRanges}
               loading={isGeneratingRanges}
               disabled={
@@ -376,7 +376,7 @@ export const MultiNumericDateSection = (props: {
       </Row>
       <Row className="mb-2 w-full gap-2 sm:hidden">
         <Button
-          color="indigo-outline"
+          color="primary-outline"
           onClick={generateRanges}
           loading={isGeneratingRanges}
           disabled={

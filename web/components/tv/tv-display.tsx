@@ -155,14 +155,14 @@ export function TVDisplay(props: {
           <Row className="m-4 gap-4">
             {showModify && (
               <Button
-                color="indigo-outline"
+                color="primary-outline"
                 onClick={() => setShowSettings(true)}
               >
                 Modify event
               </Button>
             )}
             <Button
-              color="indigo-outline"
+              color="primary-outline"
               onClick={() => Router.push('/tv/schedule')}
             >
               See schedule

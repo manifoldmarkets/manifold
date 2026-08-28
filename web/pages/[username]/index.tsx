@@ -926,8 +926,8 @@ function AchievementBadgeCard(props: {
     props
 
   const bucketStyle: Record<typeof props.bucket, string> = {
-    'Top 50 Users': 'from-fuchsia-500 to-indigo-500',
-    'Top 200 Users': 'from-indigo-500 to-sky-500',
+    'Top 50 Users': 'from-fuchsia-500 to-primary-500',
+    'Top 200 Users': 'from-primary-500 to-sky-500',
     'Top 1000 Users': 'from-sky-500 to-teal-500',
     'Top 5000 Users': 'from-emerald-500 to-lime-500',
     'Top 20,000 Users': 'from-slate-500 to-zinc-500',

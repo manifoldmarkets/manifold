@@ -47,7 +47,7 @@ export const CountryCodeSelector = (props: {
               className={({ active }) =>
                 `relative cursor-default select-none py-2 pl-10 pr-4 ${
                   active
-                    ? 'bg-canvas-50 text-indigo-600'
+                    ? 'bg-canvas-50 text-primary-600'
                     : 'text-gray-900 dark:text-gray-100'
                 }`
               }

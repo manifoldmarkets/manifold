@@ -66,7 +66,7 @@ export function TVSchedulePage(props: {
 
       {user && (
         <Row className="mt-8">
-          <Button color="indigo-outline" onClick={() => setShowSettings(true)}>
+          <Button color="primary-outline" onClick={() => setShowSettings(true)}>
             Schedule event
           </Button>
           <ScheduleTVModal

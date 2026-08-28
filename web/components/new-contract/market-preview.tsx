@@ -752,7 +752,7 @@ export function MarketPreview(props: {
               >
                 <Button
                   id="generate-date-ranges-button"
-                  color="indigo-outline"
+                  color="primary-outline"
                   size="xs"
                   onClick={onGenerateDateRanges}
                   disabled={
@@ -850,7 +850,7 @@ export function MarketPreview(props: {
               >
                 <Button
                   id="generate-numeric-ranges-button"
-                  color="indigo-outline"
+                  color="primary-outline"
                   size="xs"
                   onClick={onGenerateNumericRanges}
                   disabled={
@@ -1160,7 +1160,7 @@ export function MarketPreview(props: {
                     {/* Generate with AI button */}
                     {data.question && onGenerateAnswers && (
                       <Button
-                        color="indigo-outline"
+                        color="primary-outline"
                         size="xs"
                         loading={isGeneratingAnswers}
                         onClick={(e) => {
@@ -2157,7 +2157,7 @@ export function MarketPreview(props: {
             </div>
             {onGenerateDescription && (
               <Button
-                color="indigo-outline"
+                color="primary-outline"
                 size="xs"
                 loading={isGeneratingDescription}
                 onClick={onGenerateDescription}

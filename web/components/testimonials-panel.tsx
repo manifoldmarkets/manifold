@@ -37,7 +37,7 @@ export function TestimonialsPanel() {
       >
         <div
           className={clsx(
-            'relative z-30 h-[5%] w-full rounded-t-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-l-xl sm:rounded-r-none'
+            'relative z-30 h-[5%] w-full rounded-t-xl bg-primary-200 sm:h-full sm:w-2/5 sm:rounded-l-xl sm:rounded-r-none'
           )}
         >
           <div className="group absolute left-8 top-8 z-30 sm:top-32">
@@ -66,7 +66,7 @@ export function TestimonialsPanel() {
             </div>
           </div>
         </div>
-        <div className="relative h-[95%] w-full rounded-b-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-none sm:rounded-r-xl">
+        <div className="relative h-[95%] w-full rounded-b-xl bg-primary-700 sm:h-full sm:w-3/5 sm:rounded-l-none sm:rounded-r-xl">
           {hasTestimonials && (
             <Testimonial
               key={testimonialList[pageNumber].testimonial}
@@ -75,12 +75,12 @@ export function TestimonialsPanel() {
           )}
           {!isMobile && (
             <div className="absolute -left-0.5 bottom-0 z-20 h-full">
-              <SquiggleVertical className={clsx('h-full text-indigo-200')} />
+              <SquiggleVertical className={clsx('h-full text-primary-200')} />
             </div>
           )}
           {isMobile && (
             <div className="absolute -top-0.5 right-0 z-10 w-full items-center">
-              <SquiggleHorizontal className={clsx('text-indigo-200')} />
+              <SquiggleHorizontal className={clsx('text-primary-200')} />
             </div>
           )}
           <div
@@ -139,7 +139,7 @@ function Testimonial(props: {
             <div className="font-semibold transition-colors group-hover:text-teal-200">
               {name}
             </div>
-            <div className="font-thin text-indigo-200">{credit}</div>
+            <div className="font-thin text-primary-200">{credit}</div>
           </Col>
         </Row>
       </Link>
@@ -166,7 +166,7 @@ function PaginationCircle(props: {
       <div
         className={clsx(
           'h-2 w-2 rounded-full transition-colors',
-          currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
+          currentPageNumber === pageNumber ? 'bg-white' : 'bg-primary-400'
         )}
       />
     </div>

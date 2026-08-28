@@ -212,7 +212,7 @@ function NewUsersTable() {
                     u.bonusEligibility === 'verified' &&
                       'border-green-200 bg-green-50 text-green-700',
                     u.bonusEligibility === 'grandfathered' &&
-                      'border-indigo-200 bg-indigo-50 text-indigo-700',
+                      'border-primary-200 bg-primary-50 text-primary-700',
                     u.bonusEligibility === 'eligible' &&
                       'border-teal-200 bg-teal-50 text-teal-700',
                     u.bonusEligibility === 'ineligible' &&

@@ -606,7 +606,7 @@ function ToggleButton(props: {
       className={clsx(
         'flex h-full items-center rounded px-3 transition-colors',
         selected
-          ? 'bg-indigo-600 text-white'
+          ? 'bg-primary-600 text-white'
           : 'dark:bg-ink-300 dark:text-ink-600 text-ink-500 bg-ink-200 hover:bg-ink-300 dark:hover:bg-ink-400'
       )}
       onClick={onClick}

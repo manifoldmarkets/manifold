@@ -72,7 +72,7 @@ export function SubscribeButton({
         className={clsx(
           'w-full transition-all duration-200',
           tier === 'premium' && 'shadow-lg shadow-amber-500/25',
-          tier === 'plus' && 'shadow-lg shadow-indigo-500/25'
+          tier === 'plus' && 'shadow-lg shadow-primary-500/25'
         )}
         onClick={onClick}
         disabled={disabled || !canAfford}
@@ -131,7 +131,7 @@ export function SubscribeButton({
       className={clsx(
         'w-full transition-all duration-200',
         tier === 'premium' && 'shadow-lg shadow-amber-500/25',
-        tier === 'plus' && 'shadow-lg shadow-indigo-500/25'
+        tier === 'plus' && 'shadow-lg shadow-primary-500/25'
       )}
       onClick={onClick}
       disabled={disabled || !canAfford}

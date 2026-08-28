@@ -30,13 +30,13 @@ export default function PressPage() {
       description: 'SAGE team members',
       icon: (
         <Foldy
-          className="h-5 w-5 stroke-indigo-700 dark:stroke-indigo-300"
+          className="h-5 w-5 stroke-primary-700 dark:stroke-primary-300"
           strokeWidth="0.6"
         />
       ),
       largeIcon: (
         <Foldy
-          className="h-32 w-32 stroke-indigo-700 dark:stroke-indigo-300"
+          className="h-32 w-32 stroke-primary-700 dark:stroke-primary-300"
           strokeWidth="0.6"
         />
       ),
@@ -137,10 +137,10 @@ export default function PressPage() {
             </h3>
             <div className="flex items-center justify-center gap-1 py-12 md:gap-2">
               <LogoIcon
-                className="h-12 w-12 stroke-indigo-700 md:h-24 md:w-24"
+                className="h-12 w-12 stroke-primary-700 md:h-24 md:w-24"
                 strokeWidth="0.6"
               />
-              <div className="text-3xl font-thin text-indigo-700 md:text-6xl">
+              <div className="text-3xl font-thin text-primary-700 md:text-6xl">
                 SAGE
               </div>
             </div>

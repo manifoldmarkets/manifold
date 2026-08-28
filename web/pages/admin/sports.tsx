@@ -1069,7 +1069,7 @@ export default function SportsAdminPage() {
                   'Needs attention': 'NEEDS_ATTENTION',
                 }}
                 setChoice={(v) => setMarketFilter(v as string)}
-                color="indigo-dark"
+                color="primary-dark"
               />
               <Button size="sm" color="gray-outline" onClick={fetchMarkets}>
                 {marketsLoading ? 'Loading…' : 'Refresh'}

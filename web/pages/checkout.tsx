@@ -365,7 +365,7 @@ function CheckoutContent() {
       {/* Main Payment Card */}
       <div className="bg-canvas-0 overflow-hidden rounded-xl shadow-md">
         {/* Header */}
-        <div className="border-ink-100 border-b bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 dark:from-indigo-950/30 dark:to-purple-950/30">
+        <div className="border-ink-100 border-b bg-gradient-to-r from-primary-50 to-purple-50 px-6 py-4 dark:from-primary-950/30 dark:to-purple-950/30">
           <Row className="items-center justify-between gap-2">
             <h1 className="text-primary-700 text-xl font-semibold sm:text-2xl">
               Buy mana
@@ -520,9 +520,9 @@ function CheckoutContent() {
                         disabled={cryptoLoading}
                         className={clsx(
                           'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                          'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
+                          'bg-gradient-to-r from-primary-600 via-purple-600 to-primary-600 bg-[length:200%_100%]',
                           'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                          'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
+                          'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-primary-500/25',
                           'active:scale-[0.98]',
                           'disabled:cursor-not-allowed disabled:opacity-50'
                         )}
@@ -551,7 +551,7 @@ function CheckoutContent() {
                           'group relative w-full overflow-hidden rounded-xl border-2',
                           'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
                           'active:scale-[0.98]',
-                          'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
+                          'bg-canvas-0 border-primary-600 text-primary-700 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-300 dark:hover:bg-primary-950/30'
                         )}
                       >
                         <Row className="items-center justify-center gap-3">
@@ -605,7 +605,7 @@ function CheckoutContent() {
                     </p>
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-indigo-950/30">
+                  <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-primary-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-primary-950/30">
                     <Row className="items-center gap-2">
                       <GiftIcon className="h-5 w-5 text-purple-500" />
                       <span className="font-semibold text-purple-700 dark:text-purple-400">

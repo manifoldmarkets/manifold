@@ -168,7 +168,7 @@ export function SearchCreateAnswerPanel(props: {
                 <Button
                   className="!rounded-full !px-3"
                   size="2xs"
-                  color={text ? 'indigo' : 'indigo-outline'}
+                  color={text ? 'indigo' : 'primary-outline'}
                   loading={isSubmitting}
                   onClick={withTracking(handleAddAnswerClick, 'submit answer')}
                 >

@@ -250,7 +250,7 @@ function BoostPurchaseModal(props: {
           {isAdminOrMod && (
             <Row className="gap-2">
               <Button
-                color="indigo-outline"
+                color="primary-outline"
                 onClick={handleAdminFreeBoost}
                 loading={loading === 'admin-free'}
                 disabled={!!loading}

@@ -1468,7 +1468,7 @@ function AvatarOverlay(props: {
         return (
           <div className={cornerClasses}>
             <LuGraduationCap
-              className={clsx(hatSizeClass, 'text-indigo-500')}
+              className={clsx(hatSizeClass, 'text-primary-500')}
             />
           </div>
         )

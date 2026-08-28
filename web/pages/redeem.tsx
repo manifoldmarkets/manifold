@@ -252,7 +252,7 @@ export default function CashoutPage() {
                 </Col>
               </Row>
               <Button
-                color={'indigo-outline'}
+                color={'primary-outline'}
                 loading={loadingMonitorStatus}
                 disabled={loadingMonitorStatus}
                 onClick={() => requestLocationThenFetchMonitorStatus()}
@@ -322,7 +322,7 @@ export default function CashoutPage() {
                   if using.
                 </p>
                 <Button
-                  color={'indigo-outline'}
+                  color={'primary-outline'}
                   loading={loadingMonitorStatus}
                   disabled={loadingMonitorStatus}
                   onClick={() => requestLocationThenFetchMonitorStatus()}

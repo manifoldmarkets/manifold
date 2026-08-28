@@ -214,7 +214,7 @@ export function DailyLoan(props: {
       >
         <Button
           className={className}
-          color={'indigo-outline'}
+          color={'primary-outline'}
           size={'md'}
           onClick={(e) => {
             e.stopPropagation()

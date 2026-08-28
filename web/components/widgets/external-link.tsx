@@ -16,7 +16,7 @@ export const ExternalLink = (props: {
       target="_blank"
       rel="noopener noreferrer"
       className={clsx(
-        'items-center hover:text-indigo-400 hover:underline',
+        'items-center hover:text-primary-400 hover:underline',
         className
       )}
     >

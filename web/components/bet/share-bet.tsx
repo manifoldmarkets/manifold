@@ -53,7 +53,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
   const displayOrderAmount = orderAmount ? Math.abs(orderAmount) : undefined
 
   return (
-    <div className="w-full min-w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
+    <div className="w-full min-w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-primary-600 via-primary-600 to-purple-500">
       <div className="flex items-center justify-center pb-4 pt-5">
         <div className="flex items-center gap-2">
           <LogoIcon className="-mt-2 h-14 w-14 text-white" />

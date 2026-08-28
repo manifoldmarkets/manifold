@@ -189,7 +189,7 @@ export default function SupporterPage() {
                         (hoveredTier ?? currentTier ?? activeTier) ===
                           'basic' && 'text-gray-400',
                         (hoveredTier ?? currentTier ?? activeTier) === 'plus' &&
-                          'text-indigo-500',
+                          'text-primary-500',
                         (hoveredTier ?? currentTier ?? activeTier) ===
                           'premium' && 'text-amber-500'
                       )}

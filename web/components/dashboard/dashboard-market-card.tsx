@@ -54,7 +54,7 @@ function marketMeta(outcomeType: string): MarketMeta {
       return {
         label: 'Yes/No',
         badgeClass:
-          'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
+          'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300',
       }
     case 'MULTIPLE_CHOICE':
       return {

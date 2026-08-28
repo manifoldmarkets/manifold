@@ -23,9 +23,9 @@ export function PromotionalPanel(props: {
   const isMobile = useIsMobile()
   return (
     <div
-      className={`mx-1 mb-6 flex select-none flex-col overflow-hidden rounded-lg bg-indigo-700 sm:mx-2 sm:flex-row`}
+      className={`mx-1 mb-6 flex select-none flex-col overflow-hidden rounded-lg bg-primary-700 sm:mx-2 sm:flex-row`}
     >
-      <Col className={` bg-indigo-700 px-8 py-6 sm:w-[30rem] sm:bg-indigo-300`}>
+      <Col className={` bg-primary-700 px-8 py-6 sm:w-[30rem] sm:bg-primary-300`}>
         <Image
           className="mx-auto my-auto"
           src={isMobile ? darkModeImg : lightModeImg}
@@ -35,19 +35,19 @@ export function PromotionalPanel(props: {
         />
       </Col>
 
-      <div className={`mx-8 h-[1px] bg-indigo-300 sm:hidden`} />
+      <div className={`mx-8 h-[1px] bg-primary-300 sm:hidden`} />
       <Col className="relative w-full items-center px-8 py-6 text-white sm:px-16">
         {!isMobile && (
           <div className="absolute -left-0.5 bottom-0 z-20 h-full">
-            <SquiggleVertical className={clsx(`h-full text-indigo-300`)} />
+            <SquiggleVertical className={clsx(`h-full text-primary-300`)} />
           </div>
         )}
 
         <div className="text-2xl">{header}</div>
-        <Col className="w-full items-center text-lg text-indigo-300">
+        <Col className="w-full items-center text-lg text-primary-300">
           <div className="mx-auto mt-2">{description}</div>
           {/* <Row
-            className={`md::text-4xl relative mx-auto mt-4 items-center gap-2 rounded-xl border border-indigo-300 p-5 text-2xl `}
+            className={`md::text-4xl relative mx-auto mt-4 items-center gap-2 rounded-xl border border-primary-300 p-5 text-2xl `}
           >
             <TokenNumber
               amount={5000}
@@ -63,7 +63,7 @@ export function PromotionalPanel(props: {
               className="font-bold text-white"
             />{' '}
             <div
-              className={`absolute bottom-[-14px]  left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-300 px-3 text-lg text-indigo-700`}
+              className={`absolute bottom-[-14px]  left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary-300 px-3 text-lg text-primary-700`}
             >
               for only <b>{formatMoneyUSD(20)}</b>
             </div>

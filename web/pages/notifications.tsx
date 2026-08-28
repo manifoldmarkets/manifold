@@ -339,7 +339,7 @@ export function NotificationsList(props: {
   return (
     <Col className="gap-2">
       {pinnedNotifications && pinnedNotifications.length > 0 && (
-        <Col className="gap-1 rounded-md border-2 border-indigo-500 p-2">
+        <Col className="gap-1 rounded-md border-2 border-primary-500 p-2">
           <Row
             className={clsx(
               'bg-primary-100',

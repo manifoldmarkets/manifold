@@ -357,7 +357,7 @@ function CoreBadge() {
   return (
     <Tooltip text="I work on SAGE!" placement="right">
       <Foldy
-        className="stoke-indigo-700 h-4 w-4 stroke-1 hover:rotate-12 dark:stroke-indigo-300"
+        className="stoke-primary-700 h-4 w-4 stroke-1 hover:rotate-12 dark:stroke-primary-300"
         aria-hidden
       />
     </Tooltip>
@@ -442,7 +442,7 @@ function SupporterBadge({
           className={clsx(
             'h-4 w-4',
             tier === 'basic' && 'text-gray-400',
-            tier === 'plus' && 'text-indigo-500',
+            tier === 'plus' && 'text-primary-500',
             tier === 'premium' && 'text-amber-500'
           )}
           aria-hidden="true"

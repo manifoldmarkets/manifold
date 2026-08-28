@@ -98,7 +98,7 @@ const ChartAnnotation = (props: {
     <Col
       className={clsx(
         'cursor-pointer rounded-md border-2',
-        hovered ? 'border-indigo-600' : 'dark:border-ink-500 border-ink-200'
+        hovered ? 'border-primary-600' : 'dark:border-ink-500 border-ink-200'
       )}
       ref={ref}
       onMouseOver={() => setHoveredAnnotation?.(id)}

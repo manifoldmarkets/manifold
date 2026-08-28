@@ -235,7 +235,7 @@ export const MultiBettor = (props: {
 
       <Button
         size="2xs"
-        color="indigo-outline"
+        color="primary-outline"
         className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()

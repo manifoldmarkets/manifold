@@ -546,14 +546,14 @@ export default function SweepstakesPage() {
         {/* KYC Required Banner. KYC is a regulatory requirement for prize
             drawings — a subscription does NOT unlock entry. */}
         {!isLocationRestricted && needsVerification && (
-          <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
+          <div className="rounded-lg border border-primary-200 bg-primary-50 p-4 dark:border-primary-800 dark:bg-primary-950/30">
             <Row className="items-center justify-between gap-4">
               <Col className="gap-1">
-                <p className="font-semibold text-indigo-900 dark:text-indigo-200">
+                <p className="font-semibold text-primary-900 dark:text-primary-200">
                   KYC identity verification is required to participate in prize
                   drawings.
                 </p>
-                <p className="text-sm text-indigo-800 dark:text-indigo-300">
+                <p className="text-sm text-primary-800 dark:text-primary-300">
                   This is a regulatory requirement and applies even to active
                   subscribers. Verifying takes a few minutes.
                 </p>
@@ -707,7 +707,7 @@ export default function SweepstakesPage() {
               href="https://docs.manifold.markets/prize-faq"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-600 hover:underline dark:text-indigo-400"
+              className="text-primary-600 hover:underline dark:text-primary-400"
             >
               Prize Drawing FAQ
             </a>
@@ -716,7 +716,7 @@ export default function SweepstakesPage() {
               href="https://docs.manifold.markets/prize-rules"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-600 hover:underline dark:text-indigo-400"
+              className="text-primary-600 hover:underline dark:text-primary-400"
             >
               Prize Drawing Rules
             </a>
@@ -850,7 +850,7 @@ function AnnouncePrizeDrawingSection(props: {
   }
 
   return (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-800 dark:bg-indigo-950/20">
+    <div className="rounded-lg border border-primary-200 bg-primary-50/50 p-4 dark:border-primary-800 dark:bg-primary-950/20">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-ink-900 text-sm font-semibold uppercase tracking-wide">
           Admin · Announce to subscribers
@@ -1213,7 +1213,7 @@ function StatCard(props: {
     teal: 'text-teal-600 dark:text-teal-400',
     amber: 'text-amber-600 dark:text-amber-400',
     red: 'text-red-500 dark:text-red-400',
-    indigo: 'text-indigo-600 dark:text-indigo-400',
+    indigo: 'text-primary-600 dark:text-primary-400',
     violet: 'text-violet-600 dark:text-violet-400',
   }
 
@@ -1461,7 +1461,7 @@ function PurchaseForm(props: {
                 className={clsx(
                   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   manaAmount === n
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300'
                     : 'text-ink-600 hover:bg-canvas-100'
                 )}
               >
@@ -1976,10 +1976,10 @@ function ProvablyFairBanner(props: {
       <Row className="items-center justify-center">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="dark:from-indigo-400/15 dark:via-purple-400/15 dark:to-pink-400/15 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 px-4 py-2 ring-1 ring-indigo-500/20 transition-all hover:ring-indigo-500/40 dark:ring-indigo-400/25 dark:hover:ring-indigo-400/40"
+          className="dark:from-primary-400/15 dark:via-purple-400/15 dark:to-pink-400/15 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-500/10 via-purple-500/10 to-pink-500/10 px-4 py-2 ring-1 ring-primary-500/20 transition-all hover:ring-primary-500/40 dark:ring-primary-400/25 dark:hover:ring-primary-400/40"
         >
           <span className="text-base">⚖️</span>
-          <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-sm font-semibold text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
+          <span className="bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 bg-clip-text text-sm font-semibold text-transparent dark:from-primary-400 dark:via-purple-400 dark:to-pink-400">
             Provably fair
           </span>
         </button>
@@ -2127,7 +2127,7 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
                 claim.paymentStatus === 'rejected' &&
                   'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
                 claim.paymentStatus === 'opted_out' &&
-                  'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                  'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300'
               )}
             >
               {claim.paymentStatus === 'awaiting' && '⏳ Awaiting Payment'}

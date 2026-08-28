@@ -61,9 +61,9 @@ export function ContractDescription(props: {
             'text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic'
           )}
         >
-          <LogoIcon className="h-5 w-5 text-indigo-600" />
+          <LogoIcon className="h-5 w-5 text-primary-600" />
           <span>This question is managed and resolved by SAGE.</span>
-          <LogoIcon className="h-5 w-5 text-indigo-600" />
+          <LogoIcon className="h-5 w-5 text-primary-600" />
         </div>
 
         {creatorBannedFromBetting && (

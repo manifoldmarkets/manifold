@@ -13,7 +13,7 @@ export type ColorType =
   | 'blue'
   | 'sky-outline'
   | 'indigo'
-  | 'indigo-outline'
+  | 'primary-outline'
   | 'yellow'
   | 'gray'
   | 'gray-outline'
@@ -31,7 +31,7 @@ export type ColorType =
   | 'violet'
   | 'azure'
   | 'sienna'
-  | 'indigo-white'
+  | 'primary-white'
 
 type NativeButtonProps = Omit<
   JSX.IntrinsicElements['button'],
@@ -83,7 +83,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'violet' && [solid, 'bg-violet-500 hover:bg-violet-700'],
     color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
     color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
-    color === 'indigo-outline' && [
+    color === 'primary-outline' && [
       outline,
       'text-primary-600 hover:bg-primary-600',
     ],
@@ -95,7 +95,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'pink' && [solid, 'bg-fuchsia-500 hover:bg-fuchsia-600'],
     color === 'gray-white' &&
       'text-ink-600 hover:bg-ink-200 disabled:text-ink-300 disabled:bg-transparent',
-    color === 'indigo-white' &&
+    color === 'primary-white' &&
       'text-primary-600 hover:bg-primary-200 disabled:text-primary-300 disabled:bg-transparent',
     color === 'gold' && [
       gradient,

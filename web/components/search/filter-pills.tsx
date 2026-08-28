@@ -16,9 +16,9 @@ import { LiteGroup } from 'common/group'
 import { User } from 'common/user'
 
 export const minimalistIndigoSelectedClass =
-  'bg-indigo-200 hover:bg-indigo-400 text-ink-600 dark:text-ink-800 dark:bg-indigo-900 dark:hover:bg-indigo-500'
+  'bg-primary-200 hover:bg-primary-400 text-ink-600 dark:text-ink-800 dark:bg-primary-900 dark:hover:bg-primary-500'
 export const unselectedClass =
-  'bg-ink-100 hover:bg-indigo-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-indigo-800'
+  'bg-ink-100 hover:bg-primary-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-primary-800'
 
 export function FilterPill(props: {
   selected: boolean

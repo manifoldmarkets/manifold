@@ -268,7 +268,7 @@ const QuestRow = (props: {
             <span
               className={clsx(
                 'text-ink-500 text-sm',
-                complete && 'text-indigo-500'
+                complete && 'text-primary-500'
               )}
             >
               {complete ? 'Complete!' : status}

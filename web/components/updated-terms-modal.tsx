@@ -31,7 +31,7 @@ export function UpdatedTermsModal() {
     <Modal open={true} onClose={() => {}}>
       <Col className={MODAL_CLASS}>
         <LogoIcon
-          className="h-24 w-24 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white "
+          className="h-24 w-24 shrink-0 stroke-primary-700 transition-transform group-hover:rotate-12 dark:stroke-white "
           aria-hidden
         />
         <div className="text-2xl font-semibold">Sweepstakes are here!</div>

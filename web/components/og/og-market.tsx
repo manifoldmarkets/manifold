@@ -30,7 +30,7 @@ export function OgMarket(props: OgCardProps) {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col items-stretch bg-indigo-700"
+      className="relative flex h-full w-full flex-col items-stretch bg-primary-700"
       style={{
         backgroundImage: 'linear-gradient(to bottom, #4338ca, #818cf8)',
       }}

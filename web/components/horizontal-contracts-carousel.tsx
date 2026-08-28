@@ -19,8 +19,8 @@ export function HorizontalContractsCarousel(props: {
       {title && (
         <Row className="items-center gap-1 font-semibold sm:text-lg">
           <div className="relative">
-            <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-            <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
+            <div className="h-4 w-4 animate-pulse rounded-full bg-primary-500/40" />
+            <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-primary-500" />
           </div>
           <span>{title}</span>
         </Row>
@@ -32,7 +32,7 @@ export function HorizontalContractsCarousel(props: {
           key={contracts[0].id}
           contract={contracts[0]}
           showGraph
-          className="mb-8 w-full shadow-xl shadow-indigo-500/20"
+          className="mb-8 w-full shadow-xl shadow-primary-500/20"
         />
       )}
 
@@ -45,7 +45,7 @@ export function HorizontalContractsCarousel(props: {
                 key={contract.id}
                 contract={contract}
                 showGraph
-                className="mb-8 w-1/2 shadow-xl shadow-indigo-500/20"
+                className="mb-8 w-1/2 shadow-xl shadow-primary-500/20"
               />
             ))}
           </Row>
@@ -55,7 +55,7 @@ export function HorizontalContractsCarousel(props: {
                 key={contract.id}
                 contract={contract}
                 showGraph
-                className="mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20"
+                className="mb-8 min-w-[332px] shadow-xl shadow-primary-500/20"
               />
             ))}
           </Carousel>
@@ -70,7 +70,7 @@ export function HorizontalContractsCarousel(props: {
               key={contract.id}
               contract={contract}
               showGraph
-              className="mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20"
+              className="mb-8 min-w-[332px] shadow-xl shadow-primary-500/20"
             />
           ))}
         </Carousel>

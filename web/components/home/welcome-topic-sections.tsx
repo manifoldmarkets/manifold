@@ -50,7 +50,7 @@ export const WelcomeTopicSections = (props: {
       })}
       <Row className={'justify-center'}>
         <Link className={linkClass} href={`/browse?fy=1&f=open`}>
-          <Button color={'indigo-outline'} className={'mx-2 mb-8 mt-2 text-xl'}>
+          <Button color={'primary-outline'} className={'mx-2 mb-8 mt-2 text-xl'}>
             <Row className={'items-center justify-center gap-2'}>
               Explore all questions by topic
               <ArrowRightIcon className="h-4 w-4 shrink-0" />

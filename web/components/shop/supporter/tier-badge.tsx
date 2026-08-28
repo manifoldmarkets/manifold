@@ -21,7 +21,7 @@ export function TierBadge({
         className={clsx(
           sizeClass,
           tier === 'basic' && 'text-gray-400',
-          tier === 'plus' && 'text-indigo-500',
+          tier === 'plus' && 'text-primary-500',
           tier === 'premium' && 'text-amber-500'
         )}
       />
@@ -42,7 +42,7 @@ export function TierBadge({
 export function getTierStarClasses(tier: SupporterTier): string {
   return clsx(
     tier === 'basic' && 'text-gray-400',
-    tier === 'plus' && 'text-indigo-500',
+    tier === 'plus' && 'text-primary-500',
     tier === 'premium' && 'text-amber-500'
   )
 }

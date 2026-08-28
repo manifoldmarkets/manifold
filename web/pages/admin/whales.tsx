@@ -161,7 +161,7 @@ function BreakdownPopup(props: {
   const { byType } = props
 
   const types: { key: PaymentType; label: string; color: string }[] = [
-    { key: 'stripe', label: 'Stripe', color: 'bg-indigo-100 text-indigo-700' },
+    { key: 'stripe', label: 'Stripe', color: 'bg-primary-100 text-primary-700' },
     { key: 'crypto', label: 'Crypto', color: 'bg-teal-100 text-teal-700' },
     { key: 'gidx', label: 'Card (GIDX)', color: 'bg-green-100 text-green-700' },
     { key: 'apple', label: 'Apple', color: 'bg-gray-100 text-gray-700' },

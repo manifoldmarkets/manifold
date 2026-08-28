@@ -60,7 +60,7 @@ export function HorizontalDashboard(props: {
             item={item}
             previews={previews}
             contracts={contracts}
-            className={clsx('mb-8 w-full shadow-xl shadow-indigo-500/20')}
+            className={clsx('mb-8 w-full shadow-xl shadow-primary-500/20')}
           />
         ))}
       </>
@@ -76,7 +76,7 @@ export function HorizontalDashboard(props: {
               item={item}
               previews={previews}
               contracts={contracts}
-              className={clsx(' mb-8 w-1/2 shadow-xl shadow-indigo-500/20')}
+              className={clsx(' mb-8 w-1/2 shadow-xl shadow-primary-500/20')}
             />
           ))}
         </Row>
@@ -88,7 +88,7 @@ export function HorizontalDashboard(props: {
               previews={previews}
               contracts={contracts}
               className={clsx(
-                ' mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20'
+                ' mb-8 min-w-[332px] shadow-xl shadow-primary-500/20'
               )}
             />
           ))}
@@ -106,7 +106,7 @@ export function HorizontalDashboard(props: {
             previews={previews}
             contracts={contracts}
             className={clsx(
-              'mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20'
+              'mb-8 min-w-[332px] shadow-xl shadow-primary-500/20'
             )}
           />
         ))}

@@ -125,7 +125,7 @@ export function DailyFreeLoanModal(props: {
                 {formatMoney(todaysClaim)}
               </span>
             </Col>
-            <Col className="flex-1 items-center gap-1 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-3 dark:from-blue-900/20 dark:to-indigo-900/20">
+            <Col className="flex-1 items-center gap-1 rounded-lg bg-gradient-to-br from-blue-50 to-primary-50 p-3 dark:from-blue-900/20 dark:to-primary-900/20">
               <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
                 TOTAL LOAN
               </span>

@@ -149,7 +149,7 @@ function SummaryCard(props: {
     <div
       className={clsx(
         'rounded-lg border px-4 py-3',
-        color === 'indigo' && 'border-indigo-200 bg-indigo-50',
+        color === 'indigo' && 'border-primary-200 bg-primary-50',
         color === 'teal' && 'border-teal-200 bg-teal-50',
         color === 'green' && 'border-green-200 bg-green-50',
         color === 'gray' && 'border-gray-200 bg-gray-50',
@@ -160,7 +160,7 @@ function SummaryCard(props: {
       <div
         className={clsx(
           'text-xl font-bold',
-          color === 'indigo' && 'text-indigo-700',
+          color === 'indigo' && 'text-primary-700',
           color === 'teal' && 'text-teal-700',
           color === 'green' && 'text-green-700',
           color === 'gray' && 'text-gray-700',
@@ -179,7 +179,7 @@ function PaymentTypeBadge(props: { type: string }) {
   const config: Record<string, { label: string; className: string }> = {
     stripe: {
       label: 'Stripe',
-      className: 'bg-indigo-100 text-indigo-700',
+      className: 'bg-primary-100 text-primary-700',
     },
     crypto: {
       label: 'Crypto',

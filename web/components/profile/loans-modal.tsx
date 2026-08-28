@@ -536,7 +536,7 @@ export function LoansModal(props: {
             </Col>
           ) : (
             <Col className="items-center gap-4 py-4 text-center">
-              <div className="rounded-full bg-indigo-100 p-4 dark:bg-indigo-900/30">
+              <div className="rounded-full bg-primary-100 p-4 dark:bg-primary-900/30">
                 <span className="text-4xl">🔒</span>
               </div>
               <Col className="gap-2">
