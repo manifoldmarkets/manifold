@@ -498,7 +498,7 @@ export const PerpChart = (props: {
   }, [mode, fundingPoints, liveFundingRate, chartNow])
 
   const points = mode === 'price' ? windowedSeries : fundingSeries
-  const width = Math.max(320, measuredWidth ?? 720)
+  const width = Math.max(280, measuredWidth ?? 720)
 
   const overlayGeom = useMemo((): OverlayGeometry | null => {
     if (mode !== 'price' || windowedSeries.length < 2) return null
