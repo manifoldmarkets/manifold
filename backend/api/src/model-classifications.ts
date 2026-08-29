@@ -6,6 +6,7 @@ import {
   isCompositeSlug,
 } from 'common/perps/open-weight-models'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
+import { verifyHuggingFaceWeights } from 'shared/huggingface'
 import {
   ClassificationRow,
   upsertClassification,
@@ -27,12 +28,22 @@ export const getModelClassifications: APIHandler<
   throwErrorIfNotAdmin(auth.uid)
   const pg = createSupabaseDirectClient()
 
+  // Every decided row, not a 30-day slice.
+  //
+  // The nightly audit re-checks EVERY override, and the case it exists to
+  // catch is a publisher shipping weights long after launch — months, not
+  // weeks. Under the old window the audit would flag such a model every night
+  // while the page an operator is told to go and fix it on did not list it at
+  // all, which is the worst possible pairing: a standing alert with no
+  // reachable remedy.
+  //
+  // The table is a few hundred rows and grows by a handful a week, so there is
+  // nothing to paginate away from yet; `recent` is capped for display below
+  // instead, and correcting an older verdict still works through the CLI.
   const rows = await pg.manyOrNone<ClassificationRow>(
     `select permaslug, open, weights, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by
      from model_classifications
-     where open is null
-        or classified_at > now() - interval '30 days'
      order by first_ranked_at asc nulls last, first_seen asc`
   )
 
@@ -128,7 +139,10 @@ export const getModelClassifications: APIHandler<
           : null,
         classifiedBy: r.classified_by,
       }))
-      .sort((a, b) => (b.classifiedAt ?? 0) - (a.classifiedAt ?? 0)),
+      .sort((a, b) => (b.classifiedAt ?? 0) - (a.classifiedAt ?? 0))
+      // Newest 200 decided rows. A cap on RENDERING, not on what is editable:
+      // the CLI reaches anything, and the audit names the slug in its alert.
+      .slice(0, 200),
     seedVersion: OPEN_WEIGHT_LIST_VERSION,
     graceWindowMs: UNCLASSIFIED_GRACE_WINDOW_MS,
   }
@@ -166,12 +180,44 @@ export const setModelClassification: APIHandler<
     )
 
   const pg = createSupabaseDirectClient()
+
+  // Verify the citation before it enters the map, not after.
+  //
+  // This endpoint used to accept any non-empty string, which made the admin
+  // form the LEAST checked way into an executable index: the nightly audit
+  // re-verifies every open verdict, the research agent's proposals are
+  // re-fetched and name-matched, and the CLI verifies before writing — but a
+  // typo, a full URL pasted instead of an id, a private repo or a
+  // tokenizer-only repo typed here went straight in and priced the market on
+  // the next tick. `upstage/solar-pro3-tokenizer` resolves and carries zero
+  // weight files, so "it exists" is not the bar.
+  //
+  // The operator is trusted to make the JUDGEMENT; they are not a substitute
+  // for the mechanical check, and being asked to re-type a repo id is exactly
+  // where a slip happens.
+  let evidence: Record<string, unknown> = {
+    classifiedByAdmin: auth.uid,
+    weightsCitedAt: Date.now(),
+  }
+  if (open) {
+    const cited = weights?.trim() ?? ''
+    const verification = await verifyHuggingFaceWeights(cited)
+    if (!verification.confirmed)
+      throw new APIError(
+        400,
+        `${cited || '(no repo)'} did not verify as public weights: ` +
+          `${verification.reason}. An open call needs a repo that resolves, ` +
+          `is public, and carries weight files.`
+      )
+    evidence = { ...evidence, ...verification.evidence }
+  }
+
   await upsertClassification(pg, {
     permaslug,
     open,
     weights: weights?.trim() || null,
     source: 'admin',
-    evidence: { classifiedByAdmin: auth.uid, weightsCitedAt: Date.now() },
+    evidence,
     classifiedBy: auth.uid,
   })
 

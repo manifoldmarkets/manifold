@@ -28,15 +28,23 @@ import { upsertClassification } from 'shared/perps/model-classifications'
 //   npx ts-node reclassify-model.ts <permaslug> closed
 //   ... add --apply to write; dry run otherwise.
 
-const usage = () => {
-  console.error(
-    'usage: reclassify-model.ts <permaslug> <open|closed> [owner/repo] [--apply]'
-  )
+// Every refusal exits NON-ZERO. runScript ends in a bare `process.exit()`,
+// which honours process.exitCode — without setting it a script that refused to
+// do anything still exited 0 and read as success.
+const fail = (message: string) => {
+  console.error(message)
+  process.exitCode = 1
 }
+
+const usage = () =>
+  fail(
+    'usage: reclassify-model.ts <permaslug> <open|closed> [owner/repo] [--apply] [--create]'
+  )
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    const args = process.argv.slice(2).filter((a) => a !== '--apply')
+    const FLAGS = ['--apply', '--create']
+    const args = process.argv.slice(2).filter((a) => !FLAGS.includes(a))
     const apply = process.argv.includes('--apply')
     const [rawSlug, verdict, repo] = args
     if (!rawSlug || (verdict !== 'open' && verdict !== 'closed')) return usage()
@@ -47,14 +55,14 @@ if (require.main === module) {
     // Same refusals the admin endpoint applies, so the two cannot disagree
     // about what is editable.
     if (isCompositeSlug(permaslug)) {
-      console.error(
+      fail(
         `${permaslug} is a router or floating alias — excluded from the index, ` +
           `so a verdict on it is ignored either way.`
       )
       return
     }
     if (OPEN_WEIGHT_MODELS[permaslug]) {
-      console.error(
+      fail(
         `${permaslug} is in the audited seed (version ${OPEN_WEIGHT_LIST_VERSION}). ` +
           `Changing it is a change to the published methodology — edit ` +
           `common/src/perps/open-weight-models.ts and bump the version.`
@@ -62,8 +70,8 @@ if (require.main === module) {
       return
     }
     if (open && !repo) {
-      console.error('an open verdict needs the weights repo that proves it')
-      return usage()
+      fail('an open verdict needs the weights repo that proves it')
+      return
     }
 
     const before = await pg.oneOrNone<{
@@ -82,6 +90,17 @@ if (require.main === module) {
       }`
     )
 
+    // A permaslug with no row is almost always a typo, and the upsert would
+    // happily INSERT one — reporting success while the model you meant to fix
+    // stays untouched and an inert row joins the table.
+    if (!before && !process.argv.includes('--create')) {
+      fail(
+        `no classification row for ${permaslug} — check the permaslug. ` +
+          `Pass --create if you really mean to add a new row.`
+      )
+      return
+    }
+
     // Verify before writing, not after. An open verdict is the only one that
     // asserts something positive about the world, and the whole reason this
     // script exists is a repo that changed state under a stored answer.
@@ -89,7 +108,7 @@ if (require.main === module) {
     if (open) {
       const result = await verifyHuggingFaceWeights(repo)
       if (!result.confirmed) {
-        console.error(`refusing: ${repo} did not verify — ${result.reason}`)
+        fail(`refusing: ${repo} did not verify — ${result.reason}`)
         return
       }
       weightFileCount = result.evidence.weightFileCount

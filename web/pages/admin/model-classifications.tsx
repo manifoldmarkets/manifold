@@ -206,13 +206,20 @@ function DecidedRow(props: {
               check repo &#8599;
             </a>
           )}
+          {/* Enabled even when the model is ALREADY open, because replacing a
+              citation is a real correction: a repo can be renamed or withdrawn
+              while the verdict stays right. Disabling it forced a round trip
+              through "closed", which publishes a number we know to be wrong on
+              the tick in between. */}
           <Button
             size="xs"
             color="green"
-            disabled={saving || model.open}
+            disabled={
+              saving || (model.open && weights.trim() === (model.weights ?? ''))
+            }
             onClick={() => reclassify(true)}
           >
-            Open
+            {model.open ? 'Update citation' : 'Open'}
           </Button>
           <Button
             size="xs"

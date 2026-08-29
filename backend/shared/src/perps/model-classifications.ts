@@ -163,9 +163,7 @@ export const recordPendingModels = async (
      on conflict (permaslug) do nothing`,
     [
       rows.map((r) => r.slug),
-      firstSeen
-        ? new Date(firstSeen).toISOString()
-        : new Date().toISOString(),
+      firstSeen ? new Date(firstSeen).toISOString() : new Date().toISOString(),
       rows.map((r) => r.evidence),
     ]
   )
@@ -189,9 +187,9 @@ export const recordUnclassifiedInRankings = async (
   permaslugs: string[],
   rankedAt = Date.now()
 ) => {
-  const slugs = Array.from(
-    new Set(permaslugs.map(basePermaslug))
-  ).filter((slug) => !OPEN_WEIGHT_MODELS[slug] && !isCompositeSlug(slug))
+  const slugs = Array.from(new Set(permaslugs.map(basePermaslug))).filter(
+    (slug) => !OPEN_WEIGHT_MODELS[slug] && !isCompositeSlug(slug)
+  )
   if (slugs.length === 0) return 0
 
   await pg.none(
@@ -235,6 +233,21 @@ export const upsertClassification = async (
       `refusing to classify ${permaslug} open without a weights repo`
     )
 
+  // The prior decision is APPENDED to evidence.history rather than replaced.
+  //
+  // This upsert used to overwrite evidence, classified_at and classified_by
+  // outright, so every correction destroyed the record of what it corrected.
+  // That is not hypothetical: GLM 5.3's original agent recommendation and
+  // the searches behind it were lost the moment a human adjudicated it, and
+  // when the verdict later turned out to need reversing there was nothing
+  // left showing why it had been made. A classification that moves a money
+  // market should be able to answer "who decided this, when, on what
+  // evidence" for every verdict it has ever held, not just the current one.
+  //
+  // Built in SQL so it is atomic and applies to every caller — the admin
+  // endpoint, the CLI, and the automatic watcher alike. The nested copy has
+  // its own `history` stripped so repeated corrections cannot nest
+  // exponentially.
   await pg.none(
     `insert into model_classifications
        (permaslug, open, weights, source, evidence, classified_at, classified_by, updated_time)
@@ -243,7 +256,19 @@ export const upsertClassification = async (
        open = excluded.open,
        weights = excluded.weights,
        source = excluded.source,
-       evidence = excluded.evidence,
+       evidence = excluded.evidence || jsonb_build_object(
+         'history',
+         coalesce(model_classifications.evidence->'history', '[]'::jsonb) ||
+           jsonb_build_array(jsonb_build_object(
+             'open', model_classifications.open,
+             'weights', model_classifications.weights,
+             'source', model_classifications.source,
+             'classifiedAt', model_classifications.classified_at,
+             'classifiedBy', model_classifications.classified_by,
+             'supersededAt', now(),
+             'evidence', model_classifications.evidence - 'history'
+           ))
+       ),
        classified_at = excluded.classified_at,
        classified_by = excluded.classified_by,
        updated_time = now()`,
@@ -257,7 +282,6 @@ export const upsertClassification = async (
     ]
   )
 }
-
 /**
  * Attach the research agent's findings to a PENDING row without adjudicating
  * it.
@@ -304,17 +328,25 @@ export const recordAgentRecommendation = async (
   )
 }
 
-/** Pending rows for the admin tool, oldest first — the review queue. */
+/**
+ * Pending rows for the admin tool, oldest first — the review queue.
+ *
+ * Composites are filtered here as well as at candidate creation, because rows
+ * written before that rule existed are still in the table and would otherwise
+ * keep inflating queue counts and summaries with work nobody can usefully do.
+ */
 export const getPendingClassifications = async (
   pg: SupabaseDirectClient
-): Promise<ClassificationRow[]> =>
-  pg.manyOrNone<ClassificationRow>(
+): Promise<ClassificationRow[]> => {
+  const rows = await pg.manyOrNone<ClassificationRow>(
     `select permaslug, open, weights, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by
      from model_classifications
      where open is null
      order by first_ranked_at asc nulls last, first_seen asc`
   )
+  return rows.filter((row) => !isCompositeSlug(basePermaslug(row.permaslug)))
+}
 
 /**
  * How long a researched-but-unsettled model is left alone before a re-run.
