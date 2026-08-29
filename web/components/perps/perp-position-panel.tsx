@@ -22,6 +22,7 @@ import {
 } from 'common/perps/format'
 import {
   formatMoney,
+  formatMoneyOrLessThanOne,
   formatMoneyPrecise,
   MONEY_PRECISE_DUST,
 } from 'common/util/format'
@@ -501,7 +502,7 @@ const PositionCard = (props: {
               )}
             >
               {fundingMana > 0 ? 'Earning ' : 'Paying '}
-              {formatMoneyPrecise(Math.abs(fundingMana))}/
+              {formatMoneyOrLessThanOne(fundingMana)}/
               {fundingPeriodUnit(fundingPeriodMs)}{' '}
               {fundingMana > 0 ? 'from funding' : 'in funding'}
             </span>

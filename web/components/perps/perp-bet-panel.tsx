@@ -41,6 +41,7 @@ import {
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import {
   formatMoney,
+  formatMoneyOrLessThanOne,
   formatMoneyPrecise,
   MONEY_PRECISE_DUST,
 } from 'common/util/format'
@@ -936,14 +937,24 @@ const StatsGrid = (props: {
     : []
 
   const periodPct = marketFundingRate * 100
-  // Dust from a near-balanced pool would otherwise read "-Ṁ0/hr".
+  // Dust from a near-balanced pool would otherwise read "-Ṁ0/hr". A real
+  // but sub-mana amount reads "<Ṁ1/hr" — unsigned, the rate beside it
+  // carries the direction.
   const paysFunding = fundingManaPerPeriod <= -MONEY_PRECISE_DUST
   const earnsFunding = fundingManaPerPeriod >= MONEY_PRECISE_DUST
-  const fundingValue = `${
-    paysFunding ? '-' : earnsFunding ? '+' : ''
-  }${formatMoneyPrecise(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
-    fundingPeriodMs
-  )} · ${periodPct >= 0 ? '+' : ''}${periodPct.toFixed(3)}%`
+  const fundingSign =
+    Math.abs(fundingManaPerPeriod) < 1
+      ? ''
+      : paysFunding
+      ? '-'
+      : earnsFunding
+      ? '+'
+      : ''
+  const fundingValue = `${fundingSign}${formatMoneyOrLessThanOne(
+    fundingManaPerPeriod
+  )}/${fundingPeriodUnit(fundingPeriodMs)} · ${
+    periodPct >= 0 ? '+' : ''
+  }${periodPct.toFixed(3)}%`
 
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-2 rounded-md border p-3 text-sm">

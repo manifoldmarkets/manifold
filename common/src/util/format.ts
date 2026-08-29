@@ -142,30 +142,41 @@ export function formatMoneyWithDecimals(amount: number) {
 export const MONEY_PRECISE_DUST = 1e-6
 
 /**
- * Mana formatting for exact fractional financial values such as perp fees,
- * PnL, payouts and per-period funding. Values of at least 0.01 use cents;
- * smaller non-zero values use two significant digits so a real debit never
- * collapses to zero. Both go through formatNumber, so grouping and the
- * decimal separator follow the viewer's locale like formatMoney. The sign
- * goes before the moniker; non-finite input reads as zero.
+ * Mana formatting for perp financial values (fees, PnL, payouts, per-period
+ * funding). Whole mana, like everywhere else on the site: sub-mana
+ * precision was shown here for a while (#4005) and removed on 2026-08-29 —
+ * it cost space and nobody read it. If it ever returns it should apply
+ * only below Ṁ1. Truncates toward zero via getMoneyNumber exactly like
+ * formatMoney, so the two never disagree on the digits; grouping follows
+ * the viewer's locale. The sign goes before the moniker ("-Ṁ12"), an
+ * amount that rounds to nothing reads as "Ṁ0" (never "-Ṁ0"), and
+ * non-finite input reads as zero.
  */
 export function formatMoneyPrecise(amount: number) {
   if (!Number.isFinite(amount)) return ENV_CONFIG.moneyMoniker + '0'
-  const absoluteAmount = Math.abs(amount)
-  if (absoluteAmount < MONEY_PRECISE_DUST) return ENV_CONFIG.moneyMoniker + '0'
+  const whole = getMoneyNumber(Math.abs(amount))
+  if (whole === 0) return ENV_CONFIG.moneyMoniker + '0'
+  return `${amount < 0 ? '-' : ''}${ENV_CONFIG.moneyMoniker}${formatNumber(
+    whole
+  )}`
+}
 
-  const fractionDigits =
-    absoluteAmount >= 0.01
-      ? 2
-      : // Two significant digits: count the decimals they occupy. The value
-        // is ≥ 1e-6, so its string form is never in exponent notation.
-        (String(Number(absoluteAmount.toPrecision(2))).split('.')[1] ?? '')
-          .length
-  const numberText = formatNumber(absoluteAmount, {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  })
-  return `${amount < 0 ? '-' : ''}${ENV_CONFIG.moneyMoniker}${numberText}`
+/**
+ * formatMoneyPrecise, except a real amount that truncates to nothing reads
+ * "<Ṁ1" instead of "Ṁ0". For per-period figures such as hourly funding,
+ * where a small position's true cost rounds away but is not nothing —
+ * "Paying Ṁ0/hr" would be false. Sign-agnostic: pass the magnitude.
+ */
+export function formatMoneyOrLessThanOne(amount: number) {
+  const magnitude = Math.abs(amount)
+  if (
+    Number.isFinite(magnitude) &&
+    magnitude >= MONEY_PRECISE_DUST &&
+    getMoneyNumber(magnitude) === 0
+  ) {
+    return '<' + ENV_CONFIG.moneyMoniker + '1'
+  }
+  return formatMoneyPrecise(magnitude)
 }
 
 // Like formatMoney, but avoids collapsing tiny non-zero spends to "Ṁ0".
