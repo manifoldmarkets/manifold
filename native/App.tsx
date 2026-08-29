@@ -90,7 +90,7 @@ const App = () => {
 
   // This tracks if the webview has loaded its first page
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
-  // Bumped to force a brand-new WebView instance. See resetWebView.
+  // Bumped to force a brand-new WebView instance. See recreateWebView.
   const [webviewKey, setWebviewKey] = useState(0)
   // This tracks if the app has its nativeMessageListener set up
   // NOTE: After the webview is killed on android due to OOM, this will always be false, see: https://github.com/react-native-webview/react-native-webview/issues/2680
@@ -102,9 +102,11 @@ const App = () => {
     destination: string
   } | null>(null)
   const [baseUri, setBaseUri] = useState(BASE_URI)
-  // State of the 'switch server?' prompt: one per app run, and a refusal is
-  // final. See setAppUrl.
+  // State of the 'switch server?' prompt. See setAppUrl.
   const appUrlPrompt = useRef<'idle' | 'open' | 'rejected'>('idle')
+  // Set when the prompt goes away without the admin choosing anything, so a
+  // page in a tight loop can't immediately put it back.
+  const appUrlPromptCooldownUntil = useRef(0)
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -209,17 +211,10 @@ const App = () => {
     pendingAuthPosts.current.forEach((timer) => clearTimeout(timer))
     pendingAuthPosts.current = []
   }
-  // Whether a wanted handoff post was dropped because the WebView was on an
-  // untrusted URL at fire time — the whole retry ladder can fire while a
-  // third-party page (iDenfy, Stripe) is up. This flag lets the next committed
-  // Manifold page re-arm the handoff (see onNavigate) instead of silently
-  // stranding the web client logged out.
-  const authPostDropped = useRef(false)
 
   // Sends the saved user to the web client to make the log in process faster
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
     cancelPendingAuthPosts()
-    authPostDropped.current = false
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
     const timeouts = [100, 500, 1000, 3000]
@@ -227,13 +222,10 @@ const App = () => {
       setTimeout(() => {
         // Stale: native signed out or switched accounts since this was queued.
         if (fbUserRef.current?.uid !== user.uid) return
-        // Never post credentials into a third-party page. Best-effort only —
-        // the enforcing check is inside postAuthToWebview; this one exists so a
-        // skipped post sets authPostDropped and gets re-armed.
-        if (!isManifoldUrl(webviewUrl.current)) {
-          authPostDropped.current = true
-          return
-        }
+        // Cheap first cut so we don't inject into a page we already know isn't
+        // ours. It is NOT the guarantee — postAuthToWebview checks the origin
+        // inside the receiving document, which is the check that can't be raced.
+        if (!isManifoldUrl(webviewUrl.current)) return
         postAuthToWebview(user)
       }, timeout)
     )
@@ -659,21 +651,38 @@ const App = () => {
         return
       }
       // Alert.alert is not single-flight: React Native dismisses the visible
-      // dialog to show the next one. Tracking only whether one is OPEN is not
-      // enough either — a page in a setInterval would just reopen it the instant
-      // it was cancelled, which is a modal DoS the admin cannot tap their way
-      // out of. So a refusal latches: 'rejected' is terminal for the life of the
-      // app process, and restarting the app is the reset, which is the one thing
-      // the WebView cannot do for itself. If neither button ever fires we stay
-      // 'open', which fails closed.
+      // dialog to show the next one, so tracking that one is OPEN is what stops
+      // a page swapping the origin under the admin's finger. That alone still
+      // leaves a modal DoS — a setInterval would put the dialog straight back —
+      // so Cancel latches to 'rejected' for the rest of the app run.
+      //
+      // Only the Cancel BUTTON latches. Android routes every other kind of
+      // dismissal through onDismiss too: an outside tap, hardware back, and
+      // notably any other Alert.alert in the app, because DialogModule dismisses
+      // the existing dialog before showing a new one. Latching on those would
+      // silently kill the admin's own switcher until a force-quit. Those take a
+      // cooldown instead.
+      const now = Date.now()
       if (appUrlPrompt.current !== 'idle') {
         log('Ignoring setAppUrl, switch prompt is', appUrlPrompt.current)
         return
       }
+      if (now < appUrlPromptCooldownUntil.current) {
+        log('Ignoring setAppUrl, prompt is cooling down')
+        return
+      }
       const promptedUid = fbUser.uid
       appUrlPrompt.current = 'open'
+      // The admin said no. Nothing the WebView can do reopens this; signing out
+      // or restarting the app does.
       const rejectPrompt = () => {
         appUrlPrompt.current = 'rejected'
+      }
+      // Went away on its own. Allow another, but not immediately.
+      const dismissPrompt = () => {
+        if (appUrlPrompt.current !== 'open') return
+        appUrlPrompt.current = 'idle'
+        appUrlPromptCooldownUntil.current = Date.now() + 30_000
       }
       // The one check WebView content can neither forge nor race, because it
       // isn't in the WebView: the admin okays the new origin by name.
@@ -707,7 +716,6 @@ const App = () => {
               }
               // Don't let a hand-off queued for the old origin land on the new one.
               cancelPendingAuthPosts()
-              authPostDropped.current = false
               webviewUrl.current = ''
               // The base must be the bare origin: callers concatenate an
               // endpoint onto it, so a path here yields urls like '/foohome'.
@@ -716,7 +724,7 @@ const App = () => {
             },
           },
         ],
-        { cancelable: true, onDismiss: rejectPrompt }
+        { cancelable: true, onDismiss: dismissPrompt }
       )
     } else {
       log('Unhandled message from web type: ', type)
@@ -726,8 +734,10 @@ const App = () => {
 
   const signOutUsers = async (errorMessage: string) => {
     authGeneration.current += 1
+    // A refusal was this user's decision, not a permanent property of the app.
+    appUrlPrompt.current = 'idle'
+    appUrlPromptCooldownUntil.current = 0
     cancelPendingAuthPosts()
-    authPostDropped.current = false
     try {
       await auth.signOut()
     } catch (err) {
@@ -787,8 +797,10 @@ const App = () => {
   // So the check is made inside the target document instead, where it cannot be
   // raced: location.origin is [LegacyUnforgeable], so a hostile page cannot
   // shadow it, and a foreign document just drops the payload. This mirrors what
-  // RNCWebView's postMessage injects — a 'message' MessageEvent dispatched on
-  // document; web listens on both document and window (use-native-messages.ts).
+  // RNCWebView's postMessage injects on ANDROID - a 'message' MessageEvent
+  // dispatched on document. (iOS RNW dispatches on window instead; web registers
+  // a listener on both, see use-native-messages.ts, and the event doesn't bubble,
+  // so dispatching on document reaches exactly one of them on either platform.)
   const postAuthToWebview = (user: FirebaseUser) => {
     const trustedOrigin = originOf(baseUri)
     if (!trustedOrigin) return
@@ -813,21 +825,32 @@ const App = () => {
     )
   }
 
-  const resetWebView = () => {
+  // A load failed - offline, TLS, an unknown scheme from a mailto:/tel: tap.
+  // The WebView object is alive, so reload it. Deliberately NOT a remount: that
+  // would throw away the back stack and the current route for an offline blip,
+  // and repeated errors would churn instances instead of retrying one.
+  const reloadWebView = () => {
     setHasLoadedWebView(false)
     listeningToNative.current = false
+    webviewUrl.current = ''
+    setEndpointWithNativeQuery()
+    log('Reloading webview')
+    webview.current?.reload()
+  }
+
+  // The OS killed the renderer / content process. THIS one cannot be reloaded:
+  // that WebView is a dead object and .reload() on it silently does nothing
+  // (react-native-webview#2680, already noted next to listeningToNative above).
+  // onLoadEnd then never fires again, so hasLoadedWebView stays false and
+  // SplashAuth is stuck on the splash until the app is force-closed. A new key
+  // gives a fresh instance, which loads urlToLoad from scratch - at the cost of
+  // the back stack, which is why only process death gets this treatment.
+  const recreateWebView = () => {
+    setHasLoadedWebView(false)
+    listeningToNative.current = false
+    webviewUrl.current = ''
     setEndpointWithNativeQuery()
     log('Recreating webview')
-    // Remount, don't reload. This runs from onError and - the case that matters -
-    // from onRenderProcessGone / onContentProcessDidTerminate. A WebView whose
-    // renderer process the OS killed is a dead object, and .reload() on it
-    // silently does nothing (react-native-webview#2680, already noted next to
-    // listeningToNative above). onLoadEnd then never fires again, so
-    // hasLoadedWebView stays false and SplashAuth is stuck on the splash until
-    // the app is force-closed. Android reclaims that renderer while we're
-    // backgrounded for the OAuth round-trip, which made every first sign-in on a
-    // low-memory device hang on the crane. A new key gives a fresh instance,
-    // which loads urlToLoad from scratch.
     setWebviewKey((k) => k + 1)
   }
 
@@ -894,7 +917,8 @@ const App = () => {
           display={!!fullyLoaded}
           urlToLoad={urlToLoad}
           webview={webview}
-          resetWebView={resetWebView}
+          reloadWebView={reloadWebView}
+          recreateWebView={recreateWebView}
           setHasLoadedWebView={setHasLoadedWebView}
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
@@ -910,16 +934,16 @@ const App = () => {
               return
             }
             webviewUrl.current = url ?? ''
-            // A slow initial load can outlast the whole retry ladder while
-            // trust is cleared; if that dropped a wanted post, re-arm the
-            // handoff now that one of our pages has committed. The web side
-            // no-ops when the user already matches, so re-sends are idempotent.
-            if (
-              url &&
-              authPostDropped.current &&
-              fbUserRef.current &&
-              isManifoldUrl(url)
-            ) {
+            // Re-hand credentials to every one of our pages that commits, not
+            // just when an earlier post was recorded as dropped. The enforcing
+            // check now lives inside the target document, so a post fired into
+            // a page that hasn't hydrated yet is dropped there and leaves no
+            // trace here — the whole 100/500/1000/3000ms ladder can expire that
+            // way on a cold start or after a remount. The web side no-ops when
+            // the user already matches, so re-sends are idempotent and cheap:
+            // an in-app route change doesn't commit a document, so this is once
+            // per real page load.
+            if (url && fbUserRef.current && isManifoldUrl(url)) {
               sendWebviewAuthInfo(fbUserRef.current)
             }
           }}

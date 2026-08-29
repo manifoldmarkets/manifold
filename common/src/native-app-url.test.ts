@@ -28,6 +28,8 @@ const ACCEPTED = [
   'http://172.16.4.4:3000',
   'http://[::1]:3000/',
   'https://1.2.3.4/',
+  'http://100.64.0.1:3000/',
+  'https://manifold.markets:080/',
 ]
 
 describe('browser-origin invariant', () => {
@@ -44,12 +46,15 @@ describe('browser-origin invariant', () => {
     expect(new URL(href).origin).toBe(parsed!.origin)
   })
 
-  it.each(ACCEPTED)('%s produces a switchable base a browser agrees with', (raw) => {
-    const parsed = parseSwitchableAppUrl(raw)
-    if (!parsed) return // http on a public host is rejected by design
-    expect(new URL(parsed.base).origin).toBe(parsed.origin)
-    expect(new URL(parsed.href).origin).toBe(parsed.origin)
-  })
+  it.each(ACCEPTED)(
+    '%s produces a switchable base a browser agrees with',
+    (raw) => {
+      const parsed = parseSwitchableAppUrl(raw)
+      if (!parsed) return // http on a public host is rejected by design
+      expect(new URL(parsed.base).origin).toBe(parsed.origin)
+      expect(new URL(parsed.href).origin).toBe(parsed.origin)
+    }
+  )
 })
 
 describe('parseHttpOrigin', () => {
@@ -137,8 +142,26 @@ describe('parseHttpOrigin', () => {
       ['https://010.000.000.001/', 'https://8.0.0.1'],
       ['https://2130706433/', 'https://127.0.0.1'],
       ['https://0x7f.0.0.1/', 'https://127.0.0.1'],
+      // The spec's "ends in a number" test also covers a 0x-prefixed last
+      // label, which an all-digits check misses.
+      ['https://0x7f/', 'https://0.0.0.127'],
+      ['https://1.0x1/', 'https://1.0.0.1'],
+      ['https://0x/', 'https://0.0.0.0'],
     ]) {
       expect(new URL(raw).origin).toBe(browserOrigin)
+      expect(originOf(raw)).toBeNull()
+    }
+  })
+
+  it('rejects hosts a browser refuses outright', () => {
+    // 'ends in a number' with a non-numeric earlier label is a parse failure,
+    // not a domain.
+    for (const raw of [
+      'https://a.0x1/',
+      'https://a.1/',
+      'https://1.2.3.4.5/',
+    ]) {
+      expect(() => new URL(raw)).toThrow()
       expect(originOf(raw)).toBeNull()
     }
   })
@@ -201,7 +224,10 @@ describe('isSameOrigin', () => {
       )
     ).toBe(false)
     expect(
-      isSameOrigin('https://manifold.markets:8443/', 'https://manifold.markets/')
+      isSameOrigin(
+        'https://manifold.markets:8443/',
+        'https://manifold.markets/'
+      )
     ).toBe(false)
   })
 
@@ -225,6 +251,9 @@ describe('isLocalHostname', () => {
       '192.168.1.229',
       '172.16.0.1',
       '172.31.255.255',
+      // RFC 6598 / Tailscale
+      '100.64.0.1',
+      '100.127.255.255',
     ])
       expect(isLocalHostname(host)).toBe(true)
   })
@@ -250,6 +279,8 @@ describe('isLocalHostname', () => {
       '172.32.0.1',
       '192.169.0.1',
       '9.255.255.255',
+      '100.63.255.255',
+      '100.128.0.1',
       '10.0.0',
       '10.0.0.0.1',
       '10.0.0.256',

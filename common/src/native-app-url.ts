@@ -26,6 +26,11 @@
 // rejects the input rather than store an origin no document will ever report.
 // native-app-url.test.ts asserts that invariant for every accepted case, using
 // Node's WHATWG URL as the browser oracle.
+//
+// Known gap, low impact: an 'xn--' label that isn't decodable punycode
+// ('https://xn--abc/') is accepted here while a browser throws. That fails
+// loudly at navigation rather than silently stranding auth, and validating it
+// would mean carrying a punycode decoder.
 
 const DEFAULT_PORTS: Record<string, string> = { 'http:': '80', 'https:': '443' }
 
@@ -62,15 +67,20 @@ const ipv4Octets = (hostname: string): number[] | null => {
   return octets
 }
 
-// Per the URL spec a domain whose last label is all digits must parse as an IPv4
-// address, so anything that looks numeric has to already BE the canonical dotted
-// quad. This rejects '127.1' (browser: 127.0.0.1), '2130706433' (127.0.0.1),
-// '0x7f.0.0.1' (127.0.0.1) and '010.000.000.001' (8.0.0.1).
-const looksNumeric = (hostname: string) => /(?:^|\.)[0-9]+$/.test(hostname)
+// Per the URL spec a domain "ends in a number" - and so must parse as IPv4 - when
+// its last label is all digits OR starts with '0x'. Anything matching therefore
+// has to already BE the canonical dotted quad. This rejects '127.1' (browser:
+// 127.0.0.1), '2130706433' (127.0.0.1), '010.000.000.001' (8.0.0.1, octal),
+// '0x7f' (0.0.0.127), '1.0x1' (1.0.0.1), '0x' (0.0.0.0) and 'a.0x1' (a browser
+// throws). The hostname is already lowercased, so '0X' is covered.
+const looksNumeric = (hostname: string) =>
+  /(?:^|\.)(?:[0-9]+|0x[0-9a-f]*)$/.test(hostname)
 
 const parsePort = (raw: string, protocol: string): string | null => {
   if (raw === '') return ''
-  // No leading zeros, no '+', no whitespace — Number() is far too forgiving.
+  // Digits only — no '+', no whitespace, no hex; Number() is far too forgiving.
+  // Leading zeros are fine because the value is re-serialized below, exactly as
+  // a browser does ('https://x:080' -> origin 'https://x:80').
   if (!/^[0-9]{1,5}$/.test(raw)) return null
   const port = Number(raw)
   if (port < 1 || port > 65535) return null
@@ -166,9 +176,13 @@ export const isSameOrigin = (a: unknown, b: unknown): boolean => {
 }
 
 /**
- * Loopback or RFC1918 only — the sole hosts allowed to hold credentials over
- * plain http. Requires a COMPLETE numeric IPv4 address: a prefix test alone
+ * Loopback, RFC1918 or CGNAT only — the sole hosts allowed to hold credentials
+ * over plain http. Requires a COMPLETE numeric IPv4 address: a prefix test alone
  * would accept public names like '10.attacker.example'.
+ *
+ * Deliberately NOT accepted, so a dev hitting one of these knows it is a policy
+ * choice and not a bug: mDNS '.local' names (they resolve off-link in ways this
+ * cannot see), and IPv6 other than [::1]. Use https, or tunnel to localhost.
  */
 export const isLocalHostname = (hostname: string): boolean => {
   if (hostname === 'localhost' || hostname === '[::1]') return true
@@ -179,6 +193,9 @@ export const isLocalHostname = (hostname: string): boolean => {
   if (a === 10) return true
   if (a === 192 && b === 168) return true
   if (a === 172 && b >= 16 && b <= 31) return true
+  // 100.64.0.0/10, RFC 6598 shared address space — what Tailscale hands out,
+  // and a common way to reach a dev server from a test device.
+  if (a === 100 && b >= 64 && b <= 127) return true
   return false
 }
 
