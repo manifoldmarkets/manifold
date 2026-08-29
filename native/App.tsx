@@ -219,12 +219,14 @@ const App = () => {
       setTimeout(() => {
         // Stale: native signed out or switched accounts since this was queued.
         if (fbUserRef.current?.uid !== user.uid) return
-        // Never post credentials into a third-party page.
+        // Never post credentials into a third-party page. Best-effort only —
+        // the enforcing check is inside postAuthToWebview; this one exists so a
+        // skipped post sets authPostDropped and gets re-armed.
         if (!isManifoldUrl(webviewUrl.current)) {
           authPostDropped.current = true
           return
         }
-        communicateWithWebview('nativeFbUser', user)
+        postAuthToWebview(user)
       }, timeout)
     )
   }
@@ -664,6 +666,57 @@ const App = () => {
         type,
         data,
       } as nativeToWebMessage)
+    )
+  }
+
+  // Escapes a string for embedding in injected JS. JSON.stringify covers quotes
+  // and backslashes but emits raw U+2028/U+2029, which are legal in JSON yet were
+  // illegal in JS string literals before ES2019 — a display name containing one
+  // would otherwise be a syntax error that silently kills the whole injection.
+  const jsString = (value: string) =>
+    JSON.stringify(value)
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029')
+
+  // The credential hand-off — the ONE message that must never reach a document
+  // that isn't ours — so it does not go through communicateWithWebview's plain
+  // postMessage.
+  //
+  // Checking a React-side URL ref cannot enforce that, because no navigation
+  // event we receive is reliably pre-navigation. On Android react-native-webview
+  // dispatches topLoadingStart from doUpdateVisitedHistory, which Chromium calls
+  // only AFTER the navigation commits, so between a foreign page committing and
+  // that event reaching JS the ref still holds the old Manifold url.
+  // onShouldStartLoadWithRequest is genuinely pre-navigation but unusable here:
+  // RNCWebViewClient forwards the WebResourceRequest overload without
+  // isForMainFrame, so every third-party IFRAME on one of our own pages would
+  // look like a foreign navigation and strand the hand-off — the exact bug class
+  // above.
+  //
+  // So the check is made inside the target document instead, where it cannot be
+  // raced: location.origin is [LegacyUnforgeable], so a hostile page cannot
+  // shadow it, and a foreign document just drops the payload. This mirrors what
+  // RNCWebView's postMessage injects — a 'message' MessageEvent dispatched on
+  // document; web listens on both document and window (use-native-messages.ts).
+  const postAuthToWebview = (user: FirebaseUser) => {
+    const message = JSON.stringify({
+      type: 'nativeFbUser',
+      data: user,
+    } as nativeToWebMessage)
+    webview.current?.injectJavaScript(
+      `(function () {
+        if (window.location.origin !== ${jsString(new URL(baseUri).origin)}) return;
+        var data = { data: ${jsString(message)} };
+        var event;
+        try {
+          event = new MessageEvent('message', data);
+        } catch (e) {
+          event = document.createEvent('MessageEvent');
+          event.initMessageEvent('message', true, true, data.data, data.origin, data.lastEventId, data.source);
+        }
+        document.dispatchEvent(event);
+      })();
+      true;`
     )
   }
 
