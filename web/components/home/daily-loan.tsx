@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { hasFullBonusAccess, User } from 'common/user'
+import { User } from 'common/user'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -18,7 +18,6 @@ import { api } from 'web/lib/api/api'
 import { formatMoney } from 'common/util/format'
 import toast from 'react-hot-toast'
 import { DailyFreeLoanModal } from './daily-free-loan-modal'
-import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -33,12 +32,8 @@ export function DailyLoan(props: {
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [showFreeLoanModal, setShowFreeLoanModal] = useState(false)
-  const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [isClaiming, setIsClaiming] = useState(false)
   const [justClaimed, setJustClaimed] = useState(false)
-
-  // Daily free loans are a full-bonus perk.
-  const userCanReceiveBonuses = hasFullBonusAccess(user)
 
   // Get free loan availability
   const {
@@ -87,12 +82,6 @@ export function DailyLoan(props: {
   }, [canClaimFreeLoan, isClaiming, refreshFreeLoan, refreshPortfolio])
 
   const handleChestClick = useCallback(() => {
-    // Check if user needs verification first
-    if (!userCanReceiveBonuses) {
-      setShowVerificationModal(true)
-      return
-    }
-
     if (canClaimFreeLoan && !isClaiming) {
       // Golden chest - auto claim
       handleClaimFreeLoan()
@@ -100,7 +89,7 @@ export function DailyLoan(props: {
       // Brown chest - open daily free loan modal
       setShowFreeLoanModal(true)
     }
-  }, [canClaimFreeLoan, isClaiming, handleClaimFreeLoan, userCanReceiveBonuses])
+  }, [canClaimFreeLoan, isClaiming, handleClaimFreeLoan])
 
   const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
   if (createdRecently) {
@@ -185,14 +174,6 @@ export function DailyLoan(props: {
             isOpen={showFreeLoanModal}
             setOpen={setShowFreeLoanModal}
             user={user}
-          />
-        )}
-        {showVerificationModal && (
-          <VerificationRequiredModal
-            open={showVerificationModal}
-            setOpen={setShowVerificationModal}
-            user={user}
-            action="claim free loan"
           />
         )}
       </>
