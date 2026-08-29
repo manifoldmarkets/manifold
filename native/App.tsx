@@ -940,9 +940,18 @@ const App = () => {
             // a page that hasn't hydrated yet is dropped there and leaves no
             // trace here — the whole 100/500/1000/3000ms ladder can expire that
             // way on a cold start or after a remount. The web side no-ops when
-            // the user already matches, so re-sends are idempotent and cheap:
-            // an in-app route change doesn't commit a document, so this is once
-            // per real page load.
+            // the user already matches, so re-sends are idempotent.
+            //
+            // How often this fires differs by platform, and it is worth knowing
+            // on a path that ships a token. On Android it is once per real page
+            // load. On iOS it is once per CLIENT-SIDE route change too: RNW
+            // installs a history shim at document start that posts every
+            // pushState / replaceState / popstate, and RNCWebViewImpl routes
+            // that straight to onLoadingFinish, i.e. to this handler. So every
+            // in-app tap re-runs the ladder there. Harmless — only one ladder is
+            // ever live, since sendWebviewAuthInfo cancels the previous — but if
+            // the chatter ever matters, the 'users' echo is the ack needed to
+            // cancel the remaining rungs early.
             if (url && fbUserRef.current && isManifoldUrl(url)) {
               sendWebviewAuthInfo(fbUserRef.current)
             }
