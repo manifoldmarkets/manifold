@@ -94,20 +94,11 @@ const PROPRIETARY_PHRASES = [
 const describesOpenness = (description: string | null) => {
   if (!description) return null
   const haystack = description.toLowerCase()
-  if (PROPRIETARY_PHRASES.some((phrase) => haystack.includes(phrase))) return null
+  if (PROPRIETARY_PHRASES.some((phrase) => haystack.includes(phrase)))
+    return null
   return OPENNESS_PHRASES.find((phrase) => haystack.includes(phrase)) ?? null
 }
 
-/**
- * Did this verification fail because the repo is genuinely not public, or
- * because we could not reach HuggingFace?
- *
- * The distinction is the difference between a finding and noise. A network
- * blip, a 5xx, or a rate-limit answer produces `confirmed: false` exactly like
- * a withdrawn repo does — and reporting those as "no longer verifies" would
- * put every open model in the warn on a bad night, which is how an alert stops
- * being read. Only reasons that assert something about the repo count as rot.
- */
 /**
  * Verify without letting one bad response end the night.
  *
@@ -194,11 +185,17 @@ export const runClassificationAudit = async () => {
     // HINTS: OpenRouter declares a repo for something we call closed. Only a
     // finding if the repo actually carries public weights — a declared but
     // empty or withdrawn repo agrees with us, it does not contradict us.
+    // Whether the DECLARED-REPO check could be run. The prose check below is
+    // independent of HuggingFace — it reads a description already fetched from
+    // OpenRouter — so an HF outage must not skip it. Returning early here meant
+    // a bad HF night suppressed the one signal still available and reported
+    // "no disagreements".
+    let repoCheckRan = true
     if (entry.huggingFaceId) {
       const result = await safeVerify(entry.huggingFaceId)
       if (!result.confirmed && isTransportFailure(result.reason)) {
         closedUnreachable++
-        continue
+        repoCheckRan = false
       }
       if (result.confirmed) {
         contradicted.push(
@@ -206,12 +203,16 @@ export const runClassificationAudit = async () => {
             `${entry.huggingFaceId} (${result.evidence.weightFileCount} weight files, ` +
             `gated=${result.evidence.gated})`
         )
+        closedVerified++
         continue
       }
     }
 
     // PROSE: no usable declared repo, but the blurb claims openness.
-    closedVerified++
+    // Counted once, after both checks, and only when the repo check actually
+    // ran — so verified + notInCatalog + unreachable + contradicted reconciles
+    // against closedChecked instead of silently under-counting.
+    if (repoCheckRan) closedVerified++
     const phrase = describesOpenness(entry.description)
     if (phrase)
       contradicted.push(

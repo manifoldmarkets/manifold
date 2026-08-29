@@ -1,4 +1,7 @@
-import { OPEN_WEIGHT_MODELS } from 'common/perps/open-weight-models'
+import {
+  OPEN_WEIGHT_MODELS,
+  isCompositeSlug,
+} from 'common/perps/open-weight-models'
 import {
   logHuggingFaceVerification,
   verifyHuggingFaceWeights,
@@ -77,8 +80,16 @@ const updateModelClassificationsInternal = async () => {
   )
   const settled = new Set(adjudicated.map((r) => r.permaslug))
 
+  // Composites are filtered HERE, at candidate creation, not only where rows
+  // are written. Everything downstream — the pending insert, the research
+  // shortlist, the summary counts — is derived from this list, so filtering
+  // later left routers and aliases eligible for a paid research call and an
+  // automatic verdict that the index would then ignore.
   const unknown = catalog.filter(
-    (m) => !OPEN_WEIGHT_MODELS[m.permaslug] && !settled.has(m.permaslug)
+    (m) =>
+      !OPEN_WEIGHT_MODELS[m.permaslug] &&
+      !settled.has(m.permaslug) &&
+      !isCompositeSlug(m.permaslug)
   )
   if (unknown.length === 0) {
     log('[model-classifier] catalog fully classified')
@@ -140,7 +151,9 @@ const updateModelClassificationsInternal = async () => {
       `${confirmed} auto-classified open from a declared repo, ` +
       `${researched.recommended} agent recommendations for review, ` +
       `${researched.unresolved} unresolved; ${rankedPending.length} ranked ` +
-      `awaiting review, ${pending.length - rankedPending.length} unranked backlog`
+      `awaiting review, ${
+        pending.length - rankedPending.length
+      } unranked backlog`
   )
 
   // Warn rather than error: a pending model is not yet a problem — the index

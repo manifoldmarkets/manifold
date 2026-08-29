@@ -54,6 +54,13 @@ export const verifyHuggingFaceWeights = async (
 ): Promise<HuggingFaceVerification> => {
   if (!repo || !repo.includes('/'))
     return { confirmed: false, repo: repo || null, reason: 'no repo id' }
+  // Before any URL is built. See isValidRepoId.
+  if (!isValidRepoId(repo))
+    return {
+      confirmed: false,
+      repo,
+      reason: `malformed repo id: ${JSON.stringify(repo)}`,
+    }
 
   let res: Response
   try {
@@ -81,8 +88,7 @@ export const verifyHuggingFaceWeights = async (
     gated?: string | boolean | null
     siblings?: { rfilename?: string }[]
   }
-  if (body.private)
-    return { confirmed: false, repo, reason: 'repo is private' }
+  if (body.private) return { confirmed: false, repo, reason: 'repo is private' }
 
   if (!isPubliclyGettable(body.gated, repo))
     return {
@@ -179,14 +185,8 @@ const isPubliclyGettable = (
  * it existed to prevent, and invisible in review because the byte does not
  * render. Nothing here can fail that way.
  */
-export const TRANSPORT_FAILURE_STATUSES = new Set([
-  '408',
-  '429',
-  '500',
-  '502',
-  '503',
-  '504',
-])
+/** Non-5xx statuses that still mean "could not reach it", not "not public". */
+export const TRANSPORT_FAILURE_STATUSES = new Set(['408', '429'])
 
 const NOT_PUBLIC_PREFIX = 'not public: '
 
@@ -194,13 +194,44 @@ export const isTransportFailure = (reason: string) => {
   if (reason.startsWith('fetch failed')) return true
   if (!reason.startsWith(NOT_PUBLIC_PREFIX)) return false
   const status = reason.slice(NOT_PUBLIC_PREFIX.length).trim().split(' ')[0]
-  return TRANSPORT_FAILURE_STATUSES.has(status)
+  if (TRANSPORT_FAILURE_STATUSES.has(status)) return true
+  // The whole 5xx range, not an allowlist. Cloudflare alone serves 520/522/524
+  // in front of HuggingFace and 501/599 exist too; every one of them means the
+  // request failed rather than that the repo is gone, and an allowlist that
+  // misses one turns an outage into an ERROR alert claiming weights were
+  // withdrawn.
+  const code = Number(status)
+  return Number.isInteger(code) && code >= 500 && code <= 599
 }
 
-/** Repo ids are `org/name`; the slash is structural and must not be escaped. */
+/**
+ * A repo id is exactly `owner/name`, and it is validated before it is used to
+ * build a URL.
+ *
+ * `encodeURIComponent` does not escape dots, so a proposed id containing a
+ * traversal segment survived encoding intact and the fetch then normalised it
+ * away: `openai/../attacker/gpt-oss-120b` requests
+ * `api/models/attacker/gpt-oss-120b` -- verified live against HuggingFace,
+ * which answers 200 for it -- while every guard upstream only ever looks at
+ * `split('/')[0]` and sees `openai`. The attacker's repo is what gets checked;
+ * the publisher's id is what gets stored. On the auto-apply path that writes
+ * `open: true` with nobody looking.
+ *
+ * So the shape is enforced rather than escaped: two non-empty segments of
+ * HuggingFace-legal characters, and neither segment may be `.` or `..`.
+ */
+const REPO_ID_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
+
+export const isValidRepoId = (repo: string): boolean => {
+  const parts = repo.split('/')
+  if (parts.length !== 2) return false
+  return parts.every(
+    (part) => part !== '.' && part !== '..' && REPO_ID_SEGMENT.test(part)
+  )
+}
+
 const encodeRepo = (repo: string) =>
   repo.split('/').map(encodeURIComponent).join('/')
-
 export type HuggingFaceRepoSummary = {
   id: string
   downloads?: number
