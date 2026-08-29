@@ -15,6 +15,7 @@ import {
   tradingAllowed,
   type Contract,
   type ContractParams,
+  type PerpContract,
 } from 'common/contract'
 import { shouldHideGraph } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
@@ -368,7 +369,13 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
-                    prefix={isPerp ? <PerpMarketExplainer /> : undefined}
+                    prefix={
+                      isPerp ? (
+                        <PerpMarketExplainer
+                          contract={liveContract as PerpContract}
+                        />
+                      ) : undefined
+                    }
                   />
                 </div>
               </Col>

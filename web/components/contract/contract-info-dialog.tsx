@@ -23,10 +23,16 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import {
+  formatFeePct,
+  formatFeePctApprox,
+  formatPrice,
+  inferPriceDecimals,
+  perpFeeScheduleSummary,
+} from 'common/perps/format'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
-import { formatWithCommas } from 'common/util/format'
+import { formatNumber, formatWithCommas } from 'common/util/format'
 import { YEAR_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
@@ -592,10 +598,40 @@ export const Stats = (props: {
   )
 }
 
+// formatWithCommas floors, and both of these settings are validated as plain
+// numbers (maxLeverage is z.number().gt(1).lte(100), takerFeeImpact
+// z.number().min(0).max(100) — neither is .int(), and the leverage input ships
+// step={0.5}). Flooring turned a 2.5x cap into "2x" and an active 0.5 impact
+// into "0", i.e. "size does not matter" on a market where it does.
+const formatLeverage = (value: number) =>
+  formatNumber(value, { maximumFractionDigits: 2 })
+const formatImpact = (value: number) =>
+  formatNumber(value, { maximumFractionDigits: 2 })
+
 function PerpStatsRows(props: { contract: PerpContract }) {
   const { contract } = props
   const isAdmin = useAdmin()
   const canEdit = isAdmin && !contract.isResolved
+  // Fee settings are admin-edited but reader-visible: every row below renders
+  // read-only for non-admins, and the size-impact coefficient is translated
+  // into what a pool-sized entry actually pays so the number means something.
+  // Derived by the same shared helper the perp explainer uses, so the two
+  // surfaces cannot quote this market two different ways.
+  const fees = perpFeeScheduleSummary(contract)
+  const takerFeeBps = fees.baseBps
+  const takerFeeImpact = fees.impact
+  const apiPoolSizedFee = formatFeePct(fees.apiPoolSizedBps)
+  const apiFourTimesPoolFee = formatFeePct(fees.apiFourTimesPoolBps)
+  // Approx forms wherever the copy hedges: formatFeePct returns "<0.01%"
+  // below display precision, and "about <0.01%" / "~<0.01%" doubles it.
+  const poolSizedApprox = formatFeePctApprox(fees.poolSizedBps)
+  const fourTimesPoolApprox = formatFeePctApprox(fees.fourTimesPoolBps)
+  const apiPoolSizedApprox = formatFeePctApprox(fees.apiPoolSizedBps)
+  // The size term stacks on whichever base the CHANNEL selected, so the web
+  // figures understate an API-key open whenever the API rate is higher.
+  const apiSizeNote = fees.apiSizeExamplesDiffer
+    ? ` Through the API those are ${apiPoolSizedFee} and ${apiFourTimesPoolFee}.`
+    : ''
   const price =
     contract.resolution === 'MKT'
       ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
@@ -644,7 +680,7 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           {canEdit ? (
             <MaxLeverageInput contract={contract} />
           ) : Number.isFinite(contract.maxLeverage) ? (
-            `${formatWithCommas(contract.maxLeverage)}×`
+            `${formatLeverage(contract.maxLeverage)}×`
           ) : (
             '—'
           )}
@@ -669,14 +705,14 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           Taker fee{' '}
-          <InfoTooltip text="Fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping." />
+          <InfoTooltip text="Charged on a position's notional (margin × leverage) when it is opened or added to; closing is free, so this is the whole round-trip cost. Paid into this market's backing pool, not to Manifold. Exists to price out oracle-tick sniping." />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeBpsInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}% to open
+              {formatFeePct(takerFeeBps)} to open
             </span>
           )}
         </td>
@@ -684,15 +720,14 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           API taker fee{' '}
-          <InfoTooltip text="Opens authenticated with an API key pay the higher of this and the web taker fee. Prices bot flow without taxing the web majority. Closing is free on both channels." />
+          <InfoTooltip text="Rate for opens authenticated with an API key — the server selects it from the credential, not from whether the caller looks like a bot, so session-authenticated automation still pays the web rate. API opens pay the higher of this and the web taker fee, and the size term (if any) stacks on top of it. Closing is free on both channels." />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeApiBpsInput contract={contract} />
           ) : (
             <span className="tabular-nums">
-              {(getPerpEffectiveTakerFeeBps(contract, true) / 100).toFixed(2)}%
-              to open
+              {formatFeePct(fees.apiBps)} to open
             </span>
           )}
         </td>
@@ -700,14 +735,32 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
         <td>
           Fee size impact{' '}
-          <InfoTooltip text="Size coefficient of the taker fee: the marginal rate at pool-share s is base + impact·s² bps, so a fresh position that is share S of the pool pays base + (impact/3)·S² bps on average. 0 = flat base fee only. Small trades pay ~base regardless of the impact." />
+          <InfoTooltip
+            text={
+              takerFeeImpact > 0
+                ? `Positions that are large relative to this market's backing pool pay a higher opening fee, like price impact on an exchange. Small positions pay just the base taker fee; a position the size of the whole pool pays ${poolSizedApprox}, and one four times the pool ${fourTimesPoolApprox}.${apiSizeNote} The exact fee is quoted before you confirm. (Marginal rate at pool-share s is base + impact·s² bps; a fresh position of share S averages base + impact/3·S².)`
+                : 'Size coefficient of the taker fee. At 0 the fee is flat: every position pays the base taker fee regardless of how large it is relative to the backing pool. When set above 0, positions large relative to the pool pay more (marginal rate at pool-share s is base + impact·s² bps).'
+            }
+          />
         </td>
         <td>
           {canEdit ? (
             <TakerFeeImpactInput contract={contract} />
           ) : (
-            <span className="tabular-nums">
-              {formatWithCommas(getPerpTakerFeeImpact(contract))}
+            // The Table is `table-fixed ... sm:whitespace-nowrap`, so this
+            // cell must opt back into wrapping (`!` beats the sm: variant) or
+            // the two-channel hint runs outside the modal.
+            <span className="!whitespace-normal tabular-nums">
+              {formatImpact(takerFeeImpact)}
+              <span className="text-ink-500 text-xs">
+                {' '}
+                ·{' '}
+                {takerFeeImpact > 0
+                  ? fees.apiPoolSizedDiffers
+                    ? `pool-sized: ${poolSizedApprox} web / ${apiPoolSizedApprox} API`
+                    : `pool-sized entry pays ${poolSizedApprox}`
+                  : 'flat fee, size does not matter'}
+              </span>
             </span>
           )}
         </td>
@@ -883,7 +936,7 @@ function MaxLeverageInput(props: { contract: PerpContract }) {
   return (
     <Row className="items-center gap-2">
       <span className="tabular-nums">
-        {Number.isFinite(current) ? `${formatWithCommas(current)}×` : '—'}
+        {Number.isFinite(current) ? `${formatLeverage(current)}×` : '—'}
       </span>
       <input
         type="number"
@@ -937,9 +990,9 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
       setJustSaved(res.takerFeeBps)
       setInput('')
       toast.success(
-        `Taker fee is now ${res.takerFeeBps} bps (${(
-          res.takerFeeBps / 100
-        ).toFixed(2)}%) to open`
+        `Taker fee is now ${res.takerFeeBps} bps (${formatFeePct(
+          res.takerFeeBps
+        )}) to open`
       )
     } catch (err) {
       toast.error(
@@ -953,7 +1006,7 @@ function TakerFeeBpsInput(props: { contract: PerpContract }) {
   return (
     <Row className="flex-wrap items-center gap-1.5">
       <span className="tabular-nums">
-        {current} bps ({(current / 100).toFixed(2)}%)
+        {current} bps ({formatFeePct(current)})
       </span>
       <input
         type="number"
@@ -1016,9 +1069,9 @@ function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
       setInput('')
       toast.success(
         res.effectiveTakerFeeApiBps === parsed
-          ? `API taker fee is now ${parsed} bps (${(parsed / 100).toFixed(
-              2
-            )}%) to open`
+          ? `API taker fee is now ${parsed} bps (${formatFeePct(
+              parsed
+            )}) to open`
           : `Set to ${parsed} bps, but the ${base} bps web base is higher — API opens still pay ${res.effectiveTakerFeeApiBps} bps`
       )
     } catch (err) {
@@ -1033,7 +1086,7 @@ function TakerFeeApiBpsInput(props: { contract: PerpContract }) {
   return (
     <Row className="flex-wrap items-center gap-1.5">
       <span className="tabular-nums">
-        {current} bps ({(current / 100).toFixed(2)}%)
+        {current} bps ({formatFeePct(current)})
       </span>
       {contract.takerFeeApiBps === undefined && (
         <span className="text-ink-500 text-xs">(unset — pays web base)</span>
@@ -1110,14 +1163,28 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
       setInput('')
       // The response's base, not the possibly-stale prop's — the base may
       // have just been edited in the sibling input.
-      const poolSizedPct = (res.takerFeeBps + res.takerFeeImpact / 3) / 100
+      // Read the shared summary rather than restating base + impact/3 here:
+      // duplicated market math is exactly how the two reader surfaces drifted.
+      const saved = perpFeeScheduleSummary({
+        takerFeeBps: res.takerFeeBps,
+        // Without this the summary reads apiBps = base and the toast quotes
+        // the WEB figure as if it applied to everyone — at base 10 / API 30 /
+        // impact 10 it said 0.13% when an API open pays 0.33%.
+        takerFeeApiBps: res.takerFeeApiBps ?? undefined,
+        takerFeeImpact: res.takerFeeImpact,
+      })
+      // Gated on the pool-sized pair specifically: that is the only pair this
+      // sentence shows.
+      const apiPart = saved.apiPoolSizedDiffers
+        ? ` on the web, ${formatFeePct(saved.apiPoolSizedBps)} via API`
+        : ''
       toast.success(
         res.takerFeeImpact > 0
           ? `Fee size impact is now ${
               res.takerFeeImpact
-            } — a pool-sized position pays ${poolSizedPct.toFixed(
-              2
-            )}% effective`
+            } — a pool-sized position pays ${formatFeePct(
+              saved.poolSizedBps
+            )} effective${apiPart}`
           : 'Fee size impact is off — the taker fee is flat at the base'
       )
     } catch (err) {
@@ -1131,7 +1198,7 @@ function TakerFeeImpactInput(props: { contract: PerpContract }) {
 
   return (
     <Row className="flex-wrap items-center gap-1.5">
-      <span className="tabular-nums">{formatWithCommas(current)}</span>
+      <span className="tabular-nums">{formatImpact(current)}</span>
       <input
         type="number"
         min={0}

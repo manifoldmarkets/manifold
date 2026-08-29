@@ -268,6 +268,32 @@ export const perpSizeFeeDetails = (args: {
 }
 
 /**
+ * Effective open-side rate, in bps of notional, for a FRESH position whose
+ * notional is `poolShare` × the external pool depth: base + (impact/3)·S².
+ * Display helper for turning the bare `takerFeeImpact` coefficient into a
+ * number a trader can read ("a pool-sized entry pays ~0.13%"). Delegates to
+ * perpSizeFeeDetails (share space is depth-invariant, so P = 1) rather than
+ * restating the formula, so the explanation can never drift from the fee
+ * actually charged. Total: degenerate inputs read as the base.
+ */
+export const perpFreshPositionFeeBps = (args: {
+  baseBps: number
+  impact: number
+  poolShare: number
+}): number => {
+  const { baseBps, impact, poolShare } = args
+  const base = Number.isFinite(baseBps) && baseBps > 0 ? baseBps : 0
+  if (!Number.isFinite(poolShare) || poolShare <= 0) return base
+  return perpSizeFeeDetails({
+    notionalBefore: 0,
+    notionalAfter: poolShare,
+    poolDepth: 1,
+    baseBps: base,
+    impact,
+  }).effectiveBps
+}
+
+/**
  * The one fee-input assembly for an exposure increase — the engine charges
  * from it and the bet panel previews from it, so the state selection can
  * never drift between them.

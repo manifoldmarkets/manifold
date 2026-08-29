@@ -11,6 +11,7 @@ import {
   perpMaxFeeFor,
   perpOpenFeeQuote,
   perpOwnContributionInputs,
+  perpFreshPositionFeeBps,
   perpSizeFeeDetails,
   PERP_FEE_SLIPPAGE_BPS,
   PERP_MAX_FEE_SHARE_OF_MARGIN,
@@ -1770,5 +1771,46 @@ describe('PERP_MAX_FEE_SHARE_OF_MARGIN', () => {
     // And the pre-fix charge it replaced, which the old bound let through.
     expect(19_488.679541 / margin).toBeLessThan(1)
     expect(19_488.679541 / margin).toBeGreaterThan(PERP_MAX_FEE_SHARE_OF_MARGIN)
+  })
+})
+
+describe('perpFreshPositionFeeBps', () => {
+  it('is base + (impact/3)·S² for a fresh position of pool-share S', () => {
+    expect(
+      perpFreshPositionFeeBps({ baseBps: 10, impact: 10, poolShare: 1 })
+    ).toBeCloseTo(10 + 10 / 3, 10)
+    expect(
+      perpFreshPositionFeeBps({ baseBps: 10, impact: 10, poolShare: 4 })
+    ).toBeCloseTo(10 + (10 / 3) * 16, 10)
+  })
+
+  it('matches the charged effective rate for the same trade at any pool depth', () => {
+    const P = 466_000
+    const S = 1.42
+    const charged = perpSizeFeeDetails({
+      notionalBefore: 0,
+      notionalAfter: S * P,
+      poolDepth: P,
+      baseBps: 10,
+      impact: 90,
+    })
+    expect(
+      perpFreshPositionFeeBps({ baseBps: 10, impact: 90, poolShare: S })
+    ).toBeCloseTo(charged.effectiveBps, 8)
+  })
+
+  it('reads as the base with no impact or a degenerate share', () => {
+    expect(
+      perpFreshPositionFeeBps({ baseBps: 10, impact: 0, poolShare: 3 })
+    ).toBeCloseTo(10, 10)
+    expect(
+      perpFreshPositionFeeBps({ baseBps: 10, impact: 10, poolShare: 0 })
+    ).toBe(10)
+    expect(
+      perpFreshPositionFeeBps({ baseBps: 10, impact: 10, poolShare: NaN })
+    ).toBe(10)
+    expect(
+      perpFreshPositionFeeBps({ baseBps: NaN, impact: 10, poolShare: 1 })
+    ).toBeCloseTo(10 / 3, 10)
   })
 })
