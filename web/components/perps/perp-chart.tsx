@@ -167,10 +167,16 @@ const fetchFrameSeries = (
   const inflight = seriesInflight.get(key)
   if (inflight) return inflight
   const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[frame]
+  // Align `since` to the frame's bucket (a minute for raw frames): a
+  // millisecond bound makes every request a unique URL that the edge cache
+  // can never serve twice, and the series is bucketed at that grain anyway.
+  const step = Math.max((bucketSeconds ?? 0) * 1000, MINUTE_MS)
   const request = api('get-oracle-price-series', {
     feedId,
     limit: 5000,
-    since: windowMs ? Date.now() - windowMs : undefined,
+    since: windowMs
+      ? Math.floor((Date.now() - windowMs) / step) * step
+      : undefined,
     bucketSeconds,
   })
     .then((res) => {
@@ -421,8 +427,9 @@ export const PerpChart = (props: {
   const allPositions = useMemo(() => positions ?? [], [positions])
   // Open notional on each side whose liquidation price is within a small
   // move of the current price — the number behind the liquidation bands.
-  // A big figure here is a fragile side: a move that far force-closes it,
-  // which pushes the price further the same way.
+  // A big figure here is a fragile side: a move that far force-closes it.
+  // (The price is an external oracle — liquidations here do not move it;
+  // what they do is forfeit that side's margin to the backing pool.)
   const liqProximity = useMemo(() => {
     const price = Number(contract.oraclePrice)
     if (!(price > 0)) return null
@@ -1385,7 +1392,8 @@ export const PerpChart = (props: {
             </>
           )}
           <span>
-            A move that far force-closes them, pushing the price further.
+            A move that far force-closes them and forfeits their margin to
+            the pool.
           </span>
         </Row>
       )}
