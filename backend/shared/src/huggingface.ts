@@ -84,7 +84,7 @@ export const verifyHuggingFaceWeights = async (
   if (body.private)
     return { confirmed: false, repo, reason: 'repo is private' }
 
-  if (!isPubliclyGettable(body.gated))
+  if (!isPubliclyGettable(body.gated, repo))
     return {
       confirmed: false,
       repo,
@@ -121,29 +121,81 @@ export const verifyHuggingFaceWeights = async (
  * "waitlist", whatever) fails closed into "unresolved" and waits for a human
  * instead of quietly counting on the open side of an executable index.
  *
- * `"manual"` is on the list, and that reverses an earlier reading of it. The
- * argument for excluding it was that the owner approves each request
- * individually, so the public cannot in fact get the weights. That is not what
- * the value means in practice for the repos this index actually contains:
- * Llama and Gemma report `"manual"`, anyone may accept the licence and
- * download, and the published seed classifies all eleven of them `open:true`
- * — `meta-llama/Llama-3.3-70B-Instruct`, `google/gemma-3-27b-it`, the Llama 4
- * pair, and the rest.
+ * `"manual"` is NOT generally accepted, and the narrowness is the point.
+ * HuggingFace defines it as the author approving each request individually,
+ * which can stay pending or be refused — that is not public access, and
+ * accepting it wholesale would let a future restricted release land on the
+ * open side of an executable index with no human ever looking, because the
+ * catalog watcher persists a publisher-declared verdict automatically.
  *
- * So the two disagreed, and the disagreement had teeth in both directions:
- * the watcher could never auto-confirm a Llama or Gemma release, putting every
- * one of them in the review queue on a 48-hour clock; and the nightly
- * re-verification in `update-classification-audit.ts` reported all eleven
- * seeded entries as "no longer verifies" on its first run, which is exactly
- * the kind of standing false alarm that gets an alert ignored.
+ * The eleven Llama and Gemma repos below are allowlisted individually. They
+ * report `"manual"` while in practice anyone may accept the licence and
+ * download, the weights are in general circulation, and the published seed
+ * classifies every one of them open. Calling them closed would read as
+ * obviously wrong to anyone checking, which is the worst outcome for a
+ * settlement source. Enumerating them keeps that judgement where it can be
+ * audited instead of hiding it inside a predicate.
  *
- * The methodology's test is "can anyone get them", and for click-through and
- * accept-the-licence gating alike the answer is yes. Discretionary gating that
- * genuinely blocks the public would need a value HF does not currently emit,
- * and would land on the reject side by default.
+ * A new manual-gated repo therefore resolves to "unresolved" and goes to the
+ * review queue. If it turns out to be another accept-the-licence line, add
+ * it here deliberately.
  */
-const isPubliclyGettable = (gated: string | boolean | null | undefined) =>
-  gated == null || gated === false || gated === 'auto' || gated === 'manual'
+export const MANUAL_GATING_PUBLIC_REPOS = new Set([
+  'google/gemma-3-12b-it',
+  'google/gemma-3-27b-it',
+  'google/gemma-3-4b-it',
+  'google/gemma-3n-e4b-it',
+  'meta-llama/llama-3.2-1b-instruct',
+  'meta-llama/llama-3.2-3b-instruct',
+  'meta-llama/llama-3.3-70b-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/meta-llama-3.1-70b-instruct',
+  'meta-llama/meta-llama-3.1-8b-instruct',
+])
+
+const isPubliclyGettable = (
+  gated: string | boolean | null | undefined,
+  repo: string
+) =>
+  gated == null ||
+  gated === false ||
+  gated === 'auto' ||
+  (gated === 'manual' && MANUAL_GATING_PUBLIC_REPOS.has(repo.toLowerCase()))
+
+/**
+ * Did a verification fail because the repo is genuinely not public, or
+ * because HuggingFace could not be reached?
+ *
+ * Lives here, beside the code that PRODUCES these reason strings, so the two
+ * cannot drift. A network blip, a 5xx or a rate-limit answer all come back
+ * as `confirmed: false` exactly like a withdrawn repo does, and a caller
+ * auditing existing verdicts must not report the first as the second.
+ *
+ * Parsed by string, not by pattern. An earlier version of this lived in the
+ * audit job as a regex whose word boundary was mangled into a literal 0x08
+ * control character while being edited, so it silently never matched and
+ * every transport blip was reported as repository rot -- the exact failure
+ * it existed to prevent, and invisible in review because the byte does not
+ * render. Nothing here can fail that way.
+ */
+export const TRANSPORT_FAILURE_STATUSES = new Set([
+  '408',
+  '429',
+  '500',
+  '502',
+  '503',
+  '504',
+])
+
+const NOT_PUBLIC_PREFIX = 'not public: '
+
+export const isTransportFailure = (reason: string) => {
+  if (reason.startsWith('fetch failed')) return true
+  if (!reason.startsWith(NOT_PUBLIC_PREFIX)) return false
+  const status = reason.slice(NOT_PUBLIC_PREFIX.length).trim().split(' ')[0]
+  return TRANSPORT_FAILURE_STATUSES.has(status)
+}
 
 /** Repo ids are `org/name`; the slash is structural and must not be escaped. */
 const encodeRepo = (repo: string) =>

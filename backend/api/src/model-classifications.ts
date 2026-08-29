@@ -3,6 +3,7 @@ import {
   OPEN_WEIGHT_MODELS,
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
+  isCompositeSlug,
 } from 'common/perps/open-weight-models'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import {
@@ -66,7 +67,15 @@ export const getModelClassifications: APIHandler<
     // A pending row for a model the seed already classifies is inert — the
     // seed verdict stands — so it must not appear as work to do.
     pending: rows
-      .filter((r) => r.open === null && !OPEN_WEIGHT_MODELS[r.permaslug])
+      // Composite slugs are excluded from the index by construction, so a
+      // verdict on one is ignored whichever way it is answered. Showing them
+      // as work to do would be asking for a click that changes nothing.
+      .filter(
+        (r) =>
+          r.open === null &&
+          !OPEN_WEIGHT_MODELS[r.permaslug] &&
+          !isCompositeSlug(r.permaslug)
+      )
       .map((r) => {
         const firstSeen = new Date(r.first_seen).getTime()
         const firstRankedAt = r.first_ranked_at
@@ -140,6 +149,14 @@ export const setModelClassification: APIHandler<
   // (An earlier comment here said the version is "stamped on every point the
   // oracle writes". It is not: the version reaches the insert LOG line only,
   // and `oracle_prices` has no version column.)
+  if (isCompositeSlug(permaslug))
+    throw new APIError(
+      400,
+      `${permaslug} is a router or floating alias, not a single model. It is ` +
+        `excluded from both sides of the index, so a verdict on it would be ` +
+        `ignored — see isCompositeSlug in common/src/perps/open-weight-models.ts.`
+    )
+
   if (OPEN_WEIGHT_MODELS[permaslug])
     throw new APIError(
       400,

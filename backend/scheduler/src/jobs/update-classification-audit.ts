@@ -3,7 +3,10 @@ import {
   OPEN_WEIGHT_MODELS,
   basePermaslug,
 } from 'common/perps/open-weight-models'
-import { verifyHuggingFaceWeights } from 'shared/huggingface'
+import {
+  isTransportFailure,
+  verifyHuggingFaceWeights,
+} from 'shared/huggingface'
 import { fetchOpenRouterCatalog } from 'shared/openrouter-tokens'
 import { resolveModelClassifications } from 'shared/perps/model-classifications'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -105,10 +108,6 @@ const describesOpenness = (description: string | null) => {
  * put every open model in the warn on a bad night, which is how an alert stops
  * being read. Only reasons that assert something about the repo count as rot.
  */
-const isTransportFailure = (reason: string) =>
-  reason.startsWith('fetch failed') ||
-  /not public: (?:5\d\d|429|408)/.test(reason)
-
 /**
  * Verify without letting one bad response end the night.
  *
@@ -150,6 +149,14 @@ export const runClassificationAudit = async () => {
   let openChecked = 0
   let closedChecked = 0
   let unreachable = 0
+  // Closed verdicts split three ways, because "checked" was previously
+  // incremented before anything was actually checked: a model absent from the
+  // catalog and one whose declared repo could not be fetched both counted as
+  // checked while producing no finding, so the job could print "checked N
+  // closed / no disagreements" having verified none of them.
+  let closedVerified = 0
+  let closedNoCatalogEntry = 0
+  let closedUnreachable = 0
 
   for (const [permaslug, verdict] of Object.entries(classifications)) {
     const seeded = !!OPEN_WEIGHT_MODELS[permaslug]
@@ -177,13 +184,22 @@ export const runClassificationAudit = async () => {
 
     closedChecked++
     const entry = byPermaslug[permaslug]
-    if (!entry) continue
+    if (!entry) {
+      // Not in the catalog at all — retired, or renamed under us. Nothing to
+      // compare against, which is not the same as agreeing with us.
+      closedNoCatalogEntry++
+      continue
+    }
 
     // HINTS: OpenRouter declares a repo for something we call closed. Only a
     // finding if the repo actually carries public weights — a declared but
     // empty or withdrawn repo agrees with us, it does not contradict us.
     if (entry.huggingFaceId) {
       const result = await safeVerify(entry.huggingFaceId)
+      if (!result.confirmed && isTransportFailure(result.reason)) {
+        closedUnreachable++
+        continue
+      }
       if (result.confirmed) {
         contradicted.push(
           `${permaslug} [${origin}] — we say closed, OpenRouter declares ` +
@@ -195,6 +211,7 @@ export const runClassificationAudit = async () => {
     }
 
     // PROSE: no usable declared repo, but the blurb claims openness.
+    closedVerified++
     const phrase = describesOpenness(entry.description)
     if (phrase)
       contradicted.push(
@@ -204,41 +221,57 @@ export const runClassificationAudit = async () => {
   }
 
   log(
-    `[classification-audit] checked ${openChecked} open + ${closedChecked} closed ` +
+    `[classification-audit] ${openChecked} open (${unreachable} unverifiable), ` +
+      `${closedChecked} closed (${closedVerified} verified, ` +
+      `${closedNoCatalogEntry} not in catalog, ${closedUnreachable} unverifiable) ` +
       `(list ${OPEN_WEIGHT_LIST_VERSION})`
   )
 
-  // Warn, not error, and deliberately: neither finding means the index is
-  // wrong right now. A rot finding can be a transient HF outage, and a
-  // contradiction can be OpenRouter's metadata being wrong — it was, for
-  // three models in the 2026-08-24 audit. Both need a human to look, and
-  // paging on something that is often a false positive trains people to
-  // ignore it. What must not happen is nobody being told at all, which is
-  // the state this job replaces.
+  // ERROR, not warn, and that is a deployment fact rather than a severity
+  // judgement: prod monitoring alerts on ERROR and does not look at WARN, so a
+  // finding logged at warn is a finding nobody is ever told about — which
+  // would leave this job detecting a wrong classification nightly and changing
+  // nothing. If that routing changes, this can go back to warn.
+  //
+  // Kept rare enough to deserve it: transport failures are excluded above, so
+  // these are claims about repos rather than about the network, and the first
+  // three prod runs produced none.
+  const indent = (lines: string[]) => '\n  ' + lines.join('\n  ')
   if (rot.length > 0)
-    log.warn(
-      `[classification-audit] ${rot.length} open verdict(s) no longer verify:\n  ` +
-        rot.join('\n  ')
+    log.error(
+      `[classification-audit] ${rot.length} open verdict(s) no longer verify:` +
+        indent(rot)
     )
   if (contradicted.length > 0)
-    log.warn(
-      `[classification-audit] ${contradicted.length} closed verdict(s) contradicted by ` +
-        `OpenRouter metadata — review at /admin/model-classifications:\n  ` +
-        contradicted.join('\n  ')
+    log.error(
+      `[classification-audit] ${contradicted.length} closed verdict(s) contradicted ` +
+        `by OpenRouter metadata — review at /admin/model-classifications:` +
+        indent(contradicted)
     )
-  // Said out loud rather than folded into the findings: a night where most
-  // repos were unreachable is a night that proved nothing, and "no
-  // disagreements" would read as a clean bill of health.
-  if (unreachable > 0)
+
+  // A night where much of the population could not be reached proved little,
+  // and "no disagreements" would read as a clean bill of health. Warn is right
+  // here — it is a caveat on coverage, not a finding.
+  const unverifiable = unreachable + closedUnreachable + closedNoCatalogEntry
+  if (unverifiable > 0)
     log.warn(
-      `[classification-audit] ${unreachable}/${openChecked} open verdict(s) could not be ` +
-        `re-checked (HuggingFace unreachable) — not counted as rot`
+      `[classification-audit] ${unverifiable} verdict(s) could not be re-checked ` +
+        `(${unreachable} open unreachable, ${closedUnreachable} closed unreachable, ` +
+        `${closedNoCatalogEntry} absent from catalog) — not counted as findings`
     )
   if (rot.length === 0 && contradicted.length === 0)
     log(
       `[classification-audit] no disagreements` +
-        (unreachable > 0 ? ` (${unreachable} unverifiable)` : '')
+        (unverifiable > 0 ? ` (${unverifiable} unverifiable)` : '')
     )
-
-  return { rot, contradicted, openChecked, closedChecked, unreachable }
+  return {
+    rot,
+    contradicted,
+    openChecked,
+    closedChecked,
+    closedVerified,
+    closedNoCatalogEntry,
+    closedUnreachable,
+    unreachable,
+  }
 }

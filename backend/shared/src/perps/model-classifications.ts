@@ -3,6 +3,7 @@ import {
   OPEN_WEIGHT_MODELS,
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
+  isCompositeSlug,
 } from 'common/perps/open-weight-models'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
@@ -65,6 +66,10 @@ export const resolveModelClassifications = async (
 
   for (const row of rows) {
     const slug = basePermaslug(row.permaslug)
+    // Rows predating the composite rule can still carry a verdict. Ignore it
+    // on read too, so the DB and computeOpenWeightShare cannot disagree about
+    // whether a router counts.
+    if (isCompositeSlug(slug)) continue
     if (row.open === null) {
       // A pending row for a model the seed already classifies is inert — the
       // seed verdict stands and there is nothing to wait for.
@@ -132,6 +137,10 @@ export const recordPendingModels = async (
   const rows: { slug: string; evidence: string }[] = []
   for (const model of models) {
     const slug = basePermaslug(model.permaslug)
+    // Routers and floating aliases are excluded from the index by
+    // construction, so queueing them asks an operator for a boolean that will
+    // be ignored whichever way they answer.
+    if (isCompositeSlug(slug)) continue
     if (OPEN_WEIGHT_MODELS[slug] || seen.has(slug)) continue
     seen.add(slug)
     rows.push({
@@ -182,7 +191,7 @@ export const recordUnclassifiedInRankings = async (
 ) => {
   const slugs = Array.from(
     new Set(permaslugs.map(basePermaslug))
-  ).filter((slug) => !OPEN_WEIGHT_MODELS[slug])
+  ).filter((slug) => !OPEN_WEIGHT_MODELS[slug] && !isCompositeSlug(slug))
   if (slugs.length === 0) return 0
 
   await pg.none(

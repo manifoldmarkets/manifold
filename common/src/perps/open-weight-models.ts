@@ -746,10 +746,17 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
   'openrouter/aurora-alpha': { open: false },
   // Corrected 2026-08-24 (was `open: false`). OpenRouter's description states
   // it is "released under the Apache 2.0 license"; the repo is public,
-  // ungated, apache-2.0, 272 weight files, created 2025-11-30.
+  // ungated, apache-2.0, 272 weight files.
+  //
+  // Cites Instruct, not Base. Both are public and both would satisfy the
+  // "are the weights downloadable" test, so the verdict is the same either
+  // way — but the OpenRouter slug serves the instruction-tuned model, and the
+  // Base card says it is not instruction-fine-tuned. The citation is the
+  // artifact a reader checks and the one the nightly ROT audit re-verifies,
+  // so it should name the checkpoint actually being served.
   'mistralai/mistral-large-2512': {
     open: true,
-    weights: 'mistralai/Mistral-Large-3-675B-Base-2512',
+    weights: 'mistralai/Mistral-Large-3-675B-Instruct-2512',
   }, // Mistral: Mistral Large 3 2512
   'mistralai/ministral-8b-2512': {
     open: true,

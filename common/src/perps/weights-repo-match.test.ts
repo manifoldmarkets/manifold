@@ -223,6 +223,22 @@ describe('repoOwnerMatchesPublisher', () => {
     )
   })
 
+  it('treats punctuation as part of the org identity', () => {
+    // `open-ai` is a real (currently empty) namespace on HuggingFace, distinct
+    // from `openai`. Normalising punctuation away made them the same org, so
+    // whoever claimed it would have inherited every openai/* model.
+    expect(repoOwnerMatchesPublisher('openai/gpt-oss-120b', 'open-ai/gpt-oss-120b')).toBe(
+      false
+    )
+    expect(repoOwnerMatchesPublisher('meta-llama/llama-3.3-70b', 'metallama/Llama-3.3-70B')).toBe(
+      false
+    )
+    // ...while genuine case differences still match.
+    expect(
+      repoOwnerMatchesPublisher('inclusionai/ling-3.0-flash', 'inclusionAI/Ling-3.0-flash')
+    ).toBe(true)
+  })
+
   it('accepts the org-name decorations publishers actually use', () => {
     // Every non-exact shape observed across the 175 open classifications that
     // carry a weights repo. If this list grows, PUBLISHER_HF_ORGS must too —
