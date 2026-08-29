@@ -2,6 +2,11 @@ import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Clipboard from '@react-native-clipboard/clipboard'
 import * as Sentry from '@sentry/react-native'
 import { CONFIGS, EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
+import {
+  isSameOrigin,
+  originOf,
+  parseSwitchableAppUrl,
+} from 'common/native-app-url'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import {
   MesageTypeMap,
@@ -68,36 +73,6 @@ SplashScreen.preventAutoHideAsync()
 const BASE_URI =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
-// Hosts we'll accept over plain http, for a dev server on the machine or LAN.
-// Everything else must be https before it can ever hold credentials.
-const isLocalHost = (hostname: string) =>
-  hostname === 'localhost' ||
-  hostname === '::1' ||
-  hostname === '[::1]' ||
-  /^127\./.test(hostname) ||
-  /^10\./.test(hostname) ||
-  /^192\.168\./.test(hostname) ||
-  /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
-
-// Validates a 'Native url' the admin typed into the web app before it is allowed
-// to become the app's base — and therefore the origin the credential hand-off
-// trusts. Returns null for anything that must not be switched to.
-const parseAppUrl = (raw: unknown) => {
-  if (typeof raw !== 'string') return null
-  let url: URL
-  try {
-    url = new URL(raw)
-  } catch {
-    return null
-  }
-  // An opaque origin serializes to the string "null", which would also be what a
-  // sandboxed hostile document reports for itself — never let that be the match.
-  if (!url.origin || url.origin === 'null') return null
-  if (url.protocol === 'https:') return url
-  if (url.protocol === 'http:' && isLocalHost(url.hostname)) return url
-  return null
-}
-
 // Set up notification handler before component
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -127,6 +102,8 @@ const App = () => {
     destination: string
   } | null>(null)
   const [baseUri, setBaseUri] = useState(BASE_URI)
+  // Origin of the one outstanding 'switch server?' prompt, or null. See setAppUrl.
+  const appUrlPrompt = useRef<string | null>(null)
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -214,13 +191,10 @@ const App = () => {
   const webviewUrl = useRef(baseUri)
   // Full-origin match (scheme + host + port), not just host: a page served over
   // http://manifold.markets or a look-alike subdomain must not read as ours.
-  const isManifoldUrl = (url: string) => {
-    try {
-      return new URL(url).origin === new URL(baseUri).origin
-    } catch {
-      return false
-    }
-  }
+  // Parsed by hand rather than with the global URL — React Native's polyfill
+  // never throws, keeps userinfo in origin, and doesn't lowercase the host, so
+  // 'https://manifold.markets@evil.com/' and case tricks both misread there.
+  const isManifoldUrl = (url: string) => isSameOrigin(url, baseUri)
 
   // Pending 'nativeFbUser' posts, kept so a sign-out (or a switch to another
   // account) can cancel them. A late post would otherwise hand the OLD user back
@@ -672,17 +646,30 @@ const App = () => {
         log('Rejected setAppUrl from untrusted sender:', messageUrl)
         return
       }
-      const appUrl = parseAppUrl(payload?.appUrl)
+      const appUrl = parseSwitchableAppUrl(payload?.appUrl)
       if (!appUrl) {
         log('Rejected setAppUrl, not a switchable url:', payload?.appUrl)
         return
       }
-      if (appUrl.origin === new URL(baseUri).origin) {
+      if (appUrl.origin === originOf(baseUri)) {
         setUrlWithNativeQuery(appUrl.href)
         return
       }
-      // The one check content cannot forge or race, because it isn't in the
-      // WebView: the admin has to okay the new origin by name.
+      // Alert.alert is not single-flight: React Native dismisses the visible
+      // dialog to show the next one. Without this, a page that spams setAppUrl
+      // could swap the origin under the admin's finger between reading and
+      // tapping, or just wedge the app behind an endless stack of dialogs.
+      if (appUrlPrompt.current) {
+        log('Ignoring setAppUrl, a switch prompt is already open')
+        return
+      }
+      const promptedUid = fbUser.uid
+      appUrlPrompt.current = appUrl.origin
+      const closePrompt = () => {
+        appUrlPrompt.current = null
+      }
+      // The one check WebView content can neither forge nor race, because it
+      // isn't in the WebView: the admin okays the new origin by name.
       log('Confirming app url switch to: ', appUrl.href)
       Alert.alert(
         'Switch Manifold to another server?',
@@ -691,21 +678,35 @@ const App = () => {
           'You will be signed in there with this account, so only ' +
           'continue if you entered this URL yourself.',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: 'Cancel', style: 'cancel', onPress: closePrompt },
           {
             text: 'Switch',
             style: 'destructive',
             onPress: () => {
+              closePrompt()
+              // Re-check on confirm: the dialog may have sat there across a
+              // sign-out or an account switch.
+              const signedIn = fbUserRef.current
+              if (
+                !signedIn?.uid ||
+                signedIn.uid !== promptedUid ||
+                !isAdminId(signedIn.uid)
+              ) {
+                log('Dropping confirmed app url switch, signed-in user changed')
+                return
+              }
               // Don't let a hand-off queued for the old origin land on the new one.
               cancelPendingAuthPosts()
               authPostDropped.current = false
               webviewUrl.current = ''
-              setBaseUri(appUrl.href)
+              // The base must be the bare origin: callers concatenate an
+              // endpoint onto it, so a path here yields urls like '/foohome'.
+              setBaseUri(appUrl.base)
               setUrlWithNativeQuery(appUrl.href)
             },
           },
         ],
-        { cancelable: true }
+        { cancelable: true, onDismiss: closePrompt }
       )
     } else {
       log('Unhandled message from web type: ', type)
@@ -779,13 +780,15 @@ const App = () => {
   // RNCWebView's postMessage injects — a 'message' MessageEvent dispatched on
   // document; web listens on both document and window (use-native-messages.ts).
   const postAuthToWebview = (user: FirebaseUser) => {
+    const trustedOrigin = originOf(baseUri)
+    if (!trustedOrigin) return
     const message = JSON.stringify({
       type: 'nativeFbUser',
       data: user,
     } as nativeToWebMessage)
     webview.current?.injectJavaScript(
       `(function () {
-        if (window.location.origin !== ${jsString(new URL(baseUri).origin)}) return;
+        if (window.location.origin !== ${jsString(trustedOrigin)}) return;
         var data = { data: ${jsString(message)} };
         var event;
         try {
