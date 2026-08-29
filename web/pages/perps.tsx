@@ -28,7 +28,7 @@ import {
 } from 'common/perps/funding'
 import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer'
 import { getOracleFreshness } from 'common/perps/oracle'
-import { DAY_MS, YEAR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -85,7 +85,16 @@ export async function getStaticProps() {
     if (error) throw error
     const perps = (data ?? [])
       .map(convertContract)
-      .filter((c) => c.mechanism === 'perp' && !c.deleted)
+      // Perps launch UNLISTED (create-perp's default) and stay that way
+      // through smoke tests and the staged rollout; this page is the one
+      // place that enumerates them, so it must not be the leak. Only a
+      // local dev server shows the unlisted queue, for previewing a batch.
+      .filter(
+        (c) =>
+          c.mechanism === 'perp' &&
+          !c.deleted &&
+          (c.visibility === 'public' || process.env.NODE_ENV === 'development')
+      )
       // Perp descriptions carry the full oracle methodology — pages of text
       // the page never renders. Strip them from the static payload.
       .map((c) => ({ ...c, description: '' }))
@@ -251,11 +260,15 @@ const useWeekSeries = (perps: PerpContract[]) => {
     if (!key) return
     let cancelled = false
     const pairs = key.split(',').map((s) => s.split(':') as [string, string])
+    // `since` on an hour boundary: the buckets are hourly anyway, and a
+    // millisecond bound would give every visitor a unique URL, so nothing
+    // could be served from the edge cache.
+    const since = Math.floor(Date.now() / HOUR_MS) * HOUR_MS - 7 * DAY_MS
     Promise.all(
       pairs.map(([id, feedId]) =>
         api('get-oracle-price-series', {
           feedId,
-          since: Date.now() - 7 * DAY_MS,
+          since,
           bucketSeconds: 3600,
           limit: 400,
         })
@@ -368,9 +381,30 @@ const useAnswersFor = (contracts: Contract[]) => {
 
 // The viewer's open positions across every perp: one request per market,
 // refreshed every 30s. Null while loading or signed out; [] when flat.
-type MyPosition = APIResponse<'get-perp-positions'>[number] & {
-  contractId: string
+// The two live feeds below hit uncached endpoints, so they are polite by
+// construction: one request per tick (not one per market), a tick is
+// skipped while the previous one is still in flight, nothing runs while
+// the tab is hidden, and a tab coming back refreshes once immediately.
+const FEED_POLL_MS = 60_000
+const pollWhileVisible = (load: () => Promise<unknown>, intervalMs: number) => {
+  let inFlight = false
+  const tick = () => {
+    if (inFlight || document.visibilityState === 'hidden') return
+    inFlight = true
+    load().finally(() => {
+      inFlight = false
+    })
+  }
+  tick()
+  const interval = setInterval(tick, intervalMs)
+  document.addEventListener('visibilitychange', tick)
+  return () => {
+    clearInterval(interval)
+    document.removeEventListener('visibilitychange', tick)
+  }
 }
+
+type MyPosition = APIResponse<'get-perp-positions'>[number]
 const useMyPositions = (userId: string | undefined, perps: PerpContract[]) => {
   const [rows, setRows] = useState<MyPosition[] | null>(null)
   const key = perps.map((c) => c.id).join(',')
@@ -380,32 +414,26 @@ const useMyPositions = (userId: string | undefined, perps: PerpContract[]) => {
       return
     }
     let cancelled = false
+    const onPage = new Set(key.split(','))
+    // The user's whole perp book in one call; keep only markets on the page.
     const load = () =>
-      Promise.all(
-        key.split(',').map((contractId) =>
-          api('get-perp-positions', { contractId, userId })
-            .then((rs) => rs.map((r) => ({ ...r, contractId })))
-            .catch(() => [] as MyPosition[])
-        )
-      ).then((all) => {
-        if (!cancelled) setRows(all.flat())
-      })
-    load()
-    const interval = setInterval(load, 2 * POLL_MS)
+      api('get-perp-positions', { userId })
+        .then((rs) => {
+          if (!cancelled) setRows(rs.filter((r) => onPage.has(r.contractId)))
+        })
+        .catch(() => {})
+    const stop = pollWhileVisible(load, FEED_POLL_MS)
     return () => {
       cancelled = true
-      clearInterval(interval)
+      stop()
     }
   }, [userId, key])
   return rows
 }
 
-// Recent trades across every perp, newest first: one request per market,
-// merged, refreshed every 30s. API-key (bot) trades and funding ticks are
-// excluded — this is the human tape.
-type ActivityEvent = APIResponse<'get-perp-events'>[number] & {
-  contractId: string
-}
+// Recent trades across every perp, newest first, in one request. API-key
+// (bot) trades and funding ticks are excluded — this is the human tape.
+type ActivityEvent = APIResponse<'get-perp-events'>[number]
 const ACTIVITY_TYPES = new Set(['open', 'add', 'close', 'liquidation', 'adl'])
 const useRecentActivity = (perps: PerpContract[]) => {
   const [events, setEvents] = useState<ActivityEvent[] | null>(null)
@@ -414,48 +442,72 @@ const useRecentActivity = (perps: PerpContract[]) => {
     if (!key) return
     let cancelled = false
     const load = () =>
-      Promise.all(
-        key.split(',').map((contractId) =>
-          api('get-perp-events', { contractId, limit: 12, excludeApi: true })
-            .then((rs) => rs.map((r) => ({ ...r, contractId })))
-            .catch(() => [] as ActivityEvent[])
-        )
-      ).then((all) => {
-        if (cancelled) return
-        setEvents(
-          all
-            .flat()
-            .filter((e) => ACTIVITY_TYPES.has(e.eventType) && e.userId)
-            .sort((a, b) => b.ts - a.ts)
-            .slice(0, 30)
-        )
+      api('get-perp-events', {
+        contractIds: key.split(','),
+        limit: 40,
+        excludeApi: true,
       })
-    load()
-    const interval = setInterval(load, 2 * POLL_MS)
+        .then((rs) => {
+          if (cancelled) return
+          setEvents(
+            rs
+              .filter((e) => ACTIVITY_TYPES.has(e.eventType) && e.userId)
+              .slice(0, 30)
+          )
+        })
+        .catch(() => {})
+    const stop = pollWhileVisible(load, FEED_POLL_MS)
     return () => {
       cancelled = true
-      clearInterval(interval)
+      stop()
     }
   }, [key])
   return events
 }
 
-// Warm every chart once the page is up, most-traded first, so switching in
-// the terminal never shows a loading state. Sequential: one feed at a time
-// keeps this from competing with the visible chart's own fetch.
+// Warm every chart so switching in the terminal never shows a loading
+// state — but only once the page has settled: after the browser reports
+// idle (or 2s), never while the tab is hidden, and not on a data-saver
+// connection. Sequential, most-traded first, so this never competes with
+// the visible chart's own fetch; the in-flight map in perp-chart dedupes
+// against it. The series requests use bucket-aligned `since` bounds, so
+// every visitor in the same window shares the edge cache entry.
 const usePrefetchCharts = (perps: PerpContract[]) => {
   const idKey = perps.map((c) => c.id).join(',')
   useEffect(() => {
     let cancelled = false
+    const saveData = (navigator as { connection?: { saveData?: boolean } })
+      .connection?.saveData
+    if (saveData) return
     const run = async () => {
       for (const c of perps) {
         if (cancelled) return
+        while (document.visibilityState === 'hidden') {
+          await new Promise<void>((resolve) =>
+            document.addEventListener('visibilitychange', () => resolve(), {
+              once: true,
+            })
+          )
+          if (cancelled) return
+        }
         await prefetchPerpChart(c).catch(() => {})
       }
     }
-    run()
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    let idleId: number | undefined
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    if (w.requestIdleCallback) {
+      idleId = w.requestIdleCallback(run, { timeout: 2000 })
+    } else {
+      timeoutId = setTimeout(run, 1500)
+    }
     return () => {
       cancelled = true
+      if (idleId !== undefined) w.cancelIdleCallback?.(idleId)
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idKey])

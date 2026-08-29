@@ -97,6 +97,11 @@ pathMatchers:
           - pathTemplateMatch: /get-mana-supply
           - pathTemplateMatch: /get-txn-summary-stats
           - pathTemplateMatch: /get-mana-summary-stats
+          - pathTemplateMatch: /get-oracle-price-series
+          - pathTemplateMatch: /get-perp-positions
+          - pathTemplateMatch: /get-perp-funding-events
+          - pathTemplateMatch: /get-perp-events
+          - pathTemplateMatch: /get-perp-suggestions
           - pathTemplateMatch: /v0/get-user-contract-metrics-with-contracts
           - pathTemplateMatch: /v0/check-sports-event
           - pathTemplateMatch: /v0/comment-reactions

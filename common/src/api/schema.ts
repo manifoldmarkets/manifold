@@ -1386,6 +1386,7 @@ export const API = (_apiTypeCheck = {
     // Positions are correctness-critical right after a trade.
     cache: 'no-cache',
     returns: [] as {
+      contractId: string
       userId: string
       direction: 'long' | 'short'
       size: number
@@ -1403,10 +1404,16 @@ export const API = (_apiTypeCheck = {
     }[],
     props: z
       .object({
-        contractId: z.string().min(1),
+        // One of contractId / userId is required: a market's book, a user's
+        // book across every perp (the /perps hub polls that in one call), or
+        // one user in one market.
+        contractId: z.string().min(1).optional(),
         userId: z.string().min(1).optional(),
       })
-      .strict(),
+      .strict()
+      .refine((p) => p.contractId || p.userId, {
+        message: 'contractId or userId is required',
+      }),
   },
   'get-perp-suggestions': {
     method: 'GET',
@@ -1456,6 +1463,7 @@ export const API = (_apiTypeCheck = {
     cache: 'no-cache',
     returns: [] as {
       id: number
+      contractId: string
       ts: number
       userId: string | null
       direction: 'long' | 'short' | null
@@ -1475,7 +1483,11 @@ export const API = (_apiTypeCheck = {
     }[],
     props: z
       .object({
-        contractId: z.string().min(1),
+        contractId: z.string().min(1).optional(),
+        // A merged, newest-first tape across several markets in ONE query —
+        // the /perps hub's activity feed. Exactly one of contractId /
+        // contractIds.
+        contractIds: z.array(z.string().min(1)).min(1).max(50).optional(),
         userId: z.string().min(1).optional(),
         beforeId: z.coerce.number().int().optional(),
         limit: z.coerce.number().int().positive().max(200).optional(),
@@ -1484,7 +1496,10 @@ export const API = (_apiTypeCheck = {
         // carry no marker and read as manual.
         excludeApi: coerceBoolean.optional(),
       })
-      .strict(),
+      .strict()
+      .refine((p) => !!p.contractId !== !!p.contractIds, {
+        message: 'Exactly one of contractId or contractIds is required',
+      }),
   },
   'get-perp-funding-events': {
     method: 'GET',
