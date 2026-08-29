@@ -142,16 +142,12 @@ export function formatMoneyWithDecimals(amount: number) {
 export const MONEY_PRECISE_DUST = 1e-6
 
 /**
- * EXACT mana formatting for fractional financial values such as perp fees,
- * PnL, payouts and per-period funding — use it wherever the number is a
- * statement of fact a user may check against their balance or a ledger
- * (affordability errors, notifications, balance changes, trade toasts).
- * Values of at least 0.01 use cents; smaller non-zero values use two
- * significant digits so a real debit never collapses to zero. Both go
- * through formatNumber, so grouping and the decimal separator follow the
- * viewer's locale like formatMoney. The sign goes before the moniker;
- * non-finite input reads as zero. For dashboards and tables, where cents
- * on a four-figure number are noise, see formatMoneyDisplay.
+ * Mana formatting for exact fractional financial values such as perp fees,
+ * PnL, payouts and per-period funding. Values of at least 0.01 use cents;
+ * smaller non-zero values use two significant digits so a real debit never
+ * collapses to zero. Both go through formatNumber, so grouping and the
+ * decimal separator follow the viewer's locale like formatMoney. The sign
+ * goes before the moniker; non-finite input reads as zero.
  */
 export function formatMoneyPrecise(amount: number) {
   if (!Number.isFinite(amount)) return ENV_CONFIG.moneyMoniker + '0'
@@ -170,27 +166,6 @@ export function formatMoneyPrecise(amount: number) {
     maximumFractionDigits: fractionDigits,
   })
   return `${amount < 0 ? '-' : ''}${ENV_CONFIG.moneyMoniker}${numberText}`
-}
-
-/** From this magnitude up, formatMoneyDisplay drops the cents. */
-export const MONEY_DISPLAY_WHOLE_FROM = 100
-
-/**
- * Display formatting for perp financial values in cards and tables: whole
- * mana from Ṁ100 up, like everywhere else on the site (truncated toward
- * zero via getMoneyNumber exactly like formatMoney, so the two never
- * disagree on the digits), and formatMoneyPrecise below that — a Ṁ1.1 and
- * a Ṁ1.4 hourly funding charge are different things, and cents on a
- * four-figure P&L are not. Never use it where the reader may reconcile the
- * number against a balance or ledger; that is formatMoneyPrecise's job.
- */
-export function formatMoneyDisplay(amount: number) {
-  if (!Number.isFinite(amount)) return ENV_CONFIG.moneyMoniker + '0'
-  const magnitude = Math.abs(amount)
-  if (magnitude < MONEY_DISPLAY_WHOLE_FROM) return formatMoneyPrecise(amount)
-  return `${amount < 0 ? '-' : ''}${ENV_CONFIG.moneyMoniker}${formatNumber(
-    getMoneyNumber(magnitude)
-  )}`
 }
 
 // Like formatMoney, but avoids collapsing tiny non-zero spends to "Ṁ0".
