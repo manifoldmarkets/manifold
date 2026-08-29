@@ -6,7 +6,10 @@ import {
   isCompositeSlug,
 } from 'common/perps/open-weight-models'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
-import { verifyHuggingFaceWeights } from 'shared/huggingface'
+import {
+  isTransportFailure,
+  verifyHuggingFaceWeights,
+} from 'shared/huggingface'
 import {
   ClassificationRow,
   upsertClassification,
@@ -127,8 +130,29 @@ export const getModelClassifications: APIHandler<
               : null,
         }
       }),
+    // Every decided row an operator can actually act on, uncapped.
+    //
+    // Not sliced. A previous revision took the newest 200, which reintroduced
+    // the exact problem removing the 30-day window was meant to solve: the
+    // audit re-checks EVERY override and names the slug in its alert, so any
+    // bound here eventually produces a nightly finding pointing at a page
+    // that cannot show the row. A cap is only safe alongside search or
+    // pagination, and there is neither.
+    //
+    // Filtered to what the setter will accept, which is also what keeps the
+    // list small: seeded models are refused (they go through the file) and
+    // composites are refused (excluded from the index), so rendering them
+    // would offer a Change control that always errors. Roughly 60 rows today
+    // against a few hundred in the table.
+    //
+    // Revisit if this outgrows a page: the fix is a slug lookup, not a slice.
     recent: rows
-      .filter((r) => r.open !== null)
+      .filter(
+        (r) =>
+          r.open !== null &&
+          !OPEN_WEIGHT_MODELS[r.permaslug] &&
+          !isCompositeSlug(r.permaslug)
+      )
       .map((r) => ({
         permaslug: r.permaslug,
         open: r.open as boolean,
@@ -139,10 +163,7 @@ export const getModelClassifications: APIHandler<
           : null,
         classifiedBy: r.classified_by,
       }))
-      .sort((a, b) => (b.classifiedAt ?? 0) - (a.classifiedAt ?? 0))
-      // Newest 200 decided rows. A cap on RENDERING, not on what is editable:
-      // the CLI reaches anything, and the audit names the slug in its alert.
-      .slice(0, 200),
+      .sort((a, b) => (b.classifiedAt ?? 0) - (a.classifiedAt ?? 0)),
     seedVersion: OPEN_WEIGHT_LIST_VERSION,
     graceWindowMs: UNCLASSIFIED_GRACE_WINDOW_MS,
   }
@@ -201,17 +222,40 @@ export const setModelClassification: APIHandler<
   }
   if (open) {
     const cited = weights?.trim() ?? ''
-    const verification = await verifyHuggingFaceWeights(cited)
-    if (!verification.confirmed)
+    // Wrapped: verifyHuggingFaceWeights catches fetch rejections but not a
+    // malformed body, and an admin form should not 500 because HuggingFace
+    // served HTML during an incident.
+    let verification
+    try {
+      verification = await verifyHuggingFaceWeights(cited)
+    } catch (err) {
+      verification = {
+        confirmed: false as const,
+        repo: cited,
+        reason: `fetch failed: ${err}`,
+      }
+    }
+    if (!verification.confirmed) {
+      // 503, not 400, when we could not reach HuggingFace. A timeout, a 429 or
+      // a Cloudflare 5xx says nothing about what the operator typed, and
+      // telling them their input is invalid during an upstream outage sends
+      // them to re-check a repo id that was right — or worse, to work around
+      // the form. Retryable, and it says so.
+      if (isTransportFailure(verification.reason))
+        throw new APIError(
+          503,
+          `Could not reach HuggingFace to verify ${cited}: ` +
+            `${verification.reason}. Nothing was written — retry shortly.`
+        )
       throw new APIError(
         400,
         `${cited || '(no repo)'} did not verify as public weights: ` +
           `${verification.reason}. An open call needs a repo that resolves, ` +
           `is public, and carries weight files.`
       )
+    }
     evidence = { ...evidence, ...verification.evidence }
   }
-
   await upsertClassification(pg, {
     permaslug,
     open,

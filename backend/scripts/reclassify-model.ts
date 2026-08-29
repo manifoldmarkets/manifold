@@ -52,6 +52,18 @@ if (require.main === module) {
     const permaslug = basePermaslug(rawSlug.trim())
     const open = verdict === 'open'
 
+    // basePermaslug truncates at the first ':', so ':free' and a whitespace
+    // argument both normalise to '' — which passed the raw-argument check
+    // above and, with --create, would have inserted an empty-slug row that
+    // nothing can ever match.
+    if (!permaslug.includes('/')) {
+      fail(
+        `${JSON.stringify(rawSlug)} does not normalise to an owner/model ` +
+          `permaslug (got ${JSON.stringify(permaslug)}).`
+      )
+      return
+    }
+
     // Same refusals the admin endpoint applies, so the two cannot disagree
     // about what is editable.
     if (isCompositeSlug(permaslug)) {
@@ -105,12 +117,17 @@ if (require.main === module) {
     // asserts something positive about the world, and the whole reason this
     // script exists is a repo that changed state under a stored answer.
     let weightFileCount: number | null = null
+    let confirmation: Extract<
+      Awaited<ReturnType<typeof verifyHuggingFaceWeights>>,
+      { confirmed: true }
+    > | null = null
     if (open) {
       const result = await verifyHuggingFaceWeights(repo)
       if (!result.confirmed) {
         fail(`refusing: ${repo} did not verify — ${result.reason}`)
         return
       }
+      confirmation = result
       weightFileCount = result.evidence.weightFileCount
       console.log(
         `verified: ${repo} public, ${weightFileCount} weight files, ` +
@@ -129,12 +146,16 @@ if (require.main === module) {
       weights: open ? repo : null,
       source: 'admin',
       classifiedBy: process.env.RECLASSIFY_ACTOR ?? 'reclassify-model-script',
+      // No hand-rolled `previous` snapshot. It was read before a verification
+      // that can take fifteen seconds, so a concurrent correction in that
+      // window would have persisted a stale record that CONTRADICTS the
+      // history the upsert archives atomically in SQL — two disagreeing
+      // accounts of the same change, with the wrong one easier to read.
+      // The SQL history is the record; this carries only what the verifier
+      // actually established.
       evidence: {
         method: 'reclassify-model.ts',
-        previous: before
-          ? { open: before.open, weights: before.weights }
-          : null,
-        ...(open ? { weightsRepo: repo, weightFileCount } : {}),
+        ...(open && confirmation ? confirmation.evidence : {}),
         reclassifiedAt: new Date().toISOString(),
       },
     })
