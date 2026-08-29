@@ -38,6 +38,7 @@ import {
 import { useIsConnected } from 'lib/use-is-connected'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  Alert,
   AppState,
   BackHandler,
   NativeModules,
@@ -66,6 +67,36 @@ SplashScreen.preventAutoHideAsync()
 
 const BASE_URI =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+
+// Hosts we'll accept over plain http, for a dev server on the machine or LAN.
+// Everything else must be https before it can ever hold credentials.
+const isLocalHost = (hostname: string) =>
+  hostname === 'localhost' ||
+  hostname === '::1' ||
+  hostname === '[::1]' ||
+  /^127\./.test(hostname) ||
+  /^10\./.test(hostname) ||
+  /^192\.168\./.test(hostname) ||
+  /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+
+// Validates a 'Native url' the admin typed into the web app before it is allowed
+// to become the app's base — and therefore the origin the credential hand-off
+// trusts. Returns null for anything that must not be switched to.
+const parseAppUrl = (raw: unknown) => {
+  if (typeof raw !== 'string') return null
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return null
+  }
+  // An opaque origin serializes to the string "null", which would also be what a
+  // sandboxed hostile document reports for itself — never let that be the match.
+  if (!url.origin || url.origin === 'null') return null
+  if (url.protocol === 'https:') return url
+  if (url.protocol === 'http:' && isLocalHost(url.hostname)) return url
+  return null
+}
 
 // Set up notification handler before component
 Notifications.setNotificationHandler({
@@ -623,10 +654,59 @@ const App = () => {
       const version = Constants.expoConfig?.version
       communicateWithWebview('version', { version })
     } else if (type === 'setAppUrl') {
+      // This points the app at another deployment (the admin 'Native url' box —
+      // a Vercel preview, or a laptop on the LAN) and that URL BECOMES the
+      // origin the credential hand-off trusts. So it cannot be driven by the
+      // WebView alone: an admin check says who is signed in, not who sent the
+      // message, and any document in the WebView can reach the bridge —
+      // react-native-webview registers the Android message listener for origin
+      // '*' (RNCWebView.createRNCWebViewBridge), and on the older
+      // addJavascriptInterface fallback the reported url is the TOP document's,
+      // so an iframe's message is indistinguishable from the page's own.
+      // Without this, a third-party page could repoint the app at itself and
+      // then collect an admin's Firebase credentials from the hand-off.
       if (!fbUser?.uid || !isAdminId(fbUser.uid)) return
-      log('Setting app url to: ', payload.appUrl)
-      setBaseUri(payload.appUrl)
-      setUrlWithNativeQuery(payload.appUrl)
+      // Cheap first cut: on the modern bridge (and on iOS) this really is the
+      // sending frame's url, so a foreign sender is rejected before we prompt.
+      if (messageUrl && !isManifoldUrl(messageUrl)) {
+        log('Rejected setAppUrl from untrusted sender:', messageUrl)
+        return
+      }
+      const appUrl = parseAppUrl(payload?.appUrl)
+      if (!appUrl) {
+        log('Rejected setAppUrl, not a switchable url:', payload?.appUrl)
+        return
+      }
+      if (appUrl.origin === new URL(baseUri).origin) {
+        setUrlWithNativeQuery(appUrl.href)
+        return
+      }
+      // The one check content cannot forge or race, because it isn't in the
+      // WebView: the admin has to okay the new origin by name.
+      log('Confirming app url switch to: ', appUrl.href)
+      Alert.alert(
+        'Switch Manifold to another server?',
+        appUrl.origin +
+          '\n\n' +
+          'You will be signed in there with this account, so only ' +
+          'continue if you entered this URL yourself.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Switch',
+            style: 'destructive',
+            onPress: () => {
+              // Don't let a hand-off queued for the old origin land on the new one.
+              cancelPendingAuthPosts()
+              authPostDropped.current = false
+              webviewUrl.current = ''
+              setBaseUri(appUrl.href)
+              setUrlWithNativeQuery(appUrl.href)
+            },
+          },
+        ],
+        { cancelable: true }
+      )
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
