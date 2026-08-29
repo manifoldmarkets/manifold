@@ -45,6 +45,7 @@ import {
 } from 'common/perps/format'
 import {
   formatMoney,
+  formatMoneyDisplay,
   formatMoneyPrecise,
   MONEY_PRECISE_DUST,
 } from 'common/util/format'
@@ -934,7 +935,7 @@ const StatsGrid = (props: {
   const earnsFunding = fundingManaPerPeriod >= MONEY_PRECISE_DUST
   const fundingValue = `${
     paysFunding ? '-' : earnsFunding ? '+' : ''
-  }${formatMoneyPrecise(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
+  }${formatMoneyDisplay(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
     fundingPeriodMs
   )} · ${periodPct >= 0 ? '+' : ''}${periodPct.toFixed(3)}%`
 
@@ -976,7 +977,7 @@ const StatsGrid = (props: {
             value={
               feePreviewInvalid
                 ? '—'
-                : `${formatMoneyPrecise(fee)} (${formatFeePct(
+                : `${formatMoneyDisplay(fee)} (${formatFeePct(
                     notional > 0 ? feeEffectiveBps : feeBaseBps
                   )})`
             }
@@ -1064,7 +1065,7 @@ const StatsGrid = (props: {
                     {formatPrice(s.price, priceDecimals)}
                   </span>
                   <span className="w-20 text-right font-medium text-teal-600">
-                    +{formatMoneyPrecise(s.pnl)}
+                    +{formatMoneyDisplay(s.pnl)}
                   </span>
                 </Row>
               ))}

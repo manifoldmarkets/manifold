@@ -29,7 +29,7 @@ import { PerpPosition } from 'common/perps/position'
 import { buildArray } from 'common/util/array'
 import {
   formatMoney,
-  formatMoneyPrecise,
+  formatMoneyDisplay,
   formatWithToken,
 } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
@@ -1301,18 +1301,18 @@ const ExpandedPerpRow = (props: {
       <Row className="flex-wrap gap-x-8 gap-y-2 text-sm">
         <Col>
           <span className="text-ink-500 text-xs">Position value</span>
-          <span className="font-semibold">{formatMoneyPrecise(m.payout)}</span>
+          <span className="font-semibold">{formatMoneyDisplay(m.payout)}</span>
         </Col>
         <Col>
           <span className="text-ink-500 text-xs">Amount invested</span>
           <span className="font-semibold">
-            {formatMoneyPrecise(m.totalAmountInvested)}
+            {formatMoneyDisplay(m.totalAmountInvested)}
           </span>
         </Col>
         <Col>
           <span className="text-ink-500 text-xs">Returned on closes</span>
           <span className="font-semibold">
-            {formatMoneyPrecise(m.totalAmountSold ?? 0)}
+            {formatMoneyDisplay(m.totalAmountSold ?? 0)}
           </span>
         </Col>
         <Col>
@@ -1324,7 +1324,7 @@ const ExpandedPerpRow = (props: {
             )}
           >
             {m.profit >= 0 ? '+' : ''}
-            {formatMoneyPrecise(m.profit)}
+            {formatMoneyDisplay(m.profit)}
           </span>
         </Col>
       </Row>
@@ -1374,7 +1374,7 @@ const ExpandedPerpRow = (props: {
                     )}
                   >
                     {pnl >= 0 ? '+' : ''}
-                    {formatMoneyPrecise(pnl)}
+                    {formatMoneyDisplay(pnl)}
                   </span>
                 )}
               </Row>
@@ -1406,7 +1406,7 @@ const ExpandedPerpRow = (props: {
               </span>
               {e.payout != null && (
                 <span className="text-ink-500">
-                  payout {formatMoneyPrecise(e.payout)}
+                  payout {formatMoneyDisplay(e.payout)}
                 </span>
               )}
               <span className="text-ink-400 text-xs">

@@ -14,7 +14,7 @@ import {
 } from 'common/perps/funding'
 import {
   formatMoney,
-  formatMoneyPrecise,
+  formatMoneyDisplay,
   formatMoneyShort,
 } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -355,7 +355,7 @@ const HolderRow = (props: {
         </div>
         <Col className="items-end">
           <span className={pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'}>
-            {formatMoneyPrecise(pnl)}
+            {formatMoneyDisplay(pnl)}
           </span>
           <span className="text-ink-500 text-xs">
             {formatMoney(holder.size)} notional · {holder.leverage.toFixed(2)}×

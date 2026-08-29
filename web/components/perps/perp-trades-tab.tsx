@@ -3,7 +3,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoney, formatMoneyPrecise } from 'common/util/format'
+import { formatMoney, formatMoneyDisplay } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -278,7 +278,7 @@ const EventRow = (props: {
           <span className="text-scarlet-600 font-medium">
             {liquidationMarginLost == null
               ? 'Margin lost'
-              : `${formatMoneyPrecise(liquidationMarginLost)} margin lost`}
+              : `${formatMoneyDisplay(liquidationMarginLost)} margin lost`}
           </span>
         ) : partialAdlReduction != null ? (
           <span className="font-medium text-amber-600">
@@ -289,7 +289,7 @@ const EventRow = (props: {
           // rows; posted margin stays whole-mana like everywhere else.
           <span className="text-ink-900">
             {isExit
-              ? formatMoneyPrecise(marginOrPayout)
+              ? formatMoneyDisplay(marginOrPayout)
               : formatMoney(marginOrPayout)}
           </span>
         ) : null}
@@ -298,7 +298,7 @@ const EventRow = (props: {
             className={event.pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'}
           >
             {event.pnl >= 0 ? '+' : ''}
-            {formatMoneyPrecise(event.pnl)}
+            {formatMoneyDisplay(event.pnl)}
           </span>
         )}
       </Col>

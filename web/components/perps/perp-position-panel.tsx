@@ -22,6 +22,7 @@ import {
 } from 'common/perps/format'
 import {
   formatMoney,
+  formatMoneyDisplay,
   formatMoneyPrecise,
   MONEY_PRECISE_DUST,
 } from 'common/util/format'
@@ -260,7 +261,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 💥 Liquidated {e.direction}
               </span>
               <span className="text-scarlet-600 font-semibold tabular-nums">
-                −{formatMoneyPrecise(lost)} margin
+                −{formatMoneyDisplay(lost)} margin
               </span>
               <span className="text-ink-500 tabular-nums">
                 at {formatPrice(e.oraclePrice, decimals)}
@@ -280,7 +281,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 Auto-deleveraged {e.direction}
               </span>
               <span className="text-ink-700 tabular-nums">
-                {formatMoneyPrecise(e.payout ?? 0)} margin returned
+                {formatMoneyDisplay(e.payout ?? 0)} margin returned
               </span>
               <span
                 className={clsx(
@@ -289,7 +290,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 )}
               >
                 Profit {pnl >= 0 ? '+' : ''}
-                {formatMoneyPrecise(pnl)}
+                {formatMoneyDisplay(pnl)}
               </span>
               <span className="text-ink-500 tabular-nums">
                 at {formatPrice(e.oraclePrice, decimals)}
@@ -310,7 +311,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
               Closed {e.direction}
             </span>
             <span className="text-ink-700 tabular-nums">
-              payout {formatMoneyPrecise(e.payout ?? 0)}
+              payout {formatMoneyDisplay(e.payout ?? 0)}
             </span>
             <span
               className={clsx(
@@ -319,7 +320,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
               )}
             >
               {pnl >= 0 ? '+' : ''}
-              {formatMoneyPrecise(pnl)}
+              {formatMoneyDisplay(pnl)}
             </span>
             <span className="text-ink-500 tabular-nums">
               at {formatPrice(e.oraclePrice, decimals)}
@@ -478,7 +479,7 @@ const PositionCard = (props: {
               )}
             >
               {pnl >= 0 ? '+' : ''}
-              {formatMoneyPrecise(pnl)}
+              {formatMoneyDisplay(pnl)}
             </div>
             <div className={clsx('tabular-nums', CARD_LABEL, pnlColor)}>
               {pnl >= 0 ? '+' : ''}
@@ -521,7 +522,7 @@ const PositionCard = (props: {
               )}
             >
               {fundingMana > 0 ? 'Earning ' : 'Paying '}
-              {formatMoneyPrecise(Math.abs(fundingMana))}/
+              {formatMoneyDisplay(Math.abs(fundingMana))}/
               {fundingPeriodUnit(fundingPeriodMs)}{' '}
               {fundingMana > 0 ? 'from funding' : 'in funding'}
             </span>
