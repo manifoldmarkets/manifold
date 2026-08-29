@@ -14,29 +14,32 @@ describe('formatMoneyPrecise', () => {
     })
   const digits = (s: string) => s.replace(/\D/g, '')
 
-  it('shows whole mana from Ṁ1 up, truncating toward zero like formatMoney', () => {
-    expect(formatMoneyPrecise(1)).toBe(`${mana}1`)
-    expect(formatMoneyPrecise(12)).toBe(`${mana}12`)
-    expect(formatMoneyPrecise(12.345)).toBe(`${mana}12`)
-    expect(formatMoneyPrecise(12.99)).toBe(`${mana}12`)
+  it('shows whole mana from Ṁ100 up, truncating toward zero like formatMoney', () => {
+    expect(formatMoneyPrecise(100)).toBe(`${mana}100`)
+    expect(formatMoneyPrecise(100.99)).toBe(`${mana}100`)
+    expect(formatMoneyPrecise(120.345)).toBe(`${mana}120`)
     expect(digits(formatMoneyPrecise(1_234.5))).toBe('1234')
     expect(formatMoneyPrecise(1_234.5)).not.toMatch(/\d[.,]\d$/)
     // Float dust just under a whole number rounds up, as formatMoney does.
     expect(formatMoneyPrecise(499.9999999999999)).toBe(`${mana}500`)
   })
 
-  it('agrees with formatMoney on the digits from Ṁ1 up', () => {
-    for (const amount of [1, 1.5, 12.345, 999.99, 1_234.5, 1e6 + 0.7]) {
+  it('agrees with formatMoney on the digits from Ṁ100 up', () => {
+    for (const amount of [100, 100.5, 123.45, 999.99, 1_234.5, 1e6 + 0.7]) {
       expect(digits(formatMoneyPrecise(amount))).toBe(
         digits(formatMoney(amount))
       )
     }
   })
 
-  it('keeps cents below Ṁ1', () => {
+  it('keeps cents below Ṁ100', () => {
+    expect(formatMoneyPrecise(99.99)).toBe(`${mana}${fixed(99.99, 2)}`)
+    expect(formatMoneyPrecise(12.345)).toBe(`${mana}${fixed(12.35, 2)}`)
+    expect(formatMoneyPrecise(1.4)).toBe(`${mana}${fixed(1.4, 2)}`)
+    expect(formatMoneyPrecise(1.1)).toBe(`${mana}${fixed(1.1, 2)}`)
+    expect(formatMoneyPrecise(1)).toBe(`${mana}${fixed(1, 2)}`)
     expect(formatMoneyPrecise(0.9)).toBe(`${mana}${fixed(0.9, 2)}`)
     expect(formatMoneyPrecise(0.45)).toBe(`${mana}${fixed(0.45, 2)}`)
-    expect(formatMoneyPrecise(0.1)).toBe(`${mana}${fixed(0.1, 2)}`)
     expect(formatMoneyPrecise(0.01)).toBe(`${mana}${fixed(0.01, 2)}`)
     expect(formatMoneyPrecise(0.456).replace(/\D/g, '')).toBe('046')
   })
@@ -61,7 +64,8 @@ describe('formatMoneyPrecise', () => {
   })
 
   it('places the sign before the moniker and never shows -0', () => {
-    expect(formatMoneyPrecise(-12.7)).toBe(`-${mana}12`)
+    expect(formatMoneyPrecise(-120.7)).toBe(`-${mana}120`)
+    expect(formatMoneyPrecise(-12.7)).toBe(`-${mana}${fixed(12.7, 2)}`)
     expect(formatMoneyPrecise(-1_234.5).startsWith(`-${mana}`)).toBe(true)
     expect(digits(formatMoneyPrecise(-1_234.5))).toBe('1234')
     expect(formatMoneyPrecise(-0.45)).toBe(`-${mana}${fixed(0.45, 2)}`)

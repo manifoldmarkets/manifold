@@ -143,21 +143,23 @@ export const MONEY_PRECISE_DUST = 1e-6
 
 /**
  * Mana formatting for perp financial values (fees, PnL, payouts, per-period
- * funding). Whole mana from Ṁ1 up, like everywhere else on the site —
+ * funding). Whole mana from Ṁ100 up, like everywhere else on the site —
  * truncated toward zero via getMoneyNumber exactly like formatMoney, so the
- * two never disagree on the digits. Below Ṁ1 the fraction IS the amount (a
- * Ṁ0.1 and a Ṁ0.9 hourly funding charge are different things), so those
+ * two never disagree on the digits. Below Ṁ100 the fraction still matters
+ * (a Ṁ1.1 and a Ṁ1.4 hourly funding charge are different things), so those
  * keep cents, and anything under a cent keeps two significant digits so a
  * real debit never collapses to zero. Grouping and the decimal separator
- * follow the viewer's locale. The sign goes before the moniker ("-Ṁ12");
+ * follow the viewer's locale. The sign goes before the moniker ("-Ṁ120");
  * non-finite input and float dust read as zero.
  */
+export const MONEY_PRECISE_WHOLE_FROM = 100
+
 export function formatMoneyPrecise(amount: number) {
   if (!Number.isFinite(amount)) return ENV_CONFIG.moneyMoniker + '0'
   const magnitude = Math.abs(amount)
   if (magnitude < MONEY_PRECISE_DUST) return ENV_CONFIG.moneyMoniker + '0'
   const sign = amount < 0 ? '-' : ''
-  if (magnitude >= 1) {
+  if (magnitude >= MONEY_PRECISE_WHOLE_FROM) {
     return `${sign}${ENV_CONFIG.moneyMoniker}${formatNumber(
       getMoneyNumber(magnitude)
     )}`
