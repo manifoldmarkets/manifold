@@ -105,20 +105,14 @@ export default function AdminModelClassificationsPage() {
         {!!data?.recent.length && (
           <Col className="gap-1 pt-4">
             <div className="text-ink-700 font-semibold">Recently decided</div>
+            <div className="text-ink-500 text-xs">
+              A verdict can go stale without anything here changing: a publisher
+              may ship weights after launch, which the methodology treats as a
+              reclassification from the release date forward. The nightly audit
+              flags those, so these stay editable.
+            </div>
             {data.recent.map((r) => (
-              <Row
-                key={r.permaslug}
-                className="text-ink-600 items-center gap-2 text-xs"
-              >
-                <span className={r.open ? 'text-teal-600' : 'text-ink-500'}>
-                  {r.open ? 'open' : 'closed'}
-                </span>
-                <span className="font-mono">{r.permaslug}</span>
-                {r.weights && (
-                  <span className="text-ink-400 font-mono">{r.weights}</span>
-                )}
-                <span className="text-ink-400">via {r.source}</span>
-              </Row>
+              <DecidedRow key={r.permaslug} model={r} onDone={refresh} />
             ))}
           </Col>
         )}
@@ -127,6 +121,112 @@ export default function AdminModelClassificationsPage() {
   )
 }
 
+// A verdict already reached, and a way to change it.
+//
+// This list used to be read-only, which quietly assumed a classification is
+// decided once. It is not: the methodology's own pre-committed cases include
+// a publisher shipping weights after launch, and the nightly audit exists to
+// find verdicts that have gone stale. GLM 5.3 was the case that made the gap
+// obvious — correctly closed on 2026-08-20 when zai-org had no such repo,
+// weights published on 08-25, and no way to act on it here while the market
+// showed a stale number.
+//
+// Collapsed behind a click because correcting a verdict should be deliberate
+// and is rare next to working the pending queue above.
+function DecidedRow(props: {
+  model: {
+    permaslug: string
+    open: boolean
+    weights: string | null
+    source: string
+  }
+  onDone: () => void
+}) {
+  const { model, onDone } = props
+  const [editing, setEditing] = useState(false)
+  const [weights, setWeights] = useState(model.weights ?? '')
+  const [saving, setSaving] = useState(false)
+
+  const reclassify = async (open: boolean) => {
+    if (open && !weights.trim()) {
+      toast.error('An open call needs the weights repo that proves it')
+      return
+    }
+    setSaving(true)
+    try {
+      await api('set-model-classification', {
+        permaslug: model.permaslug,
+        open,
+        weights: open ? weights.trim() : undefined,
+      })
+      toast.success(`${model.permaslug} -> ${open ? 'open' : 'closed'}`)
+      setEditing(false)
+      onDone()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Col className="gap-1">
+      <Row className="text-ink-600 flex-wrap items-center gap-2 text-xs">
+        <span className={model.open ? 'text-teal-600' : 'text-ink-500'}>
+          {model.open ? 'open' : 'closed'}
+        </span>
+        <span className="font-mono">{model.permaslug}</span>
+        {model.weights && (
+          <span className="text-ink-400 font-mono">{model.weights}</span>
+        )}
+        <span className="text-ink-400">via {model.source}</span>
+        <button
+          className="text-primary-600 hover:underline"
+          onClick={() => setEditing((v) => !v)}
+        >
+          {editing ? 'cancel' : 'change'}
+        </button>
+      </Row>
+
+      {editing && (
+        <Row className="flex-wrap items-center gap-2 pb-2 pl-4">
+          <Input
+            className="w-72 font-mono text-xs"
+            placeholder="HuggingFace repo backing an open call"
+            value={weights}
+            onChange={(e) => setWeights(e.target.value)}
+          />
+          {!!weights.trim() && (
+            <a
+              className="text-primary-600 text-xs hover:underline"
+              href={`https://huggingface.co/${weights.trim()}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              check repo &#8599;
+            </a>
+          )}
+          <Button
+            size="xs"
+            color="green"
+            disabled={saving || model.open}
+            onClick={() => reclassify(true)}
+          >
+            Open
+          </Button>
+          <Button
+            size="xs"
+            color="gray"
+            disabled={saving || !model.open}
+            onClick={() => reclassify(false)}
+          >
+            Closed
+          </Button>
+        </Row>
+      )}
+    </Col>
+  )
+}
 function PendingRow(props: {
   model: {
     permaslug: string
