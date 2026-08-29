@@ -28,6 +28,9 @@ const PREVENT_ZOOM_SET_NATIVE = `(function() {
 const isIOS = Platform.OS === 'ios'
 
 export const CustomWebview = (props: {
+  // Changing this remounts the WebView. resetWebView bumps it, because a
+  // renderer-killed WebView cannot be revived with .reload().
+  webviewKey: number
   urlToLoad: string
   webview: RefObject<WebView>
   resetWebView: () => void
@@ -41,6 +44,7 @@ export const CustomWebview = (props: {
   display: boolean
 }) => {
   const {
+    webviewKey,
     urlToLoad,
     webview,
     resetWebView,
@@ -85,6 +89,7 @@ export const CustomWebview = (props: {
           }
         >
           <WebView
+            key={webviewKey}
             {...sharedWebViewProps}
             style={styles.webView}
             onLoadStart={() => onNavigate(null)}
@@ -121,6 +126,7 @@ export const CustomWebview = (props: {
       ) : (
         <View style={[styles.container, { position: 'relative' }]}>
           <WebView
+            key={webviewKey}
             {...sharedWebViewProps}
             style={styles.webView}
             onLoadStart={() => onNavigate(null)}

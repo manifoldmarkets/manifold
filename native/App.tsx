@@ -84,6 +84,8 @@ const App = () => {
 
   // This tracks if the webview has loaded its first page
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
+  // Bumped to force a brand-new WebView instance. See resetWebView.
+  const [webviewKey, setWebviewKey] = useState(0)
   // This tracks if the app has its nativeMessageListener set up
   // NOTE: After the webview is killed on android due to OOM, this will always be false, see: https://github.com/react-native-webview/react-native-webview/issues/2680
   const listeningToNative = useRef(false)
@@ -669,8 +671,18 @@ const App = () => {
     setHasLoadedWebView(false)
     listeningToNative.current = false
     setEndpointWithNativeQuery()
-    log('Reloading webview, webview.current:', webview.current)
-    webview.current?.reload()
+    log('Recreating webview')
+    // Remount, don't reload. This runs from onError and - the case that matters -
+    // from onRenderProcessGone / onContentProcessDidTerminate. A WebView whose
+    // renderer process the OS killed is a dead object, and .reload() on it
+    // silently does nothing (react-native-webview#2680, already noted next to
+    // listeningToNative above). onLoadEnd then never fires again, so
+    // hasLoadedWebView stays false and SplashAuth is stuck on the splash until
+    // the app is force-closed. Android reclaims that renderer while we're
+    // backgrounded for the OAuth round-trip, which made every first sign-in on a
+    // low-memory device hang on the crane. A new key gives a fresh instance,
+    // which loads urlToLoad from scratch.
+    setWebviewKey((k) => k + 1)
   }
 
   const isConnected = useIsConnected()
@@ -732,6 +744,7 @@ const App = () => {
           isConnected={isConnected}
         />
         <CustomWebview
+          webviewKey={webviewKey}
           display={!!fullyLoaded}
           urlToLoad={urlToLoad}
           webview={webview}
