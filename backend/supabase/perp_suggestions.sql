@@ -17,8 +17,3 @@ create unique index perp_suggestions_name_key on public.perp_suggestions using b
 
 drop index if exists perp_suggestions_user_created;
 create index perp_suggestions_user_created on public.perp_suggestions using btree (user_id, created_time desc);
-
--- Policies
-drop policy if exists "public read perp suggestions" on perp_suggestions;
-create policy "public read perp suggestions" on perp_suggestions for
-select using (true);

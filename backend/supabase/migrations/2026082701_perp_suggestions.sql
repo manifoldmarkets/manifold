@@ -20,10 +20,10 @@ create unique index if not exists perp_suggestions_name_key
 create index if not exists perp_suggestions_user_created
   on perp_suggestions (user_id, created_time desc);
 
+-- RLS on with NO policies: every read goes through the API (server-side
+-- direct client), which hides moderated rows and never exposes who voted.
+-- A public select policy here would let PostgREST bypass both.
 alter table perp_suggestions enable row level security;
-drop policy if exists "public read perp suggestions" on perp_suggestions;
-create policy "public read perp suggestions" on perp_suggestions
-  for select using (true);
 
 create table if not exists perp_suggestion_votes (
   suggestion_id bigint not null references perp_suggestions (id) on delete cascade,
@@ -33,8 +33,5 @@ create table if not exists perp_suggestion_votes (
 );
 
 alter table perp_suggestion_votes enable row level security;
-drop policy if exists "public read perp suggestion votes" on perp_suggestion_votes;
-create policy "public read perp suggestion votes" on perp_suggestion_votes
-  for select using (true);
 
 commit;

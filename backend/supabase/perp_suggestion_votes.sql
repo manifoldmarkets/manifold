@@ -9,8 +9,3 @@ create table if not exists
   );
 
 alter table perp_suggestion_votes enable row level security;
-
--- Policies
-drop policy if exists "public read perp suggestion votes" on perp_suggestion_votes;
-create policy "public read perp suggestion votes" on perp_suggestion_votes for
-select using (true);
