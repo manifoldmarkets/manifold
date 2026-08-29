@@ -1,52 +1,69 @@
 import { ENV_CONFIG } from '../envs/constants'
-import { formatMoneyPrecise } from './format'
+import {
+  formatMoney,
+  formatMoneyOrLessThanOne,
+  formatMoneyPrecise,
+} from './format'
+
+describe('formatMoneyOrLessThanOne', () => {
+  const mana = ENV_CONFIG.moneyMoniker
+
+  it('reads a real sub-mana amount as "<Ṁ1", not "Ṁ0"', () => {
+    expect(formatMoneyOrLessThanOne(0.45)).toBe(`<${mana}1`)
+    expect(formatMoneyOrLessThanOne(0.001)).toBe(`<${mana}1`)
+    expect(formatMoneyOrLessThanOne(-0.45)).toBe(`<${mana}1`)
+  })
+
+  it('otherwise matches formatMoneyPrecise on the magnitude', () => {
+    expect(formatMoneyOrLessThanOne(0)).toBe(`${mana}0`)
+    expect(formatMoneyOrLessThanOne(1e-9)).toBe(`${mana}0`)
+    expect(formatMoneyOrLessThanOne(1)).toBe(`${mana}1`)
+    expect(formatMoneyOrLessThanOne(12.7)).toBe(`${mana}12`)
+    expect(formatMoneyOrLessThanOne(-12.7)).toBe(`${mana}12`)
+    expect(formatMoneyOrLessThanOne(Number.NaN)).toBe(`${mana}0`)
+  })
+})
 
 describe('formatMoneyPrecise', () => {
   const mana = ENV_CONFIG.moneyMoniker
-  // Grouping and the decimal separator follow the runtime locale (as
-  // formatMoney does), so pin expectations to the same Intl call with the
-  // digit count we expect, rather than to en-US punctuation — the suite must
-  // pass on a de-DE or es-ES runner too.
-  const fixed = (n: number, digits: number) =>
-    n.toLocaleString(undefined, {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
-    })
+  // Grouping follows the runtime locale (as formatMoney does), so compare
+  // digits separator-agnostically rather than pinning en-US punctuation —
+  // the suite must pass on a de-DE or es-ES runner too.
+  const digits = (s: string) => s.replace(/\D/g, '')
 
-  it('keeps cents and groups larger values', () => {
+  it('shows whole mana only, truncating toward zero like formatMoney', () => {
     expect(formatMoneyPrecise(0)).toBe(`${mana}0`)
-    expect(formatMoneyPrecise(0.01)).toBe(`${mana}${fixed(0.01, 2)}`)
-    expect(formatMoneyPrecise(0.02)).toBe(`${mana}${fixed(0.02, 2)}`)
-    expect(formatMoneyPrecise(12.345)).toBe(`${mana}${fixed(12.35, 2)}`)
-    expect(formatMoneyPrecise(1_234.5)).toBe(`${mana}${fixed(1_234.5, 2)}`)
-    // Sanity on the digits themselves, separator-agnostic.
-    expect(formatMoneyPrecise(1_234.5).replace(/\D/g, '')).toBe('123450')
-    expect(formatMoneyPrecise(12.345).replace(/\D/g, '')).toBe('1235')
+    expect(formatMoneyPrecise(12)).toBe(`${mana}12`)
+    expect(formatMoneyPrecise(12.345)).toBe(`${mana}12`)
+    expect(formatMoneyPrecise(12.99)).toBe(`${mana}12`)
+    expect(digits(formatMoneyPrecise(1_234.5))).toBe('1234')
+    expect(formatMoneyPrecise(1_234.5)).not.toMatch(/\d[.,]\d$/)
+    // Float dust just under a whole number rounds up, as formatMoney does.
+    expect(formatMoneyPrecise(499.9999999999999)).toBe(`${mana}500`)
   })
 
-  it('preserves non-zero sub-cent values at two significant digits', () => {
-    expect(formatMoneyPrecise(0.009)).toBe(`${mana}${fixed(0.009, 3)}`)
-    expect(formatMoneyPrecise(0.001234)).toBe(`${mana}${fixed(0.0012, 4)}`)
-    expect(formatMoneyPrecise(0.001234).replace(/\D/g, '')).toBe('00012')
-    // Two significant digits round up across the cent boundary cleanly.
-    expect(formatMoneyPrecise(0.0099999)).toBe(`${mana}${fixed(0.01, 2)}`)
-    // The smallest real fee (M$1 at 1x, 10 bps) survives.
-    expect(formatMoneyPrecise(0.001)).toBe(`${mana}${fixed(0.001, 3)}`)
-    expect(formatMoneyPrecise(0.001).replace(/\D/g, '')).toBe('0001')
+  it('agrees with formatMoney on the digits for every magnitude', () => {
+    for (const amount of [0, 0.4, 1, 1.5, 12.345, 999.99, 1_234.5, 1e6 + 0.7]) {
+      expect(digits(formatMoneyPrecise(amount))).toBe(
+        digits(formatMoney(amount))
+      )
+    }
   })
 
-  it('reads float dust below a micro-mana as zero, never as exponent notation', () => {
+  it('reads sub-mana amounts as zero, never as a fraction or exponent', () => {
+    expect(formatMoneyPrecise(0.5)).toBe(`${mana}0`)
+    expect(formatMoneyPrecise(0.999)).toBe(`${mana}0`)
+    expect(formatMoneyPrecise(0.001)).toBe(`${mana}0`)
     expect(formatMoneyPrecise(1e-9)).toBe(`${mana}0`)
-    expect(formatMoneyPrecise(-5e-8)).toBe(`${mana}0`)
-    expect(formatMoneyPrecise(9.9e-7)).toBe(`${mana}0`)
-    expect(formatMoneyPrecise(1e-6)).toBe(`${mana}${fixed(1e-6, 6)}`)
     expect(formatMoneyPrecise(1e-6)).not.toMatch(/e/)
   })
 
-  it('places the sign before the moniker', () => {
-    expect(formatMoneyPrecise(-0.02)).toBe(`-${mana}${fixed(0.02, 2)}`)
-    expect(formatMoneyPrecise(-0.001)).toBe(`-${mana}${fixed(0.001, 3)}`)
-    expect(formatMoneyPrecise(-1_234.5)).toBe(`-${mana}${fixed(1_234.5, 2)}`)
+  it('places the sign before the moniker and never shows -0', () => {
+    expect(formatMoneyPrecise(-12.7)).toBe(`-${mana}12`)
+    expect(formatMoneyPrecise(-1_234.5).startsWith(`-${mana}`)).toBe(true)
+    expect(digits(formatMoneyPrecise(-1_234.5))).toBe('1234')
+    expect(formatMoneyPrecise(-0.4)).toBe(`${mana}0`)
+    expect(formatMoneyPrecise(-5e-8)).toBe(`${mana}0`)
     expect(formatMoneyPrecise(-0)).toBe(`${mana}0`)
   })
 
