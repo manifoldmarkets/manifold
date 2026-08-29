@@ -314,31 +314,33 @@ const weekChange = (series: WeekSeries | undefined, c: PerpContract) =>
 // Related markets per perp, via the group-overlap endpoint behind the contract
 // page's related-questions rail: everything sharing a topic with the perp,
 // ranked by importance.
-const useRelatedMarkets = (perps: PerpContract[]) => {
+// Fetched on demand for the SELECTED market and kept for the session, so
+// the first paint costs one request rather than one per market, and
+// switching back to a market is instant.
+const useRelatedMarkets = (selectedId: string | undefined) => {
   const [byPerp, setByPerp] = useState<Record<string, Contract[]>>({})
-  const idKey = perps.map((c) => c.id).join(',')
 
   useEffect(() => {
-    const ids = idKey ? idKey.split(',') : []
-    if (ids.length === 0) return
+    if (!selectedId || byPerp[selectedId]) return
     let cancelled = false
-    Promise.all(
-      ids.map((contractId) =>
-        api('get-related-markets-by-group', {
-          contractId,
-          limit: 30,
-          offset: 0,
-        })
-          .then((r) => [contractId, r.groupContracts] as const)
-          .catch(() => [contractId, [] as Contract[]] as const)
-      )
-    ).then((entries) => {
-      if (!cancelled) setByPerp(Object.fromEntries(entries))
+    api('get-related-markets-by-group', {
+      contractId: selectedId,
+      limit: 30,
+      offset: 0,
     })
+      .then((r) => {
+        if (!cancelled)
+          setByPerp((prev) => ({ ...prev, [selectedId]: r.groupContracts }))
+      })
+      .catch(() => {
+        if (!cancelled) setByPerp((prev) => ({ ...prev, [selectedId]: [] }))
+      })
     return () => {
       cancelled = true
     }
-  }, [idKey])
+    // byPerp is read only as a "have we fetched this yet" guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId])
 
   return byPerp
 }
@@ -539,7 +541,6 @@ export default function PerpsPage(props: { perps: Contract[] }) {
   const open = contracts.filter((c) => !c.isResolved)
 
   const week = useWeekSeries(open)
-  const related = useRelatedMarkets(open)
   const activity = useRecentActivity(HUB_FEATURES.activity ? open : [])
   const user = useUser()
   // `?as=<userId>` previews the positions card as another user — positions
@@ -571,6 +572,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     open.find((c) => c.id === selectedId) ??
     open.find((c) => c.id === flagshipId) ??
     open[0]
+  const related = useRelatedMarkets(selected?.id)
   // Ticker clicks can happen from anywhere on the page: select and bring
   // the terminal into view (its scroll margin clears the pinned tape).
   const selectRow = (id: string) => {
