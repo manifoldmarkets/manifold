@@ -6,10 +6,56 @@ import {
   parseSwitchableAppUrl,
 } from './native-app-url'
 
+// Every url this module accepts, so the browser-oracle invariant below can be
+// asserted over all of them in one place. Add here when adding an accept case.
+const ACCEPTED = [
+  'https://manifold.markets/',
+  'https://dev.manifold.markets/',
+  'https://PREVIEW.VERCEL.APP',
+  'HTTPS://Manifold.Markets/Home',
+  'https://manifold.markets:443/x',
+  'https://manifold.markets:8443/',
+  'https://manifold.markets/home?nativePlatform=android',
+  'https://manifold.markets/#/deep',
+  'https://xn--mnifold-5wa.markets/',
+  'https://prod-git-abc-manifold.vercel.app',
+  'http://localhost:3000/',
+  'HTTP://LOCALHOST:3000',
+  'http://localhost:80/',
+  'http://127.0.0.1:3001',
+  'http://192.168.1.229:3000/',
+  'http://10.0.0.5:3000',
+  'http://172.16.4.4:3000',
+  'http://[::1]:3000/',
+  'https://1.2.3.4/',
+]
+
+describe('browser-origin invariant', () => {
+  // The whole point of the module: an accepted origin must be exactly what a
+  // browser reports for that document, or the credential hand-off compares two
+  // different strings forever. Node's WHATWG URL stands in for the browser here
+  // — it is NOT a valid oracle for the app's runtime parser
+  // (whatwg-url-without-unicode preserves host case), but it is the right oracle
+  // for what a WebView document's location.origin will say.
+  it.each(ACCEPTED)('%s round-trips through a real URL parser', (raw) => {
+    const parsed = parseHttpOrigin(raw)
+    expect(parsed).not.toBeNull()
+    const href = parsed!.origin + (parsed!.rest || '/')
+    expect(new URL(href).origin).toBe(parsed!.origin)
+  })
+
+  it.each(ACCEPTED)('%s produces a switchable base a browser agrees with', (raw) => {
+    const parsed = parseSwitchableAppUrl(raw)
+    if (!parsed) return // http on a public host is rejected by design
+    expect(new URL(parsed.base).origin).toBe(parsed.origin)
+    expect(new URL(parsed.href).origin).toBe(parsed.origin)
+  })
+})
+
 describe('parseHttpOrigin', () => {
   it('canonicalizes scheme and host case', () => {
-    // React Native's URL polyfill does not lowercase, so an uppercase host would
-    // never match the lowercase origin a document reports for itself.
+    // The app's runtime URL does not lowercase, so an uppercase host would never
+    // match the lowercase origin a document reports for itself.
     expect(originOf('https://PREVIEW.VERCEL.APP')).toBe(
       'https://preview.vercel.app'
     )
@@ -28,15 +74,15 @@ describe('parseHttpOrigin', () => {
   })
 
   it('ignores path, query and fragment', () => {
-    expect(originOf('https://manifold.markets/home?nativePlatform=android')).toBe(
-      'https://manifold.markets'
-    )
+    expect(
+      originOf('https://manifold.markets/home?nativePlatform=android')
+    ).toBe('https://manifold.markets')
     expect(originOf('https://manifold.markets/#/deep')).toBe(
       'https://manifold.markets'
     )
   })
 
-  it('rejects userinfo, which RN URL.origin would keep', () => {
+  it('rejects userinfo', () => {
     expect(originOf('https://manifold.markets@evil.com/')).toBeNull()
     expect(originOf('https://user:pass@evil.com/')).toBeNull()
   })
@@ -54,9 +100,7 @@ describe('parseHttpOrigin', () => {
       expect(originOf(raw)).toBeNull()
   })
 
-  it('rejects malformed input rather than coercing it', () => {
-    // RN's single-argument URL constructor never throws, so these all "parse"
-    // there; a try/catch is not a filter.
+  it('rejects malformed input', () => {
     for (const raw of [
       'not a url',
       '',
@@ -75,6 +119,8 @@ describe('parseHttpOrigin', () => {
   })
 
   it('rejects non-ASCII hosts but accepts their punycode form', () => {
+    // The runtime URL skips IDNA entirely, so a unicode host would be stored
+    // verbatim while the browser reports the punycoded origin.
     expect(originOf('https://mänifold.markets/')).toBeNull()
     expect(originOf('https://манифолд.рф/')).toBeNull()
     expect(originOf('https://xn--mnifold-5wa.markets/')).toBe(
@@ -82,14 +128,42 @@ describe('parseHttpOrigin', () => {
     )
   })
 
+  it('rejects non-canonical IPv4, which a browser would rewrite', () => {
+    // Each of these parses in a browser but serializes to something else, so
+    // storing our reading of it would strand the hand-off. Asserted against the
+    // oracle so the comment cannot rot.
+    for (const [raw, browserOrigin] of [
+      ['https://127.1/', 'https://127.0.0.1'],
+      ['https://010.000.000.001/', 'https://8.0.0.1'],
+      ['https://2130706433/', 'https://127.0.0.1'],
+      ['https://0x7f.0.0.1/', 'https://127.0.0.1'],
+    ]) {
+      expect(new URL(raw).origin).toBe(browserOrigin)
+      expect(originOf(raw)).toBeNull()
+    }
+  })
+
+  it('accepts only already-canonical IPv6 loopback', () => {
+    expect(originOf('http://[::1]:3000/')).toBe('http://[::1]:3000')
+    // A browser compresses this to [::1]; we reject rather than reimplement
+    // RFC 5952.
+    expect(new URL('http://[0:0:0:0:0:0:0:1]:3000/').origin).toBe(
+      'http://[::1]:3000'
+    )
+    expect(originOf('http://[0:0:0:0:0:0:0:1]:3000/')).toBeNull()
+    // Malformed: a browser throws, and so must we — the old parser accepted
+    // these and threw later, after trust had already been cleared.
+    for (const raw of ['http://[:::]/', 'http://[1::2::3]/', 'http://[::1/']) {
+      expect(() => new URL(raw)).toThrow()
+      expect(originOf(raw)).toBeNull()
+    }
+    // Any other IPv6 is refused, canonical or not.
+    expect(originOf('http://[2001:db8::1]/')).toBeNull()
+  })
+
   it('rejects non-strings', () => {
     for (const raw of [null, undefined, 42, {}, [], { toString: () => 'x' }])
       expect(originOf(raw)).toBeNull()
-  })
-
-  it('handles bracketed IPv6', () => {
-    expect(originOf('http://[::1]:3000/')).toBe('http://[::1]:3000')
-    expect(originOf('http://[::1/')).toBeNull()
   })
 
   it('exposes the remainder after the authority', () => {
@@ -103,22 +177,28 @@ describe('parseHttpOrigin', () => {
 describe('isSameOrigin', () => {
   it('matches regardless of path or case', () => {
     expect(
-      isSameOrigin('https://manifold.markets/home?x=1', 'https://manifold.markets/')
+      isSameOrigin(
+        'https://manifold.markets/home?x=1',
+        'https://manifold.markets/'
+      )
     ).toBe(true)
-    expect(isSameOrigin('https://MANIFOLD.markets/', 'https://manifold.markets/')).toBe(
-      true
-    )
+    expect(
+      isSameOrigin('https://MANIFOLD.markets/', 'https://manifold.markets/')
+    ).toBe(true)
   })
 
   it('separates scheme, host and port', () => {
-    expect(isSameOrigin('http://manifold.markets/', 'https://manifold.markets/')).toBe(
-      false
-    )
+    expect(
+      isSameOrigin('http://manifold.markets/', 'https://manifold.markets/')
+    ).toBe(false)
     expect(
       isSameOrigin('https://www.manifold.markets/', 'https://manifold.markets/')
     ).toBe(false)
     expect(
-      isSameOrigin('https://manifold.markets.evil.com/', 'https://manifold.markets/')
+      isSameOrigin(
+        'https://manifold.markets.evil.com/',
+        'https://manifold.markets/'
+      )
     ).toBe(false)
     expect(
       isSameOrigin('https://manifold.markets:8443/', 'https://manifold.markets/')
@@ -176,6 +256,7 @@ describe('isLocalHostname', () => {
       '010.0.0.1',
       '10.0.0.01',
       '10.-1.0.1',
+      '127.1',
     ])
       expect(isLocalHostname(host)).toBe(false)
   })
@@ -183,13 +264,13 @@ describe('isLocalHostname', () => {
 
 describe('parseSwitchableAppUrl', () => {
   it('accepts the deploy previews and LAN dev servers the workflow needs', () => {
-    expect(parseSwitchableAppUrl('https://prod-git-abc-manifold.vercel.app')).toEqual(
-      {
-        origin: 'https://prod-git-abc-manifold.vercel.app',
-        base: 'https://prod-git-abc-manifold.vercel.app/',
-        href: 'https://prod-git-abc-manifold.vercel.app/',
-      }
-    )
+    expect(
+      parseSwitchableAppUrl('https://prod-git-abc-manifold.vercel.app')
+    ).toEqual({
+      origin: 'https://prod-git-abc-manifold.vercel.app',
+      base: 'https://prod-git-abc-manifold.vercel.app/',
+      href: 'https://prod-git-abc-manifold.vercel.app/',
+    })
     expect(parseSwitchableAppUrl('http://192.168.1.229:3000/')?.base).toBe(
       'http://192.168.1.229:3000/'
     )
@@ -222,6 +303,8 @@ describe('parseSwitchableAppUrl', () => {
       'about:blank',
       'blob:https://evil.com/1',
       'https://user@evil.com/',
+      'https://127.1/',
+      'http://[0:0:0:0:0:0:0:1]/',
       'not a url',
       '',
       null,
@@ -229,61 +312,5 @@ describe('parseSwitchableAppUrl', () => {
       42,
     ])
       expect(parseSwitchableAppUrl(raw)).toBeNull()
-  })
-})
-
-// Transcribed VERBATIM from react-native@0.81.4
-// Libraries/Blob/URL.js (the module polyfillGlobal installs as the global URL in
-// setUpXHR.js). Not the live module — common's jest cannot load a Flow file — so
-// this pins the behaviour that motivated parsing urls by hand. If a React Native
-// upgrade makes these fail, the global URL may have become spec-compliant and
-// this module could be reconsidered.
-describe('react-native 0.81 URL semantics this module exists to avoid', () => {
-  class RnUrl {
-    _url: string
-    constructor(url: string) {
-      this._url = url
-      if (this._url.includes('#')) {
-        const split = this._url.split('#')
-        const beforeHash = split[0]
-        const website = beforeHash.split('://')[1]
-        if (!website.includes('/')) this._url = split.join('/#')
-      }
-      if (
-        !this._url.endsWith('/') &&
-        !(this._url.includes('?') || this._url.includes('#'))
-      )
-        this._url += '/'
-    }
-    get origin(): string {
-      const matches = this._url.match(/^(https?:\/\/[^/]+)/)
-      return matches ? matches[1] : ''
-    }
-    get hostname(): string {
-      const m = this._url.match(/^https?:\/\/(?:[^@]+@)?([^:/?#]+)/)
-      return m ? m[1] : ''
-    }
-  }
-
-  it('never throws on garbage, so try/catch is not a filter', () => {
-    expect(() => new RnUrl('not a url')).not.toThrow()
-    expect(() => new RnUrl('javascript:alert(1)')).not.toThrow()
-    expect(originOf('not a url')).toBeNull()
-  })
-
-  it('keeps userinfo in origin while hostname strips it', () => {
-    const url = new RnUrl('https://manifold.markets@evil.com/')
-    expect(url.origin).toBe('https://manifold.markets@evil.com')
-    expect(url.hostname).toBe('evil.com')
-    expect(originOf('https://manifold.markets@evil.com/')).toBeNull()
-  })
-
-  it('does not lowercase the host', () => {
-    expect(new RnUrl('https://PREVIEW.VERCEL.APP/').origin).toBe(
-      'https://PREVIEW.VERCEL.APP'
-    )
-    expect(originOf('https://PREVIEW.VERCEL.APP/')).toBe(
-      'https://preview.vercel.app'
-    )
   })
 })

@@ -1,26 +1,37 @@
 // Origin parsing for the native app's credential hand-off.
 //
-// This deliberately does NOT use the global URL. React Native 0.81 polyfills URL
-// from Libraries/Blob/URL.js, which is a set of regexes rather than a WHATWG
-// parser, and three of its behaviours are actively unsafe to base a trust
-// decision on:
-//   - the single-argument constructor NEVER throws, so `new URL('not a url')`
-//     succeeds and a try/catch around it is dead code;
-//   - `origin` is `_url.match(/^(https?:\/\/[^/]+)/)`, so it keeps any userinfo:
-//     'https://manifold.markets@evil.com/' yields origin
-//     'https://manifold.markets@evil.com';
-//   - nothing is lowercased, so 'https://PREVIEW.VERCEL.APP' compares unequal to
-//     the lowercase origin the WebView document reports for itself.
-// Everything here is pure and string-only so it can be tested in CI, which the
-// native package has no runner for.
+// WHY NOT THE GLOBAL URL. The native app's index.js imports 'expo' before
+// './App', and expo/src/winter/runtime.native.ts installs URL from
+// whatwg-url-without-unicode over React Native's own polyfill — so the runtime
+// URL is spec-compliant in almost every respect. It throws on garbage, strips
+// userinfo from origin, and drops a default port. Two things it does NOT do,
+// because that package exists to omit the IDNA tables:
+//
+//   new URL('https://PREVIEW.VERCEL.APP/').origin -> 'https://PREVIEW.VERCEL.APP'
+//   new URL('https://mänifold.markets/').origin   -> 'https://mänifold.markets'
+//
+// (Verified against whatwg-url-without-unicode@8.0.0-3; Node's WHATWG URL gives
+// 'https://preview.vercel.app' and 'https://xn--mnifold-5wa.markets'.)
+//
+// A WebView document is a real browser, so the location.origin it reports is
+// always lowercase ASCII. Comparing that against an origin the runtime URL left
+// mixed-case would never match, and the hand-off would be stranded for good —
+// silently and permanently. So origins are parsed and canonicalized here
+// instead. Everything is pure and string-only, because CI has no way to run
+// anything in the native package.
+//
+// The bar for accepting an origin is therefore: it must serialize exactly the
+// way a browser would. Where matching a browser takes real work — compressing an
+// IPv6 address per RFC 5952, or expanding shorthand IPv4 like '127.1' — this
+// rejects the input rather than store an origin no document will ever report.
+// native-app-url.test.ts asserts that invariant for every accepted case, using
+// Node's WHATWG URL as the browser oracle.
 
 const DEFAULT_PORTS: Record<string, string> = { 'http:': '80', 'https:': '443' }
 
 // A single ASCII DNS label: alphanumeric, inner hyphens allowed.
 const LABEL = '[a-z0-9](?:[a-z0-9-]*[a-z0-9])?'
 const HOSTNAME_RE = new RegExp(`^${LABEL}(?:\\.${LABEL})*$`)
-// Bracketed IPv6, e.g. [::1]. Only hex, colons and a dotted IPv4 tail.
-const IPV6_RE = /^\[[0-9a-f:.]+\]$/
 
 // Splits scheme + authority off the front. Authority runs to the first /, ? or #.
 const SCHEME_AUTHORITY_RE = /^([a-z][a-z0-9+.-]*):\/\/([^/?#]*)([\s\S]*)$/i
@@ -36,6 +47,27 @@ type ParsedOrigin = {
   rest: string
 }
 
+const ipv4Octets = (hostname: string): number[] | null => {
+  const parts = hostname.split('.')
+  if (parts.length !== 4) return null
+  const octets: number[] = []
+  for (const part of parts) {
+    // No leading zeros: a browser reads '010' as octal, so '010.000.000.001'
+    // serializes to 8.0.0.1. Refuse the ambiguity rather than reimplement it.
+    if (!/^(?:0|[1-9][0-9]{0,2})$/.test(part)) return null
+    const value = Number(part)
+    if (value > 255) return null
+    octets.push(value)
+  }
+  return octets
+}
+
+// Per the URL spec a domain whose last label is all digits must parse as an IPv4
+// address, so anything that looks numeric has to already BE the canonical dotted
+// quad. This rejects '127.1' (browser: 127.0.0.1), '2130706433' (127.0.0.1),
+// '0x7f.0.0.1' (127.0.0.1) and '010.000.000.001' (8.0.0.1).
+const looksNumeric = (hostname: string) => /(?:^|\.)[0-9]+$/.test(hostname)
+
 const parsePort = (raw: string, protocol: string): string | null => {
   if (raw === '') return ''
   // No leading zeros, no '+', no whitespace — Number() is far too forgiving.
@@ -49,13 +81,12 @@ const parsePort = (raw: string, protocol: string): string | null => {
 
 /**
  * Strictly parses an absolute http(s) URL into a canonical origin, or returns
- * null. Rejects userinfo, non-ASCII hosts, malformed ports and every non-http(s)
- * scheme (javascript:, data:, file:, blob:, about:).
+ * null. Accepts only what serializes identically in a browser: ASCII hostnames,
+ * canonical dotted-quad IPv4, and '[::1]'. Rejects userinfo, non-ASCII hosts,
+ * malformed ports and every non-http(s) scheme.
  */
 export const parseHttpOrigin = (raw: unknown): ParsedOrigin | null => {
   if (typeof raw !== 'string') return null
-  // Leading/trailing whitespace and C0 controls are stripped by real parsers;
-  // anything else non-printable means it isn't a URL a human typed.
   const trimmed = raw.trim()
   if (trimmed === '') return null
   for (let i = 0; i < trimmed.length; i++) {
@@ -72,8 +103,8 @@ export const parseHttpOrigin = (raw: unknown): ParsedOrigin | null => {
   const protocol = rawScheme.toLowerCase() + ':'
   if (protocol !== 'http:' && protocol !== 'https:') return null
 
-  // Userinfo is never acceptable here: RN's URL.origin keeps it while its
-  // hostname getter strips it, so the two disagree about who the host is.
+  // Userinfo before the host is never acceptable here — it is exactly how a
+  // hostile url is dressed to read as ours: 'https://manifold.markets@evil.com'.
   if (authority.includes('@')) return null
 
   let hostPart = authority
@@ -97,9 +128,21 @@ export const parseHttpOrigin = (raw: unknown): ParsedOrigin | null => {
 
   const hostname = hostPart.toLowerCase()
   if (hostname === '') return null
-  // ASCII only. A non-ASCII host would need IDNA to canonicalize, which nothing
-  // in this path can do — a punycoded 'xn--' host is already ASCII and passes.
-  if (!HOSTNAME_RE.test(hostname) && !IPV6_RE.test(hostname)) return null
+
+  if (hostname.startsWith('[')) {
+    // Loopback only. A browser compresses IPv6 per RFC 5952, so
+    // '[0:0:0:0:0:0:0:1]' comes back as '[::1]' and a stored expanded form would
+    // never match, while '[:::]' and '[1::2::3]' are rejected outright there.
+    // Rather than reimplement either behaviour for an address nothing needs,
+    // take the one form that is already canonical.
+    if (hostname !== '[::1]') return null
+  } else {
+    // ASCII only. A non-ASCII host needs IDNA to canonicalize, which the app's
+    // runtime URL deliberately cannot do — a punycoded 'xn--' host is already
+    // ASCII and passes.
+    if (!HOSTNAME_RE.test(hostname)) return null
+    if (looksNumeric(hostname) && ipv4Octets(hostname) === null) return null
+  }
 
   const port = parsePort(portPart, protocol)
   if (port === null) return null
@@ -120,21 +163,6 @@ export const originOf = (raw: unknown): string | null =>
 export const isSameOrigin = (a: unknown, b: unknown): boolean => {
   const originA = originOf(a)
   return originA !== null && originA === originOf(b)
-}
-
-const ipv4Octets = (hostname: string): number[] | null => {
-  const parts = hostname.split('.')
-  if (parts.length !== 4) return null
-  const octets: number[] = []
-  for (const part of parts) {
-    // No leading zeros: '010.0.0.1' is octal to some resolvers and decimal to
-    // others, so it has no single correct reading.
-    if (!/^(?:0|[1-9][0-9]{0,2})$/.test(part)) return null
-    const value = Number(part)
-    if (value > 255) return null
-    octets.push(value)
-  }
-  return octets
 }
 
 /**

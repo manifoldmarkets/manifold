@@ -102,8 +102,9 @@ const App = () => {
     destination: string
   } | null>(null)
   const [baseUri, setBaseUri] = useState(BASE_URI)
-  // Origin of the one outstanding 'switch server?' prompt, or null. See setAppUrl.
-  const appUrlPrompt = useRef<string | null>(null)
+  // State of the 'switch server?' prompt: one per app run, and a refusal is
+  // final. See setAppUrl.
+  const appUrlPrompt = useRef<'idle' | 'open' | 'rejected'>('idle')
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -191,9 +192,11 @@ const App = () => {
   const webviewUrl = useRef(baseUri)
   // Full-origin match (scheme + host + port), not just host: a page served over
   // http://manifold.markets or a look-alike subdomain must not read as ours.
-  // Parsed by hand rather than with the global URL — React Native's polyfill
-  // never throws, keeps userinfo in origin, and doesn't lowercase the host, so
-  // 'https://manifold.markets@evil.com/' and case tricks both misread there.
+  // Parsed by hand rather than with the global URL. Expo's winter runtime
+  // installs whatwg-url-without-unicode as URL before App loads, and that
+  // package omits the IDNA tables — so it neither lowercases a host nor
+  // punycodes one, while the document we compare against always reports a
+  // lowercase ASCII location.origin. See common/src/native-app-url.ts.
   const isManifoldUrl = (url: string) => isSameOrigin(url, baseUri)
 
   // Pending 'nativeFbUser' posts, kept so a sign-out (or a switch to another
@@ -656,17 +659,21 @@ const App = () => {
         return
       }
       // Alert.alert is not single-flight: React Native dismisses the visible
-      // dialog to show the next one. Without this, a page that spams setAppUrl
-      // could swap the origin under the admin's finger between reading and
-      // tapping, or just wedge the app behind an endless stack of dialogs.
-      if (appUrlPrompt.current) {
-        log('Ignoring setAppUrl, a switch prompt is already open')
+      // dialog to show the next one. Tracking only whether one is OPEN is not
+      // enough either — a page in a setInterval would just reopen it the instant
+      // it was cancelled, which is a modal DoS the admin cannot tap their way
+      // out of. So a refusal latches: 'rejected' is terminal for the life of the
+      // app process, and restarting the app is the reset, which is the one thing
+      // the WebView cannot do for itself. If neither button ever fires we stay
+      // 'open', which fails closed.
+      if (appUrlPrompt.current !== 'idle') {
+        log('Ignoring setAppUrl, switch prompt is', appUrlPrompt.current)
         return
       }
       const promptedUid = fbUser.uid
-      appUrlPrompt.current = appUrl.origin
-      const closePrompt = () => {
-        appUrlPrompt.current = null
+      appUrlPrompt.current = 'open'
+      const rejectPrompt = () => {
+        appUrlPrompt.current = 'rejected'
       }
       // The one check WebView content can neither forge nor race, because it
       // isn't in the WebView: the admin okays the new origin by name.
@@ -678,12 +685,15 @@ const App = () => {
           'You will be signed in there with this account, so only ' +
           'continue if you entered this URL yourself.',
         [
-          { text: 'Cancel', style: 'cancel', onPress: closePrompt },
+          { text: 'Cancel', style: 'cancel', onPress: rejectPrompt },
           {
             text: 'Switch',
             style: 'destructive',
             onPress: () => {
-              closePrompt()
+              // A confirmed switch goes back to idle rather than latching: the
+              // admin may well want to switch back, and a page that got a
+              // confirmation out of them has already won.
+              appUrlPrompt.current = 'idle'
               // Re-check on confirm: the dialog may have sat there across a
               // sign-out or an account switch.
               const signedIn = fbUserRef.current
@@ -706,7 +716,7 @@ const App = () => {
             },
           },
         ],
-        { cancelable: true, onDismiss: closePrompt }
+        { cancelable: true, onDismiss: rejectPrompt }
       )
     } else {
       log('Unhandled message from web type: ', type)
