@@ -37,10 +37,12 @@ export const CustomWebview = (props: {
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
-  // Reports the WebView's committed URL (including third-party pages such as
-  // iDenfy), so the app can avoid posting credentials into them. Called with
-  // null at navigation start to clear trust until the next load commits.
-  onNavigate: (url: string | null) => void
+  // Reports where the WebView is going ('start') and what actually committed
+  // ('commit'), so the app can avoid posting credentials into third-party pages
+  // such as iDenfy. The start URL matters: clearing trust for EVERY navigation
+  // start strands us when a navigation is abandoned (the user leaving for the
+  // OAuth flow), because onLoad then never fires to restore it.
+  onNavigate: (url: string | null, phase: 'start' | 'commit') => void
   display: boolean
 }) => {
   const {
@@ -92,13 +94,13 @@ export const CustomWebview = (props: {
             key={webviewKey}
             {...sharedWebViewProps}
             style={styles.webView}
-            onLoadStart={() => onNavigate(null)}
+            onLoadStart={(e) => onNavigate(e.nativeEvent.url, 'start')}
             // Restore trust only from a SUCCESSFUL, committed load. onLoad fires
             // only from onLoadingFinish; onNavigationStateChange also fires for
             // the provisional navigation-START event (on iOS with loading still
             // false), which would restore a Manifold URL while the external
             // document is still active, and onLoadEnd also fires on errors.
-            onLoad={(e) => onNavigate(e.nativeEvent.url)}
+            onLoad={(e) => onNavigate(e.nativeEvent.url, 'commit')}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -129,13 +131,13 @@ export const CustomWebview = (props: {
             key={webviewKey}
             {...sharedWebViewProps}
             style={styles.webView}
-            onLoadStart={() => onNavigate(null)}
+            onLoadStart={(e) => onNavigate(e.nativeEvent.url, 'start')}
             // Restore trust only from a SUCCESSFUL, committed load. onLoad fires
             // only from onLoadingFinish; onNavigationStateChange also fires for
             // the provisional navigation-START event (on iOS with loading still
             // false), which would restore a Manifold URL while the external
             // document is still active, and onLoadEnd also fires on errors.
-            onLoad={(e) => onNavigate(e.nativeEvent.url)}
+            onLoad={(e) => onNavigate(e.nativeEvent.url, 'commit')}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)

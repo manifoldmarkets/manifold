@@ -202,10 +202,10 @@ const App = () => {
     pendingAuthPosts.current = []
   }
   // Whether a wanted handoff post was dropped because the WebView was on an
-  // untrusted URL at fire time. Trust is cleared for the whole document load,
-  // so on a slow connection every timer below can fire inside that window —
-  // this flag lets the next committed Manifold page re-arm the handoff (see
-  // onNavigate) instead of silently stranding the web client logged out.
+  // untrusted URL at fire time — the whole retry ladder can fire while a
+  // third-party page (iDenfy, Stripe) is up. This flag lets the next committed
+  // Manifold page re-arm the handoff (see onNavigate) instead of silently
+  // stranding the web client logged out.
   const authPostDropped = useRef(false)
 
   // Sends the saved user to the web client to make the log in process faster
@@ -752,9 +752,17 @@ const App = () => {
           setHasLoadedWebView={setHasLoadedWebView}
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
-          onNavigate={(url) => {
-            // null (navigation start) leaves an empty string, which isManifoldUrl
-            // treats as untrusted until the next load commits.
+          onNavigate={(url, phase) => {
+            if (phase === 'start') {
+              // Distrust ONLY a navigation heading somewhere foreign. Clearing
+              // on every start is what stranded sign-in: the OAuth hand-off
+              // abandons an in-flight load, so onLoad never fires, trust stays
+              // empty forever, and every queued credential post is dropped with
+              // no path back. A start we can't identify is still treated as
+              // hostile.
+              if (!url || !isManifoldUrl(url)) webviewUrl.current = ''
+              return
+            }
             webviewUrl.current = url ?? ''
             // A slow initial load can outlast the whole retry ladder while
             // trust is cleared; if that dropped a wanted post, re-arm the
