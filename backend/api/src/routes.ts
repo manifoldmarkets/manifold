@@ -79,10 +79,7 @@ import {
   getModelClassifications,
   setModelClassification,
 } from './model-classifications'
-import {
-  getOraclePrice,
-  getOraclePriceSeries,
-} from './get-oracle-price'
+import { getOraclePrice, getOraclePriceSeries } from './get-oracle-price'
 import { getKnownOracleFeeds } from './get-known-oracle-feeds'
 import { internalWriteOraclePrice } from './internal-write-oracle-price'
 import { getPerpPositions } from './get-perp-positions'
