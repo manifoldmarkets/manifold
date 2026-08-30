@@ -1,17 +1,103 @@
 diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
-index 834cbaf..c51848b 100644
+index 834cbaf..ccaa13a 100644
 --- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
 +++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
-@@ -115,10 +115,53 @@ public class RNWidget {
+@@ -1,8 +1,10 @@
+ package com.reactnativeandroidwidget;
+ 
++import android.app.AlarmManager;
+ import android.app.PendingIntent;
+ import android.appwidget.AppWidgetManager;
+ import android.content.ComponentName;
++import android.content.Context;
+ import android.content.Intent;
+ import android.graphics.Bitmap;
+ import android.graphics.Canvas;
+@@ -115,10 +117,128 @@ public class RNWidget {
          }
          addCollectionViews(widgetId, remoteWidgetView, widgetWithViews);
  
 +        applyCountdown(remoteWidgetView, light);
++        scheduleRolloverUpdate(widgetId, light);
 +
          AppWidgetManager.getInstance(appContext)
              .updateAppWidget(widgetId, remoteWidgetView);
      }
  
++    // Schedule the next unattended re-render, at the streak day's rollover.
++    //
++    // updatePeriodMillis is a 30-minute floor that Doze defers indefinitely, so a
++    // widget on an idle phone can sit on yesterday's state for hours - and once a
++    // Chronometer is running it ticks visibly NEGATIVE past its target, which
++    // looks broken rather than merely stale. iOS gets this free from a WidgetKit
++    // timeline; Android has no equivalent, so we set the alarm ourselves.
++    //
++    // The render tells us how long until the rollover (clickActionData.rolloverMs).
++    // An inexact alarm, not setExact*: exact alarms need SCHEDULE_EXACT_ALARM,
++    // denied by default on targetSdk 33+ and a poor thing to demand for a widget.
++    // This is therefore BEST EFFORT - Android may deliver an inexact alarm up to
++    // an hour late, and Doze or battery saver can stretch that further. It is a
++    // large improvement on updatePeriodMillis alone, which stays as the backstop,
++    // but it is not a guarantee: a briefly negative countdown remains possible.
++    //
++    // RTC, not RTC_WAKEUP: the widget only has to be right once someone can see
++    // it, so there is no reason to wake a sleeping phone - which would cold-start
++    // WorkManager and React Native at midnight for every widget instance. A
++    // non-wakeup alarm is delivered at the device's next wakeup instead.
++    //
++    // And plain set(), not setAndAllowWhileIdle(): the latter no longer wakes the
++    // CPU once RTC replaces RTC_WAKEUP, but it still buys a Doze exemption so the
++    // work can run during an unrelated maintenance window. Nothing here needs to
++    // run while the device is idle, so set() matches the intent - deliver once
++    // Doze ends. Neither API means "screen visible"; there is no such alarm.
++    //
++    // The alarm broadcasts a custom <pkg>.WIDGET_* action, which RNWidgetProvider
++    // dispatches as WIDGET_ROLLOVER - deliberately NOT an ordinary WIDGET_UPDATE,
++    // which would re-fetch and could cache a row the backend's midnight job has
++    // not reached yet. Every render arms the next alarm, so the chain sustains
++    // itself with the app closed.
++    private void scheduleRolloverUpdate(int widgetId, ReadableMap rootConfig) {
++        try {
++            long rolloverMs = 0;
++            if (rootConfig != null && rootConfig.hasKey("props")) {
++                ReadableMap props = rootConfig.getMap("props");
++                if (props != null && props.hasKey("clickActionData")) {
++                    ReadableMap data = props.getMap("clickActionData");
++                    if (data != null && data.hasKey("rolloverMs")) {
++                        rolloverMs = (long) data.getDouble("rolloverMs");
++                    }
++                }
++            }
++            if (rolloverMs <= 0) return;
++
++            String pkg = appContext.getPackageName();
++            Intent intent = new Intent(appContext, Class.forName(pkg + ".widget." + widgetName));
++            intent.setAction(pkg + ".WIDGET_SCHEDULED_UPDATE");
++            intent.putExtra("widgetId", widgetId);
++            // RNWidgetProvider.onReceive switches on clickAction - never leave it null.
++            intent.putExtra("clickAction", "SCHEDULED_UPDATE");
++
++            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
++                flags |= PendingIntent.FLAG_IMMUTABLE;
++            }
++            // widgetId as the request code: one pending alarm per widget instance,
++            // each re-render replacing its own rather than stacking.
++            PendingIntent pending =
++                PendingIntent.getBroadcast(appContext, widgetId, intent, flags);
++
++            AlarmManager alarms =
++                (AlarmManager) appContext.getSystemService(Context.ALARM_SERVICE);
++            if (alarms == null) return;
++            long at = System.currentTimeMillis() + rolloverMs;
++            alarms.set(AlarmManager.RTC, at, pending);
++        } catch (Exception e) {
++            // Never fail a render over a missed alarm: the updatePeriodMillis tick
++            // stays as the backstop, exactly as before this patch.
++            e.printStackTrace();
++        }
++    }
++
 +    // Live countdown overlay. The root widget passes { showCountdown, countdownMs }
 +    // via clickActionData (a supported passthrough). When shown, we drive a native
 +    // Chronometer that ticks down to the target with no app process — the one thing
@@ -55,6 +141,109 @@ index 834cbaf..c51848b 100644
 +
      public WritableMap createPreview(int width, int height) throws Exception {
          ReadableMap configClone = Arguments.makeNativeMap(config.toHashMap());
+ 
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
+index c138d81..89f0c61 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
+@@ -1,11 +1,15 @@
+ package com.reactnativeandroidwidget;
+ 
++import android.app.AlarmManager;
++import android.app.PendingIntent;
+ import android.appwidget.AppWidgetManager;
+ import android.appwidget.AppWidgetProvider;
++import android.content.ComponentName;
+ import android.content.Context;
+ import android.content.Intent;
+ import android.content.SharedPreferences;
+ import android.net.Uri;
++import android.os.Build;
+ import android.os.Bundle;
+ 
+ import androidx.work.Data;
+@@ -48,6 +52,29 @@ public class RNWidgetProvider extends AppWidgetProvider {
+             return;
+         }
+ 
++        // An alarm set by RNWidget.scheduleRolloverUpdate.
++        //
++        // Dispatched as its own WIDGET_ROLLOVER action rather than WIDGET_UPDATE:
++        // a WIDGET_UPDATE re-fetches, and this fires seconds after the streak day
++        // turns over, possibly before the backend's midnight job has run. The JS
++        // handler answers WIDGET_ROLLOVER from the stored snapshot only - it never
++        // fetches and never persists - so the local overnight prediction runs and
++        // this path adds no write of its own. An ordinary update near midnight can
++        // still cache a pre-reset row; that race predates this change and is out
++        // of scope here.
++        if ((context.getPackageName() + ".WIDGET_SCHEDULED_UPDATE")
++                .equals(incomingIntent.getAction())) {
++            int scheduledWidgetId = incomingIntent.getIntExtra("widgetId", -1);
++            // A deleted widget can leave its alarm pending; don't wake JS for an id
++            // the host no longer has.
++            if (scheduledWidgetId != -1 && isWidgetActive(context, scheduledWidgetId)) {
++                Data scheduledData = RNWidgetJsCommunication.buildData(
++                    context, getClass().getSimpleName(), scheduledWidgetId, "WIDGET_ROLLOVER");
++                RNWidgetJsCommunication.startBackgroundTask(context, scheduledData);
++            }
++            return;
++        }
++
+         int widgetId = incomingIntent.getIntExtra("widgetId", -1);
+ 
+         switch (incomingIntent.getStringExtra("clickAction")) {
+@@ -62,11 +89,52 @@ public class RNWidgetProvider extends AppWidgetProvider {
+         }
+     }
+ 
++    // Is this id still bound to a host? Guards against a stale alarm firing for a
++    // widget the user has removed.
++    private boolean isWidgetActive(Context context, int widgetId) {
++        try {
++            int[] live = AppWidgetManager.getInstance(context)
++                .getAppWidgetIds(new ComponentName(context, getClass()));
++            for (int id : live) {
++                if (id == widgetId) return true;
++            }
++        } catch (Exception e) {
++            // If we can't tell, let it through: a spurious render is cheaper than a
++            // widget that stops updating.
++            return true;
++        }
++        return false;
++    }
++
++    // Drop the pending rollover alarm for a removed widget. Must construct the
++    // PendingIntent identically to RNWidget.scheduleRolloverUpdate (same action,
++    // same request code) or it won't match the one to cancel.
++    private void cancelRolloverUpdate(Context context, int widgetId) {
++        try {
++            Intent intent = new Intent(context, getClass());
++            intent.setAction(context.getPackageName() + ".WIDGET_SCHEDULED_UPDATE");
++            int flags = PendingIntent.FLAG_NO_CREATE;
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
++                flags |= PendingIntent.FLAG_IMMUTABLE;
++            }
++            PendingIntent pending =
++                PendingIntent.getBroadcast(context, widgetId, intent, flags);
++            if (pending == null) return;
++            AlarmManager alarms =
++                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
++            if (alarms != null) alarms.cancel(pending);
++            pending.cancel();
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++    }
++
+     @Override
+     public void onDeleted(Context context, int[] appWidgetIds) {
+         super.onDeleted(context, appWidgetIds);
+ 
+         for (int widgetId : appWidgetIds) {
++            cancelRolloverUpdate(context, widgetId);
+             removeWidgetSize(context, widgetId);
+             RNWidgetImageProvider.deleteWidgetImages(context, widgetId);
  
 diff --git a/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml b/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml
 index 9426de7..26f6813 100644

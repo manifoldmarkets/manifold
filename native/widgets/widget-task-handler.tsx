@@ -68,6 +68,27 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       renderWidget(renderStreakWidget(widgetInfo, data, quests))
       break
     }
+    // Fired by the rollover alarm, seconds after the streak day turns over.
+    //
+    // Deliberately does NOT refresh. The backend's own midnight job may not have
+    // run yet, so the API can still answer with the previous day's row — and
+    // saving that would stamp pre-reset data with a post-midnight updatedAt,
+    // which both closes refreshIfStale's staleness gate and disqualifies
+    // predictOvernight (it requires a snapshot synced during the day that just
+    // ended). The widget would then show an unconsumed freeze, or a streak that
+    // has actually died, until the app was next opened.
+    //
+    // Rendering the stored snapshot instead lets predictOvernight replay the
+    // reset locally and leaves updatedAt stale, so the next ordinary
+    // WIDGET_UPDATE still fetches and confirms.
+    case 'WIDGET_ROLLOVER' as typeof widgetAction: {
+      const [stored, quests] = await Promise.all([
+        loadStreakSnapshot(),
+        loadQuestSnapshot(),
+      ])
+      renderWidget(renderStreakWidget(widgetInfo, stored, quests))
+      break
+    }
     case 'WIDGET_CLICK':
       // Tap-to-open-app is wired in a later pass.
       break

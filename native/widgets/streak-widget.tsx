@@ -8,6 +8,7 @@ import {
 } from 'react-native-android-widget'
 import type { WidgetInfo } from 'react-native-android-widget'
 import type { NativeQuestData, NativeStreakData } from 'common/native-message'
+import { pacificStartOfDayMs } from 'common/streak-snapshot'
 import { CRANE_DATA_URI } from './crane-data'
 import {
   MANI_ASPECT,
@@ -30,39 +31,10 @@ import {
 
 type StreakState = 'lit' | 'pending' | 'frozen' | 'loggedOut'
 
-// How many ms past LA-midnight the LA wall clock reads at `at`.
-function laWallClockMsPastMidnight(at: Date): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(at)
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0)
-  // '24' can appear for midnight in some engines; normalize to 0.
-  const h = get('hour') % 24
-  const m = get('minute')
-  const s = get('second')
-  return ((h * 60 + m) * 60 + s) * 1000 + at.getMilliseconds()
-}
-
-// Most recent midnight America/Los_Angeles, in epoch ms (the streak "today"
-// boundary the backend uses). First pass: subtract however many ms `now` is
-// past LA-midnight in wall-clock terms. On the two DST-transition days
-// wall-clock ms ≠ elapsed ms, so that candidate lands ±1h off — the second
-// pass reads the LA wall clock AT the candidate and nudges it home (exactly 0,
-// a no-op, on the other 363 days). Mirrors pacificStartOfDay() in index.swift,
-// which gets DST handling from Calendar for free.
-export function pacificStartOfDayMs(now: Date): number {
-  let start = now.getTime() - laWallClockMsPastMidnight(now)
-  const drift = laWallClockMsPastMidnight(new Date(start))
-  if (drift !== 0) {
-    const halfDay = 12 * 60 * 60 * 1000
-    start += drift > halfDay ? 24 * 60 * 60 * 1000 - drift : -drift
-  }
-  return start
-}
+// The Pacific day boundary lives in common/ so CI can test it (and the snapshot
+// acceptance rule that depends on it); re-exported here because the widget and
+// its headless task both import it from this module.
+export { pacificStartOfDayMs }
 
 function computeState(d: NativeStreakData | null, now: Date): StreakState {
   if (!d || !d.loggedIn || !d.streak || d.streak <= 0) return 'loggedOut'
@@ -125,6 +97,10 @@ export function predictOvernight(
 // today is 23/25h long (DST). Returns 0 when LA time can't be computed —
 // callers treat 0 as "don't show a countdown" (a Chronometer started at zero
 // would tick negative until the next re-render).
+// Land the rollover alarm just after midnight rather than exactly on it, so the
+// render that follows always sees the new day.
+const ROLLOVER_ALARM_BUFFER_MS = 2000
+
 function msUntilPacificReset(now: Date): number {
   try {
     const startMs = pacificStartOfDayMs(now)
@@ -594,8 +570,16 @@ function Shell({
   if (!frame) return inner
   // Frame: a solid pale-gold layer behind the gradient gives milestone widgets a
   // premium rim (a real border can't sit on a gradient background in this lib).
+  //
+  // It must repeat clickAction/clickActionData, because this FlexWidget becomes
+  // the ROOT and the native side reads both the countdown and the rollover time
+  // from the root's clickActionData. Without it a framed widget would schedule no
+  // rollover alarm and fall back to the periodic/Doze path — and framed means a
+  // lit milestone, which is exactly the state that needs the midnight re-render.
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
+      clickActionData={clickData}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -726,10 +710,9 @@ function SmallWidget({
       mascot={mascot}
       clickData={clickData}
       // NOTE: frame wraps the shell in an outer FlexWidget, which becomes the
-      // ROOT — and the patched Chronometer reads {showCountdown} from the
-      // root's clickActionData. Safe today only because frame ⇒ lit milestone
-      // and countdown ⇒ pending/frozen never coincide; a framed countdown
-      // state would silently lose its timer.
+      // ROOT, and the native side reads the countdown AND the rollover time from
+      // the root's clickActionData. WidgetShell therefore repeats clickActionData
+      // on that frame; without it a framed widget silently loses both.
       frame={isTall && milestone ? FRAME_GOLD : undefined}
     >
       <FlexWidget style={contentStyle}>
@@ -1199,6 +1182,10 @@ const FORCE_QUESTS: NativeQuestData | null = null
 // Dev: override the remaining ms to preview the countdown urgency colours
 // (e.g. 3 * 60 * 60 * 1000 = 3h → red). Null = use the real time to midnight.
 const FORCE_COUNTDOWN_MS: number | null = null
+// Debug: seconds until the scheduled-rollover alarm should fire, instead of the
+// real time to midnight PT. Set to e.g. 60_000 to watch the widget re-render on
+// demand rather than waiting for a real rollover. Ship as null.
+const FORCE_ROLLOVER_MS: number | null = null
 
 // Single resizable widget: pick small vs medium by the host width (dp). Mirrors
 // the iOS systemSmall / systemMedium families of one widget.
@@ -1249,7 +1236,8 @@ export function StreakWidget({
   // to reserve the ticker's spot). The plain (no-quest) medium can't host it, so
   // it's left off there. Requires a computable reset time (countdownMs > 0):
   // starting the Chronometer at zero would tick negative until the next render.
-  const countdownMs = FORCE_COUNTDOWN_MS ?? msUntilPacificReset(now)
+  const resetMs = msUntilPacificReset(now)
+  const countdownMs = FORCE_COUNTDOWN_MS ?? resetMs
   const showCountdown =
     (state === 'pending' || state === 'frozen') &&
     countdownMs > 0 &&
@@ -1257,6 +1245,13 @@ export function StreakWidget({
   const clickData = {
     showCountdown,
     countdownMs: showCountdown ? countdownMs : 0,
+    // Sent on EVERY render, countdown shown or not — the native side uses it to
+    // set the alarm that re-renders us at the rollover, and the state that most
+    // needs that re-render is 'lit', which shows no countdown at all. A small
+    // buffer past midnight so the alarm lands after the new day has started,
+    // never a hair before it. 0 means "no alarm" (unknown reset time).
+    rolloverMs:
+      FORCE_ROLLOVER_MS ?? (resetMs > 0 ? resetMs + ROLLOVER_ALARM_BUFFER_MS : 0),
   }
   return isMedium ? (
     <MediumWidget
