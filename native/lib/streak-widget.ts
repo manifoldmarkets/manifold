@@ -1,4 +1,3 @@
-import { mayPersistStreakSnapshot } from 'common/streak-snapshot'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import {
   NativeQuestData,
@@ -26,18 +25,7 @@ const storage =
 // Writes the streak snapshot into the App Group and refreshes the widget. The
 // widget computes lit/pending/frozen itself from these fields, so we just mirror
 // the raw numbers.
-//
-// This is the persistence boundary for BOTH platforms and every writer - the
-// app's own API sync, and the web client's 'setStreak' push, which is not ours
-// and can carry anything. A row is only stored once it proves the day's reset has
-// been applied to it; see mayPersistStreakSnapshot. Refusing leaves the previous
-// snapshot in place, which still renders correctly (and, past a rollover, gets
-// the local overnight prediction), and the next write retries.
 export const writeStreakWidget = (data: NativeStreakData) => {
-  if (!mayPersistStreakSnapshot(data, new Date())) {
-    log('Refusing streak snapshot: fields unusable, or the daily reset is unproven')
-    return
-  }
   if (Platform.OS === 'android') {
     require('./streak-widget-android').writeAndroidStreakWidget(data)
     return

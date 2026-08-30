@@ -152,8 +152,6 @@ const App = () => {
     const snapshot = await fetchStreakSnapshot(CONFIGS[ENV].apiEndpoint, userId)
     // Drop the write if the widget stopped belonging to this user while the
     // request was in flight (sign-out, or a switch to another account).
-    // writeStreakWidget itself refuses a row that hasn't proven the day's reset,
-    // so this only has to answer "does the widget still belong to this user".
     if (snapshot && widgetUid.current === userId) writeStreakWidget(snapshot)
   }
 

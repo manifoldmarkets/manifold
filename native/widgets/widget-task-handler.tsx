@@ -1,6 +1,5 @@
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget'
 import { CONFIGS } from 'common/envs/constants'
-import { mayPersistStreakSnapshot } from 'common/streak-snapshot'
 import type { NativeStreakData } from 'common/native-message'
 import { getData } from 'lib/auth'
 import { fetchStreakSnapshot } from '../lib/streak-widget'
@@ -33,25 +32,15 @@ async function refreshIfStale(
     const user = await getData<{ uid?: string }>('user')
     if (!user?.uid) return data
     const fresh = await fetchStreakSnapshot(CONFIGS[ENV].apiEndpoint, user.uid)
+    if (!fresh) return data
     // A sign-out during the fetch clears the stored user. Without this check we'd
     // persist the old account's snapshot with a fresh updatedAt, which also closes
     // the staleness gate above — so a signed-out phone would keep rendering that
     // streak indefinitely. iOS can't hit this (no headless fetch; clearStreakWidget
     // is final there), so leaving it would be a real lockstep divergence. Returning
     // null renders 'loggedOut', matching index.swift's loadStreakData guard.
-    //
-    // Checked BEFORE any other post-fetch return: `data` is the signed-out
-    // account's snapshot, so returning it anywhere below would repaint the streak
-    // we just cleared.
     const current = await getData<{ uid?: string }>('user')
     if (current?.uid !== user.uid) return null
-    if (!fresh) return data
-    // Around the rollover the API can still answer with the day-that-just-ended's
-    // row, before the backend's midnight job has reached this user. Saving that
-    // stamps pre-reset data with a fresh updatedAt, which closes the gate above
-    // for the rest of the day AND disqualifies predictOvernight. Keep the older
-    // snapshot instead: its prediction is right, and the next update retries.
-    if (!mayPersistStreakSnapshot(fresh, new Date())) return data
     await saveStreakSnapshot(fresh)
     return fresh
   } catch {

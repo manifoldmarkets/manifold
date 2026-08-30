@@ -143,7 +143,7 @@ index 834cbaf..ccaa13a 100644
          ReadableMap configClone = Arguments.makeNativeMap(config.toHashMap());
  
 diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
-index c138d81..b66a0d9 100644
+index c138d81..89f0c61 100644
 --- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
 +++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
 @@ -1,11 +1,15 @@
@@ -162,7 +162,7 @@ index c138d81..b66a0d9 100644
  import android.os.Bundle;
  
  import androidx.work.Data;
-@@ -48,6 +52,28 @@ public class RNWidgetProvider extends AppWidgetProvider {
+@@ -48,6 +52,29 @@ public class RNWidgetProvider extends AppWidgetProvider {
              return;
          }
  
@@ -171,10 +171,11 @@ index c138d81..b66a0d9 100644
 +        // Dispatched as its own WIDGET_ROLLOVER action rather than WIDGET_UPDATE:
 +        // a WIDGET_UPDATE re-fetches, and this fires seconds after the streak day
 +        // turns over, possibly before the backend's midnight job has run. The JS
-+        // handler answers WIDGET_ROLLOVER from the stored snapshot only, so the
-+        // local overnight prediction runs and no pre-reset row can be cached.
-+        // (Persisting one is refused centrally too - see reflectsDailyReset in
-+        // common/streak-snapshot - since ordinary updates race the same window.)
++        // handler answers WIDGET_ROLLOVER from the stored snapshot only - it never
++        // fetches and never persists - so the local overnight prediction runs and
++        // this path adds no write of its own. An ordinary update near midnight can
++        // still cache a pre-reset row; that race predates this change and is out
++        // of scope here.
 +        if ((context.getPackageName() + ".WIDGET_SCHEDULED_UPDATE")
 +                .equals(incomingIntent.getAction())) {
 +            int scheduledWidgetId = incomingIntent.getIntExtra("widgetId", -1);
@@ -191,7 +192,7 @@ index c138d81..b66a0d9 100644
          int widgetId = incomingIntent.getIntExtra("widgetId", -1);
  
          switch (incomingIntent.getStringExtra("clickAction")) {
-@@ -62,11 +88,52 @@ public class RNWidgetProvider extends AppWidgetProvider {
+@@ -62,11 +89,52 @@ public class RNWidgetProvider extends AppWidgetProvider {
          }
      }
  
