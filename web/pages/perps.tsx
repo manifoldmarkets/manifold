@@ -214,6 +214,8 @@ const useTickFlash = (value: number) => {
 // One batched poll for the whole page. Matches the 15s scheduler cadence used
 // by useLivePerpContract; same never-rewind guards.
 const POLL_MS = 15_000
+// The schema's cap on ids per markets-by-ids call.
+const MARKETS_BY_IDS_MAX = 100
 
 const usePerpBoard = (initial: PerpContract[]) => {
   const [contracts, setContracts] = useState(initial)
@@ -223,10 +225,19 @@ const usePerpBoard = (initial: PerpContract[]) => {
     const ids = idKey ? idKey.split(',') : []
     if (ids.length === 0) return
     let cancelled = false
+    // markets-by-ids caps a request at 100 ids. The board carries every
+    // public perp ever created (resolved ones too, for the ticker), so
+    // chunk rather than let the 101st market silently stop the poll — and
+    // with it live unlisting.
+    const chunks: string[][] = []
+    for (let i = 0; i < ids.length; i += MARKETS_BY_IDS_MAX) {
+      chunks.push(ids.slice(i, i + MARKETS_BY_IDS_MAX))
+    }
     const poll = () =>
-      api('markets-by-ids', { ids })
-        .then((fetched) => {
+      Promise.all(chunks.map((chunk) => api('markets-by-ids', { ids: chunk })))
+        .then((pages) => {
           if (cancelled) return
+          const fetched = pages.flat()
           const byId = new Map(fetched.map((m) => [m.id, m]))
           setContracts((prev) =>
             prev.map((c) => {
