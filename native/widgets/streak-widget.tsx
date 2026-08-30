@@ -8,6 +8,7 @@ import {
 } from 'react-native-android-widget'
 import type { WidgetInfo } from 'react-native-android-widget'
 import type { NativeQuestData, NativeStreakData } from 'common/native-message'
+import { pacificStartOfDayMs } from 'common/streak-snapshot'
 import { CRANE_DATA_URI } from './crane-data'
 import {
   MANI_ASPECT,
@@ -30,39 +31,10 @@ import {
 
 type StreakState = 'lit' | 'pending' | 'frozen' | 'loggedOut'
 
-// How many ms past LA-midnight the LA wall clock reads at `at`.
-function laWallClockMsPastMidnight(at: Date): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(at)
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0)
-  // '24' can appear for midnight in some engines; normalize to 0.
-  const h = get('hour') % 24
-  const m = get('minute')
-  const s = get('second')
-  return ((h * 60 + m) * 60 + s) * 1000 + at.getMilliseconds()
-}
-
-// Most recent midnight America/Los_Angeles, in epoch ms (the streak "today"
-// boundary the backend uses). First pass: subtract however many ms `now` is
-// past LA-midnight in wall-clock terms. On the two DST-transition days
-// wall-clock ms ≠ elapsed ms, so that candidate lands ±1h off — the second
-// pass reads the LA wall clock AT the candidate and nudges it home (exactly 0,
-// a no-op, on the other 363 days). Mirrors pacificStartOfDay() in index.swift,
-// which gets DST handling from Calendar for free.
-export function pacificStartOfDayMs(now: Date): number {
-  let start = now.getTime() - laWallClockMsPastMidnight(now)
-  const drift = laWallClockMsPastMidnight(new Date(start))
-  if (drift !== 0) {
-    const halfDay = 12 * 60 * 60 * 1000
-    start += drift > halfDay ? 24 * 60 * 60 * 1000 - drift : -drift
-  }
-  return start
-}
+// The Pacific day boundary lives in common/ so CI can test it (and the snapshot
+// acceptance rule that depends on it); re-exported here because the widget and
+// its headless task both import it from this module.
+export { pacificStartOfDayMs }
 
 function computeState(d: NativeStreakData | null, now: Date): StreakState {
   if (!d || !d.loggedIn || !d.streak || d.streak <= 0) return 'loggedOut'

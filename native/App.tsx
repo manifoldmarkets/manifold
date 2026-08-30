@@ -8,6 +8,7 @@ import {
   parseSwitchableAppUrl,
 } from 'common/native-app-url'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
+import { reflectsDailyReset } from 'common/streak-snapshot'
 import {
   MesageTypeMap,
   NativeQuestData,
@@ -152,7 +153,13 @@ const App = () => {
     const snapshot = await fetchStreakSnapshot(CONFIGS[ENV].apiEndpoint, userId)
     // Drop the write if the widget stopped belonging to this user while the
     // request was in flight (sign-out, or a switch to another account).
-    if (snapshot && widgetUid.current === userId) writeStreakWidget(snapshot)
+    if (!snapshot || widgetUid.current !== userId) return
+    // ...or if the row predates the backend's midnight job. Persisting a
+    // pre-reset row around the rollover would cache it as authoritative for the
+    // whole day and suppress the widget's own overnight prediction; the widget
+    // keeps rendering its (correct) stale snapshot until a later sync confirms.
+    if (!reflectsDailyReset(snapshot, new Date())) return
+    writeStreakWidget(snapshot)
   }
 
   // Re-sync the streak widget whenever the app is backgrounded or re-activated —
