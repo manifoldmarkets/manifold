@@ -39,7 +39,17 @@ export function useMeasureSize() {
     resizeObserver.observe(elem)
     observerRef.current = resizeObserver
   })
-  useEffect(() => () => observerRef.current?.disconnect(), [])
+  // Unmount (and Strict Mode's simulated unmount): disconnect AND forget the
+  // element, so the replayed layout effect above sees a change and creates
+  // a fresh observer instead of leaving the element unobserved for good.
+  useEffect(
+    () => () => {
+      observerRef.current?.disconnect()
+      observerRef.current = null
+      observedRef.current = null
+    },
+    []
+  )
 
   return { elemRef, ...size }
 }
