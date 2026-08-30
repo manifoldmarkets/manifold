@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
-index 834cbaf..55b1d18 100644
+index 834cbaf..ccaa13a 100644
 --- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
 +++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
 @@ -1,8 +1,10 @@
@@ -13,7 +13,7 @@ index 834cbaf..55b1d18 100644
  import android.content.Intent;
  import android.graphics.Bitmap;
  import android.graphics.Canvas;
-@@ -115,10 +117,126 @@ public class RNWidget {
+@@ -115,10 +117,128 @@ public class RNWidget {
          }
          addCollectionViews(widgetId, remoteWidgetView, widgetWithViews);
  
@@ -52,8 +52,10 @@ index 834cbaf..55b1d18 100644
 +    // Doze ends. Neither API means "screen visible"; there is no such alarm.
 +    //
 +    // The alarm broadcasts a custom <pkg>.WIDGET_* action, which RNWidgetProvider
-+    // turns back into an ordinary WIDGET_UPDATE. Every render therefore arms the
-+    // next one, so the chain sustains itself with the app closed.
++    // dispatches as WIDGET_ROLLOVER - deliberately NOT an ordinary WIDGET_UPDATE,
++    // which would re-fetch and could cache a row the backend's midnight job has
++    // not reached yet. Every render arms the next alarm, so the chain sustains
++    // itself with the app closed.
 +    private void scheduleRolloverUpdate(int widgetId, ReadableMap rootConfig) {
 +        try {
 +            long rolloverMs = 0;
