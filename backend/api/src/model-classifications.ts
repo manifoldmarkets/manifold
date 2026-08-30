@@ -4,6 +4,7 @@ import {
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
   isCompositeSlug,
+  isValidPermaslug,
 } from 'common/perps/open-weight-models'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import {
@@ -184,6 +185,12 @@ export const setModelClassification: APIHandler<
   // (An earlier comment here said the version is "stamped on every point the
   // oracle writes". It is not: the version reaches the insert LOG line only,
   // and `oracle_prices` has no version column.)
+  if (!isValidPermaslug(permaslug))
+    throw new APIError(
+      400,
+      `${JSON.stringify(body.permaslug)} is not a valid owner/model permaslug.`
+    )
+
   if (isCompositeSlug(permaslug))
     throw new APIError(
       400,

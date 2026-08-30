@@ -7,6 +7,7 @@ import {
   classifyModel,
   computeOpenWeightShare,
   isCompositeSlug,
+  isValidPermaslug,
   newestWindowDates,
   openWeightWindowRange,
   utcDateString,
@@ -308,9 +309,9 @@ describe('publication validation', () => {
 
     for (const truth of [asOpen, asClosed]) {
       expect(truth).not.toBeNull()
-      expect(Math.abs((truth as number) - validation.share)).toBeLessThanOrEqual(
-        validation.grace.maxIndexError + 1e-9
-      )
+      expect(
+        Math.abs((truth as number) - validation.share)
+      ).toBeLessThanOrEqual(validation.grace.maxIndexError + 1e-9)
     }
   })
 
@@ -417,7 +418,10 @@ describe('the published list', () => {
         expect([slug, typeof c.weights]).toEqual([slug, 'string'])
         expect([slug, (c.weights ?? '').trim()]).not.toEqual([slug, ''])
         // owner/repo, and the owner is not the empty string
-        expect([slug, c.weights]).toEqual([slug, expect.stringMatching(/^[^/\s]+\/[^/\s]+$/)])
+        expect([slug, c.weights]).toEqual([
+          slug,
+          expect.stringMatching(/^[^/\s]+\/[^/\s]+$/),
+        ])
       } else {
         expect([slug, c.weights]).toEqual([slug, undefined])
       }
@@ -475,7 +479,10 @@ describe('composite slugs (routers and floating aliases)', () => {
     // And critically they are NOT unclassified, which is what would start a
     // grace clock and eventually halt publication.
     expect(result.unclassified).toEqual([])
-    expect(result.compositeSlugs).toEqual(['openrouter/fusion', '~z-ai/glm-latest'])
+    expect(result.compositeSlugs).toEqual([
+      'openrouter/fusion',
+      '~z-ai/glm-latest',
+    ])
     expect(result.compositeTokens).toBe(600)
   })
 
@@ -490,5 +497,33 @@ describe('composite slugs (routers and floating aliases)', () => {
     )
     expect(result.unclassified).toEqual(['newlab/brand-new'])
     expect(result.compositeSlugs).toEqual([])
+  })
+})
+
+describe('isValidPermaslug', () => {
+  it('rejects slash-containing keys that are not owner/model', () => {
+    // Every one of these passed the old includes('/') check, and with the
+    // CLI's --create flag could have been INSERTED as a classification row
+    // that nothing in the index can ever match.
+    for (const bad of ['/x', 'x/', '/', 'x//y', '', 'x', 'a/b/c', ' / '])
+      expect([bad, isValidPermaslug(bad)]).toEqual([bad, false])
+  })
+
+  it('accepts the real permaslug keys the index uses', () => {
+    for (const good of [
+      'z-ai/glm-5.3-20260816',
+      'openai/gpt-4',
+      'meta-llama/llama-3.3-70b-instruct',
+      'inclusionai/ling-3.0-flash-20260723',
+    ])
+      expect([good, isValidPermaslug(good)]).toEqual([good, true])
+  })
+
+  it('agrees with basePermaslug on what it produces', () => {
+    // basePermaslug truncates at ':', so a variant suffix must still normalise
+    // to something this accepts -- otherwise the write path would reject keys
+    // the read path generates.
+    for (const raw of ['qwen/qwen3-max:free', 'z-ai/glm-5.3-20260816:nitro'])
+      expect([raw, isValidPermaslug(basePermaslug(raw))]).toEqual([raw, true])
   })
 })

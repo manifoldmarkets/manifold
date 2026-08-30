@@ -4,6 +4,7 @@ import {
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
   isCompositeSlug,
+  isValidPermaslug,
 } from 'common/perps/open-weight-models'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
@@ -227,6 +228,14 @@ export const upsertClassification = async (
   }
 ) => {
   const { permaslug, open, source, classifiedBy } = params
+  const slug = basePermaslug(permaslug)
+  // Enforced at the single write path, so no caller can insert a key the index
+  // could never match — `/x`, `x/`, `x//y` all previously passed an
+  // includes('/') check.
+  if (!isValidPermaslug(slug))
+    throw new Error(
+      `refusing malformed permaslug: ${JSON.stringify(permaslug)}`
+    )
   const weights = open ? params.weights ?? null : null
   if (open && !weights)
     throw new Error(
@@ -273,7 +282,7 @@ export const upsertClassification = async (
        classified_by = excluded.classified_by,
        updated_time = now()`,
     [
-      basePermaslug(permaslug),
+      slug,
       open,
       weights,
       source,

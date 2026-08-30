@@ -817,11 +817,28 @@ export const basePermaslug = (permaslug: string): string => {
   return colon === -1 ? permaslug : permaslug.slice(0, colon)
 }
 
+/**
+ * Is this a well-formed permaslug key — exactly `owner/model`?
+ *
+ * `basePermaslug` normalises but does not validate, and every caller that
+ * checked at all checked `includes('/')`, which admits `/x`, `x/`, `/` and
+ * `x//y`. With the CLI's --create flag any of those could be INSERTED as a
+ * classification row, and nothing in the index would ever match one: a key
+ * that cannot correspond to a model is a row that can only ever be noise in
+ * the queue and the audit.
+ *
+ * Lives here rather than in each caller because the gap was central — the
+ * API, the CLI and upsertClassification all shared it.
+ */
+export const isValidPermaslug = (permaslug: string): boolean => {
+  const parts = permaslug.split('/')
+  if (parts.length !== 2) return false
+  return parts.every((part) => part.trim().length > 0)
+}
 export const classifyModel = (
   permaslug: string,
   classifications: ModelClassifications = OPEN_WEIGHT_MODELS
-): ModelClassification | undefined =>
-  classifications[basePermaslug(permaslug)]
+): ModelClassification | undefined => classifications[basePermaslug(permaslug)]
 
 /** One row of OpenRouter's `datasets/rankings-daily` payload. */
 export type RankingRow = {
@@ -1141,13 +1158,12 @@ export const validateOpenWeightPublication = (
   )
     return {
       ok: false,
-      reason:
-        `composite (router/alias) slugs are ${(
-          (result.compositeTokens / result.classifiedTokens) *
-          100
-        ).toFixed(2)}% of classified tokens, over the ${(
-          compositeShareCap * 100
-        ).toFixed(2)}% cap: ${result.compositeSlugs.join(', ')}`,
+      reason: `composite (router/alias) slugs are ${(
+        (result.compositeTokens / result.classifiedTokens) *
+        100
+      ).toFixed(2)}% of classified tokens, over the ${(
+        compositeShareCap * 100
+      ).toFixed(2)}% cap: ${result.compositeSlugs.join(', ')}`,
     }
 
   if (result.unclassified.length === 0) return { ok: true, share: result.share }

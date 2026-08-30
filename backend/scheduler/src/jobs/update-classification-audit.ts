@@ -135,8 +135,14 @@ export const runClassificationAudit = async () => {
     catalog.map((entry) => [basePermaslug(entry.permaslug), entry])
   )
 
-  const rot: string[] = []
-  const contradicted: string[] = []
+  // Tagged with origin, because the two have DIFFERENT remedies and pointing
+  // at the wrong one is worse than saying nothing. A seeded entry is invisible
+  // on the admin page (the getter filters it) and refused by the setter (it is
+  // the published methodology), so telling an operator to go and fix it there
+  // sends them to a page where the row does not appear at all.
+  type Finding = { origin: 'seed' | 'override'; message: string }
+  const rot: Finding[] = []
+  const contradicted: Finding[] = []
   let openChecked = 0
   let closedChecked = 0
   let unreachable = 0
@@ -159,16 +165,20 @@ export const runClassificationAudit = async () => {
       // table's check constraint plus the seed's own test both forbid it —
       // so if one appears, that is the finding.
       if (!verdict.weights) {
-        rot.push(`${permaslug} [${origin}] — open with no weights repo cited`)
+        rot.push({
+          origin,
+          message: `${permaslug} — open with no weights repo cited`,
+        })
         continue
       }
       const result = await safeVerify(verdict.weights)
       if (!result.confirmed) {
         if (isTransportFailure(result.reason)) unreachable++
         else
-          rot.push(
-            `${permaslug} [${origin}] — ${verdict.weights} no longer verifies: ${result.reason}`
-          )
+          rot.push({
+            origin,
+            message: `${permaslug} — ${verdict.weights} no longer verifies: ${result.reason}`,
+          })
       }
       continue
     }
@@ -198,11 +208,13 @@ export const runClassificationAudit = async () => {
         repoCheckRan = false
       }
       if (result.confirmed) {
-        contradicted.push(
-          `${permaslug} [${origin}] — we say closed, OpenRouter declares ` +
+        contradicted.push({
+          origin,
+          message:
+            `${permaslug} — we say closed, OpenRouter declares ` +
             `${entry.huggingFaceId} (${result.evidence.weightFileCount} weight files, ` +
-            `gated=${result.evidence.gated})`
-        )
+            `gated=${result.evidence.gated})`,
+        })
         closedVerified++
         continue
       }
@@ -215,10 +227,12 @@ export const runClassificationAudit = async () => {
     if (repoCheckRan) closedVerified++
     const phrase = describesOpenness(entry.description)
     if (phrase)
-      contradicted.push(
-        `${permaslug} [${origin}] — we say closed, but OpenRouter's ` +
-          `description says "${phrase}"`
-      )
+      contradicted.push({
+        origin,
+        message:
+          `${permaslug} — we say closed, but OpenRouter's ` +
+          `description says "${phrase}"`,
+      })
   }
 
   log(
@@ -237,19 +251,39 @@ export const runClassificationAudit = async () => {
   // Kept rare enough to deserve it: transport failures are excluded above, so
   // these are claims about repos rather than about the network, and the first
   // three prod runs produced none.
-  const indent = (lines: string[]) => '\n  ' + lines.join('\n  ')
-  if (rot.length > 0)
-    log.error(
-      `[classification-audit] ${rot.length} open verdict(s) no longer verify:` +
-        indent(rot)
-    )
-  if (contradicted.length > 0)
-    log.error(
-      `[classification-audit] ${contradicted.length} closed verdict(s) contradicted ` +
-        `by OpenRouter metadata — review at /admin/model-classifications:` +
-        indent(contradicted)
-    )
+  // Reported per origin, because the remedy differs and only one of them is
+  // reachable from the admin page.
+  const indent = (fs: Finding[]) =>
+    '\n  ' + fs.map((f) => f.message).join('\n  ')
+  const seedOf = (fs: Finding[]) => fs.filter((f) => f.origin === 'seed')
+  const overrideOf = (fs: Finding[]) =>
+    fs.filter((f) => f.origin === 'override')
 
+  const SEED_REMEDY =
+    'edit common/src/perps/open-weight-models.ts and bump ' +
+    'OPEN_WEIGHT_LIST_VERSION (seeded entries are not editable from the ' +
+    'admin page or the API — they are the published methodology)'
+  const OVERRIDE_REMEDY = 'review at /admin/model-classifications'
+
+  for (const [findings, what] of [
+    [rot, 'open verdict(s) no longer verify'],
+    [contradicted, 'closed verdict(s) contradicted by OpenRouter metadata'],
+  ] as [Finding[], string][]) {
+    const seeded = seedOf(findings)
+    const overridden = overrideOf(findings)
+    if (seeded.length > 0)
+      log.error(
+        `[classification-audit] ${seeded.length} SEED ${what} — ` +
+          `${SEED_REMEDY}:` +
+          indent(seeded)
+      )
+    if (overridden.length > 0)
+      log.error(
+        `[classification-audit] ${overridden.length} override ${what} — ` +
+          `${OVERRIDE_REMEDY}:` +
+          indent(overridden)
+      )
+  }
   // A night where much of the population could not be reached proved little,
   // and "no disagreements" would read as a clean bill of health. Warn is right
   // here — it is a caveat on coverage, not a finding.

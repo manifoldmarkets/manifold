@@ -3,6 +3,7 @@ import {
   OPEN_WEIGHT_MODELS,
   basePermaslug,
   isCompositeSlug,
+  isValidPermaslug,
 } from 'common/perps/open-weight-models'
 import { runScript } from 'run-script'
 import { verifyHuggingFaceWeights } from 'shared/huggingface'
@@ -43,12 +44,37 @@ const usage = () =>
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
+    // Strict parsing, because the failure mode is a silent no-op that looks
+    // like success. Filtering only EXACT known flags meant `--aply` fell
+    // through as a positional argument: `slug closed --aply` parsed as a dry
+    // run and exited 0, so an operator who thought they had written a
+    // correction had written nothing. Excess positionals were ignored the
+    // same way.
     const FLAGS = ['--apply', '--create']
-    const args = process.argv.slice(2).filter((a) => !FLAGS.includes(a))
-    const apply = process.argv.includes('--apply')
+    const argv = process.argv.slice(2)
+    const unknownFlags = argv.filter(
+      (a) => a.startsWith('-') && !FLAGS.includes(a)
+    )
+    if (unknownFlags.length > 0) {
+      fail(`unknown flag(s): ${unknownFlags.join(', ')}`)
+      return usage()
+    }
+    const args = argv.filter((a) => !FLAGS.includes(a))
+    const apply = argv.includes('--apply')
+    const create = argv.includes('--create')
     const [rawSlug, verdict, repo] = args
-    if (!rawSlug || (verdict !== 'open' && verdict !== 'closed')) return usage()
 
+    // Exact arity: closed takes 2, open takes 3. Anything else is a typo, not
+    // something to guess at.
+    const expected = verdict === 'open' ? 3 : 2
+    if (!rawSlug || (verdict !== 'open' && verdict !== 'closed')) return usage()
+    if (args.length !== expected) {
+      fail(
+        `expected ${expected} positional argument(s) for '${verdict}', ` +
+          `got ${args.length}: ${JSON.stringify(args)}`
+      )
+      return usage()
+    }
     const permaslug = basePermaslug(rawSlug.trim())
     const open = verdict === 'open'
 
@@ -56,7 +82,7 @@ if (require.main === module) {
     // argument both normalise to '' — which passed the raw-argument check
     // above and, with --create, would have inserted an empty-slug row that
     // nothing can ever match.
-    if (!permaslug.includes('/')) {
+    if (!isValidPermaslug(permaslug)) {
       fail(
         `${JSON.stringify(rawSlug)} does not normalise to an owner/model ` +
           `permaslug (got ${JSON.stringify(permaslug)}).`
@@ -105,7 +131,7 @@ if (require.main === module) {
     // A permaslug with no row is almost always a typo, and the upsert would
     // happily INSERT one — reporting success while the model you meant to fix
     // stays untouched and an inert row joins the table.
-    if (!before && !process.argv.includes('--create')) {
+    if (!before && !create) {
       fail(
         `no classification row for ${permaslug} — check the permaslug. ` +
           `Pass --create if you really mean to add a new row.`
