@@ -2,6 +2,11 @@ import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Clipboard from '@react-native-clipboard/clipboard'
 import * as Sentry from '@sentry/react-native'
 import { CONFIGS, EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
+import {
+  isSameOrigin,
+  originOf,
+  parseSwitchableAppUrl,
+} from 'common/native-app-url'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import {
   MesageTypeMap,
@@ -38,6 +43,7 @@ import {
 import { useIsConnected } from 'lib/use-is-connected'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  Alert,
   AppState,
   BackHandler,
   NativeModules,
@@ -84,6 +90,8 @@ const App = () => {
 
   // This tracks if the webview has loaded its first page
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
+  // Bumped to force a brand-new WebView instance. See recreateWebView.
+  const [webviewKey, setWebviewKey] = useState(0)
   // This tracks if the app has its nativeMessageListener set up
   // NOTE: After the webview is killed on android due to OOM, this will always be false, see: https://github.com/react-native-webview/react-native-webview/issues/2680
   const listeningToNative = useRef(false)
@@ -94,6 +102,17 @@ const App = () => {
     destination: string
   } | null>(null)
   const [baseUri, setBaseUri] = useState(BASE_URI)
+  // State of the 'switch server?' prompt. See setAppUrl.
+  const appUrlPrompt = useRef<'idle' | 'open' | 'rejected'>('idle')
+  // Set when the prompt goes away without the admin choosing anything, so a
+  // page in a tight loop can't immediately put it back.
+  const appUrlPromptCooldownUntil = useRef(0)
+  // Bumped for every prompt, and on sign-out. An Alert's callbacks outlive the
+  // Alert — signing out clears the latch but does NOT take a dialog off the
+  // screen — so each callback carries the generation it was created with and
+  // does nothing once that generation is stale. Without this, tapping a
+  // leftover dialog rewrites the state of the prompt that replaced it.
+  const appUrlPromptGeneration = useRef(0)
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -181,13 +200,12 @@ const App = () => {
   const webviewUrl = useRef(baseUri)
   // Full-origin match (scheme + host + port), not just host: a page served over
   // http://manifold.markets or a look-alike subdomain must not read as ours.
-  const isManifoldUrl = (url: string) => {
-    try {
-      return new URL(url).origin === new URL(baseUri).origin
-    } catch {
-      return false
-    }
-  }
+  // Parsed by hand rather than with the global URL. Expo's winter runtime
+  // installs whatwg-url-without-unicode as URL before App loads, and that
+  // package omits the IDNA tables — so it neither lowercases a host nor
+  // punycodes one, while the document we compare against always reports a
+  // lowercase ASCII location.origin. See common/src/native-app-url.ts.
+  const isManifoldUrl = (url: string) => isSameOrigin(url, baseUri)
 
   // Pending 'nativeFbUser' posts, kept so a sign-out (or a switch to another
   // account) can cancel them. A late post would otherwise hand the OLD user back
@@ -199,17 +217,10 @@ const App = () => {
     pendingAuthPosts.current.forEach((timer) => clearTimeout(timer))
     pendingAuthPosts.current = []
   }
-  // Whether a wanted handoff post was dropped because the WebView was on an
-  // untrusted URL at fire time. Trust is cleared for the whole document load,
-  // so on a slow connection every timer below can fire inside that window —
-  // this flag lets the next committed Manifold page re-arm the handoff (see
-  // onNavigate) instead of silently stranding the web client logged out.
-  const authPostDropped = useRef(false)
 
   // Sends the saved user to the web client to make the log in process faster
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
     cancelPendingAuthPosts()
-    authPostDropped.current = false
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
     const timeouts = [100, 500, 1000, 3000]
@@ -217,12 +228,11 @@ const App = () => {
       setTimeout(() => {
         // Stale: native signed out or switched accounts since this was queued.
         if (fbUserRef.current?.uid !== user.uid) return
-        // Never post credentials into a third-party page.
-        if (!isManifoldUrl(webviewUrl.current)) {
-          authPostDropped.current = true
-          return
-        }
-        communicateWithWebview('nativeFbUser', user)
+        // Cheap first cut so we don't inject into a page we already know isn't
+        // ours. It is NOT the guarantee — postAuthToWebview checks the origin
+        // inside the receiving document, which is the check that can't be raced.
+        if (!isManifoldUrl(webviewUrl.current)) return
+        postAuthToWebview(user)
       }, timeout)
     )
   }
@@ -267,10 +277,12 @@ const App = () => {
     const [baseUrl, fragment] = urlString.split('#')
     const url = new URL(baseUrl)
 
-    const params = new URLSearchParams()
-    params.set('nativePlatform', Platform.OS)
-    params.set('rand', Math.random().toString())
-    url.search = params.toString()
+    // Add ours ON TOP of whatever the caller already had. This used to build a
+    // fresh URLSearchParams and overwrite url.search, which silently dropped the
+    // query off any url that carried one — a preview link's ?token=… being the
+    // case that matters, since the admin switcher navigates to exactly that.
+    url.searchParams.set('nativePlatform', Platform.OS)
+    url.searchParams.set('rand', Math.random().toString())
 
     const newUrl = url.toString() + (fragment ? `#${fragment}` : '')
     log('Setting new url:', newUrl)
@@ -619,10 +631,113 @@ const App = () => {
       const version = Constants.expoConfig?.version
       communicateWithWebview('version', { version })
     } else if (type === 'setAppUrl') {
+      // This points the app at another deployment (the admin 'Native url' box —
+      // a Vercel preview, or a laptop on the LAN) and that URL BECOMES the
+      // origin the credential hand-off trusts. So it cannot be driven by the
+      // WebView alone: an admin check says who is signed in, not who sent the
+      // message, and any document in the WebView can reach the bridge —
+      // react-native-webview registers the Android message listener for origin
+      // '*' (RNCWebView.createRNCWebViewBridge), and on the older
+      // addJavascriptInterface fallback the reported url is the TOP document's,
+      // so an iframe's message is indistinguishable from the page's own.
+      // Without this, a third-party page could repoint the app at itself and
+      // then collect an admin's Firebase credentials from the hand-off.
       if (!fbUser?.uid || !isAdminId(fbUser.uid)) return
-      log('Setting app url to: ', payload.appUrl)
-      setBaseUri(payload.appUrl)
-      setUrlWithNativeQuery(payload.appUrl)
+      // Cheap first cut: on the modern bridge (and on iOS) this really is the
+      // sending frame's url, so a foreign sender is rejected before we prompt.
+      if (messageUrl && !isManifoldUrl(messageUrl)) {
+        log('Rejected setAppUrl from untrusted sender:', messageUrl)
+        return
+      }
+      const appUrl = parseSwitchableAppUrl(payload?.appUrl)
+      if (!appUrl) {
+        log('Rejected setAppUrl, not a switchable url:', payload?.appUrl)
+        return
+      }
+      if (appUrl.origin === originOf(baseUri)) {
+        setUrlWithNativeQuery(appUrl.href)
+        return
+      }
+      // Alert.alert is not single-flight: React Native dismisses the visible
+      // dialog to show the next one, so tracking that one is OPEN is what stops
+      // a page swapping the origin under the admin's finger. That alone still
+      // leaves a modal DoS — a setInterval would put the dialog straight back —
+      // so Cancel latches to 'rejected' for the rest of the app run.
+      //
+      // Only the Cancel BUTTON latches. Android routes every other kind of
+      // dismissal through onDismiss too: an outside tap, hardware back, and
+      // notably any other Alert.alert in the app, because DialogModule dismisses
+      // the existing dialog before showing a new one. Latching on those would
+      // silently kill the admin's own switcher until a force-quit. Those take a
+      // cooldown instead.
+      const now = Date.now()
+      if (appUrlPrompt.current !== 'idle') {
+        log('Ignoring setAppUrl, switch prompt is', appUrlPrompt.current)
+        return
+      }
+      if (now < appUrlPromptCooldownUntil.current) {
+        log('Ignoring setAppUrl, prompt is cooling down')
+        return
+      }
+      const promptedUid = fbUser.uid
+      const generation = ++appUrlPromptGeneration.current
+      const isCurrent = () => appUrlPromptGeneration.current === generation
+      appUrlPrompt.current = 'open'
+      // The admin said no. Nothing the WebView can do reopens this; signing out
+      // or restarting the app does.
+      const rejectPrompt = () => {
+        if (!isCurrent()) return
+        appUrlPrompt.current = 'rejected'
+      }
+      // Went away on its own. Allow another, but not immediately.
+      const dismissPrompt = () => {
+        if (!isCurrent() || appUrlPrompt.current !== 'open') return
+        appUrlPrompt.current = 'idle'
+        appUrlPromptCooldownUntil.current = Date.now() + 30_000
+      }
+      // The one check WebView content can neither forge nor race, because it
+      // isn't in the WebView: the admin okays the new origin by name.
+      log('Confirming app url switch to: ', appUrl.href)
+      Alert.alert(
+        'Switch Manifold to another server?',
+        appUrl.origin +
+          '\n\n' +
+          'You will be signed in there with this account, so only ' +
+          'continue if you entered this URL yourself.',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: rejectPrompt },
+          {
+            text: 'Switch',
+            style: 'destructive',
+            onPress: () => {
+              if (!isCurrent()) return
+              // A confirmed switch goes back to idle rather than latching: the
+              // admin may well want to switch back, and a page that got a
+              // confirmation out of them has already won.
+              appUrlPrompt.current = 'idle'
+              // Re-check on confirm: the dialog may have sat there across a
+              // sign-out or an account switch.
+              const signedIn = fbUserRef.current
+              if (
+                !signedIn?.uid ||
+                signedIn.uid !== promptedUid ||
+                !isAdminId(signedIn.uid)
+              ) {
+                log('Dropping confirmed app url switch, signed-in user changed')
+                return
+              }
+              // Don't let a hand-off queued for the old origin land on the new one.
+              cancelPendingAuthPosts()
+              webviewUrl.current = ''
+              // The base must be the bare origin: callers concatenate an
+              // endpoint onto it, so a path here yields urls like '/foohome'.
+              setBaseUri(appUrl.base)
+              setUrlWithNativeQuery(appUrl.href)
+            },
+          },
+        ],
+        { cancelable: true, onDismiss: dismissPrompt }
+      )
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
@@ -631,8 +746,13 @@ const App = () => {
 
   const signOutUsers = async (errorMessage: string) => {
     authGeneration.current += 1
+    // A refusal was this user's decision, not a permanent property of the app.
+    // Bump the generation too: any dialog still on screen belongs to the session
+    // being ended, and its buttons must not touch what comes next.
+    appUrlPromptGeneration.current += 1
+    appUrlPrompt.current = 'idle'
+    appUrlPromptCooldownUntil.current = 0
     cancelPendingAuthPosts()
-    authPostDropped.current = false
     try {
       await auth.signOut()
     } catch (err) {
@@ -665,12 +785,88 @@ const App = () => {
     )
   }
 
-  const resetWebView = () => {
+  // Escapes a string for embedding in injected JS. JSON.stringify covers quotes
+  // and backslashes but emits raw U+2028/U+2029, which are legal in JSON yet were
+  // illegal in JS string literals before ES2019 — a display name containing one
+  // would otherwise be a syntax error that silently kills the whole injection.
+  const jsString = (value: string) =>
+    JSON.stringify(value)
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029')
+
+  // The credential hand-off — the ONE message that must never reach a document
+  // that isn't ours — so it does not go through communicateWithWebview's plain
+  // postMessage.
+  //
+  // Checking a React-side URL ref cannot enforce that, because no navigation
+  // event we receive is reliably pre-navigation. On Android react-native-webview
+  // dispatches topLoadingStart from doUpdateVisitedHistory, which Chromium calls
+  // only AFTER the navigation commits, so between a foreign page committing and
+  // that event reaching JS the ref still holds the old Manifold url.
+  // onShouldStartLoadWithRequest is genuinely pre-navigation but unusable here:
+  // RNCWebViewClient forwards the WebResourceRequest overload without
+  // isForMainFrame, so every third-party IFRAME on one of our own pages would
+  // look like a foreign navigation and strand the hand-off — the exact bug class
+  // above.
+  //
+  // So the check is made inside the target document instead, where it cannot be
+  // raced: location.origin is [LegacyUnforgeable], so a hostile page cannot
+  // shadow it, and a foreign document just drops the payload. This mirrors what
+  // RNCWebView's postMessage injects on ANDROID - a 'message' MessageEvent
+  // dispatched on document. (iOS RNW dispatches on window instead; web registers
+  // a listener on both, see use-native-messages.ts, and the event doesn't bubble,
+  // so dispatching on document reaches exactly one of them on either platform.)
+  const postAuthToWebview = (user: FirebaseUser) => {
+    const trustedOrigin = originOf(baseUri)
+    if (!trustedOrigin) return
+    const message = JSON.stringify({
+      type: 'nativeFbUser',
+      data: user,
+    } as nativeToWebMessage)
+    webview.current?.injectJavaScript(
+      `(function () {
+        if (window.location.origin !== ${jsString(trustedOrigin)}) return;
+        var data = { data: ${jsString(message)} };
+        var event;
+        try {
+          event = new MessageEvent('message', data);
+        } catch (e) {
+          event = document.createEvent('MessageEvent');
+          event.initMessageEvent('message', true, true, data.data, data.origin, data.lastEventId, data.source);
+        }
+        document.dispatchEvent(event);
+      })();
+      true;`
+    )
+  }
+
+  // A load failed - offline, TLS, an unknown scheme from a mailto:/tel: tap.
+  // The WebView object is alive, so reload it. Deliberately NOT a remount: that
+  // would throw away the back stack and the current route for an offline blip,
+  // and repeated errors would churn instances instead of retrying one.
+  const reloadWebView = () => {
     setHasLoadedWebView(false)
     listeningToNative.current = false
+    webviewUrl.current = ''
     setEndpointWithNativeQuery()
-    log('Reloading webview, webview.current:', webview.current)
+    log('Reloading webview')
     webview.current?.reload()
+  }
+
+  // The OS killed the renderer / content process. THIS one cannot be reloaded:
+  // that WebView is a dead object and .reload() on it silently does nothing
+  // (react-native-webview#2680, already noted next to listeningToNative above).
+  // onLoadEnd then never fires again, so hasLoadedWebView stays false and
+  // SplashAuth is stuck on the splash until the app is force-closed. A new key
+  // gives a fresh instance, which loads urlToLoad from scratch - at the cost of
+  // the back stack, which is why only process death gets this treatment.
+  const recreateWebView = () => {
+    setHasLoadedWebView(false)
+    listeningToNative.current = false
+    webviewUrl.current = ''
+    setEndpointWithNativeQuery()
+    log('Recreating webview')
+    setWebviewKey((k) => k + 1)
   }
 
   const isConnected = useIsConnected()
@@ -732,27 +928,46 @@ const App = () => {
           isConnected={isConnected}
         />
         <CustomWebview
+          webviewKey={webviewKey}
           display={!!fullyLoaded}
           urlToLoad={urlToLoad}
           webview={webview}
-          resetWebView={resetWebView}
+          reloadWebView={reloadWebView}
+          recreateWebView={recreateWebView}
           setHasLoadedWebView={setHasLoadedWebView}
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
-          onNavigate={(url) => {
-            // null (navigation start) leaves an empty string, which isManifoldUrl
-            // treats as untrusted until the next load commits.
+          onNavigate={(url, phase) => {
+            if (phase === 'start') {
+              // Distrust ONLY a navigation heading somewhere foreign. Clearing
+              // on every start is what stranded sign-in: the OAuth hand-off
+              // abandons an in-flight load, so onLoad never fires, trust stays
+              // empty forever, and every queued credential post is dropped with
+              // no path back. A start we can't identify is still treated as
+              // hostile.
+              if (!url || !isManifoldUrl(url)) webviewUrl.current = ''
+              return
+            }
             webviewUrl.current = url ?? ''
-            // A slow initial load can outlast the whole retry ladder while
-            // trust is cleared; if that dropped a wanted post, re-arm the
-            // handoff now that one of our pages has committed. The web side
-            // no-ops when the user already matches, so re-sends are idempotent.
-            if (
-              url &&
-              authPostDropped.current &&
-              fbUserRef.current &&
-              isManifoldUrl(url)
-            ) {
+            // Re-hand credentials to every one of our pages that commits, not
+            // just when an earlier post was recorded as dropped. The enforcing
+            // check now lives inside the target document, so a post fired into
+            // a page that hasn't hydrated yet is dropped there and leaves no
+            // trace here — the whole 100/500/1000/3000ms ladder can expire that
+            // way on a cold start or after a remount. The web side no-ops when
+            // the user already matches, so re-sends are idempotent.
+            //
+            // How often this fires differs by platform, and it is worth knowing
+            // on a path that ships a token. On Android it is once per real page
+            // load. On iOS it is once per CLIENT-SIDE route change too: RNW
+            // installs a history shim at document start that posts every
+            // pushState / replaceState / popstate, and RNCWebViewImpl routes
+            // that straight to onLoadingFinish, i.e. to this handler. So every
+            // in-app tap re-runs the ladder there. Harmless — only one ladder is
+            // ever live, since sendWebviewAuthInfo cancels the previous — but if
+            // the chatter ever matters, the 'users' echo is the ack needed to
+            // cancel the remaining rungs early.
+            if (url && fbUserRef.current && isManifoldUrl(url)) {
               sendWebviewAuthInfo(fbUserRef.current)
             }
           }}
