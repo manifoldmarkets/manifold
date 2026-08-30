@@ -107,6 +107,12 @@ const App = () => {
   // Set when the prompt goes away without the admin choosing anything, so a
   // page in a tight loop can't immediately put it back.
   const appUrlPromptCooldownUntil = useRef(0)
+  // Bumped for every prompt, and on sign-out. An Alert's callbacks outlive the
+  // Alert — signing out clears the latch but does NOT take a dialog off the
+  // screen — so each callback carries the generation it was created with and
+  // does nothing once that generation is stale. Without this, tapping a
+  // leftover dialog rewrites the state of the prompt that replaced it.
+  const appUrlPromptGeneration = useRef(0)
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -271,10 +277,12 @@ const App = () => {
     const [baseUrl, fragment] = urlString.split('#')
     const url = new URL(baseUrl)
 
-    const params = new URLSearchParams()
-    params.set('nativePlatform', Platform.OS)
-    params.set('rand', Math.random().toString())
-    url.search = params.toString()
+    // Add ours ON TOP of whatever the caller already had. This used to build a
+    // fresh URLSearchParams and overwrite url.search, which silently dropped the
+    // query off any url that carried one — a preview link's ?token=… being the
+    // case that matters, since the admin switcher navigates to exactly that.
+    url.searchParams.set('nativePlatform', Platform.OS)
+    url.searchParams.set('rand', Math.random().toString())
 
     const newUrl = url.toString() + (fragment ? `#${fragment}` : '')
     log('Setting new url:', newUrl)
@@ -672,15 +680,18 @@ const App = () => {
         return
       }
       const promptedUid = fbUser.uid
+      const generation = ++appUrlPromptGeneration.current
+      const isCurrent = () => appUrlPromptGeneration.current === generation
       appUrlPrompt.current = 'open'
       // The admin said no. Nothing the WebView can do reopens this; signing out
       // or restarting the app does.
       const rejectPrompt = () => {
+        if (!isCurrent()) return
         appUrlPrompt.current = 'rejected'
       }
       // Went away on its own. Allow another, but not immediately.
       const dismissPrompt = () => {
-        if (appUrlPrompt.current !== 'open') return
+        if (!isCurrent() || appUrlPrompt.current !== 'open') return
         appUrlPrompt.current = 'idle'
         appUrlPromptCooldownUntil.current = Date.now() + 30_000
       }
@@ -699,6 +710,7 @@ const App = () => {
             text: 'Switch',
             style: 'destructive',
             onPress: () => {
+              if (!isCurrent()) return
               // A confirmed switch goes back to idle rather than latching: the
               // admin may well want to switch back, and a page that got a
               // confirmation out of them has already won.
@@ -735,6 +747,9 @@ const App = () => {
   const signOutUsers = async (errorMessage: string) => {
     authGeneration.current += 1
     // A refusal was this user's decision, not a permanent property of the app.
+    // Bump the generation too: any dialog still on screen belongs to the session
+    // being ended, and its buttons must not touch what comes next.
+    appUrlPromptGeneration.current += 1
     appUrlPrompt.current = 'idle'
     appUrlPromptCooldownUntil.current = 0
     cancelPendingAuthPosts()
