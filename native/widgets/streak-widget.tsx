@@ -31,9 +31,9 @@ import {
 
 type StreakState = 'lit' | 'pending' | 'frozen' | 'loggedOut'
 
-// The Pacific day boundary lives in common/ so CI can test it (and the snapshot
-// acceptance rule that depends on it); re-exported here because the widget and
-// its headless task both import it from this module.
+// The Pacific day boundary lives in common/ so CI can test it — the native
+// package has no test runner. Re-exported here because the widget and its
+// headless task both import it from this module.
 export { pacificStartOfDayMs }
 
 function computeState(d: NativeStreakData | null, now: Date): StreakState {

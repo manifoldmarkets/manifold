@@ -1,5 +1,15 @@
-// The Pacific streak day boundary — the "today" the backend's streak logic and
-// both widgets are defined against.
+// The Pacific streak day boundary — the "today" both widgets are defined against.
+//
+// NOTE it is NOT what the backend's reset job measures. reset-betting-streaks
+// compares lastBetTime against ts_to_millis(now() - interval '1 day'), a rolling
+// 24 hours from whenever the job runs. The two agree on the other 363 days and
+// diverge by an hour on the two DST transitions, where a Pacific day is 23 or 25
+// hours long. That makes predictOvernight (native/widgets/streak-widget.tsx)
+// disagree with the backend for a narrow cohort on those two days: in spring it
+// can predict a freeze the backend did not consume, in autumn it can stay pending
+// when one was. The prediction performs no write and the next ordinary refresh
+// corrects it, so this is left as a known, bounded divergence. A focused fix
+// would compare against todayStart - 24h, with a test for each transition.
 //
 // It lives in common/ so CI can cover it, including the two DST days a year when
 // a Pacific day is 23 or 25 hours long. The native package has no test runner,
