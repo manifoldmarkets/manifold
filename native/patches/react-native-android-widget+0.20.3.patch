@@ -1,17 +1,92 @@
 diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
-index 834cbaf..c51848b 100644
+index 834cbaf..1fbed0b 100644
 --- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
 +++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
-@@ -115,10 +115,53 @@ public class RNWidget {
+@@ -1,8 +1,10 @@
+ package com.reactnativeandroidwidget;
+ 
++import android.app.AlarmManager;
+ import android.app.PendingIntent;
+ import android.appwidget.AppWidgetManager;
+ import android.content.ComponentName;
++import android.content.Context;
+ import android.content.Intent;
+ import android.graphics.Bitmap;
+ import android.graphics.Canvas;
+@@ -115,10 +117,117 @@ public class RNWidget {
          }
          addCollectionViews(widgetId, remoteWidgetView, widgetWithViews);
  
 +        applyCountdown(remoteWidgetView, light);
++        scheduleRolloverUpdate(widgetId, light);
 +
          AppWidgetManager.getInstance(appContext)
              .updateAppWidget(widgetId, remoteWidgetView);
      }
  
++    // Schedule the next unattended re-render, at the streak day's rollover.
++    //
++    // updatePeriodMillis is a 30-minute floor that Doze defers indefinitely, so a
++    // widget on an idle phone can sit on yesterday's state for hours - and once a
++    // Chronometer is running it ticks visibly NEGATIVE past its target, which
++    // looks broken rather than merely stale. iOS gets this free from a WidgetKit
++    // timeline; Android has no equivalent, so we set the alarm ourselves.
++    //
++    // The render tells us how long until the rollover (clickActionData.rolloverMs).
++    // setAndAllowWhileIdle rather than setExact*: exact alarms need
++    // SCHEDULE_EXACT_ALARM, denied by default on targetSdk 33+. Inexact fires
++    // immediately while the device is awake and within a few minutes in deep Doze
++    // - and a widget nobody can see does not need to be right yet.
++    //
++    // The alarm broadcasts a custom <pkg>.WIDGET_* action, which RNWidgetProvider
++    // turns back into an ordinary WIDGET_UPDATE. Every render therefore arms the
++    // next one, so the chain sustains itself with the app closed.
++    private void scheduleRolloverUpdate(int widgetId, ReadableMap rootConfig) {
++        try {
++            long rolloverMs = 0;
++            if (rootConfig != null && rootConfig.hasKey("props")) {
++                ReadableMap props = rootConfig.getMap("props");
++                if (props != null && props.hasKey("clickActionData")) {
++                    ReadableMap data = props.getMap("clickActionData");
++                    if (data != null && data.hasKey("rolloverMs")) {
++                        rolloverMs = (long) data.getDouble("rolloverMs");
++                    }
++                }
++            }
++            if (rolloverMs <= 0) return;
++
++            String pkg = appContext.getPackageName();
++            Intent intent = new Intent(appContext, Class.forName(pkg + ".widget." + widgetName));
++            intent.setAction(pkg + ".WIDGET_SCHEDULED_UPDATE");
++            intent.putExtra("widgetId", widgetId);
++            // RNWidgetProvider.onReceive switches on clickAction - never leave it null.
++            intent.putExtra("clickAction", "SCHEDULED_UPDATE");
++
++            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
++                flags |= PendingIntent.FLAG_IMMUTABLE;
++            }
++            // widgetId as the request code: one pending alarm per widget instance,
++            // each re-render replacing its own rather than stacking.
++            PendingIntent pending =
++                PendingIntent.getBroadcast(appContext, widgetId, intent, flags);
++
++            AlarmManager alarms =
++                (AlarmManager) appContext.getSystemService(Context.ALARM_SERVICE);
++            if (alarms == null) return;
++            long at = System.currentTimeMillis() + rolloverMs;
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
++                alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending);
++            } else {
++                alarms.set(AlarmManager.RTC_WAKEUP, at, pending);
++            }
++        } catch (Exception e) {
++            // Never fail a render over a missed alarm: the updatePeriodMillis tick
++            // stays as the backstop, exactly as before this patch.
++            e.printStackTrace();
++        }
++    }
++
 +    // Live countdown overlay. The root widget passes { showCountdown, countdownMs }
 +    // via clickActionData (a supported passthrough). When shown, we drive a native
 +    // Chronometer that ticks down to the target with no app process — the one thing
@@ -56,6 +131,31 @@ index 834cbaf..c51848b 100644
      public WritableMap createPreview(int width, int height) throws Exception {
          ReadableMap configClone = Arguments.makeNativeMap(config.toHashMap());
  
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
+index c138d81..c2ffa32 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetProvider.java
+@@ -48,6 +48,20 @@ public class RNWidgetProvider extends AppWidgetProvider {
+             return;
+         }
+ 
++        // An alarm set by RNWidget.scheduleRolloverUpdate. Dispatch exactly the
++        // WIDGET_UPDATE the OS would have, so the JS render path is unchanged and
++        // the widget's own overnight state prediction runs as normal.
++        if ((context.getPackageName() + ".WIDGET_SCHEDULED_UPDATE")
++                .equals(incomingIntent.getAction())) {
++            int scheduledWidgetId = incomingIntent.getIntExtra("widgetId", -1);
++            if (scheduledWidgetId != -1) {
++                Data scheduledData = RNWidgetJsCommunication.buildData(
++                    context, getClass().getSimpleName(), scheduledWidgetId, "WIDGET_UPDATE");
++                RNWidgetJsCommunication.startBackgroundTask(context, scheduledData);
++            }
++            return;
++        }
++
+         int widgetId = incomingIntent.getIntExtra("widgetId", -1);
+ 
+         switch (incomingIntent.getStringExtra("clickAction")) {
 diff --git a/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml b/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml
 index 9426de7..26f6813 100644
 --- a/node_modules/react-native-android-widget/android/src/main/res/layout-night/rn_widget.xml

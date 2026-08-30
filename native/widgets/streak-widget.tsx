@@ -125,6 +125,10 @@ export function predictOvernight(
 // today is 23/25h long (DST). Returns 0 when LA time can't be computed —
 // callers treat 0 as "don't show a countdown" (a Chronometer started at zero
 // would tick negative until the next re-render).
+// Land the rollover alarm just after midnight rather than exactly on it, so the
+// render that follows always sees the new day.
+const ROLLOVER_ALARM_BUFFER_MS = 2000
+
 function msUntilPacificReset(now: Date): number {
   try {
     const startMs = pacificStartOfDayMs(now)
@@ -1199,6 +1203,10 @@ const FORCE_QUESTS: NativeQuestData | null = null
 // Dev: override the remaining ms to preview the countdown urgency colours
 // (e.g. 3 * 60 * 60 * 1000 = 3h → red). Null = use the real time to midnight.
 const FORCE_COUNTDOWN_MS: number | null = null
+// Debug: seconds until the scheduled-rollover alarm should fire, instead of the
+// real time to midnight PT. Set to e.g. 60_000 to watch the widget re-render on
+// demand rather than waiting for a real rollover. Ship as null.
+const FORCE_ROLLOVER_MS: number | null = null
 
 // Single resizable widget: pick small vs medium by the host width (dp). Mirrors
 // the iOS systemSmall / systemMedium families of one widget.
@@ -1249,7 +1257,8 @@ export function StreakWidget({
   // to reserve the ticker's spot). The plain (no-quest) medium can't host it, so
   // it's left off there. Requires a computable reset time (countdownMs > 0):
   // starting the Chronometer at zero would tick negative until the next render.
-  const countdownMs = FORCE_COUNTDOWN_MS ?? msUntilPacificReset(now)
+  const resetMs = msUntilPacificReset(now)
+  const countdownMs = FORCE_COUNTDOWN_MS ?? resetMs
   const showCountdown =
     (state === 'pending' || state === 'frozen') &&
     countdownMs > 0 &&
@@ -1257,6 +1266,13 @@ export function StreakWidget({
   const clickData = {
     showCountdown,
     countdownMs: showCountdown ? countdownMs : 0,
+    // Sent on EVERY render, countdown shown or not — the native side uses it to
+    // set the alarm that re-renders us at the rollover, and the state that most
+    // needs that re-render is 'lit', which shows no countdown at all. A small
+    // buffer past midnight so the alarm lands after the new day has started,
+    // never a hair before it. 0 means "no alarm" (unknown reset time).
+    rolloverMs:
+      FORCE_ROLLOVER_MS ?? (resetMs > 0 ? resetMs + ROLLOVER_ALARM_BUFFER_MS : 0),
   }
   return isMedium ? (
     <MediumWidget
