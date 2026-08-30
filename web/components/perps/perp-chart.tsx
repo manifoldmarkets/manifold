@@ -157,13 +157,19 @@ const getCachedSeries = (feedId: string, frame: Timeframe) => {
   return hit && Date.now() - hit.at < SERIES_CACHE_TTL_MS ? hit.points : null
 }
 
+// `revalidate` skips the cache READ (still dedupes against an in-flight
+// request and still writes the result back) — for painting a cached series
+// immediately and then replacing it with fresh history.
 const fetchFrameSeries = (
   feedId: string,
-  frame: Timeframe
+  frame: Timeframe,
+  opts?: { revalidate?: boolean }
 ): Promise<SeriesPoint[]> => {
   const key = seriesKey(feedId, frame)
-  const cached = getCachedSeries(feedId, frame)
-  if (cached) return Promise.resolve(cached)
+  if (!opts?.revalidate) {
+    const cached = getCachedSeries(feedId, frame)
+    if (cached) return Promise.resolve(cached)
+  }
   const inflight = seriesInflight.get(key)
   if (inflight) return inflight
   const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[frame]
@@ -356,9 +362,22 @@ export const PerpChart = (props: {
         (cached.length >= MIN_FRAME_POINTS || activeFrame === 'ALL')
       ) {
         // Cache hit: set data and clear loading in the same effect so React
-        // batches them and never commits a loading render.
+        // batches them and never commits a loading render — then revalidate.
+        // A series cached minutes ago (e.g. by the hub's prefetch) is missing
+        // every tick since; the live-tick merge only appends the CURRENT
+        // price, so without a refetch the gap would draw as one fabricated
+        // straight segment. Fresh history replaces the cached one wholesale
+        // and the live merge re-derives from its last point.
         setOraclePoints(cached.map((p) => ({ ts: p.ts, value: p.price })))
         setLoading(false)
+        fetchFrameSeries(feedId, activeFrame, { revalidate: true })
+          .then((points) => {
+            if (cancelled) return
+            if (points.length >= MIN_FRAME_POINTS || activeFrame === 'ALL') {
+              setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
+            }
+          })
+          .catch(() => {})
       } else {
         setOraclePoints([])
         fetchFrameSeries(feedId, activeFrame)
@@ -1392,8 +1411,8 @@ export const PerpChart = (props: {
             </>
           )}
           <span>
-            A move that far force-closes them and forfeits their margin to
-            the pool.
+            A move that far force-closes them and forfeits their margin to the
+            pool.
           </span>
         </Row>
       )}
