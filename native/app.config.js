@@ -117,7 +117,7 @@ export default ({ config }) => {
           backgroundColor: '#4337C9',
         },
         package: 'com.markets.manifold',
-        versionCode: 72,
+        versionCode: 73,
         runtimeVersion: otaUpdateVersion,
       },
       ios: {
