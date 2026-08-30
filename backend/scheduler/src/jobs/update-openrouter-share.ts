@@ -84,6 +84,22 @@ const updateOpenRouterShareInternal = async () => {
   if (result.unclassified.length > 0)
     await recordUnclassifiedInRankings(pg, result.unclassified)
 
+  // Routers and floating aliases leave the denominator without ever being
+  // adjudicated, so nothing else would mention them. Say so on every tick that
+  // has one: an exclusion nobody can see is indistinguishable from full
+  // coverage, and if one ever carries real volume that is the signal to
+  // resolve it through OpenRouter's `alias_target` rather than keep dropping
+  // it.
+  if (result.compositeSlugs.length > 0)
+    log.warn(
+      `[openrouter] excluded ${result.compositeSlugs.length} router/alias slug(s) ` +
+        `from both sides — ${result.compositeSlugs.join(', ')} (` +
+        `${(
+          (result.compositeTokens / Math.max(result.payloadTokens, 1)) *
+          100
+        ).toFixed(3)}% of payload tokens)`
+    )
+
   const publication = validateOpenWeightPublication(result, {
     expiredUnclassified,
   })

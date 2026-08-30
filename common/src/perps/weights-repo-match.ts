@@ -172,3 +172,79 @@ export const proposedRepoMatchesModel = (
 ): boolean =>
   identifierTokens(permaslug).length >= MIN_DISTINCTIVE_MODEL_TOKENS &&
   weightsRepoNameOverlap(permaslug, repo) >= WEIGHTS_REPO_MATCH_THRESHOLD
+
+/**
+ * Publisher -> the HuggingFace org(s) they actually publish weights under.
+ *
+ * An explicit map rather than a prefix rule, and that is the whole point.
+ * Prefix matching looks like it captures the pattern -- `z-ai` publishes as
+ * `zai-org`, `cohere` as `CohereLabs` -- but "org name starts with the
+ * publisher's name" is a namespace ANYONE can enter. HuggingFace org names
+ * are first-come, so `openai-community` already satisfied it for every
+ * `openai/*` model, and `anthropic-fan` or `qwenfake` would too. That is the
+ * same first-come name-grab the fabricated `brokenshards/ox-alpha` repo
+ * exploited, one level up.
+ *
+ * Comparison is case-insensitive but otherwise EXACT -- punctuation is
+ * significant. An earlier version normalised it away, which made `openai`
+ * and `open-ai` the same namespace; `open-ai` is a real, currently-empty org
+ * on HuggingFace, so anyone claiming it would have inherited every
+ * `openai/*` model. Hyphens are part of an org's identity, not noise.
+ *
+ * Measured against the 175 open classifications carrying a weights repo: 86
+ * match their publisher's org exactly and the rest need one of the entries
+ * below. `venice` is deliberately ABSENT -- its weights genuinely ship from
+ * `cognitivecomputations`, and a cross-publisher release is exactly the case
+ * that should reach a human rather than be waved through by a map entry.
+ */
+const PUBLISHER_HF_ORGS: Record<string, string[]> = {
+  'ai21': ['ai21labs'],
+  'bytedance': ['bytedance-seed'],
+  'cohere': ['coherelabs', 'cohereforai'],
+  'deepseek': ['deepseek-ai'],
+  'liquid': ['liquidai'],
+  'meituan': ['meituan-longcat'],
+  'meta': ['meta-models', 'meta-llama'],
+  'minimax': ['minimaxai'],
+  'perplexity': ['perplexity-ai'],
+  'stepfun': ['stepfun-ai'],
+  'x-ai': ['xai-org'],
+  'xiaomi': ['xiaomimimo'],
+  'z-ai': ['zai-org'],
+}
+
+/**
+ * Is `repo` owned by the model's own publisher?
+ *
+ * The name check above asks whether a repo is named like the model. That is
+ * necessary and not sufficient, because a name is not owned by anyone: on
+ * 2026-08-21 someone created `brokenshards/ox-alpha` -- twenty files named
+ * like weight shards, a config claiming 800B parameters, a README reading
+ * "real ox alpha dataset npnp", the whole repo assembled in 24 seconds --
+ * while `stealth/ox-alpha` was climbing into the ranked window. It is public,
+ * carries `.safetensors` files, and scores a perfect 1.00 name match. Both
+ * other guards pass it.
+ *
+ * What it cannot fake is provenance. Weights for a model are published by the
+ * outfit that trained it, so a repo under an unrelated account is not that
+ * model's weights however it is named. The same rule independently rejects
+ * the plausible-but-wrong matches a broad search returns --
+ * `jondurbin/airoboros-gpt-3.5-turbo-100k-7b` for `openai/gpt-3.5-turbo`, a
+ * stranger's INT4 quant for `~z-ai/glm-latest`.
+ *
+ * A false result must NOT be read as "closed". This gates whether a repo may
+ * be RECOMMENDED automatically; a failure sends the model to a human rather
+ * than deciding against it.
+ */
+export const repoOwnerMatchesPublisher = (
+  permaslug: string,
+  repo: string
+): boolean => {
+  // `~` prefixes OpenRouter's floating aliases (`~z-ai/glm-latest`) and is not
+  // part of the publisher's name.
+  const publisher = (permaslug.replace(/^~/, '').split('/')[0] ?? '').toLowerCase()
+  const owner = (repo.split('/')[0] ?? '').toLowerCase()
+  if (!publisher || !owner) return false
+  if (owner === publisher) return true
+  return (PUBLISHER_HF_ORGS[publisher] ?? []).includes(owner)
+}

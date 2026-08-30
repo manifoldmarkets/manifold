@@ -40,22 +40,27 @@ export type HuggingFaceVerification =
 /**
  * Verify that `repo` holds publicly downloadable weights.
  *
- * Click-through gating still counts as public — Llama and Gemma sit behind a
- * licence any member of the public can accept, and the methodology's line is
- * "can anyone get them", not "is the licence tidy". Discretionary gating does
- * NOT: HF's `gated` is a trichotomy, and `"manual"` means the owner approves
- * each request individually, so the public cannot in fact get the weights.
- * Hence the accept-list below — any value HF invents later reads as unresolved
- * rather than silently confirming, per the directionality note above. A private
- * repo does not count either, and neither does a repo with no weight files
- * (tokenizer-only publications are the exact trap Upstage's `solar-pro*` line
- * sets: `solar-pro3-tokenizer` resolves while the weights never shipped).
+ * Gating still counts as public — Llama and Gemma sit behind a licence any
+ * member of the public can accept, and the methodology's line is "can anyone
+ * get them", not "is the licence tidy". See `isPubliclyGettable` below for why
+ * `"manual"` is on the accept side; any value HF invents later reads as
+ * unresolved rather than silently confirming, per the directionality note
+ * above. A private repo does not count, and neither does a repo with no weight
+ * files (tokenizer-only publications are the exact trap Upstage's `solar-pro*`
+ * line sets: `solar-pro3-tokenizer` resolves while the weights never shipped).
  */
 export const verifyHuggingFaceWeights = async (
   repo: string
 ): Promise<HuggingFaceVerification> => {
   if (!repo || !repo.includes('/'))
     return { confirmed: false, repo: repo || null, reason: 'no repo id' }
+  // Before any URL is built. See isValidRepoId.
+  if (!isValidRepoId(repo))
+    return {
+      confirmed: false,
+      repo,
+      reason: `malformed repo id: ${JSON.stringify(repo)}`,
+    }
 
   let res: Response
   try {
@@ -83,10 +88,9 @@ export const verifyHuggingFaceWeights = async (
     gated?: string | boolean | null
     siblings?: { rfilename?: string }[]
   }
-  if (body.private)
-    return { confirmed: false, repo, reason: 'repo is private' }
+  if (body.private) return { confirmed: false, repo, reason: 'repo is private' }
 
-  if (!isPubliclyGettable(body.gated))
+  if (!isPubliclyGettable(body.gated, repo))
     return {
       confirmed: false,
       repo,
@@ -122,14 +126,112 @@ export const verifyHuggingFaceWeights = async (
  * An accept-list, not a reject-list, so a value HF adds later ("research",
  * "waitlist", whatever) fails closed into "unresolved" and waits for a human
  * instead of quietly counting on the open side of an executable index.
+ *
+ * `"manual"` is NOT generally accepted, and the narrowness is the point.
+ * HuggingFace defines it as the author approving each request individually,
+ * which can stay pending or be refused — that is not public access, and
+ * accepting it wholesale would let a future restricted release land on the
+ * open side of an executable index with no human ever looking, because the
+ * catalog watcher persists a publisher-declared verdict automatically.
+ *
+ * The eleven Llama and Gemma repos below are allowlisted individually. They
+ * report `"manual"` while in practice anyone may accept the licence and
+ * download, the weights are in general circulation, and the published seed
+ * classifies every one of them open. Calling them closed would read as
+ * obviously wrong to anyone checking, which is the worst outcome for a
+ * settlement source. Enumerating them keeps that judgement where it can be
+ * audited instead of hiding it inside a predicate.
+ *
+ * A new manual-gated repo therefore resolves to "unresolved" and goes to the
+ * review queue. If it turns out to be another accept-the-licence line, add
+ * it here deliberately.
  */
-const isPubliclyGettable = (gated: string | boolean | null | undefined) =>
-  gated == null || gated === false || gated === 'auto'
+export const MANUAL_GATING_PUBLIC_REPOS = new Set([
+  'google/gemma-3-12b-it',
+  'google/gemma-3-27b-it',
+  'google/gemma-3-4b-it',
+  'google/gemma-3n-e4b-it',
+  'meta-llama/llama-3.2-1b-instruct',
+  'meta-llama/llama-3.2-3b-instruct',
+  'meta-llama/llama-3.3-70b-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/meta-llama-3.1-70b-instruct',
+  'meta-llama/meta-llama-3.1-8b-instruct',
+])
 
-/** Repo ids are `org/name`; the slash is structural and must not be escaped. */
+const isPubliclyGettable = (
+  gated: string | boolean | null | undefined,
+  repo: string
+) =>
+  gated == null ||
+  gated === false ||
+  gated === 'auto' ||
+  (gated === 'manual' && MANUAL_GATING_PUBLIC_REPOS.has(repo.toLowerCase()))
+
+/**
+ * Did a verification fail because the repo is genuinely not public, or
+ * because HuggingFace could not be reached?
+ *
+ * Lives here, beside the code that PRODUCES these reason strings, so the two
+ * cannot drift. A network blip, a 5xx or a rate-limit answer all come back
+ * as `confirmed: false` exactly like a withdrawn repo does, and a caller
+ * auditing existing verdicts must not report the first as the second.
+ *
+ * Parsed by string, not by pattern. An earlier version of this lived in the
+ * audit job as a regex whose word boundary was mangled into a literal 0x08
+ * control character while being edited, so it silently never matched and
+ * every transport blip was reported as repository rot -- the exact failure
+ * it existed to prevent, and invisible in review because the byte does not
+ * render. Nothing here can fail that way.
+ */
+/** Non-5xx statuses that still mean "could not reach it", not "not public". */
+export const TRANSPORT_FAILURE_STATUSES = new Set(['408', '429'])
+
+const NOT_PUBLIC_PREFIX = 'not public: '
+
+export const isTransportFailure = (reason: string) => {
+  if (reason.startsWith('fetch failed')) return true
+  if (!reason.startsWith(NOT_PUBLIC_PREFIX)) return false
+  const status = reason.slice(NOT_PUBLIC_PREFIX.length).trim().split(' ')[0]
+  if (TRANSPORT_FAILURE_STATUSES.has(status)) return true
+  // The whole 5xx range, not an allowlist. Cloudflare alone serves 520/522/524
+  // in front of HuggingFace and 501/599 exist too; every one of them means the
+  // request failed rather than that the repo is gone, and an allowlist that
+  // misses one turns an outage into an ERROR alert claiming weights were
+  // withdrawn.
+  const code = Number(status)
+  return Number.isInteger(code) && code >= 500 && code <= 599
+}
+
+/**
+ * A repo id is exactly `owner/name`, and it is validated before it is used to
+ * build a URL.
+ *
+ * `encodeURIComponent` does not escape dots, so a proposed id containing a
+ * traversal segment survived encoding intact and the fetch then normalised it
+ * away: `openai/../attacker/gpt-oss-120b` requests
+ * `api/models/attacker/gpt-oss-120b` -- verified live against HuggingFace,
+ * which answers 200 for it -- while every guard upstream only ever looks at
+ * `split('/')[0]` and sees `openai`. The attacker's repo is what gets checked;
+ * the publisher's id is what gets stored. On the auto-apply path that writes
+ * `open: true` with nobody looking.
+ *
+ * So the shape is enforced rather than escaped: two non-empty segments of
+ * HuggingFace-legal characters, and neither segment may be `.` or `..`.
+ */
+const REPO_ID_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
+
+export const isValidRepoId = (repo: string): boolean => {
+  const parts = repo.split('/')
+  if (parts.length !== 2) return false
+  return parts.every(
+    (part) => part !== '.' && part !== '..' && REPO_ID_SEGMENT.test(part)
+  )
+}
+
 const encodeRepo = (repo: string) =>
   repo.split('/').map(encodeURIComponent).join('/')
-
 export type HuggingFaceRepoSummary = {
   id: string
   downloads?: number

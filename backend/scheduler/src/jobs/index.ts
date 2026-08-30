@@ -67,6 +67,7 @@ import {
   validateOracleFeedPollPeriods,
 } from './update-oracle-feeds'
 import { updateOpenRouterShare } from './update-openrouter-share'
+import { updateClassificationAudit } from './update-classification-audit'
 import { updateModelClassifications } from './update-model-classifications'
 import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
@@ -268,6 +269,22 @@ export function createJobs(jobSet: SchedulerJobSet) {
       updateModelClassifications
     ),
     // Daily jobs:
+    createJob(
+      'classification-audit',
+      // 06:40 LA. NOT 03:40, which an earlier revision picked while claiming it
+      // sat in the "same quiet window" as the schedule above — it is the exact
+      // opposite. That comment defines the window to AVOID as 00:00-04:30 LA
+      // (the 08:00 UTC API restart and the ~10:00-11:30 UTC scheduler memory
+      // pressure, mapped through both DST offsets), which 03:40 is inside.
+      //
+      // 06:40 clears it in PDT and PST alike, and sits between the 05:15 and
+      // 11:15 firings of the classifier above so the two never contend for the
+      // HuggingFace rate limit. Daily rather than hourly because it re-verifies
+      // every published classification against a third-party API and nothing it
+      // looks for changes on an hourly timescale.
+      '0 40 6 * * *',
+      updateClassificationAudit
+    ),
     createJob(
       'process-membership-renewals',
       '0 0 8 * * *', // daily at 8:00 AM LA

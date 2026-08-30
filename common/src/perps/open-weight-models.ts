@@ -58,8 +58,32 @@ import { DAY_MS } from '../util/time'
 // a versioned list rather than a live lookup: the index definition must not
 // change silently when a third party edits a metadata field.
 
+// MISSED_BY_RENAME — the failure mode a re-audit on 2026-08-24 actually found.
+//
+// A full re-verification of all 299 published classifications turned up zero
+// rot (every `open` entry still cites a live public repo with weight files)
+// but four models marked closed whose weights were public all along:
+// Kimi K3, Mistral Large 3 2512, Mistral Medium 3.5, Ling-3.0-flash.
+//
+// Three of the four have an EMPTY `hugging_face_id` on OpenRouter, so building
+// the list fell through to the org-catalogue name match — and that match
+// cannot bridge a rename. `mistral-large-2512` and
+// `Mistral-Large-3-675B-Base-2512` share almost no tokens, so a correct repo
+// sitting in the publisher's own org scored zero and the model defaulted to
+// closed. Mistral renames between OpenRouter slug and HF repo routinely, which
+// is why it is two of the four.
+//
+// Every error ran the same direction — open marked closed — so the published
+// index was UNDERSTATED, never inflated. That is not luck: a missing repo is
+// the only way the build can fail, and its default is closed.
+//
+// The fix is not a better matcher. It is that nothing ever re-examined a
+// verdict once written: no job re-verified an existing entry and none diffed
+// against OpenRouter's own metadata, so a wrong entry was permanent. See
+// `update-classification-audit.ts`, which now asserts both nightly.
+
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-08-14'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-24'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -93,6 +117,25 @@ export const OPEN_WEIGHT_WINDOW_DAYS = 7
 export const UNCLASSIFIED_TOKEN_SHARE_CAP = 0.01
 
 /**
+ * How much of the classified token pool may sit in router/alias slugs before
+ * the index refuses to publish, as composite tokens over classified tokens.
+ *
+ * These are excluded from both sides by design (see isCompositeSlug), and
+ * unlike an unclassified model nothing else bounds them — no grace clock, no
+ * adjudication, no alert. Without a cap a router that grew into real volume
+ * would quietly shrink the denominator forever and the published number would
+ * stop describing the population the methodology names.
+ *
+ * NEEDS CALIBRATION, like UNCLASSIFIED_TOKEN_SHARE_CAP. No router or alias has
+ * ever entered the ranked window, so there is no measured base rate to size
+ * this against; 2% is chosen only as "clearly past a rounding decision" and
+ * should be revisited the first time `compositeSlugs` is non-empty on a real
+ * tick. It is deliberately looser than the unclassified cap because exclusion
+ * here is the CORRECT treatment rather than a temporary gap awaiting a human.
+ */
+export const COMPOSITE_TOKEN_SHARE_CAP = 0.02
+
+/**
  * How long a below-cap unknown may keep publishing before the index halts on
  * it anyway, measured from when the catalog watcher first saw the model.
  *
@@ -114,6 +157,56 @@ export const UNCLASSIFIED_GRACE_WINDOW_MS = 2 * DAY_MS
  * so. We do not estimate it.
  */
 export const OTHER_MODEL_KEY = 'other'
+
+/**
+ * OpenRouter slugs that route across models instead of being one.
+ *
+ * `openrouter/fusion` is the clearest: OpenRouter documents it as "a panel of
+ * expert models … analyzes your prompt in parallel, then a judge model
+ * synthesizes their responses", billed as the sum of the underlying
+ * completions. Its tokens are a MIXTURE of open and closed models, so `open`
+ * and `closed` are both false statements about it and either one misattributes
+ * the whole volume.
+ *
+ * An explicit list rather than a pattern, because `openrouter/` is also where
+ * the cloaked pre-release models live and those ARE single models, correctly
+ * classified closed — you cannot download weights for a model nobody has
+ * named. No suffix separates the two: `auto-beta` is a router and
+ * `horizon-beta` is a stealth model.
+ */
+export const ROUTER_MODEL_KEYS = [
+  'openrouter/auto',
+  'openrouter/auto-beta',
+  'openrouter/bodybuilder',
+  'openrouter/free',
+  'openrouter/fusion',
+  'openrouter/pareto-code',
+]
+
+/**
+ * Slugs that are not a single model and so cannot carry a classification.
+ *
+ * Two shapes. Routers, above. And OpenRouter's floating aliases, which carry a
+ * `~` prefix (`~z-ai/glm-latest`, `~openai/gpt-latest`) and resolve to whatever
+ * the publisher's current model is — so their openness changes underneath any
+ * stored answer. `~z-ai/glm-latest` points at GLM 5.3 today, which is closed,
+ * while every earlier GLM is open; a boolean written against the alias would
+ * have been right last month and wrong now, with nothing to notice.
+ *
+ * Excluded from BOTH sides, exactly as `other` is, rather than left
+ * unclassified. Unclassified is the worse failure: it starts a grace clock and
+ * eventually halts the feed, forcing someone to invent a boolean for a thing
+ * that does not have one, under a deadline. Their tokens are accounted for and
+ * logged by the caller so the exclusion can never become a silent drop — see
+ * `compositeTokens`.
+ *
+ * If an alias ever carries enough volume to matter, the fix is to resolve it
+ * through OpenRouter's own `alias_target` field to the model it points at and
+ * classify THAT, not to guess at the alias.
+ */
+export const isCompositeSlug = (permaslug: string): boolean =>
+  permaslug.startsWith('~') ||
+  ROUTER_MODEL_KEYS.includes(basePermaslug(permaslug))
 
 export type ModelClassification = {
   /** True iff the weights are publicly downloadable. */
@@ -346,7 +439,15 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
   'qwen/qwen3.6-plus-preview': { open: false },
   'anthropic/claude-3-7-sonnet-20250219': { open: false },
   'qwen/qwen3-embedding-8b': { open: true, weights: 'Qwen/Qwen3-Embedding-8B' },
-  'moonshotai/kimi-k3-20260715': { open: false }, // MoonshotAI: Kimi K3
+  // Corrected 2026-08-24 (was `open: false`). OpenRouter's own description
+  // calls it "a 2.8T parameter open-weight multimodal reasoning model" and
+  // declares this repo; it is public, ungated, 96 weight files, 2.7M
+  // downloads, and predates the 2026-08-14 list cut by two months. The
+  // original miss is the rename pattern documented at MISSED_BY_RENAME below.
+  'moonshotai/kimi-k3-20260715': {
+    open: true,
+    weights: 'moonshotai/Kimi-K3',
+  }, // MoonshotAI: Kimi K3
   'google/gemini-2.5-flash-lite-preview-09-2025': { open: false },
   'anthropic/claude-5-fable-20260609': { open: false }, // Anthropic: Claude Fable 5
   'openrouter/hunter-alpha': { open: false },
@@ -437,7 +538,13 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
     open: true,
     weights: 'tngtech/DeepSeek-R1T-Chimera',
   },
-  'inclusionai/ling-3.0-flash-20260723': { open: false }, // Ling-3.0-flash (free)
+  // Corrected 2026-08-24 (was `open: false`). Publisher-declared
+  // `hugging_face_id`; repo is public, ungated, MIT, 24 weight files, created
+  // 2026-08-02 — before the 2026-08-14 list cut.
+  'inclusionai/ling-3.0-flash-20260723': {
+    open: true,
+    weights: 'inclusionAI/Ling-3.0-flash',
+  }, // Ling-3.0-flash (free)
   'openai/gpt-5.2-codex-20260114': { open: false }, // OpenAI: GPT-5.2-Codex
   'moonshotai/kimi-k2': { open: true, weights: 'moonshotai/Kimi-K2-Instruct' }, // MoonshotAI: Kimi K2 0711
   'x-ai/grok-4-07-09': { open: false },
@@ -567,7 +674,14 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
     open: true,
     weights: 'Qwen/Qwen3-235B-A22B-Thinking-2507',
   }, // Qwen: Qwen3 235B A22B Thinking 2507
-  'mistralai/mistral-medium-3.5-20260430': { open: false }, // Mistral: Mistral Medium 3.5
+  // Corrected 2026-08-24 (was `open: false`). Public, ungated, 6 weight files,
+  // 91k downloads, created 2026-03-31. `license:other` is not disqualifying —
+  // the test is whether anyone can download the weights, the same reading that
+  // puts Llama and Gemma on the open side.
+  'mistralai/mistral-medium-3.5-20260430': {
+    open: true,
+    weights: 'mistralai/Mistral-Medium-3.5-128B',
+  }, // Mistral: Mistral Medium 3.5
   'qwen/qwen3-coder-plus': { open: false }, // Qwen: Qwen3 Coder Plus
   'x-ai/grok-4.20-20260309': { open: false }, // xAI: Grok 4.20
   'alibaba/tongyi-deepresearch-30b-a3b': { open: false },
@@ -630,7 +744,20 @@ export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
   },
   'tngtech/tng-r1t-chimera': { open: false },
   'openrouter/aurora-alpha': { open: false },
-  'mistralai/mistral-large-2512': { open: false }, // Mistral: Mistral Large 3 2512
+  // Corrected 2026-08-24 (was `open: false`). OpenRouter's description states
+  // it is "released under the Apache 2.0 license"; the repo is public,
+  // ungated, apache-2.0, 272 weight files.
+  //
+  // Cites Instruct, not Base. Both are public and both would satisfy the
+  // "are the weights downloadable" test, so the verdict is the same either
+  // way — but the OpenRouter slug serves the instruction-tuned model, and the
+  // Base card says it is not instruction-fine-tuned. The citation is the
+  // artifact a reader checks and the one the nightly ROT audit re-verifies,
+  // so it should name the checkpoint actually being served.
+  'mistralai/mistral-large-2512': {
+    open: true,
+    weights: 'mistralai/Mistral-Large-3-675B-Instruct-2512',
+  }, // Mistral: Mistral Large 3 2512
   'mistralai/ministral-8b-2512': {
     open: true,
     weights: 'mistralai/Ministral-3-8B-Instruct-2512',
@@ -690,11 +817,30 @@ export const basePermaslug = (permaslug: string): string => {
   return colon === -1 ? permaslug : permaslug.slice(0, colon)
 }
 
+/**
+ * Is this a well-formed permaslug key — exactly `owner/model`?
+ *
+ * `basePermaslug` normalises but does not validate, and every caller that
+ * checked at all checked `includes('/')`, which admits `/x`, `x/`, `/` and
+ * `x//y`. With the CLI's --create flag any of those could be INSERTED as a
+ * classification row, and nothing in the index would ever match one: a key
+ * that cannot correspond to a model is a row that can only ever be noise in
+ * the queue and the audit.
+ *
+ * Lives here rather than in each caller because the gap was central — the
+ * API, the CLI and upsertClassification all shared it.
+ */
+export const isValidPermaslug = (permaslug: string): boolean =>
+  // No whitespace anywhere, not merely non-blank segments. A `trim().length > 0`
+  // check passed `openai /gpt-4`, `openai/ gpt-4` and `openai/gpt 4` — keys
+  // that look right in a log line, match no model, and which the central upsert
+  // would then persist. The rankings dataset never emits a slug containing a
+  // space, so anything that does is a paste or a typo.
+  /^[^/\s]+\/[^/\s]+$/.test(permaslug)
 export const classifyModel = (
   permaslug: string,
   classifications: ModelClassifications = OPEN_WEIGHT_MODELS
-): ModelClassification | undefined =>
-  classifications[basePermaslug(permaslug)]
+): ModelClassification | undefined => classifications[basePermaslug(permaslug)]
 
 /** One row of OpenRouter's `datasets/rankings-daily` payload. */
 export type RankingRow = {
@@ -724,6 +870,13 @@ export type OpenWeightShareResult = {
   classifiedTokens: number
   unclassifiedTokens: number
   otherTokens: number
+  /**
+   * Router and floating-alias slugs seen in the window, and their volume.
+   * Excluded from both sides (rule 1b); surfaced so the exclusion is visible
+   * in the logs rather than silently shrinking the denominator.
+   */
+  compositeSlugs: string[]
+  compositeTokens: number
   /** Everything in the payload including `other` and unclassified models. */
   payloadTokens: number
 }
@@ -787,8 +940,10 @@ export const computeOpenWeightShare = (
   let classifiedTokens = 0n
   let unclassifiedTokens = 0n
   let otherTokens = 0n
+  let compositeTokens = 0n
   let payloadTokens = 0n
   const unclassifiedSet: Record<string, true> = {}
+  const compositeSet: Record<string, true> = {}
   const invalidTokenRowSet: Record<string, true> = {}
 
   for (const row of rows) {
@@ -803,6 +958,15 @@ export const computeOpenWeightShare = (
     // denominator, never estimated.
     if (basePermaslug(row.model_permaslug) === OTHER_MODEL_KEY) {
       otherTokens += tokens
+      continue
+    }
+
+    // Rule 1b: routers and floating aliases are not a single model, so no
+    // boolean about them is true. Out of both sides like `other`, and recorded
+    // rather than dropped — the caller logs the slugs and the volume.
+    if (isCompositeSlug(row.model_permaslug)) {
+      compositeSet[basePermaslug(row.model_permaslug)] = true
+      compositeTokens += tokens
       continue
     }
 
@@ -840,6 +1004,7 @@ export const computeOpenWeightShare = (
     share,
     dates,
     unclassified: Object.keys(unclassifiedSet).sort(),
+    compositeSlugs: Object.keys(compositeSet).sort(),
     invalidTokenRows,
     // Checked against `other` specifically, not "payload exceeds classified":
     // unclassified tokens also widen that gap, so the loose form would read a
@@ -853,6 +1018,7 @@ export const computeOpenWeightShare = (
     classifiedTokens: finiteBigIntTelemetry(classifiedTokens),
     unclassifiedTokens: finiteBigIntTelemetry(unclassifiedTokens),
     otherTokens: finiteBigIntTelemetry(otherTokens),
+    compositeTokens: finiteBigIntTelemetry(compositeTokens),
     payloadTokens: finiteBigIntTelemetry(payloadTokens),
   }
 }
@@ -906,6 +1072,8 @@ export type OpenWeightPublicationOptions = {
   expectedDays?: number
   /** Override the cap; 0 restores the old halt-on-any-unknown behaviour. */
   unclassifiedShareCap?: number
+  /** Bound on router/alias tokens; defaults to COMPOSITE_TOKEN_SHARE_CAP. */
+  compositeShareCap?: number
   /**
    * Unknowns that have been unclassified for longer than the operator's grace
    * window. Present here they halt the index regardless of how small they are:
@@ -932,6 +1100,7 @@ export const validateOpenWeightPublication = (
   const {
     expectedDays = OPEN_WEIGHT_WINDOW_DAYS,
     unclassifiedShareCap = UNCLASSIFIED_TOKEN_SHARE_CAP,
+    compositeShareCap = COMPOSITE_TOKEN_SHARE_CAP,
     expiredUnclassified = [],
   } = options
 
@@ -977,6 +1146,27 @@ export const validateOpenWeightPublication = (
     result.share > 100
   )
     return { ok: false, reason: `invalid share ${result.share}` }
+
+  // Composite slugs leave the denominator without ever being adjudicated, so
+  // unlike an unclassified model nothing else bounds them: no grace clock, no
+  // U/C cap. At small volume that is the intended trade (see isCompositeSlug).
+  // Past this cap it stops being a rounding decision — the index would be
+  // reporting a share of a materially different population than the
+  // methodology claims — so it halts and someone resolves the alias through
+  // `alias_target` or reconsiders the router.
+  if (
+    result.classifiedTokens > 0 &&
+    result.compositeTokens / result.classifiedTokens > compositeShareCap
+  )
+    return {
+      ok: false,
+      reason: `composite (router/alias) slugs are ${(
+        (result.compositeTokens / result.classifiedTokens) *
+        100
+      ).toFixed(2)}% of classified tokens, over the ${(
+        compositeShareCap * 100
+      ).toFixed(2)}% cap: ${result.compositeSlugs.join(', ')}`,
+    }
 
   if (result.unclassified.length === 0) return { ok: true, share: result.share }
 

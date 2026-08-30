@@ -6,6 +6,8 @@ import {
   basePermaslug,
   classifyModel,
   computeOpenWeightShare,
+  isCompositeSlug,
+  isValidPermaslug,
   newestWindowDates,
   openWeightWindowRange,
   utcDateString,
@@ -307,9 +309,9 @@ describe('publication validation', () => {
 
     for (const truth of [asOpen, asClosed]) {
       expect(truth).not.toBeNull()
-      expect(Math.abs((truth as number) - validation.share)).toBeLessThanOrEqual(
-        validation.grace.maxIndexError + 1e-9
-      )
+      expect(
+        Math.abs((truth as number) - validation.share)
+      ).toBeLessThanOrEqual(validation.grace.maxIndexError + 1e-9)
     }
   })
 
@@ -406,9 +408,137 @@ describe('the published list', () => {
   })
 
   it('cites public weights for every open model and none for closed ones', () => {
+    // Assert on `weights` itself. The previous form interpolated the slug and
+    // matched the pair against /.+\/.+/ — which the slug's OWN slash satisfies,
+    // so it passed for an open entry citing nothing at all. Three comments in
+    // this package describe it as the invariant that keeps an unevidenced open
+    // call out of the list, so it needs to actually check.
     for (const [slug, c] of Object.entries(OPEN_WEIGHT_MODELS)) {
-      if (c.open) expect(`${slug}:${c.weights ?? ''}`).toMatch(/.+\/.+/)
-      else expect(c.weights).toBeUndefined()
+      if (c.open) {
+        expect([slug, typeof c.weights]).toEqual([slug, 'string'])
+        expect([slug, (c.weights ?? '').trim()]).not.toEqual([slug, ''])
+        // owner/repo, and the owner is not the empty string
+        expect([slug, c.weights]).toEqual([
+          slug,
+          expect.stringMatching(/^[^/\s]+\/[^/\s]+$/),
+        ])
+      } else {
+        expect([slug, c.weights]).toEqual([slug, undefined])
+      }
     }
+  })
+
+  it('that invariant actually fails on an unevidenced open entry', () => {
+    // Guards the guard: if this ever passes, the assertion above went vacuous
+    // again.
+    const bad = { open: true } as (typeof OPEN_WEIGHT_MODELS)[string]
+    expect(() =>
+      expect(['x/y', typeof bad.weights]).toEqual(['x/y', 'string'])
+    ).toThrow()
+  })
+})
+
+describe('composite slugs (routers and floating aliases)', () => {
+  const rows = (entries: [string, string][]) =>
+    entries.map(([model_permaslug, total_tokens]) => ({
+      date: '2026-08-20',
+      model_permaslug,
+      total_tokens,
+    }))
+
+  it('identifies routers and aliases, but not stealth models', () => {
+    expect(isCompositeSlug('openrouter/fusion')).toBe(true)
+    expect(isCompositeSlug('openrouter/auto-beta')).toBe(true)
+    expect(isCompositeSlug('~z-ai/glm-latest')).toBe(true)
+    expect(isCompositeSlug('~openai/gpt-latest')).toBe(true)
+    // Cloaked pre-release models ARE single models and stay classifiable —
+    // no suffix separates them from routers, which is why the list is
+    // explicit. `auto-beta` is a router; `horizon-beta` is a model.
+    expect(isCompositeSlug('openrouter/horizon-beta')).toBe(false)
+    expect(isCompositeSlug('openrouter/owl-alpha')).toBe(false)
+    expect(isCompositeSlug('z-ai/glm-5.3-20260816')).toBe(false)
+  })
+
+  it('keeps them out of both sides instead of halting the feed on them', () => {
+    const classifications = {
+      'a/open-model': { open: true, weights: 'a/Open' },
+      'b/closed-model': { open: false },
+    }
+    const result = computeOpenWeightShare(
+      rows([
+        ['a/open-model', '700'],
+        ['b/closed-model', '300'],
+        ['openrouter/fusion', '500'],
+        ['~z-ai/glm-latest', '100'],
+      ]),
+      1,
+      classifications
+    )
+    // 700 / (700 + 300) — the router and alias touch neither side.
+    expect(result.share).toBe(70)
+    // And critically they are NOT unclassified, which is what would start a
+    // grace clock and eventually halt publication.
+    expect(result.unclassified).toEqual([])
+    expect(result.compositeSlugs).toEqual([
+      'openrouter/fusion',
+      '~z-ai/glm-latest',
+    ])
+    expect(result.compositeTokens).toBe(600)
+  })
+
+  it('still treats an unknown ordinary model as unclassified', () => {
+    const result = computeOpenWeightShare(
+      rows([
+        ['a/open-model', '700'],
+        ['newlab/brand-new', '10'],
+      ]),
+      1,
+      { 'a/open-model': { open: true, weights: 'a/Open' } }
+    )
+    expect(result.unclassified).toEqual(['newlab/brand-new'])
+    expect(result.compositeSlugs).toEqual([])
+  })
+})
+
+describe('isValidPermaslug', () => {
+  it('rejects slash-containing keys that are not owner/model', () => {
+    // Every one of these passed the old includes('/') check, and with the
+    // CLI's --create flag could have been INSERTED as a classification row
+    // that nothing in the index can ever match.
+    for (const bad of ['/x', 'x/', '/', 'x//y', '', 'x', 'a/b/c', ' / '])
+      expect([bad, isValidPermaslug(bad)]).toEqual([bad, false])
+  })
+
+  it('rejects whitespace-bearing keys that match no model', () => {
+    // These pass a non-blank-segment check but correspond to nothing, and the
+    // central upsert would persist them. They read as correct in a log line,
+    // which is what makes them worth rejecting rather than tolerating.
+    for (const bad of [
+      'openai /gpt-4',
+      'openai/ gpt-4',
+      'openai/gpt 4',
+      ' openai/gpt-4',
+      'openai/gpt-4 ',
+      'openai/gpt\t4',
+    ])
+      expect([bad, isValidPermaslug(bad)]).toEqual([bad, false])
+  })
+
+  it('accepts the real permaslug keys the index uses', () => {
+    for (const good of [
+      'z-ai/glm-5.3-20260816',
+      'openai/gpt-4',
+      'meta-llama/llama-3.3-70b-instruct',
+      'inclusionai/ling-3.0-flash-20260723',
+    ])
+      expect([good, isValidPermaslug(good)]).toEqual([good, true])
+  })
+
+  it('agrees with basePermaslug on what it produces', () => {
+    // basePermaslug truncates at ':', so a variant suffix must still normalise
+    // to something this accepts -- otherwise the write path would reject keys
+    // the read path generates.
+    for (const raw of ['qwen/qwen3-max:free', 'z-ai/glm-5.3-20260816:nitro'])
+      expect([raw, isValidPermaslug(basePermaslug(raw))]).toEqual([raw, true])
   })
 })
