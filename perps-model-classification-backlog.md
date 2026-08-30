@@ -135,11 +135,36 @@ to closed, because cross-publisher releases are real.
 - **Whether to recompute historical points.** The four errors predate the list
   cut, so this is a correction rather than a forward-dated reclassification.
   That is a decision about what the market settled on, not a technical one.
-- **Deploy: `prod main`, NOT `prod perps`.** `classification-audit` is not in
-  `PERP_JOB_NAMES` (which is only `update-perps`, `update-oracle-feeds`,
-  `update-openrouter-share`, `update-trump-approval`), so it runs on the `main`
-  scheduler instance — same as `update-model-classifications`. Deploying
-  `perps` would leave the audit permanently un-run while looking shipped.
+- **Deploy BOTH, in order: `prod main`, then `prod perps`.** An earlier
+  version of this line said "`prod main`, NOT `prod perps`". That was wrong
+  and following it would have shipped half the change.
+
+  The two instances are separate deployments with separate images
+  (`deploy-scheduler-windows.sh prod <main|perps>` sets `SERVICE_NAME` to
+  `scheduler` or `scheduler-perps` and builds an image per target), and the
+  work splits across both:
+
+  - `classification-audit` is NOT in `PERP_JOB_NAMES`, so it runs on **main**.
+  - `update-openrouter-share` IS in `PERP_JOB_NAMES`, so it runs on **perps**
+    — and it builds its map from the COMPILED `OPEN_WEIGHT_MODELS` via
+    `resolveModelClassifications`, which starts from `{...OPEN_WEIGHT_MODELS}`.
+
+  So the four seed corrections only reach the executable oracle when **perps**
+  is deployed. Deploying main alone gives the strange half-state where the
+  audit is running against the corrected list while the oracle still prices
+  the market off the old one — and the audit would report no disagreements,
+  because it is reading its own image's seed rather than the one in use.
+
+  Recommended sequencing, so the index step is not a surprise:
+
+  1. Deploy `prod main`. Nothing about the published number changes; this
+     starts the nightly audit.
+  2. Quantify the old-vs-new 7-day delta against the production rankings
+     (needs `OPENROUTER_API_KEY`). Forward-only — do NOT rewrite historical
+     oracle points; `insertOraclePrices` is `on conflict do nothing` and the
+     stored series is what the perp actually marked against.
+  3. Deploy `prod perps` at a chosen time. This is the tick where the index
+     steps up.
 
 ---
 

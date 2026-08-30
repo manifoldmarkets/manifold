@@ -509,6 +509,21 @@ describe('isValidPermaslug', () => {
       expect([bad, isValidPermaslug(bad)]).toEqual([bad, false])
   })
 
+  it('rejects whitespace-bearing keys that match no model', () => {
+    // These pass a non-blank-segment check but correspond to nothing, and the
+    // central upsert would persist them. They read as correct in a log line,
+    // which is what makes them worth rejecting rather than tolerating.
+    for (const bad of [
+      'openai /gpt-4',
+      'openai/ gpt-4',
+      'openai/gpt 4',
+      ' openai/gpt-4',
+      'openai/gpt-4 ',
+      'openai/gpt\t4',
+    ])
+      expect([bad, isValidPermaslug(bad)]).toEqual([bad, false])
+  })
+
   it('accepts the real permaslug keys the index uses', () => {
     for (const good of [
       'z-ai/glm-5.3-20260816',

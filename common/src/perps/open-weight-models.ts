@@ -830,11 +830,13 @@ export const basePermaslug = (permaslug: string): string => {
  * Lives here rather than in each caller because the gap was central — the
  * API, the CLI and upsertClassification all shared it.
  */
-export const isValidPermaslug = (permaslug: string): boolean => {
-  const parts = permaslug.split('/')
-  if (parts.length !== 2) return false
-  return parts.every((part) => part.trim().length > 0)
-}
+export const isValidPermaslug = (permaslug: string): boolean =>
+  // No whitespace anywhere, not merely non-blank segments. A `trim().length > 0`
+  // check passed `openai /gpt-4`, `openai/ gpt-4` and `openai/gpt 4` — keys
+  // that look right in a log line, match no model, and which the central upsert
+  // would then persist. The rankings dataset never emits a slug containing a
+  // space, so anything that does is a paste or a typo.
+  /^[^/\s]+\/[^/\s]+$/.test(permaslug)
 export const classifyModel = (
   permaslug: string,
   classifications: ModelClassifications = OPEN_WEIGHT_MODELS
