@@ -69,12 +69,26 @@ export type StreakResetFacts = {
  * been applied to it — or that there was nothing for that job to do:
  *
  *  - no live streak, so no reset was ever due;
- *  - a bet during the day that just ended (or later), so the streak survived on
- *    its own merits;
+ *  - a bet TODAY, which no run of the job today can undo;
  *  - a freeze consumed today, which only the reset does.
  *
- * False for the one shape that means "the job has not reached this row yet": a
- * live streak, no bet in the day that just ended, and no freeze consumed today.
+ * The bet test deliberately uses today's start, not the previous day's. The
+ * backend predicate is `lastBetTime < ts_to_millis(now() - interval '1 day')`
+ * (backend/scheduler/src/jobs/reset-betting-streaks.ts) - a ROLLING 24 hours
+ * measured when the job happens to run, not the Pacific day. A bet at 00:00:05
+ * yesterday clears a "did they bet yesterday" test, yet a job running at 00:00:10
+ * today still resets it. `now()` is also evaluated separately in that job's SELECT
+ * and UPDATE, and on a DST day a Pacific day is 23h or 25h rather than 24h, so
+ * the two cutoffs can differ by an hour. A bet at or after today's start is the
+ * only bet-based proof that holds for every execution time today.
+ *
+ * The cost is that a user who bet yesterday but not yet today has no accepted
+ * row until they bet again, so the widget keeps rendering its stored snapshot.
+ * That snapshot is correct for them (it still derives 'pending'), and the fetch
+ * simply retries - the conservative direction is the safe one here.
+ *
+ * False for the shape that means "the job has not reached this row yet": a live
+ * streak, no bet today, and no freeze consumed today.
  * Callers must then keep the older snapshot — stale timestamp included — so the
  * local prediction still runs and the next fetch retries. This self-heals: it
  * keeps refusing only for as long as the backend keeps answering with pre-reset
@@ -84,14 +98,42 @@ export function reflectsDailyReset(
   row: StreakResetFacts | null | undefined,
   now: Date
 ): boolean {
-  if (!row) return false
+  if (!hasSaneStreakFields(row)) return false
   const todayStart = pacificStartOfDayMs(now)
-  // One ms before today's start is inside the day that just ended, so this
-  // resolves that day's start even across a DST boundary.
-  const yesterdayStart = pacificStartOfDayMs(new Date(todayStart - 1))
 
   if (!(row.streak > 0)) return true
-  if (row.lastBetTime >= yesterdayStart) return true
+  if (row.lastBetTime >= todayStart) return true
   if (row.lastStreakFreezeTime >= todayStart) return true
   return false
+}
+
+/**
+ * Are these fields numbers we can reason about at all? A payload reaches the
+ * widget from the web client as well as from our own fetch, and a NaN or an
+ * Infinity would silently defeat every comparison above (NaN >= x is false, so a
+ * garbage row would look like the pre-reset shape forever). Reject rather than
+ * guess.
+ */
+export function hasSaneStreakFields(
+  row: StreakResetFacts | null | undefined
+): row is StreakResetFacts {
+  if (!row) return false
+  return (
+    Number.isFinite(row.streak) &&
+    Number.isFinite(row.lastBetTime) &&
+    Number.isFinite(row.lastStreakFreezeTime) &&
+    row.lastBetTime >= 0 &&
+    row.lastStreakFreezeTime >= 0
+  )
+}
+
+/**
+ * The single question every writer must ask before persisting a streak snapshot:
+ * are the fields sane, and does the row prove the day's reset has been applied?
+ */
+export function mayPersistStreakSnapshot(
+  row: StreakResetFacts | null | undefined,
+  now: Date
+): boolean {
+  return hasSaneStreakFields(row) && reflectsDailyReset(row, now)
 }

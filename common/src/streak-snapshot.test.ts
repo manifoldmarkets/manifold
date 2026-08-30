@@ -1,4 +1,6 @@
 import {
+  hasSaneStreakFields,
+  mayPersistStreakSnapshot,
   pacificStartOfDayMs,
   reflectsDailyReset,
   type StreakResetFacts,
@@ -77,18 +79,35 @@ describe('reflectsDailyReset', () => {
     ).toBe(true)
   })
 
-  it('accepts when they bet during the day that just ended — no reset was due', () => {
+  it('REFUSES a bet in the day that just ended — the backend cutoff is rolling', () => {
+    // reset-betting-streaks compares lastBetTime against now() - interval '1 day',
+    // evaluated whenever the job runs. A bet just after yesterday's midnight is
+    // still reset by a job running just after today's, so "bet yesterday" is not
+    // proof of anything.
     expect(
       reflectsDailyReset(
         row({ lastBetTime: YESTERDAY_START }),
         JUST_PAST_MIDNIGHT
       )
-    ).toBe(true)
+    ).toBe(false)
+    expect(
+      reflectsDailyReset(
+        row({ lastBetTime: YESTERDAY_START + 5000 }),
+        JUST_PAST_MIDNIGHT
+      )
+    ).toBe(false)
+    // Even a bet a millisecond before today's start proves nothing.
     expect(
       reflectsDailyReset(
         row({ lastBetTime: TODAY_START - 1 }),
         JUST_PAST_MIDNIGHT
       )
+    ).toBe(false)
+  })
+
+  it('accepts a bet exactly at the start of today', () => {
+    expect(
+      reflectsDailyReset(row({ lastBetTime: TODAY_START }), JUST_PAST_MIDNIGHT)
     ).toBe(true)
   })
 
@@ -119,7 +138,10 @@ describe('reflectsDailyReset', () => {
     expect(reflectsDailyReset(undefined, JUST_PAST_MIDNIGHT)).toBe(false)
   })
 
-  it('handles a negative or absent streak as nothing-to-reset', () => {
+  it('treats a non-positive streak as nothing-to-reset, but garbage as unusable', () => {
+    // A negative streak is a real (if odd) number: there is no live streak, so no
+    // reset was due. NaN is not — it would make every comparison below false and
+    // masquerade as the pre-reset shape forever, so it is refused outright.
     expect(reflectsDailyReset(row({ streak: -1 }), JUST_PAST_MIDNIGHT)).toBe(
       true
     )
@@ -128,7 +150,20 @@ describe('reflectsDailyReset', () => {
         { streak: NaN, lastBetTime: 0, lastStreakFreezeTime: 0 },
         JUST_PAST_MIDNIGHT
       )
-    ).toBe(true)
+    ).toBe(false)
+  })
+
+  it('is unaffected by a 23h or 25h DST day, because it never spans one', () => {
+    // The rule only ever compares against TODAY's start, so the shorter/longer
+    // previous day cannot shift the cutoff underneath it.
+    const dstDay = at('2026-11-01T20:00:00Z')
+    const dayStart = pacificStartOfDayMs(dstDay)
+    expect(reflectsDailyReset(row({ lastBetTime: dayStart }), dstDay)).toBe(
+      true
+    )
+    expect(reflectsDailyReset(row({ lastBetTime: dayStart - 1 }), dstDay)).toBe(
+      false
+    )
   })
 
   it('mid-day, a live streak with a bet that day is accepted', () => {
@@ -139,14 +174,70 @@ describe('reflectsDailyReset', () => {
     ).toBe(true)
   })
 
-  it('mid-day, a live streak that missed yesterday and has no freeze is still refused', () => {
-    // The backend job is late or failed. Refusing keeps the stale snapshot, whose
-    // local prediction is right, and retries — rather than caching a lie.
+  it('mid-day, a live streak that has not bet today and has no freeze is refused', () => {
+    // The backend job may be late or may have failed. Refusing keeps the stale
+    // snapshot, whose local prediction is right, and retries — rather than
+    // caching a lie.
     const midday = at('2026-08-30T20:00:00Z')
     const dayStart = pacificStartOfDayMs(midday)
-    const prevStart = pacificStartOfDayMs(new Date(dayStart - 1))
+    expect(reflectsDailyReset(row({ lastBetTime: dayStart - 1 }), midday)).toBe(
+      false
+    )
+  })
+})
+
+describe('hasSaneStreakFields', () => {
+  it('rejects non-finite fields, which would defeat every comparison', () => {
+    // NaN >= x is false, so a garbage row would masquerade as the pre-reset shape
+    // forever rather than being caught.
+    for (const bad of [
+      { streak: NaN },
+      { streak: Infinity },
+      { lastBetTime: NaN },
+      { lastStreakFreezeTime: NaN },
+      { lastBetTime: -1 },
+      { lastStreakFreezeTime: -1 },
+    ])
+      expect(hasSaneStreakFields(row(bad as Partial<StreakResetFacts>))).toBe(
+        false
+      )
+  })
+
+  it('accepts an ordinary row and a zeroed one', () => {
+    expect(hasSaneStreakFields(row({}))).toBe(true)
     expect(
-      reflectsDailyReset(row({ lastBetTime: prevStart - 1 }), midday)
+      hasSaneStreakFields({
+        streak: 0,
+        lastBetTime: 0,
+        lastStreakFreezeTime: 0,
+      })
+    ).toBe(true)
+  })
+
+  it('rejects nothing at all', () => {
+    expect(hasSaneStreakFields(null)).toBe(false)
+    expect(hasSaneStreakFields(undefined)).toBe(false)
+  })
+})
+
+describe('mayPersistStreakSnapshot', () => {
+  it('is the single gate every writer uses: sane fields AND a proven reset', () => {
+    const proven = row({ lastBetTime: TODAY_START })
+    expect(mayPersistStreakSnapshot(proven, JUST_PAST_MIDNIGHT)).toBe(true)
+    // sane, but the reset is unproven
+    expect(
+      mayPersistStreakSnapshot(
+        row({ lastBetTime: YESTERDAY_START }),
+        JUST_PAST_MIDNIGHT
+      )
     ).toBe(false)
+    // reset would be provable, but the fields are garbage
+    expect(
+      mayPersistStreakSnapshot(
+        { streak: NaN, lastBetTime: TODAY_START, lastStreakFreezeTime: 0 },
+        JUST_PAST_MIDNIGHT
+      )
+    ).toBe(false)
+    expect(mayPersistStreakSnapshot(null, JUST_PAST_MIDNIGHT)).toBe(false)
   })
 })
