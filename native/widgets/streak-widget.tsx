@@ -598,8 +598,16 @@ function Shell({
   if (!frame) return inner
   // Frame: a solid pale-gold layer behind the gradient gives milestone widgets a
   // premium rim (a real border can't sit on a gradient background in this lib).
+  //
+  // It must repeat clickAction/clickActionData, because this FlexWidget becomes
+  // the ROOT and the native side reads both the countdown and the rollover time
+  // from the root's clickActionData. Without it a framed widget would schedule no
+  // rollover alarm and fall back to the periodic/Doze path — and framed means a
+  // lit milestone, which is exactly the state that needs the midnight re-render.
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
+      clickActionData={clickData}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -730,10 +738,9 @@ function SmallWidget({
       mascot={mascot}
       clickData={clickData}
       // NOTE: frame wraps the shell in an outer FlexWidget, which becomes the
-      // ROOT — and the patched Chronometer reads {showCountdown} from the
-      // root's clickActionData. Safe today only because frame ⇒ lit milestone
-      // and countdown ⇒ pending/frozen never coincide; a framed countdown
-      // state would silently lose its timer.
+      // ROOT, and the native side reads the countdown AND the rollover time from
+      // the root's clickActionData. WidgetShell therefore repeats clickActionData
+      // on that frame; without it a framed widget silently loses both.
       frame={isTall && milestone ? FRAME_GOLD : undefined}
     >
       <FlexWidget style={contentStyle}>
