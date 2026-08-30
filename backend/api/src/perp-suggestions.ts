@@ -58,106 +58,106 @@ export const getPerpSuggestions: APIHandler<'get-perp-suggestions'> = async (
 // account, active posting ban) applies before anything else runs.
 export const createPerpSuggestion: APIHandler<'create-perp-suggestion'> =
   onlyUsersWhoCanPerformAction('post', async (props, auth) => {
-  const name = props.name.trim().replace(/\s+/g, ' ')
-  if (
-    name.length < PERP_SUGGESTION_NAME_MIN ||
-    name.length > PERP_SUGGESTION_NAME_MAX
-  ) {
-    throw new APIError(
-      400,
-      `Name must be ${PERP_SUGGESTION_NAME_MIN}–${PERP_SUGGESTION_NAME_MAX} characters`
-    )
-  }
-  const dataSource = props.dataSource?.trim() || null
-  if (dataSource && dataSource.length > PERP_SUGGESTION_SOURCE_MAX) {
-    throw new APIError(
-      400,
-      `Data source must be at most ${PERP_SUGGESTION_SOURCE_MAX} characters`
-    )
-  }
-
-  const pg = createSupabaseDirectClient()
-  // A repeat of an existing name (case-insensitive) counts as an upvote on
-  // it rather than a duplicate; the creator's own upvote is implied either
-  // way. The unique index makes the insert race-safe. The daily quota is
-  // counted INSIDE the transaction behind a per-user advisory lock, so N
-  // concurrent distinct submissions serialize and the (N+1)th is refused
-  // instead of all of them slipping past a stale count.
-  const id = await pg.tx(async (tx) => {
-    await tx.none(`select pg_advisory_xact_lock(hashtext($1))`, [
-      `perp-suggestion:${auth.uid}`,
-    ])
-    const recent = await tx.one<number>(
-      `select count(*)::int as n from perp_suggestions
-       where user_id = $1 and created_time > now() - interval '1 day'`,
-      [auth.uid],
-      (r) => r.n
-    )
-    const existing = await tx.oneOrNone<number | null>(
-      `select id from perp_suggestions where lower(name) = lower($1)`,
-      [name],
-      (r) => (r ? Number(r.id) : null)
-    )
-    // Upvoting an existing name creates nothing, so it never counts.
-    if (existing == null && recent >= PERP_SUGGESTIONS_PER_DAY) {
+    const name = props.name.trim().replace(/\s+/g, ' ')
+    if (
+      name.length < PERP_SUGGESTION_NAME_MIN ||
+      name.length > PERP_SUGGESTION_NAME_MAX
+    ) {
       throw new APIError(
-        429,
-        `You can suggest up to ${PERP_SUGGESTIONS_PER_DAY} markets a day — try again tomorrow`
+        400,
+        `Name must be ${PERP_SUGGESTION_NAME_MIN}–${PERP_SUGGESTION_NAME_MAX} characters`
       )
     }
-    const id =
-      existing ??
-      (await tx.one<number>(
-        `insert into perp_suggestions (user_id, name, data_source)
+    const dataSource = props.dataSource?.trim() || null
+    if (dataSource && dataSource.length > PERP_SUGGESTION_SOURCE_MAX) {
+      throw new APIError(
+        400,
+        `Data source must be at most ${PERP_SUGGESTION_SOURCE_MAX} characters`
+      )
+    }
+
+    const pg = createSupabaseDirectClient()
+    // A repeat of an existing name (case-insensitive) counts as an upvote on
+    // it rather than a duplicate; the creator's own upvote is implied either
+    // way. The unique index makes the insert race-safe. The daily quota is
+    // counted INSIDE the transaction behind a per-user advisory lock, so N
+    // concurrent distinct submissions serialize and the (N+1)th is refused
+    // instead of all of them slipping past a stale count.
+    const id = await pg.tx(async (tx) => {
+      await tx.one(`select pg_advisory_xact_lock(hashtext($1))`, [
+        `perp-suggestion:${auth.uid}`,
+      ])
+      const recent = await tx.one<number>(
+        `select count(*)::int as n from perp_suggestions
+       where user_id = $1 and created_time > now() - interval '1 day'`,
+        [auth.uid],
+        (r) => r.n
+      )
+      const existing = await tx.oneOrNone<number | null>(
+        `select id from perp_suggestions where lower(name) = lower($1)`,
+        [name],
+        (r) => (r ? Number(r.id) : null)
+      )
+      // Upvoting an existing name creates nothing, so it never counts.
+      if (existing == null && recent >= PERP_SUGGESTIONS_PER_DAY) {
+        throw new APIError(
+          429,
+          `You can suggest up to ${PERP_SUGGESTIONS_PER_DAY} markets a day — try again tomorrow`
+        )
+      }
+      const id =
+        existing ??
+        (await tx.one<number>(
+          `insert into perp_suggestions (user_id, name, data_source)
          values ($1, $2, $3)
          on conflict (lower(name)) do update set name = perp_suggestions.name
          returning id`,
-        [auth.uid, name, dataSource],
-        (r) => Number(r.id)
-      ))
-    await tx.none(
-      `insert into perp_suggestion_votes (suggestion_id, user_id)
+          [auth.uid, name, dataSource],
+          (r) => Number(r.id)
+        ))
+      await tx.none(
+        `insert into perp_suggestion_votes (suggestion_id, user_id)
        values ($1, $2) on conflict do nothing`,
-      [id, auth.uid]
-    )
-    return id
-  })
+        [id, auth.uid]
+      )
+      return id
+    })
 
-  return pg.one(
-    `${SELECT_SUGGESTION} where s.id = $2`,
-    [auth.uid, id],
-    toSuggestion
-  )
-})
+    return pg.one(
+      `${SELECT_SUGGESTION} where s.id = $2`,
+      [auth.uid, id],
+      toSuggestion
+    )
+  })
 
 export const votePerpSuggestion: APIHandler<'vote-perp-suggestion'> =
   onlyUsersWhoCanPerformAction('post', async (props, auth) => {
-  const { suggestionId, remove } = props
-  const pg = createSupabaseDirectClient()
-  const exists = await pg.oneOrNone(
-    `select 1 from perp_suggestions where id = $1 and not hidden`,
-    [suggestionId]
-  )
-  if (!exists) throw new APIError(404, 'Suggestion not found')
+    const { suggestionId, remove } = props
+    const pg = createSupabaseDirectClient()
+    const exists = await pg.oneOrNone(
+      `select 1 from perp_suggestions where id = $1 and not hidden`,
+      [suggestionId]
+    )
+    if (!exists) throw new APIError(404, 'Suggestion not found')
 
-  if (remove) {
-    await pg.none(
-      `delete from perp_suggestion_votes
+    if (remove) {
+      await pg.none(
+        `delete from perp_suggestion_votes
        where suggestion_id = $1 and user_id = $2`,
-      [suggestionId, auth.uid]
-    )
-  } else {
-    await pg.none(
-      `insert into perp_suggestion_votes (suggestion_id, user_id)
+        [suggestionId, auth.uid]
+      )
+    } else {
+      await pg.none(
+        `insert into perp_suggestion_votes (suggestion_id, user_id)
        values ($1, $2) on conflict do nothing`,
-      [suggestionId, auth.uid]
-    )
-  }
-  const votes = await pg.one<number>(
-    `select count(*)::int as n from perp_suggestion_votes
+        [suggestionId, auth.uid]
+      )
+    }
+    const votes = await pg.one<number>(
+      `select count(*)::int as n from perp_suggestion_votes
      where suggestion_id = $1`,
-    [suggestionId],
-    (r) => r.n
-  )
-  return { votes }
-})
+      [suggestionId],
+      (r) => r.n
+    )
+    return { votes }
+  })
