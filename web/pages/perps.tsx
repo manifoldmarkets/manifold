@@ -72,6 +72,18 @@ const HUB_FEATURES = {
 // can't enumerate them — the anon supabase client can, since contracts RLS is
 // public-read. That keeps this page automated: any perp shows up on the next
 // revalidate with no list to maintain.
+// The one rule for what this page may show — applied to the static props AND
+// to the live board, so a market unlisted or deleted mid-incident drops out
+// of an already-open tab on the next poll instead of staying selected with
+// its trading UI. Perps launch UNLISTED (create-perp's default) and stay that
+// way through smoke tests and the staged rollout; this page is the one place
+// that enumerates them, so it must not be the leak. Only a local dev server
+// shows the unlisted queue, for previewing a batch.
+const isListed = (c: Contract): c is PerpContract =>
+  c.mechanism === 'perp' &&
+  !c.deleted &&
+  (c.visibility === 'public' || process.env.NODE_ENV === 'development')
+
 export async function getStaticProps() {
   try {
     // outcome_type is indexed (partial index over non-binary types);
@@ -85,16 +97,7 @@ export async function getStaticProps() {
     if (error) throw error
     const perps = (data ?? [])
       .map(convertContract)
-      // Perps launch UNLISTED (create-perp's default) and stay that way
-      // through smoke tests and the staged rollout; this page is the one
-      // place that enumerates them, so it must not be the leak. Only a
-      // local dev server shows the unlisted queue, for previewing a batch.
-      .filter(
-        (c) =>
-          c.mechanism === 'perp' &&
-          !c.deleted &&
-          (c.visibility === 'public' || process.env.NODE_ENV === 'development')
-      )
+      .filter(isListed)
       // Perp descriptions carry the full oracle methodology — pages of text
       // the page never renders. Strip them from the static payload.
       .map((c) => ({ ...c, description: '' }))
@@ -467,22 +470,41 @@ const useRecentActivity = (perps: PerpContract[]) => {
   return events
 }
 
-// Warm every chart so switching in the terminal never shows a loading
-// state — but only once the page has settled: after the browser reports
-// idle (or 2s), never while the tab is hidden, and not on a data-saver
-// connection. Sequential, most-traded first, so this never competes with
-// the visible chart's own fetch; the in-flight map in perp-chart dedupes
-// against it. The series requests use bucket-aligned `since` bounds, so
-// every visitor in the same window shares the edge cache entry.
-const usePrefetchCharts = (perps: PerpContract[]) => {
+// Warm a chart before it is asked for, so switching never shows a loading
+// state. Two tiers so a visit does not cost a history fetch per market:
+//  - intent: hovering or focusing any switch button (watchlist row, ticker
+//    item, chip, top mover) warms that one market — warmChart below;
+//  - idle: the two most-traded markets other than the selected one, the
+//    likeliest next taps on touch screens where there is no hover.
+// The idle tier waits for the browser to report idle (or 2s), never runs
+// while the tab is hidden, and is skipped on data-saver connections. The
+// in-flight map in perp-chart dedupes against the visible chart's fetch,
+// and `since` bounds are bucket-aligned so visitors share edge cache
+// entries.
+const warmChart = (c: PerpContract) => {
+  prefetchPerpChart(c).catch(() => {})
+}
+const IDLE_PREFETCH_COUNT = 2
+const usePrefetchCharts = (
+  perps: PerpContract[],
+  selectedId: string | undefined
+) => {
   const idKey = perps.map((c) => c.id).join(',')
   useEffect(() => {
     let cancelled = false
     const saveData = (navigator as { connection?: { saveData?: boolean } })
       .connection?.saveData
     if (saveData) return
+    const targets = [...perps]
+      .filter((c) => c.id !== selectedId)
+      .sort(
+        (a, b) =>
+          (b.volume24Hours ?? 0) - (a.volume24Hours ?? 0) ||
+          (b.volume ?? 0) - (a.volume ?? 0)
+      )
+      .slice(0, IDLE_PREFETCH_COUNT)
     const run = async () => {
-      for (const c of perps) {
+      for (const c of targets) {
         if (cancelled) return
         while (document.visibilityState === 'hidden') {
           await new Promise<void>((resolve) =>
@@ -496,7 +518,10 @@ const usePrefetchCharts = (perps: PerpContract[]) => {
       }
     }
     const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number }
+      ) => number
       cancelIdleCallback?: (id: number) => void
     }
     let idleId: number | undefined
@@ -512,7 +537,7 @@ const usePrefetchCharts = (perps: PerpContract[]) => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idKey])
+  }, [idKey, selectedId])
 }
 
 // ---------------------------------------------------------------------------
@@ -530,15 +555,10 @@ const WATCH_GRID =
 const DEFAULT_ROWS = 5
 
 export default function PerpsPage(props: { perps: Contract[] }) {
-  const initial = useMemo(
-    () =>
-      props.perps.filter(
-        (c): c is PerpContract => c.mechanism === 'perp' && !c.deleted
-      ),
-    [props.perps]
-  )
+  const initial = useMemo(() => props.perps.filter(isListed), [props.perps])
   const contracts = usePerpBoard(initial)
-  const open = contracts.filter((c) => !c.isResolved)
+  // Re-checked on every poll: markets-by-ids carries visibility and deletion.
+  const open = contracts.filter((c) => !c.isResolved && isListed(c))
 
   const week = useWeekSeries(open)
   const activity = useRecentActivity(HUB_FEATURES.activity ? open : [])
@@ -553,7 +573,6 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     HUB_FEATURES.positions ? previewAs ?? user?.id : undefined,
     open
   )
-  usePrefetchCharts(open)
 
   // The flagship (most traded) market is the landing chart.
   const flagshipId = useMemo(
@@ -573,6 +592,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     open.find((c) => c.id === flagshipId) ??
     open[0]
   const related = useRelatedMarkets(selected?.id)
+  usePrefetchCharts(open, selected?.id)
   // Ticker clicks can happen from anywhere on the page: select and bring
   // the terminal into view (its scroll margin clears the pinned tape).
   const selectRow = (id: string) => {
@@ -1017,6 +1037,8 @@ const TopMover = (props: {
       </div>
       <button
         onClick={() => onSelect(best!.contract.id)}
+        onPointerEnter={() => warmChart(best!.contract)}
+        onFocus={() => warmChart(best!.contract)}
         className="hover:bg-canvas-50 -mx-1 flex items-baseline gap-1.5 rounded px-1 text-left font-mono text-lg font-semibold tabular-nums"
       >
         <span className="text-ink-900">{tickerOf(best.contract)}</span>
@@ -1175,6 +1197,8 @@ const TickerItem = (props: {
   return (
     <button
       onClick={onSelect}
+      onPointerEnter={() => warmChart(contract)}
+      onFocus={() => warmChart(contract)}
       className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
     >
       <span className="text-ink-900 font-mono font-semibold">
@@ -1494,6 +1518,8 @@ const Terminal = (props: {
             <button
               key={c.id}
               onClick={() => onSelect(c.id)}
+              onPointerEnter={() => warmChart(c)}
+              onFocus={() => warmChart(c)}
               className={clsx(
                 'shrink-0 rounded-md border px-2.5 py-1 font-mono text-xs font-semibold transition-colors',
                 active
@@ -1855,6 +1881,8 @@ const WatchRow = (props: {
     // title; the ticker is the label.
     <button
       onClick={onSelect}
+      onPointerEnter={() => warmChart(contract)}
+      onFocus={() => warmChart(contract)}
       aria-current={selected}
       title={contract.question}
       className={clsx(
