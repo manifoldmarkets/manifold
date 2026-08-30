@@ -197,10 +197,16 @@ const fetchFrameSeries = (
   return request
 }
 
+// In-flight probes are shared like frame fetches: a touch activation fires
+// pointerenter, focus and then the mount's own probe within milliseconds,
+// which used to be three identical requests.
+const cadenceInflight = new Map<string, Promise<number | null>>()
 const probeCadence = (feedId: string): Promise<number | null> => {
   const cached = cadenceCache.get(feedId)
   if (cached !== undefined) return Promise.resolve(cached)
-  return api('get-oracle-price-series', { feedId, limit: 8 })
+  const inflight = cadenceInflight.get(feedId)
+  if (inflight) return inflight
+  const request = api('get-oracle-price-series', { feedId, limit: 8 })
     .then((res) => {
       if (res.length < 2) return null
       const dts = res.slice(1).map((p, i) => p.ts - res[i].ts)
@@ -210,6 +216,9 @@ const probeCadence = (feedId: string): Promise<number | null> => {
       return cadence
     })
     .catch(() => null)
+    .finally(() => cadenceInflight.delete(feedId))
+  cadenceInflight.set(feedId, request)
+  return request
 }
 
 const frameEligibleFor = (
@@ -356,6 +365,33 @@ export const PerpChart = (props: {
     }
     if (mode === 'price') {
       const feedId = contract.oracleFeedId
+      // ONE loader for both the cold path and cache-hit revalidation, so a
+      // sparse fresh window takes the same All fallback either way. Cadence
+      // gating keeps systematically-starved frames unselectable, but a data
+      // gap (feed outage, freshly created feed) can still empty an eligible
+      // window; refetching All keeps the series populated so the All view —
+      // and the sparse window itself — still have something honest to draw.
+      // (A revalidation that ignored a sparse response would leave the OLD
+      // cached points on screen for good — fetchFrameSeries has already
+      // overwritten the cache with the sparse one — and the live-tick merge
+      // would redraw exactly the stale-to-current straight segment the
+      // revalidation exists to remove.)
+      const load = async (revalidate: boolean) => {
+        const validPoints = await fetchFrameSeries(feedId, activeFrame, {
+          revalidate,
+        })
+        const fellBack =
+          validPoints.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
+        const points = fellBack
+          ? await fetchFrameSeries(feedId, 'ALL', { revalidate })
+          : validPoints
+        if (cancelled) return
+        setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
+        // Keep the selected control honest: once the short window falls
+        // back to all history, label it All and stop re-filtering the
+        // fallback back into the same starved window.
+        if (fellBack) setTimeframe('ALL')
+      }
       const cached = getCachedSeries(feedId, activeFrame)
       if (
         cached &&
@@ -370,35 +406,10 @@ export const PerpChart = (props: {
         // and the live merge re-derives from its last point.
         setOraclePoints(cached.map((p) => ({ ts: p.ts, value: p.price })))
         setLoading(false)
-        fetchFrameSeries(feedId, activeFrame, { revalidate: true })
-          .then((points) => {
-            if (cancelled) return
-            if (points.length >= MIN_FRAME_POINTS || activeFrame === 'ALL') {
-              setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
-            }
-          })
-          .catch(() => {})
+        load(true).catch(() => {})
       } else {
         setOraclePoints([])
-        fetchFrameSeries(feedId, activeFrame)
-          .then(async (validPoints) => {
-            // Cadence gating keeps systematically-starved frames unselectable,
-            // but a data gap (feed outage, freshly created feed) can still
-            // empty an eligible window. Refetching All keeps the series
-            // populated so the All view — and the sparse window itself —
-            // still have something honest to draw.
-            const fellBack =
-              validPoints.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
-            const points = fellBack
-              ? await fetchFrameSeries(feedId, 'ALL')
-              : validPoints
-            if (cancelled) return
-            setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
-            // Keep the selected control honest: once the short window falls
-            // back to all history, label it All and stop re-filtering the
-            // fallback back into the same starved window.
-            if (fellBack) setTimeframe('ALL')
-          })
+        load(false)
           .catch(() => {
             if (!cancelled) setOraclePoints([])
           })
