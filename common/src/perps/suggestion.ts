@@ -11,6 +11,9 @@ export type PerpSuggestion = {
   votes: number
   // Whether the requesting user has upvoted it (false when signed out).
   hasVoted: boolean
+  // Moderated out of the public list. Only ever true in a mod or admin response
+  // — every other caller's query filters hidden rows out in SQL.
+  hidden: boolean
 }
 
 export const PERP_SUGGESTION_NAME_MIN = 3

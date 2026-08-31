@@ -1426,6 +1426,9 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limit: z.coerce.number().int().positive().max(100).optional(),
+        // Mods and admins only — silently ignored for everyone else. Returns
+        // moderated rows alongside the live ones, each tagged with `hidden`.
+        includeHidden: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -1450,6 +1453,22 @@ export const API = (_apiTypeCheck = {
       .object({
         suggestionId: z.number().int().positive(),
         remove: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  // Moderation: mods and admins drop a suggestion out of the public list.
+  // Reversible — the row is flagged, never deleted, so the votes on it
+  // survive an unhide.
+  'hide-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { hidden: boolean },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        // Omitted means hide; pass false to restore.
+        hide: z.boolean().optional(),
       })
       .strict(),
   },

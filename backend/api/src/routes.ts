@@ -90,6 +90,7 @@ import { getPerpEvents } from './get-perp-events'
 import {
   createPerpSuggestion,
   getPerpSuggestions,
+  hidePerpSuggestion,
   votePerpSuggestion,
 } from './perp-suggestions'
 import { deleteGroup } from './delete-group'
@@ -468,6 +469,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-perp-suggestions': getPerpSuggestions,
   'create-perp-suggestion': createPerpSuggestion,
   'vote-perp-suggestion': votePerpSuggestion,
+  'hide-perp-suggestion': hidePerpSuggestion,
   'get-followed-groups': getFollowedGroups,
   'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,

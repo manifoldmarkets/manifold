@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
+import { ExternalLinkIcon, PlusIcon, XIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 import { Answer } from 'common/answer'
 import { APIResponse } from 'common/api/schema'
@@ -9,7 +9,11 @@ import { getUserFacingPnl, getUserFacingPnlPercent } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
-import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
+import {
+  PERPS_SKIP_ORACLE_FRESHNESS,
+  isAdminId,
+  isModId,
+} from 'common/envs/constants'
 import { contractFields, convertContract } from 'common/supabase/contracts'
 import { fromNow } from 'client-common/lib/time'
 import { nextFundingTimes } from 'common/perps/chart-projections'
@@ -30,6 +34,7 @@ import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer
 import { getOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
@@ -2071,6 +2076,10 @@ const RelatedStat = (props: { contract: Contract }) => {
 // Suggest a perpetual market: name + optional data source, one upvote per
 // user. The list is what the team pulls from when picking the next launch.
 
+// The list opens with a short preview; the rest is one click and one request
+// away.
+const SUGGESTIONS_PREVIEW = 5
+
 const isUrl = (s: string) => /^https?:\/\/\S+$/i.test(s)
 const hostOf = (url: string) => {
   try {
@@ -2080,19 +2089,117 @@ const hostOf = (url: string) => {
   }
 }
 
+// One row of the list. The moderation controls are opt-in props, so a
+// signed-out reader renders exactly the markup they did before.
+const SuggestionRow = (props: {
+  suggestion: PerpSuggestion
+  onVote: (s: PerpSuggestion) => void
+  onHide?: (s: PerpSuggestion) => void
+  onUnhide?: (s: PerpSuggestion) => void
+}) => {
+  const { suggestion: s, onVote, onHide, onUnhide } = props
+  return (
+    <Row className="items-center gap-3 px-4 py-2">
+      <button
+        onClick={() => onVote(s)}
+        aria-pressed={s.hasVoted}
+        aria-label={s.hasVoted ? 'Remove upvote' : 'Upvote'}
+        // The vote endpoint refuses hidden rows; don't offer the click.
+        disabled={s.hidden}
+        className={clsx(
+          'flex w-12 shrink-0 flex-col items-center rounded-md border py-1 font-mono text-xs font-semibold leading-tight transition-colors',
+          s.hidden
+            ? 'border-ink-200 text-ink-400 dark:border-ink-300'
+            : s.hasVoted
+            ? 'border-primary-500 bg-primary-500 text-white'
+            : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
+        )}
+      >
+        <span>▲</span>
+        <span>{s.votes}</span>
+      </button>
+      <Col className="min-w-0 flex-1">
+        <span
+          className={clsx(
+            'truncate text-sm font-medium',
+            s.hidden ? 'text-ink-500' : 'text-ink-900'
+          )}
+        >
+          {s.name}
+        </span>
+        {s.dataSource &&
+          (isUrl(s.dataSource) ? (
+            <a
+              href={s.dataSource}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ink-400 hover:text-primary-500 truncate text-xs"
+            >
+              {hostOf(s.dataSource)}
+            </a>
+          ) : (
+            <span className="text-ink-400 truncate text-xs">
+              {s.dataSource}
+            </span>
+          ))}
+      </Col>
+      {onHide && (
+        <Tooltip
+          text="Hide from the list"
+          placement="left"
+          className="shrink-0"
+        >
+          <button
+            onClick={() => onHide(s)}
+            aria-label={`Hide "${s.name}"`}
+            className="text-ink-300 hover:text-scarlet-500 rounded p-1 transition-colors"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </Tooltip>
+      )}
+      {onUnhide && (
+        <button
+          onClick={() => onUnhide(s)}
+          className="text-ink-500 hover:text-primary-500 shrink-0 rounded px-1 py-1 text-xs transition-colors"
+        >
+          Unhide
+        </button>
+      )}
+    </Row>
+  )
+}
+
 const Suggestions = () => {
   const user = useUser()
+  const isMod = !!user && (isAdminId(user.id) || isModId(user.id))
+  // Declared before the fetch because it picks the page size.
+  const [showAll, setShowAll] = useState(false)
   const {
     data,
     error: loadError,
     setData,
     refresh,
-  } = useAPIGetter('get-perp-suggestions', { limit: 100 })
+  } = useAPIGetter('get-perp-suggestions', {
+    // The page opens with a preview and only pays for the rest when asked.
+    // One row past the preview is fetched so the button knows there is more
+    // without loading the list to find out. Mods take the whole list either
+    // way — the hidden drawer's count has to be right.
+    limit: showAll || isMod ? 100 : SUGGESTIONS_PREVIEW + 1,
+    // Mods get the moderated rows back in the same response, tagged, and
+    // split out below — no second request, and the count is known up front.
+    includeHidden: isMod || undefined,
+  })
   const [name, setName] = useState('')
   const [source, setSource] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string>()
-  const [showAll, setShowAll] = useState(false)
+  // Moderation state: the row awaiting confirmation, and whether the hidden
+  // drawer is open.
+  const [pendingHide, setPendingHide] = useState<PerpSuggestion>()
+  const [hiding, setHiding] = useState(false)
+  const [hideError, setHideError] = useState<string>()
+  const [showHidden, setShowHidden] = useState(false)
 
   const submit = async () => {
     if (!user) {
@@ -2137,8 +2244,29 @@ const Suggestions = () => {
     }
   }
 
-  const list = data ?? []
-  const visible = showAll ? list : list.slice(0, 8)
+  const setHidden = async (s: PerpSuggestion, hide: boolean) => {
+    setHiding(true)
+    setHideError(undefined)
+    try {
+      await api('hide-perp-suggestion', { suggestionId: s.id, hide })
+      setData((prev) =>
+        prev?.map((x) => (x.id === s.id ? { ...x, hidden: hide } : x))
+      )
+      setPendingHide(undefined)
+      refresh()
+    } catch (e) {
+      setHideError(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setHiding(false)
+    }
+  }
+
+  // Only a mod's response carries hidden rows at all, so this split is a
+  // no-op for everyone else.
+  const all = data ?? []
+  const list = all.filter((s) => !s.hidden)
+  const hiddenList = all.filter((s) => s.hidden)
+  const visible = showAll ? list : list.slice(0, SUGGESTIONS_PREVIEW)
 
   return (
     <Col id="perps-suggest" className="scroll-mt-4 gap-3">
@@ -2222,42 +2350,12 @@ const Suggestions = () => {
               </div>
             ) : (
               visible.map((s) => (
-                <Row key={s.id} className="items-center gap-3 px-4 py-2">
-                  <button
-                    onClick={() => vote(s)}
-                    aria-pressed={s.hasVoted}
-                    aria-label={s.hasVoted ? 'Remove upvote' : 'Upvote'}
-                    className={clsx(
-                      'flex w-12 shrink-0 flex-col items-center rounded-md border py-1 font-mono text-xs font-semibold leading-tight transition-colors',
-                      s.hasVoted
-                        ? 'border-primary-500 bg-primary-500 text-white'
-                        : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
-                    )}
-                  >
-                    <span>▲</span>
-                    <span>{s.votes}</span>
-                  </button>
-                  <Col className="min-w-0">
-                    <span className="text-ink-900 truncate text-sm font-medium">
-                      {s.name}
-                    </span>
-                    {s.dataSource &&
-                      (isUrl(s.dataSource) ? (
-                        <a
-                          href={s.dataSource}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-ink-400 hover:text-primary-500 truncate text-xs"
-                        >
-                          {hostOf(s.dataSource)}
-                        </a>
-                      ) : (
-                        <span className="text-ink-400 truncate text-xs">
-                          {s.dataSource}
-                        </span>
-                      ))}
-                  </Col>
-                </Row>
+                <SuggestionRow
+                  key={s.id}
+                  suggestion={s}
+                  onVote={vote}
+                  onHide={isMod ? setPendingHide : undefined}
+                />
               ))
             )}
           </Col>
@@ -2266,11 +2364,81 @@ const Suggestions = () => {
               onClick={() => setShowAll((v) => !v)}
               className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
             >
-              {showAll ? 'Show fewer' : `Show all ${list.length}`}
+              {showAll ? 'Show fewer' : 'Show more'}
             </button>
           ) : null}
+          {isMod && hiddenList.length > 0 && (
+            <Col className="border-ink-200 dark:border-ink-300 border-t">
+              <button
+                onClick={() => setShowHidden((v) => !v)}
+                className="text-ink-400 hover:bg-canvas-50 hover:text-ink-600 px-3 py-2 text-left text-xs"
+              >
+                {hiddenList.length} hidden {showHidden ? '▾' : '▸'}
+              </button>
+              {showHidden && (
+                <Col className="divide-ink-200 dark:divide-ink-300 bg-canvas-50 border-ink-200 dark:border-ink-300 divide-y border-t">
+                  {hiddenList.map((s) => (
+                    <SuggestionRow
+                      key={s.id}
+                      suggestion={s}
+                      onVote={vote}
+                      onUnhide={(x) => setHidden(x, false)}
+                    />
+                  ))}
+                  {hideError && !pendingHide && (
+                    <div className="text-scarlet-500 px-4 py-2 text-xs">
+                      {hideError}
+                    </div>
+                  )}
+                </Col>
+              )}
+            </Col>
+          )}
         </Col>
       </div>
+      <Modal
+        open={!!pendingHide}
+        setOpen={(open) => {
+          if (!open) {
+            setPendingHide(undefined)
+            setHideError(undefined)
+          }
+        }}
+      >
+        <Col className={clsx(MODAL_CLASS, '!items-start')}>
+          <div className="text-ink-900 text-lg font-semibold">
+            Hide this suggestion?
+          </div>
+          <p className="text-ink-600 text-sm">
+            <span className="text-ink-900 font-medium">
+              {pendingHide?.name}
+            </span>{' '}
+            comes off the public list. Its{' '}
+            {pendingHide?.votes === 1
+              ? '1 upvote is'
+              : `${pendingHide?.votes ?? 0} upvotes are`}{' '}
+            kept, and you can restore it from the hidden list underneath.
+          </p>
+          {hideError && (
+            <div className="text-scarlet-500 text-sm">{hideError}</div>
+          )}
+          <Row className="w-full justify-end gap-3">
+            <Button
+              color="gray-white"
+              onClick={() => setPendingHide(undefined)}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={hiding}
+              onClick={() => pendingHide && setHidden(pendingHide, true)}
+            >
+              Hide it
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
     </Col>
   )
 }
