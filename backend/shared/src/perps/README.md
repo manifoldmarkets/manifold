@@ -261,13 +261,18 @@ from somewhere other than the absent side.
 
 ## Exposure capacity
 
-Opening, adding, or flipping into a side is limited so aggregate open notional
-on that side cannot exceed 10× its unreserved opposing-pool cover. Unreserved
-cover is the opposing pool minus each opposite-side position's currently
-refundable value (capped at its cost basis), matching the reserve definition
-used by ADL solvency:
+Opening, adding, or flipping into a side is limited by what the opposing side
+can back. That is two things: its unreserved pool cover, plus the notional it
+already has at risk and funds out of its own losses. Unreserved cover is the
+opposing pool minus each opposite-side position's currently refundable value
+(capped at its cost basis), matching the reserve definition used by ADL
+solvency:
 
-`side open interest <= 10 × max(opposing pool - opposing reserves, 0)`
+```
+matched credit = min(opposing OI, 10 × opposing reserves)
+side OI       <= min(10 × max(opposing pool - opposing reserves, 0) + matched credit,
+                     10 × opposing pool)
+```
 
 This is a launch guardrail in addition to the ManiPerp paper. It preserves high
 leverage for small positions while preventing a new, initially flat position
@@ -275,6 +280,77 @@ from creating unlimited future claims against finite backing. The cap applies
 only to exposure-increasing actions; users can always reduce or close existing
 positions. Funding, oracle movement, or legacy state can move a side above the
 limit, in which case further opens are blocked until capacity recovers.
+
+Read the multiple as an adverse move of 1/10. Over such a move this side's
+profit is `OI/10`, and the opposing side funds it twice over: from the pool it
+has already lost into (`availableCover`), and from the margin it is about to
+lose (`matched credit`), which is forfeited into that same pool. Crediting only
+the first term compares a NOTIONAL quantity against a MARGIN one and ignores
+opposing notional entirely, so a market could refuse the trade that would
+balance it while still accepting the trade that worsened it — on 2026-08-31 the
+BTC market held 734,349 long against 928,994 short of notional, a short-heavy
+book, and had 1,129 of long headroom against 544,752 of short. The two terms
+telescope to at most `10 × opposing pool`, which the final `min` also enforces
+directly for books whose cover has gone negative.
+
+## Cross-side deficit transfer
+
+A side's pool can end up below that side's own refundable margin: short profits
+are paid out of `L` (see `closePosition`), and while the longs are underwater
+their reserve `Σ min(costBasis, value)` is small, so those payouts pass the
+solvency check — but the reserve grows back toward `Σ costBasis` if the price
+mean-reverts, and the mana has already left. Twice in production: UK carbon
+2026-08-07 and the OpenRouter open-weight share market 2026-08-29.
+
+ADL cannot repair it. ADL scales profits and never cost bases, so the factor
+clamps to 0, the winners are settled and removed, and the deficit remains with
+no profit left to scale — `assertPerpStateSolvent` then sees `-Infinity`.
+
+`applyADL` therefore moves the deficit across from the other pool first, when
+that pool holds at least that much above its own reserve. `assertPerpEscrowBalance`
+checks `L + S` against one contract balance, so the split is an accounting
+convention, not a custody boundary; the transfer conserves total escrow and
+moves no user balance. It is all-or-nothing: a partial transfer cannot make the
+book representable but would change the ADL factors on the way to the same
+throw, so it can only ever turn a failure into a success.
+
+This does NOT stop principal being spent against an opposing side's unrealized
+loss in the first place — it lets the pot honour the resulting claim out of its
+own surplus. Reserving at full cost basis would prevent the spend, at the cost
+of much lower profit capacity on every market. That is a separate decision.
+
+## Solvency halt (tick liveness)
+
+`runOracleUpdate` always commits the new price. If the post-transition state
+cannot be made solvent even after liquidations, ADL, and the transfer above,
+the tick writes the price and `solvencyHaltTime`/`solvencyHaltReason`, and
+writes nothing else — no pools, positions, events, or metrics.
+
+Before this, that state threw and rolled the whole transaction back, so the
+cached mark never advanced and every later tick re-derived the same failure
+from the same state: a permanent wedge (12h in both incidents). A frozen mark
+is strictly worse than the state it refuses to write — it is wrong on the
+screen, it leaves trading OPEN against a dead price for a full
+`maxOraclePriceAgeMs`, and it grows the deficit it is failing on. On 2026-08-29
+a trader added to a position against a mark that had been frozen for four
+hours.
+
+Because the mark now stays fresh, the implicit staleness protection is gone, so
+`assertPerpNotSolvencyHalted` gates opens AND closes explicitly. Scheduler
+exits (liquidation, ADL, resolution) call the internal paths and are
+unaffected. `add-perp-subsidy` is deliberately not gated: it is the rescue
+tool. The first tick that applies cleanly clears the halt, so topping up the
+deficit side is the whole runbook.
+
+Pending liquidations and ADL stay pending across a halt and are re-derived by
+the next tick at the newer price. A position whose liquidation is deferred that
+way can escape it if the price rebounds — a real but bounded transfer, accepted
+against a market that is otherwise dark for hours, and trading is halted
+throughout so nobody can act on the gap.
+
+Both callers log the halt with their own prefix (`[oracle-feeds]` /
+`[update-perps]`), so the existing GCP alert policies page exactly as they did
+when this threw.
 
 ## Oracle feeds
 

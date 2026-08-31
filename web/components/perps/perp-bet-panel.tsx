@@ -16,7 +16,6 @@ import {
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
   mergedEntryPrice,
-  PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
 import {
   assertPerpTakerFeeConfig,
@@ -670,8 +669,7 @@ export const PerpBetPanel = (props: {
           ) : (
             <>
               {formatMoney(capacity.headroom)} additional {direction} notional
-              capacity at the {PERP_OPEN_INTEREST_COVER_MULTIPLE}× backing
-              limit.
+              capacity at the backing limit.
             </>
           )}
         </div>
