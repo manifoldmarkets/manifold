@@ -220,15 +220,44 @@ const MARKETS_BY_IDS_MAX = 100
 const usePerpBoard = (initial: PerpContract[]) => {
   const [contracts, setContracts] = useState(initial)
   const idKey = initial.map((c) => c.id).join(',')
+  // Resolved perps stay on the board — RelatedMarkets excludes every perp id,
+  // resolved included — but nothing renders their live fields: every other
+  // consumer works off `open`. Polling them would grow the per-tick request
+  // count with every perp ever launched, forever.
+  const pollKey = initial
+    .filter((c) => !c.isResolved)
+    .map((c) => c.id)
+    .join(',')
+
+  // New page props are authoritative about WHICH markets belong on the board.
+  // useState reads `initial` once, so without this an ISR regeneration (or a
+  // client-side nav back to this route) that drops an unlisted or deleted
+  // market would leave it rendered from its last public snapshot — no longer
+  // polled, but still showing its terminal and trade controls. Live fields we
+  // already polled win over the staler static ones, same never-rewind guard
+  // as the poll below.
+  useEffect(() => {
+    setContracts((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c]))
+      const next = initial.map((c) => {
+        const live = byId.get(c.id)
+        return live && (live.oraclePriceTime ?? 0) > (c.oraclePriceTime ?? 0)
+          ? ({ ...c, ...live } as PerpContract)
+          : c
+      })
+      // Mount and same-membership regenerations must not force a render.
+      return next.length === prev.length && next.every((c, i) => c === prev[i])
+        ? prev
+        : next
+    })
+  }, [idKey])
 
   useEffect(() => {
-    const ids = idKey ? idKey.split(',') : []
+    const ids = pollKey ? pollKey.split(',') : []
     if (ids.length === 0) return
     let cancelled = false
-    // markets-by-ids caps a request at 100 ids. The board carries every
-    // public perp ever created (resolved ones too, for the ticker), so
-    // chunk rather than let the 101st market silently stop the poll — and
-    // with it live unlisting.
+    // markets-by-ids caps a request at 100 ids, so chunk rather than let the
+    // 101st market silently stop the poll — and with it live unlisting.
     const chunks: string[][] = []
     for (let i = 0; i < ids.length; i += MARKETS_BY_IDS_MAX) {
       chunks.push(ids.slice(i, i + MARKETS_BY_IDS_MAX))
@@ -256,7 +285,7 @@ const usePerpBoard = (initial: PerpContract[]) => {
       cancelled = true
       clearInterval(interval)
     }
-  }, [idKey])
+  }, [pollKey])
 
   return contracts
 }
