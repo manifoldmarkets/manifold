@@ -410,8 +410,15 @@ export const applyADL = (state: PerpState, price: number) => {
   const transferToS = surplusS < 0 && surplusL >= -surplusS ? -surplusS : 0
   /** Positive = moved S -> L, negative = moved L -> S. */
   const crossSideTransfer = transferToL - transferToS
-  const adjustedL = L + crossSideTransfer
-  const adjustedS = S - crossSideTransfer
+  // Assign the RECIPIENT its reserve exactly rather than computing
+  // `L + (CL - L)`, which is not exactly CL in float and can leave cover one
+  // ULP negative. That is not a rounding nuisance here: the -Infinity branch of
+  // solvencyFactor has no tolerance, so a single ULP of negative cover on a
+  // side with no profit left is the difference between unwedging and staying
+  // wedged. The donor absorbs the same value, so escrow moves by at most one
+  // ULP, which assertPerpEscrowBalance tolerates.
+  const adjustedL = transferToL > 0 ? CL : L - transferToS
+  const adjustedS = transferToS > 0 ? CS : S - transferToL
 
   const sL = EL > 0 ? (adjustedS - CS) / EL : 1
   const sS = ES > 0 ? (adjustedL - CL) / ES : 1
@@ -717,33 +724,41 @@ const calculateAvailableCover = (
  * profits over an adverse move of x = 1 / PERP_OPEN_INTEREST_COVER_MULTIPLE.
  * Over such a move:
  *
- *   this side's profit   ≈ x · OI(side)
- *   opposing side's loss ≈ x · OI(opposite), but they liquidate once their
- *                          remaining margin is gone, so at most R(opposite),
- *                          the same reserved value `availableCover` deducts
- *                          — and it is forfeited INTO the very pool that pays
- *                          this side.
- *   net drain            ≈ x · OI(side) − min(x · OI(opp), R(opp))
+ *   this side's profit ≈ x · OI(side)
+ *   released           = R(opp, P) − R(opp, P'), the opposing reserve that
+ *                        actually stops being reserved as the move goes
+ *                        against them — and it is released INTO the very pool
+ *                        that pays this side.
+ *   net drain          ≈ x · OI(side) − released
  *
  * Requiring `net drain ≤ availableCover` and multiplying through by the
  * multiple M = 1/x gives
  *
- *   OI(side) ≤ M · availableCover + min(OI(opp), M · R(opp))
+ *   OI(side) ≤ M · availableCover + M · released
  *
  * and the second term is this credit.
  *
- * Using R — `min(costBasis, positionValue)`, exactly what `availableCover`
- * reserves — rather than raw cost basis is what makes the two terms compose
- * into something bounded. Where cover is non-negative they telescope:
+ * ⚠️ `released` must be evaluated at BOTH prices. R is
+ * `min(costBasis, positionValue)`, which is FLAT in price wherever the
+ * opposing position is in profit — value exceeds cost basis, the `min` clamps
+ * to cost basis, and an adverse move releases nothing at all. Crediting
+ * `M · R(opp, P)` instead (the first version of this) hands out capacity
+ * against margin that the move never frees: mark 100, a short of size 1000 at
+ * entry 200 with 100 of basis against a 100 short pool reserves its whole 100,
+ * so the naive form credits 1000 of long notional — and at mark 110 that short
+ * is still deeply profitable, still reserves the entire pool, and the new long
+ * has zero cover and is factor-zero ADL'd on its first profitable tick.
  *
- *   M · (pool − R) + min(OI(opp), M · R)  ≤  M · pool
+ * Because R is non-increasing over an adverse move and can fall by at most the
+ * position's own loss, `released ≤ x · OI(opp)`, so `M · released ≤ OI(opp)`;
+ * the explicit `min` against opposing OI below is therefore belt-and-braces
+ * against float, not the binding constraint. And since `released ≤ R(opp, P)`,
+ * the two terms telescope wherever cover is non-negative:
  *
- * so the cap can never promise more than the whole opposing pool over the
- * move it is sized for. (Raw cost basis has no such bound — on a wedged book
- * Σ cb exceeds the pool, which is the entire failure mode this PR is about.)
- * The `min` is what stops a thin-margin, high-leverage opposing book from
- * granting unbounded capacity: 929k of short notional standing on 34k of
- * reserved margin credits 335k, not 929k.
+ *   M · (pool − R) + M · released  ≤  M · pool
+ *
+ * so the cap can never promise more than the whole opposing pool over the move
+ * it is sized for.
  *
  * Without this term the cap compares a NOTIONAL quantity against a MARGIN one
  * and never looks at opposing notional at all, so a market can refuse the
@@ -761,15 +776,25 @@ const calculateMatchedCredit = (
   const opposing = state.positions.filter(
     (p) => p.direction === oppositeDirection && p.size > 0
   )
+  // The move this cap is sized for, in the direction that hurts the opposing
+  // side: up for a long book, down for a short one.
+  const x = 1 / PERP_OPEN_INTEREST_COVER_MULTIPLE
+  const movedPrice = side === 'long' ? price * (1 + x) : price * (1 - x)
+
   const openInterest = opposing.reduce((sum, p) => sum + p.size, 0)
-  const reserved = opposing.reduce(
-    (sum, p) => sum + Math.min(p.costBasis, getPositionValue(p, price)),
+  // Per position, and floored at zero: one holder whose reserve does not move
+  // must not have another's release netted away against it.
+  const released = opposing.reduce(
+    (sum, p) =>
+      sum +
+      Math.max(
+        Math.min(p.costBasis, getPositionValue(p, price)) -
+          Math.min(p.costBasis, getPositionValue(p, movedPrice)),
+        0
+      ),
     0
   )
-  return Math.min(
-    openInterest,
-    Math.max(reserved, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE
-  )
+  return Math.min(openInterest, released * PERP_OPEN_INTEREST_COVER_MULTIPLE)
 }
 
 /**

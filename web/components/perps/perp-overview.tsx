@@ -107,10 +107,16 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // sign — until the next funding tick, which reads as "backwards".
   const liveFundingRate = getPerpFundingRate(contract)
   const oracleFreshness = useOracleFreshness(contract)
+  // A solvency halt keeps the mark FRESH on purpose (see runOracleUpdate), so
+  // freshness alone no longer tells you whether the engine will accept a trade.
+  // Fold it into the same flag the panels already gate on, or the controls stay
+  // live until the API answers 503.
+  const solvencyHalted = contract.solvencyHaltTime != null
   const oracleTradingPaused =
-    !PERPS_SKIP_ORACLE_FRESHNESS &&
-    oracleFreshness != null &&
-    oracleFreshness.status !== 'fresh'
+    solvencyHalted ||
+    (!PERPS_SKIP_ORACLE_FRESHNESS &&
+      oracleFreshness != null &&
+      oracleFreshness.status !== 'fresh')
 
   return (
     <Col className="gap-4">
@@ -175,17 +181,32 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
         >
           <div className="font-semibold">
-            {oracleFreshness.status === 'stale'
+            {solvencyHalted
+              ? 'Trading paused for a risk check'
+              : oracleFreshness?.status === 'stale'
               ? 'Oracle update delayed'
               : 'Oracle update unavailable'}
           </div>
-          Trading and position closes are paused to prevent execution at an
-          outdated price.{' '}
-          {oracleFreshness.ageMs != null &&
-          typeof contract.oraclePriceTime === 'number'
-            ? `The last update arrived ${fromNow(contract.oraclePriceTime)}. `
-            : 'No valid update timestamp is available. '}
-          They resume automatically after the next valid update.
+          {solvencyHalted ? (
+            <>
+              A risk update could not be applied to this market, so trading and
+              position closes are paused while it is looked at. Open positions
+              are unaffected and still settle. Trading resumes automatically
+              once the market processes its next update.
+            </>
+          ) : (
+            <>
+              Trading and position closes are paused to prevent execution at an
+              outdated price.{' '}
+              {oracleFreshness?.ageMs != null &&
+              typeof contract.oraclePriceTime === 'number'
+                ? `The last update arrived ${fromNow(
+                    contract.oraclePriceTime
+                  )}. `
+                : 'No valid update timestamp is available. '}
+              They resume automatically after the next valid update.
+            </>
+          )}
         </div>
       )}
 

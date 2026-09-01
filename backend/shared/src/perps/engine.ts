@@ -1804,10 +1804,23 @@ export const runOracleUpdate = async (
       const decision = decideOracleTransition(currentPoint, incomingPoint)
       if (decision.action === 'reject')
         throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
+
+      // A halted contract MUST be allowed to re-run the same point. The halt
+      // committed the price without the transition, so from here on that point
+      // reads as a duplicate and is ignored — which would strand the contract
+      // permanently: the pending liquidations/ADL would never be applied and
+      // the halt would never clear, no matter how much subsidy an operator
+      // added. This retry is what makes recovery converge. Restricted to an
+      // exact duplicate; a genuinely stale (older) point stays ignored.
+      const retryingHalt =
+        decision.action === 'ignore' &&
+        decision.reason === 'duplicate' &&
+        contract.solvencyHaltTime != null
+
       // Delivery can race even though state writes cannot. Once the contract
       // lock is held, an older point or exact retry must not touch price, pools,
       // positions, metrics, or event history.
-      if (decision.action === 'ignore') return null
+      if (decision.action === 'ignore' && !retryingHalt) return null
 
       const poolLongBefore = state.pool.L
       const poolShortBefore = state.pool.S
@@ -1844,7 +1857,10 @@ export const runOracleUpdate = async (
             oraclePrice: newPrice,
             oraclePriceTime: ts,
             oracleSourceTime: sourceTs ?? null,
-            solvencyHaltTime: appliedTime,
+            // Keep the ORIGINAL halt time across retries so an operator can
+            // see how long this book has been wedged, not how long ago the
+            // last retry ran.
+            solvencyHaltTime: contract.solvencyHaltTime ?? appliedTime,
             solvencyHaltReason: reason,
           })
         )
@@ -1994,6 +2010,27 @@ export const runFunding = async (
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const appliedTime = Date.now()
+
+    // Halt gate, read from the PERSISTED contract under the lock rather than
+    // from the caller's oracle result.
+    //
+    // Once a tick has halted, it has already committed its price, so replaying
+    // that same point returns `ignore`/null and the scheduler's per-run check
+    // sees nothing to skip on. Funding would then run against positions whose
+    // liquidation and ADL are still pending — and unlike the tick that refused
+    // to write them, funding DOES persist pools, positions, and events. Before
+    // the halt existed this was covered incidentally: the tick threw, and the
+    // throw took funding down with it.
+    //
+    // Subsidy recovery is not blocked by this. The retried oracle tick applies
+    // the pending transition and clears the halt; funding resumes on the next
+    // pass, against a book that has caught up.
+    if (contract.solvencyHaltTime != null) {
+      log(
+        `[perps] skipping funding for ${contract.slug}: solvency halt in effect since ${contract.solvencyHaltTime}`
+      )
+      return null
+    }
 
     // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
     // runs unlocked, so two overlapping ticks (fine hourly, likely at fast

@@ -352,6 +352,35 @@ Both callers log the halt with their own prefix (`[oracle-feeds]` /
 `[update-perps]`), so the existing GCP alert policies page exactly as they did
 when this threw.
 
+Two consequences of committing the price that are easy to miss:
+
+- **`runFunding` refuses a persisted halt, read under the contract lock.** Once
+  a tick halts it has committed its price, so replaying that same point returns
+  `ignore`/null and a caller checking only its own oracle result sees nothing to
+  skip on. Funding would then run against positions whose liquidation and ADL
+  are still pending — and unlike the tick that refused to write them, funding
+  persists pools, positions, and events. Before the halt existed this was
+  covered incidentally, by the throw taking funding down with it.
+- **A halted contract re-applies the SAME oracle point.** Otherwise the halt is
+  terminal: the committed price makes every retry a duplicate, so the pending
+  transition is never applied and the halt never clears no matter how much
+  subsidy is added. Restricted to an exact duplicate; a stale (older) point
+  stays ignored.
+
+### Deploy order
+
+**API first, fully rolled out and drained, THEN the perps scheduler.** Not
+"same SHA" — that is not sufficient during a rolling deploy. A new scheduler
+writes a fresh mark alongside `solvencyHaltTime`; an old API instance does not
+know the field, sees a fresh mark, passes the freshness gate, and will happily
+persist trades against the inconsistent book. The open path does not
+independently verify global solvency, so nothing else catches it. The new API
+is inert until a scheduler writes the first halt, so leading with it is free.
+
+The same asymmetry applies in reverse: **do not roll the API back while halt
+rows exist.** Clear them first (top up the deficit side, let a tick apply, or
+clear the field directly) or roll the scheduler back with it.
+
 ## Oracle feeds
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence

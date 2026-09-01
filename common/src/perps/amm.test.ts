@@ -1111,6 +1111,44 @@ describe('open interest capacity', () => {
     expect(long.isWithinLimit).toBe(true)
   })
 
+  it('credits nothing for an opposing side that is in profit', () => {
+    // Review counterexample. The short is 500 up at the mark, so its reserve is
+    // clamped at its 100 of cost basis and STAYS there across the whole move
+    // this cap is sized for — an adverse tick frees none of the pool. Crediting
+    // its reserve outright would admit 1000 of long notional whose cover is
+    // zero, and factor-zero ADL would take it out on its first profitable tick.
+    const profitableOpponent: PerpState = {
+      pool: { L: 500, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 1000,
+          costBasis: 100,
+          entryPrice: 200,
+        }),
+      ],
+    }
+
+    const capacity = getPerpOpenInterestCapacity(
+      'long',
+      profitableOpponent,
+      100
+    )
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(0)
+    expect(capacity.limit).toBe(0)
+    expect(capacity.headroom).toBe(0)
+
+    // The same short, now at a mark where it is underwater, does release its
+    // margin over the move and is credited for it.
+    const underwater = getPerpOpenInterestCapacity(
+      'long',
+      profitableOpponent,
+      210
+    )
+    expect(underwater.matchedCredit).toBeGreaterThan(0)
+  })
+
   it('never promises more than the whole opposing pool', () => {
     // A book whose long side is already short of its own reserve: cover floors
     // at 0 and the reserved value exceeds pool.L, so the raw credit would hand
