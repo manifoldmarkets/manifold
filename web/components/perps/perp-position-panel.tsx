@@ -429,38 +429,58 @@ const PositionCard = (props: {
       : 'text-ink-900'
 
   return (
+    // The card renders at very different widths — full column on the
+    // market page, a phone with large text, the hub's terminal — so its type
+    // steps on the card's own width (@container), in rem so a user's larger
+    // text setting counts as less room. Below that, the header wraps and the
+    // number column can shrink: a flex item's default min-width is its
+    // content, so two wide numbers used to push the P&L block clean out of
+    // the card (overflow-hidden then clipped it).
     <Col
       className={clsx(
-        'border-ink-200 bg-canvas-0 relative overflow-hidden rounded-lg border'
+        'border-ink-200 bg-canvas-0 @container relative overflow-hidden rounded-lg border'
       )}
     >
       <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
       <Col className="gap-3 p-4 pl-5">
         {/* Header: side + leverage badge, then PnL */}
-        <Row className="items-start justify-between gap-2">
-          <Col className="gap-0.5">
+        <Row className="items-start justify-between gap-3">
+          <Col className="min-w-0 gap-0.5">
             <Row className="items-center gap-2">
-              <span className={clsx('font-semibold capitalize', accentText)}>
+              <span
+                className={clsx(
+                  'whitespace-nowrap text-[clamp(13px,4.8cqw,1rem)] font-semibold capitalize',
+                  accentText
+                )}
+              >
                 {p.direction} {formatLeverage(p.leverage)}×
               </span>
             </Row>
-            <div className="text-ink-900 text-2xl font-bold tabular-nums">
+            {/* The two headline numbers must share one line at any card
+                width, so their size follows the card (cqw) between fixed
+                px floors and the desktop sizes. Floors are px, not rem, so
+                a large OS text setting can't re-widen them past the card. */}
+            <div className="text-ink-900 whitespace-nowrap text-[clamp(15px,6.5cqw,1.5rem)] font-bold tabular-nums leading-tight">
               {formatMoney(p.size)}
-              <span className="text-ink-400 ml-1.5 text-sm font-normal">
-                notional
-              </span>
             </div>
-            <div className="text-ink-500 text-xs">
-              {formatMoney(p.originalCostBasis)} margin
+            <div className={clsx('text-ink-500', CARD_LABEL)}>
+              notional · {formatMoney(p.originalCostBasis)} margin
             </div>
           </Col>
-          <Col className="items-end">
-            <div className="text-ink-400 text-xs">Unrealized profit</div>
-            <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
+          <Col className="shrink-0 items-end">
+            <div className={clsx('text-ink-400 whitespace-nowrap', CARD_LABEL)}>
+              Unrealized profit
+            </div>
+            <div
+              className={clsx(
+                'whitespace-nowrap text-[clamp(13px,5.5cqw,1.25rem)] font-bold tabular-nums leading-tight',
+                pnlColor
+              )}
+            >
               {pnl >= 0 ? '+' : ''}
               {formatMoneyPrecise(pnl)}
             </div>
-            <div className={clsx('text-xs tabular-nums', pnlColor)}>
+            <div className={clsx('tabular-nums', CARD_LABEL, pnlColor)}>
               {pnl >= 0 ? '+' : ''}
               {pnlPct.toFixed(2)}%
             </div>
@@ -468,7 +488,7 @@ const PositionCard = (props: {
         </Row>
 
         {/* Price stats grid */}
-        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3 text-sm">
+        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3">
           <PriceStat
             label="Entry"
             value={formatPrice(p.entryPrice, priceDecimals)}
@@ -544,6 +564,13 @@ const PositionCard = (props: {
   )
 }
 
+// Small type inside the card follows the card's width (cqw) between a px
+// floor and the usual text-xs / text-sm, so three mono prices and the
+// labels above them keep fitting when a phone runs a large text setting.
+// Card widths of ~336px and up get exactly text-xs / text-sm.
+const CARD_LABEL = 'text-[clamp(10px,3.6cqw,0.75rem)]'
+const CARD_VALUE = 'text-[clamp(11px,4.2cqw,0.875rem)]'
+
 // Drop trailing zeros so whole leverages render as "100×" not "100.00×",
 // but fractional ones keep one decimal of precision (e.g. "1.5×").
 const formatLeverage = (leverage: number) => {
@@ -557,18 +584,19 @@ const PriceStat = (props: {
   valueClass?: string
   sublabel?: string
 }) => (
-  <Col className="gap-0.5">
-    <div className="text-ink-500 text-xs">{props.label}</div>
+  <Col className="min-w-0 gap-0.5">
+    <div className={clsx('text-ink-500', CARD_LABEL)}>{props.label}</div>
     <div
       className={clsx(
-        'text-ink-900 font-mono font-semibold tabular-nums',
+        'text-ink-900 whitespace-nowrap font-mono font-semibold tabular-nums',
+        CARD_VALUE,
         props.valueClass
       )}
     >
       {props.value}
     </div>
     {props.sublabel && (
-      <div className="text-ink-400 text-xs">{props.sublabel}</div>
+      <div className={clsx('text-ink-400', CARD_LABEL)}>{props.sublabel}</div>
     )}
   </Col>
 )

@@ -115,7 +115,9 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   return (
     <Col className="gap-4">
       <Row className="flex-wrap items-baseline justify-between gap-2">
-        <Row className="min-w-0 items-baseline gap-4 sm:gap-8">
+        {/* Wraps so Funding drops under the price on 320px phones instead
+            of the pair overflowing the viewport. */}
+        <Row className="min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2 sm:gap-x-8">
           <Col>
             <div className="text-ink-500 text-sm">
               {contract.isResolved ? 'Final oracle price' : 'Oracle price'}

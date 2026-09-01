@@ -589,6 +589,20 @@ export function Search(props: SearchProps) {
                 >
                   2026 Midterms
                 </Link>
+                <Link
+                  href="/perps"
+                  onClick={() =>
+                    track('select search topic', { topic: 'perps' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    'bg-gradient-to-r from-teal-100 to-indigo-100 dark:from-teal-900/50 dark:to-indigo-900/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Perps
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
