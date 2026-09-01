@@ -192,6 +192,7 @@ export type SearchState = {
   topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
   posts: TopLevelPost[] | undefined
+  seenMarketCutoffTime: number | undefined
 }
 
 type SearchProps = {
@@ -950,6 +951,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   topics: undefined,
   shouldLoadMore: true,
   posts: undefined,
+  seenMarketCutoffTime: undefined,
 }
 
 export const useSearchResults = (props: {
@@ -1021,6 +1023,9 @@ export const useSearchResults = (props: {
         !contractsOnly && props.includeUsersAndTopics
 
       if (freshQuery || state.shouldLoadMore) {
+        const seenMarketCutoffTime = freshQuery
+          ? Date.now()
+          : state.seenMarketCutoffTime ?? Date.now()
         const id = ++requestId.current
         let timeoutId: NodeJS.Timeout | undefined
         if (freshQuery) {
@@ -1047,6 +1052,7 @@ export const useSearchResults = (props: {
               topics: undefined,
               posts: uniqBy(buildArray(state.posts, posts), 'id'),
               shouldLoadMore,
+              seenMarketCutoffTime,
             })
 
             // Store the search params that were used for this query
@@ -1100,6 +1106,7 @@ export const useSearchResults = (props: {
               gids,
               liquidity: liquidity === '' ? undefined : parseInt(liquidity),
               hasBets,
+              seenMarketCutoffTime,
             }),
           ]
 
@@ -1200,6 +1207,7 @@ export const useSearchResults = (props: {
               topics: includeUsersAndTopics ? newTopics?.lite : state.topics,
               posts: freshPosts,
               shouldLoadMore,
+              seenMarketCutoffTime,
             })
 
             // Store the search params that were used for this query

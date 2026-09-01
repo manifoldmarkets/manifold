@@ -1,10 +1,19 @@
 import { getMarketSearchRoute, searchProps } from './market-search-types'
+import { API } from './schema'
 
 describe('searchProps', () => {
   it('accepts PERP as an exact market type filter', () => {
     const result = searchProps.parse({ contractType: 'PERP' })
 
     expect(result.contractType).toBe('PERP')
+  })
+
+  it('accepts a finite browse-session anchor', () => {
+    const result = searchProps.parse({
+      seenMarketCutoffTime: '1700000000000',
+    })
+
+    expect(result.seenMarketCutoffTime).toBe(1_700_000_000_000)
   })
 })
 
@@ -41,4 +50,13 @@ describe('getMarketSearchRoute', () => {
       })
     ).toBe('filtered')
   })
+})
+
+describe('market search caching', () => {
+  it.each(['search-markets', 'search-markets-full'] as const)(
+    'does not shared-cache auth-sensitive %s results',
+    (endpoint) => {
+      expect(API[endpoint].cache).toBe('private, no-store')
+    }
+  )
 })

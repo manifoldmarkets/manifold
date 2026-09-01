@@ -11,6 +11,7 @@ export const models = {
   gpt5: 'gpt-5.4',
   gpt5mini: 'gpt-5.4-mini',
 } as const
+export const EMBEDDING_MODEL = 'text-embedding-3-small'
 
 export const generateEmbeddings = async (
   question: string,
@@ -22,7 +23,7 @@ export const generateEmbeddings = async (
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     response = await openai.embeddings.create(
       {
-        model: 'text-embedding-3-small',
+        model: EMBEDDING_MODEL,
         input: question,
       },
       // Absent keys fall through to the SDK defaults (~10 min, 2 retries);
@@ -32,15 +33,16 @@ export const generateEmbeddings = async (
         maxRetries: opts?.maxRetries,
       })
     )
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
     log.error(
       'Error generating embeddings ' +
         (!process.env.OPENAI_API_KEY ? ' (no OpenAI API key found) ' : ' ') +
-        e.message
+        message
     )
     return undefined
   }
-  log('Made embeddings for question', question)
+  log('Made embeddings')
   return response.data[0]?.embedding
 }
 
