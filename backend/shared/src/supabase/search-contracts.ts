@@ -41,22 +41,24 @@ const SEEN_MEMORY_WINDOW = '7 days'
 // Views younger than this don't count yet. This is what makes going back
 // safe: scroll browse, open the 4th market, hit back — every card you
 // scrolled past is still inside the grace period, so the page you return
-// to looks like the page you left. It also keeps "load more" honest, since
-// paging with a shifting offset over a set that's shrinking underneath you
-// silently skips rows.
+// to looks like the page you left. The web client anchors this cutoff when a
+// fresh query starts and reuses it so load-more offsets see one stable set.
 const SEEN_GRACE_PERIOD = '1 hour'
 // Matches PROB_CHANGE_THRESHOLD in feed-market-movement-display.ts: the same
-// move that earns a card its movement badge also earns it another look.
+// binary move that earns a card its movement badge also earns it another look.
 const SEEN_PROB_MOVE_THRESHOLD = 0.05
 
 /**
- * Drops markets the user has already looked at and that have gone quiet since.
+ * Drops markets the user has already looked at and that are currently quiet
+ * from For You results. Callers without a session anchor use this only on the
+ * first page so a moving time boundary cannot create pagination holes.
  *
  * Browse ranks on score alone, so the same top markets greet you every visit.
  * But "seen" is a weak signal and over-trusting it is worse than repetition,
- * so this only fires in the narrow band where repetition is genuinely stale:
- * seen, long enough ago to be a separate visit, recently enough to still
- * remember, and nothing has happened since.
+ * so this only fires in the narrow band where repetition is plausibly stale:
+ * seen, long enough ago to be a separate visit, recently enough to remember,
+ * no comment/resolution/new answer after the view, and no significant current
+ * daily movement.
  *
  * A view here means the card was ≥90% in the viewport (useIsVisible in
  * feed-contract-card.tsx) or the market page was opened — not merely that the
@@ -64,26 +66,61 @@ const SEEN_PROB_MOVE_THRESHOLD = 0.05
  * deliberately: an ad scrolling past is not the user choosing to look at
  * something.
  *
- * Resurfacing is driven by new comments and by significant price movement,
- * not by last_bet_time — on an active market bets land continuously, so
- * keying on them would make this a no-op exactly where repetition is worst.
+ * Resurfacing is driven by resolution, comments or answers after the view and
+ * by significant recent price movement. The stored movement metric is a
+ * rolling daily value, not a probability snapshot at view time, so do not
+ * describe it as movement since the view. We deliberately avoid last_bet_time:
+ * continuously traded markets would otherwise make this filter a no-op.
  */
-const staleSeenMarketsSql = (userId: string) =>
-  where(
+export const staleSeenMarketsSql = (
+  userId: string,
+  seenMarketCutoffTime?: number
+) => {
+  const anchor =
+    seenMarketCutoffTime === undefined ? 'now()' : 'millis_to_ts($2)'
+  return where(
     `not exists (
       select 1 from user_contract_views ucv
       where ucv.user_id = $1
         and ucv.contract_id = contracts.id
         and greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
-            between now() - interval '${SEEN_MEMORY_WINDOW}'
-                and now() - interval '${SEEN_GRACE_PERIOD}'
+            between ${anchor} - interval '${SEEN_MEMORY_WINDOW}'
+                and ${anchor} - interval '${SEEN_GRACE_PERIOD}'
         and coalesce(contracts.last_comment_time, contracts.created_time)
             <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+        and coalesce(contracts.resolution_time, contracts.created_time)
+            <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+        -- Only CPMM markets have a normalized daily probability-change
+        -- metric. Perps, polls, and bounties can be active while probChanges
+        -- is absent, so never classify them as quiet from missing data.
+        and contracts.mechanism in ('cpmm-1', 'cpmm-multi-1')
         and abs(coalesce((contracts.data->'probChanges'->>'day')::numeric, 0))
             <= ${SEEN_PROB_MOVE_THRESHOLD}
+        -- Multi-answer markets store movement on answers, not contracts. A
+        -- new or moving answer should resurface the market.
+        and not exists (
+          select 1 from answers a
+          where a.contract_id = contracts.id
+            and (
+              a.created_time > greatest(
+                ucv.last_card_view_ts,
+                ucv.last_page_view_ts
+              )
+              or abs(coalesce(a.prob_change_day, 0))
+                  > ${SEEN_PROB_MOVE_THRESHOLD}
+            )
+        )
     )`,
-    [userId]
+    seenMarketCutoffTime === undefined
+      ? [userId]
+      : [userId, seenMarketCutoffTime]
   )
+}
+
+export const shouldSuppressStaleSeenMarkets = (
+  offset: number,
+  seenMarketCutoffTime?: number
+) => offset === 0 || seenMarketCutoffTime !== undefined
 
 type SharedSearchArgs = {
   filter: string
@@ -98,6 +135,7 @@ type SharedSearchArgs = {
   liquidity?: number
   isPrizeMarket?: boolean
   beforeTime?: number
+  seenMarketCutoffTime?: number
 }
 
 export async function getForYouSQL(
@@ -114,6 +152,7 @@ export async function getForYouSQL(
     privateUser,
     threshold = DEFAULT_THRESHOLD,
     hasBets,
+    seenMarketCutoffTime,
   } = args
 
   const userId = args.uid
@@ -169,7 +208,10 @@ export async function getForYouSQL(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
       ),
-      staleSeenMarketsSql(userId),
+      // A client-provided session anchor keeps the seen set stable across
+      // every offset page. Legacy callers get safe top-page-only suppression.
+      shouldSuppressStaleSeenMarkets(offset, seenMarketCutoffTime) &&
+        staleSeenMarketsSql(userId, seenMarketCutoffTime),
       privateUserBlocksSql(privateUser),
       withClause(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
@@ -323,19 +365,23 @@ export function getSemanticSearchContractSQL(
     excludeContractIds?: string[]
   }
 ) {
-  const { embedding, limit, filter, uid, hasBets, privateUser, excludeContractIds } =
-    args
+  const {
+    embedding,
+    limit,
+    filter,
+    uid,
+    hasBets,
+    privateUser,
+    excludeContractIds,
+  } = args
   return renderSql(
     select(contractColumnsToSelectWithPrefix('contracts')),
-    from(
-      `search_contract_embeddings($1::vector, $2, $3) as se`,
-      [
-        // pgvector parses its literal from a JSON-shaped array string.
-        JSON.stringify(embedding),
-        SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
-        SEMANTIC_SEARCH_OVERFETCH,
-      ]
-    ),
+    from(`search_contract_embeddings($1::vector, $2, $3) as se`, [
+      // pgvector parses its literal from a JSON-shaped array string.
+      JSON.stringify(embedding),
+      SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
+      SEMANTIC_SEARCH_OVERFETCH,
+    ]),
     join('contracts on contracts.id = se.contract_id'),
     groupsFilterSql(args),
     filter === 'news' && newsMovementFilterSql(),

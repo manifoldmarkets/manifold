@@ -64,6 +64,14 @@ export const searchProps = z
     // Cursor for efficient pagination: pass the createdTime of the last
     // result from the previous page. Only works with sort=newest.
     beforeTime: z.coerce.number().optional(),
+    // Anchor for a stable seen-market filter across an offset-paginated browse
+    // session. Clients must reuse the first page's value for load-more calls.
+    seenMarketCutoffTime: z.coerce
+      .number()
+      .int()
+      .gte(0)
+      .lte(4_102_444_800_000)
+      .optional(),
     topicSlug: z
       .string()
       .regex(FIRESTORE_DOC_REF_ID_REGEX)

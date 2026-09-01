@@ -33,16 +33,24 @@ const rankingSql = `
     select c.id,
            c.question,
            count(gc.group_id) as n_tags,
-           avg(power(coalesce(uti.score, $2), 4) * c.importance_score)
-             as old_rank,
-           power(0.7 * max(coalesce(uti.score, $2))
-               + 0.3 * avg(coalesce(uti.score, $2)), 4)
-             * avg(c.importance_score) as new_rank
+           case when bool_or(uti.score is not null)
+             then avg(power(coalesce(uti.score, $2), 4) * c.importance_score)
+             else avg(c.importance_score * $2)
+           end as old_rank,
+           case when bool_or(uti.score is not null)
+             then power(0.7 * max(coalesce(uti.score, $2))
+                    + 0.3 * avg(coalesce(uti.score, $2)), 4)
+                  * avg(c.importance_score)
+             else avg(c.importance_score * $2)
+           end as new_rank
     from contracts c
     join group_contracts gc on gc.contract_id = c.id
     left join uti on uti.group_id = gc.group_id
-    where c.close_time > now()
+    where c.resolution_time is null
+      and (c.close_time > now() or c.close_time is null)
       and c.visibility = 'public'
+      and c.deleted = false
+      and c.token = 'MANA'
       and c.outcome_type not in ('STONK', 'BOUNTIED_QUESTION')
       and c.importance_score > $3
     group by c.id
@@ -88,17 +96,17 @@ if (require.main === module) {
     }
 
     for (const user of users) {
-      const rows = await pg.map<Row>(rankingSql, [
-        user.id,
-        GROUP_SCORE_PRIOR,
-        MIN_IMPORTANCE,
-      ], (r) => ({
-        id: r.id,
-        question: r.question,
-        n_tags: Number(r.n_tags),
-        old_pos: Number(r.old_pos),
-        new_pos: Number(r.new_pos),
-      }))
+      const rows = await pg.map<Row>(
+        rankingSql,
+        [user.id, GROUP_SCORE_PRIOR, MIN_IMPORTANCE],
+        (r) => ({
+          id: r.id,
+          question: r.question,
+          n_tags: Number(r.n_tags),
+          old_pos: Number(r.old_pos),
+          new_pos: Number(r.new_pos),
+        })
+      )
 
       const oldTop = rows.filter((r) => r.old_pos <= TOP_N)
       const newTop = rows.filter((r) => r.new_pos <= TOP_N)
@@ -108,16 +116,21 @@ if (require.main === module) {
         .sort((a, b) => a.new_pos - b.new_pos)
 
       const avgTags = (rs: Row[]) =>
-        rs.length ? (rs.reduce((s, r) => s + r.n_tags, 0) / rs.length).toFixed(2) : 'n/a'
+        rs.length
+          ? (rs.reduce((s, r) => s + r.n_tags, 0) / rs.length).toFixed(2)
+          : 'n/a'
 
       console.log(`\n=== ${user.username} (${rows.length} candidates) ===`)
       console.log(
-        `top ${TOP_N}: ${TOP_N - promoted.length} unchanged, ${promoted.length} new` +
-          ` | avg tags ${avgTags(oldTop)} -> ${avgTags(newTop)}`
+        `top ${TOP_N}: ${TOP_N - promoted.length} unchanged, ${
+          promoted.length
+        } new` + ` | avg tags ${avgTags(oldTop)} -> ${avgTags(newTop)}`
       )
       for (const r of promoted) {
         console.log(
-          `  #${String(r.new_pos).padStart(2)} (was #${r.old_pos}, ${r.n_tags} tags) ${r.question.slice(0, 80)}`
+          `  #${String(r.new_pos).padStart(2)} (was #${r.old_pos}, ${
+            r.n_tags
+          } tags) ${r.question.slice(0, 80)}`
         )
       }
     }

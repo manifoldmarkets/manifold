@@ -19,7 +19,18 @@ import {
   SearchTypes,
   sortFields,
 } from 'shared/supabase/search-contracts'
-import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import {
+  EMBEDDING_MODEL,
+  generateEmbeddings,
+} from 'shared/helpers/openai-utils'
+import {
+  BoundedSingleFlightCache,
+  isValidQueryEmbedding,
+  normalizeSemanticSearchTerm,
+  queryEmbeddingCacheKey,
+  RollingWindowGate,
+  shouldAttemptSemanticFallback,
+} from 'shared/helpers/semantic-search-fallback'
 import { cacheGetJson, cacheSetJson } from 'shared/redis/cache'
 import { getPrivateUser, log } from 'shared/utils'
 import { z } from 'zod'
@@ -241,18 +252,34 @@ const SEMANTIC_FALLBACK_MAX_TERM_LENGTH = 200
 // have beats hanging the page on a slow OpenAI call. No retries for the same
 // reason (the SDK default is 2 retries inside a ~10-minute timeout).
 const SEMANTIC_FALLBACK_OPENAI_TIMEOUT_MS = 3000
-// Bounds concurrent OpenAI calls per server process during incidents or
-// crawler storms (the read API runs a small pm2 cluster, so the fleet-wide
-// cap is a small multiple of this). At the cap, fallback-eligible searches
-// just return their lexical results.
 const SEMANTIC_FALLBACK_MAX_INFLIGHT = 10
-let inflightEmbeddingCalls = 0
-// The embedding of a given string never changes; this only avoids re-paying
-// the ~100ms OpenAI round-trip on repeated searches. ~30KB per entry, so keep
-// the ttl short enough that one-off queries age out.
+// A cache-miss budget also bounds sequential abuse: the in-flight cap alone
+// still allows an unauthenticated caller to create an unbounded stream of
+// unique OpenAI requests. Exhausting this budget only disables the optional
+// fallback; lexical search continues normally.
+const SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_MINUTE = 5
+// Redis is deliberately disabled in the API deploy config, so keep a small
+// process-local LRU as the dependable cache and use Redis as an optional
+// cross-process layer. One embedding is roughly 30KB in JSON form; 100 entries
+// keeps the per-process upper bound modest while retaining common searches.
+const LOCAL_QUERY_EMBEDDING_CACHE_MAX_ENTRIES = 100
 const QUERY_EMBEDDING_CACHE_TTL_S = 24 * 60 * 60
-const queryEmbeddingCacheKey = (term: string) =>
-  `search-embedding:${term.toLowerCase()}`
+const queryEmbeddingCache = new BoundedSingleFlightCache<number[]>({
+  maxEntries: LOCAL_QUERY_EMBEDDING_CACHE_MAX_ENTRIES,
+  ttlMs: QUERY_EMBEDDING_CACHE_TTL_S * 1000,
+  maxInflightCreates: SEMANTIC_FALLBACK_MAX_INFLIGHT,
+  maxCreatesPerWindow: SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_MINUTE,
+  createWindowMs: 60_000,
+})
+// Cached terms bypass the embedding budget, so separately bound vector-query
+// work that an unauthenticated caller could otherwise repeat indefinitely.
+const SEMANTIC_FALLBACK_MAX_QUERIES_PER_MINUTE = 60
+const SEMANTIC_FALLBACK_MAX_QUERY_INFLIGHT = 10
+const semanticQueryGate = new RollingWindowGate(
+  SEMANTIC_FALLBACK_MAX_QUERIES_PER_MINUTE,
+  60_000
+)
+let inflightSemanticQueries = 0
 
 type SemanticSearchArgs = Parameters<typeof getSemanticSearchContractSQL>[0]
 
@@ -268,24 +295,19 @@ const semanticFallback = async (
 ): Promise<Contract[]> => {
   const { term, uid, limit, offset, sort, beforeTime, lexicalResults, pg } =
     props
+  const normalizedTerm = normalizeSemanticSearchTerm(term)
   if (
-    offset > 0 ||
-    // The sort=newest cursor contract reads createdTime off the LAST row of
-    // each page (see beforeTime in market-search-types), and a similarity-
-    // ordered tail poisons that on page 1 just as surely as on later pages —
-    // so the newest sort gets no tail at all, and beforeTime is guarded
-    // separately in case a client sends it with another sort.
-    sort === 'newest' ||
-    beforeTime !== undefined ||
-    // URL terms take the exact slug-lookup branch in getSearchContractSQL;
-    // embedding the URL text would append noise to an exact lookup.
-    term.startsWith('https://') ||
-    term.startsWith('http://') ||
-    term.length < SEMANTIC_FALLBACK_MIN_TERM_LENGTH ||
-    term.length > SEMANTIC_FALLBACK_MAX_TERM_LENGTH ||
-    // Capped at limit: a full page under 5 hits (limit <= 4) is not a dead
-    // end, and this also keeps the semantic query's limit strictly positive.
-    lexicalResults.length >= Math.min(limit, SEMANTIC_FALLBACK_MIN_RESULTS)
+    !shouldAttemptSemanticFallback({
+      term: normalizedTerm,
+      offset,
+      sort,
+      beforeTime,
+      lexicalResultCount: lexicalResults.length,
+      limit,
+      minResults: SEMANTIC_FALLBACK_MIN_RESULTS,
+      minTermLength: SEMANTIC_FALLBACK_MIN_TERM_LENGTH,
+      maxTermLength: SEMANTIC_FALLBACK_MAX_TERM_LENGTH,
+    })
   ) {
     return []
   }
@@ -293,48 +315,63 @@ const semanticFallback = async (
   // Fallback of a fallback: nothing in here — OpenAI, redis, the db — may
   // break the search itself. Any failure returns the lexical results alone.
   try {
-    const cacheKey = queryEmbeddingCacheKey(term)
+    const cacheKey = queryEmbeddingCacheKey(normalizedTerm, EMBEDDING_MODEL)
+    const localEmbedding = queryEmbeddingCache.get(cacheKey)
     const [cached, privateUser] = await Promise.all([
-      cacheGetJson<number[]>(cacheKey),
+      localEmbedding === undefined
+        ? cacheGetJson<unknown>(cacheKey)
+        : localEmbedding,
       uid ? getPrivateUser(uid, pg).then((u) => u ?? undefined) : undefined,
     ])
-    let embedding = cached
+    let embedding = isValidQueryEmbedding(cached) ? cached : undefined
+    if (embedding !== undefined && localEmbedding === undefined) {
+      queryEmbeddingCache.set(cacheKey, embedding)
+    }
     if (embedding === undefined) {
-      if (inflightEmbeddingCalls >= SEMANTIC_FALLBACK_MAX_INFLIGHT) return []
-      inflightEmbeddingCalls++
-      try {
-        embedding = await generateEmbeddings(term, {
+      embedding = await queryEmbeddingCache.getOrCreate(cacheKey, async () => {
+        const generated = await generateEmbeddings(normalizedTerm, {
           timeoutMs: SEMANTIC_FALLBACK_OPENAI_TIMEOUT_MS,
           maxRetries: 0,
         })
-      } finally {
-        inflightEmbeddingCalls--
-      }
+        if (!isValidQueryEmbedding(generated)) return undefined
+        // Optional cross-process cache; cacheSetJson is a no-op when Redis is
+        // disabled and does not reject callers when Redis is unavailable.
+        void cacheSetJson(cacheKey, generated, QUERY_EMBEDDING_CACHE_TTL_S)
+        return generated
+      })
       // No key configured, or OpenAI is down. A search with no results is a
       // worse page, not a broken one — leave it as it was.
       if (!embedding) return []
-      // Fire and forget: nothing reads the result and cacheSetJson never throws.
-      void cacheSetJson(cacheKey, embedding, QUERY_EMBEDDING_CACHE_TTL_S)
     }
 
-    const results = await pg.map(
-      getSemanticSearchContractSQL({
-        ...props,
-        embedding,
-        privateUser,
-        limit: limit - lexicalResults.length,
-        excludeContractIds: lexicalResults.map((c) => c.id),
-      }),
-      null,
-      convertContract
+    if (
+      inflightSemanticQueries >= SEMANTIC_FALLBACK_MAX_QUERY_INFLIGHT ||
+      !semanticQueryGate.take()
     )
-    log(`Semantic fallback for "${term}"`, {
-      lexicalHits: lexicalResults.length,
-      semanticHits: results.length,
-    })
-    return results
+      return []
+    inflightSemanticQueries++
+    try {
+      const results = await pg.map(
+        getSemanticSearchContractSQL({
+          ...props,
+          embedding,
+          privateUser,
+          limit: limit - lexicalResults.length,
+          excludeContractIds: lexicalResults.map((c) => c.id),
+        }),
+        null,
+        convertContract
+      )
+      log('Semantic search fallback completed', {
+        lexicalHits: lexicalResults.length,
+        semanticHits: results.length,
+      })
+      return results
+    } finally {
+      inflightSemanticQueries--
+    }
   } catch (e) {
-    log.error(`Semantic search fallback failed for term: ${term}`, {
+    log.error('Semantic search fallback failed', {
       error: e instanceof Error ? e.message : String(e),
     })
     return []
