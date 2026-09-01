@@ -224,7 +224,14 @@ const MARKETS_BY_IDS_MAX = 100
 
 const usePerpBoard = (initial: PerpContract[]) => {
   const [contracts, setContracts] = useState(initial)
-  const idKey = initial.map((c) => c.id).join(',')
+  // Membership AND resolution. A market that resolves between regenerations
+  // changes no ids, but it still has to be reconciled: it leaves the poll
+  // below the moment it resolves, so nothing else would ever correct the
+  // unresolved copy sitting in state — and an unresolved copy keeps its
+  // Long/Short controls on screen.
+  const boardKey = initial
+    .map((c) => `${c.id}:${c.isResolved ? 1 : 0}`)
+    .join(',')
   // Resolved perps stay on the board — RelatedMarkets excludes every perp id,
   // resolved included — but nothing renders their live fields: every other
   // consumer works off `open`. Polling them would grow the per-tick request
@@ -234,28 +241,37 @@ const usePerpBoard = (initial: PerpContract[]) => {
     .map((c) => c.id)
     .join(',')
 
-  // New page props are authoritative about WHICH markets belong on the board.
-  // useState reads `initial` once, so without this an ISR regeneration (or a
-  // client-side nav back to this route) that drops an unlisted or deleted
-  // market would leave it rendered from its last public snapshot — no longer
-  // polled, but still showing its terminal and trade controls. Live fields we
-  // already polled win over the staler static ones, same never-rewind guard
-  // as the poll below.
+  // New page props are authoritative about WHICH markets belong on the board
+  // and about whether they have resolved. useState reads `initial` once, so
+  // without this an ISR regeneration (or a client-side nav back to this
+  // route) that drops an unlisted or deleted market would leave it rendered
+  // from its last public snapshot — no longer polled, but still showing its
+  // terminal and trade controls.
   useEffect(() => {
     setContracts((prev) => {
       const byId = new Map(prev.map((c) => [c.id, c]))
       const next = initial.map((c) => {
+        // Props win outright once a market is resolved: it drops out of
+        // `open`, nothing renders its live fields, and an older live snapshot
+        // must not be able to un-resolve it back into a tradeable row.
+        if (c.isResolved) return c
         const live = byId.get(c.id)
-        return live && (live.oraclePriceTime ?? 0) > (c.oraclePriceTime ?? 0)
+        // Props decide resolution in both directions: a live snapshot that
+        // still reads resolved is stale about an un-resolution, and merging
+        // it would put the market straight back out of `open`.
+        if (!live || live.isResolved) return c
+        // Otherwise keep the live fields already polled, never rewinding the
+        // oracle snapshot — the same guard the poll below uses.
+        return (live.oraclePriceTime ?? 0) > (c.oraclePriceTime ?? 0)
           ? ({ ...c, ...live } as PerpContract)
           : c
       })
-      // Mount and same-membership regenerations must not force a render.
+      // Mount and no-op regenerations must not force a render.
       return next.length === prev.length && next.every((c, i) => c === prev[i])
         ? prev
         : next
     })
-  }, [idKey])
+  }, [boardKey])
 
   useEffect(() => {
     const ids = pollKey ? pollKey.split(',') : []
@@ -2173,8 +2189,14 @@ const SuggestionRow = (props: {
 const Suggestions = () => {
   const user = useUser()
   const isMod = !!user && (isAdminId(user.id) || isModId(user.id))
-  // Declared before the fetch because it picks the page size.
+  // Both declared before the fetch because they pick the page size.
   const [showAll, setShowAll] = useState(false)
+  // One-way latch: collapsing must not send the request back to the short
+  // page. useAPIGetter caches per (path, props) and refresh() only clears the
+  // key currently in use, so returning to the short page would leave the full
+  // response cached and unrefreshed — a later expand would replay a
+  // pre-mutation list and visually undo a vote or a new suggestion.
+  const [loadedAll, setLoadedAll] = useState(false)
   const {
     data,
     error: loadError,
@@ -2185,7 +2207,7 @@ const Suggestions = () => {
     // One row past the preview is fetched so the button knows there is more
     // without loading the list to find out. Mods take the whole list either
     // way — the hidden drawer's count has to be right.
-    limit: showAll || isMod ? 100 : SUGGESTIONS_PREVIEW + 1,
+    limit: loadedAll || isMod ? 100 : SUGGESTIONS_PREVIEW + 1,
     // Mods get the moderated rows back in the same response, tagged, and
     // split out below — no second request, and the count is known up front.
     includeHidden: isMod || undefined,
@@ -2361,7 +2383,10 @@ const Suggestions = () => {
           </Col>
           {list.length > visible.length || showAll ? (
             <button
-              onClick={() => setShowAll((v) => !v)}
+              onClick={() => {
+                setShowAll((v) => !v)
+                setLoadedAll(true)
+              }}
               className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
             >
               {showAll ? 'Show fewer' : 'Show more'}

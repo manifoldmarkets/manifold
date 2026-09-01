@@ -102,14 +102,26 @@ export const createPerpSuggestion: APIHandler<'create-perp-suggestion'> =
         [auth.uid],
         (r) => r.n
       )
-      // Matches hidden rows too, deliberately: a name a mod moderated out
-      // stays out, and re-suggesting it resolves to that row instead of
-      // announcing to the submitter that their idea was moderated.
-      const existing = await tx.oneOrNone<number | null>(
-        `select id from perp_suggestions where lower(name) = lower($1)`,
+      // Deliberately matches hidden rows: the unique index on lower(name)
+      // means a moderated name can never be re-created, so the collision has
+      // to be answered here rather than silently resolving to that row.
+      // Resolving to it would add a vote the hidden row is not supposed to be
+      // able to collect (vote-perp-suggestion refuses hidden rows) and return
+      // it in full — handing anyone who guesses the name its creator, source,
+      // vote count and hidden flag.
+      const existing = await tx.oneOrNone<{
+        id: number
+        hidden: boolean
+      } | null>(
+        `select id, hidden from perp_suggestions where lower(name) = lower($1)`,
         [name],
-        (r) => (r ? Number(r.id) : null)
+        (r) => (r ? { id: Number(r.id), hidden: r.hidden } : null)
       )
+      // Deliberately says nothing about why. A moderated name stays out, and
+      // the refusal reveals only what the submitter already typed.
+      if (existing?.hidden) {
+        throw new APIError(400, "That suggestion can't be added.")
+      }
       // Upvoting an existing name creates nothing, so it never counts.
       if (existing == null && recent >= PERP_SUGGESTIONS_PER_DAY) {
         throw new APIError(
@@ -118,7 +130,7 @@ export const createPerpSuggestion: APIHandler<'create-perp-suggestion'> =
         )
       }
       const id =
-        existing ??
+        existing?.id ??
         (await tx.one<number>(
           `insert into perp_suggestions (user_id, name, data_source)
          values ($1, $2, $3)
