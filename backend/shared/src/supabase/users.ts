@@ -8,7 +8,7 @@ import {
   broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 import { removeUndefinedProps } from 'common/util/object'
-import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
+import { getStreakDayStart } from 'common/streak'
 import { log } from 'node:console'
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { Row } from 'common/supabase/utils'
@@ -203,8 +203,14 @@ export const incrementBalance = async (
   )
 }
 
+// The single writer of currentBettingStreak increments and lastBetTime.
+// See the streak-qualifying-activity invariant below before adding callers
+// or judging streak activity anywhere else.
 export const incrementStreakQuery = (user: User, newBetTime: number) => {
-  const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
+  // The boundary of the bet's OWN Pacific day, so a bet stamped just before
+  // midnight but processed just after it still counts for the day it belongs
+  // to (Date.now() here would judge it against the wrong day).
+  const betStreakResetTime = getStreakDayStart(newBetTime)
 
   return pgp.as.format(
     `
@@ -237,6 +243,78 @@ export const incrementStreakQuery = (user: User, newBetTime: number) => {
     [user.id, betStreakResetTime, newBetTime]
   )
 }
+
+/**
+ * THE STREAK-QUALIFYING-ACTIVITY INVARIANT
+ *
+ * Every action that advances a betting streak runs incrementStreakQuery
+ * above, and nothing else does:
+ *   - executed bets and sells, API included: place-bet's executeNewBetResult
+ *     runs it in-transaction for every CandidateBet it commits
+ *   - perp opens/adds/closes: advancePerpBettingStreak
+ *     (backend/api/src/helpers/perp-streak.ts)
+ * and it stamps lastBetTime unconditionally as it runs. lastBetTime is
+ * therefore the time of the user's last streak-qualifying action, and any
+ * consumer that needs "has the user acted since <boundary>" can read the
+ * scalar directly — the streak expiry notice job and the web streak modal
+ * do exactly that.
+ *
+ * NOT qualifying (incrementStreakQuery never runs on their path): unfilled
+ * limit orders (place-bet returns early with streakIncremented: false),
+ * maker fills, redemptions, and forced perp exits (liquidation / ADL /
+ * market resolution).
+ *
+ * The one question the scalar cannot answer is "was there an action inside
+ * a CLOSED day [start, end)" for a user who has acted since `end` — the
+ * later action overwrote the evidence. The fragment below is the
+ * table-level twin of the invariant for exactly that case; the nightly
+ * reset job is its only consumer. If a new activity type starts calling
+ * incrementStreakQuery, extend this fragment to match.
+ *
+ * Expects the users row to be aliased `u` in the surrounding query.
+ */
+export const streakQualifyingActivitySql = (startMs: number, endMs: number) =>
+  pgp.as.format(
+    `(
+      exists (
+        select 1 from contract_bets b
+        where b.user_id = u.id
+          and b.created_time >= millis_to_ts($1)
+          and b.created_time < millis_to_ts($2)
+          -- streakEligible is the immutable insert-time marker of an
+          -- executed bet (common/src/bet.ts), written explicitly true or
+          -- false; later maker fills merge into data and can neither add
+          -- nor remove it. The fallback is amount != 0 — the mutable
+          -- inference this marker replaces — and it matters only for rows
+          -- whose amount can still change, i.e. unfilled limit orders,
+          -- which are created solely in executeNewBetResult and so always
+          -- carry the marker. Rows predating the field age out within a day
+          -- of the API deploy, since a row is only ever probed for the
+          -- single day it was created in.
+          and coalesce((b.data->>'streakEligible')::boolean, b.amount != 0)
+          and b.is_redemption is not true
+      )
+      or exists (
+        select 1 from contract_perp_events e
+        where e.user_id = u.id
+          and e.ts >= millis_to_ts($1)
+          and e.ts < millis_to_ts($2)
+          and (
+            e.event_type in ('open', 'add')
+            -- Direct user closes write NO reason key (the coalesce falls
+            -- through to qualifying) and flip auto-closes write 'flip';
+            -- market settlement writes 'resolve-market' / 'resolve'. Keep
+            -- this a negative filter: a positive reason allowlist would
+            -- silently stop counting every direct close. Liquidation, ADL
+            -- and funding are separate event types entirely.
+            or (e.event_type = 'close'
+              and coalesce(e.data->>'reason', '')
+                not in ('resolve-market', 'resolve'))
+          )
+      )
+    )`,
+    [startMs, endMs]
+  )
 
 export const bulkIncrementBalances = async (
   db: SupabaseDirectClient,

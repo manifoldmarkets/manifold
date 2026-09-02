@@ -11,15 +11,13 @@ import {
   ENV_CONFIG,
   GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 } from 'common/envs/constants'
+import { getStreakDayStart } from 'common/streak'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
-import * as dayjs from 'dayjs'
-import * as timezone from 'dayjs/plugin/timezone'
-import * as utc from 'dayjs/plugin/utc'
 import * as admin from 'firebase-admin'
 import { first, uniq } from 'lodash'
 import { log } from 'shared/monitoring/log'
@@ -30,8 +28,6 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 export { log, metrics }
-dayjs.extend(utc)
-dayjs.extend(timezone)
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -414,19 +410,7 @@ export async function getTrendingContractsToEmail() {
 }
 
 export const getBettingStreakResetTimeBeforeNow = () => {
-  // Get current time in Pacific
-  const now = dayjs().tz('America/Los_Angeles')
-
-  // Get today's reset time (midnight Pacific)
-  const todayResetTime = now.startOf('day')
-
-  // Get yesterday's reset time
-  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
-
-  // Use yesterday's reset time if we haven't hit today's yet
-  const resetTime = (
-    now.isBefore(todayResetTime) ? yesterdayResetTime : todayResetTime
-  ).valueOf()
+  const resetTime = getStreakDayStart()
   log('betting streak reset time', resetTime)
   return resetTime
 }

@@ -15,7 +15,7 @@ export const sendStreakExpirationNotification = async () => {
     where
         (data->'lastBetTime')::bigint < $1
       and (data->'currentBettingStreak')::int > 0
-      and (data->'streakForgiveness')::int = 0
+      and coalesce((data->'streakForgiveness')::int, 0) = 0
     `,
     [mostRecentResetTime],
     (row) => [row.id as string, row.streak as number] as [string, number]

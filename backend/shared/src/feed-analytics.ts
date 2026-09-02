@@ -2,6 +2,11 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { VIEW_RECORDINGS_START } from 'common/feed'
 import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+// Extend locally rather than relying on a caller having extended first.
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export const getFeedConversionScores = async (
   pg: SupabaseDirectClient,
