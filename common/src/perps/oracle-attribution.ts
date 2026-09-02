@@ -14,7 +14,10 @@
 // Verification status of each claim below, because asserting a licence we
 // haven't read is its own problem:
 //   - OpenRouter — their dataset terms specify the exact credit line,
-//     including the data's as-of time. Hence `showAsOf`.
+//     including the data's as-of time. Hence `showAsOf`. The Anthropic-share
+//     and Chinese-lab-share feeds are computed from the same dataset payload
+//     and carry the identical credit; `showAsOf` on them is what makes
+//     insertOraclePrices refuse a point without the dataset's `as_of`.
 //   - VoteHub — their API documentation states "This API is licensed under
 //     Creative Commons Attribution 4.0 International". Read directly, so it
 //     carries a licence label and a link to the licence deed. The same
@@ -63,6 +66,17 @@ export type OracleAttribution = {
 
 export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   'openrouter-open-weight-share': {
+    source: 'OpenRouter (openrouter.ai/rankings)',
+    url: 'https://openrouter.ai/rankings',
+    showAsOf: true,
+  },
+  // Same dataset, same terms, same credit line with the as-of stamp.
+  'openrouter-anthropic-share': {
+    source: 'OpenRouter (openrouter.ai/rankings)',
+    url: 'https://openrouter.ai/rankings',
+    showAsOf: true,
+  },
+  'openrouter-chinese-lab-share': {
     source: 'OpenRouter (openrouter.ai/rankings)',
     url: 'https://openrouter.ai/rankings',
     showAsOf: true,

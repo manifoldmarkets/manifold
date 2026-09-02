@@ -8,6 +8,8 @@ import {
   CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
   NVDAX_USD_FEED_ID,
+  OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+  OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
@@ -213,6 +215,65 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     requiresSourceAsOf: true,
     gameDesign:
       'The trailing share can rise or fall and has coherent AI-adoption theses in both directions.',
+    latencyArbitrageRisk:
+      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 6 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  // Two more indexes over the same OpenRouter payload (lab-share.ts), with
+  // the open-weight entry's settings: same source, same cadence, same
+  // dataset terms (hence requiresSourceAsOf).
+  {
+    feedId: OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+    question: 'Anthropic share of OpenRouter tokens (%)',
+    requiredTopics: [
+      {
+        name: 'AI',
+        slugByEnvironment: {
+          DEV: 'ai',
+          PROD: 'ai',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: true,
+    gameDesign:
+      "Measures tokens routed THROUGH OpenRouter to Anthropic models, not Anthropic's total usage: most Anthropic traffic goes direct to Anthropic and the cloud providers and never touches OpenRouter, so this is a proxy for third-party-routed demand, not for Anthropic's market share. Read that way it is genuinely two-sided — a new Claude release, a pricing change, a competitor launch, or a shift in what OpenRouter's own user base builds all move it in either direction — and the trailing 7-day window keeps any single day's step small.",
+    latencyArbitrageRisk:
+      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 6 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+    question: 'Chinese-lab share of OpenRouter tokens (%)',
+    requiredTopics: [
+      {
+        name: 'AI',
+        slugByEnvironment: {
+          DEV: 'ai',
+          PROD: 'ai',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: true,
+    gameDesign:
+      'The share of OpenRouter-routed tokens attributed to labs headquartered in China (classified by author slug, list in common/perps/lab-share.ts). Two-sided with coherent theses both ways: open-weight Chinese releases and their price advantage push it up, frontier closed releases and enterprise routing patterns push it down. An author the list cannot place is excluded from both sides and, past 1% of tokens, pauses the feed until a one-line classification is deployed — expect an occasional short pause after a brand-new lab enters the top 50.',
     latencyArbitrageRisk:
       'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
     recommended: {

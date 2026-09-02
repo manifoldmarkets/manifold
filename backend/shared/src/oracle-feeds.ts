@@ -8,6 +8,8 @@ import {
   CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
   NVDAX_USD_FEED_ID,
+  OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+  OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
@@ -325,6 +327,43 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // a new VALUE, and we write a point every hour — so a 24h period would
     // free-run to an arbitrary time and let anyone flat at that instant pay
     // nothing.
+    updatePeriodMs: HOUR_MS,
+  },
+  // Two more indexes over the SAME OpenRouter payload, computed by the same
+  // hourly job from the rows it already fetched — no additional API calls
+  // against the 500/day account limit. Same window, same denominator, same
+  // exclusions as the open-weight index (common/perps/lab-share.ts), so the
+  // three are one comparable family, and the same cadence, staleness and
+  // funding reasoning as the entry above. Corruption is caught at the
+  // source by validateLabSharePublication: malformed rows or slugs and an
+  // incomplete window fail both feeds closed, and the Chinese-lab feed also
+  // refuses to publish when authors it cannot place exceed
+  // UNKNOWN_AUTHOR_TOKEN_SHARE_CAP.
+  {
+    id: OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+    description:
+      'Anthropic share of top-50 model tokens on OpenRouter, trailing 7 UTC days (%)',
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // A single publisher's share of a marketplace: anywhere from a few
+    // percent to a clear majority is a real reading, and the bounds only
+    // reject a 0-1 fraction or a share of the wrong population.
+    minPrice: 1,
+    maxPrice: 90,
+    staleAfterMs: 3 * HOUR_MS,
+    updatePeriodMs: HOUR_MS,
+  },
+  {
+    id: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+    description:
+      'Chinese-lab share of top-50 model tokens on OpenRouter, trailing 7 UTC days (%)',
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // A group of publishers can plausibly dominate the marketplace; the
+    // upper bound is set so that even near-total dominance still publishes.
+    minPrice: 1,
+    maxPrice: 95,
+    staleAfterMs: 3 * HOUR_MS,
     updatePeriodMs: HOUR_MS,
   },
 ]

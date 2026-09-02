@@ -1,4 +1,10 @@
 import {
+  CHINESE_LAB_LIST_VERSION,
+  LabShareFeed,
+  computeLabShare,
+  validateLabSharePublication,
+} from 'common/perps/lab-share'
+import {
   computeOpenWeightShare,
   OPEN_WEIGHT_LIST_VERSION,
   OPEN_WEIGHT_WINDOW_DAYS,
@@ -9,13 +15,21 @@ import {
   recordUnclassifiedInRankings,
   resolveModelClassifications,
 } from 'shared/perps/model-classifications'
-import { fetchOpenRouterRankings } from 'shared/openrouter-tokens'
 import {
+  OpenRouterRankings,
+  fetchOpenRouterRankings,
+} from 'shared/openrouter-tokens'
+import {
+  OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+  OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   insertOraclePrices,
 } from 'shared/oracle'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
@@ -43,6 +57,16 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 // though points are written hourly. The 7-day window dilutes that step ~7x.
 // We do not manufacture intraday movement to paper over this; a synthesised
 // price on a market people trade would be worse than a visible step.
+//
+// THREE INDEXES, ONE FETCH. The same payload also prices the Anthropic-share
+// and Chinese-lab-share feeds (common/perps/lab-share.ts): they use the same
+// window and the same denominator exclusions, so computing them here costs
+// zero additional OpenRouter calls against the 500/day account limit (this
+// job spends 24). Each feed is published INDEPENDENTLY through the same
+// validate → insert → apply sequence, with the previous point read per feed:
+// a refusal or a thrown error on one feed must never withhold the others,
+// and each has its own registry entry, bounds and market. The open-weight
+// path is unchanged; its log lines are kept verbatim.
 export const updateOpenRouterShare = async () => {
   try {
     await updateOpenRouterShareInternal()
@@ -65,7 +89,48 @@ const updateOpenRouterShareInternal = async () => {
     log.error('[openrouter] response has no valid meta.as_of — skipping')
     return
   }
+  const sourceTs = Date.parse(rankings.asOf)
 
+  await guarded('open-weight share', () =>
+    publishOpenWeightShare(pg, rankings, now, sourceTs)
+  )
+  await guarded('anthropic share', () =>
+    publishLabShare(
+      pg,
+      'anthropic',
+      OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+      rankings,
+      now,
+      sourceTs
+    )
+  )
+  await guarded('chinese-lab share', () =>
+    publishLabShare(
+      pg,
+      'chinese-lab',
+      OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+      rankings,
+      now,
+      sourceTs
+    )
+  )
+}
+
+/** One feed's failure is that feed's ERROR line, not the tick's. */
+const guarded = async (label: string, run: () => Promise<void>) => {
+  try {
+    await run()
+  } catch (err) {
+    log.error(`[openrouter] ${label} failed — ${err}`)
+  }
+}
+
+const publishOpenWeightShare = async (
+  pg: SupabaseDirectClient,
+  rankings: OpenRouterRankings,
+  now: number,
+  sourceTs: number
+) => {
   // Seed list plus any operator/auto overrides that landed since the last
   // deploy, so a classification takes effect on the next tick rather than the
   // next release.
@@ -89,7 +154,7 @@ const updateOpenRouterShareInternal = async () => {
   // has one: an exclusion nobody can see is indistinguishable from full
   // coverage, and if one ever carries real volume that is the signal to
   // resolve it through OpenRouter's `alias_target` rather than keep dropping
-  // it.
+  // it. Logged once here for all three indexes: they share the exclusion.
   if (result.compositeSlugs.length > 0)
     log.warn(
       `[openrouter] excluded ${result.compositeSlugs.length} router/alias slug(s) ` +
@@ -120,18 +185,81 @@ const updateOpenRouterShareInternal = async () => {
       )}pp)`
     )
 
-  const point = {
-    ts: now,
-    price: publication.share,
-    sourceTs: Date.parse(rankings.asOf),
+  await publishOpenRouterPoint(
+    pg,
+    OPENROUTER_OPEN_WEIGHT_FEED_ID,
+    'open-weight share',
+    publication.share,
+    now,
+    sourceTs,
+    `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +
+      `(${result.dates.length}d, as_of ${rankings.asOf}, classification ${OPEN_WEIGHT_LIST_VERSION})`
+  )
+}
+
+const publishLabShare = async (
+  pg: SupabaseDirectClient,
+  feed: LabShareFeed,
+  feedId: string,
+  rankings: OpenRouterRankings,
+  now: number,
+  sourceTs: number
+) => {
+  const label = feed === 'anthropic' ? 'anthropic share' : 'chinese-lab share'
+  const result = computeLabShare(feed, rankings.rows, OPEN_WEIGHT_WINDOW_DAYS)
+
+  const publication = validateLabSharePublication(result)
+  if (!publication.ok) {
+    // For the Chinese-lab feed the reason names the unknown author(s), their
+    // share of tokens, and the two constants one of which needs a line. That
+    // is the whole maintenance path (see lab-share.ts), so it pages.
+    log.error(`[openrouter] ${label} halted — ${publication.reason}`)
+    return
   }
-  const feed = getOracleFeed(OPENROUTER_OPEN_WEIGHT_FEED_ID)
-  // Fetch the previous point so validateOraclePoint can enforce strictly
-  // increasing timestamps against what is already stored.
+  if (publication.unknownAuthors.length > 0)
+    log.warn(
+      `[openrouter] ${label} publishing with unknown author(s) ` +
+        `${publication.unknownAuthors.join(', ')} excluded from both sides (${(
+          publication.unknownShareOfClassified * 100
+        ).toFixed(3)}% of classified tokens); ` +
+        `add to CHINESE_LAB_AUTHORS or KNOWN_NON_CHINESE_AUTHORS`
+    )
+
+  await publishOpenRouterPoint(
+    pg,
+    feedId,
+    label,
+    publication.share,
+    now,
+    sourceTs,
+    `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +
+      `(${result.dates.length}d, as_of ${rankings.asOf}, authors ${CHINESE_LAB_LIST_VERSION}; ` +
+      `other ${result.otherTokens.toExponential(3)} and composite ` +
+      `${result.compositeTokens.toExponential(3)} tokens excluded)`
+  )
+}
+
+/**
+ * The validate → insert → apply sequence, per feed. Fetches the previous
+ * point so validateOraclePoint can enforce strictly increasing timestamps
+ * against what is already stored; `sourceTs` is mandatory for these feeds
+ * (insertOraclePrices refuses a point without it, per OpenRouter's terms).
+ */
+const publishOpenRouterPoint = async (
+  pg: SupabaseDirectClient,
+  feedId: string,
+  label: string,
+  share: number,
+  now: number,
+  sourceTs: number,
+  detail: string
+) => {
+  const point = { ts: now, price: share, sourceTs }
+  const feed = getOracleFeed(feedId)
   const prev = await pg.oneOrNone<{ ts: string; price: number | string }>(
     `select ts, price from oracle_prices where feed_id = $1
      order by ts desc limit 1`,
-    [OPENROUTER_OPEN_WEIGHT_FEED_ID]
+    [feedId]
   )
   const rejection = feed
     ? validateOraclePoint(
@@ -141,23 +269,15 @@ const updateOpenRouterShareInternal = async () => {
           : null,
         point
       )
-    : `missing OracleFeedDef for ${OPENROUTER_OPEN_WEIGHT_FEED_ID}`
+    : `missing OracleFeedDef for ${feedId}`
   if (rejection) {
     log.error(
-      `[openrouter] rejected share ${publication.share.toFixed(
-        3
-      )} — ${rejection}`
+      `[openrouter] rejected ${label} ${share.toFixed(3)} — ${rejection}`
     )
     return
   }
 
-  await insertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, [point])
-  await applyOraclePointToLivePerps(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, point)
-  log(
-    `[openrouter] inserted ${publication.share.toFixed(
-      3
-    )}% open-weight share ` +
-      `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +
-      `(${result.dates.length}d, as_of ${rankings.asOf}, classification ${OPEN_WEIGHT_LIST_VERSION})`
-  )
+  await insertOraclePrices(pg, feedId, [point])
+  await applyOraclePointToLivePerps(pg, feedId, point)
+  log(`[openrouter] inserted ${share.toFixed(3)}% ${label} ${detail}`)
 }

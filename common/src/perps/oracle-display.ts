@@ -23,6 +23,8 @@ export const ORACLE_TICK_DECORATIONS: Readonly<
   // Index points on a 0-100 sentiment scale: a level, not a percentage.
   'crypto-fear-greed': {},
   'openrouter-open-weight-share': { suffix: '%' },
+  'openrouter-anthropic-share': { suffix: '%' },
+  'openrouter-chinese-lab-share': { suffix: '%' },
 }
 
 // Decimals needed to distinguish axis ticks `step` apart: 0 for steps >= 1,
