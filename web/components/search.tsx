@@ -975,6 +975,14 @@ export const useSearchResults = (props: {
     )
 
   const requestId = useRef(0)
+  const freshRequestAbortController = useRef<AbortController>()
+
+  useEffect(
+    () => () => {
+      freshRequestAbortController.current?.abort()
+    },
+    []
+  )
 
   // Helper function to check if search parameters have meaningfully changed
   const searchParamsChanged = (
@@ -991,6 +999,15 @@ export const useSearchResults = (props: {
   const querySearchResults = useEvent(
     async (freshQuery?: boolean, contractsOnly?: boolean) => {
       if (!isReady) return true
+      // A visibility callback can be queued while the user changes filters.
+      // Retry it after the fresh page lands instead of paging the new params
+      // with an offset and anchor from the old result set.
+      if (
+        !freshQuery &&
+        (freshRequestAbortController.current !== undefined ||
+          searchParamsChanged(searchParams, lastSearchParams))
+      )
+        return true
       const {
         q: query,
         s: sort,
@@ -1023,10 +1040,23 @@ export const useSearchResults = (props: {
         !contractsOnly && props.includeUsersAndTopics
 
       if (freshQuery || state.shouldLoadMore) {
+        // A no-op load-more must not cancel an active fresh search. Only
+        // replace the controller after we know this invocation will request.
+        if (freshQuery) freshRequestAbortController.current?.abort()
+        const abortController = new AbortController()
+        if (freshQuery) freshRequestAbortController.current = abortController
         const seenMarketCutoffTime = freshQuery
           ? Date.now()
           : state.seenMarketCutoffTime ?? Date.now()
         const id = ++requestId.current
+        const finishFreshRequest = () => {
+          if (
+            freshQuery &&
+            freshRequestAbortController.current === abortController
+          ) {
+            freshRequestAbortController.current = undefined
+          }
+        }
         let timeoutId: NodeJS.Timeout | undefined
         if (freshQuery) {
           timeoutId = setTimeout(() => {
@@ -1044,7 +1074,13 @@ export const useSearchResults = (props: {
         }
         try {
           if (contractType === 'POSTS') {
-            const posts = await api('get-posts', postApiParams)
+            const posts = await api('get-posts', postApiParams, {
+              signal: abortController.signal,
+            })
+            if (id !== requestId.current) {
+              finishFreshRequest()
+              return false
+            }
             const shouldLoadMore = posts.length === postApiParams.limit
             setState({
               contracts: [],
@@ -1061,6 +1097,7 @@ export const useSearchResults = (props: {
             }
 
             clearTimeout(timeoutId)
+            finishFreshRequest()
             setLoading(false)
             return shouldLoadMore
           }
@@ -1073,41 +1110,47 @@ export const useSearchResults = (props: {
             | APIResponse<'search-users'>
             | APIResponse<'search-groups'>
           >[] = [
-            api(endpoint, {
-              term: query,
-              filter,
-              sort,
-              contractType,
-              ...(() => {
-                const useCursor =
-                  !freshQuery && sort === 'newest' && !!state.contracts?.length
-                return useCursor
-                  ? {
-                      offset: 0,
-                      beforeTime:
-                        state.contracts![state.contracts!.length - 1]
-                          ?.createdTime,
-                    }
-                  : {
-                      offset: freshQuery ? 0 : state.contracts?.length ?? 0,
-                    }
-              })(),
-              limit: CONTRACTS_PER_SEARCH_PAGE,
-              topicSlug: topicSlug !== '' ? topicSlug : undefined,
-              creatorId: additionalFilter?.creatorId,
-              isPrizeMarket: isPrizeMarketString,
-              forYou,
-              token:
-                sweepState === '2'
-                  ? 'ALL'
-                  : sweepState === '1'
-                  ? 'CASH'
-                  : 'MANA',
-              gids,
-              liquidity: liquidity === '' ? undefined : parseInt(liquidity),
-              hasBets,
-              seenMarketCutoffTime,
-            }),
+            api(
+              endpoint,
+              {
+                term: query,
+                filter,
+                sort,
+                contractType,
+                ...(() => {
+                  const useCursor =
+                    !freshQuery &&
+                    sort === 'newest' &&
+                    !!state.contracts?.length
+                  return useCursor
+                    ? {
+                        offset: 0,
+                        beforeTime:
+                          state.contracts![state.contracts!.length - 1]
+                            ?.createdTime,
+                      }
+                    : {
+                        offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+                      }
+                })(),
+                limit: CONTRACTS_PER_SEARCH_PAGE,
+                topicSlug: topicSlug !== '' ? topicSlug : undefined,
+                creatorId: additionalFilter?.creatorId,
+                isPrizeMarket: isPrizeMarketString,
+                forYou,
+                token:
+                  sweepState === '2'
+                    ? 'ALL'
+                    : sweepState === '1'
+                    ? 'CASH'
+                    : 'MANA',
+                gids,
+                liquidity: liquidity === '' ? undefined : parseInt(liquidity),
+                hasBets,
+                seenMarketCutoffTime,
+              },
+              { signal: abortController.signal }
+            ),
           ]
 
           if (includeUsersAndTopics) {
@@ -1121,7 +1164,11 @@ export const useSearchResults = (props: {
             )
           }
           if (shouldSearchPostsWithContracts) {
-            searchPromises.push(api('get-posts', postApiParams))
+            searchPromises.push(
+              api('get-posts', postApiParams, {
+                signal: abortController.signal,
+              })
+            )
           }
 
           const results = await Promise.all(searchPromises)
@@ -1216,37 +1263,43 @@ export const useSearchResults = (props: {
             }
 
             clearTimeout(timeoutId)
+            finishFreshRequest()
             setLoading(false)
 
             return shouldLoadMore
           }
+          finishFreshRequest()
         } catch (error) {
+          clearTimeout(timeoutId)
+          finishFreshRequest()
+          if (error instanceof Error && error.name === 'AbortError') {
+            return false
+          }
           console.error('Error fetching search results:', error)
-          setLoading(false)
+          if (id === requestId.current) setLoading(false)
         }
       }
       return false
     }
   )
 
+  const searchTermChanged =
+    lastSearchParams !== null &&
+    searchParams[QUERY_KEY] !== lastSearchParams[QUERY_KEY]
   useDebouncedEffect(
     () => {
-      if (!state.contracts?.length) {
+      // One effect avoids duplicate initial requests. Term typing waits long
+      // enough for ordinary keystroke bursts to settle; filter changes stay
+      // responsive.
+      if (
+        state.contracts === undefined ||
+        searchParamsChanged(searchParams, lastSearchParams)
+      ) {
         querySearchResults(true)
       }
     },
-    50,
-    [isReady]
-  )
-  useDebouncedEffect(
-    () => {
-      // Only do a fresh query if search parameters have meaningfully changed
-      if (searchParamsChanged(searchParams, lastSearchParams)) {
-        querySearchResults(true)
-      }
-    },
-    50,
-    [JSON.stringify(searchParams)]
+    searchTermChanged ? 300 : 50,
+    [isReady, JSON.stringify(searchParams)]
   )
 
   const contracts = state.contracts

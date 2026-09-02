@@ -1,5 +1,6 @@
 import {
   BoundedSingleFlightCache,
+  HierarchicalRollingWindowGate,
   isValidQueryEmbedding,
   normalizeSemanticSearchTerm,
   queryEmbeddingCacheKey,
@@ -12,8 +13,6 @@ const makeCache = (now: () => number) =>
     maxEntries: 2,
     ttlMs: 100,
     maxInflightCreates: 2,
-    maxCreatesPerWindow: 2,
-    createWindowMs: 1_000,
     now,
   })
 
@@ -56,6 +55,25 @@ describe('BoundedSingleFlightCache', () => {
     ).rejects.toThrow('failed')
     await expect(cache.getOrCreate('key', async () => 'ok')).resolves.toBe('ok')
   })
+
+  it('checks caller allowance only for the request that creates a value', async () => {
+    const cache = makeCache(() => 0)
+    const create = jest.fn(async () => 'value')
+    const deny = jest.fn(() => false)
+
+    expect(cache.getOrCreate('key', create, deny)).toBeUndefined()
+    expect(create).not.toHaveBeenCalled()
+
+    const allow = jest.fn(() => true)
+    await expect(
+      Promise.all([
+        cache.getOrCreate('key', create, allow),
+        cache.getOrCreate('key', create, allow),
+      ])
+    ).resolves.toEqual(['value', 'value'])
+    expect(allow).toHaveBeenCalledTimes(1)
+    expect(create).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('RollingWindowGate', () => {
@@ -68,6 +86,32 @@ describe('RollingWindowGate', () => {
     expect(gate.take()).toBe(false)
     time = 1_000
     expect(gate.take()).toBe(true)
+  })
+})
+
+describe('HierarchicalRollingWindowGate', () => {
+  it("keeps one caller from consuming another caller's allowance", () => {
+    let time = 0
+    const gate = new HierarchicalRollingWindowGate(3, 2, 1_000, 100, () => time)
+
+    expect(gate.take('caller-a')).toBe(true)
+    expect(gate.take('caller-a')).toBe(true)
+    expect(gate.take('caller-a')).toBe(false)
+    expect(gate.take('caller-b')).toBe(true)
+
+    time = 1_000
+    expect(gate.take('caller-a')).toBe(true)
+  })
+
+  it('does not charge a caller when the global budget rejects it', () => {
+    let time = 0
+    const gate = new HierarchicalRollingWindowGate(1, 1, 1_000, 100, () => time)
+
+    expect(gate.take('caller-a')).toBe(true)
+    time = 500
+    expect(gate.take('caller-b')).toBe(false)
+    time = 1_000
+    expect(gate.take('caller-b')).toBe(true)
   })
 })
 

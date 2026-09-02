@@ -1,4 +1,5 @@
 import {
+  basicSearchSQL,
   getSemanticSearchContractSQL,
   shouldSuppressStaleSeenMarkets,
   staleSeenMarketsSql,
@@ -71,6 +72,7 @@ describe('staleSeenMarketsSql', () => {
     expect(sql).toContain('contracts.resolution_time')
     expect(sql).toContain('from answers a')
     expect(sql).toContain('a.created_time')
+    expect(sql).toContain('a.resolution_time > greatest')
     expect(sql).toContain('a.prob_change_day')
   })
 
@@ -86,11 +88,49 @@ describe('staleSeenMarketsSql', () => {
 
 describe('shouldSuppressStaleSeenMarkets', () => {
   it('uses an anchored seen set on every page', () => {
+    expect(shouldSuppressStaleSeenMarkets(0, 1_700_000_000_000)).toBe(true)
     expect(shouldSuppressStaleSeenMarkets(40, 1_700_000_000_000)).toBe(true)
   })
 
-  it('limits legacy unanchored callers to the first page', () => {
-    expect(shouldSuppressStaleSeenMarkets(0)).toBe(true)
+  it('leaves every page unchanged for legacy unanchored callers', () => {
+    expect(shouldSuppressStaleSeenMarkets(0)).toBe(false)
     expect(shouldSuppressStaleSeenMarkets(40)).toBe(false)
+  })
+})
+
+describe('basicSearchSQL', () => {
+  const basicSearchArgs = {
+    filter: 'open',
+    contractType: 'ALL',
+    limit: 40,
+    offset: 0,
+    sort: 'score',
+    token: 'MANA' as const,
+  }
+
+  it('does not suppress seen markets for ordinary basic browse', () => {
+    expect(basicSearchSQL(basicSearchArgs)).not.toContain('user_contract_views')
+  })
+
+  it('does not enable fallback suppression without an anchor', () => {
+    const sql = basicSearchSQL({
+      ...basicSearchArgs,
+      uid: 'user-id',
+      suppressStaleSeen: true,
+    })
+
+    expect(sql).not.toContain('user_contract_views')
+  })
+
+  it('can preserve stale-seen behavior for an anchored For You fallback', () => {
+    const sql = basicSearchSQL({
+      ...basicSearchArgs,
+      uid: 'user-id',
+      seenMarketCutoffTime: 1_700_000_000_000,
+      suppressStaleSeen: true,
+    })
+
+    expect(sql).toContain('user_contract_views')
+    expect(sql).toContain('millis_to_ts(1700000000000)')
   })
 })

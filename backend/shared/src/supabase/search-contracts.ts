@@ -50,8 +50,9 @@ const SEEN_PROB_MOVE_THRESHOLD = 0.05
 
 /**
  * Drops markets the user has already looked at and that are currently quiet
- * from For You results. Callers without a session anchor use this only on the
- * first page so a moving time boundary cannot create pagination holes.
+ * from For You results. Suppression requires a session anchor: applying it to
+ * only the first page shifts the raw offsets on later pages and duplicates a
+ * row, while applying an unanchored moving boundary can skip rows.
  *
  * Browse ranks on score alone, so the same top markets greet you every visit.
  * But "seen" is a weak signal and over-trusting it is worse than repetition,
@@ -106,6 +107,10 @@ export const staleSeenMarketsSql = (
                 ucv.last_card_view_ts,
                 ucv.last_page_view_ts
               )
+              or a.resolution_time > greatest(
+                ucv.last_card_view_ts,
+                ucv.last_page_view_ts
+              )
               or abs(coalesce(a.prob_change_day, 0))
                   > ${SEEN_PROB_MOVE_THRESHOLD}
             )
@@ -118,9 +123,9 @@ export const staleSeenMarketsSql = (
 }
 
 export const shouldSuppressStaleSeenMarkets = (
-  offset: number,
+  _offset: number,
   seenMarketCutoffTime?: number
-) => offset === 0 || seenMarketCutoffTime !== undefined
+) => seenMarketCutoffTime !== undefined
 
 type SharedSearchArgs = {
   filter: string
@@ -183,6 +188,12 @@ export async function getForYouSQL(
       ...args,
       uid: userId,
       privateUser,
+      // Keep the same diversity behavior when a new/low-activity user has no
+      // topic scores yet. Ordinary basic browse does not opt into this.
+      suppressStaleSeen: shouldSuppressStaleSeenMarkets(
+        offset,
+        seenMarketCutoffTime
+      ),
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
@@ -209,7 +220,8 @@ export async function getForYouSQL(
         [userId]
       ),
       // A client-provided session anchor keeps the seen set stable across
-      // every offset page. Legacy callers get safe top-page-only suppression.
+      // every offset page. Unanchored callers retain the old unsuppressed
+      // behavior so page-one filtering cannot shift their later offsets.
       shouldSuppressStaleSeenMarkets(offset, seenMarketCutoffTime) &&
         staleSeenMarketsSql(userId, seenMarketCutoffTime),
       privateUserBlocksSql(privateUser),
@@ -254,9 +266,10 @@ export async function getForYouSQL(
 export const basicSearchSQL = (
   args: SharedSearchArgs & {
     privateUser?: PrivateUser
+    suppressStaleSeen?: boolean
   }
 ) => {
-  const { sort, privateUser, beforeTime, ...rest } = args
+  const { sort, privateUser, beforeTime, suppressStaleSeen, ...rest } = args
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   const userBetsJoin = args.hasBets === '1' && args.uid && userBetsJoinSql
   const sql = renderSql(
@@ -268,6 +281,10 @@ export const basicSearchSQL = (
       ...rest,
       hideStonks: true,
     }),
+    suppressStaleSeen &&
+      args.uid &&
+      args.seenMarketCutoffTime !== undefined &&
+      staleSeenMarketsSql(args.uid, args.seenMarketCutoffTime),
     privateUserBlocksSql(privateUser),
     beforeTime && where(`created_time < millis_to_ts($1)`, [beforeTime]),
     lim(args.limit, beforeTime ? 0 : args.offset)

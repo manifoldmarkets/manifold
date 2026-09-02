@@ -25,12 +25,13 @@ import {
 } from 'shared/helpers/openai-utils'
 import {
   BoundedSingleFlightCache,
+  HierarchicalRollingWindowGate,
   isValidQueryEmbedding,
   normalizeSemanticSearchTerm,
   queryEmbeddingCacheKey,
-  RollingWindowGate,
   shouldAttemptSemanticFallback,
 } from 'shared/helpers/semantic-search-fallback'
+import { getIp } from 'shared/analytics'
 import { cacheGetJson, cacheSetJson } from 'shared/redis/cache'
 import { getPrivateUser, log } from 'shared/utils'
 import { z } from 'zod'
@@ -38,30 +39,46 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
-  auth
+  auth,
+  req
 ) => {
   const { includeLiteAnswers } = props
-  const contracts = await search(props, auth?.uid)
+  const contracts = await search(
+    props,
+    auth?.uid,
+    getSemanticCallerKey(auth?.uid, req)
+  )
   return contracts.map((c) => toLiteMarket(c, { includeLiteAnswers }))
 }
 
 export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   props,
-  auth
+  auth,
+  req
 ) => {
-  return await search(props, auth?.uid)
+  return await search(props, auth?.uid, getSemanticCallerKey(auth?.uid, req))
 }
 
 export const getRecentMarkets: APIHandler<'recent-markets'> = async (
   props,
-  auth
+  auth,
+  req
 ) => {
-  return await search(props, auth.uid)
+  return await search(props, auth.uid, getSemanticCallerKey(auth.uid, req))
+}
+
+const getSemanticCallerKey = (
+  userId: string | undefined,
+  req: Parameters<APIHandler<'search-markets'>>[2]
+) => {
+  if (userId) return `user:${userId}`
+  return `ip:${getIp(req) ?? 'unknown'}`
 }
 
 const search = async (
   props: z.infer<typeof searchProps>,
-  userId: string | undefined
+  userId: string | undefined,
+  semanticCallerKey: string
 ) => {
   const {
     term = '',
@@ -231,6 +248,7 @@ const search = async (
       groupIds,
       isPrizeMarket,
       lexicalResults,
+      callerKey: semanticCallerKey,
       pg,
     })
 
@@ -257,7 +275,9 @@ const SEMANTIC_FALLBACK_MAX_INFLIGHT = 10
 // still allows an unauthenticated caller to create an unbounded stream of
 // unique OpenAI requests. Exhausting this budget only disables the optional
 // fallback; lexical search continues normally.
-const SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_MINUTE = 5
+const SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_MINUTE = 60
+const SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_CALLER_PER_MINUTE = 10
+const SEMANTIC_FALLBACK_MAX_CALLER_BUCKETS = 10_000
 // Redis is deliberately disabled in the API deploy config, so keep a small
 // process-local LRU as the dependable cache and use Redis as an optional
 // cross-process layer. One embedding is roughly 30KB in JSON form; 100 entries
@@ -268,16 +288,23 @@ const queryEmbeddingCache = new BoundedSingleFlightCache<number[]>({
   maxEntries: LOCAL_QUERY_EMBEDDING_CACHE_MAX_ENTRIES,
   ttlMs: QUERY_EMBEDDING_CACHE_TTL_S * 1000,
   maxInflightCreates: SEMANTIC_FALLBACK_MAX_INFLIGHT,
-  maxCreatesPerWindow: SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_MINUTE,
-  createWindowMs: 60_000,
 })
+const semanticEmbeddingGate = new HierarchicalRollingWindowGate(
+  SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_MINUTE,
+  SEMANTIC_FALLBACK_MAX_EMBEDDINGS_PER_CALLER_PER_MINUTE,
+  60_000,
+  SEMANTIC_FALLBACK_MAX_CALLER_BUCKETS
+)
 // Cached terms bypass the embedding budget, so separately bound vector-query
 // work that an unauthenticated caller could otherwise repeat indefinitely.
-const SEMANTIC_FALLBACK_MAX_QUERIES_PER_MINUTE = 60
+const SEMANTIC_FALLBACK_MAX_QUERIES_PER_MINUTE = 120
+const SEMANTIC_FALLBACK_MAX_QUERIES_PER_CALLER_PER_MINUTE = 30
 const SEMANTIC_FALLBACK_MAX_QUERY_INFLIGHT = 10
-const semanticQueryGate = new RollingWindowGate(
+const semanticQueryGate = new HierarchicalRollingWindowGate(
   SEMANTIC_FALLBACK_MAX_QUERIES_PER_MINUTE,
-  60_000
+  SEMANTIC_FALLBACK_MAX_QUERIES_PER_CALLER_PER_MINUTE,
+  60_000,
+  SEMANTIC_FALLBACK_MAX_CALLER_BUCKETS
 )
 let inflightSemanticQueries = 0
 
@@ -290,11 +317,21 @@ const semanticFallback = async (
   > & {
     term: string
     lexicalResults: Contract[]
+    callerKey: string
     pg: SupabaseDirectClient
   }
 ): Promise<Contract[]> => {
-  const { term, uid, limit, offset, sort, beforeTime, lexicalResults, pg } =
-    props
+  const {
+    term,
+    uid,
+    limit,
+    offset,
+    sort,
+    beforeTime,
+    lexicalResults,
+    callerKey,
+    pg,
+  } = props
   const normalizedTerm = normalizeSemanticSearchTerm(term)
   if (
     !shouldAttemptSemanticFallback({
@@ -328,17 +365,21 @@ const semanticFallback = async (
       queryEmbeddingCache.set(cacheKey, embedding)
     }
     if (embedding === undefined) {
-      embedding = await queryEmbeddingCache.getOrCreate(cacheKey, async () => {
-        const generated = await generateEmbeddings(normalizedTerm, {
-          timeoutMs: SEMANTIC_FALLBACK_OPENAI_TIMEOUT_MS,
-          maxRetries: 0,
-        })
-        if (!isValidQueryEmbedding(generated)) return undefined
-        // Optional cross-process cache; cacheSetJson is a no-op when Redis is
-        // disabled and does not reject callers when Redis is unavailable.
-        void cacheSetJson(cacheKey, generated, QUERY_EMBEDDING_CACHE_TTL_S)
-        return generated
-      })
+      embedding = await queryEmbeddingCache.getOrCreate(
+        cacheKey,
+        async () => {
+          const generated = await generateEmbeddings(normalizedTerm, {
+            timeoutMs: SEMANTIC_FALLBACK_OPENAI_TIMEOUT_MS,
+            maxRetries: 0,
+          })
+          if (!isValidQueryEmbedding(generated)) return undefined
+          // Optional cross-process cache; cacheSetJson is a no-op when Redis is
+          // disabled and does not reject callers when Redis is unavailable.
+          void cacheSetJson(cacheKey, generated, QUERY_EMBEDDING_CACHE_TTL_S)
+          return generated
+        },
+        () => semanticEmbeddingGate.take(callerKey)
+      )
       // No key configured, or OpenAI is down. A search with no results is a
       // worse page, not a broken one — leave it as it was.
       if (!embedding) return []
@@ -346,7 +387,7 @@ const semanticFallback = async (
 
     if (
       inflightSemanticQueries >= SEMANTIC_FALLBACK_MAX_QUERY_INFLIGHT ||
-      !semanticQueryGate.take()
+      !semanticQueryGate.take(callerKey)
     )
       return []
     inflightSemanticQueries++

@@ -72,10 +72,62 @@ export class RollingWindowGate {
   }
 }
 
+/** Atomically enforces a hard global ceiling and a fair per-caller budget. */
+export class HierarchicalRollingWindowGate {
+  private globalEventTimes: number[] = []
+  private readonly eventTimesByKey = new Map<string, number[]>()
+
+  constructor(
+    private readonly maxGlobalEvents: number,
+    private readonly maxEventsPerKey: number,
+    private readonly windowMs: number,
+    private readonly maxKeys: number,
+    private readonly now: Clock = Date.now
+  ) {}
+
+  take(key: string) {
+    const now = this.now()
+    const globalEventTimes = this.globalEventTimes.filter(
+      (time) => now - time < this.windowMs
+    )
+    this.globalEventTimes = globalEventTimes
+
+    // Reject globally before touching caller state. Otherwise attempts during
+    // saturation can leave an innocent caller locally blocked after global
+    // capacity has recovered.
+    if (globalEventTimes.length >= this.maxGlobalEvents) return false
+
+    const eventTimes = (this.eventTimesByKey.get(key) ?? []).filter(
+      (time) => now - time < this.windowMs
+    )
+
+    if (eventTimes.length >= this.maxEventsPerKey) {
+      this.remember(key, eventTimes)
+      return false
+    }
+
+    globalEventTimes.push(now)
+    eventTimes.push(now)
+    this.remember(key, eventTimes)
+    return true
+  }
+
+  private remember(key: string, eventTimes: number[]) {
+    // Refresh insertion order so abandoned callers are evicted before active
+    // ones when a public endpoint sees more distinct IPs than the bound.
+    this.eventTimesByKey.delete(key)
+    this.eventTimesByKey.set(key, eventTimes)
+    while (this.eventTimesByKey.size > this.maxKeys) {
+      const oldestKey = this.eventTimesByKey.keys().next().value
+      if (oldestKey === undefined) break
+      this.eventTimesByKey.delete(oldestKey)
+    }
+  }
+}
+
 export class BoundedSingleFlightCache<T> {
   private readonly values = new Map<string, { value: T; expiresAt: number }>()
   private readonly pending = new Map<string, Promise<T | undefined>>()
-  private readonly createGate: RollingWindowGate
   private inflightCreates = 0
 
   constructor(
@@ -83,17 +135,9 @@ export class BoundedSingleFlightCache<T> {
       maxEntries: number
       ttlMs: number
       maxInflightCreates: number
-      maxCreatesPerWindow: number
-      createWindowMs: number
       now?: Clock
     }
-  ) {
-    this.createGate = new RollingWindowGate(
-      options.maxCreatesPerWindow,
-      options.createWindowMs,
-      options.now
-    )
-  }
+  ) {}
 
   get(key: string) {
     const cached = this.values.get(key)
@@ -121,7 +165,11 @@ export class BoundedSingleFlightCache<T> {
     }
   }
 
-  getOrCreate(key: string, create: () => Promise<T | undefined>) {
+  getOrCreate(
+    key: string,
+    create: () => Promise<T | undefined>,
+    allowCreate: () => boolean = () => true
+  ) {
     const cached = this.get(key)
     if (cached !== undefined) return Promise.resolve(cached)
 
@@ -129,7 +177,7 @@ export class BoundedSingleFlightCache<T> {
     if (pending) return pending
     if (
       this.inflightCreates >= this.options.maxInflightCreates ||
-      !this.createGate.take()
+      !allowCreate()
     )
       return undefined
 
