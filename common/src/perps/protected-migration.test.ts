@@ -115,7 +115,10 @@ describe('allocateLastResortReserveBasis', () => {
     expect(allocation[1].reserveBasis).toBeCloseTo(500 - 100 / 3, 9)
   })
 
-  it('throws when nobody is underwater at the mark', () => {
+  it('is refused when nobody is underwater at the mark: without paper losses the side is in the deficit class, never top-up', () => {
+    // With every row at or above its cost basis, Rc = C, so B < C means
+    // B < Rc: the deficit class, which the allocation refuses by name. A
+    // top-up-class side with no paper loss cannot exist.
     const state: PerpState = {
       pool: { L: 900, S: 0 },
       positions: [
@@ -128,9 +131,10 @@ describe('allocateLastResortReserveBasis', () => {
         }),
       ],
     }
-    // At 100 the class is top-up-by-numbers (B < C) but Rc = C so the
-    // decision tree says deficit... use a price where V = c exactly.
-    expect(() => allocateLastResortReserveBasis(state, 'long', 100)).toThrow()
+    expect(classifyPerpMigrationSide(state, 'long', 100).class).toBe('deficit')
+    expect(() => allocateLastResortReserveBasis(state, 'long', 100)).toThrow(
+      'top-up'
+    )
   })
 })
 

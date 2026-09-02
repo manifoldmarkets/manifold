@@ -3,12 +3,14 @@ import { z } from 'zod'
 import { API } from 'common/api/schema'
 import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
+import { PERP_MIN_CLOSE_FRACTION } from 'common/perps/protected-basis'
 import {
   PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_IMPACT_MAX,
   PERP_TAKER_FEE_BPS_DEFAULT,
 } from 'common/perps/fees'
 import {
+  closePerpPositionSchema,
   createPerpSchema,
   LiteMarket,
   placePerpTradeSchema,
@@ -417,5 +419,37 @@ describe('update-perp-config props', () => {
         takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX,
       }).success
     ).toBe(true)
+  })
+})
+
+describe('closePerpPositionSchema', () => {
+  const base = {
+    contractId: 'c1',
+    direction: 'long' as const,
+    idempotencyKey: 'abcdefghij',
+    expectedOpenedTime: 0,
+  }
+
+  it('accepts a whole close (omitted or exactly 1) and any fraction at or above the minimum', () => {
+    expect(closePerpPositionSchema.safeParse(base).success).toBe(true)
+    for (const fraction of [1, PERP_MIN_CLOSE_FRACTION, 0.5, 0.999])
+      expect(
+        closePerpPositionSchema.safeParse({ ...base, fraction }).success
+      ).toBe(true)
+  })
+
+  it('rejects fractions that cannot change the position, above one, non-finite, or not numbers', () => {
+    for (const fraction of [
+      PERP_MIN_CLOSE_FRACTION * 0.99,
+      0,
+      -0.5,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      '0.5',
+    ])
+      expect(
+        closePerpPositionSchema.safeParse({ ...base, fraction }).success
+      ).toBe(false)
   })
 })
