@@ -27,7 +27,10 @@ import {
   JOB_INTERESTS,
   JOB_REGIONS,
   JOB_SKILLS,
+  JobSeekerAdminRow,
   JobSeekerInterest,
+  JobSeekerTopicProfit,
+  JobSeekerTopicRank,
 } from 'common/job-seeker'
 import { League } from 'common/leagues'
 import { type LinkPreview } from 'common/link-preview'
@@ -2002,6 +2005,27 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { interest: JobSeekerInterest | null },
+  },
+  'get-job-seekers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { seekers: JobSeekerAdminRow[] },
+  },
+  'get-job-seeker-topics': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ userId: z.string() }).strict(),
+    returns: {} as { topics: JobSeekerTopicProfit[] },
+  },
+  'get-job-seeker-topic-rank': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ topic: z.string() }).strict(),
+    returns: {} as { participants: number; ranks: JobSeekerTopicRank[] },
   },
   headlines: {
     method: 'GET',
