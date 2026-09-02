@@ -383,6 +383,9 @@ describe('the author lists', () => {
       'alibaba',
       'kwaipilot',
     ])
-      expect([author, CHINESE_LAB_AUTHORS[author]]).toBeDefined()
+      expect([author, CHINESE_LAB_AUTHORS[author] != null]).toEqual([
+        author,
+        true,
+      ])
   })
 })
