@@ -2,7 +2,7 @@ import { APIParams, APIResponse } from 'common/api/schema'
 import { Bet, LimitBet } from 'common/bet'
 import { User } from 'common/user'
 import { sortBy, uniq, uniqBy } from 'lodash'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
@@ -230,8 +230,13 @@ export const useUnfilledBetsAndBalanceByUserId = (
   const userIds = uniq(unfilledBets.map((b) => b.userId))
   const balances = useUserBalances(userIds, usersApi, useIsPageVisible) ?? []
 
-  const balanceByUserId = Object.fromEntries(
-    balances.map(({ id, balance }) => [id, balance])
+  // Memoize so the returned object keeps a stable identity across renders (it
+  // only changes when balances actually change). This lets consumers memoize
+  // expensive derived work (e.g. bet-return previews) instead of recomputing
+  // it on every unrelated re-render.
+  const balanceByUserId = useMemo(
+    () => Object.fromEntries(balances.map(({ id, balance }) => [id, balance])),
+    [balances]
   )
   return { unfilledBets, balanceByUserId }
 }
