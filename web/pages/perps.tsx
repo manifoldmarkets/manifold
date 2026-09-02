@@ -712,38 +712,36 @@ export default function PerpsPage(props: { perps: Contract[] }) {
       <TickerTape contracts={sorted} week={week} onSelect={selectRow} />
 
       <Col className="w-full gap-8 px-3 py-5 sm:px-6">
-        {/* Back sits left of the title, as on /election. It flanks the whole
-            header (title + stats) rather than just the title so that when the
-            stats wrap onto their own line they stay aligned under the title
-            instead of under the arrow. */}
-        <Row className="items-start gap-2">
-          <BackButton className="mt-0.5 shrink-0" />
-          <Row className="min-w-0 flex-1 flex-wrap items-end justify-between gap-4">
-            <Col className="gap-1">
+        <Row className="flex-wrap items-end justify-between gap-4">
+          <Col className="gap-1">
+            {/* Back sits inline with the heading only (as on the sports
+                dashboards), so the subtitle and the stats strip below keep
+                the page's left edge. */}
+            <Row className="items-center gap-1">
+              <BackButton size="xs" className="-ml-2 shrink-0" />
               <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
                 Perpetuals
               </h1>
-              <div className="text-ink-600 text-sm sm:text-base">
-                Go long or short on a live number, with leverage. No expiry
-                date.{' '}
-                <a
-                  href="#perps-explainer"
-                  className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
-                >
-                  How perps work ↓
-                </a>
-              </div>
-            </Col>
-            <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">
-              <Stat label="24h volume" amount={stats.volume24h} />
-              <Stat label="Open interest" amount={stats.openInterest} />
-              <Stat label="Traders" value={stats.traders.toLocaleString()} />
-              <Stat label="Markets" value={String(open.length)} />
-              {HUB_FEATURES.topMover && (
-                <TopMover contracts={open} week={week} onSelect={selectRow} />
-              )}
+            </Row>
+            <div className="text-ink-600 text-sm sm:text-base">
+              Go long or short on a live number, with leverage. No expiry date.{' '}
+              <a
+                href="#perps-explainer"
+                className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
+              >
+                How perps work ↓
+              </a>
             </div>
-          </Row>
+          </Col>
+          <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">
+            <Stat label="24h volume" amount={stats.volume24h} />
+            <Stat label="Open interest" amount={stats.openInterest} />
+            <Stat label="Traders" value={stats.traders.toLocaleString()} />
+            <Stat label="Markets" value={String(open.length)} />
+            {HUB_FEATURES.topMover && (
+              <TopMover contracts={open} week={week} onSelect={selectRow} />
+            )}
+          </div>
         </Row>
 
         {selected ? (
