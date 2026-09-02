@@ -60,6 +60,7 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { checkStatsFreshness } from './check-stats-freshness'
 import { updatePerps } from './update-perps'
 import {
   ORACLE_TICK_PERIOD_MS,
@@ -394,6 +395,11 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'update-stats',
       '0 20 4 * * *', // daily at 4:20 AM LA
       () => updateStatsCore(7)
+    ),
+    createJob(
+      'check-stats-freshness',
+      '0 0 8 * * *', // daily at 8:00 AM LA, a few hours after update-stats
+      checkStatsFreshness
     ),
     createJob(
       'update-trump-approval',
