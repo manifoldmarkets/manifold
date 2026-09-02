@@ -4,7 +4,6 @@ import {
   isValidQueryEmbedding,
   normalizeSemanticSearchTerm,
   queryEmbeddingCacheKey,
-  RollingWindowGate,
   shouldAttemptSemanticFallback,
 } from './semantic-search-fallback'
 
@@ -73,19 +72,6 @@ describe('BoundedSingleFlightCache', () => {
     ).resolves.toEqual(['value', 'value'])
     expect(allow).toHaveBeenCalledTimes(1)
     expect(create).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('RollingWindowGate', () => {
-  it('enforces its budget and recovers when the window expires', () => {
-    let time = 0
-    const gate = new RollingWindowGate(2, 1_000, () => time)
-
-    expect(gate.take()).toBe(true)
-    expect(gate.take()).toBe(true)
-    expect(gate.take()).toBe(false)
-    time = 1_000
-    expect(gate.take()).toBe(true)
   })
 })
 

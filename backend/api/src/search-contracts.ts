@@ -29,6 +29,7 @@ import {
   HierarchicalRollingWindowGate,
   isValidQueryEmbedding,
   normalizeSemanticSearchTerm,
+  QUERY_EMBEDDING_DIMENSIONS,
   queryEmbeddingCacheKey,
   shouldAttemptSemanticFallback,
 } from 'shared/helpers/semantic-search-fallback'
@@ -40,15 +41,16 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
-  auth,
-  req
+  auth
 ) => {
   const { includeLiteAnswers } = props
-  const contracts = await search(
-    props,
-    auth?.uid,
-    getSemanticCallerKey(auth?.uid, req)
-  )
+  // No semantic tail on the documented endpoint: LiteMarket carries no
+  // searchMatchType marker, so similarity neighbours would be
+  // indistinguishable from real matches to API consumers doing exact-title
+  // existence checks, and to the MCP server, which shares this handler.
+  const contracts = await search(props, auth?.uid, {
+    allowSemanticFallback: false,
+  })
   return contracts.map((c) => toLiteMarket(c, { includeLiteAnswers }))
 }
 
@@ -57,29 +59,37 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   auth,
   req
 ) => {
-  return await search(props, auth?.uid, getSemanticCallerKey(auth?.uid, req))
+  return await search(props, auth?.uid, {
+    allowSemanticFallback: true,
+    semanticCallerKey: getSemanticCallerKey(auth?.uid, req),
+  })
 }
 
 export const getRecentMarkets: APIHandler<'recent-markets'> = async (
   props,
-  auth,
-  req
+  auth
 ) => {
-  return await search(props, auth.uid, getSemanticCallerKey(auth.uid, req))
+  return await search(props, auth.uid, { allowSemanticFallback: false })
 }
 
 const getSemanticCallerKey = (
   userId: string | undefined,
-  req: Parameters<APIHandler<'search-markets'>>[2]
+  req: Parameters<APIHandler<'search-markets-full'>>[2]
 ) => {
   if (userId) return `user:${userId}`
   return `ip:${getIp(req) ?? 'unknown'}`
 }
 
+// The caller key only matters when the fallback can run, so tie the two
+// together rather than making every endpoint derive one.
+type SearchOptions =
+  | { allowSemanticFallback: false }
+  | { allowSemanticFallback: true; semanticCallerKey: string }
+
 const search = async (
   props: z.infer<typeof searchProps>,
   userId: string | undefined,
-  semanticCallerKey: string
+  options: SearchOptions
 ) => {
   const {
     term = '',
@@ -246,6 +256,7 @@ const search = async (
         searchMatchType: 'lexical',
       })
     )
+    if (!options.allowSemanticFallback) return markedLexicalResults
 
     const semanticResults: FullMarketSearchResult[] = (
       await semanticFallback({
@@ -256,7 +267,7 @@ const search = async (
         groupIds,
         isPrizeMarket,
         lexicalResults,
-        callerKey: semanticCallerKey,
+        callerKey: options.semanticCallerKey,
         pg,
       })
     ).map((contract) => ({
@@ -380,11 +391,30 @@ const semanticFallback = async (
       embedding = await queryEmbeddingCache.getOrCreate(
         cacheKey,
         async () => {
-          const generated = await generateEmbeddings(normalizedTerm, {
+          // Widened on purpose: the SDK type promises number[], but the
+          // dimension check is about what the API actually sent back, and the
+          // predicate below would otherwise narrow a mismatch to never.
+          const generated: unknown = await generateEmbeddings(normalizedTerm, {
             timeoutMs: SEMANTIC_FALLBACK_OPENAI_TIMEOUT_MS,
             maxRetries: 0,
           })
-          if (!isValidQueryEmbedding(generated)) return undefined
+          // Request failures are logged inside generateEmbeddings.
+          if (generated === undefined) return undefined
+          if (!isValidQueryEmbedding(generated)) {
+            // Paid for but unusable: a model or dimension change would
+            // otherwise switch the feature off with nothing in the logs.
+            log.error('Semantic search fallback got an unusable embedding', {
+              model: EMBEDDING_MODEL,
+              expectedDimensions: QUERY_EMBEDDING_DIMENSIONS,
+              receivedType: Array.isArray(generated)
+                ? 'array'
+                : typeof generated,
+              receivedDimensions: Array.isArray(generated)
+                ? generated.length
+                : undefined,
+            })
+            return undefined
+          }
           // Optional cross-process cache; cacheSetJson is a no-op when Redis is
           // disabled and does not reject callers when Redis is unavailable.
           void cacheSetJson(cacheKey, generated, QUERY_EMBEDDING_CACHE_TTL_S)

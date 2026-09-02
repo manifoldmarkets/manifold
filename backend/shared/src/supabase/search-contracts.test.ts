@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   basicSearchSQL,
   getSemanticSearchContractSQL,
@@ -76,25 +77,52 @@ describe('staleSeenMarketsSql', () => {
     expect(sql).toContain('a.prob_change_day')
   })
 
-  it('can anchor the seen window for stable offset pagination', () => {
+  it('anchors the seen window on server time without a cutoff', () => {
+    expect(sql).toContain("between now() - interval '7 days'")
+    expect(sql).toContain("and now() - interval '1 hour'")
+  })
+
+  it('anchors both bounds of the seen window on the cutoff alone', () => {
     const anchoredSql = renderSql(
       staleSeenMarketsSql('user-id', 1_700_000_000_000)
     )
 
-    expect(anchoredSql).toContain('millis_to_ts(1700000000000)')
-    expect(anchoredSql).not.toContain('between now()')
+    expect(anchoredSql).toContain(
+      "between millis_to_ts(1700000000000) - interval '7 days'"
+    )
+    expect(anchoredSql).toContain(
+      "and millis_to_ts(1700000000000) - interval '1 hour'"
+    )
+    expect(anchoredSql).not.toContain('now()')
   })
 })
 
 describe('shouldSuppressStaleSeenMarkets', () => {
-  it('uses an anchored seen set on every page', () => {
-    expect(shouldSuppressStaleSeenMarkets(0, 1_700_000_000_000)).toBe(true)
-    expect(shouldSuppressStaleSeenMarkets(40, 1_700_000_000_000)).toBe(true)
+  const now = 1_700_000_000_000
+
+  it('applies an anchored seen set', () => {
+    expect(shouldSuppressStaleSeenMarkets(now, now)).toBe(true)
+    expect(shouldSuppressStaleSeenMarkets(now - HOUR_MS, now)).toBe(true)
   })
 
-  it('leaves every page unchanged for legacy unanchored callers', () => {
-    expect(shouldSuppressStaleSeenMarkets(0)).toBe(false)
-    expect(shouldSuppressStaleSeenMarkets(40)).toBe(false)
+  it('tolerates request latency and a slightly fast client clock', () => {
+    expect(shouldSuppressStaleSeenMarkets(now + MINUTE_MS, now)).toBe(true)
+  })
+
+  it('refuses an anchor far ahead of server time', () => {
+    expect(shouldSuppressStaleSeenMarkets(now + HOUR_MS, now)).toBe(false)
+  })
+
+  it('pins the tolerance at five minutes', () => {
+    expect(shouldSuppressStaleSeenMarkets(now + 5 * MINUTE_MS, now)).toBe(true)
+    expect(shouldSuppressStaleSeenMarkets(now + 5 * MINUTE_MS + 1, now)).toBe(
+      false
+    )
+  })
+
+  it('never applies without an anchor', () => {
+    expect(shouldSuppressStaleSeenMarkets()).toBe(false)
+    expect(shouldSuppressStaleSeenMarkets(undefined)).toBe(false)
   })
 })
 
@@ -132,5 +160,16 @@ describe('basicSearchSQL', () => {
 
     expect(sql).toContain('user_contract_views')
     expect(sql).toContain('millis_to_ts(1700000000000)')
+  })
+
+  it('refuses an anchor far ahead of server time', () => {
+    const sql = basicSearchSQL({
+      ...basicSearchArgs,
+      uid: 'user-id',
+      seenMarketCutoffTime: Date.now() + HOUR_MS,
+      suppressStaleSeen: true,
+    })
+
+    expect(sql).not.toContain('user_contract_views')
   })
 })

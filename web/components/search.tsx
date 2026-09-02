@@ -980,6 +980,8 @@ export const useSearchResults = (props: {
 
   const requestId = useRef(0)
   const freshRequestAbortController = useRef<AbortController>()
+  const initialQuery = useRef<string>()
+  const completedInThisMount = useRef(false)
 
   useEffect(
     () => () => {
@@ -1098,6 +1100,7 @@ export const useSearchResults = (props: {
             // Store the search params that were used for this query
             if (freshQuery) {
               setLastSearchParams(searchParams)
+              completedInThisMount.current = true
             }
 
             clearTimeout(timeoutId)
@@ -1151,7 +1154,11 @@ export const useSearchResults = (props: {
                 gids,
                 liquidity: liquidity === '' ? undefined : parseInt(liquidity),
                 hasBets,
-                seenMarketCutoffTime,
+                // Server only suppresses on For You; sending it elsewhere only
+                // risks strict-schema rejections from an older API worker
+                // during a rolling deploy.
+                seenMarketCutoffTime:
+                  forYou === '1' ? seenMarketCutoffTime : undefined,
               },
               { signal: abortController.signal }
             ),
@@ -1225,8 +1232,10 @@ export const useSearchResults = (props: {
                     'id'
                   )
 
+            // Semantic rows only pad page one, so they never imply a page two.
             const shouldLoadMore =
-              newContracts.length === CONTRACTS_PER_SEARCH_PAGE
+              newContracts.filter((c) => c.searchMatchType !== 'semantic')
+                .length === CONTRACTS_PER_SEARCH_PAGE
 
             setState({
               contracts: freshContracts,
@@ -1240,6 +1249,7 @@ export const useSearchResults = (props: {
             // Store the search params that were used for this query
             if (freshQuery) {
               setLastSearchParams(searchParams)
+              completedInThisMount.current = true
             }
 
             clearTimeout(timeoutId)
@@ -1283,12 +1293,26 @@ export const useSearchResults = (props: {
     cancelFreshRequest()
   }, [serializedSearchParams, cancelFreshRequest])
 
+  // The URL query reaches searchParams a render after isReady, so the query
+  // the page mounted with is whatever the first debounced pass over ready
+  // params sees. Until then the current query stands in for it, which keeps
+  // a deep-linked load as responsive as a blank one.
+  // lastSearchParams outlives this mount, so until a request completes here
+  // it may describe an earlier visit, and a deep-linked query would look
+  // typed next to it.
   const requestDebounceMs = getSearchRequestDebounceMs(
     searchParams[QUERY_KEY],
-    lastSearchParams?.[QUERY_KEY]
+    completedInThisMount.current ? lastSearchParams?.[QUERY_KEY] : undefined,
+    initialQuery.current ?? searchParams[QUERY_KEY]
   )
   useDebouncedEffect(
     () => {
+      // Whether this pass issues the first request or finds results restored
+      // from an earlier visit, the query it sees is the one this mount
+      // committed to, so typing after it waits like a keystroke.
+      if (isReady && initialQuery.current === undefined) {
+        initialQuery.current = searchParams[QUERY_KEY]
+      }
       // One effect avoids duplicate initial requests. Term typing waits long
       // enough for ordinary keystroke bursts to settle; filter changes stay
       // responsive.
