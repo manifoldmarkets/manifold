@@ -38,6 +38,7 @@ import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
+import { BackButton } from 'web/components/contract/back-button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { PerpBetPanel } from 'web/components/perps/perp-bet-panel'
 import { PerpChart, prefetchPerpChart } from 'web/components/perps/perp-chart'
@@ -712,20 +713,25 @@ export default function PerpsPage(props: { perps: Contract[] }) {
 
       <Col className="w-full gap-8 px-3 py-5 sm:px-6">
         <Row className="flex-wrap items-end justify-between gap-4">
-          <Col className="gap-1">
-            <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
-              Perpetuals
-            </h1>
-            <div className="text-ink-600 text-sm sm:text-base">
-              Go long or short on a live number, with leverage. No expiry date.{' '}
-              <a
-                href="#perps-explainer"
-                className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
-              >
-                How perps work ↓
-              </a>
-            </div>
-          </Col>
+          {/* Back sits left of the title, as on /election. */}
+          <Row className="items-center gap-2">
+            <BackButton />
+            <Col className="gap-1">
+              <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
+                Perpetuals
+              </h1>
+              <div className="text-ink-600 text-sm sm:text-base">
+                Go long or short on a live number, with leverage. No expiry
+                date.{' '}
+                <a
+                  href="#perps-explainer"
+                  className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
+                >
+                  How perps work ↓
+                </a>
+              </div>
+            </Col>
+          </Row>
           <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">
             <Stat label="24h volume" amount={stats.volume24h} />
             <Stat label="Open interest" amount={stats.openInterest} />
