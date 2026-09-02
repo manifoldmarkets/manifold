@@ -17,7 +17,9 @@
 //     including the data's as-of time. Hence `showAsOf`.
 //   - VoteHub — their API documentation states "This API is licensed under
 //     Creative Commons Attribution 4.0 International". Read directly, so it
-//     carries a licence label and a link to the licence deed.
+//     carries a licence label and a link to the licence deed. The same
+//     documentation page covers every `/averages/<key>/values` endpoint, so
+//     the generic-ballot and Vance favorability feeds carry the same credit.
 //   - NESO — publishes under an open licence requiring attribution, but the
 //     exact current licence text was NOT read directly. So it gets a credit
 //     and a link, and no licence label we can't back up.
@@ -78,6 +80,23 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     // condition that the source is credited. The oracle mirrors their
     // published average, so this credit IS the compliance, not decoration —
     // which is why the licence link is required rather than ornamental.
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  // Two more VoteHub published averages, read from the same
+  // polling.votehub.com API under the same documentation and therefore the
+  // same CC BY 4.0 statement quoted above (verified for the Trump feed; the
+  // statement covers the API as a whole, not one endpoint). Identical credit,
+  // identical obligation: the credit IS the compliance.
+  'votehub-generic-ballot-2026': {
+    source: 'VoteHub',
+    url: 'https://votehub.com',
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  'vance-favorability': {
+    source: 'VoteHub',
+    url: 'https://votehub.com',
     licence: 'CC BY 4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
   },

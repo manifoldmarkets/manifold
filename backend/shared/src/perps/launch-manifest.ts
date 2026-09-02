@@ -11,6 +11,8 @@ import {
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
+  VANCE_FAVORABILITY_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
 } from '../oracle'
 import { getOracleFeed } from '../oracle-feeds'
 
@@ -96,6 +98,66 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
       "Two-sided political exposure, but VoteHub's time-weighted average is slow and often unchanged between poll releases.",
     latencyArbitrageRisk:
       "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  // The other two VoteHub averages: same publisher, same cadence, same
+  // conservative settings as the Trump market. Both are shares, never
+  // margins, so the price is always positive and both directions are
+  // tradeable.
+  {
+    feedId: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+    question: 'Democratic share of 2026 generic ballot (VoteHub avg, %)',
+    requiredTopics: [
+      {
+        name: 'Politics',
+        slugByEnvironment: {
+          DEV: 'politics-default',
+          PROD: 'politics-default',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
+    gameDesign:
+      "Two-sided: the Democratic share of the generic ballot moves with the national environment and has coherent theses on both sides, but VoteHub's time-weighted average is slow and often unchanged between poll releases. The midterm is 2026-11-03; polling of a 2026 generic ballot stops after it and the published average goes quiet, so this market needs a close date or a resolution plan (settle at the last published average) set before then rather than being left to run into a frozen feed.",
+    latencyArbitrageRisk:
+      "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: VANCE_FAVORABILITY_FEED_ID,
+    question: 'JD Vance favorability (VoteHub avg, %)',
+    requiredTopics: [
+      {
+        name: 'Politics',
+        slugByEnvironment: {
+          DEV: 'politics-default',
+          PROD: 'politics-default',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
+    gameDesign:
+      "Two-sided political exposure on a figure whose standing is contested in both directions, priced as the Favorable share rather than net favorability so the level is always positive. Favorability is polled less often than presidential approval, so expect longer flat stretches between releases than the Trump market shows, and expect the independent cross-check to report 'unchecked' more often.",
+    latencyArbitrageRisk:
+      "Same as the other VoteHub feeds: the value is public and the feed is polled every 5 minutes against VoteHub's max-age=300 cache, so a trader can see a new average at most a few minutes before the market does. Fewer polls means fewer, larger steps, each of them public before the poll reaches the market.",
     recommended: {
       maxLeverage: 3,
       annualMaxFundingRate: 1,
@@ -305,6 +367,12 @@ export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
     jobName: 'update-trump-approval',
     // Polls every 5 minutes, so a 26h last-success age would have described
     // a job that had been dead for over 300 consecutive runs.
+    maxEndAgeMs: 30 * MINUTE_MS,
+    maxRunMs: 2 * MINUTE_MS,
+  },
+  {
+    jobName: 'update-votehub-averages',
+    // The other VoteHub averages, on the Trump job's cadence and bounds.
     maxEndAgeMs: 30 * MINUTE_MS,
     maxRunMs: 2 * MINUTE_MS,
   },

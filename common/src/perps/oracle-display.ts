@@ -8,9 +8,18 @@ type OracleTickDecoration = {
 // Oracle prices are plain numbers in storage. Keep their presentation metadata
 // explicit and keyed by the stable feed id: inferring a unit from a market
 // question would silently mislabel renamed or user-created markets.
-const ORACLE_TICK_DECORATIONS: Record<string, OracleTickDecoration> = {
+//
+// Exported (read-only) so the feed-table tests in backend/shared can assert
+// that every feed in a spec table has an entry here; an index-point feed with
+// no unit still gets an explicit empty entry so "missing" and "unitless" are
+// different states.
+export const ORACLE_TICK_DECORATIONS: Readonly<
+  Record<string, OracleTickDecoration>
+> = {
   'btc-usd': { prefix: '$' },
   'trump-approval-rating': { suffix: '%' },
+  'votehub-generic-ballot-2026': { suffix: '%' },
+  'vance-favorability': { suffix: '%' },
   'openrouter-open-weight-share': { suffix: '%' },
 }
 

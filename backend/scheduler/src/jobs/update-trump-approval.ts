@@ -1,44 +1,26 @@
-import { HOUR_MS } from 'common/util/time'
-
 import { TRUMP_APPROVAL_FEED_ID } from 'shared/oracle'
 import {
   publishTrumpApprovalPoint,
   trumpApprovalDay,
 } from 'shared/perps/publish-trump-approval'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-} from 'shared/supabase/init'
-import { log } from 'shared/utils'
-
-/**
- * Failures are logged at most this often.
- *
- * At a 5-minute cadence an outage that used to produce one line an hour would
- * produce 288 a day. The feed's own staleness alerting is the durable signal;
- * these lines exist to say why, so one an hour is plenty. In-memory, so a
- * scheduler restart re-logs immediately — which is the behaviour you want.
- */
-const FAILURE_LOG_INTERVAL_MS = HOUR_MS
-let lastFailureLog = 0
+  DAILY_FEED_STALE_ERROR_MS,
+  reportDailyFeedFailure,
+} from './daily-feed-failure'
 
 /**
  * How long the feed may go without a published point before a failed attempt
- * is an ERROR rather than a retryable blip.
- *
- * Replaces the old "is this the last firing of the day?" test, which only
- * made sense when the job published once daily. With hourly publication the
- * question that matters is not what time it is, it is how long the market has
- * been marking against an ageing price. Set below the feed's 26h staleAfterMs
- * so the page arrives before the staleness alert, not after it.
+ * is an ERROR rather than a retryable blip. The rationale and the number are
+ * DAILY_FEED_STALE_ERROR_MS; this name is kept for the feed's own docs.
  */
-export const TRUMP_APPROVAL_STALE_ERROR_MS = 20 * HOUR_MS
+export const TRUMP_APPROVAL_STALE_ERROR_MS = DAILY_FEED_STALE_ERROR_MS
 
 // Publishes points for the `trump-approval-rating` feed from VoteHub's
 // published average.
 //
 // Runs EVERY 5 MINUTES and publishes whenever the source value moves — see
-// decideApprovalPublish. Publishing once a day, as this job did originally,
+// decideDailyFeedPublish. Publishing once a day, as this job did originally,
 // left every intraday move by the source sitting in public view as the exact
 // next morning's mark: the same timing edge the feed was rebuilt to remove,
 // relocated from the averaging window to the publication schedule. Hourly
@@ -55,6 +37,11 @@ export const TRUMP_APPROVAL_STALE_ERROR_MS = 20 * HOUR_MS
 // maxOraclePriceAgeMs, which pauses the engine and with it liquidations and
 // ADL. That retry behaviour is preserved — a failed hour is simply followed
 // by another hour — it is just no longer the only reason to run.
+//
+// The other VoteHub averages (generic ballot, Vance favorability) run in
+// their own job, update-votehub-averages, offset by two minutes from this
+// one. This job keeps its name and its `[trump-approval]` prefix because the
+// GCP alert policies are keyed on both.
 export const updateTrumpApproval = async () => {
   const pg = createSupabaseDirectClient()
   const today = trumpApprovalDay()
@@ -71,40 +58,15 @@ export const updateTrumpApproval = async () => {
   }
 }
 
-/** How long since the feed last got a point, or null if it never has. */
-const getAgeOfLatestPoint = async (
-  pg: SupabaseDirectClient
-): Promise<number | null> => {
-  const row = await pg.oneOrNone<{ ts: string }>(
-    `select ts from oracle_prices where feed_id = $1 order by ts desc limit 1`,
-    [TRUMP_APPROVAL_FEED_ID]
-  )
-  if (!row) return null
-  const ts = new Date(row.ts).getTime()
-  return Number.isFinite(ts) ? Date.now() - ts : null
-}
-
-const reportFailure = async (
-  pg: SupabaseDirectClient,
+const reportFailure = (
+  pg: ReturnType<typeof createSupabaseDirectClient>,
   day: string,
   reason: string
-) => {
-  const message = `[trump-approval] publish failed for ${day} — ${reason}`
-  // Feed staleness is alerted on separately by update-perps and
-  // update-oracle-feeds, so a retryable attempt stays at WARN to avoid paging
-  // once an hour for one outage. Escalate only once the feed itself has gone
-  // long enough without a point that the next retry is no longer the fix.
-  const ageMs = await getAgeOfLatestPoint(pg)
-  const stale = ageMs == null || ageMs >= TRUMP_APPROVAL_STALE_ERROR_MS
-  // Throttle, but never throttle away the escalation: a feed that has gone
-  // stale is the one thing here worth paging on every time it is observed.
-  if (!stale && Date.now() - lastFailureLog < FAILURE_LOG_INTERVAL_MS) return
-  lastFailureLog = Date.now()
-  if (stale)
-    log.error(
-      `${message}; last point ${
-        ageMs == null ? 'never' : `${Math.round(ageMs / HOUR_MS)}h ago`
-      }, feed is going stale`
-    )
-  else log.warn(`${message}; retrying in 5 minutes`)
-}
+) =>
+  reportDailyFeedFailure(pg, {
+    feedId: TRUMP_APPROVAL_FEED_ID,
+    label: '[trump-approval]',
+    day,
+    reason,
+    staleErrorMs: TRUMP_APPROVAL_STALE_ERROR_MS,
+  })

@@ -12,6 +12,10 @@ export const SPYX_USD_FEED_ID = 'spyx-usd'
 export const QQQX_USD_FEED_ID = 'qqqx-usd'
 export const GLDX_USD_FEED_ID = 'gldx-usd'
 export const NVDAX_USD_FEED_ID = 'nvdax-usd'
+// VoteHub published averages beyond Trump approval. Same publisher, same
+// licence, different answer key — see backend/shared/src/votehub-feeds.ts.
+export const VOTEHUB_GENERIC_BALLOT_2026_FEED_ID = 'votehub-generic-ballot-2026'
+export const VANCE_FAVORABILITY_FEED_ID = 'vance-favorability'
 
 // Append oracle price points for a feed. Published history is immutable:
 // duplicate (feed_id, ts) values remain unchanged even if a source later

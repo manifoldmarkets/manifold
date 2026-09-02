@@ -10,6 +10,8 @@ import {
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
+  VANCE_FAVORABILITY_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
 } from './oracle'
 import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 
@@ -230,6 +232,46 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // feed (max(1h, updatePeriodMs)). Holding it at a day keeps funding
     // matched to how often the number actually moves rather than to how
     // often we look at it. The live market carries its own frozen 24h value.
+    updatePeriodMs: DAY_MS,
+  },
+  // The other VoteHub averages. Same publisher structure as Trump (polled
+  // every 5 minutes by update-votehub-averages, published on change plus a
+  // 12h heartbeat), same 26h dead-man threshold, same once-a-day
+  // updatePeriodMs so a new market's funding period matches how often the
+  // number actually moves. Bounds are wide on purpose and reject only
+  // unit-confused garbage (a 0-1 fraction, a margin, a percent-of-percent):
+  // corruption is caught at the source by readPublishedAverage, which
+  // rejects a published value outside (0,100) or staler than
+  // maxSourceAgeDays, and by the cross-check canary, which refuses to publish
+  // a value our own poll average disagrees with by more than the spec's
+  // tolerance.
+  {
+    id: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+    description:
+      "Democratic share (%) of VoteHub's published 2026 generic-ballot average",
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // A major party's generic-ballot share has sat between the high 30s and
+    // the mid 50s for as long as the question has been polled; 20-80 leaves
+    // room for any real result and still catches a margin (D-R, typically
+    // single digits) or a fraction being published in its place.
+    minPrice: 20,
+    maxPrice: 80,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  {
+    id: VANCE_FAVORABILITY_FEED_ID,
+    description:
+      "Favorable (%) from VoteHub's published JD Vance favorability average",
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // Same bounds as Trump approval: favorability of a national politician
+    // ranges more widely than a party's ballot share, and 10-90 still rejects
+    // a net-favorability margin or a 0-1 fraction.
+    minPrice: 10,
+    maxPrice: 90,
+    staleAfterMs: 26 * HOUR_MS,
     updatePeriodMs: DAY_MS,
   },
   {
