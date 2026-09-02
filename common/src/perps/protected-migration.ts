@@ -18,11 +18,12 @@
 // cross-side current-claim inequalities must hold, or the approved activation
 // ADL is applied atomically, or the contract does not activate.
 
-import { getPositionValue, PerpState } from './amm'
+import { getPositionValue, getReserveBasis, PerpState } from './amm'
 import { PerpDirection, PerpEvent, PerpPosition } from './position'
 import {
   applyPerpProtectedClaimAdl,
   assertPerpProtectedState,
+  canonicalPerpPositions,
   getPerpAccountingSnapshot,
   oppositePerpDirection,
   perpDustTolerance,
@@ -168,7 +169,13 @@ export const allocateLastResortReserveBasis = (
 
   return rows.map(({ position, value, loss: rowLoss }) => {
     const reduction = reductions.get(position.userId) ?? 0
-    const reserveBasis = Math.max(position.costBasis - reduction, value)
+    // b_i = c_i − reduction_i, never below V_i (a reduced row keeps its
+    // current value protected) and never above c_i: an in-profit row has no
+    // loss, no reduction, and keeps b = c exactly.
+    const reserveBasis = Math.min(
+      position.costBasis,
+      Math.max(position.costBasis - reduction, value)
+    )
     const floor = Math.min(position.costBasis, value)
     if (reserveBasis < floor - perpDustTolerance(reserveBasis, floor))
       throw new Error(
@@ -436,4 +443,41 @@ export const summarizePerpInvariants = (state: PerpState, price: number) => {
     }
   }
   return { long: side('long'), short: side('short'), snapshot }
+}
+
+/** The rows an activation plan leaves with b below c, with the exact numbers. */
+export const perpActivationReductions = (plan: PerpActivationPlan) =>
+  plan.allocations.filter(
+    (a) =>
+      a.reserveBasisAfter <
+      a.reserveBasisBefore - perpDustTolerance(a.reserveBasisBefore)
+  )
+
+const fnv1a32 = (text: string, seed: number) => {
+  let hash = seed >>> 0
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash.toString(16).padStart(8, '0')
+}
+
+/**
+ * A short deterministic digest of everything an activation plan depends on:
+ * the cutover mark, both pools, and every live row's size, cost basis and
+ * current protected basis, in canonical row order. The dry run prints it and
+ * the live run refuses to commit a reviewed reduction (last-resort
+ * allocation, activation ADL) unless the book still has this exact digest —
+ * so a legacy trade, settlement, subsidy or tick between review and
+ * execution aborts instead of silently reallocating, even when the mark
+ * itself is unchanged. Not a security primitive; a change detector.
+ */
+export const perpActivationFingerprint = (state: PerpState, price: number) => {
+  const rows = canonicalPerpPositions(
+    state.positions.filter((p) => p.size > 0)
+  ).map((p) =>
+    [p.userId, p.direction, p.size, p.costBasis, getReserveBasis(p)].join(':')
+  )
+  const text = [price, state.pool.L, state.pool.S, ...rows].join('|')
+  return fnv1a32(text, 0x811c9dc5) + fnv1a32(text, 0x9747b28c)
 }

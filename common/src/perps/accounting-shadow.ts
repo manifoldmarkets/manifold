@@ -66,7 +66,12 @@ export type PerpShadowTransitionInput =
   | { kind: 'oracle'; price: number }
   | { kind: 'funding'; fundingRate: number; price: number }
   | { kind: 'subsidy'; side: PerpDirection; amount: number }
-  | { kind: 'resolve'; price: number }
+  | {
+      kind: 'resolve'
+      price: number
+      /** What the legacy ledger paid the creator as residual, for the comparison. */
+      liveResidual?: number
+    }
 
 export type PerpShadowPositionDifference = {
   userId: string
@@ -97,7 +102,11 @@ export type PerpShadowReport = {
   liveInvariants: ReturnType<typeof summarizePerpInvariants>['long'] & {
     short: ReturnType<typeof summarizePerpInvariants>['short']
   }
-  /** protected payout on the shadow − legacy payout live, for closes. */
+  /**
+   * protected − legacy: the user payout for closes, the creator residual for
+   * resolution. Null for the other kinds or when the live figure was not
+   * supplied.
+   */
   payoutDifference: number | null
   /** Any pool/row difference beyond dust, a missing row, or an error. */
   divergent: boolean
@@ -226,13 +235,21 @@ const applyProtectedCounterpart = (
         payout: null,
       }
     case 'resolve': {
+      // Same shape as the engine: liquidation and claim ADL at the terminal
+      // mark, one batch settlement, then the residual leaves the contract
+      // (paid to the creator), so the terminal checkpoint is empty pools and
+      // no rows — exactly what the engine reports as the live post-state.
       const transitioned = applyPerpProtectedOracleTransition(
         state,
         input.price
       )
+      const resolved = resolvePerpProtectedBatch(
+        transitioned.state,
+        input.price
+      )
       return {
-        state: resolvePerpProtectedBatch(transitioned.state, input.price).state,
-        payout: null,
+        state: { pool: { L: 0, S: 0 }, positions: [] },
+        payout: resolved.residual,
       }
     }
   }
@@ -328,10 +345,14 @@ export const advancePerpShadowCheckpoint = (
     short: next.pool.S - live.pool.S,
   }
   const snapshot = getPerpAccountingSnapshot(next, price)
+  const livePayout =
+    input.kind === 'close'
+      ? input.livePayout
+      : input.kind === 'resolve'
+      ? input.liveResidual
+      : undefined
   const payoutDifference =
-    input.kind === 'close' && payout !== null && input.livePayout !== undefined
-      ? payout - input.livePayout
-      : null
+    payout !== null && livePayout !== undefined ? payout - livePayout : null
   const divergent =
     error !== null ||
     positionDifferences.length > 0 ||

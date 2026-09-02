@@ -2,6 +2,7 @@ import {
   applyADL,
   applyFunding,
   closePosition,
+  getPerpOpenInterestCapacity,
   getPositionValue,
   getUnrealizedEquity,
   liquidationPrice,
@@ -26,6 +27,8 @@ import {
   payPerpContingentClaim,
   perpClaimTolerance,
   perpDustTolerance,
+  PERP_DUST_CAP,
+  PERP_DUST_FLOOR,
   PERP_MIN_CLOSE_FRACTION,
   PerpProtectedInvariantError,
   resolvePerpProtectedBatch,
@@ -1338,9 +1341,11 @@ describe('one affordability predicate for invariant, ADL, payment and debit', ()
     expect(isPerpClaimBacked(100 + 2 * perpClaimTolerance(100, 100), 100)).toBe(
       false
     )
-    expect(perpClaimTolerance(1e-9, 1e-9, 1e6)).toBeGreaterThan(
-      perpClaimTolerance(1e-9, 1e-9)
-    )
+    // Absolute floor below ~M$10m of scale, growth with scale above it, cap.
+    expect(perpClaimTolerance(1e-9, 1e-9)).toBe(PERP_DUST_FLOOR)
+    expect(perpClaimTolerance(1e-9, 1e-9, 1e6)).toBe(PERP_DUST_FLOOR)
+    expect(perpClaimTolerance(1e-9, 1e-9, 1e8)).toBeGreaterThan(PERP_DUST_FLOOR)
+    expect(perpClaimTolerance(1e-9, 1e-9, 1e12)).toBe(PERP_DUST_CAP)
     expect(isPerpClaimBacked(Number.NaN, 1)).toBe(false)
     expect(isPerpClaimBacked(1, Number.POSITIVE_INFINITY)).toBe(false)
   })
@@ -1496,5 +1501,286 @@ describe('partial close materiality (review P2)', () => {
         0.5
       )
     ).toThrow('too small')
+  })
+})
+
+describe('tolerance is scale-independent where residues outlive the state that made them (review round 3)', () => {
+  it('a residue left by claim ADL on a M$5m row does not refuse the closes that shrink the book to M$2', () => {
+    // Longs A (M$5m) and B (M$1), short S (M$1); the short pool carries
+    // enough surplus for the long side to be claim-ADL'd on a rally. After
+    // the tick E_long sits on the allowance within ulps of M$5m. A then
+    // closes in full: the residue stays in the pools while Σc collapses to
+    // ~2. Every state on the way must still pass the invariant, and B must
+    // still be able to close afterwards.
+    const state: PerpState = {
+      pool: { L: 5 * M + 1, S: 1 + 9e5 },
+      positions: [
+        pos({
+          userId: 'A',
+          direction: 'long',
+          size: 5 * M,
+          costBasis: 5 * M,
+          entryPrice: 1,
+        }),
+        pos({
+          userId: 'B',
+          direction: 'long',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 1,
+        }),
+        pos({
+          userId: 'S',
+          direction: 'short',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 1,
+        }),
+      ],
+    }
+    let adlActive = 0
+    for (let i = 0; i < 200; i++) {
+      const price = 1.05 + (i / 200) * 0.45
+      const ticked = applyPerpProtectedOracleTransition(state, price)
+      if (ticked.adlFactorLong >= 1) continue
+      adlActive++
+      const closedA = closePerpProtectedPosition(
+        ticked.state,
+        { userId: 'A', direction: 'long' },
+        price
+      )
+      expect(() => assertPerpProtectedState(closedA.state, price)).not.toThrow()
+      const closedB = closePerpProtectedPosition(
+        closedA.state,
+        { userId: 'B', direction: 'long' },
+        price
+      )
+      expect(() => assertPerpProtectedState(closedB.state, price)).not.toThrow()
+      expect(closedB.state.pool.L).toBeGreaterThanOrEqual(0)
+      expect(closedB.state.pool.S).toBeGreaterThanOrEqual(0)
+    }
+    expect(adlActive).toBeGreaterThan(100)
+  })
+
+  it('the payment and the invariant agree in both directions when the paying side holds paper losses (D_opp > 0)', () => {
+    // Long a: c = 5m, b = 0, at entry -> E = 5m. Short s: b = c = 5m at an
+    // 80% paper loss -> D = 4m, so the payment settles 4m from paper loss
+    // and needs 1m of unreserved balance. The payment tolerance is keyed
+    // on the same quantities as the invariant, so a gap inside the dust is
+    // accepted by both (close, resolution and the post-close state) and a
+    // gap outside it is refused by both.
+    const book = (gap: number): PerpState => ({
+      pool: { L: 0, S: 5 * M + (M - gap) },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: 5 * M,
+          costBasis: 5 * M,
+          entryPrice: 180,
+          reserveBasis: 0,
+        }),
+        pos({
+          userId: 's',
+          direction: 'short',
+          size: 5 * M,
+          costBasis: 5 * M,
+          entryPrice: 100,
+        }),
+      ],
+    })
+    const inside = book(PERP_DUST_FLOOR / 2)
+    expect(() => assertPerpProtectedState(inside, 180)).not.toThrow()
+    const closed = closePerpProtectedPosition(
+      inside,
+      { userId: 'a', direction: 'long' },
+      180
+    )
+    expect(closed.payout).toBeCloseTo(5 * M, 3)
+    expect(closed.state.pool.S).toBeGreaterThanOrEqual(0)
+    expect(() => assertPerpProtectedState(closed.state, 180)).not.toThrow()
+    expect(() => resolvePerpProtectedBatch(inside, 180)).not.toThrow()
+
+    const outside = book(50 * PERP_DUST_CAP)
+    expect(() => assertPerpProtectedState(outside, 180)).toThrow('exceed')
+    expect(() =>
+      closePerpProtectedPosition(
+        outside,
+        { userId: 'a', direction: 'long' },
+        180
+      )
+    ).toThrow('unreserved balance')
+  })
+
+  it('a row whose value exceeds b by dust is not a contingent claim, so it neither blocks a tick nor gets settled at factor zero', () => {
+    // A is scaled hard (b << c, tiny allowance) so the side's Σc collapses;
+    // B sits 2e-8 above its b. Before the dead band, B was skipped at the
+    // pre-ADL dust but counted against the post-ADL tolerance, halting the
+    // tick on a valid input.
+    const state: PerpState = {
+      pool: { L: 1e5 + 10 - 2e-8, S: 1.5 },
+      positions: [
+        pos({
+          userId: 'A',
+          direction: 'long',
+          size: 1e6,
+          costBasis: 1e6,
+          entryPrice: 1,
+          reserveBasis: 1e5,
+        }),
+        pos({
+          userId: 'B',
+          direction: 'long',
+          size: 10,
+          costBasis: 10,
+          entryPrice: 1,
+          reserveBasis: 10 - 2e-8,
+        }),
+        pos({
+          userId: 'S',
+          direction: 'short',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 1,
+        }),
+      ],
+    }
+    expect(getPerpPositionClaims(state.positions[1], 1).contingent).toBe(0)
+    const ticked = applyPerpProtectedOracleTransition(state, 1)
+    expect(ticked.adlFactorLong).toBeGreaterThan(0)
+    expect(ticked.adlFactorLong).toBeLessThan(1)
+    expect(ticked.settled).toHaveLength(0)
+    const b = ticked.state.positions.find((p) => p.userId === 'B')!
+    expect(b.size).toBe(10)
+
+    // And at factor zero the dust row is left alone rather than settled.
+    const noAllowance: PerpState = {
+      pool: { L: 10 - 2e-8, S: 1 },
+      positions: [state.positions[1], state.positions[2]],
+    }
+    const tick = applyPerpProtectedOracleTransition(noAllowance, 1)
+    expect(tick.settled).toHaveLength(0)
+    expect(tick.state.positions).toHaveLength(2)
+  })
+
+  it('a factor-zero settlement of a whale leaves ulps of its basis in the pool without failing pool >= Σb', () => {
+    // Fresh unsubsidised protected book (H = 0 both sides). On the first
+    // up-tick the short is in profit with nothing unreserved, so the whale
+    // long is settled at b. The pool is then short of the survivor's b by
+    // ~6e-13 of representational residue; the tick must apply, and the
+    // book must stay closable and resolvable.
+    const state: PerpState = {
+      pool: { L: 123456.789 + 7.89, S: 20.02 },
+      positions: [
+        pos({
+          userId: 'whale',
+          direction: 'long',
+          size: 123456.789 * 3,
+          costBasis: 123456.789,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'small',
+          direction: 'long',
+          size: 7.89 * 4,
+          costBasis: 7.89,
+          entryPrice: 130,
+        }),
+        pos({
+          userId: 'short',
+          direction: 'short',
+          size: 20.02,
+          costBasis: 20.02,
+          entryPrice: 105,
+        }),
+      ],
+    }
+    expect(() => assertPerpProtectedState(state, 100)).not.toThrow()
+    for (const price of [101, 102, 103, 104]) {
+      const ticked = applyPerpProtectedOracleTransition(state, price)
+      expect(ticked.adlFactorLong).toBe(0)
+      expect(ticked.settled.map((s) => s.position.userId)).toEqual(['whale'])
+      expect(() => assertPerpProtectedState(ticked.state, price)).not.toThrow()
+      expect(() =>
+        closePerpProtectedPosition(
+          ticked.state,
+          { userId: 'small', direction: 'long' },
+          price
+        )
+      ).not.toThrow()
+      expect(() => resolvePerpProtectedBatch(ticked.state, price)).not.toThrow()
+    }
+  })
+
+  it('funding that pushes a side past its allowance is followed by claim ADL', () => {
+    // Boundary book: E_short = 200 = D_long + H_long. Longs pay shorts 1%:
+    // the long side's paper loss shrinks and the short side's claim grows,
+    // so the post-funding claim ADL must scale the short.
+    const state: PerpState = {
+      pool: { L: 250, S: 100 },
+      positions: [
+        pos({
+          userId: 'long',
+          direction: 'long',
+          size: 1000,
+          costBasis: 250,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'short',
+          direction: 'short',
+          size: 1000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    expect(() => assertPerpProtectedState(state, 80)).not.toThrow()
+    const result = applyPerpProtectedFunding(state, 0.01, 80)
+    expect(result.adlFactorLong).toBe(1)
+    expect(result.adlFactorShort).toBeCloseTo(198 / 205, 9)
+    expect(result.adjusted).toHaveLength(1)
+    expect(result.adjusted[0].position.userId).toBe('short')
+    expect(result.settled).toHaveLength(0)
+    expect(() => assertPerpProtectedState(result.state, 80)).not.toThrow()
+    const short = result.state.positions.find((p) => p.userId === 'short')!
+    expect(short.reserveBasis).toBeCloseTo(102.5, 9)
+    expect(getPerpPositionClaims(short, 80).contingent).toBeCloseTo(198, 6)
+  })
+
+  it('compatibility admission reserves min(b, V), not min(c, V): a reduced opposing b frees cover and shrinks the matched credit', () => {
+    // One short at entry, b = c = 1000. Reducing its b to 400 lowers the
+    // opposing reserve the long side must leave in the short pool by 600,
+    // so the long limit grows by M x 600 minus the matched credit the
+    // smaller reserve can no longer fund.
+    const short = (reserveBasis: number) =>
+      pos({
+        userId: 's',
+        direction: 'short',
+        size: 5000,
+        costBasis: 1000,
+        entryPrice: 100,
+        reserveBasis,
+      })
+    const at = (reserveBasis: number) =>
+      getPerpOpenInterestCapacity(
+        'long',
+        { pool: { L: 0, S: 3000 }, positions: [short(reserveBasis)] },
+        100
+      )
+    const full = at(1000)
+    const reduced = at(400)
+    expect(reduced.availableCover - full.availableCover).toBeCloseTo(600, 9)
+    expect(reduced.matchedCredit).toBeLessThan(full.matchedCredit)
+    // With b = c the numbers are exactly the #4030 numbers.
+    const legacy = getPerpOpenInterestCapacity(
+      'long',
+      {
+        pool: { L: 0, S: 3000 },
+        positions: [{ ...short(1000), reserveBasis: undefined }],
+      },
+      100
+    )
+    expect(full).toEqual(legacy)
   })
 })

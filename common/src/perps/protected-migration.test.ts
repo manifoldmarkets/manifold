@@ -5,6 +5,8 @@ import {
   allocateLastResortReserveBasis,
   classifyPerpMigration,
   classifyPerpMigrationSide,
+  perpActivationFingerprint,
+  perpActivationReductions,
   planPerpProtectedActivation,
   verifyPerpAccountingDowngrade,
 } from './protected-migration'
@@ -308,5 +310,125 @@ describe('verifyPerpAccountingDowngrade', () => {
         activationReducedBasis: true,
       }).allowed
     ).toBe(false)
+  })
+})
+
+describe('last-resort allocation with in-profit rows (review round 3)', () => {
+  // Top-up class on the long side with one row underwater and one in
+  // profit at the mark: the deficit lands on the loser only, and the
+  // winner keeps b = c exactly (never b = V > c).
+  const state: PerpState = {
+    pool: { L: 1400, S: 500 },
+    positions: [
+      pos({
+        userId: 'loser',
+        direction: 'long',
+        size: 1000,
+        costBasis: 1000,
+        entryPrice: 100,
+      }),
+      pos({
+        userId: 'winner',
+        direction: 'long',
+        size: 500,
+        costBasis: 500,
+        entryPrice: 80,
+      }),
+    ],
+  }
+
+  it('never assigns b above c', () => {
+    const allocation = allocateLastResortReserveBasis(state, 'long', 90)
+    const winner = allocation.find((a) => a.userId === 'winner')!
+    const loser = allocation.find((a) => a.userId === 'loser')!
+    expect(winner.value).toBeGreaterThan(winner.costBasis)
+    expect(winner.reserveBasis).toBe(winner.costBasis)
+    expect(loser.reserveBasis).toBeCloseTo(1000 - 100, 9)
+    expect(loser.reserveBasis).toBeGreaterThanOrEqual(loser.value)
+  })
+
+  it('plans cleanly and reports exactly the reduced rows as receipts', () => {
+    const plan = planPerpProtectedActivation(state, 90, {
+      topUp: { long: 0, short: 0 },
+      allocation: 'last-resort-snapshot',
+      allowActivationAdl: false,
+    })
+    expect(plan.ok).toBe(true)
+    expect(plan.reducedAnyBasis).toBe(true)
+    const reductions = perpActivationReductions(plan)
+    expect(reductions.map((r) => r.userId)).toEqual(['loser'])
+    expect(
+      reductions[0].reserveBasisAfter - reductions[0].reserveBasisBefore
+    ).toBeCloseTo(-100, 9)
+    for (const a of plan.allocations)
+      expect(a.reserveBasisAfter).toBeLessThanOrEqual(a.costBasis)
+  })
+})
+
+describe('perpActivationFingerprint', () => {
+  const state = book(1400)
+
+  it('is deterministic and independent of row order', () => {
+    const a = perpActivationFingerprint(state, 90)
+    const reversed: PerpState = {
+      pool: state.pool,
+      positions: [...state.positions].reverse(),
+    }
+    expect(a).toMatch(/^[0-9a-f]{16}$/)
+    expect(perpActivationFingerprint(state, 90)).toBe(a)
+    expect(perpActivationFingerprint(reversed, 90)).toBe(a)
+  })
+
+  it('changes when the mark, a pool, a row or a protected basis changes — even at an identical mark', () => {
+    const base = perpActivationFingerprint(state, 90)
+    expect(perpActivationFingerprint(state, 90.0001)).not.toBe(base)
+    expect(perpActivationFingerprint(book(1400.01), 90)).not.toBe(base)
+    expect(
+      perpActivationFingerprint(
+        { pool: state.pool, positions: state.positions.slice(1) },
+        90
+      )
+    ).not.toBe(base)
+    expect(
+      perpActivationFingerprint(
+        {
+          pool: state.pool,
+          positions: state.positions.map((p, i) =>
+            i === 0 ? { ...p, size: p.size - 1 } : p
+          ),
+        },
+        90
+      )
+    ).not.toBe(base)
+    expect(
+      perpActivationFingerprint(
+        {
+          pool: state.pool,
+          positions: state.positions.map((p, i) =>
+            i === 0 ? { ...p, reserveBasis: p.costBasis - 1 } : p
+          ),
+        },
+        90
+      )
+    ).not.toBe(base)
+    // A closed (size 0) row does not count.
+    expect(
+      perpActivationFingerprint(
+        {
+          pool: state.pool,
+          positions: [
+            ...state.positions,
+            pos({
+              userId: 'gone',
+              direction: 'short',
+              size: 0,
+              costBasis: 1,
+              entryPrice: 100,
+            }),
+          ],
+        },
+        90
+      )
+    ).toBe(base)
   })
 })

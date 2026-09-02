@@ -76,8 +76,11 @@ affected rows keep `q, c, Pe`, value, leverage and liquidation price. The
 allocation uses canonical row order and a deterministic residual; aggregate
 and partitioned settlement agree within the documented float tolerance
 (not bitwise). Every backing check and pool debit uses one shared
-affordability predicate, so the invariant and the payout path cannot
-disagree about whether a claim is payable.
+tolerance — dust of the largest basis involved, with an absolute floor of a
+millionth of a mana and no separate relative term — so the invariant and the
+payout path cannot disagree about whether a claim is payable, and slack
+admitted while a large row existed is still tolerated after it leaves. A
+value within dust of `b` is not a contingent claim.
 
 ## 6. Closing
 

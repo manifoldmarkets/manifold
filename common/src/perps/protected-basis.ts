@@ -36,7 +36,6 @@ import {
   getReserveBasis,
   getUnrealizedEquity,
   liquidationPrice,
-  PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   processLiquidations,
 } from './amm'
@@ -47,60 +46,79 @@ export const oppositePerpDirection = (
 ): PerpDirection => (direction === 'long' ? 'short' : 'long')
 
 /**
+ * Below this, a difference between two mana amounts is representational,
+ * not economic: a millionth of a mana, four orders of magnitude under the
+ * smallest amount the product displays.
+ */
+export const PERP_DUST_FLOOR = 1e-6
+/**
+ * Above this the allowance stops growing with scale, so a corrupt pool
+ * cannot turn the allowance into money: a ten-thousandth of a mana.
+ */
+export const PERP_DUST_CAP = 1e-4
+
+/**
  * Absolute dust allowance for comparisons between quantities that are equal
  * in real arithmetic but reach the comparison by different float paths (a
  * pro-rata allocation summed back against its total, a pool debited in two
- * parts). Scale-relative, capped at a millionth of a mana so a corrupt
- * six-figure pool cannot turn the allowance into money.
+ * parts, a value rebuilt from a basis that funding scaled).
+ *
+ * The allowance has an ABSOLUTE floor on purpose. Rounding residues are
+ * created at the scale of the state that produced them and then persist in
+ * the pools after that state has shrunk: a M$5m row that claim ADL landed on
+ * the boundary and that then closed leaves ulps of M$5m behind in a M$2 book;
+ * a factor-0 settlement leaves ulps of the settled basis in a pool whose
+ * remaining reserves are tiny. A tolerance that shrank with the CURRENT
+ * scale would turn every such residue into an invariant violation — a
+ * refused close, a halted tick — once the large row was gone. The floor
+ * covers residues from books up to ~M$10m; above that the allowance grows
+ * with the largest quantity involved (256 ulps of it), capped.
  */
 export const perpDustTolerance = (...values: number[]) => {
   let scale = 1
   for (const value of values)
     if (Number.isFinite(value)) scale = Math.max(scale, Math.abs(value))
-  return Math.min(1e-4, 256 * Number.EPSILON * scale)
+  return Math.min(
+    PERP_DUST_CAP,
+    Math.max(PERP_DUST_FLOOR, 256 * Number.EPSILON * scale)
+  )
 }
 
 /**
  * THE affordability tolerance: one rule for the current-claim invariant, the
- * claim-ADL boundary, the contingent payment, and the pool debit. Two states
- * that disagree on whether a claim is payable are how a book accepted as
- * solvent can refuse a guaranteed close, so nothing may check this any other
- * way.
- *
- * Relative part: ADL lands claims on the boundary within division rounding,
- * so a 1e-12 share of the claim is allowed. Absolute part: E and V are
- * differences of quantities the size of the side's COST BASIS (c' = b +
- * s·(c − b), V = c + π), so the dust must scale with that basis, not with
- * the claim — a tiny allowance against a large basis rounds to ulps of the
- * basis, not of the allowance. Callers pass the side's Σc as `scale`.
+ * claim-ADL boundary, the contingent payment, the pool debit and the
+ * pool >= Σb check. It is exactly the dust rule — deliberately with no
+ * separate relative part — because slack admitted at one scale must still be
+ * tolerated by every later check at a smaller scale, and that only holds
+ * when no check ever allows more than the floor-bounded dust of the largest
+ * quantity involved. Two checks that disagree on whether a claim is payable
+ * are how a book accepted as solvent can refuse a guaranteed close, so
+ * nothing may check this any other way. Callers pass the basis-sized
+ * quantities the comparison derives from (a side's Σc, the pool, the claim)
+ * as `scale`.
  */
 export const perpClaimTolerance = (
   claim: number,
   available: number,
-  scale = 0,
-  relative = PERP_SOLVENCY_FACTOR_TOLERANCE
-) =>
-  Math.max(
-    perpDustTolerance(claim, available, scale),
-    relative * Math.abs(claim)
-  )
+  scale = 0
+) => perpDustTolerance(claim, available, scale)
 
 /** Is `claim` payable from `available`? See perpClaimTolerance. */
 export const isPerpClaimBacked = (
   claim: number,
   available: number,
-  scale = 0,
-  relative = PERP_SOLVENCY_FACTOR_TOLERANCE
+  scale = 0
 ) =>
   Number.isFinite(claim) &&
   Number.isFinite(available) &&
-  claim <= available + perpClaimTolerance(claim, available, scale, relative)
+  claim <= available + perpClaimTolerance(claim, available, scale)
 
 /**
  * Pool debit with the SAME tolerance as the affordability predicate: a claim
  * the invariant accepted may leave the pool a tolerance below zero, and that
  * is representational dust, not a deficit. Anything larger stays negative so
- * the caller fails closed.
+ * the caller fails closed. The dust floor equals the escrow check's floor,
+ * so a snap here never trips the ledger-vs-pools invariant.
  */
 const debitPool = (pool: number, amount: number, scale: number) => {
   const next = pool - amount
@@ -184,8 +202,21 @@ export const getPerpPositionClaims = (
   position: PerpPosition,
   price: number
 ): PerpPositionClaims => {
-  const value = getPositionValue(position, price)
+  const rawValue = getPositionValue(position, price)
   const reserveBasis = getReserveBasis(position)
+  // Dead band: a value above b by less than dust is not a contingent claim.
+  // V and b are basis-sized quantities that reach this comparison by
+  // different float paths (funding scaled both; claim ADL rebuilt c from b),
+  // so the difference is rounding. Treating it as a claim would let one ulp
+  // settle a row at factor 0 when the opposing side has no allowance, or
+  // fail a side-level check whose tolerance is measured at another scale.
+  // The value is snapped onto b so V = R + E and b = R + D hold exactly.
+  const excess = rawValue - reserveBasis
+  const value =
+    excess > 0 &&
+    excess <= perpDustTolerance(rawValue, reserveBasis, position.costBasis)
+      ? reserveBasis
+      : rawValue
   return {
     value,
     reserveBasis,
@@ -307,16 +338,10 @@ export const assertPerpProtectedPosition = (
 
 /**
  * Fail closed before protected state is persisted or paid from. Strict:
- * only the documented float tolerances are allowed, and every side must
+ * only the one documented dust tolerance is allowed, and every side must
  * satisfy all four invariants at once.
  */
-export const assertPerpProtectedState = (
-  state: PerpState,
-  price: number,
-  tolerance = PERP_SOLVENCY_FACTOR_TOLERANCE
-) => {
-  if (!Number.isFinite(tolerance) || tolerance < 0 || tolerance >= 1)
-    throw new Error('solvency tolerance must be finite and in [0, 1)')
+export const assertPerpProtectedState = (state: PerpState, price: number) => {
   assertPerpStateNumbers(state, price)
   state.positions.forEach((position, index) =>
     assertPerpProtectedPosition(position, `position ${index}`)
@@ -327,7 +352,8 @@ export const assertPerpProtectedState = (
     const own = snapshot[side]
     if (
       own.pool <
-      own.reservedBasis - perpDustTolerance(own.pool, own.reservedBasis)
+      own.reservedBasis -
+        perpDustTolerance(own.pool, own.reservedBasis, own.costBasis)
     )
       fail(
         'pool-below-reserves',
@@ -341,8 +367,7 @@ export const assertPerpProtectedState = (
       !isPerpClaimBacked(
         own.contingentClaims,
         available,
-        own.costBasis + opposing.costBasis,
-        tolerance
+        own.costBasis + opposing.costBasis
       )
     )
       fail(
@@ -353,7 +378,10 @@ export const assertPerpProtectedState = (
 
   const deficit = getPerpCrossSideDeficit(state, price)
   for (const side of ['long', 'short'] as const)
-    if (deficit[side] > perpDustTolerance(snapshot[side].pool))
+    if (
+      deficit[side] >
+      perpDustTolerance(snapshot[side].pool, snapshot[side].costBasis)
+    )
       fail(
         'cross-side-transfer',
         `${side} pool would require a ${deficit[side]} cross-side transfer, which protected accounting forbids`
@@ -505,14 +533,25 @@ export const payPerpContingentClaim = (
   const claimant = getPerpSideAccounting(state, claimantSide, price)
   const settled = settlePerpPaperLoss(state, payingSide, claim, price)
   const { unreservedConsumed } = settled.settlement
-  // Same predicate and same scale as the invariant that admitted this claim:
-  // the whole side's contingent claim and both sides' cost basis.
+  // Same predicate, same scale AND same claim as the invariant that admitted
+  // this payment: the tolerance is keyed on the side's whole contingent
+  // claim E (the invariant's quantity), never on the unmatched remainder
+  // W − delta, which is smaller whenever the paying side holds paper losses
+  // and would otherwise let the invariant accept what the payment refuses.
   const scale = Math.max(
     claim,
     claimant.contingentClaims,
     before.costBasis + claimant.costBasis
   )
-  if (!isPerpClaimBacked(unreservedConsumed, before.unreserved, scale))
+  const tolerance = perpClaimTolerance(
+    Math.max(claim, claimant.contingentClaims),
+    before.paperLosses + before.unreserved,
+    scale
+  )
+  if (
+    !Number.isFinite(unreservedConsumed) ||
+    !(unreservedConsumed <= before.unreserved + tolerance)
+  )
     fail(
       'claim-unpayable',
       `${claimantSide} contingent claim ${claim} needs ${unreservedConsumed} of ${payingSide} unreserved balance but only ${before.unreserved} is available`
@@ -579,8 +618,11 @@ export const applyPerpProtectedClaimAdl = (
   // by scaling: c' = b + s·(c − b) rounds to b's ulps and the scaled claim
   // comes out LARGER than the allowance it was meant to fit. Such an
   // allowance is economically zero, so the factor snaps to zero (the rows
-  // are settled at b). Symmetrically, a contingent claim within that dust
-  // is no claim at all and is left alone.
+  // are settled at b). Symmetrically, a side whose whole contingent claim is
+  // within that dust has no claim and is left alone. Per row, dust claims
+  // are already zero (getPerpPositionClaims' dead band), so every row with
+  // E > 0 is scaled by the same factor and Σ s·E_i lands on the allowance
+  // whatever the post-ADL scale of the side.
   const dustFor = (side: PerpDirection) =>
     perpDustTolerance(
       snapshot[side].contingentClaims,
@@ -612,7 +654,7 @@ export const applyPerpProtectedClaimAdl = (
         position.direction === 'long' ? adlFactorLong : adlFactorShort
       if (factor >= 1) return position
       const claims = getPerpPositionClaims(position, price)
-      if (claims.contingent <= dustFor(position.direction)) return position
+      if (claims.contingent <= 0) return position
 
       if (factor === 0) {
         // Zero exposure remains; return the protected basis once. E > 0
@@ -681,9 +723,9 @@ export const applyPerpProtectedClaimAdl = (
   }
 
   // The scaled claims must fit the allowance they were scaled to, under the
-  // same predicate the invariant uses. With the dust snap above this cannot
-  // fail for a valid input; keep it as the fail-closed proof rather than
-  // trusting the algebra.
+  // same predicate the invariant uses. With the dust snap above, the
+  // per-row dead band and the absolute dust floor this holds for every valid
+  // input; keep it as the fail-closed proof rather than trusting the algebra.
   const after = getPerpAccountingSnapshot(result.state, price)
   for (const side of ['long', 'short'] as const) {
     const factor = side === 'long' ? adlFactorLong : adlFactorShort

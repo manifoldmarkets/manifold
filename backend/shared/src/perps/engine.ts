@@ -75,6 +75,7 @@ import {
 import {
   recordPerpAccountingShadow,
   recordPerpRiskShadow,
+  recordPerpRiskShadowDetached,
 } from './accounting-shadow'
 import {
   comparePerpAdmissionPolicies,
@@ -1329,9 +1330,10 @@ export const openOrAddPosition = async (
     const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
     if (!capacity.isWithinLimit) {
       // Workstream B, shadow only: a REJECTED attempt is evaluated too, so
-      // the telemetry covers both sides of the compatibility decision. Log
-      // only — this transaction is about to roll back.
-      riskPolicyShadowForOpen(
+      // the telemetry covers both sides of the compatibility decision. This
+      // transaction is about to roll back, so the evaluation is persisted
+      // through a detached connection (best effort, never awaited).
+      const rejectedShadow = riskPolicyShadowForOpen(
         contract,
         accounting,
         direction,
@@ -1339,6 +1341,11 @@ export const openOrAddPosition = async (
         price,
         false
       )
+      if (rejectedShadow)
+        recordPerpRiskShadowDetached(contract, {
+          ...rejectedShadow,
+          at: Date.now(),
+        })
       // The limit depends only on the opposing SIDE (its pool and its own
       // exposure), which an open on this side never touches, so pre-trade
       // headroom is exact — tell the user the largest trade that fits instead
@@ -3240,7 +3247,7 @@ export const resolvePerp = async (
       pgTrans,
       contract,
       accounting,
-      { kind: 'resolve', price: finalPrice },
+      { kind: 'resolve', price: finalPrice, liveResidual: residualPayout },
       loaded,
       { pool: { L: 0, S: 0 }, positions: [] },
       finalPrice

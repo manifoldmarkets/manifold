@@ -17,14 +17,19 @@
 //
 //   # shadow -> protected at the contract's committed mark. ALWAYS dry-run
 //   # first: it prints the exact per-user reserve bases and reductions the
-//   # activation would commit at the current mark, without writing.
+//   # activation would commit on the current book, without writing, plus the
+//   # book's fingerprint (mark + pools + positions).
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-protected --dry-run \
 //       [--top-up-long=N --top-up-short=N] [--last-resort-allocation] [--allow-activation-adl]
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-protected \
 //       [--top-up-long=N --top-up-short=N --funder=<userId>] \
-//       [--last-resort-allocation --confirm-last-resort-mark=<mark from the dry run>] \
-//       [--allow-activation-adl] [--allow-stale-mark] \
+//       [--last-resort-allocation] [--allow-activation-adl] \
+//       [--confirm-fingerprint=<fingerprint from the dry run>; required for either of the two above] \
+//       [--allow-stale-mark] \
 //       --confirm=PERP_ACCOUNTING_PROTECTED
+//
+//   # a shadow checkpoint write failed (see its ERROR line): restart the replay
+//   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --reseed-shadow --confirm=PERP_ACCOUNTING_SHADOW
 //
 //   # rollback boundary: may this contract return to legacy?
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --verify-downgrade
@@ -47,6 +52,7 @@ import {
   dryRunPerpAccountingProtected,
   PerpProtectedActivationDryRun,
   PerpProtectedSimulation,
+  reseedPerpAccountingShadow,
   simulatePerpProtectedAccounting,
   verifyPerpAccountingDowngradeForContract,
 } from 'shared/perps/accounting'
@@ -207,9 +213,9 @@ runScript(async ({ pg }) => {
       console.log(
         `dry run ${dry.slug}: mark=${dry.mark} (${
           dry.markFresh ? 'fresh' : 'STALE'
-        }) accounting=${dry.accounting.mode} epoch=${dry.accounting.epoch} ok=${
-          dry.plan.ok
-        }`
+        }) fingerprint=${dry.fingerprint} accounting=${
+          dry.accounting.mode
+        } epoch=${dry.accounting.epoch} ok=${dry.plan.ok}`
       )
       for (const blocker of dry.plan.blockers)
         console.log(`  BLOCKER: ${blocker}`)
@@ -232,7 +238,11 @@ runScript(async ({ pg }) => {
         )
       if (dry.reductions.length > 0)
         console.log(
-          `  ${dry.reductions.length} position(s) would receive b < c; each gets an immutable basis-settlement receipt (trigger=activation). Re-run with --confirm-last-resort-mark=${dry.mark} to execute at exactly this mark.`
+          `  ${dry.reductions.length} position(s) would receive b < c; each gets an immutable basis-settlement receipt (trigger=activation).`
+        )
+      if (dry.reductions.length > 0 || dry.plan.activationAdl)
+        console.log(
+          `  This activation reduces someone. Re-run with --confirm-fingerprint=${dry.fingerprint} to execute against exactly this book (mark ${dry.mark}); any change aborts.`
         )
     }
     if (flag('dry-run')) {
@@ -249,13 +259,11 @@ runScript(async ({ pg }) => {
     const before = await simulatePerpProtectedAccounting(pg, target.id)
     printSimulation(before)
     printDryRun(await dryRunPerpAccountingProtected(pg, target.id, planOptions))
-    const confirmedMarkArg = arg('confirm-last-resort-mark')
     const result = await activatePerpAccountingProtected(target.id, actorId, {
       ...planOptions,
       allowStaleMark: flag('allow-stale-mark'),
       funderId: arg('funder'),
-      confirmedMark:
-        confirmedMarkArg === undefined ? undefined : Number(confirmedMarkArg),
+      confirmedFingerprint: arg('confirm-fingerprint'),
     })
     console.log(
       `protected accounting active on ${result.contract.slug} at epoch ${
@@ -265,6 +273,19 @@ runScript(async ({ pg }) => {
       }`
     )
     printSimulation(await simulatePerpProtectedAccounting(pg, target.id))
+    return
+  }
+
+  if (flag('reseed-shadow')) {
+    if (!target) throw new Error('--contract is required')
+    if (confirm !== 'PERP_ACCOUNTING_SHADOW')
+      throw new Error(
+        'Pass --confirm=PERP_ACCOUNTING_SHADOW to re-seed the shadow checkpoint'
+      )
+    const result = await reseedPerpAccountingShadow(target.id, actorId)
+    console.log(
+      `shadow checkpoint on ${result.contract.slug} (epoch ${result.epoch}) deleted; the next transition re-seeds it from live`
+    )
     return
   }
 

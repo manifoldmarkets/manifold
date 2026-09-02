@@ -425,16 +425,25 @@ and realized surplus alike; NOT house capital), committed state must satisfy
 0 <= b <= c    B >= Σb    E_long <= D_short + H_short    E_short <= D_long + H_long
 ```
 
-`assertPerpProtectedState` checks all four, strictly. Every backing check
-and every pool debit in the model goes through ONE affordability predicate,
-`isPerpClaimBacked(claim, available, scale)` / `debitPool`: a claim is backed
-when `claim <= available + max(dust(scale), 1e-12·|claim|)`, where `dust` is
-`256ε` times the largest basis involved, capped at `1e-4`. The invariant can
-therefore never accept a claim the payout path refuses, nor the reverse
-(`protected-basis.test.ts` pins this at M$5m scale, the case where a relative
-invariant tolerance and an absolute payment tolerance used to disagree).
-Every formula reduces to #4030 at `b = c`; every legacy contract mirrors
-`b = c` at the write boundary AND in the database guard.
+`assertPerpProtectedState` checks all four, strictly. Every backing check,
+every pool debit and the `B >= Σb` check go through ONE tolerance,
+`perpDustTolerance` (`isPerpClaimBacked` / `debitPool` are that rule): `256ε`
+of the largest basis-sized quantity involved, with an absolute floor of a
+millionth of a mana and a cap of a ten-thousandth. The floor is deliberate.
+Rounding residues are created at the scale of the state that produced them
+and persist in the pools after that state has shrunk — a M$5m row claim-ADL'd
+onto the boundary and then closed leaves ulps of M$5m in a M$2 book; a
+factor-0 settlement leaves ulps of the settled basis next to tiny surviving
+reserves — so a tolerance that shrank with the current scale would refuse
+the close or halt the tick that follows. There is no separate relative term,
+so no check ever admits more slack than a later check tolerates: the
+invariant can never accept a claim the payout path refuses, nor the reverse.
+A value above `b` by less than dust is snapped onto `b` in
+`getPerpPositionClaims`: one rounding ulp is never a contingent claim, so it
+can neither be settled at factor 0 nor fail a side-level check.
+`protected-basis.test.ts` pins all of this at M$5m and M$100k scale. Every
+formula reduces to #4030 at `b = c`; every legacy contract mirrors `b = c` at
+the write boundary AND in the database guard.
 
 **Transitions (all pure; the engine persists them under the contract lock in
 one transaction with the ledger txns, events and metrics):**
@@ -491,9 +500,14 @@ have (`common/perps/accounting-shadow.ts`, persisted in
 and advanced, under the same contract lock, by the protected counterpart of
 every committed transition — open/add/flip, close, oracle tick, funding,
 subsidy, resolution. After each step the checkpoint is compared with the
-live state (pools, rows, both invariant sets, and for closes the protected
-vs legacy payout); the report is stored next to the checkpoint and logged as
-`[perps][accounting-shadow]` when it diverges. A counterpart the protected
+live state (pools, rows, both invariant sets, the protected vs legacy user
+payout on closes and the creator residual on resolution); the report is
+stored next to the checkpoint and logged as `[perps][accounting-shadow]`
+when it diverges. Every database statement of the shadow, the checkpoint
+read included, runs under a savepoint, so a failing statement can never
+leave the financial transaction aborted; a checkpoint write that fails is
+logged at ERROR, leaves the epoch's replay with a gap, and is repaired by
+`--reseed-shadow`. A counterpart the protected
 rules cannot apply (a book that needs a cross-side transfer, a row protected
 ADL already removed) is recorded as a divergence and the checkpoint re-seeds
 from live. That is cumulative validation of an existing market; the
@@ -536,7 +550,11 @@ The contract patch carries `perpBasisDeficit` (Σ(c − b)) and
 `[perps][protected] claim ADL …`, `[perps][accounting] …` for transitions.
 Activation with the last-resort allocation writes one `basis-settlement`
 per reduced position (`trigger: 'activation'`, `cutoverMark`, epoch), so a
-migration-time reduction is as auditable as a settlement-time one.
+migration-time reduction is as auditable as a settlement-time one. A reducing
+activation (last-resort allocation or activation ADL) executes only against
+the exact book the dry run printed: mark, pools and every row's `q, c, b` are
+digested into a fingerprint (`perpActivationFingerprint`) the live run must
+repeat, so a legacy trade at an identical mark aborts it.
 Basis settlements produce a receipt and a persistent explainer, not a
 notification — product must approve any notification treatment separately.
 
@@ -547,8 +565,10 @@ gate — is scored (compat vs candidate `U = 1` vs the exact stress rule
 `E_d(P*) <= D_opp(P*) + (U/M)·H_opp`) and every oracle/funding tick projects
 claim ADL under `alpha ∈ {1, 0.5, 0.1}` (`available = D + alpha·H`). The
 latest evaluation is written to `contract_perp_risk_shadow` (one row per
-contract, outside the financial event log; nothing is stamped on events) and
-the interesting cases are logged as `[perps][risk-shadow]`. None of it can
+contract, outside the financial event log; nothing is stamped on events — a
+rejected attempt's transaction rolls back, so its row is written best-effort
+through a detached connection) and the interesting cases are logged as
+`[perps][risk-shadow]`. None of it can
 change an admission, a position, a pool, an event or a payout; a failure
 inside the evaluator is logged and ignored. Before any of it is enforced the `H` provenance question (realized
 trader losses vs house balance) must be decided — see `risk-policy-shadow.ts`.

@@ -5,7 +5,8 @@ import {
   parsePerpShadowCheckpoint,
   seedPerpShadowCheckpoint,
 } from './accounting-shadow'
-import { closePosition, openPosition } from './amm'
+import { applyFunding, closePosition, openPosition } from './amm'
+import { resolvePerpProtectedBatch } from './protected-basis'
 
 const M = 1_000_000
 
@@ -267,5 +268,68 @@ describe('accounting shadow checkpoint', () => {
         3
       )
     ).toBeNull()
+  })
+})
+
+describe('accounting shadow: funding, subsidy and resolution counterparts', () => {
+  it('funding at b = c is byte-identical to the legacy transform, and a subsidy only raises the pool', () => {
+    const live = scenario()
+    const checkpoint = seedPerpShadowCheckpoint(live, 1)
+    const funded = applyFunding(live, 0.001)
+    const step = advancePerpShadowCheckpoint(
+      checkpoint,
+      { kind: 'funding', fundingRate: 0.001, price: 100 },
+      funded,
+      100
+    )
+    expect(step.report.applied).toBe(true)
+    expect(step.report.divergent).toBe(false)
+    expect(step.report.positionDifferences).toEqual([])
+    expect(step.checkpoint.pool).toEqual(funded.pool)
+
+    const subsidised: PerpState = {
+      pool: { L: funded.pool.L, S: funded.pool.S + 1000 },
+      positions: funded.positions,
+    }
+    const next = advancePerpShadowCheckpoint(
+      step.checkpoint,
+      { kind: 'subsidy', side: 'short', amount: 1000 },
+      subsidised,
+      100
+    )
+    expect(next.report.divergent).toBe(false)
+    expect(next.checkpoint.pool.S).toBeCloseTo(subsidised.pool.S, 9)
+    expect(next.checkpoint.transitions).toBe(2)
+  })
+
+  it('resolution ends the checkpoint at empty pools and compares the creator residual, so a clean resolution is not a divergence', () => {
+    const live = scenario()
+    const checkpoint = seedPerpShadowCheckpoint(live, 1)
+    const protectedResidual = resolvePerpProtectedBatch(live, 100).residual
+    // The legacy ledger paid the same residual (b = c, no ADL at 100).
+    const step = advancePerpShadowCheckpoint(
+      checkpoint,
+      { kind: 'resolve', price: 100, liveResidual: protectedResidual },
+      { pool: { L: 0, S: 0 }, positions: [] },
+      100
+    )
+    expect(step.report.applied).toBe(true)
+    expect(step.report.divergent).toBe(false)
+    expect(step.report.poolDifference).toEqual({ long: 0, short: 0 })
+    expect(step.report.positionDifferences).toEqual([])
+    expect(step.report.payoutDifference).toBeCloseTo(0, 9)
+    expect(step.checkpoint.positions).toEqual([])
+    expect(step.checkpoint.divergences).toBe(0)
+
+    // A legacy residual that differs from the protected one shows up in the
+    // payout comparison without being a pool divergence.
+    const other = advancePerpShadowCheckpoint(
+      checkpoint,
+      { kind: 'resolve', price: 100, liveResidual: protectedResidual - 5 },
+      { pool: { L: 0, S: 0 }, positions: [] },
+      100
+    )
+    expect(other.report.divergent).toBe(false)
+    expect(other.report.payoutDifference).toBeCloseTo(5, 9)
   })
 })

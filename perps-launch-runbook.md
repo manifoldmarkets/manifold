@@ -322,12 +322,14 @@ the exact top-up:
   (`--top-up-long/--top-up-short --funder=<userId>`), then `b = c`. The
   last-resort snapshot allocation (`--last-resort-allocation`) assigns the
   deficit to whoever is underwater at the cutover mark; it is NOT
-  user-conservative and needs explicit product approval. It can only run
-  after a `--dry-run` at the same mark: the dry run prints every position's
-  `b` and reduction, and the live run must repeat that mark as
-  `--confirm-last-resort-mark=<mark>` or it is refused. Every reduced
-  position receives an immutable `basis-settlement` receipt
-  (`trigger=activation`).
+  user-conservative and needs explicit product approval. It — and any
+  activation ADL — can only run against the exact book a `--dry-run`
+  printed: the dry run prints every position's `b` and reduction plus a
+  fingerprint of mark, pools and positions, and the live run must repeat it
+  as `--confirm-fingerprint=<fingerprint>` or it is refused; a legacy trade,
+  settlement, tick or subsidy in between changes the fingerprint even at an
+  identical mark. Every reduced position receives an immutable
+  `basis-settlement` receipt (`trigger=activation`).
 - `deficit` (`B < Rc`): do not activate without the full `C − B`. Default is
   to stay legacy through resolution or recreate the market.
 
@@ -345,7 +347,16 @@ protected is allowed only with zero positions).
 Global maintenance window, because there are no per-contract pause controls:
 
 1. `PERP_TRADING_MODE=halted`, roll the API fully, drain old instances.
-2. Pause the perp scheduler jobs globally.
+2. Pause `update-perps` (funding) globally. Leave the oracle-feed job
+   running: the activation transaction takes the contract lock, so ticks
+   serialize around it, and a fast-feed contract's mark goes stale within
+   `maxOraclePriceAgeMs` (two minutes for the BTC launch config) once ticks
+   stop — the freshness check would then refuse the activation. For a
+   REDUCING activation, whose fingerprint pins the mark and the book, pause
+   the feed job too, immediately before the dry run, and pass
+   `--allow-stale-mark` together with `--confirm-fingerprint` if the pause
+   outlasts the freshness window: the reviewed fingerprint, not the clock,
+   is what proves the cutover mark in that case.
 3. For each approved contract, in order:
    - `--activate-shadow --confirm=PERP_ACCOUNTING_SHADOW` — done earlier,
      outside the window, and left running for at least one funding period
@@ -358,18 +369,24 @@ Global maintenance window, because there are no per-contract pause controls:
      `b < c` and the legacy ledger paid a recovery the shadow would have
      claim-ADL'd is the expected legacy/protected difference; a re-seed
      with an error is a state the protected rules could not take and must
-     be understood before activation.
+     be understood before activation. A
+     `[perps][accounting-shadow] … must be re-seeded` ERROR line means a
+     checkpoint write failed and the replay has a gap: run
+     `--reseed-shadow --confirm=PERP_ACCOUNTING_SHADOW` and restart the soak.
    - `--activate-protected --dry-run [...]` — prints the exact per-user
-     reserve bases, reductions and cutover mark without writing. Required
-     before any `--last-resort-allocation`; recommended always.
-   - `--activate-protected [--top-up-... --funder=...] [--last-resort-allocation --confirm-last-resort-mark=<mark>] [--allow-activation-adl] --confirm=PERP_ACCOUNTING_PROTECTED`.
+     reserve bases, reductions, cutover mark and book fingerprint without
+     writing. Required before any `--last-resort-allocation` or
+     `--allow-activation-adl` (they need its fingerprint); recommended
+     always.
+   - `--activate-protected [--top-up-... --funder=...] [--last-resort-allocation] [--allow-activation-adl] [--confirm-fingerprint=<fingerprint>] --confirm=PERP_ACCOUNTING_PROTECTED`.
      One transaction under the contract lock: top-up txn, every position
      rewritten with its `b` and the new epoch, the immutable
      `contract_perp_accounting_epochs` row, the version flip, the
      `accounting-activation` event, any activation ADL and its payouts, the
      metrics rebuild, escrow and invariant checks. The cutover mark is the
-     contract's committed oracle price and must be fresh
-     (`--allow-stale-mark` overrides; do not).
+     contract's committed oracle price and must be fresh;
+     `--allow-stale-mark` is acceptable only together with a reviewed
+     `--confirm-fingerprint` (step 2).
    - Re-run the report; every invariant must read true.
 4. Resume the scheduler globally; keep the API `reduce-only`.
 5. Observe repeated clean ticks and funding on the migrated contracts, then
@@ -406,6 +423,8 @@ blindly.
 Set `perpRiskPolicyMode=shadow` on protected contracts once they are stable.
 Read the `[perps][risk-shadow]` lines and the `contract_perp_risk_shadow`
 row (latest evaluation per contract: accepted and compat-rejected opens,
-and every oracle/funding tick; nothing is stamped on financial events). Enforcement of `U = 1`, the exact stress rule, or any `alpha < 1`
+and every oracle/funding tick; nothing is stamped on financial events, and a
+rejected open's row is written best-effort through a detached connection
+because its transaction rolls back). Enforcement of `U = 1`, the exact stress rule, or any `alpha < 1`
 requires a separate product/risk approval and a separate PR; nothing in this
 build can enforce them.

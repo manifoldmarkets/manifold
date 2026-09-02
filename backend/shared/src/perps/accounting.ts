@@ -27,14 +27,15 @@ import { PerpDirection, PerpEvent, PerpPosition } from 'common/perps/position'
 import {
   assertPerpProtectedState,
   getPerpAccountingSnapshot,
-  perpDustTolerance,
   PerpAccountingSnapshot,
   withReserveBasis,
 } from 'common/perps/protected-basis'
 import {
   classifyPerpMigration,
+  perpActivationFingerprint,
   PerpActivationPlan,
   PerpActivationPlanOptions,
+  perpActivationReductions,
   PerpMigrationReport,
   planPerpProtectedActivation,
   summarizePerpInvariants,
@@ -420,12 +421,14 @@ export type PerpProtectedActivationOptions = PerpActivationPlanOptions & {
   /** Activate on a stale cached mark. Off by default: the cutover mark must be executable. */
   allowStaleMark?: boolean
   /**
-   * Required with the last-resort allocation: the exact cutover mark the
-   * dry run printed. The allocation is mark-dependent (it assigns the
-   * deficit to whoever is underwater at that mark), so it may only execute
-   * against the mark that was reviewed. Any other mark aborts.
+   * Required whenever the activation can reduce anyone (the last-resort
+   * allocation, an activation ADL): the digest of mark, pools and positions
+   * the dry run printed. Those plans depend on the whole book, not only the
+   * mark, so they may only execute against exactly the state that was
+   * reviewed; any change — a legacy trade at an identical mark included —
+   * aborts.
    */
-  confirmedMark?: number
+  confirmedFingerprint?: string
 }
 
 export type PerpProtectedActivationDryRun = {
@@ -434,6 +437,8 @@ export type PerpProtectedActivationDryRun = {
   mark: number
   markTime: number | undefined
   markFresh: boolean
+  /** Pass back as `confirmedFingerprint`; see PerpProtectedActivationOptions. */
+  fingerprint: string
   accounting: PerpAccounting
   plan: PerpActivationPlan
   /** Every row the plan would leave with b < c, with the exact numbers. */
@@ -446,18 +451,11 @@ export type PerpProtectedActivationDryRun = {
   }[]
 }
 
-const reducedAllocations = (plan: PerpActivationPlan) =>
-  plan.allocations.filter(
-    (a) =>
-      a.reserveBasisAfter <
-      a.reserveBasisBefore - perpDustTolerance(a.reserveBasisBefore)
-  )
-
 /**
  * The activation, computed and reported without writing anything. The
- * per-user reductions it prints are exactly what activation would commit at
- * this mark; with the last-resort allocation the mark must then be passed
- * back as `confirmedMark`.
+ * per-user reductions it prints are exactly what activation would commit on
+ * this book; a reducing activation must then pass the printed `fingerprint`
+ * back as `confirmedFingerprint`.
  */
 export const dryRunPerpAccountingProtected = async (
   pg: SupabaseDirectClient,
@@ -483,9 +481,10 @@ export const dryRunPerpAccountingProtected = async (
         contract.maxOraclePriceAgeMs,
         Date.now()
       ).status === 'fresh',
+    fingerprint: perpActivationFingerprint(state, contract.oraclePrice),
     accounting,
     plan,
-    reductions: reducedAllocations(plan).map((a) => ({
+    reductions: perpActivationReductions(plan).map((a) => ({
       userId: a.userId,
       direction: a.direction,
       costBasis: a.costBasis,
@@ -533,20 +532,26 @@ export const activatePerpAccountingProtected = async (
     const price = contract.oraclePrice
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
-    // The last-resort allocation is mark-dependent and not user-conservative:
-    // it may only execute against the exact mark a reviewer saw in the dry
-    // run. The mark is read under the lock, so a tick between review and
-    // execution aborts rather than silently reallocating.
-    if (options.allocation === 'last-resort-snapshot') {
-      if (options.confirmedMark === undefined)
+    // A reducing activation (last-resort allocation, activation ADL) is not
+    // user-conservative and depends on the whole book, so it may only execute
+    // against exactly the state a reviewer saw in the dry run. Mark, pools
+    // and positions are read under the lock and digested; a tick, a legacy
+    // trade, a settlement or a subsidy in between aborts rather than
+    // silently reallocating.
+    const fingerprint = perpActivationFingerprint(state, price)
+    if (
+      options.allocation === 'last-resort-snapshot' ||
+      options.allowActivationAdl
+    ) {
+      if (options.confirmedFingerprint === undefined)
         throw new APIError(
           400,
-          'The last-resort allocation requires confirmedMark: the exact cutover mark reported by the dry run'
+          'A reducing activation requires confirmedFingerprint: the digest reported by the dry run'
         )
-      if (options.confirmedMark !== price)
+      if (options.confirmedFingerprint !== fingerprint)
         throw new APIError(
           409,
-          `Cutover mark moved: dry run reviewed ${options.confirmedMark}, contract is now at ${price}; re-run the dry run`
+          `Book changed since the dry run: reviewed ${options.confirmedFingerprint}, contract is now ${fingerprint} (mark ${price}); re-run the dry run`
         )
     }
 
@@ -621,7 +626,8 @@ export const activatePerpAccountingProtected = async (
         data: {
           actorId,
           allocation: options.allocation,
-          confirmedMark: options.confirmedMark ?? null,
+          confirmedFingerprint: options.confirmedFingerprint ?? null,
+          fingerprint,
           activationAdl: plan.activationAdl
             ? {
                 adlFactorLong: plan.activationAdl.adlFactorLong,
@@ -663,14 +669,15 @@ export const activatePerpAccountingProtected = async (
           actorId,
           topUp: options.topUp,
           allocation: options.allocation,
-          confirmedMark: options.confirmedMark ?? null,
+          confirmedFingerprint: options.confirmedFingerprint ?? null,
+          fingerprint,
           reducedAnyBasis: plan.reducedAnyBasis,
         }
       ),
       // One immutable, user-attributed receipt per row whose b the activation
       // set below c (last-resort allocation only): the same shape as a basis
       // settlement, so the position history explains it the same way.
-      ...reducedAllocations(plan).map((a) =>
+      ...perpActivationReductions(plan).map((a) =>
         asEvent(contract, {
           userId: a.userId,
           eventType: 'basis-settlement',
@@ -757,7 +764,7 @@ export const activatePerpAccountingProtected = async (
         options.topUp
       )} allocation=${options.allocation} reducedAnyBasis=${
         plan.reducedAnyBasis
-      } reductions=${reducedAllocations(plan).length} activationAdl=${
+      } reductions=${perpActivationReductions(plan).length} activationAdl=${
         plan.activationAdl ? 'yes' : 'no'
       }`
     )
@@ -926,4 +933,32 @@ export const downgradePerpAccountingToLegacy = async (
       `[perps][accounting] ${contract.slug}: ${accounting.mode} -> legacy (epoch ${epoch}) by ${actorId}`
     )
     return { contract, epoch }
+  })
+
+/**
+ * Delete the shadow checkpoint under the contract lock so the next committed
+ * transition seeds a fresh one from the live state. The remedy for a
+ * checkpoint write that failed (its ERROR line says so): the cumulative
+ * replay for the epoch has a gap and cannot be trusted; counters restart.
+ * Diagnostic state only — no ledger, position, event or pool is touched.
+ */
+export const reseedPerpAccountingShadow = async (
+  contractId: string,
+  actorId: string
+) =>
+  runPerpTransaction(async (pgTrans: SupabaseTransaction) => {
+    const { contract, accounting } = await loadPerpStateForUpdate(
+      pgTrans,
+      contractId
+    )
+    if (accounting.mode !== 'shadow')
+      throw new APIError(
+        409,
+        `${contract.slug} is in ${accounting.mode} accounting; only a shadow contract has a checkpoint to re-seed`
+      )
+    await pgTrans.none(deleteShadowCheckpointQuery(contractId))
+    log(
+      `[perps][accounting] ${contract.slug}: shadow checkpoint for epoch ${accounting.epoch} deleted by ${actorId}; the next transition re-seeds it from live`
+    )
+    return { contract, epoch: accounting.epoch }
   })
