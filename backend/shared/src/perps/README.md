@@ -380,7 +380,8 @@ sequence and rollback are in `perps-launch-runbook.md`.
 
 The slow-feed jobs share `daily-feed-failure.ts`: a failed attempt is a
 throttled WARN until the feed has gone 20h without a point, then every
-failure is an ERROR.
+failure is an ERROR (a feed that has never published is an ERROR too, but
+throttled to one an hour).
 
 Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
 `[update-perps]`, and the publisher jobs page under `[trump-approval]`,

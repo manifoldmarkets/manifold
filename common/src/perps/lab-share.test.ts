@@ -188,6 +188,44 @@ describe('Chinese-lab share', () => {
     expect(res.unknownAuthors).toEqual([])
     expect(res.share).toBeCloseTo(30)
   })
+
+  it('treats Object.prototype-named authors as unknown, not as listed', () => {
+    // The author segment is untrusted. A truthy plain-object lookup would
+    // have put `constructor/x` into the NUMERATOR silently, and an
+    // `__proto__` object key would have vanished from the reported list.
+    for (const author of [
+      'constructor',
+      '__proto__',
+      'toString',
+      'hasOwnProperty',
+    ]) {
+      const rows = [
+        row(D, 'deepseek/deepseek-v4-pro-20260423', 500),
+        row(D, 'openai/gpt-5.5-20260423', 500),
+        row(D, `${author}/mystery-model`, 100),
+      ]
+      const res = computeChineseLabShare(rows)
+      expect([author, res.unknownAuthors]).toEqual([author, [author]])
+      expect([author, res.unknownTokens]).toEqual([author, 100])
+      expect([author, res.numeratorTokens]).toEqual([author, 500])
+      expect([author, res.share]).toEqual([author, 50])
+      // ...and over the cap it halts like any other unknown.
+      const validation = validateLabSharePublication({
+        ...res,
+        dates: [
+          '2026-08-20',
+          '2026-08-21',
+          '2026-08-22',
+          '2026-08-23',
+          '2026-08-24',
+          '2026-08-25',
+          '2026-08-26',
+        ],
+        hasExcludedPayload: true,
+      })
+      expect([author, validation.ok]).toEqual([author, false])
+    }
+  })
 })
 
 describe('publication validation', () => {
@@ -246,6 +284,18 @@ describe('publication validation', () => {
     expect(validation.share).toBeCloseTo(40)
     expect(validation.unknownAuthors).toEqual(['mystery-lab'])
     expect(validation.unknownShareOfClassified).toBeCloseTo(0.005)
+  })
+
+  it('publishes exactly at the cap and halts just above it', () => {
+    // 70 unknown against 7000 classified is exactly 1%; 71 is over.
+    const at = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 70)])
+    )
+    expect(validateLabSharePublication(at).ok).toBe(true)
+    const over = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 71)])
+    )
+    expect(validateLabSharePublication(over).ok).toBe(false)
   })
 
   it('halts on any unknown when the cap is zero (backfill posture)', () => {
@@ -328,8 +378,9 @@ describe('publication validation', () => {
 })
 
 describe('the author lists', () => {
-  it('reuse the open-weight cap number', () => {
+  it('reuse the open-weight cap number — 1% of classified tokens', () => {
     expect(UNKNOWN_AUTHOR_TOKEN_SHARE_CAP).toBe(UNCLASSIFIED_TOKEN_SHARE_CAP)
+    expect(UNKNOWN_AUTHOR_TOKEN_SHARE_CAP).toBe(0.01)
   })
 
   it('never place an author on both sides', () => {

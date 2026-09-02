@@ -123,6 +123,8 @@ describe('parseFearGreedPayload', () => {
       // Guard the other direction too: a small integer is 1970, before the
       // index existed.
       '86400',
+      // Past the largest Date; toISOString() would throw a RangeError.
+      '99999999999999999',
     ])
       expect([
         timestamp,

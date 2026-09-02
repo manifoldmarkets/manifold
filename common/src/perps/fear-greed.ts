@@ -109,11 +109,19 @@ const parseTimestamp = (raw: unknown): number | null => {
   if (!Number.isInteger(seconds) || seconds <= 0) return null
   const ms = seconds * 1000
   if (!Number.isFinite(ms) || ms < FEAR_GREED_EPOCH_MS) return null
+  // Beyond the largest instant a Date can hold, toISOString() throws; that
+  // would surface as an opaque RangeError from a log line instead of a
+  // rejection that names the field. (A merely future timestamp is left to
+  // validateBasicOraclePoint, which refuses a sourceTs ahead of now.)
+  if (ms > MAX_DATE_MS) return null
   return ms
 }
 
 /** 2018-01-01T00:00:00Z — the index did not exist before 2018. */
 export const FEAR_GREED_EPOCH_MS = Date.UTC(2018, 0, 1)
+
+/** ECMAScript's maximum Date value, ±8.64e15 ms from the epoch. */
+const MAX_DATE_MS = 8.64e15
 
 /**
  * Parse the `/fng/` payload, treating every field as untrusted.

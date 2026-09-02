@@ -19,8 +19,14 @@ import { runScript } from './run-script'
 // verified against a live response, and fix the constant if it disagrees.
 if (require.main === module)
   runScript(async () => {
-    log('GET /averages:')
-    log(JSON.stringify(await fetchVoteHubAverageList(), null, 2))
+    // Guarded like the per-spec fetches below: a failing list endpoint must
+    // not hide the per-spec diagnostics, which are the part that matters.
+    try {
+      log('GET /averages:')
+      log(JSON.stringify(await fetchVoteHubAverageList(), null, 2))
+    } catch (err) {
+      log.error(`GET /averages failed: ${err}`)
+    }
 
     for (const spec of ALL_VOTEHUB_FEED_SPECS) {
       log(`--- ${spec.feedId} (averageKey=${spec.averageKey})`)

@@ -33,6 +33,16 @@ import { runScript } from './run-script'
 // (D+1 00:00 UTC), the instant that window became complete; day-boundary
 // stamps never collide with the live job's Date.now() stamps.
 //
+// ⚠️ NOT for a live feed. Points already published are immutable and may have
+// been consumed by funding and liquidations; this writes day-boundary history
+// under the CURRENT classification lists and exists for standing up a NEW
+// feed (today, the two lab-share feeds). `insertOraclePrices` is on-conflict-
+// do-nothing, so existing rows are left alone even if it is run by accident —
+// but a run against a feed that already has a live market would still append
+// a day-boundary point next to every live Date.now() point. The DEFAULT
+// target (no --feed) is the open-weight feed, which already has a market:
+// only re-run it deliberately.
+//
 // Two honest limitations, both of which belong in the market description:
 //  - Historical points are classified with the CURRENT list (models for the
 //    open-weight feed, authors for the Chinese-lab feed). Reconstructing
@@ -57,7 +67,12 @@ if (require.main === module)
       process.argv
         .find((arg) => arg.startsWith('--feed='))
         ?.slice('--feed='.length) ?? OPENROUTER_OPEN_WEIGHT_FEED_ID
-    const labFeed: LabShareFeed | undefined = LAB_FEEDS[feedId]
+    // Own-property lookup: `--feed=constructor` must not resolve to
+    // Object.prototype and write rows under that feed id.
+    const labFeed: LabShareFeed | undefined =
+      Object.prototype.hasOwnProperty.call(LAB_FEEDS, feedId)
+        ? LAB_FEEDS[feedId]
+        : undefined
     if (feedId !== OPENROUTER_OPEN_WEIGHT_FEED_ID && !labFeed)
       throw new Error(
         `unknown --feed=${feedId}; expected ${[

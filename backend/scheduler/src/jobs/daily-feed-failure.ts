@@ -19,6 +19,11 @@ import { log } from 'shared/utils'
 //      retry is no longer the fix, every failure is an ERROR and none are
 //      throttled: a feed that has gone stale is the one thing here worth
 //      paging on every time it is observed.
+//   3. A feed that has NEVER published is also an ERROR — a wrong source key
+//      on a freshly deployed feed is a real fault — but throttled to one an
+//      hour: nothing is marking against an ageing price yet, and the hourly
+//      `[oracle-feeds]` staleness probe already covers it, so twelve pages
+//      an hour would only bury the one that says why.
 //
 // State is in-memory, so a scheduler restart re-logs immediately — which is
 // the behaviour you want.
@@ -85,20 +90,21 @@ export const reportDailyFeedFailure = async (
   // once an hour for one outage. Escalate only once the feed itself has gone
   // long enough without a point that the next retry is no longer the fix.
   const ageMs = await getAgeOfLatestPoint(pg, feedId)
-  const stale = ageMs == null || ageMs >= staleErrorMs
+  const neverPublished = ageMs == null
+  const stale = neverPublished || ageMs >= staleErrorMs
   // Throttle, but never throttle away the escalation: a feed that has gone
   // stale is the one thing here worth paging on every time it is observed.
+  // The never-published case is the exception (rule 3 above): it pages, but
+  // once an hour.
   const now = Date.now()
-  if (
-    !stale &&
+  const throttled =
     now - (lastFailureLog[feedId] ?? 0) < DAILY_FEED_FAILURE_LOG_INTERVAL_MS
-  )
-    return
+  if ((!stale || neverPublished) && throttled) return
   lastFailureLog[feedId] = now
   if (stale)
     log.error(
       `${message}; last point ${
-        ageMs == null ? 'never' : `${Math.round(ageMs / HOUR_MS)}h ago`
+        neverPublished ? 'never' : `${Math.round(ageMs / HOUR_MS)}h ago`
       }, feed is going stale`
     )
   else log.warn(`${message}; ${retryHint}`)

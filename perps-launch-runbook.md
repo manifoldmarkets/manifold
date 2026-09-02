@@ -275,7 +275,11 @@ For an incident:
 
 2. Unlist affected markets.
 3. If the oracle is merely stale, restore it and let users close. Do not publish
-   an invented point to make the warning disappear.
+   an invented point to make the warning disappear. The slow feeds have manual
+   escape hatches that publish the source's CURRENT value stamped now
+   (`publish-trump-approval-now`, `publish-votehub-now --feed=<feedId>`,
+   `publish-fear-greed-now`, each with `--force` to bypass the unchanged gate);
+   they never backdate.
 4. If a still-fresh cached point is known corrupt, use `halted` before
    investigating; unlisting alone does not block a direct API close. Preserve
    immutable history and resolve only against a validated published point.

@@ -111,6 +111,45 @@ describe('VoteHub feed specs', () => {
     expect(VANCE_FAVORABILITY_SPEC.pollAnswerChoice).toBe('Favorable')
   })
 
+  it('pins the registry bounds and launch settings per feed', () => {
+    const bounds: Record<string, [number, number]> = {
+      'trump-approval-rating': [10, 90],
+      'votehub-generic-ballot-2026': [20, 80],
+      'vance-favorability': [10, 90],
+    }
+    for (const spec of ALL_VOTEHUB_FEED_SPECS) {
+      const feed = getOracleFeed(spec.feedId)
+      expect([spec.feedId, feed?.minPrice, feed?.maxPrice]).toEqual([
+        spec.feedId,
+        ...bounds[spec.feedId],
+      ])
+      expect([spec.feedId, feed?.staleAfterMs]).toEqual([
+        spec.feedId,
+        26 * 60 * 60 * 1000,
+      ])
+      expect([spec.feedId, feed?.updatePeriodMs]).toEqual([
+        spec.feedId,
+        24 * 60 * 60 * 1000,
+      ])
+      const market = PERP_LAUNCH_MARKETS.find((m) => m.feedId === spec.feedId)
+      expect([spec.feedId, market?.recommended]).toEqual([
+        spec.feedId,
+        {
+          maxLeverage: 3,
+          annualMaxFundingRate: 1,
+          fundingSensitivity: 1,
+          maxOraclePriceAgeMs: 30 * 60 * 60 * 1000,
+          subsidyLong: 5_000,
+          subsidyShort: 5_000,
+        },
+      ])
+      expect([spec.feedId, market?.requiredTopics.map((t) => t.name)]).toEqual([
+        spec.feedId,
+        ['Politics'],
+      ])
+    }
+  })
+
   it('both VoteHub jobs are in the launch scheduler expectations', () => {
     const names = PERP_LAUNCH_SCHEDULER_EXPECTATIONS.map((e) => e.jobName)
     expect(names).toContain('update-trump-approval')

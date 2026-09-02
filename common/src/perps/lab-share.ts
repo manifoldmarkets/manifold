@@ -262,14 +262,26 @@ export type LabShareResult = {
 
 type AuthorVerdict = 'in' | 'out' | 'unknown'
 
+/**
+ * Own-property membership. The author segment is untrusted input, and a
+ * plain `lists.chinese[author]` would be truthy for `constructor`,
+ * `__proto__`, `toString` and every other Object.prototype member — which
+ * would put a slug like `constructor/x` straight into the Chinese-lab
+ * NUMERATOR with no warning, bypassing the whole unknown-author rule.
+ */
+const listed = (
+  list: Readonly<Record<string, AuthorEvidence>>,
+  author: string
+): boolean => Object.prototype.hasOwnProperty.call(list, author)
+
 const classifyAuthor = (
   feed: LabShareFeed,
   author: string,
   lists: LabShareAuthorLists
 ): AuthorVerdict => {
   if (feed === 'anthropic') return author === ANTHROPIC_AUTHOR ? 'in' : 'out'
-  if (lists.chinese[author]) return 'in'
-  if (lists.nonChinese[author]) return 'out'
+  if (listed(lists.chinese, author)) return 'in'
+  if (listed(lists.nonChinese, author)) return 'out'
   return 'unknown'
 }
 
@@ -297,15 +309,17 @@ export const computeLabShare = (
   let otherTokens = 0n
   let compositeTokens = 0n
   let payloadTokens = 0n
-  const unknownSet: Record<string, true> = {}
-  const compositeSet: Record<string, true> = {}
-  const invalidTokenRowSet: Record<string, true> = {}
-  const malformedSlugSet: Record<string, true> = {}
+  // Sets, not plain objects: an author of `__proto__` written as an object
+  // key would silently vanish from Object.keys and never be reported.
+  const unknownSet = new Set<string>()
+  const compositeSet = new Set<string>()
+  const invalidTokenRowSet = new Set<string>()
+  const malformedSlugSet = new Set<string>()
 
   for (const row of rows) {
     const tokens = parseTokens(row.total_tokens)
     if (tokens == null) {
-      invalidTokenRowSet[`${row.date}:${row.model_permaslug}`] = true
+      invalidTokenRowSet.add(`${row.date}:${row.model_permaslug}`)
       continue
     }
     payloadTokens += tokens
@@ -319,20 +333,20 @@ export const computeLabShare = (
     // Routers and floating aliases are not one publisher's model. Out of both
     // sides, and recorded so the caller can log the volume.
     if (isCompositeSlug(row.model_permaslug)) {
-      compositeSet[basePermaslug(row.model_permaslug)] = true
+      compositeSet.add(basePermaslug(row.model_permaslug))
       compositeTokens += tokens
       continue
     }
 
     const author = authorOfPermaslug(row.model_permaslug)
     if (author == null) {
-      malformedSlugSet[row.model_permaslug] = true
+      malformedSlugSet.add(row.model_permaslug)
       continue
     }
 
     const verdict = classifyAuthor(feed, author, lists)
     if (verdict === 'unknown') {
-      unknownSet[author] = true
+      unknownSet.add(author)
       unknownTokens += tokens
       continue
     }
@@ -340,8 +354,8 @@ export const computeLabShare = (
     if (verdict === 'in') numeratorTokens += tokens
   }
 
-  const invalidTokenRows = Object.keys(invalidTokenRowSet).sort()
-  const malformedSlugs = Object.keys(malformedSlugSet).sort()
+  const invalidTokenRows = [...invalidTokenRowSet].sort()
+  const malformedSlugs = [...malformedSlugSet].sort()
   const share =
     classifiedTokens > 0n &&
     invalidTokenRows.length === 0 &&
@@ -357,13 +371,13 @@ export const computeLabShare = (
     invalidTokenRows,
     malformedSlugs,
     hasExcludedPayload: otherTokens > 0n,
-    unknownAuthors: Object.keys(unknownSet).sort(),
+    unknownAuthors: [...unknownSet].sort(),
     unknownTokens: finiteBigIntTelemetry(unknownTokens),
     unknownShareOfClassified: ratioOfBigInts(unknownTokens, classifiedTokens),
     numeratorTokens: finiteBigIntTelemetry(numeratorTokens),
     classifiedTokens: finiteBigIntTelemetry(classifiedTokens),
     otherTokens: finiteBigIntTelemetry(otherTokens),
-    compositeSlugs: Object.keys(compositeSet).sort(),
+    compositeSlugs: [...compositeSet].sort(),
     compositeTokens: finiteBigIntTelemetry(compositeTokens),
     payloadTokens: finiteBigIntTelemetry(payloadTokens),
   }
