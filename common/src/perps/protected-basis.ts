@@ -38,7 +38,6 @@ import {
   liquidationPrice,
   PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
-  poolAfterDebit,
   processLiquidations,
 } from './amm'
 import { PerpDirection, PerpPosition } from './position'
@@ -58,8 +57,63 @@ export const perpDustTolerance = (...values: number[]) => {
   let scale = 1
   for (const value of values)
     if (Number.isFinite(value)) scale = Math.max(scale, Math.abs(value))
-  return Math.min(1e-6, 256 * Number.EPSILON * scale)
+  return Math.min(1e-4, 256 * Number.EPSILON * scale)
 }
+
+/**
+ * THE affordability tolerance: one rule for the current-claim invariant, the
+ * claim-ADL boundary, the contingent payment, and the pool debit. Two states
+ * that disagree on whether a claim is payable are how a book accepted as
+ * solvent can refuse a guaranteed close, so nothing may check this any other
+ * way.
+ *
+ * Relative part: ADL lands claims on the boundary within division rounding,
+ * so a 1e-12 share of the claim is allowed. Absolute part: E and V are
+ * differences of quantities the size of the side's COST BASIS (c' = b +
+ * s·(c − b), V = c + π), so the dust must scale with that basis, not with
+ * the claim — a tiny allowance against a large basis rounds to ulps of the
+ * basis, not of the allowance. Callers pass the side's Σc as `scale`.
+ */
+export const perpClaimTolerance = (
+  claim: number,
+  available: number,
+  scale = 0,
+  relative = PERP_SOLVENCY_FACTOR_TOLERANCE
+) =>
+  Math.max(
+    perpDustTolerance(claim, available, scale),
+    relative * Math.abs(claim)
+  )
+
+/** Is `claim` payable from `available`? See perpClaimTolerance. */
+export const isPerpClaimBacked = (
+  claim: number,
+  available: number,
+  scale = 0,
+  relative = PERP_SOLVENCY_FACTOR_TOLERANCE
+) =>
+  Number.isFinite(claim) &&
+  Number.isFinite(available) &&
+  claim <= available + perpClaimTolerance(claim, available, scale, relative)
+
+/**
+ * Pool debit with the SAME tolerance as the affordability predicate: a claim
+ * the invariant accepted may leave the pool a tolerance below zero, and that
+ * is representational dust, not a deficit. Anything larger stays negative so
+ * the caller fails closed.
+ */
+const debitPool = (pool: number, amount: number, scale: number) => {
+  const next = pool - amount
+  if (next >= 0) return next === 0 ? 0 : next
+  return next >= -perpClaimTolerance(amount, pool, scale) ? 0 : next
+}
+
+/**
+ * The smallest fraction a partial close may remove. A close below this is
+ * either a rounding no-op (the surviving row is byte-identical, yet an event
+ * is written and streaks advance) or streak farming; both are refused.
+ */
+export const PERP_MIN_CLOSE_FRACTION = 0.01
 
 export class PerpProtectedInvariantError extends Error {
   readonly kind:
@@ -283,13 +337,14 @@ export const assertPerpProtectedState = (
     const opposing = snapshot[oppositePerpDirection(side)]
     const available = opposing.paperLosses + opposing.unreserved
     if (own.contingentClaims <= 0) continue
-    const ratio = available / own.contingentClaims
-    if (!Number.isFinite(ratio))
-      fail(
-        'contingent-claims',
-        `${side} contingent-claim cover ratio must be finite`
+    if (
+      !isPerpClaimBacked(
+        own.contingentClaims,
+        available,
+        own.costBasis + opposing.costBasis,
+        tolerance
       )
-    if (ratio < 1 - tolerance)
+    )
       fail(
         'contingent-claims',
         `${side} contingent claims ${own.contingentClaims} exceed opposing paper losses plus unreserved balance ${available}`
@@ -447,20 +502,25 @@ export const payPerpContingentClaim = (
 ): { state: PerpState; settlement: PerpBasisSettlement } => {
   const payingSide = oppositePerpDirection(claimantSide)
   const before = getPerpSideAccounting(state, payingSide, price)
+  const claimant = getPerpSideAccounting(state, claimantSide, price)
   const settled = settlePerpPaperLoss(state, payingSide, claim, price)
   const { unreservedConsumed } = settled.settlement
-  if (
-    unreservedConsumed >
-    before.unreserved + perpDustTolerance(before.pool, before.unreserved, claim)
+  // Same predicate and same scale as the invariant that admitted this claim:
+  // the whole side's contingent claim and both sides' cost basis.
+  const scale = Math.max(
+    claim,
+    claimant.contingentClaims,
+    before.costBasis + claimant.costBasis
   )
+  if (!isPerpClaimBacked(unreservedConsumed, before.unreserved, scale))
     fail(
       'claim-unpayable',
       `${claimantSide} contingent claim ${claim} needs ${unreservedConsumed} of ${payingSide} unreserved balance but only ${before.unreserved} is available`
     )
   const pool =
     payingSide === 'long'
-      ? { L: poolAfterDebit(state.pool.L, claim), S: state.pool.S }
-      : { L: state.pool.L, S: poolAfterDebit(state.pool.S, claim) }
+      ? { L: debitPool(state.pool.L, claim, scale), S: state.pool.S }
+      : { L: state.pool.L, S: debitPool(state.pool.S, claim, scale) }
   if (pool.L < 0 || pool.S < 0)
     fail(
       'claim-unpayable',
@@ -514,11 +574,26 @@ export const applyPerpProtectedClaimAdl = (
   const normalized: PerpState = { pool: state.pool, positions }
   const snapshot = getPerpAccountingSnapshot(normalized, price)
 
+  // Representability. E and V are differences of basis-sized quantities, so
+  // an allowance below the dust of the side's cost basis cannot be realized
+  // by scaling: c' = b + s·(c − b) rounds to b's ulps and the scaled claim
+  // comes out LARGER than the allowance it was meant to fit. Such an
+  // allowance is economically zero, so the factor snaps to zero (the rows
+  // are settled at b). Symmetrically, a contingent claim within that dust
+  // is no claim at all and is left alone.
+  const dustFor = (side: PerpDirection) =>
+    perpDustTolerance(
+      snapshot[side].contingentClaims,
+      snapshot[side].costBasis + snapshot[oppositePerpDirection(side)].costBasis
+    )
   const factorFor = (side: PerpDirection) => {
     const own = snapshot[side]
-    if (own.contingentClaims <= 0) return 1
+    if (own.contingentClaims <= dustFor(side)) return 1
     const opposing = snapshot[oppositePerpDirection(side)]
     const available = opposing.paperLosses + opposing.unreserved
+    if (!Number.isFinite(available))
+      fail('contingent-claims', `${side} claim ADL allowance must be finite`)
+    if (available <= dustFor(side)) return 0
     const s = available / own.contingentClaims
     if (!Number.isFinite(s))
       fail('contingent-claims', `${side} claim ADL factor must be finite`)
@@ -537,7 +612,7 @@ export const applyPerpProtectedClaimAdl = (
         position.direction === 'long' ? adlFactorLong : adlFactorShort
       if (factor >= 1) return position
       const claims = getPerpPositionClaims(position, price)
-      if (claims.contingent <= 0) return position
+      if (claims.contingent <= dustFor(position.direction)) return position
 
       if (factor === 0) {
         // Zero exposure remains; return the protected basis once. E > 0
@@ -581,11 +656,19 @@ export const applyPerpProtectedClaimAdl = (
     .filter((s) => s.position.direction === 'short')
     .reduce((sum, s) => sum + s.payout, 0)
 
-  return {
+  const result: PerpProtectedAdlResult = {
     state: {
       pool: {
-        L: poolAfterDebit(state.pool.L, longSettlementPayout),
-        S: poolAfterDebit(state.pool.S, shortSettlementPayout),
+        L: debitPool(
+          state.pool.L,
+          longSettlementPayout,
+          snapshot.long.costBasis
+        ),
+        S: debitPool(
+          state.pool.S,
+          shortSettlementPayout,
+          snapshot.short.costBasis
+        ),
       },
       positions: next,
     },
@@ -596,6 +679,33 @@ export const applyPerpProtectedClaimAdl = (
     contingentReduced,
     crossSideTransfer: 0,
   }
+
+  // The scaled claims must fit the allowance they were scaled to, under the
+  // same predicate the invariant uses. With the dust snap above this cannot
+  // fail for a valid input; keep it as the fail-closed proof rather than
+  // trusting the algebra.
+  const after = getPerpAccountingSnapshot(result.state, price)
+  for (const side of ['long', 'short'] as const) {
+    const factor = side === 'long' ? adlFactorLong : adlFactorShort
+    if (factor >= 1) continue
+    const opposing = after[oppositePerpDirection(side)]
+    if (
+      !isPerpClaimBacked(
+        after[side].contingentClaims,
+        opposing.paperLosses + opposing.unreserved,
+        after[side].costBasis + opposing.costBasis
+      )
+    )
+      fail(
+        'contingent-claims',
+        `${side} claim ADL at factor ${factor} left ${
+          after[side].contingentClaims
+        } of contingent claim against ${
+          opposing.paperLosses + opposing.unreserved
+        } of backing`
+      )
+  }
+  return result
 }
 
 // -------- oracle transition: liquidation + claim ADL --------
@@ -755,10 +865,11 @@ export const closePerpProtectedPosition = (
   const pricePnl = z * getUnrealizedEquity(row, price)
 
   // Own-pool leg first: it is the position's own reserved margin.
+  const ownScale = getPerpSideAccounting(state, row.direction, price).costBasis
   const ownPool =
     row.direction === 'long'
-      ? { L: poolAfterDebit(state.pool.L, ownPayout), S: state.pool.S }
-      : { L: state.pool.L, S: poolAfterDebit(state.pool.S, ownPayout) }
+      ? { L: debitPool(state.pool.L, ownPayout, ownScale), S: state.pool.S }
+      : { L: state.pool.L, S: debitPool(state.pool.S, ownPayout, ownScale) }
   if (ownPool.L < 0 || ownPool.S < 0)
     fail(
       'claim-unpayable',
@@ -801,6 +912,27 @@ export const closePerpProtectedPosition = (
           updatedTime: now ?? row.updatedTime,
         }
       })()
+
+  // A partial close must materially change the row. Below the minimum
+  // fraction, or where 1 − z rounds the survivor back onto the original,
+  // there is nothing to settle and an event plus streak credit would be
+  // written for a no-op.
+  if (remainingPosition) {
+    if (z < PERP_MIN_CLOSE_FRACTION)
+      fail(
+        'invalid-input',
+        `close fraction must be at least ${PERP_MIN_CLOSE_FRACTION} or exactly 1`
+      )
+    if (
+      !(remainingPosition.size < row.size) ||
+      !(remainingPosition.costBasis < row.costBasis) ||
+      payout <= perpDustTolerance(row.costBasis, claims.value)
+    )
+      fail(
+        'invalid-input',
+        'close fraction is too small to change the position'
+      )
+  }
 
   const positions = working.positions
     .map((p) =>
@@ -891,13 +1023,16 @@ export const resolvePerpProtectedBatch = (
     }
   )
 
-  const L = poolAfterDebit(
+  const scale = snapshot.long.costBasis + snapshot.short.costBasis
+  const L = debitPool(
     normalized.pool.L,
-    totals.long.own + totals.short.contingent
+    totals.long.own + totals.short.contingent,
+    scale
   )
-  const S = poolAfterDebit(
+  const S = debitPool(
     normalized.pool.S,
-    totals.short.own + totals.long.contingent
+    totals.short.own + totals.long.contingent,
+    scale
   )
   if (L < 0 || S < 0)
     fail(

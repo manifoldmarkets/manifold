@@ -15,10 +15,15 @@
 //   # legacy -> shadow (single-transition diagnostics only; ledger unchanged)
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-shadow --confirm=PERP_ACCOUNTING_SHADOW
 //
-//   # shadow -> protected at the contract's committed mark
+//   # shadow -> protected at the contract's committed mark. ALWAYS dry-run
+//   # first: it prints the exact per-user reserve bases and reductions the
+//   # activation would commit at the current mark, without writing.
+//   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-protected --dry-run \
+//       [--top-up-long=N --top-up-short=N] [--last-resort-allocation] [--allow-activation-adl]
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-protected \
 //       [--top-up-long=N --top-up-short=N --funder=<userId>] \
-//       [--last-resort-allocation] [--allow-activation-adl] [--allow-stale-mark] \
+//       [--last-resort-allocation --confirm-last-resort-mark=<mark from the dry run>] \
+//       [--allow-activation-adl] [--allow-stale-mark] \
 //       --confirm=PERP_ACCOUNTING_PROTECTED
 //
 //   # rollback boundary: may this contract return to legacy?
@@ -39,6 +44,8 @@ import {
   activatePerpAccountingProtected,
   activatePerpAccountingShadow,
   downgradePerpAccountingToLegacy,
+  dryRunPerpAccountingProtected,
+  PerpProtectedActivationDryRun,
   PerpProtectedSimulation,
   simulatePerpProtectedAccounting,
   verifyPerpAccountingDowngradeForContract,
@@ -131,6 +138,16 @@ const printSimulation = (sim: PerpProtectedSimulation) => {
       }`
     )
   }
+  if (sim.shadow)
+    lines.push(
+      `  shadow checkpoint (epoch ${sim.shadow.epoch}): transitions=${
+        sim.shadow.transitions
+      } divergences=${sim.shadow.divergences} reseeds=${
+        sim.shadow.reseeds
+      } shadow c−b=${money(sim.shadow.basisDeficit)} reducedRows=${
+        sim.shadow.reducedBasisCount
+      } updated=${new Date(sim.shadow.updatedTime).toISOString()}`
+    )
   lines.push(
     `  history: events=${sim.history.eventCount} first=${
       sim.history.firstEventTime === null
@@ -175,24 +192,70 @@ runScript(async ({ pg }) => {
 
   if (flag('activate-protected')) {
     if (!target) throw new Error('--contract is required')
-    if (confirm !== 'PERP_ACCOUNTING_PROTECTED')
-      throw new Error(
-        'Pass --confirm=PERP_ACCOUNTING_PROTECTED to activate protected accounting'
-      )
-    const before = await simulatePerpProtectedAccounting(pg, target.id)
-    printSimulation(before)
     const topUp = {
       long: Number(arg('top-up-long') ?? 0),
       short: Number(arg('top-up-short') ?? 0),
     }
-    const result = await activatePerpAccountingProtected(target.id, actorId, {
+    const planOptions = {
       topUp,
       allocation: flag('last-resort-allocation')
-        ? 'last-resort-snapshot'
-        : 'full-basis',
+        ? ('last-resort-snapshot' as const)
+        : ('full-basis' as const),
       allowActivationAdl: flag('allow-activation-adl'),
+    }
+    const printDryRun = (dry: PerpProtectedActivationDryRun) => {
+      console.log(
+        `dry run ${dry.slug}: mark=${dry.mark} (${
+          dry.markFresh ? 'fresh' : 'STALE'
+        }) accounting=${dry.accounting.mode} epoch=${dry.accounting.epoch} ok=${
+          dry.plan.ok
+        }`
+      )
+      for (const blocker of dry.plan.blockers)
+        console.log(`  BLOCKER: ${blocker}`)
+      console.log(
+        `  reducedAnyBasis=${dry.plan.reducedAnyBasis} activationAdl=${
+          dry.plan.activationAdl
+            ? `long=${dry.plan.activationAdl.adlFactorLong} short=${dry.plan.activationAdl.adlFactorShort}`
+            : 'none'
+        }`
+      )
+      for (const a of dry.plan.allocations)
+        console.log(
+          `  ${a.userId} ${a.direction}: c=${money(a.costBasis)} b=${money(
+            a.reserveBasisAfter
+          )}${
+            a.reserveBasisAfter < a.costBasis
+              ? ` (REDUCED by ${money(a.costBasis - a.reserveBasisAfter)})`
+              : ''
+          }`
+        )
+      if (dry.reductions.length > 0)
+        console.log(
+          `  ${dry.reductions.length} position(s) would receive b < c; each gets an immutable basis-settlement receipt (trigger=activation). Re-run with --confirm-last-resort-mark=${dry.mark} to execute at exactly this mark.`
+        )
+    }
+    if (flag('dry-run')) {
+      printSimulation(await simulatePerpProtectedAccounting(pg, target.id))
+      printDryRun(
+        await dryRunPerpAccountingProtected(pg, target.id, planOptions)
+      )
+      return
+    }
+    if (confirm !== 'PERP_ACCOUNTING_PROTECTED')
+      throw new Error(
+        'Pass --confirm=PERP_ACCOUNTING_PROTECTED to activate protected accounting (or --dry-run to preview)'
+      )
+    const before = await simulatePerpProtectedAccounting(pg, target.id)
+    printSimulation(before)
+    printDryRun(await dryRunPerpAccountingProtected(pg, target.id, planOptions))
+    const confirmedMarkArg = arg('confirm-last-resort-mark')
+    const result = await activatePerpAccountingProtected(target.id, actorId, {
+      ...planOptions,
       allowStaleMark: flag('allow-stale-mark'),
       funderId: arg('funder'),
+      confirmedMark:
+        confirmedMarkArg === undefined ? undefined : Number(confirmedMarkArg),
     })
     console.log(
       `protected accounting active on ${result.contract.slug} at epoch ${

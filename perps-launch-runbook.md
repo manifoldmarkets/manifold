@@ -279,7 +279,10 @@ Nothing in this section has been run against production.
 - `contracts.data.perpAccountingMode`: `legacy` (absent) | `shadow` |
   `protected`, with `perpAccountingEpoch`. Changed ONLY by
   `backend/scripts/perp-protected-basis-preflight.ts`; the database refuses
-  any other flip (`perp_accounting_transition_guard`).
+  any other flip, and refuses any `poolLong`/`poolShort` change on a
+  protected contract that does not present the contract's epoch
+  (`perp_accounting_contract_guard`) — an old binary cannot move a
+  protected pool, even through a contract-only patch.
 - `contracts.data.perpRiskPolicyMode`: `off` (absent) | `shadow`. Independent
   Workstream B knob, via `update-perp-config` or the script. `enforce` is not
   implemented and is rejected.
@@ -319,7 +322,12 @@ the exact top-up:
   (`--top-up-long/--top-up-short --funder=<userId>`), then `b = c`. The
   last-resort snapshot allocation (`--last-resort-allocation`) assigns the
   deficit to whoever is underwater at the cutover mark; it is NOT
-  user-conservative and needs explicit product approval.
+  user-conservative and needs explicit product approval. It can only run
+  after a `--dry-run` at the same mark: the dry run prints every position's
+  `b` and reduction, and the live run must repeat that mark as
+  `--confirm-last-resort-mark=<mark>` or it is refused. Every reduced
+  position receives an immutable `basis-settlement` receipt
+  (`trigger=activation`).
 - `deficit` (`B < Rc`): do not activate without the full `C − B`. Default is
   to stay legacy through resolution or recreate the market.
 
@@ -339,11 +347,22 @@ Global maintenance window, because there are no per-contract pause controls:
 1. `PERP_TRADING_MODE=halted`, roll the API fully, drain old instances.
 2. Pause the perp scheduler jobs globally.
 3. For each approved contract, in order:
-   - `--activate-shadow --confirm=PERP_ACCOUNTING_SHADOW` (may be done
-     earlier, outside the window, and left running: shadow commits legacy
-     ledgers and only stamps rows and logs single-transition diagnostics —
-     it does NOT validate cumulative protected-basis behaviour).
-   - `--activate-protected [--top-up-... --funder=...] [--allow-activation-adl] --confirm=PERP_ACCOUNTING_PROTECTED`.
+   - `--activate-shadow --confirm=PERP_ACCOUNTING_SHADOW` — done earlier,
+     outside the window, and left running for at least one funding period
+     and several closes on each side. Shadow commits legacy ledgers and
+     stamps rows; alongside, it advances an isolated protected-basis
+     checkpoint (`contract_perp_shadow_checkpoints`) through every
+     transition and compares it with the live state. Read the `shadow`
+     block of the report before activating: `transitions`, `divergences`,
+     `reseeds` and the last report. A divergence where the shadow holds
+     `b < c` and the legacy ledger paid a recovery the shadow would have
+     claim-ADL'd is the expected legacy/protected difference; a re-seed
+     with an error is a state the protected rules could not take and must
+     be understood before activation.
+   - `--activate-protected --dry-run [...]` — prints the exact per-user
+     reserve bases, reductions and cutover mark without writing. Required
+     before any `--last-resort-allocation`; recommended always.
+   - `--activate-protected [--top-up-... --funder=...] [--last-resort-allocation --confirm-last-resort-mark=<mark>] [--allow-activation-adl] --confirm=PERP_ACCOUNTING_PROTECTED`.
      One transaction under the contract lock: top-up txn, every position
      rewritten with its `b` and the new epoch, the immutable
      `contract_perp_accounting_epochs` row, the version flip, the
@@ -385,7 +404,8 @@ blindly.
 ### Workstream B
 
 Set `perpRiskPolicyMode=shadow` on protected contracts once they are stable.
-Read the `[perps][risk-shadow]` lines and the `riskShadow` stamps on open
-events. Enforcement of `U = 1`, the exact stress rule, or any `alpha < 1`
+Read the `[perps][risk-shadow]` lines and the `contract_perp_risk_shadow`
+row (latest evaluation per contract: accepted and compat-rejected opens,
+and every oracle/funding tick; nothing is stamped on financial events). Enforcement of `U = 1`, the exact stress rule, or any `alpha < 1`
 requires a separate product/risk approval and a separate PR; nothing in this
 build can enforce them.

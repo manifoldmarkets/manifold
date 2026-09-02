@@ -748,6 +748,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_perp_risk_shadow: {
+        Row: {
+          contract_id: string
+          data: Json
+          updated_time: string
+        }
+        Insert: {
+          contract_id: string
+          data: Json
+          updated_time?: string
+        }
+        Update: {
+          contract_id?: string
+          data?: Json
+          updated_time?: string
+        }
+        Relationships: []
+      }
+      contract_perp_shadow_checkpoints: {
+        Row: {
+          accounting_epoch: number
+          contract_id: string
+          divergences: number
+          last_report: Json | null
+          state: Json
+          transitions: number
+          updated_time: string
+        }
+        Insert: {
+          accounting_epoch?: number
+          contract_id: string
+          divergences?: number
+          last_report?: Json | null
+          state: Json
+          transitions?: number
+          updated_time?: string
+        }
+        Update: {
+          accounting_epoch?: number
+          contract_id?: string
+          divergences?: number
+          last_report?: Json | null
+          state?: Json
+          transitions?: number
+          updated_time?: string
+        }
+        Relationships: []
+      }
       contract_perp_positions: {
         Row: {
           accounting_epoch: number

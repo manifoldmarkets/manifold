@@ -425,9 +425,16 @@ and realized surplus alike; NOT house capital), committed state must satisfy
 0 <= b <= c    B >= Σb    E_long <= D_short + H_short    E_short <= D_long + H_long
 ```
 
-`assertPerpProtectedState` checks all four, strictly, with only the documented
-float tolerances. Every formula reduces to #4030 at `b = c`; every legacy
-contract mirrors `b = c` at the write boundary AND in the database guard.
+`assertPerpProtectedState` checks all four, strictly. Every backing check
+and every pool debit in the model goes through ONE affordability predicate,
+`isPerpClaimBacked(claim, available, scale)` / `debitPool`: a claim is backed
+when `claim <= available + max(dust(scale), 1e-12·|claim|)`, where `dust` is
+`256ε` times the largest basis involved, capped at `1e-4`. The invariant can
+therefore never accept a claim the payout path refuses, nor the reverse
+(`protected-basis.test.ts` pins this at M$5m scale, the case where a relative
+invariant tolerance and an absolute payment tolerance used to disagree).
+Every formula reduces to #4030 at `b = c`; every legacy contract mirrors
+`b = c` at the write boundary AND in the database guard.
 
 **Transitions (all pure; the engine persists them under the contract lock in
 one transaction with the ledger txns, events and metrics):**
@@ -447,12 +454,21 @@ one transaction with the ledger txns, events and metrics):**
   partial close scales `q, c, b, originalCostBasis, takerFeeCostBasis` by
   `1 − z`. A flip runs this close before validating the new leg; if the leg
   does not fit the whole flip is rejected. Capacity never rejects a close.
+  A partial close must be at least `PERP_MIN_CLOSE_FRACTION` (1%) of the
+  position and must actually shrink the survivor and pay more than dust;
+  anything smaller is rejected (API schema, handler and pure model alike) so
+  no event, streak or `lastBetTime` can advance without a change to the
+  position.
 - Oracle tick: liquidation (forfeits `b` too, turning it into `H`), then
   generalized claim ADL against `E`, not π: `s = min(1, (D_opp + H_opp)/E)`,
   `q' = s·q`, `c' = b + s·(c − b)`, `b' = b`, `Pe' = Pe`, leverage and
   liquidation recomputed; `originalCostBasis`/`takerFeeCostBasis` untouched so
   the haircut shows in PnL. At `s = 0` the row is removed and `b` is paid
-  once from its own pool (`PERP_CLOSE_PAYOUT`, reason `adl`).
+  once from its own pool (`PERP_CLOSE_PAYOUT`, reason `adl`). The factor is
+  representability-aware: an allowance below the side's dust snaps `s` to 0
+  (the pool cannot pay a claim that rounds above it), a contingent claim
+  below dust is left alone at `s = 1`, and the scaled side is re-checked with
+  the shared predicate before the transition is accepted.
 - Funding: `applyFunding` scales `b` with `q` and `c`; then claim ADL and the
   full invariant set (`applyPerpProtectedFunding`).
 - Resolution: one deterministic batch from one immutable state
@@ -468,10 +484,24 @@ one transaction with the ledger txns, events and metrics):**
 **Versioning and the database guard.** `contracts.data.perpAccountingMode`
 (`legacy | shadow | protected`, absent = legacy; unknown fails closed) and
 `perpAccountingEpoch` are read inside `loadStateForUpdate` under the lock.
-`shadow` commits legacy ledgers and only stamps rows; it is a
-single-transition diagnostic, not cumulative validation — that comes from the
-read-only simulator (`simulatePerpProtectedAccounting`), which never writes a
-hypothetical `b`. `protected` makes `b` authoritative. The migration
+`shadow` commits legacy ledgers and stamps rows, and alongside them keeps an
+isolated forward checkpoint of the protected-basis state the contract WOULD
+have (`common/perps/accounting-shadow.ts`, persisted in
+`contract_perp_shadow_checkpoints`): seeded from the live state with `b = c`
+and advanced, under the same contract lock, by the protected counterpart of
+every committed transition — open/add/flip, close, oracle tick, funding,
+subsidy, resolution. After each step the checkpoint is compared with the
+live state (pools, rows, both invariant sets, and for closes the protected
+vs legacy payout); the report is stored next to the checkpoint and logged as
+`[perps][accounting-shadow]` when it diverges. A counterpart the protected
+rules cannot apply (a book that needs a cross-side transfer, a row protected
+ADL already removed) is recorded as a divergence and the checkpoint re-seeds
+from live. That is cumulative validation of an existing market; the
+read-only simulator (`simulatePerpProtectedAccounting`) stays the
+point-in-time report, and neither ever writes a hypothetical `b` to a
+financial row. Writes go through a savepoint and every error is swallowed:
+a diagnostic can never take a trade down with it. `protected` makes `b`
+authoritative. The migration
 `2026090201_perp_protected_basis.sql` installs `perp_accounting_guard()`:
 for legacy/shadow contracts it MIRRORS (`reserve_basis := cost_basis`,
 `reserve_basis_delta := cost_basis_delta`), for protected contracts it
@@ -481,10 +511,17 @@ be stamped with that epoch, or it raises and the whole transaction rolls back.
 A literal old binary never sets the GUC, so it cannot mutate a protected
 position, event or funding row — that, not instance draining, is the
 enforcement boundary (`backend/scripts/sql/perp-accounting-guard-test.sql`
-proves it against the old-writer fixture). Mode/epoch changes on the contract
-are themselves trigger-guarded: they need `perp.accounting_transition`, a
-strictly advancing epoch and an immutable
-`contract_perp_accounting_epochs` record, so a blind flip is impossible.
+proves it against the old-writer fixture). The contract row is guarded too
+(`perp_accounting_contract_guard()`): a mode/epoch change needs
+`perp.accounting_transition`, a strictly advancing epoch and an immutable
+`contract_perp_accounting_epochs` record, so a blind flip is impossible; and
+any change to `poolLong`/`poolShort` on a contract that is or becomes
+protected needs `perp.accounting_epoch` equal to the contract's epoch (the
+NEW epoch during activation). A contract-only pool patch — the scheduler's
+no-change fast path on an old binary committing a legacy cross-side transfer
+— is therefore refused as firmly as a position write. Activation presents
+the new epoch before the transition GUC and the contract patch. Price and
+halt patches that leave the pools alone are unaffected.
 Never mix legacy and protected rows inside one contract: readers normalize
 by the contract's mode, and a protected row without `b` fails closed.
 
@@ -497,17 +534,23 @@ ADL's `c` change like any ADL. Every event carries `reserve_basis_delta`,
 The contract patch carries `perpBasisDeficit` (Σ(c − b)) and
 `perpReducedBasisCount`. Log lines: `[perps][protected] basis settled …`,
 `[perps][protected] claim ADL …`, `[perps][accounting] …` for transitions.
+Activation with the last-resort allocation writes one `basis-settlement`
+per reduced position (`trigger: 'activation'`, `cutoverMark`, epoch), so a
+migration-time reduction is as auditable as a settlement-time one.
 Basis settlements produce a receipt and a persistent explainer, not a
 notification — product must approve any notification treatment separately.
 
 **Workstream B (shadow only).** `perpRiskPolicyMode` (`off | shadow`;
 `enforce` is rejected by this build) is independent of the accounting mode.
-In `shadow`, opens stamp `riskShadow` on their event (compat vs candidate
-`U = 1` vs the exact stress rule `E_d(P*) <= D_opp(P*) + (U/M)·H_opp`) and
-oracle/funding ticks log projected claim ADL under `alpha ∈ {1, 0.5, 0.1}`
-(`available = D + alpha·H`). None of it can change an admission, a position,
-a pool, an event or a payout; a failure inside the evaluator is logged and
-ignored. Before any of it is enforced the `H` provenance question (realized
+In `shadow`, every open attempt — accepted, or rejected by the compatibility
+gate — is scored (compat vs candidate `U = 1` vs the exact stress rule
+`E_d(P*) <= D_opp(P*) + (U/M)·H_opp`) and every oracle/funding tick projects
+claim ADL under `alpha ∈ {1, 0.5, 0.1}` (`available = D + alpha·H`). The
+latest evaluation is written to `contract_perp_risk_shadow` (one row per
+contract, outside the financial event log; nothing is stamped on events) and
+the interesting cases are logged as `[perps][risk-shadow]`. None of it can
+change an admission, a position, a pool, an event or a payout; a failure
+inside the evaluator is logged and ignored. Before any of it is enforced the `H` provenance question (realized
 trader losses vs house balance) must be decided — see `risk-policy-shadow.ts`.
 
 **Not implemented, on purpose.** Post-exit capacity deleveraging (Workstream

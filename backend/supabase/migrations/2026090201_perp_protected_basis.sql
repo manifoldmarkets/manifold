@@ -36,10 +36,13 @@
 --   old instances is still required operationally, but it is not the
 --   enforcement boundary; this is.
 --
---   Pool-only contract patches by an old writer (a price-only tick, a
---   solvency halt, an admin subsidy) are not guarded: none of them can move a
---   protected position, an event, or a user balance, and a subsidy only adds
---   unreserved balance.
+--   Contract-level POOL changes on a protected contract are guarded the same
+--   way: a pre-protected scheduler can commit a legacy cross-side transfer
+--   through its price-only fast path without touching a single position or
+--   event row, so `contracts` refuses a poolLong/poolShort change on a
+--   protected contract unless the transaction presented the epoch. Price and
+--   solvency-halt patches remain unguarded: they move no mana, and an old
+--   writer halting a market it cannot represent is the conservative outcome.
 --
 -- DEPLOY ORDER
 --   1. Apply this migration (additive; safe with the current API/scheduler:
@@ -271,57 +274,122 @@ before insert on contract_perp_funding_events
 for each row execute function perp_accounting_guard();
 
 -- ---------------------------------------------------------------------
--- 6. Mode/epoch transitions on the contract itself
+-- 6. The contract row: mode/epoch transitions and protected pool changes
 -- ---------------------------------------------------------------------
--- A blind flip of perpAccountingMode (a hand edit, a stale admin tool) must
--- not be possible: the transition must be made by the migration tooling,
--- which sets perp.accounting_transition in the same transaction, and every
--- transition must advance the epoch so the immutable records stay the
--- boundary. Evaluated only when either key actually changes.
-create or replace function perp_accounting_transition_guard()
+-- Two rules, one trigger, evaluated only when one of the keys it cares
+-- about actually changes:
+--
+--  a) A blind flip of perpAccountingMode/Epoch (a hand edit, a stale admin
+--     tool) must not be possible: the transition must be made by the
+--     migration tooling, which sets perp.accounting_transition in the same
+--     transaction, and every transition must advance the epoch and have its
+--     immutable record already written.
+--  b) poolLong/poolShort on a protected contract (before OR after this
+--     update) may only change in a transaction that presented the contract's
+--     epoch — the one the row holds after the update. Without this a
+--     pre-protected scheduler could commit a legacy cross-side transfer
+--     through its price-only fast path, moving pool balance across sides of
+--     a b < c book while touching no guarded row.
+create or replace function perp_accounting_contract_guard()
 returns trigger
 language plpgsql
 as $$
 declare
   v_old_epoch bigint;
   v_new_epoch bigint;
+  v_old_mode text;
   v_new_mode text;
+  v_presented text;
 begin
-  if coalesce(current_setting('perp.accounting_transition', true), '') <> 'true' then
-    raise exception 'PERP accounting guard: contract % accounting mode/epoch may only change through the guarded migration path',
-      new.id;
-  end if;
   v_old_epoch := coalesce((old.data->>'perpAccountingEpoch')::bigint, 0);
   v_new_epoch := coalesce((new.data->>'perpAccountingEpoch')::bigint, 0);
+  v_old_mode := coalesce(old.data->>'perpAccountingMode', 'legacy');
   v_new_mode := coalesce(new.data->>'perpAccountingMode', 'legacy');
-  if v_new_mode not in ('legacy', 'shadow', 'protected') then
-    raise exception 'PERP accounting guard: contract % cannot enter unknown accounting mode %',
-      new.id, v_new_mode;
+
+  if v_old_mode is distinct from v_new_mode or v_old_epoch <> v_new_epoch then
+    if coalesce(current_setting('perp.accounting_transition', true), '') <> 'true' then
+      raise exception 'PERP accounting guard: contract % accounting mode/epoch may only change through the guarded migration path',
+        new.id;
+    end if;
+    if v_new_mode not in ('legacy', 'shadow', 'protected') then
+      raise exception 'PERP accounting guard: contract % cannot enter unknown accounting mode %',
+        new.id, v_new_mode;
+    end if;
+    if v_new_epoch <= v_old_epoch then
+      raise exception 'PERP accounting guard: contract % accounting epoch must advance (% -> %)',
+        new.id, v_old_epoch, v_new_epoch;
+    end if;
+    if not exists (
+      select 1 from contract_perp_accounting_epochs e
+      where e.contract_id = new.id and e.epoch = v_new_epoch
+        and e.accounting_mode = v_new_mode
+    ) then
+      raise exception 'PERP accounting guard: contract % epoch % has no immutable activation record',
+        new.id, v_new_epoch;
+    end if;
   end if;
-  if v_new_epoch <= v_old_epoch then
-    raise exception 'PERP accounting guard: contract % accounting epoch must advance (% -> %)',
-      new.id, v_old_epoch, v_new_epoch;
-  end if;
-  if not exists (
-    select 1 from contract_perp_accounting_epochs e
-    where e.contract_id = new.id and e.epoch = v_new_epoch
-      and e.accounting_mode = v_new_mode
-  ) then
-    raise exception 'PERP accounting guard: contract % epoch % has no immutable activation record',
-      new.id, v_new_epoch;
+
+  if (v_old_mode = 'protected' or v_new_mode = 'protected')
+     and (
+       (old.data->>'poolLong') is distinct from (new.data->>'poolLong')
+       or (old.data->>'poolShort') is distinct from (new.data->>'poolShort')
+     ) then
+    v_presented := nullif(current_setting('perp.accounting_epoch', true), '');
+    if v_presented is null or v_presented <> v_new_epoch::text then
+      raise exception 'PERP accounting guard: contract % is protected at epoch % but this transaction presented epoch %; refusing to change its pools',
+        new.id, v_new_epoch, coalesce(v_presented, 'none');
+    end if;
   end if;
   return new;
 end;
 $$;
 
 drop trigger if exists contracts_perp_accounting_transition_guard on contracts;
-create trigger contracts_perp_accounting_transition_guard
+drop trigger if exists contracts_perp_accounting_contract_guard on contracts;
+create trigger contracts_perp_accounting_contract_guard
 before update of data on contracts
 for each row
 when (
   (old.data->>'perpAccountingMode') is distinct from (new.data->>'perpAccountingMode')
   or (old.data->>'perpAccountingEpoch') is distinct from (new.data->>'perpAccountingEpoch')
+  or (
+    (
+      (old.data->>'perpAccountingMode') = 'protected'
+      or (new.data->>'perpAccountingMode') = 'protected'
+    )
+    and (
+      (old.data->>'poolLong') is distinct from (new.data->>'poolLong')
+      or (old.data->>'poolShort') is distinct from (new.data->>'poolShort')
+    )
+  )
 )
-execute function perp_accounting_transition_guard();
+execute function perp_accounting_contract_guard();
+
+-- ---------------------------------------------------------------------
+-- 7. Isolated shadow state (diagnostics only; no trigger, no financial row)
+-- ---------------------------------------------------------------------
+-- Accounting shadow: a forward checkpoint of the protected-basis state a
+-- contract WOULD have, advanced by every live transition while the ledger
+-- stays legacy. Never read by any payout path; never writes hypothetical b
+-- into contract_perp_positions.
+create table if not exists contract_perp_shadow_checkpoints (
+  contract_id text primary key,
+  accounting_epoch bigint not null default 0,
+  state jsonb not null,
+  transitions bigint not null default 0,
+  divergences bigint not null default 0,
+  last_report jsonb,
+  updated_time timestamptz not null default now()
+);
+alter table contract_perp_shadow_checkpoints enable row level security;
+
+-- Risk-policy shadow (Workstream B): the latest candidate-policy evaluation
+-- per contract, kept OUT of the append-only financial event log.
+create table if not exists contract_perp_risk_shadow (
+  contract_id text primary key,
+  data jsonb not null,
+  updated_time timestamptz not null default now()
+);
+alter table contract_perp_risk_shadow enable row level security;
 
 commit;

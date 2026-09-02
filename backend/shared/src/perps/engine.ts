@@ -66,11 +66,16 @@ import {
   assertPerpProtectedState,
   closePerpProtectedPosition,
   getPerpAccountingSnapshot,
+  PERP_MIN_CLOSE_FRACTION,
   PerpBasisSettlement,
   PerpProtectedCloseResult,
   PerpProtectedInvariantError,
   resolvePerpProtectedBatch,
 } from 'common/perps/protected-basis'
+import {
+  recordPerpAccountingShadow,
+  recordPerpRiskShadow,
+} from './accounting-shadow'
 import {
   comparePerpAdmissionPolicies,
   evaluatePerpClaimAllowanceShadow,
@@ -109,6 +114,7 @@ import {
   insertPerpEventsQuery,
   mergeContractDataQuery,
   presentAccountingEpochQuery,
+  PositionRow,
   rowToPosition,
   selectContractForUpdateQuery,
   selectLatestOraclePriceQuery,
@@ -263,12 +269,12 @@ const loadStateForUpdate = async (
     await pgTrans.one(presentAccountingEpochQuery(accounting.epoch))
   }
 
-  const positionRows = await pgTrans.any(
+  const positionRows = await pgTrans.any<PositionRow>(
     selectPositionsForUpdateQuery(contractId)
   )
   let positions: PerpPosition[]
   try {
-    positions = positionRows.map((r: any) => rowToPosition(r, accounting))
+    positions = positionRows.map((r) => rowToPosition(r, accounting))
   } catch (error) {
     throw new APIError(
       500,
@@ -379,12 +385,25 @@ const parseStoredPosition = (value: unknown): PerpPosition => {
       500,
       'Invalid position taker fee cost basis in PERP idempotency record'
     )
+  const costBasis = finiteNumber(position.costBasis, 'position cost basis')
+  // Records stored before protected accounting carry no b: legacy mirror.
+  // A protected record without one would misreport b = c on replay.
+  const reserveBasis =
+    position.reserveBasis === undefined
+      ? costBasis
+      : finiteNumber(position.reserveBasis, 'position reserve basis')
+  if (reserveBasis < 0 || reserveBasis > costBasis * (1 + 1e-9) + 1e-9)
+    throw new APIError(
+      500,
+      'Invalid position reserve basis in PERP idempotency record'
+    )
   return {
     userId: position.userId,
     contractId: position.contractId,
     direction: position.direction,
     size: finiteNumber(position.size, 'position size'),
-    costBasis: finiteNumber(position.costBasis, 'position cost basis'),
+    costBasis,
+    reserveBasis,
     originalCostBasis: finiteNumber(
       position.originalCostBasis,
       'position original cost basis'
@@ -699,17 +718,21 @@ const logClaimAdl = (
 }
 
 /**
- * Workstream B shadow diagnostics for an admission. READ-ONLY: the result
- * is stamped on the event and logged, and the trade proceeds exactly as
- * the compatibility gate decided. Never throws — a failure here is logged
- * and ignored so a shadow policy can never block a trade.
+ * Workstream B shadow diagnostics for an admission ATTEMPT — accepted or
+ * rejected by the compatibility gate. READ-ONLY: the result is logged and
+ * (for accepted trades, whose transaction commits) persisted to the isolated
+ * contract_perp_risk_shadow table; it is never written to a financial event
+ * and the trade proceeds exactly as the compatibility gate decided. Never
+ * throws — a failure here is logged and ignored so a shadow policy can never
+ * block a trade.
  */
 const riskPolicyShadowForOpen = (
   contract: PerpContract,
   accounting: PerpAccounting,
   direction: PerpDirection,
   postTradeState: PerpState,
-  price: number
+  price: number,
+  compatAccepted: boolean
 ): Record<string, unknown> | undefined => {
   if (accounting.riskPolicyMode !== 'shadow') return undefined
   try {
@@ -719,6 +742,9 @@ const riskPolicyShadowForOpen = (
       price
     )
     const summary = {
+      kind: 'open' as const,
+      direction,
+      compatAccepted,
       candidateU: comparison.candidate.policy.unreservedMultiple,
       compatLimit: comparison.compat.limit,
       compatHeadroom: comparison.compat.headroom,
@@ -732,11 +758,15 @@ const riskPolicyShadowForOpen = (
       exactImpliedAdlFactor: comparison.exact.impliedStressAdlFactor,
       exactDisagrees: comparison.exactDisagrees,
     }
-    if (comparison.candidateStricter || comparison.exactDisagrees)
+    if (
+      !compatAccepted ||
+      comparison.candidateStricter ||
+      comparison.exactDisagrees
+    )
       log(
         `[perps][risk-shadow] ${
           contract.slug
-        } ${direction}: compat headroom=${summary.compatHeadroom.toFixed(
+        } ${direction} compatAccepted=${compatAccepted}: compat headroom=${summary.compatHeadroom.toFixed(
           2
         )} candidate(U=${
           summary.candidateU
@@ -759,8 +789,14 @@ const riskPolicyShadowForOpen = (
   }
 }
 
-/** Projected claim ADL under candidate alphas. READ-ONLY, log only. */
-const riskPolicyShadowForTransition = (
+/**
+ * Projected claim ADL under candidate alphas on a transition (every oracle
+ * tick, including the no-change fast path, and every funding). READ-ONLY:
+ * logged when a candidate would ADL, and persisted to the isolated
+ * contract_perp_risk_shadow table under a savepoint.
+ */
+const riskPolicyShadowForTransition = async (
+  pgTrans: SupabaseTransaction,
   contract: PerpContract,
   accounting: PerpAccounting,
   state: PerpState,
@@ -769,21 +805,38 @@ const riskPolicyShadowForTransition = (
 ) => {
   if (accounting.riskPolicyMode !== 'shadow') return
   try {
-    for (const alpha of PERP_CLAIM_ALLOWANCE_ALPHA_CANDIDATES) {
+    const alphas = PERP_CLAIM_ALLOWANCE_ALPHA_CANDIDATES.map((alpha) => {
       const shadow = evaluatePerpClaimAllowanceShadow(state, price, alpha)
-      if (shadow.long.factor >= 1 && shadow.short.factor >= 1) continue
-      log(
-        `[perps][risk-shadow] ${
-          contract.slug
-        } ${trigger} alpha=${alpha}: projected claim ADL long factor=${shadow.long.factor.toFixed(
-          6
-        )} amount=${shadow.long.projectedAdlAmount.toFixed(
-          4
-        )} short factor=${shadow.short.factor.toFixed(
-          6
-        )} amount=${shadow.short.projectedAdlAmount.toFixed(4)}`
-      )
-    }
+      if (shadow.long.factor < 1 || shadow.short.factor < 1)
+        log(
+          `[perps][risk-shadow] ${
+            contract.slug
+          } ${trigger} alpha=${alpha}: projected claim ADL long factor=${shadow.long.factor.toFixed(
+            6
+          )} amount=${shadow.long.projectedAdlAmount.toFixed(
+            4
+          )} short factor=${shadow.short.factor.toFixed(
+            6
+          )} amount=${shadow.short.projectedAdlAmount.toFixed(4)}`
+        )
+      return {
+        alpha,
+        long: {
+          factor: shadow.long.factor,
+          projectedAdlAmount: shadow.long.projectedAdlAmount,
+        },
+        short: {
+          factor: shadow.short.factor,
+          projectedAdlAmount: shadow.short.projectedAdlAmount,
+        },
+      }
+    })
+    await recordPerpRiskShadow(pgTrans, contract, {
+      kind: trigger,
+      price,
+      at: Date.now(),
+      alphas,
+    })
   } catch (error) {
     log.error(
       `[perps][risk-shadow] ${
@@ -1275,6 +1328,17 @@ export const openOrAddPosition = async (
     // over-cap positions can always close, but cannot add further exposure.
     const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
     if (!capacity.isWithinLimit) {
+      // Workstream B, shadow only: a REJECTED attempt is evaluated too, so
+      // the telemetry covers both sides of the compatibility decision. Log
+      // only — this transaction is about to roll back.
+      riskPolicyShadowForOpen(
+        contract,
+        accounting,
+        direction,
+        open.state,
+        price,
+        false
+      )
       // The limit depends only on the opposing SIDE (its pool and its own
       // exposure), which an open on this side never touches, so pre-trade
       // headroom is exact — tell the user the largest trade that fits instead
@@ -1323,14 +1387,21 @@ export const openOrAddPosition = async (
     }
 
     // Workstream B, shadow only: evaluated on the ADMITTED post-trade state
-    // and stamped on the event. It has no vote.
+    // and persisted to the isolated shadow table, never to the event. It has
+    // no vote.
     const riskShadow = riskPolicyShadowForOpen(
       contract,
       accounting,
       direction,
       open.state,
-      price
+      price,
+      true
     )
+    if (riskShadow)
+      await recordPerpRiskShadow(pgTrans, contract, {
+        ...riskShadow,
+        at: now,
+      })
 
     const { upserts, deletes } = diffForWrite(
       state.positions,
@@ -1353,7 +1424,6 @@ export const openOrAddPosition = async (
         mana,
         leverage,
         fee: openFee,
-        ...(riskShadow ? { riskShadow } : {}),
         // The EFFECTIVE (average) rate this add actually paid — base plus the
         // integrated size term — not the configured base alone. feeBase and
         // feeImpact snapshot the config at trade time; poolShareAfter is the
@@ -1494,6 +1564,28 @@ export const openOrAddPosition = async (
 
     await assertPerpEscrowBalance(pgTrans, contractId, open.state.pool)
 
+    // Accounting shadow: advance the isolated protected-basis checkpoint by
+    // this trade (a flip is one transition there too). Diagnostics only.
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      {
+        kind: 'open',
+        userId,
+        contractId,
+        direction,
+        mana,
+        leverage,
+        fee: openFee,
+        price,
+        now,
+      },
+      state,
+      open.state,
+      price
+    )
+
     // Settlement receipts belong to OTHER users (the opposing rows whose
     // paper loss funded the flip's contingent payout); they are inserted in
     // this same transaction so the reduction and the payout commit together.
@@ -1568,6 +1660,11 @@ export const closePosition = async (
   }
   if (!Number.isFinite(fraction) || fraction <= 0 || fraction > 1)
     throw new APIError(400, 'fraction must be a finite number in (0, 1]')
+  if (fraction < 1 && fraction < PERP_MIN_CLOSE_FRACTION)
+    throw new APIError(
+      400,
+      `fraction must be at least ${PERP_MIN_CLOSE_FRACTION} (or exactly 1 for a full close)`
+    )
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -1894,6 +1991,24 @@ export const closePosition = async (
 
     await assertPerpEscrowBalance(pgTrans, contractId, result.state.pool)
 
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      {
+        kind: 'close',
+        userId,
+        direction,
+        fraction,
+        price,
+        now,
+        livePayout: payout,
+      },
+      state,
+      result.state,
+      price
+    )
+
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
       userIds: [userId],
@@ -1953,7 +2068,10 @@ export const addPerpPoolSubsidy = async (
   return runPerpTransaction(async (pgTrans) => {
     // Rejects resolved markets and non-MANA tokens, and serializes against
     // every other engine writer on this contract.
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const { contract, state, accounting } = await loadStateForUpdate(
+      pgTrans,
+      contractId
+    )
 
     const funder = await pgTrans.oneOrNone<{ id: string; balance: number }>(
       `select id, balance from users where id = $1 for update`,
@@ -1984,6 +2102,16 @@ export const addPerpPoolSubsidy = async (
       S: state.pool.S + (side === 'short' ? amount : 0),
     }
     await assertPerpEscrowBalance(pgTrans, contractId, pool)
+
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      { kind: 'subsidy', side, amount },
+      state,
+      { pool, positions: state.positions },
+      contract.oraclePrice
+    )
 
     // mergeContractDataQuery ends in `returning *` — .one(), not .none()
     // (see the fast path in runOracleUpdate for the failure mode).
@@ -2464,6 +2592,28 @@ export const runOracleUpdate = async (
           : { solvencyHaltTime: null, solvencyHaltReason: null }),
       })
 
+      // Both shadows sample EVERY applied tick, including the no-change fast
+      // path below: a candidate allowance can project ADL, and the protected
+      // shadow can settle or ADL, on a tick the legacy ledger writes nothing
+      // for. Diagnostics only, savepoint-isolated.
+      await riskPolicyShadowForTransition(
+        pgTrans,
+        contract,
+        accounting,
+        applied.finalState,
+        newPrice,
+        'oracle'
+      )
+      await recordPerpAccountingShadow(
+        pgTrans,
+        contract,
+        accounting,
+        { kind: 'oracle', price: newPrice },
+        state,
+        applied.finalState,
+        newPrice
+      )
+
       // Fast path: no liquidations and no ADL means no position changed, so
       // only the contract's cached price needs writing. Without this, a
       // sub-minute oracle tick rebuilds user_contract_metrics for every holder
@@ -2497,14 +2647,6 @@ export const runOracleUpdate = async (
           ...state.positions.map((p) => p.userId),
           ...applied.finalState.positions.map((p) => p.userId),
         ])
-      )
-
-      riskPolicyShadowForTransition(
-        contract,
-        accounting,
-        applied.finalState,
-        newPrice,
-        'oracle'
       )
 
       if (applied.adlSettled.length > 0) {
@@ -2790,12 +2932,22 @@ export const runFunding = async (
     )
     await assertPerpEscrowBalance(pgTrans, contractId, next.pool)
 
-    riskPolicyShadowForTransition(
+    await riskPolicyShadowForTransition(
+      pgTrans,
       contract,
       accounting,
       next,
       contract.oraclePrice,
       'funding'
+    )
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      { kind: 'funding', fundingRate, price: contract.oraclePrice },
+      state,
+      next,
+      contract.oraclePrice
     )
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
@@ -3084,6 +3236,16 @@ export const resolvePerp = async (
     }
     await assertPerpEscrowBalance(pgTrans, contractId, { L: 0, S: 0 })
 
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      { kind: 'resolve', price: finalPrice },
+      loaded,
+      { pool: { L: 0, S: 0 }, positions: [] },
+      finalPrice
+    )
+
     const contractPatch = removeUndefinedProps({
       poolLong: 0,
       poolShort: 0,
@@ -3167,6 +3329,7 @@ export {
   diffForWrite,
   loadStateForUpdate as loadPerpStateForUpdate,
   openInterestPatch,
+  parseStoredPosition,
   payAdlSettlements,
   runPerpTransaction,
 }

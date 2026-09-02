@@ -4,10 +4,10 @@
 // SERIALIZABLE transaction as the engine, writes the immutable epoch record
 // BEFORE flipping the contract (the contracts trigger refuses a flip without
 // one), presents the transition and epoch GUCs to the database guard, and
-// commits the top-up, backfill, activation event, any activation ADL, its
-// payouts, the metrics rebuild and the version flip atomically. Nothing
-// here is reachable from a user-facing endpoint: it is driven by
-// backend/scripts/perp-protected-basis-preflight.ts.
+// commits the top-up, backfill, activation event, per-user reduction
+// receipts, any activation ADL, its payouts, the metrics rebuild and the
+// version flip atomically. Nothing here is reachable from a user-facing
+// endpoint: it is driven by backend/scripts/perp-protected-basis-preflight.ts.
 
 import { APIError } from 'common/api/utils'
 import { PerpContract } from 'common/contract'
@@ -17,12 +17,17 @@ import {
   PerpAccountingMode,
   readPerpAccounting,
 } from 'common/perps/accounting-mode'
+import {
+  parsePerpShadowCheckpoint,
+  seedPerpShadowCheckpoint,
+} from 'common/perps/accounting-shadow'
 import { getReserveBasis, PerpState } from 'common/perps/amm'
 import { getOracleFreshness } from 'common/perps/oracle'
-import { PerpEvent, PerpPosition } from 'common/perps/position'
+import { PerpDirection, PerpEvent, PerpPosition } from 'common/perps/position'
 import {
   assertPerpProtectedState,
   getPerpAccountingSnapshot,
+  perpDustTolerance,
   PerpAccountingSnapshot,
   withReserveBasis,
 } from 'common/perps/protected-basis'
@@ -57,14 +62,18 @@ import {
   runPerpTransaction,
 } from './engine'
 import {
+  deleteShadowCheckpointQuery,
   insertAccountingEpochQuery,
   insertPerpEventsQuery,
   mergeContractDataQuery,
   PerpAccountingEpochRecord,
   presentAccountingEpochQuery,
   presentAccountingTransitionQuery,
+  PositionRow,
   rowToPosition,
+  selectShadowCheckpointQuery,
   upsertPositionsQuery,
+  upsertShadowCheckpointQuery,
 } from './queries'
 import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
 
@@ -99,6 +108,21 @@ export type PerpProtectedSimulation = {
     /** Historical replay from events is optional and NOT attempted here. */
     replayAttempted: false
   }
+  /**
+   * The forward checkpoint kept while the contract is in accounting shadow:
+   * the cumulative protected-basis state it would have, and how often it
+   * diverged from the legacy ledger. Null unless shadow has run.
+   */
+  shadow: {
+    epoch: number
+    transitions: number
+    divergences: number
+    reseeds: number
+    basisDeficit: number
+    reducedBasisCount: number
+    lastReport: unknown
+    updatedTime: number
+  } | null
 }
 
 const loadPositionsReadOnly = async (
@@ -106,23 +130,30 @@ const loadPositionsReadOnly = async (
   contractId: string,
   accounting: PerpAccounting
 ) => {
-  const rows = await pg.manyOrNone(
+  const rows = await pg.manyOrNone<PositionRow>(
     `select * from contract_perp_positions where contract_id = $1`,
     [contractId]
   )
-  return rows.map((r: any) => rowToPosition(r, accounting))
+  return rows.map((r) => rowToPosition(r, accounting))
+}
+
+const loadContractReadOnly = async (
+  pg: Pick<SupabaseDirectClient, 'oneOrNone'>,
+  contractId: string
+) => {
+  const row = await pg.oneOrNone<{ data: PerpContract }>(
+    `select data from contracts where id = $1 and mechanism = 'perp'`,
+    [contractId]
+  )
+  if (!row) throw new APIError(404, `Perp contract ${contractId} not found`)
+  return row.data
 }
 
 export const simulatePerpProtectedAccounting = async (
   pg: SupabaseDirectClient,
   contractId: string
 ): Promise<PerpProtectedSimulation> => {
-  const row = await pg.oneOrNone<{ data: PerpContract }>(
-    `select data from contracts where id = $1 and mechanism = 'perp'`,
-    [contractId]
-  )
-  if (!row) throw new APIError(404, `Perp contract ${contractId} not found`)
-  const contract = row.data
+  const contract = await loadContractReadOnly(pg, contractId)
   const accounting = readPerpAccounting(contract)
   const positions = await loadPositionsReadOnly(pg, contractId, accounting)
   const state: PerpState = {
@@ -150,6 +181,26 @@ export const simulatePerpProtectedAccounting = async (
        from contract_perp_events where contract_id = $1`,
     [contractId]
   )
+  const shadowRow = await pg.oneOrNone<{
+    accounting_epoch: number | string
+    state: unknown
+    transitions: number | string
+    divergences: number | string
+    last_report: unknown
+    updated_time: string
+  }>(selectShadowCheckpointQuery(contractId))
+  const shadowCheckpoint = shadowRow
+    ? parsePerpShadowCheckpoint(
+        shadowRow.state,
+        Number(shadowRow.accounting_epoch)
+      )
+    : null
+  const shadowSnapshot = shadowCheckpoint
+    ? getPerpAccountingSnapshot(
+        { pool: shadowCheckpoint.pool, positions: shadowCheckpoint.positions },
+        price
+      )
+    : null
   return {
     contractId,
     slug: contract.slug,
@@ -193,6 +244,23 @@ export const simulatePerpProtectedAccounting = async (
       eventsWithoutBasisHistory: Number(history.without_history),
       replayAttempted: false,
     },
+    shadow:
+      shadowRow && shadowCheckpoint && shadowSnapshot
+        ? {
+            epoch: Number(shadowRow.accounting_epoch),
+            transitions: Number(shadowRow.transitions),
+            divergences: Number(shadowRow.divergences),
+            reseeds: shadowCheckpoint.reseeds,
+            basisDeficit:
+              shadowSnapshot.long.basisDeficit +
+              shadowSnapshot.short.basisDeficit,
+            reducedBasisCount:
+              shadowSnapshot.long.reducedBasisCount +
+              shadowSnapshot.short.reducedBasisCount,
+            lastReport: shadowRow.last_report,
+            updatedTime: new Date(shadowRow.updated_time).getTime(),
+          }
+        : null,
   }
 }
 
@@ -269,9 +337,10 @@ const assertTransition = (
 }
 
 /**
- * legacy -> shadow. No position changes: shadow commits legacy ledgers and
- * only adds single-transition protected diagnostics. Recorded with its own
- * epoch so the boundary is auditable.
+ * legacy -> shadow. No position changes: shadow commits legacy ledgers. From
+ * here on every transition advances an isolated forward checkpoint of the
+ * protected-basis state (common/perps/accounting-shadow), seeded now from
+ * the live state with b = c, and records how it diverges from the ledger.
  */
 export const activatePerpAccountingShadow = async (
   contractId: string,
@@ -310,6 +379,17 @@ export const activatePerpAccountingShadow = async (
         lastUpdatedTime: now,
       })
     )
+    const seed = seedPerpShadowCheckpoint(state, epoch)
+    await pgTrans.none(
+      upsertShadowCheckpointQuery({
+        contractId,
+        accountingEpoch: epoch,
+        state: seed,
+        transitions: 0,
+        divergences: 0,
+        lastReport: null,
+      })
+    )
     // The event is stamped by the guard with the mode/epoch now on the
     // contract; it is a pool-level record, not a user action.
     await pgTrans.none(
@@ -322,9 +402,7 @@ export const activatePerpAccountingShadow = async (
             epoch,
             now,
             contract.oraclePrice,
-            {
-              actorId,
-            }
+            { actorId }
           ),
         ],
         { ...accounting, mode: 'shadow', epoch }
@@ -341,6 +419,80 @@ export type PerpProtectedActivationOptions = PerpActivationPlanOptions & {
   funderId?: string
   /** Activate on a stale cached mark. Off by default: the cutover mark must be executable. */
   allowStaleMark?: boolean
+  /**
+   * Required with the last-resort allocation: the exact cutover mark the
+   * dry run printed. The allocation is mark-dependent (it assigns the
+   * deficit to whoever is underwater at that mark), so it may only execute
+   * against the mark that was reviewed. Any other mark aborts.
+   */
+  confirmedMark?: number
+}
+
+export type PerpProtectedActivationDryRun = {
+  contractId: string
+  slug: string
+  mark: number
+  markTime: number | undefined
+  markFresh: boolean
+  accounting: PerpAccounting
+  plan: PerpActivationPlan
+  /** Every row the plan would leave with b < c, with the exact numbers. */
+  reductions: {
+    userId: string
+    direction: PerpDirection
+    costBasis: number
+    reserveBasisAfter: number
+    reduction: number
+  }[]
+}
+
+const reducedAllocations = (plan: PerpActivationPlan) =>
+  plan.allocations.filter(
+    (a) =>
+      a.reserveBasisAfter <
+      a.reserveBasisBefore - perpDustTolerance(a.reserveBasisBefore)
+  )
+
+/**
+ * The activation, computed and reported without writing anything. The
+ * per-user reductions it prints are exactly what activation would commit at
+ * this mark; with the last-resort allocation the mark must then be passed
+ * back as `confirmedMark`.
+ */
+export const dryRunPerpAccountingProtected = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  options: PerpActivationPlanOptions
+): Promise<PerpProtectedActivationDryRun> => {
+  const contract = await loadContractReadOnly(pg, contractId)
+  const accounting = readPerpAccounting(contract)
+  const positions = await loadPositionsReadOnly(pg, contractId, accounting)
+  const state: PerpState = {
+    pool: { L: contract.poolLong, S: contract.poolShort },
+    positions,
+  }
+  const plan = planPerpProtectedActivation(state, contract.oraclePrice, options)
+  return {
+    contractId,
+    slug: contract.slug,
+    mark: contract.oraclePrice,
+    markTime: contract.oraclePriceTime,
+    markFresh:
+      getOracleFreshness(
+        contract.oraclePriceTime,
+        contract.maxOraclePriceAgeMs,
+        Date.now()
+      ).status === 'fresh',
+    accounting,
+    plan,
+    reductions: reducedAllocations(plan).map((a) => ({
+      userId: a.userId,
+      direction: a.direction,
+      costBasis: a.costBasis,
+      reserveBasisAfter: a.reserveBasisAfter,
+      reduction: a.reserveBasisBefore - a.reserveBasisAfter,
+    })),
+  }
 }
 
 /**
@@ -350,8 +502,9 @@ export type PerpProtectedActivationOptions = PerpActivationPlanOptions & {
  * under the lock — apply the approved top-up, assign every b, run the
  * activation ADL only if approved, and commit the immutable record, the
  * version flip, every position row (stamped with the new epoch, with an
- * explicit b), the activation event, any ADL events/payouts and the metrics
- * rebuild in one transaction. Any blocker aborts the whole thing.
+ * explicit b), the activation event, one basis-settlement receipt per row
+ * whose b was set below c, any ADL events/payouts and the metrics rebuild
+ * in one transaction. Any blocker aborts the whole thing.
  */
 export const activatePerpAccountingProtected = async (
   contractId: string,
@@ -379,6 +532,23 @@ export const activatePerpAccountingProtected = async (
     }
     const price = contract.oraclePrice
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+
+    // The last-resort allocation is mark-dependent and not user-conservative:
+    // it may only execute against the exact mark a reviewer saw in the dry
+    // run. The mark is read under the lock, so a tick between review and
+    // execution aborts rather than silently reallocating.
+    if (options.allocation === 'last-resort-snapshot') {
+      if (options.confirmedMark === undefined)
+        throw new APIError(
+          400,
+          'The last-resort allocation requires confirmedMark: the exact cutover mark reported by the dry run'
+        )
+      if (options.confirmedMark !== price)
+        throw new APIError(
+          409,
+          `Cutover mark moved: dry run reviewed ${options.confirmedMark}, contract is now at ${price}; re-run the dry run`
+        )
+    }
 
     const plan = planPerpProtectedActivation(state, price, options)
     if (!plan.ok)
@@ -428,7 +598,9 @@ export const activatePerpAccountingProtected = async (
       epoch,
     }
 
-    // 1. Immutable record, 2. version flip (guarded), 3. present the epoch.
+    // 1. Immutable record; 2. present the NEW epoch (the contract guard
+    // requires it for any pool change on a protected row, and the flip below
+    // carries the top-up); 3. version flip (transition-guarded).
     await pgTrans.none(
       insertAccountingEpochQuery({
         contractId,
@@ -449,6 +621,7 @@ export const activatePerpAccountingProtected = async (
         data: {
           actorId,
           allocation: options.allocation,
+          confirmedMark: options.confirmedMark ?? null,
           activationAdl: plan.activationAdl
             ? {
                 adlFactorLong: plan.activationAdl.adlFactorLong,
@@ -469,9 +642,9 @@ export const activatePerpAccountingProtected = async (
       ...openInterestPatch(finalState.positions),
       lastUpdatedTime: now,
     })
+    await pgTrans.one(presentAccountingEpochQuery(epoch))
     await pgTrans.one(presentAccountingTransitionQuery())
     await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
-    await pgTrans.one(presentAccountingEpochQuery(epoch))
 
     // 4. Every live row is rewritten: even an unchanged b needs the explicit
     // column and the new epoch stamp. Rows removed by the activation ADL are
@@ -490,8 +663,37 @@ export const activatePerpAccountingProtected = async (
           actorId,
           topUp: options.topUp,
           allocation: options.allocation,
+          confirmedMark: options.confirmedMark ?? null,
           reducedAnyBasis: plan.reducedAnyBasis,
         }
+      ),
+      // One immutable, user-attributed receipt per row whose b the activation
+      // set below c (last-resort allocation only): the same shape as a basis
+      // settlement, so the position history explains it the same way.
+      ...reducedAllocations(plan).map((a) =>
+        asEvent(contract, {
+          userId: a.userId,
+          eventType: 'basis-settlement',
+          direction: a.direction,
+          leverage: null,
+          sizeDelta: 0,
+          costBasisDelta: 0,
+          reserveBasisDelta: a.reserveBasisAfter - a.reserveBasisBefore,
+          originalCostBasisDelta: 0,
+          data: {
+            trigger: 'activation',
+            reserveBasisBefore: a.reserveBasisBefore,
+            reserveBasisAfter: a.reserveBasisAfter,
+            costBasis: a.costBasis,
+            cutoverMark: price,
+            epoch,
+            allocation: options.allocation,
+            reason: 'basis-settlement',
+          },
+          appliedTime: now,
+          ts: now,
+          oraclePrice: price,
+        })
       ),
     ]
     if (plan.activationAdl) {
@@ -529,22 +731,22 @@ export const activatePerpAccountingProtected = async (
       newEvents: events,
       finalPositions: finalState.positions,
     })
+    const quote = (value: string) => `'${value.replace(/'/g, "''")}'`
     await pgTrans.multi(
       [
-        `delete from contract_perp_positions where contract_id = '${contractId.replace(
-          /'/g,
-          "''"
-        )}' and (user_id, direction) in (${
+        `delete from contract_perp_positions where contract_id = ${quote(
+          contractId
+        )} and (user_id, direction) in (${
           diff.deletes.length
             ? diff.deletes
-                .map(
-                  (d) => `('${d.userId.replace(/'/g, "''")}', '${d.direction}')`
-                )
+                .map((d) => `(${quote(d.userId)}, '${d.direction}')`)
                 .join(',')
             : "('', '')"
         })`,
         upsertPositionsQuery(upserts, nextAccounting),
         insertPerpEventsQuery(events, nextAccounting),
+        // The shadow checkpoint belongs to the previous epoch; b is live now.
+        deleteShadowCheckpointQuery(contractId),
         metricsQuery,
       ].join(';\n')
     )
@@ -555,7 +757,9 @@ export const activatePerpAccountingProtected = async (
         options.topUp
       )} allocation=${options.allocation} reducedAnyBasis=${
         plan.reducedAnyBasis
-      } activationAdl=${plan.activationAdl ? 'yes' : 'no'}`
+      } reductions=${reducedAllocations(plan).length} activationAdl=${
+        plan.activationAdl ? 'yes' : 'no'
+      }`
     )
     return { contract, epoch, plan }
   })
@@ -636,12 +840,8 @@ export const verifyPerpAccountingDowngradeForContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ): Promise<PerpDowngradeReport> => {
-  const row = await pg.oneOrNone<{ data: PerpContract }>(
-    `select data from contracts where id = $1 and mechanism = 'perp'`,
-    [contractId]
-  )
-  if (!row) throw new APIError(404, `Perp contract ${contractId} not found`)
-  const accounting = readPerpAccounting(row.data)
+  const contract = await loadContractReadOnly(pg, contractId)
+  const accounting = readPerpAccounting(contract)
   const positions = await loadPositionsReadOnly(pg, contractId, accounting)
   return loadDowngradeEvidence(pg, contractId, accounting, positions)
 }
@@ -715,14 +915,13 @@ export const downgradePerpAccountingToLegacy = async (
             epoch,
             now,
             contract.oraclePrice,
-            {
-              actorId,
-            }
+            { actorId }
           ),
         ],
         { ...accounting, mode: 'legacy', epoch }
       )
     )
+    await pgTrans.none(deleteShadowCheckpointQuery(contractId))
     log(
       `[perps][accounting] ${contract.slug}: ${accounting.mode} -> legacy (epoch ${epoch}) by ${actorId}`
     )

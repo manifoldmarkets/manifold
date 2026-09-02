@@ -21,9 +21,12 @@ import {
   getPerpCrossSideDeficit,
   getPerpPositionClaims,
   getPerpSideAccounting,
+  isPerpClaimBacked,
   maxPerpLiquidityWithdrawal,
   payPerpContingentClaim,
+  perpClaimTolerance,
   perpDustTolerance,
+  PERP_MIN_CLOSE_FRACTION,
   PerpProtectedInvariantError,
   resolvePerpProtectedBatch,
   settlePerpPaperLoss,
@@ -1284,5 +1287,214 @@ describe('snapshot diagnostics', () => {
     expect(snap.long.reducedBasisCount).toBe(1)
     expect(snap.long.basisDeficit).toBeCloseTo(100, 9)
     expect(snap.long.unreserved).toBeCloseTo(1100, 9)
+  })
+})
+
+describe('one affordability predicate for invariant, ADL, payment and debit', () => {
+  it('a state the invariant accepts at M$5m scale can always be closed in full (review P1-2)', () => {
+    // E = 5,000,000 of contingent claim against 4,999,999.9999995 of backing:
+    // inside the relative tolerance, so the invariant accepts it. The close
+    // must then be payable under the SAME rule, and the pool must land on 0.
+    const state: PerpState = {
+      pool: { L: 0, S: 4_999_999.9999995 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: 5 * M,
+          costBasis: 5 * M,
+          entryPrice: 100,
+          reserveBasis: 0,
+        }),
+      ],
+    }
+    expect(() => assertPerpProtectedState(state, 100)).not.toThrow()
+    const close = closePerpProtectedPosition(
+      state,
+      { userId: 'a', direction: 'long' },
+      100
+    )
+    expect(close.payout).toBeCloseTo(5 * M, 6)
+    expect(close.contingentPayout).toBeCloseTo(5 * M, 6)
+    expect(close.state.pool.S).toBe(0)
+    expect(close.state.positions).toHaveLength(0)
+    // The same is true through resolution and through a fractional close.
+    expect(resolvePerpProtectedBatch(state, 100).state.pool.S).toBe(0)
+    expect(() =>
+      closePerpProtectedPosition(
+        state,
+        { userId: 'a', direction: 'long' },
+        100,
+        0.5
+      )
+    ).not.toThrow()
+  })
+
+  it('is one rule: the predicate and the tolerance agree with each other and scale with the basis', () => {
+    expect(isPerpClaimBacked(100, 100)).toBe(true)
+    expect(isPerpClaimBacked(100 + perpClaimTolerance(100, 100), 100)).toBe(
+      true
+    )
+    expect(isPerpClaimBacked(100 + 2 * perpClaimTolerance(100, 100), 100)).toBe(
+      false
+    )
+    expect(perpClaimTolerance(1e-9, 1e-9, 1e6)).toBeGreaterThan(
+      perpClaimTolerance(1e-9, 1e-9)
+    )
+    expect(isPerpClaimBacked(Number.NaN, 1)).toBe(false)
+    expect(isPerpClaimBacked(1, Number.POSITIVE_INFINITY)).toBe(false)
+  })
+
+  it('rejects a genuine shortfall at the same scale', () => {
+    const state: PerpState = {
+      pool: { L: 0, S: 4_999_999.99 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: 5 * M,
+          costBasis: 5 * M,
+          entryPrice: 100,
+          reserveBasis: 0,
+        }),
+      ],
+    }
+    expect(() => assertPerpProtectedState(state, 100)).toThrow('exceed')
+  })
+})
+
+describe('claim ADL representability (review P1-3)', () => {
+  it('snaps a dust allowance against a large basis to factor zero instead of a rounding overshoot', () => {
+    // b = c = 1,000,000 long worth 1,100,000 (E = 100,000) with only 5e-10 of
+    // backing. s ≈ 5e-15 cannot be represented against a million-mana basis:
+    // c' rounds and the scaled claim would exceed the allowance. Factor zero
+    // settles the row at b and the state stays valid.
+    const state: PerpState = {
+      pool: { L: M, S: 5e-10 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: M,
+          costBasis: M,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    const result = applyPerpProtectedClaimAdl(state, 110)
+    expect(result.adlFactorLong).toBe(0)
+    expect(result.settled).toHaveLength(1)
+    expect(result.settled[0].payout).toBe(M)
+    expect(result.state.positions).toHaveLength(0)
+    expect(() => assertPerpProtectedState(result.state, 110)).not.toThrow()
+    // And the oracle transition, which is the path a tick takes, does not halt.
+    expect(() => applyPerpProtectedOracleTransition(state, 110)).not.toThrow()
+  })
+
+  it('leaves a dust contingent claim alone rather than settling the row', () => {
+    const state: PerpState = {
+      pool: { L: M, S: 0 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: M,
+          costBasis: M,
+          entryPrice: 100,
+          reserveBasis: M - 1e-9,
+        }),
+      ],
+    }
+    // E = 1e-9 at the mark: within the basis dust, so no ADL and no settlement.
+    const result = applyPerpProtectedClaimAdl(state, 100)
+    expect(result.adlFactorLong).toBe(1)
+    expect(result.state.positions).toHaveLength(1)
+    expect(() => assertPerpProtectedState(result.state, 100)).not.toThrow()
+  })
+
+  it('still scales normally when the allowance is representable', () => {
+    const state: PerpState = {
+      pool: { L: M, S: 25_000 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: M,
+          costBasis: M,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    const result = applyPerpProtectedClaimAdl(state, 110)
+    expect(result.adlFactorLong).toBeCloseTo(0.25, 12)
+    expect(
+      getPerpPositionClaims(result.state.positions[0], 110).contingent
+    ).toBeCloseTo(25_000, 6)
+  })
+})
+
+describe('partial close materiality (review P2)', () => {
+  const state = (): PerpState => ({
+    pool: { L: 1200, S: 700 },
+    positions: [
+      pos({
+        userId: 'a',
+        direction: 'long',
+        size: 2000,
+        costBasis: 1000,
+        entryPrice: 100,
+        reserveBasis: 950,
+      }),
+      pos({
+        userId: 'b',
+        direction: 'short',
+        size: 500,
+        costBasis: 500,
+        entryPrice: 100,
+      }),
+    ],
+  })
+
+  it('refuses fractions below the minimum and rounding no-ops, accepts the minimum', () => {
+    for (const fraction of [1e-12, 1e-17, 0.001, PERP_MIN_CLOSE_FRACTION / 2])
+      expect(() =>
+        closePerpProtectedPosition(
+          state(),
+          { userId: 'a', direction: 'long' },
+          105,
+          fraction
+        )
+      ).toThrow()
+    const ok = closePerpProtectedPosition(
+      state(),
+      { userId: 'a', direction: 'long' },
+      105,
+      PERP_MIN_CLOSE_FRACTION
+    )
+    expect(ok.remainingPosition?.size).toBeCloseTo(1980, 9)
+    expect(ok.payout).toBeGreaterThan(0)
+  })
+
+  it('a fraction that cannot change the surviving row is rejected even above the minimum on a dust position', () => {
+    const dust: PerpState = {
+      pool: { L: 1e-13, S: 0 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: 1e-12,
+          costBasis: 1e-13,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    expect(() =>
+      closePerpProtectedPosition(
+        dust,
+        { userId: 'a', direction: 'long' },
+        100,
+        0.5
+      )
+    ).toThrow('too small')
   })
 })

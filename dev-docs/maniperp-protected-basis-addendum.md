@@ -56,7 +56,10 @@ q' = s·q,   c' = b + s·(c − b),   b' = b,   Pe' = Pe
 
 which maps `E` to `s·E` and reduces to the paper's `q' = s·q, c' = c` at
 `b = c`. At `s = 0` the row is removed and `b` is paid once from its own
-pool. `originalCostBasis` and fee bases are left alone for `0 < s < 1`.
+pool. `originalCostBasis` and fee bases are left alone for `0 < s < 1`. The factor
+is representability-aware: an allowance below the side's floating-point
+dust snaps `s` to 0 rather than producing a `c'` that rounds above what the
+pool can pay, and a contingent claim below dust is left at `s = 1`.
 
 ## 5. Loss-first settlement
 
@@ -72,7 +75,9 @@ Paper losses are first-loss; `H` funds only the unmatched remainder. The
 affected rows keep `q, c, Pe`, value, leverage and liquidation price. The
 allocation uses canonical row order and a deterministic residual; aggregate
 and partitioned settlement agree within the documented float tolerance
-(not bitwise).
+(not bitwise). Every backing check and pool debit uses one shared
+affordability predicate, so the invariant and the payout path cannot
+disagree about whether a claim is payable.
 
 ## 6. Closing
 
@@ -80,7 +85,9 @@ For fraction `z`: own-pool component `z·R`, opposing component `z·E`
 (paid after §5 with `W = z·E`), survivor scaled by `1 − z` on
 `q, c, b, originalCostBasis, takerFeeCostBasis`. Capacity never rejects a
 close. A flip closes first, then validates the new leg; the whole flip is
-rejected if the leg does not fit.
+rejected if the leg does not fit. A partial close must be at least 1% of the
+position and must change it; smaller requests are rejected rather than
+recorded.
 
 ## 7. Resolution and liquidity
 

@@ -1,6 +1,7 @@
 // SQL-building helpers for the perp engine. These all return query strings
 // suitable for composition into `pgTrans.multi`.
 
+import { Json } from 'common/supabase/schema'
 import { Row, Tables } from 'common/supabase/utils'
 import {
   PerpEvent,
@@ -46,7 +47,7 @@ export const selectUserPositionForUpdateQuery = (
     [contractId, userId]
   )
 
-type PositionRow = Row<'contract_perp_positions'>
+export type PositionRow = Row<'contract_perp_positions'>
 
 /**
  * Present the contract's accounting epoch to the database guard for the rest
@@ -282,8 +283,8 @@ export const insertAccountingEpochQuery = (
     top_up_long: record.topUpLong,
     top_up_short: record.topUpShort,
     reduced_any_basis: record.reducedAnyBasis,
-    position_snapshot: record.positionSnapshot as any,
-    data: (record.data ?? null) as any,
+    position_snapshot: record.positionSnapshot as unknown as Json,
+    data: (record.data ?? null) as unknown as Json,
   }
   return bulkInsertQuery('contract_perp_accounting_epochs', [row], false)
 }
@@ -299,3 +300,55 @@ export const mergeContractDataQuery = (
     id: contractId,
     ...patch,
   } as any)
+
+// ---- isolated shadow state (diagnostics; never read by a payout path) ----
+
+export const selectShadowCheckpointQuery = (contractId: string) =>
+  pgp.as.format(
+    `select contract_id, accounting_epoch, state, transitions, divergences, last_report
+       from contract_perp_shadow_checkpoints where contract_id = $1`,
+    [contractId]
+  )
+
+export const upsertShadowCheckpointQuery = (row: {
+  contractId: string
+  accountingEpoch: number
+  state: unknown
+  transitions: number
+  divergences: number
+  lastReport: unknown
+}) =>
+  pgp.as.format(
+    `insert into contract_perp_shadow_checkpoints
+       (contract_id, accounting_epoch, state, transitions, divergences, last_report, updated_time)
+     values ($1, $2, $3::jsonb, $4, $5, $6::jsonb, now())
+     on conflict (contract_id) do update set
+       accounting_epoch = excluded.accounting_epoch,
+       state = excluded.state,
+       transitions = excluded.transitions,
+       divergences = excluded.divergences,
+       last_report = excluded.last_report,
+       updated_time = now()`,
+    [
+      row.contractId,
+      row.accountingEpoch,
+      JSON.stringify(row.state),
+      row.transitions,
+      row.divergences,
+      JSON.stringify(row.lastReport ?? null),
+    ]
+  )
+
+export const deleteShadowCheckpointQuery = (contractId: string) =>
+  pgp.as.format(
+    `delete from contract_perp_shadow_checkpoints where contract_id = $1`,
+    [contractId]
+  )
+
+export const upsertRiskShadowQuery = (contractId: string, data: unknown) =>
+  pgp.as.format(
+    `insert into contract_perp_risk_shadow (contract_id, data, updated_time)
+     values ($1, $2::jsonb, now())
+     on conflict (contract_id) do update set data = excluded.data, updated_time = now()`,
+    [contractId, JSON.stringify(data)]
+  )
