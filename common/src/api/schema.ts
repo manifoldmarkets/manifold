@@ -53,7 +53,7 @@ import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
 import { PrivateUser, User, UserBan } from '../user'
-import { searchProps } from './market-search-types'
+import { type FullMarketSearchResult, searchProps } from './market-search-types'
 import {
   FullMarket,
   closePerpPositionSchema,
@@ -1597,7 +1597,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     preferAuth: true,
     cache: 'private, no-store',
-    returns: [] as Contract[],
+    returns: [] as FullMarketSearchResult[],
     props: searchProps,
   },
   'recent-markets': {

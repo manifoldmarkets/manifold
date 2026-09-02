@@ -1,4 +1,5 @@
 import {
+  type FullMarketSearchResult,
   getMarketSearchRoute,
   searchProps,
 } from 'common/api/market-search-types'
@@ -239,23 +240,34 @@ const search = async (
       (c) => sortFields[sort].sortCallback(c),
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
+    const markedLexicalResults: FullMarketSearchResult[] = lexicalResults.map(
+      (contract) => ({
+        ...contract,
+        searchMatchType: 'lexical',
+      })
+    )
 
-    const semanticResults = await semanticFallback({
-      ...props,
-      term: cleanTerm,
-      uid: userId,
-      groupId,
-      groupIds,
-      isPrizeMarket,
-      lexicalResults,
-      callerKey: semanticCallerKey,
-      pg,
-    })
+    const semanticResults: FullMarketSearchResult[] = (
+      await semanticFallback({
+        ...props,
+        term: cleanTerm,
+        uid: userId,
+        groupId,
+        groupIds,
+        isPrizeMarket,
+        lexicalResults,
+        callerKey: semanticCallerKey,
+        pg,
+      })
+    ).map((contract) => ({
+      ...contract,
+      searchMatchType: 'semantic',
+    }))
 
     // Appended in similarity order rather than merged into the sort: these
     // matched no keyword, so ordering them by importance would float a weak
     // association above a strong one.
-    return [...lexicalResults, ...semanticResults]
+    return [...markedLexicalResults, ...semanticResults]
   }
 }
 

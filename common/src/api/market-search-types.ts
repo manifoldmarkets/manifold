@@ -1,5 +1,14 @@
 import { z } from 'zod'
+import type { Contract } from '../contract'
 import { coerceBoolean } from './zod-types'
+
+export type FullMarketSearchResult = Contract & {
+  // Present on text-search results from marker-aware API workers. Keeping this
+  // on the internal full-search shape lets mixed result UIs preserve
+  // lexical/post ranking without promoting the semantic tail. It remains
+  // optional so old workers and non-text search routes stay compatible.
+  searchMatchType?: 'lexical' | 'semantic'
+}
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 
