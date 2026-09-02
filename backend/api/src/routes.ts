@@ -219,6 +219,7 @@ import { checkBitcoinBlock } from './check-bitcoin-block'
 import { claimSweepstakesPrize } from './claim-sweepstakes-prize'
 import { getSweepstakesPrizeClaim } from './get-sweepstakes-prize-claim'
 import { adminGetPrizeClaims } from './admin-get-prize-claims'
+import { getAdminTodo } from './get-admin-todo'
 import { adminUpdatePrizePayment } from './admin-update-prize-payment'
 import { adminDeletePrizeClaim } from './admin-delete-prize-claim'
 import { adminGetManaSales } from './admin-get-mana-sales'
@@ -598,6 +599,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-create-charity-giveaway': adminCreateCharityGiveaway,
   'admin-update-charity-giveaway-prize': adminUpdateCharityGiveawayPrize,
   'admin-get-prize-claims': adminGetPrizeClaims,
+  'get-admin-todo': getAdminTodo,
   'admin-update-prize-payment': adminUpdatePrizePayment,
   'admin-delete-prize-claim': adminDeletePrizeClaim,
   'admin-get-mana-sales': adminGetManaSales,

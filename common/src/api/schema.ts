@@ -4290,6 +4290,42 @@ export const API = (_apiTypeCheck = {
       } | null
     },
   },
+  // The daily operator queue: everything across merch, prize drawings,
+  // redemptions and perps that is waiting on a human, in one call. Moderation
+  // is deliberately excluded — those queues have their own pages and rhythm.
+  'get-admin-todo': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      items: Array<{
+        id: string
+        category: 'merch' | 'prizes' | 'perps' | 'payments'
+        /**
+         * `overdue` — already waited longer than it should have.
+         * `todo` — real work, not yet late.
+         * `waiting` — not today's work: blocked on someone outside the team,
+         * or a stale backlog to reconcile once. Never counted toward
+         * openCount, shown so it is not mistaken for something forgotten.
+         */
+        severity: 'overdue' | 'todo' | 'waiting'
+        title: string
+        detail: string
+        actionLabel: string
+        actionHref: string
+        count: number
+        entries: Array<{
+          label: string
+          sublabel?: string
+          href?: string
+        }>
+      }>
+      /** Items excluding `waiting` — what the badge should show. */
+      openCount: number
+      generatedAt: number
+    },
+  },
   'admin-get-prize-claims': {
     method: 'GET',
     visibility: 'undocumented',
