@@ -2,10 +2,13 @@
 
 This is the operational source of truth for the first public PERP rollout.
 `backend/shared/src/perps/launch-manifest.ts` is the executable source of truth
-for the seven intended feeds and their conservative day-one settings (BTC, the
-four xStocks tokenized equities, Trump approval, and OpenRouter open-weight
-share). It is executable on purpose: run `getPerpLaunchManifestErrors()` rather
-than trusting this count, which has drifted before.
+for the intended feeds and their conservative day-one settings: BTC, the four
+xStocks tokenized equities, the three VoteHub averages (Trump approval, the
+Democratic share of the 2026 generic ballot, JD Vance favorability), the
+Alternative.me Crypto Fear & Greed index, and the three OpenRouter token-share
+indexes (open-weight, Anthropic, Chinese labs). It is executable on purpose:
+run `getPerpLaunchManifestErrors()` rather than trusting a count here, which
+has drifted before.
 
 Current DEV state (2026-07-28): all six July PERP follow-up migrations are
 installed and their schema/immutability checks pass; do not rerun them. Exactly
@@ -70,12 +73,15 @@ fee. A trader can observe a public source before Manifold ingests it, trade
 against the old cached value, and exit after the update. Funding does not
 protect the pools when the trader is flat at the funding timestamp.
 
-| Feed                           | Day-one game design                           | Execution risk                                                                               |
-| ------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| BTC/USD                        | Best fit: continuous and genuinely two-sided  | Exchange prices can lead the 5-second poll                                                   |
-| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided          | Pools can lead the 2-second poll; liquidity far thinner than BTC                             |
-| Trump approval                 | Coherent politics theses, but slow            | Public daily step plus known scheduler timing                                                |
-| OpenRouter open-weight share   | Two-sided index with coherent adoption theses | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
+| Feed                           | Day-one game design                             | Execution risk                                                                               |
+| ------------------------------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| BTC/USD                        | Best fit: continuous and genuinely two-sided    | Exchange prices can lead the 5-second poll                                                   |
+| xStocks (SPYx/QQQx/GLDx/NVDAx) | Equity/commodity exposure, two-sided            | Pools can lead the 2-second poll; liquidity far thinner than BTC                             |
+| Trump approval                 | Coherent politics theses, but slow              | Public daily step plus known scheduler timing                                                |
+| VoteHub generic ballot / Vance | Same shape as Trump approval; Vance is thinner  | Same 5-minute poll against VoteHub's max-age=300 cache; fewer, larger steps for Vance        |
+| Crypto Fear & Greed            | Mean-reverting sentiment gauge, two-sided       | New daily value is public at ~00:00 UTC; exposure bounded by the 5-minute poll               |
+| OpenRouter open-weight share   | Two-sided index with coherent adoption theses   | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
+| OpenRouter Anthropic / CN labs | Two-sided proxies for third-party-routed demand | Same payload and same daily step as the open-weight share                                    |
 
 ### xStocks on-chain sources (ongoing, post-launch)
 
@@ -148,9 +154,17 @@ Keep that redesign separate from the capped day-one launch.
    scheduler. Configure the API runtime with `PERP_TRADING_MODE=enabled` and
    verify OpenRouter writes a point with provider `source_ts`.
 3. Provision `OPENROUTER_API_KEY` in the target environment.
-4. Run the BTC, xStocks, Trump, and OpenRouter oracle backfills if history is
-   absent. (The UK carbon feed and its backfill script were removed when that
-   market was sunset on 2026-08-10.)
+4. Run the oracle backfills for any launch feed whose history is absent: BTC,
+   xStocks, Trump (`backfill-trump-approval-oracle`), the other VoteHub feeds
+   (`backfill-votehub-oracle --feed=<feedId>`, after confirming the spec's
+   average and answer keys with `list-votehub-averages`), Fear & Greed
+   (`backfill-fear-greed-oracle`), and each OpenRouter index
+   (`backfill-openrouter-oracle [--feed=<feedId>]`). Backfills are for feeds
+   with no live market only. (The UK carbon feed and its backfill script were
+   removed when that market was sunset on 2026-08-10.)
+   Before creating a market on `crypto-fear-greed`, read the terms section of
+   https://alternative.me/crypto/fear-and-greed-index/ and record it in
+   `common/src/perps/oracle-attribution.ts`; the entry says why.
 5. Review and settle/retire out-of-manifest or legacy prototypes. This changes
    balances; record the intended final oracle point and affected positions
    before executing it.
@@ -158,7 +172,8 @@ Keep that redesign separate from the capped day-one launch.
    warning must be understood.
 7. Verify GCP alert policies and deliver a test incident:
    - ERROR presence for `[oracle-feeds]`, `[update-perps]`, `[openrouter]`,
-     `[trump-approval]`, and scheduler `Error during job execution`.
+     `[trump-approval]`, `[votehub]`, `[fear-greed]`, and scheduler
+     `Error during job execution`.
    - Absence/dead-man alerts for `update-oracle-feeds` within two minutes and
      `update-perps` within two hours.
    - Route both policies to a channel with a real on-call owner.
