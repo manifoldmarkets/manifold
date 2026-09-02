@@ -52,26 +52,6 @@ export const shouldAttemptSemanticFallback = (args: {
 
 type Clock = () => number
 
-export class RollingWindowGate {
-  private eventTimes: number[] = []
-
-  constructor(
-    private readonly maxEvents: number,
-    private readonly windowMs: number,
-    private readonly now: Clock = Date.now
-  ) {}
-
-  take() {
-    const now = this.now()
-    this.eventTimes = this.eventTimes.filter(
-      (time) => now - time < this.windowMs
-    )
-    if (this.eventTimes.length >= this.maxEvents) return false
-    this.eventTimes.push(now)
-    return true
-  }
-}
-
 /** Atomically enforces a hard global ceiling and a fair per-caller budget. */
 export class HierarchicalRollingWindowGate {
   private globalEventTimes: number[] = []

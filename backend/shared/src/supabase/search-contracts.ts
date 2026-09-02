@@ -6,6 +6,7 @@ import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 import { PrivateUser } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
+import { MINUTE_MS } from 'common/util/time'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -47,6 +48,10 @@ const SEEN_GRACE_PERIOD = '1 hour'
 // Matches PROB_CHANGE_THRESHOLD in feed-market-movement-display.ts: the same
 // binary move that earns a card its movement badge also earns it another look.
 const SEEN_PROB_MOVE_THRESHOLD = 0.05
+// How far ahead of server time a client anchor may sit before it is refused.
+// Wide enough for request latency and an unsynced clock, narrow enough that
+// the grace period it eats into stays almost whole.
+const SEEN_CUTOFF_MAX_CLOCK_AHEAD_MS = 5 * MINUTE_MS
 
 /**
  * Drops markets the user has already looked at and that are currently quiet
@@ -72,6 +77,21 @@ const SEEN_PROB_MOVE_THRESHOLD = 0.05
  * rolling daily value, not a probability snapshot at view time, so do not
  * describe it as movement since the view. We deliberately avoid last_bet_time:
  * continuously traded markets would otherwise make this filter a no-op.
+ *
+ * The client-supplied anchor exists only to keep the seen set identical
+ * across the pages of one session; it is not trusted as a clock. Both bounds
+ * of the window hang off it, so a client clock running ahead would push the
+ * upper bound past the grace period and hide markets viewed minutes ago —
+ * the exact case the grace period protects. Clamping it to now() would not
+ * help: the clamp resolves to a fresh now() on every page until server time
+ * catches up, which is the moving boundary described above. Instead
+ * shouldSuppressStaleSeenMarkets refuses an anchor too far ahead of server
+ * time, so a fast clock gets no suppression rather than a different set on
+ * each page. That check is re-evaluated per request, so a clock ahead by
+ * almost exactly the tolerance can see it flip from refused to accepted
+ * mid-session and shift one page; that narrow case is accepted over hiding
+ * fresh views for every fast clock. A clock running behind only ages the
+ * window, which at worst means nothing is suppressed.
  */
 export const staleSeenMarketsSql = (
   userId: string,
@@ -123,9 +143,11 @@ export const staleSeenMarketsSql = (
 }
 
 export const shouldSuppressStaleSeenMarkets = (
-  _offset: number,
-  seenMarketCutoffTime?: number
-) => seenMarketCutoffTime !== undefined
+  seenMarketCutoffTime?: number,
+  now = Date.now()
+) =>
+  seenMarketCutoffTime !== undefined &&
+  seenMarketCutoffTime <= now + SEEN_CUTOFF_MAX_CLOCK_AHEAD_MS
 
 type SharedSearchArgs = {
   filter: string
@@ -190,10 +212,7 @@ export async function getForYouSQL(
       privateUser,
       // Keep the same diversity behavior when a new/low-activity user has no
       // topic scores yet. Ordinary basic browse does not opt into this.
-      suppressStaleSeen: shouldSuppressStaleSeenMarkets(
-        offset,
-        seenMarketCutoffTime
-      ),
+      suppressStaleSeen: true,
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
@@ -222,7 +241,7 @@ export async function getForYouSQL(
       // A client-provided session anchor keeps the seen set stable across
       // every offset page. Unanchored callers retain the old unsuppressed
       // behavior so page-one filtering cannot shift their later offsets.
-      shouldSuppressStaleSeenMarkets(offset, seenMarketCutoffTime) &&
+      shouldSuppressStaleSeenMarkets(seenMarketCutoffTime) &&
         staleSeenMarketsSql(userId, seenMarketCutoffTime),
       privateUserBlocksSql(privateUser),
       withClause(
@@ -283,7 +302,7 @@ export const basicSearchSQL = (
     }),
     suppressStaleSeen &&
       args.uid &&
-      args.seenMarketCutoffTime !== undefined &&
+      shouldSuppressStaleSeenMarkets(args.seenMarketCutoffTime) &&
       staleSeenMarketsSql(args.uid, args.seenMarketCutoffTime),
     privateUserBlocksSql(privateUser),
     beforeTime && where(`created_time < millis_to_ts($1)`, [beforeTime]),
