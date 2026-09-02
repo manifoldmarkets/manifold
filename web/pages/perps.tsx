@@ -128,6 +128,7 @@ const FEED_TICKERS: Record<string, string> = {
   'trump-approval-rating': 'TRUMP',
   'votehub-generic-ballot-2026': 'BALLOT',
   'vance-favorability': 'VANCE',
+  'crypto-fear-greed': 'FEAR',
   'openrouter-open-weight-share': 'OPENW',
   'spyx-usd': 'SPYx',
   'qqqx-usd': 'QQQx',

@@ -71,6 +71,7 @@ import { updateClassificationAudit } from './update-classification-audit'
 import { updateModelClassifications } from './update-model-classifications'
 import { updateTrumpApproval } from './update-trump-approval'
 import { updateVoteHubAverages } from './update-votehub-averages'
+import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
@@ -89,6 +90,7 @@ const PERP_JOB_NAMES = new Set([
   'update-openrouter-share',
   'update-trump-approval',
   'update-votehub-averages',
+  'update-fear-greed',
 ])
 
 export function getSchedulerJobSet(): SchedulerJobSet {
@@ -418,6 +420,15 @@ export function createJobs(jobSet: SchedulerJobSet) {
       // feeds alert under `[votehub]`.
       '0 2-59/5 * * * *',
       updateVoteHubAverages
+    ),
+    createJob(
+      'update-fear-greed',
+      // Alternative.me's Crypto Fear & Greed index steps once a day around
+      // 00:00 UTC; polling every 5 minutes bounds how long the new daily
+      // value is public before it is the market's mark. Offset from the two
+      // VoteHub jobs so the three slow-feed publishers never fire together.
+      '0 3-59/5 * * * *',
+      updateFearGreed
     ),
     createJob(
       'onboarding-notification',

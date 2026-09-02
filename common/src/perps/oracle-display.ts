@@ -20,6 +20,8 @@ export const ORACLE_TICK_DECORATIONS: Readonly<
   'trump-approval-rating': { suffix: '%' },
   'votehub-generic-ballot-2026': { suffix: '%' },
   'vance-favorability': { suffix: '%' },
+  // Index points on a 0-100 sentiment scale: a level, not a percentage.
+  'crypto-fear-greed': {},
   'openrouter-open-weight-share': { suffix: '%' },
 }
 

@@ -1,9 +1,11 @@
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
+import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
 
 import { fetchBtcUsdSpot } from './btc-price'
 import {
   BTC_USD_FEED_ID,
+  CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
   NVDAX_USD_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
@@ -272,6 +274,32 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 10,
     maxPrice: 90,
     staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  {
+    id: CRYPTO_FEAR_GREED_FEED_ID,
+    description:
+      'Alternative.me Crypto Fear & Greed index (0-100 sentiment points)',
+    marketCreationEnabled: true,
+    // Own job (update-fear-greed, every 5 minutes, publishes on change plus
+    // a 12h heartbeat); the value itself steps once a day around 00:00 UTC.
+    cadence: 'daily',
+    // The index is an integer on [0, 100]. The LOWER bound is 1, not 0, on
+    // purpose: oracle prices must be strictly positive
+    // (validateBasicOraclePoint), so a literal 0 print cannot be published
+    // under any bounds. That is acceptable — the index has never printed 0;
+    // its historical floor is in the single digits — and the failure mode is
+    // the safe one: if it ever does print 0 the publisher rejects the point,
+    // nothing is written, the market pauses at its maxOraclePriceAgeMs stale
+    // gate, and trading resumes on the next non-zero print. Pausing beats
+    // publishing a non-positive price or inventing a floor. Everything else
+    // the parser already enforces (integer, in range, provider error flag,
+    // parseable timestamp) — see common/perps/fear-greed.ts.
+    minPrice: 1,
+    maxPrice: FEAR_GREED_MAX,
+    staleAfterMs: 26 * HOUR_MS,
+    // Steps once a day, so a new market's funding period matches how often
+    // the number moves rather than how often we look at it.
     updatePeriodMs: DAY_MS,
   },
   {

@@ -23,6 +23,11 @@
 //   - NESO — publishes under an open licence requiring attribution, but the
 //     exact current licence text was NOT read directly. So it gets a credit
 //     and a link, and no licence label we can't back up.
+//   - Alternative.me (Crypto Fear & Greed) — same status as NESO, see the
+//     entry: the terms section of their index page could not be fetched
+//     from the environment the feed was written in, so it carries a credit
+//     and a link and no licence label, and reading that page is an operator
+//     gate before a market is created on the feed.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -99,6 +104,25 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     url: 'https://votehub.com',
     licence: 'CC BY 4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  // ⚠️ TERMS NOT YET READ DIRECTLY (2026-09-02). The feed was written in a
+  // build environment whose egress policy blocks alternative.me, so the
+  // section of https://alternative.me/crypto/fear-and-greed-index/ that
+  // states the terms for using the data could not be fetched and is NOT
+  // quoted here. Prior research expects it to permit use, including
+  // commercial use, provided the index is credited with a link next to the
+  // displayed data — which is exactly what this entry renders under the
+  // chart on the market page and on the /perps hub. But an expectation is
+  // not a licence: before an admin creates a market on `crypto-fear-greed`,
+  // someone must read that page, paste the relevant sentence(s) verbatim
+  // into this comment with the date, and — only if the page names one — set
+  // `licence` / `licenceUrl`. If the page turns out NOT to permit commercial
+  // reuse with attribution, do not create the market; the registry entry is
+  // harmless without one. Until then: a credit and a link, no licence label
+  // we cannot back up (the NESO stance above).
+  'crypto-fear-greed': {
+    source: 'Alternative.me Crypto Fear & Greed Index',
+    url: 'https://alternative.me/crypto/fear-and-greed-index/',
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

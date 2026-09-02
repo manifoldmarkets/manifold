@@ -16,6 +16,7 @@ export const NVDAX_USD_FEED_ID = 'nvdax-usd'
 // licence, different answer key — see backend/shared/src/votehub-feeds.ts.
 export const VOTEHUB_GENERIC_BALLOT_2026_FEED_ID = 'votehub-generic-ballot-2026'
 export const VANCE_FAVORABILITY_FEED_ID = 'vance-favorability'
+export const CRYPTO_FEAR_GREED_FEED_ID = 'crypto-fear-greed'
 
 // Append oracle price points for a feed. Published history is immutable:
 // duplicate (feed_id, ts) values remain unchanged even if a source later

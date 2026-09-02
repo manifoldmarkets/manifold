@@ -5,6 +5,7 @@ import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 import {
   BTC_USD_FEED_ID,
+  CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
   NVDAX_USD_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
@@ -158,6 +159,34 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
       "Two-sided political exposure on a figure whose standing is contested in both directions, priced as the Favorable share rather than net favorability so the level is always positive. Favorability is polled less often than presidential approval, so expect longer flat stretches between releases than the Trump market shows, and expect the independent cross-check to report 'unchecked' more often.",
     latencyArbitrageRisk:
       "Same as the other VoteHub feeds: the value is public and the feed is polled every 5 minutes against VoteHub's max-age=300 cache, so a trader can see a new average at most a few minutes before the market does. Fewer polls means fewer, larger steps, each of them public before the poll reaches the market.",
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: CRYPTO_FEAR_GREED_FEED_ID,
+    question: 'Crypto Fear & Greed index (Alternative.me)',
+    requiredTopics: [
+      {
+        name: 'Crypto',
+        slugByEnvironment: {
+          DEV: 'crypto-default',
+          PROD: 'crypto-speculation',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
+    gameDesign:
+      'A bounded 0-100 sentiment gauge that is mean-reverting by construction and genuinely two-sided: extreme readings in either direction tend to revert, momentum traders and contrarians both have a thesis, and the index is decorrelated enough from BTC spot to be its own market rather than a proxy for the BTC perp. It steps once a day, so expect long flat stretches between moves.',
+    latencyArbitrageRisk:
+      'The new daily value is public on alternative.me at roughly 00:00 UTC and the feed is polled every 5 minutes, so the window in which a trader can see the new print before the market marks it is bounded by that poll. The step is predictable in timing but not in direction or size.',
     recommended: {
       maxLeverage: 3,
       annualMaxFundingRate: 1,
@@ -373,6 +402,12 @@ export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
   {
     jobName: 'update-votehub-averages',
     // The other VoteHub averages, on the Trump job's cadence and bounds.
+    maxEndAgeMs: 30 * MINUTE_MS,
+    maxRunMs: 2 * MINUTE_MS,
+  },
+  {
+    jobName: 'update-fear-greed',
+    // Every 5 minutes, one small fetch.
     maxEndAgeMs: 30 * MINUTE_MS,
     maxRunMs: 2 * MINUTE_MS,
   },
