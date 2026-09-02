@@ -105,6 +105,9 @@ export type LiteMarket = {
   // number — and it is the input a client needs to size a trade.
   takerFeeApiBps?: number
   resolvedOraclePrice?: number
+  // Which settlement semantics this market commits: `legacy` (#4030) or
+  // `protected` (protected-basis settlement). `shadow` commits legacy.
+  perpAccountingMode?: 'legacy' | 'shadow' | 'protected'
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -252,6 +255,7 @@ export function toLiteMarket(
           takerFeeImpact: getPerpTakerFeeImpact(contract),
           takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
+          perpAccountingMode: contract.perpAccountingMode ?? 'legacy',
         }
       : {}),
 
@@ -702,4 +706,7 @@ export const closePerpPositionSchema = z.object({
   direction: z.enum(['long', 'short']),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
   expectedOpenedTime: z.number().int().nonnegative(),
+  // Fraction of the position to close, (0, 1]; omitted = the whole position.
+  // Below 1 is accepted only on markets using protected-basis accounting.
+  fraction: z.number().gt(0).lte(1).optional(),
 })

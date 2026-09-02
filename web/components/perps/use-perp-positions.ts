@@ -25,6 +25,8 @@ export type PerpPositionRow = {
   direction: 'long' | 'short'
   size: number
   costBasis: number
+  // Protected basis b (equals costBasis on legacy-accounting markets).
+  reserveBasis: number
   originalCostBasis: number
   takerFeeCostBasis: number
   entryPrice: number

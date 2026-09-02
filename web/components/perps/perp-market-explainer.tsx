@@ -134,6 +134,21 @@ export function PerpExplainerContent(props: {
         funding time are shown above the chart.
       </ExplainerItem>
 
+      {contract?.perpAccountingMode === 'protected' && (
+        <ExplainerItem title="Protected basis" scope="this market only">
+          This market settles with protected-basis accounting. Your cost basis
+          stays the basis for your entry price and profit. When an opposing
+          trader realizes a gain, it is paid first out of the paper losses on
+          your side, which lowers the part of your position's value that your
+          own side's pool protects. Your value and exposure do not change at
+          that moment, but recovery above the protected amount depends on
+          opposing paper losses and unreserved backing and may be
+          auto-deleveraged. Any such reduction appears as a receipt in your
+          position history. No position is ever closed just because a
+          counterparty leaves.
+        </ExplainerItem>
+      )}
+
       <ExplainerItem title="No expiry">
         Your position stays open until you close it, it is liquidated or
         auto-deleveraged, or Manifold settles the market.

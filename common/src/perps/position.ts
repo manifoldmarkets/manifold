@@ -12,6 +12,16 @@ export type PerpPosition = {
   size: number
   /** c — current cost basis (scaled by funding; eq. 8/9). */
   costBasis: number
+  /**
+   * b — protected (reserve) basis: the part of the position's value still
+   * backed by its own side pool. Always `0 <= b <= c`. Realized opposing
+   * payouts that consumed this position's paper loss reduce it (see
+   * `common/perps/protected-basis.ts`); it never changes the position's
+   * value, notional, entry price, leverage or liquidation price. `undefined`
+   * reads as `costBasis` — the legacy mirror — so rows written before the
+   * column existed, and every legacy/shadow contract, keep #4030 semantics.
+   */
+  reserveBasis?: number
   /** original margin the user put in (never scaled). Used for user-facing PnL. */
   originalCostBasis: number
   /** Cumulative taker fees paid while opening/adding to this live position.
@@ -35,6 +45,19 @@ export type PerpEventType =
   | 'liquidation'
   | 'adl'
   | 'funding'
+  /**
+   * Protected accounting only: a realized opposing payout consumed part of
+   * this position's paper loss, reducing its protected basis. Not a cash
+   * flow — size, cost basis and value are unchanged; only `reserveBasisDelta`
+   * is nonzero. Never counted as realized PnL.
+   */
+  | 'basis-settlement'
+  /**
+   * Pool-level (null user) immutable record of an accounting-mode transition
+   * (legacy -> shadow -> protected). Written once per epoch alongside the
+   * `contract_perp_accounting_epochs` row.
+   */
+  | 'accounting-activation'
 
 export type PerpEvent = {
   id?: number
@@ -51,6 +74,13 @@ export type PerpEvent = {
   sizeDelta: number
   costBasisDelta: number
   originalCostBasisDelta: number
+  /**
+   * Change in protected basis `b`. Protected-mode writers state it on every
+   * event; in legacy/shadow it is mirrored from `costBasisDelta` at the write
+   * boundary (undefined here means "mirror"). Events persisted before the
+   * column existed read back as 0 and carry no protected-basis history.
+   */
+  reserveBasisDelta?: number
   direction: PerpDirection | null
   leverage: number | null
   data?: Record<string, unknown>

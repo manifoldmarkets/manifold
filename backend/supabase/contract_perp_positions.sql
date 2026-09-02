@@ -8,13 +8,19 @@ create table if not exists
     cost_basis numeric not null,
     original_cost_basis numeric not null,
     taker_fee_cost_basis numeric not null default 0,
+    reserve_basis numeric,
+    accounting_epoch bigint not null default 0,
     entry_price numeric not null,
     leverage numeric not null,
     liquidation_price numeric not null,
     opened_time timestamp with time zone not null default now(),
     updated_time timestamp with time zone not null default now(),
     constraint contract_perp_positions_direction_check check (direction in ('long','short')),
-    constraint contract_perp_positions_taker_fee_cost_basis_check check (taker_fee_cost_basis >= 0)
+    constraint contract_perp_positions_taker_fee_cost_basis_check check (taker_fee_cost_basis >= 0),
+    constraint contract_perp_positions_reserve_basis_check check (
+      reserve_basis is null
+      or (reserve_basis >= 0 and reserve_basis <= cost_basis)
+    )
   );
 
 alter table contract_perp_positions enable row level security;
@@ -37,3 +43,6 @@ create unique index contract_perp_positions_one_way on public.contract_perp_posi
 drop policy if exists "public read perp positions" on contract_perp_positions;
 create policy "public read perp positions" on contract_perp_positions for
 select using (true);
+
+-- Triggers
+create trigger contract_perp_positions_accounting_guard before insert or update or delete on public.contract_perp_positions for each row execute function perp_accounting_guard();

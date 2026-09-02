@@ -60,6 +60,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     takerFeeApiBps,
     takerFeeImpact,
     maxOraclePriceAgeMs,
+    perpRiskPolicyMode,
   } = body
 
   const pg = createSupabaseDirectClient()
@@ -105,6 +106,10 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   )
 
   const lastUpdatedTime = Date.now()
+  // Only the Workstream B shadow knob is tunable here. The accounting mode
+  // (legacy | shadow | protected) is NOT: the database refuses a flip that
+  // does not come through the guarded migration tooling, and this endpoint
+  // never writes those keys.
   const patch = removeUndefinedProps({
     maxLeverage,
     maxFundingRate,
@@ -112,6 +117,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     takerFeeApiBps,
     takerFeeImpact,
     maxOraclePriceAgeMs,
+    perpRiskPolicyMode,
     lastUpdatedTime,
   })
   await updateContract(pg, contractId, patch)
@@ -143,6 +149,12 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
     log(
       `admin ${auth.uid} set maxOraclePriceAgeMs on ${contract.slug}: ${contract.maxOraclePriceAgeMs} -> ${maxOraclePriceAgeMs}`
     )
+  if (perpRiskPolicyMode !== undefined)
+    log(
+      `admin ${auth.uid} set perpRiskPolicyMode on ${contract.slug}: ${
+        contract.perpRiskPolicyMode ?? 'off'
+      } -> ${perpRiskPolicyMode} (shadow only; no decision changes)`
+    )
   broadcastUpdatedContract(contract.visibility, { id: contractId, ...patch })
 
   const editedFields = Object.keys(
@@ -153,6 +165,7 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       takerFeeApiBps,
       takerFeeImpact,
       maxOraclePriceAgeMs,
+      perpRiskPolicyMode,
     })
   )
   return {
@@ -165,6 +178,9 @@ export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
       effectiveTakerFeeApiBps,
       takerFeeImpact: takerFeeImpact ?? getPerpTakerFeeImpact(contract),
       maxOraclePriceAgeMs: maxOraclePriceAgeMs ?? contract.maxOraclePriceAgeMs,
+      perpRiskPolicyMode:
+        perpRiskPolicyMode ??
+        (contract.perpRiskPolicyMode === 'shadow' ? 'shadow' : 'off'),
     },
     continue: async () => {
       await recordContractEdit(contract, auth.uid, editedFields)

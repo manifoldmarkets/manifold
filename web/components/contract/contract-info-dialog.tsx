@@ -664,6 +664,25 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       </tr>
       <tr>
         <td>
+          Settlement accounting{' '}
+          <InfoTooltip text="Legacy: the original ManiPerp payout rules. Protected basis: realized opposing gains consume paper losses first, and recovery above a position's protected basis is contingent on opposing backing. Changed only through the reviewed migration path." />
+        </td>
+        <td>
+          {contract.perpAccountingMode === 'protected'
+            ? 'Protected basis'
+            : 'Legacy'}
+          {contract.perpAccountingMode === 'protected' &&
+            (contract.perpReducedBasisCount ?? 0) > 0 && (
+              <span className="text-ink-500 ml-1 text-xs">
+                ({contract.perpReducedBasisCount} position
+                {contract.perpReducedBasisCount === 1 ? '' : 's'} below full
+                basis)
+              </span>
+            )}
+        </td>
+      </tr>
+      <tr>
+        <td>
           Backing pool{' '}
           <InfoTooltip text="Current mana held across both sides to back position payouts" />
         </td>

@@ -14,6 +14,7 @@ import {
   getUserFacingPnlPercent,
 } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
+import { perpDustTolerance } from 'common/perps/protected-basis'
 import { DAY_MS } from 'common/util/time'
 import {
   formatCountdown,
@@ -29,6 +30,7 @@ import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -39,6 +41,7 @@ type Position = {
   direction: 'long' | 'short'
   size: number
   costBasis: number
+  reserveBasis: number
   originalCostBasis: number
   takerFeeCostBasis: number
   entryPrice: number
@@ -114,7 +117,10 @@ export const PerpPositionPanel = (props: {
               (e) =>
                 e.eventType === 'close' ||
                 e.eventType === 'liquidation' ||
-                (e.eventType === 'adl' && e.payout != null)
+                (e.eventType === 'adl' && e.payout != null) ||
+                // Protected accounting: a receipt that part of this
+                // position's paper loss funded an opposing realized gain.
+                e.eventType === 'basis-settlement'
             )
           )
         })
@@ -193,7 +199,12 @@ export const PerpPositionPanel = (props: {
           oracleTradingPaused={oracleTradingPaused}
         />
       ))}
-      {pastEvents.length > 0 && <PositionHistory events={pastEvents} />}
+      {pastEvents.length > 0 && (
+        <PositionHistory
+          events={pastEvents}
+          protectedAccounting={contract.perpAccountingMode === 'protected'}
+        />
+      )}
     </Col>
   )
 }
@@ -201,13 +212,23 @@ export const PerpPositionPanel = (props: {
 type PerpHistoryEvent = {
   id: number
   ts: number
-  eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+  eventType:
+    | 'open'
+    | 'add'
+    | 'close'
+    | 'liquidation'
+    | 'adl'
+    | 'funding'
+    | 'basis-settlement'
   direction: 'long' | 'short' | null
   sizeDelta: number
   originalCostBasisDelta: number
+  reserveBasisDelta: number
   oraclePrice: number
   payout: number | null
   pnl: number | null
+  fraction: number | null
+  reserveBasisAfter: number | null
 }
 
 // Tombstones for closed/liquidated positions, so the outcome of a position
@@ -216,8 +237,11 @@ type PerpHistoryEvent = {
 // short list reads as "this is everything".
 const HISTORY_PREVIEW_COUNT = 5
 
-const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
-  const { events: allEvents } = props
+const PositionHistory = (props: {
+  events: PerpHistoryEvent[]
+  protectedAccounting: boolean
+}) => {
+  const { events: allEvents, protectedAccounting } = props
   const [expanded, setExpanded] = useState(false)
   const events = expanded
     ? allEvents
@@ -299,15 +323,47 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           )
         }
 
-        // close
+        if (e.eventType === 'basis-settlement') {
+          // Not a cash flow: value, notional and entry are unchanged. What
+          // changed is how much of the position's value its own side still
+          // protects; recovery above that is contingent from here on.
+          const reduced = Math.abs(e.reserveBasisDelta)
+          return (
+            <Row
+              key={e.id}
+              className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
+            >
+              <span className="font-semibold text-amber-600 dark:text-amber-400">
+                Protected basis reduced on {e.direction}
+              </span>
+              <span className="text-ink-700 tabular-nums">
+                −{formatMoneyPrecise(reduced)}
+                {e.reserveBasisAfter != null &&
+                  ` → ${formatMoneyPrecise(e.reserveBasisAfter)} protected`}
+              </span>
+              <span className="text-ink-500 tabular-nums">
+                at {formatPrice(e.oraclePrice, decimals)}
+              </span>
+              <span className="text-ink-400 text-xs">{at}</span>
+            </Row>
+          )
+        }
+
+        // close (full, or a fraction under protected accounting)
         const pnl = e.pnl ?? 0
+        const partial =
+          e.fraction != null && e.fraction > 0 && e.fraction < 1
+            ? e.fraction
+            : null
         return (
           <Row
             key={e.id}
             className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
           >
             <span className="text-ink-700 font-medium">
-              Closed {e.direction}
+              {partial != null
+                ? `Closed ${Math.round(partial * 100)}% of ${e.direction}`
+                : `Closed ${e.direction}`}
             </span>
             <span className="text-ink-700 tabular-nums">
               payout {formatMoneyPrecise(e.payout ?? 0)}
@@ -341,6 +397,8 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
         Liquidation forfeits a position's margin to the pool that pays winning
         positions. Full auto-deleveraging closes excess winning exposure and
         returns its remaining margin.
+        {protectedAccounting &&
+          ' A protected-basis reduction means part of your paper loss already funded an opposing trader’s realized gain: your value and exposure did not change at that moment, but recovery above the protected amount depends on opposing losses and unreserved backing and may be auto-deleveraged.'}
       </span>
     </Col>
   )
@@ -377,6 +435,17 @@ const PositionCard = (props: {
   } as PerpPosition
   const pnl = getUserFacingPnl(position, markPrice)
   const pnlPct = getUserFacingPnlPercent(position, markPrice) * 100
+
+  // Protected-basis accounting: b below c means a realized opposing payout
+  // already consumed part of this position's paper loss. Shown only on
+  // markets that commit those semantics, and only when it actually differs.
+  const protectedAccounting = contract.perpAccountingMode === 'protected'
+  const reserveBasis = Number.isFinite(p.reserveBasis)
+    ? p.reserveBasis
+    : p.costBasis
+  const basisReduced =
+    protectedAccounting &&
+    reserveBasis < p.costBasis - perpDustTolerance(p.costBasis, reserveBasis)
 
   const isLong = p.direction === 'long'
   const accentBar = isLong ? 'bg-teal-500' : 'bg-scarlet-500'
@@ -534,6 +603,20 @@ const PositionCard = (props: {
                 }%/day of margin)`}
               {fundingCountdown != null && ` · next in ${fundingCountdown}`}
             </span>
+          </div>
+        )}
+
+        {basisReduced && (
+          <div className="text-ink-600 -mt-1 text-xs">
+            <span className="tabular-nums">
+              {formatMoneyPrecise(reserveBasis)} of{' '}
+              {formatMoneyPrecise(p.costBasis)} basis protected
+            </span>{' '}
+            <InfoTooltip
+              text={`Part of this position's paper loss has already funded an opposing trader's realized gain. Your value, exposure, entry and liquidation price did not change when that happened. Value up to ${formatMoneyPrecise(
+                reserveBasis
+              )} stays protected by this side's pool; recovery above it depends on opposing paper losses and unreserved backing and may be auto-deleveraged. No position is ever closed just because a counterparty leaves.`}
+            />
           </div>
         )}
 

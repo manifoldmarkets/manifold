@@ -592,8 +592,64 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_perp_accounting_epochs: {
+        Row: {
+          accounting_mode: string
+          contract_id: string
+          created_time: string
+          data: Json | null
+          epoch: number
+          id: number
+          oracle_price: number | null
+          oracle_price_time: string | null
+          pool_long: number
+          pool_short: number
+          position_snapshot: Json
+          previous_mode: string
+          reduced_any_basis: boolean
+          top_up_long: number
+          top_up_short: number
+        }
+        Insert: {
+          accounting_mode: string
+          contract_id: string
+          created_time?: string
+          data?: Json | null
+          epoch: number
+          id?: number
+          oracle_price?: number | null
+          oracle_price_time?: string | null
+          pool_long: number
+          pool_short: number
+          position_snapshot: Json
+          previous_mode: string
+          reduced_any_basis?: boolean
+          top_up_long?: number
+          top_up_short?: number
+        }
+        Update: {
+          accounting_mode?: string
+          contract_id?: string
+          created_time?: string
+          data?: Json | null
+          epoch?: number
+          id?: number
+          oracle_price?: number | null
+          oracle_price_time?: string | null
+          pool_long?: number
+          pool_short?: number
+          position_snapshot?: Json
+          previous_mode?: string
+          reduced_any_basis?: boolean
+          top_up_long?: number
+          top_up_short?: number
+        }
+        Relationships: []
+      }
       contract_perp_events: {
         Row: {
+          accounting_epoch: number
+          accounting_mode: string
           applied_ts: string
           contract_id: string
           cost_basis_delta: number
@@ -604,11 +660,14 @@ export type Database = {
           leverage: number | null
           oracle_price: number | null
           original_cost_basis_delta: number
+          reserve_basis_delta: number
           size_delta: number
           ts: string
           user_id: string | null
         }
         Insert: {
+          accounting_epoch?: number
+          accounting_mode?: string
           applied_ts?: string
           contract_id: string
           cost_basis_delta?: number
@@ -619,11 +678,14 @@ export type Database = {
           leverage?: number | null
           oracle_price?: number | null
           original_cost_basis_delta?: number
+          reserve_basis_delta?: number
           size_delta?: number
           ts?: string
           user_id?: string | null
         }
         Update: {
+          accounting_epoch?: number
+          accounting_mode?: string
           applied_ts?: string
           contract_id?: string
           cost_basis_delta?: number
@@ -634,6 +696,7 @@ export type Database = {
           leverage?: number | null
           oracle_price?: number | null
           original_cost_basis_delta?: number
+          reserve_basis_delta?: number
           size_delta?: number
           ts?: string
           user_id?: string | null
@@ -642,6 +705,7 @@ export type Database = {
       }
       contract_perp_funding_events: {
         Row: {
+          accounting_epoch: number
           adl_factor_long: number
           adl_factor_short: number
           contract_id: string
@@ -655,6 +719,7 @@ export type Database = {
           ts: string
         }
         Insert: {
+          accounting_epoch?: number
           adl_factor_long?: number
           adl_factor_short?: number
           contract_id: string
@@ -668,6 +733,7 @@ export type Database = {
           ts: string
         }
         Update: {
+          accounting_epoch?: number
           adl_factor_long?: number
           adl_factor_short?: number
           contract_id?: string
@@ -684,6 +750,7 @@ export type Database = {
       }
       contract_perp_positions: {
         Row: {
+          accounting_epoch: number
           contract_id: string
           cost_basis: number
           direction: string
@@ -692,12 +759,14 @@ export type Database = {
           liquidation_price: number
           opened_time: string
           original_cost_basis: number
+          reserve_basis: number | null
           size: number
           taker_fee_cost_basis: number
           updated_time: string
           user_id: string
         }
         Insert: {
+          accounting_epoch?: number
           contract_id: string
           cost_basis: number
           direction: string
@@ -706,12 +775,14 @@ export type Database = {
           liquidation_price: number
           opened_time?: string
           original_cost_basis: number
+          reserve_basis?: number | null
           size: number
           taker_fee_cost_basis?: number
           updated_time?: string
           user_id: string
         }
         Update: {
+          accounting_epoch?: number
           contract_id?: string
           cost_basis?: number
           direction?: string
@@ -720,6 +791,7 @@ export type Database = {
           liquidation_price?: number
           opened_time?: string
           original_cost_basis?: number
+          reserve_basis?: number | null
           size?: number
           taker_fee_cost_basis?: number
           updated_time?: string

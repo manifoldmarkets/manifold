@@ -1060,6 +1060,9 @@ export const API = (_apiTypeCheck = {
         direction: 'long' | 'short'
         size: number
         costBasis: number
+        // Protected basis b (common/perps/protected-basis). Equals costBasis
+        // on every market using legacy accounting.
+        reserveBasis: number
         originalCostBasis: number
         entryPrice: number
         leverage: number
@@ -1081,7 +1084,15 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { payout: number; pnl: number },
+    returns: {} as {
+      payout: number
+      pnl: number
+      // Fraction of the position this call closed (1 = the whole position)
+      // and the notional still open afterwards. Partial closes are accepted
+      // only on markets using protected-basis accounting.
+      fraction: number
+      remainingSize: number
+    },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1181,6 +1192,9 @@ export const API = (_apiTypeCheck = {
       // base, which makes such a rate a no-op rather than a reduction.
       effectiveTakerFeeApiBps: number
       maxOraclePriceAgeMs: number
+      // Workstream B risk-policy control: off or shadow. Independent of the
+      // accounting mode, which this endpoint cannot change.
+      perpRiskPolicyMode: 'off' | 'shadow'
     },
     props: z
       .object({
@@ -1221,6 +1235,12 @@ export const API = (_apiTypeCheck = {
         // cadence floor; a value below it would freeze the market between
         // healthy updates.
         maxOraclePriceAgeMs: z.number().int().positive().optional(),
+        // Workstream B shadow evaluation of candidate admission/allowance
+        // policies. `shadow` only computes and logs; nothing it computes can
+        // change a decision. `enforce` is deliberately not accepted by this
+        // build. The ACCOUNTING mode is not tunable here at all — it changes
+        // only through the guarded migration tooling.
+        perpRiskPolicyMode: z.enum(['off', 'shadow']).optional(),
       })
       .strict()
       .refine(
@@ -1234,7 +1254,8 @@ export const API = (_apiTypeCheck = {
           p.takerFeeBps !== undefined ||
           p.takerFeeImpact !== undefined ||
           p.takerFeeApiBps !== undefined ||
-          p.maxOraclePriceAgeMs !== undefined,
+          p.maxOraclePriceAgeMs !== undefined ||
+          p.perpRiskPolicyMode !== undefined,
         { message: 'Provide at least one field to update' }
       ),
   },
@@ -1391,6 +1412,11 @@ export const API = (_apiTypeCheck = {
       direction: 'long' | 'short'
       size: number
       costBasis: number
+      // Protected basis b: the value still backed by the position's own
+      // side pool. Equals costBasis under legacy accounting; below it once
+      // a realized opposing payout has consumed part of this position's
+      // paper loss (see the market explainer).
+      reserveBasis: number
       originalCostBasis: number
       takerFeeCostBasis: number
       entryPrice: number
@@ -1486,15 +1512,31 @@ export const API = (_apiTypeCheck = {
       ts: number
       userId: string | null
       direction: 'long' | 'short' | null
-      eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+      eventType:
+        | 'open'
+        | 'add'
+        | 'close'
+        | 'liquidation'
+        | 'adl'
+        | 'funding'
+        | 'basis-settlement'
       oraclePrice: number
       sizeDelta: number
       costBasisDelta: number
+      // Δb. Mirrors costBasisDelta on legacy markets; 0 on rows written
+      // before the column existed. Only a basis-settlement moves it alone.
+      reserveBasisDelta: number
       originalCostBasisDelta: number
       leverage: number | null
       payout: number | null
       pnl: number | null
       adlFactor: number | null
+      // Fraction of the position a close removed (1 = full), when recorded.
+      fraction: number | null
+      // Protected accounting only: the value the row keeps protected after
+      // a basis settlement, so a holder can read their changed recovery
+      // rights off the receipt.
+      reserveBasisAfter: number | null
       isApi: boolean
       userName: string | null
       username: string | null

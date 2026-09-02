@@ -356,6 +356,7 @@ describe('update-perp-config props', () => {
       'maxFundingRate',
       'maxLeverage',
       'maxOraclePriceAgeMs',
+      'perpRiskPolicyMode',
       'takerFeeApiBps',
       'takerFeeBps',
       'takerFeeImpact',
@@ -363,13 +364,14 @@ describe('update-perp-config props', () => {
   })
 
   it('accepts each tunable field on its own', () => {
-    const sample: Record<string, number> = {
+    const sample: Record<string, number | string> = {
       maxLeverage: 10,
       maxFundingRate: 0.02,
       takerFeeBps: 10,
       takerFeeImpact: 90,
       takerFeeApiBps: 30,
       maxOraclePriceAgeMs: 10_000,
+      perpRiskPolicyMode: 'shadow',
     }
     for (const field of optionalFields) {
       expect(sample[field]).toBeDefined() // keeps this test honest as fields are added
@@ -379,6 +381,20 @@ describe('update-perp-config props', () => {
       })
       expect([field, parsed.success]).toEqual([field, true])
     }
+  })
+
+  it('never accepts risk-policy enforcement, and never the accounting mode', () => {
+    // Workstream B is shadow-only in this build; the accounting mode is
+    // changed only through the guarded migration path, never by this
+    // endpoint.
+    expect(
+      props.safeParse({ contractId: 'c1', perpRiskPolicyMode: 'enforce' })
+        .success
+    ).toBe(false)
+    expect(
+      props.safeParse({ contractId: 'c1', perpAccountingMode: 'protected' })
+        .success
+    ).toBe(false)
   })
 
   it('still rejects a request that changes nothing', () => {

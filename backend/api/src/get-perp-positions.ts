@@ -23,6 +23,7 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
     direction: string
     size: number | string
     cost_basis: number | string
+    reserve_basis: number | string | null
     original_cost_basis: number | string
     taker_fee_cost_basis: number | string
     entry_price: number | string
@@ -35,6 +36,7 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
     avatar_url: string | null
   }>(
     `select p.contract_id, p.user_id, p.direction, p.size, p.cost_basis,
+            p.reserve_basis,
             p.original_cost_basis, p.taker_fee_cost_basis,
             p.entry_price, p.leverage,
             p.liquidation_price, p.opened_time, p.updated_time,
@@ -52,6 +54,10 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
     direction: r.direction as 'long' | 'short',
     size: Number(r.size),
     costBasis: Number(r.cost_basis),
+    // A row an old writer left without b reads as the legacy mirror. On a
+    // protected market the engine refuses such rows before they matter.
+    reserveBasis:
+      r.reserve_basis == null ? Number(r.cost_basis) : Number(r.reserve_basis),
     originalCostBasis: Number(r.original_cost_basis),
     takerFeeCostBasis: Number(r.taker_fee_cost_basis),
     entryPrice: Number(r.entry_price),

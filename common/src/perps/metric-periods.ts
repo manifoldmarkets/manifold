@@ -116,10 +116,18 @@ const getPayout = (
   return payout !== undefined && payout >= 0 ? payout : undefined
 }
 
+const isPartialClose = (event: PerpEvent) => {
+  const fraction = getEventDataNumber(event, 'fraction')
+  return fraction !== undefined && fraction > 0 && fraction < 1
+}
+
 const reverseEvent = (
   positions: ReverseState['positions'],
   event: PerpEvent
 ) => {
+  // Pool-level accounting transitions carry no user and no position change.
+  if (event.eventType === 'accounting-activation')
+    return { cashDeposited: 0, payout: 0 }
   if (
     event.userId === null ||
     (event.direction !== 'long' && event.direction !== 'short') ||
@@ -176,6 +184,18 @@ const reverseEvent = (
       }
       break
     case 'close':
+      // A protected-accounting partial close removes a fraction z of every
+      // basis and leaves the row; the event records z so the replay can tell
+      // it from a corrupt full close.
+      if (
+        sizeDelta >= 0 ||
+        costBasisDelta >= 0 ||
+        originalCostBasisDelta >= 0 ||
+        (!isFullExit && !(isPartialClose(event) && after !== undefined))
+      ) {
+        return undefined
+      }
+      break
     case 'liquidation':
       if (
         sizeDelta >= 0 ||
@@ -186,6 +206,18 @@ const reverseEvent = (
         return undefined
       }
       break
+    case 'basis-settlement':
+      // Not a cash flow and not a position change: only the protected basis
+      // moved, which the replay does not value. The row must still exist.
+      if (
+        sizeDelta !== 0 ||
+        costBasisDelta !== 0 ||
+        originalCostBasisDelta !== 0 ||
+        after === undefined
+      ) {
+        return undefined
+      }
+      return { cashDeposited: 0, payout: 0 }
     case 'funding':
       if (
         originalCostBasisDelta !== 0 ||
