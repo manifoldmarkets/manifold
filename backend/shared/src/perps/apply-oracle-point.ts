@@ -151,6 +151,27 @@ export const applyOraclePointToLivePerps = async (
       )
       if (!result) continue
 
+      if (result.solvencyHalt) {
+        // The tick committed its PRICE but not its state, and halted trading.
+        // Same `[oracle-feeds]` prefix as the catch below, so the existing
+        // alert policy pages exactly as it did when this threw — the market is
+        // no longer dark while it waits, but it still needs an operator.
+        log.error(
+          `[oracle-feeds] ${contract.slug}: ${feedId} @ ${persistedPoint.ts} applied as PRICE ONLY, trading halted — post-tick state is not solvent: ${result.solvencyHalt.reason}`
+        )
+        publishPerpQuote({
+          contractId: contract.id,
+          oraclePrice: persistedPoint.price,
+          oraclePriceTime: persistedPoint.ts,
+          poolLong: result.poolLongAfter,
+          poolShort: result.poolShortAfter,
+          ...(persistedPoint.sourceTs == null
+            ? {}
+            : { oracleSourceTime: persistedPoint.sourceTs }),
+        })
+        continue
+      }
+
       // Push before notifying: notification delivery does its own DB work and
       // the whole point of this path is that open pages see the new price in
       // well under a tick. Carries only what the tick authoritatively settled

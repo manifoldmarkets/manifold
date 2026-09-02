@@ -126,6 +126,31 @@ const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
   )
 }
 
+/**
+ * Explicit trading halt set by a tick that could not represent its own result.
+ *
+ * Normally a book that cannot take a price update is protected implicitly: the
+ * mark stops advancing and `assertFreshOracleForTrading` closes the market at
+ * `maxOraclePriceAgeMs`. That protection is an accident of the failure, not a
+ * decision, and it is a bad one — it leaves the market OPEN at a dead price for
+ * a whole freshness budget (5 hours of it on 2026-08-29, during which a trader
+ * added to a position at a mark that had been frozen for four).
+ *
+ * `runOracleUpdate` now always commits the price, so that implicit protection
+ * is gone by construction and this takes its place. Closes are gated too: the
+ * book is known-inconsistent, and letting one side exit against it at a price
+ * the engine could not validate is exactly the drain the halt exists to stop.
+ * Scheduler-driven exits (liquidation, ADL, resolution) call the internal paths
+ * and are unaffected, so positions still settle.
+ */
+const assertPerpNotSolvencyHalted = (contract: PerpContract) => {
+  if (contract.solvencyHaltTime == null) return
+  throw new APIError(
+    503,
+    `Trading is paused on this market: a risk update could not be applied, and an operator has been alerted. Open positions are unaffected and still settle.`
+  )
+}
+
 // All engine writers on one contract serialize on the advisory lock, but each
 // waiter's SERIALIZABLE snapshot predates the winner's commit, so contended
 // transactions abort with 40001 on wake-up and must retry. Under a burst
@@ -625,6 +650,7 @@ export const openOrAddPosition = async (
       )
 
     assertFreshOracleForTrading(contract, now)
+    assertPerpNotSolvencyHalted(contract)
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
@@ -903,9 +929,10 @@ export const openOrAddPosition = async (
     // over-cap positions can always close, but cannot add further exposure.
     const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
     if (!capacity.isWithinLimit) {
-      // The limit depends only on the opposing pool, which an open never
-      // touches, so pre-trade headroom is exact — tell the user the largest
-      // trade that fits instead of making them reverse-engineer the cap.
+      // The limit depends only on the opposing SIDE (its pool and its own
+      // exposure), which an open on this side never touches, so pre-trade
+      // headroom is exact — tell the user the largest trade that fits instead
+      // of making them reverse-engineer the cap.
       const headroom = Math.max(
         capacity.limit - (capacity.openInterest - open.deltaSize),
         0
@@ -917,7 +944,7 @@ export const openOrAddPosition = async (
           2
         )} more ${direction} exposure right now, but this trade adds M$${open.deltaSize.toFixed(
           2
-        )} (margin × leverage). Reduce your margin or leverage so their product fits, or wait for more ${opposite} interest to raise the cap (${direction} exposure is limited to ${PERP_OPEN_INTEREST_COVER_MULTIPLE}× the unreserved ${opposite}-side pool).`
+        )} (margin × leverage). Reduce your margin or leverage so their product fits, or wait for more ${opposite} interest to raise the cap (${direction} exposure is limited to ${PERP_OPEN_INTEREST_COVER_MULTIPLE}× the unreserved ${opposite}-side pool, plus the notional the ${opposite} side already has at risk).`
       )
     }
 
@@ -1288,6 +1315,7 @@ export const closePosition = async (
     // watching the real market move. Opens and closes share one predicate.
     const now = Date.now()
     assertFreshOracleForTrading(contract, now)
+    assertPerpNotSolvencyHalted(contract)
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
@@ -1496,6 +1524,12 @@ export type OracleUpdateResult = {
   poolLongAfter: number
   poolShortBefore: number
   poolShortAfter: number
+  /**
+   * Present only when the tick committed its price but NOT its state, because
+   * the post-transition book could not be made solvent. Callers log this with
+   * their own prefix so the existing alert policies still fire.
+   */
+  solvencyHalt?: { reason: string }
 }
 
 const collectAdlAdjusted = (
@@ -1770,22 +1804,79 @@ export const runOracleUpdate = async (
       const decision = decideOracleTransition(currentPoint, incomingPoint)
       if (decision.action === 'reject')
         throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
+
+      // A halted contract MUST be allowed to re-run the same point. The halt
+      // committed the price without the transition, so from here on that point
+      // reads as a duplicate and is ignored — which would strand the contract
+      // permanently: the pending liquidations/ADL would never be applied and
+      // the halt would never clear, no matter how much subsidy an operator
+      // added. This retry is what makes recovery converge. Restricted to an
+      // exact duplicate; a genuinely stale (older) point stays ignored.
+      const retryingHalt =
+        decision.action === 'ignore' &&
+        decision.reason === 'duplicate' &&
+        contract.solvencyHaltTime != null
+
       // Delivery can race even though state writes cannot. Once the contract
       // lock is held, an older point or exact retry must not touch price, pools,
       // positions, metrics, or event history.
-      if (decision.action === 'ignore') return null
+      if (decision.action === 'ignore' && !retryingHalt) return null
 
       const poolLongBefore = state.pool.L
       const poolShortBefore = state.pool.S
 
       const appliedTime = Date.now()
-      const applied = applyOracleUpdate(
-        contract,
-        state,
-        newPrice,
-        ts,
-        appliedTime
-      )
+      let applied: ReturnType<typeof applyOracleUpdate>
+      try {
+        applied = applyOracleUpdate(contract, state, newPrice, ts, appliedTime)
+      } catch (error) {
+        // LIVENESS. An accounting assert must never be able to take out price
+        // discovery. Before this, a post-transition state that failed
+        // assertPerpStateSolvent rolled the whole transaction back, so the
+        // cached mark never moved again and EVERY subsequent tick re-derived
+        // the same failure from the same state — a permanent wedge that only
+        // an operator could clear (UK carbon 2026-08-07, 12h; OpenRouter
+        // open-weight share 2026-08-29, 12h).
+        //
+        // A frozen mark is strictly worse than the state it refuses to write:
+        // it is wrong on the screen, it keeps trading open against a dead
+        // price until the freshness budget expires, and it grows the very
+        // deficit it is failing on. So commit the price and halt trading
+        // explicitly instead.
+        //
+        // Deliberately NOT written: pools, positions, metrics, events. The
+        // pending liquidations and ADL stay pending and are re-derived by the
+        // next tick against the newer price — a position whose liquidation is
+        // deferred this way can escape it if the price rebounds, which is a
+        // real but small transfer, and the alternative on the table is a
+        // market that is dark for hours. Trading is halted throughout, so
+        // nobody can act on the gap.
+        const reason = error instanceof Error ? error.message : String(error)
+        await pgTrans.one(
+          mergeContractDataQuery(contractId, {
+            oraclePrice: newPrice,
+            oraclePriceTime: ts,
+            oracleSourceTime: sourceTs ?? null,
+            // Keep the ORIGINAL halt time across retries so an operator can
+            // see how long this book has been wedged, not how long ago the
+            // last retry ran.
+            solvencyHaltTime: contract.solvencyHaltTime ?? appliedTime,
+            solvencyHaltReason: reason,
+          })
+        )
+        return {
+          liquidated: [],
+          adlAdjusted: [],
+          adlSettled: [],
+          adlFactorLong: 1,
+          adlFactorShort: 1,
+          poolLongBefore,
+          poolLongAfter: poolLongBefore,
+          poolShortBefore,
+          poolShortAfter: poolShortBefore,
+          solvencyHalt: { reason },
+        }
+      }
 
       const { upserts, deletes } = diffForWrite(
         state.positions,
@@ -1804,6 +1895,13 @@ export const runOracleUpdate = async (
         // Price polling is infrastructure activity, not user activity. Only a
         // liquidation/ADL transition should refresh discovery freshness.
         lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
+        // This tick represented its own result, so whatever wedged the book is
+        // gone (typically an add-perp-subsidy top-up). Self-heal rather than
+        // needing a second operator action. `undefined` when not halted so the
+        // common path writes nothing extra.
+        ...(contract.solvencyHaltTime == null
+          ? {}
+          : { solvencyHaltTime: null, solvencyHaltReason: null }),
       })
 
       // Fast path: no liquidations and no ADL means no position changed, so
@@ -1912,6 +2010,27 @@ export const runFunding = async (
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const appliedTime = Date.now()
+
+    // Halt gate, read from the PERSISTED contract under the lock rather than
+    // from the caller's oracle result.
+    //
+    // Once a tick has halted, it has already committed its price, so replaying
+    // that same point returns `ignore`/null and the scheduler's per-run check
+    // sees nothing to skip on. Funding would then run against positions whose
+    // liquidation and ADL are still pending — and unlike the tick that refused
+    // to write them, funding DOES persist pools, positions, and events. Before
+    // the halt existed this was covered incidentally: the tick threw, and the
+    // throw took funding down with it.
+    //
+    // Subsidy recovery is not blocked by this. The retried oracle tick applies
+    // the pending transition and clears the halt; funding resumes on the next
+    // pass, against a book that has caught up.
+    if (contract.solvencyHaltTime != null) {
+      log(
+        `[perps] skipping funding for ${contract.slug}: solvency halt in effect since ${contract.solvencyHaltTime}`
+      )
+      return null
+    }
 
     // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
     // runs unlocked, so two overlapping ticks (fine hourly, likely at fast
