@@ -61,8 +61,12 @@ describe('decideDailyFeedPublish', () => {
   it('honours a per-feed heartbeat override', () => {
     const last = { price: 52, ts: now - 2 * 60 * 60 * 1000 }
     expect(
-      decideDailyFeedPublish({ price: 52, last, now, heartbeatMs: 60 * 60 * 1000 })
-        .publish
+      decideDailyFeedPublish({
+        price: 52,
+        last,
+        now,
+        heartbeatMs: 60 * 60 * 1000,
+      }).publish
     ).toBe(true)
     expect(
       decideDailyFeedPublish({ price: 52, last, now, heartbeatMs: 0 }).publish
@@ -70,9 +74,9 @@ describe('decideDailyFeedPublish', () => {
   })
 
   it('refuses garbage rather than publishing it', () => {
-    expect(decideDailyFeedPublish({ price: NaN, last: null, now }).publish).toBe(
-      false
-    )
+    expect(
+      decideDailyFeedPublish({ price: NaN, last: null, now }).publish
+    ).toBe(false)
     expect(
       decideDailyFeedPublish({ price: 52, last: null, now: NaN }).publish
     ).toBe(false)

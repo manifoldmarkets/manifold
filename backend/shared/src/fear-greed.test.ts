@@ -54,9 +54,9 @@ describe('crypto-fear-greed feed wiring', () => {
     expect(market?.oracleBehavior).toBe('scheduled-step')
     expect(market?.requiresSourceAsOf).toBe(false)
     expect(market?.requiredTopics.map((t) => t.name)).toEqual(['Crypto'])
-    expect(
-      PERP_LAUNCH_SCHEDULER_EXPECTATIONS.map((e) => e.jobName)
-    ).toContain('update-fear-greed')
+    expect(PERP_LAUNCH_SCHEDULER_EXPECTATIONS.map((e) => e.jobName)).toContain(
+      'update-fear-greed'
+    )
     expect(getPerpLaunchManifestErrors()).toEqual([])
   })
 })

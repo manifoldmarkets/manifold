@@ -447,7 +447,9 @@ export const selectPollWindow = (
 }
 
 /** Unweighted mean of the tracked pct. Null rather than NaN on an empty set. */
-export const averagePollPct = (polls: readonly AveragePoll[]): number | null => {
+export const averagePollPct = (
+  polls: readonly AveragePoll[]
+): number | null => {
   const usable = polls.filter(isUsablePoll)
   if (usable.length === 0) return null
   const mean = usable.reduce((sum, poll) => sum + poll.pct, 0) / usable.length

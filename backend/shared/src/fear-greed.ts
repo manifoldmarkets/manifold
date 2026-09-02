@@ -1,7 +1,4 @@
-import {
-  FearGreedPoint,
-  parseFearGreedPayload,
-} from 'common/perps/fear-greed'
+import { FearGreedPoint, parseFearGreedPayload } from 'common/perps/fear-greed'
 
 import { log } from './utils'
 
@@ -37,11 +34,14 @@ const fetchFearGreed = async (limit: number): Promise<FearGreedPoint[]> => {
     )
   const body = (await response.json()) as unknown
   const parsed = parseFearGreedPayload(body)
-  if (!parsed.ok) throw new Error(`Fear & Greed payload rejected: ${parsed.reason}`)
+  if (!parsed.ok)
+    throw new Error(`Fear & Greed payload rejected: ${parsed.reason}`)
   log(
     `[fear-greed] fetched ${parsed.points.length} reading(s)` +
       (parsed.points.length > 0
-        ? `, latest ${parsed.points[parsed.points.length - 1].value} at ${new Date(
+        ? `, latest ${
+            parsed.points[parsed.points.length - 1].value
+          } at ${new Date(
             parsed.points[parsed.points.length - 1].sourceTs
           ).toISOString()}`
         : '')

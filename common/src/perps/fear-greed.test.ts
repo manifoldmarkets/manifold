@@ -9,7 +9,11 @@ import {
 // The provider payload, as documented: newest first, integers as strings,
 // unix seconds as strings, and a metadata.error slot.
 const payload = (
-  rows: { value: unknown; timestamp: unknown; value_classification?: unknown }[],
+  rows: {
+    value: unknown
+    timestamp: unknown
+    value_classification?: unknown
+  }[],
   metadata: unknown = { error: null }
 ) => ({
   name: 'Fear and Greed Index',
@@ -29,7 +33,11 @@ describe('parseFearGreedPayload', () => {
           timestamp: String(T0),
           time_until_update: '43210',
         } as never,
-        { value: '47', value_classification: 'Fear', timestamp: String(T0 - 86400) },
+        {
+          value: '47',
+          value_classification: 'Fear',
+          timestamp: String(T0 - 86400),
+        },
       ])
     )
     expect(result).toEqual({
@@ -84,7 +92,18 @@ describe('parseFearGreedPayload', () => {
   })
 
   it('rejects an out-of-range or non-integer value', () => {
-    for (const value of ['101', '-1', '52.5', '5e1', 'fifty', '', null, 101, 52.5, NaN])
+    for (const value of [
+      '101',
+      '-1',
+      '52.5',
+      '5e1',
+      'fifty',
+      '',
+      null,
+      101,
+      52.5,
+      NaN,
+    ])
       expect([
         value,
         parseFearGreedPayload(payload([{ value, timestamp: String(T0) }])).ok,
@@ -158,7 +177,9 @@ describe('fearGreedDayStartUtc', () => {
   it('floors a reading to 00:00 UTC of its day', () => {
     const noon = Date.UTC(2026, 8, 2, 12, 30)
     expect(fearGreedDayStartUtc(noon)).toBe(Date.UTC(2026, 8, 2))
-    expect(fearGreedDayStartUtc(Date.UTC(2026, 8, 2))).toBe(Date.UTC(2026, 8, 2))
+    expect(fearGreedDayStartUtc(Date.UTC(2026, 8, 2))).toBe(
+      Date.UTC(2026, 8, 2)
+    )
     expect(fearGreedDayStartUtc(Date.UTC(2026, 8, 2, 23, 59, 59))).toBe(
       Date.UTC(2026, 8, 2)
     )

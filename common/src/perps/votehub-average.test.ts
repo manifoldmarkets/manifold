@@ -259,7 +259,12 @@ describe('readAnswerPct / hasAnswer — arbitrary choices', () => {
     expect(readAnswerPct(ballotPoll, 'Dem')).toBe(47)
     expect(readAnswerPct(ballotPoll, 'dem')).toBe(47)
     expect(readAnswerPct(ballotPoll, 'Rep')).toBe(44)
-    expect(readAnswerPct(answers(['Unfavorable', 52], ['Favorable', 41]), 'Favorable')).toBe(41)
+    expect(
+      readAnswerPct(
+        answers(['Unfavorable', 52], ['Favorable', 41]),
+        'Favorable'
+      )
+    ).toBe(41)
   })
 
   it('returns null when the choice is absent, and says so via hasAnswer', () => {

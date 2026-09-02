@@ -3,7 +3,10 @@ import {
   voteHubDay,
 } from 'shared/perps/publish-votehub-average'
 import { log } from 'shared/utils'
-import { ALL_VOTEHUB_FEED_SPECS, getVoteHubFeedSpec } from 'shared/votehub-feeds'
+import {
+  ALL_VOTEHUB_FEED_SPECS,
+  getVoteHubFeedSpec,
+} from 'shared/votehub-feeds'
 import { runScript } from './run-script'
 
 // Manually publish today's point for a VoteHub average feed, for when the
