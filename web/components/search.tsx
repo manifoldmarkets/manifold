@@ -1,13 +1,17 @@
 'use client'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import clsx from 'clsx'
+import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
+import { getPostSearchThreshold } from 'common/search-result-order'
+import { getSearchRequestDebounceMs } from 'common/search-request-coordination'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
+import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
 import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -187,7 +191,7 @@ export type SupabaseAdditionalFilter = {
 }
 
 export type SearchState = {
-  contracts: Contract[] | undefined
+  contracts: FullMarketSearchResult[] | undefined
   users: FullUser[] | undefined
   topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
@@ -1174,7 +1178,7 @@ export const useSearchResults = (props: {
           const results = await Promise.all(searchPromises)
 
           if (id === requestId.current) {
-            const newContracts = results[0] as Contract[]
+            const newContracts = results[0] as FullMarketSearchResult[]
             let postResultIndex = 1
             const newUsers = includeUsersAndTopics
               ? (results[postResultIndex++] as FullUser[])
@@ -1192,42 +1196,18 @@ export const useSearchResults = (props: {
             const freshContracts = freshQuery
               ? newContracts
               : buildArray(state.contracts, newContracts)
-            const bottomScoreFromAllContracts =
-              sort === 'score'
-                ? minBy(freshContracts, 'importanceScore')?.importanceScore
-                : minBy(freshContracts, 'createdTime')?.createdTime
 
             // This is necessary bc the posts are in a different table than the contracts.
             // TODO: this is bad and will leave posts out of the search results randomly.
             // We should fix this by joining the posts table to the contracts table or something.
-            let postFilteringThreshold: number | undefined
-            if (sort === 'score') {
-              if (
-                !freshQuery &&
-                state.contracts &&
-                state.contracts.length > 0
-              ) {
-                postFilteringThreshold = minBy(
-                  state.contracts,
-                  'importanceScore'
-                )?.importanceScore
-              } else {
-                postFilteringThreshold = bottomScoreFromAllContracts
-              }
-            } else {
-              if (
-                !freshQuery &&
-                state.contracts &&
-                state.contracts.length > 0
-              ) {
-                postFilteringThreshold = minBy(
-                  state.contracts,
-                  'createdTime'
-                )?.createdTime
-              } else {
-                postFilteringThreshold = bottomScoreFromAllContracts
-              }
-            }
+            const contractsBeforeNewPosts =
+              !freshQuery && state.contracts?.length
+                ? state.contracts
+                : freshContracts
+            const postFilteringThreshold = getPostSearchThreshold(
+              contractsBeforeNewPosts,
+              sort === 'score' ? 'score' : 'newest'
+            )
             const freshPosts =
               freshQuery || !state.posts
                 ? newPostsResults
@@ -1283,9 +1263,30 @@ export const useSearchResults = (props: {
     }
   )
 
-  const searchTermChanged =
-    lastSearchParams !== null &&
-    searchParams[QUERY_KEY] !== lastSearchParams[QUERY_KEY]
+  const cancelFreshRequest = useEvent(() => {
+    const controller = freshRequestAbortController.current
+    if (!controller) return
+
+    // Invalidate before aborting so even an already-resolved continuation
+    // cannot publish stale state. The debounced effect issues any replacement
+    // required by the new params.
+    freshRequestAbortController.current = undefined
+    requestId.current++
+    controller.abort()
+    setLoading(false)
+  })
+
+  const serializedSearchParams = JSON.stringify(searchParams)
+  useSafeLayoutEffect(() => {
+    // Invalidate a superseded request immediately. Waiting for the next
+    // debounced request would let the old response land during that delay.
+    cancelFreshRequest()
+  }, [serializedSearchParams, cancelFreshRequest])
+
+  const requestDebounceMs = getSearchRequestDebounceMs(
+    searchParams[QUERY_KEY],
+    lastSearchParams?.[QUERY_KEY]
+  )
   useDebouncedEffect(
     () => {
       // One effect avoids duplicate initial requests. Term typing waits long
@@ -1298,8 +1299,8 @@ export const useSearchResults = (props: {
         querySearchResults(true)
       }
     },
-    searchTermChanged ? 300 : 50,
-    [isReady, JSON.stringify(searchParams)]
+    requestDebounceMs,
+    [isReady, serializedSearchParams]
   )
 
   const contracts = state.contracts

@@ -1,11 +1,12 @@
 import { Answer } from 'common/answer'
+import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { Contract } from 'common/contract'
 import { orderCombinedSearchResults } from 'common/search-result-order'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
 import { Key } from 'react'
 import { PostRow } from '../posts/post-row'
-import { SearchParams, QUERY_KEY, SORT_KEY, TOPIC_FILTER_KEY } from '../search'
+import { QUERY_KEY, SearchParams, SORT_KEY, TOPIC_FILTER_KEY } from '../search'
 import {
   actionColumn,
   boostedColumn,
@@ -16,7 +17,7 @@ import {
 import { ContractRow } from './contracts-table'
 
 type CombinedResultsProps = {
-  contracts: Contract[]
+  contracts: FullMarketSearchResult[]
   posts: TopLevelPost[]
   searchParams: SearchParams
   onContractClick?: (contract: Contract) => void
@@ -28,7 +29,9 @@ type CombinedResultsProps = {
 }
 
 // Type guard to check if an item is a Contract
-function isContract(item: Contract | TopLevelPost): item is Contract {
+function isContract(
+  item: FullMarketSearchResult | TopLevelPost
+): item is FullMarketSearchResult {
   return 'mechanism' in item
 }
 
@@ -56,10 +59,7 @@ export function CombinedResults(props: CombinedResultsProps) {
       : searchParams[SORT_KEY]
   const combinedItems = orderCombinedSearchResults(contracts, posts, {
     sort,
-    // The API deliberately returns exact/lexical markets before its semantic
-    // tail. Raw importance cannot reproduce that relevance ordering, so posts
-    // follow the ordered market block for a text search.
-    preserveContractOrder:
+    preserveUnmarkedContractOrder:
       sort === 'score' && searchParams[QUERY_KEY].trim().length > 0,
   })
   if (!combinedItems.length) return null

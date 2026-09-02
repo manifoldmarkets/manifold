@@ -1,6 +1,33 @@
+import type { FullMarketSearchResult } from './api/market-search-types'
+
 type RankableSearchResult = {
   createdTime: number
   importanceScore: number
+}
+
+type RankableMarketSearchResult = RankableSearchResult & {
+  searchMatchType?: FullMarketSearchResult['searchMatchType']
+}
+
+export const getPostSearchThreshold = <C extends RankableMarketSearchResult>(
+  contracts: readonly C[],
+  sort: 'score' | 'newest'
+): number | undefined => {
+  // Semantic results are similarity-ranked, so their importance scores cannot
+  // define the next lexical/post page boundary.
+  const rankableContracts =
+    sort === 'score'
+      ? contracts.filter(
+          ({ searchMatchType }) => searchMatchType !== 'semantic'
+        )
+      : contracts
+  const values = rankableContracts
+    .map((contract) =>
+      sort === 'score' ? contract.importanceScore : contract.createdTime
+    )
+    .filter(Number.isFinite)
+
+  return values.length === 0 ? undefined : Math.min(...values)
 }
 
 /**
@@ -8,29 +35,47 @@ type RankableSearchResult = {
  * that only the market API understands (personalization or lexical relevance).
  */
 export const orderCombinedSearchResults = <
-  C extends RankableSearchResult,
+  C extends RankableMarketSearchResult,
   P extends RankableSearchResult
 >(
   contracts: readonly C[],
   posts: readonly P[],
   options: {
     sort?: string
-    preserveContractOrder: boolean
+    preserveUnmarkedContractOrder?: boolean
   }
 ): (C | P)[] => {
-  const { sort, preserveContractOrder } = options
+  const { sort, preserveUnmarkedContractOrder } = options
+  if (posts.length === 0 || (sort !== 'score' && sort !== 'newest')) {
+    return [...contracts, ...posts]
+  }
+
+  if (sort === 'newest') {
+    return [...contracts, ...posts].sort(
+      (a, b) => b.createdTime - a.createdTime
+    )
+  }
+
+  // During a rolling deployment, an old API worker can return an unmarked
+  // lexical-plus-semantic array to a marker-aware UI. Preserve that array's
+  // order rather than risk promoting its unknown semantic tail. New workers
+  // mark every text-search market, including lexical-only responses.
   if (
-    posts.length === 0 ||
-    preserveContractOrder ||
-    (sort !== 'score' && sort !== 'newest')
+    preserveUnmarkedContractOrder &&
+    contracts.some(({ searchMatchType }) => searchMatchType === undefined)
   ) {
     return [...contracts, ...posts]
   }
 
-  const value =
-    sort === 'score'
-      ? (item: RankableSearchResult) => item.importanceScore
-      : (item: RankableSearchResult) => item.createdTime
+  const lexicalContracts = contracts.filter(
+    ({ searchMatchType }) => searchMatchType !== 'semantic'
+  )
+  const semanticContracts = contracts.filter(
+    ({ searchMatchType }) => searchMatchType === 'semantic'
+  )
+  const rankedLexicalResults = [...lexicalContracts, ...posts].sort(
+    (a, b) => b.importanceScore - a.importanceScore
+  )
 
-  return [...contracts, ...posts].sort((a, b) => value(b) - value(a))
+  return [...rankedLexicalResults, ...semanticContracts]
 }
