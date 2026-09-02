@@ -94,7 +94,10 @@ export function useLiveAllNewContracts(limit: number) {
   return contracts
 }
 
-export function useLiveContract<C extends Contract = Contract>(initial: C): C {
+export function useLiveContract<C extends Contract = Contract>(
+  initial: C,
+  live = true
+): C {
   const isPageVisible = useIsPageVisible()
   // ian: Batching is helpful on pages like /browse
   const [contract, setContract] = useBatchedGetter<C>(
@@ -105,6 +108,6 @@ export function useLiveContract<C extends Contract = Contract>(initial: C): C {
     isPageVisible
   )
 
-  useContractUpdates(initial, setContract)
+  useContractUpdates(initial, setContract, live)
   return contract ?? initial
 }

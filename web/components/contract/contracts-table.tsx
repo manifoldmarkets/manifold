@@ -1,4 +1,5 @@
 import { EyeOffIcon } from '@heroicons/react/solid'
+import { memo } from 'react'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import {
@@ -185,7 +186,7 @@ function PositionRow(props: {
   )
 }
 
-export function ContractRow(props: {
+function ContractRowInner(props: {
   contract: Contract
   columns: ColumnFormat[]
   highlighted?: boolean
@@ -194,8 +195,9 @@ export function ContractRow(props: {
   hideAvatar?: boolean
   answers?: Answer[]
   showPosition?: boolean
+  disableLiveUpdates?: boolean
 }) {
-  const contract = useLiveContract(props.contract)
+  const contract = useLiveContract(props.contract, !props.disableLiveUpdates)
   const isPoll = contract.outcomeType === 'POLL'
 
   const {
@@ -361,6 +363,10 @@ export function ContractRow(props: {
     </Col>
   )
 }
+
+// Memoized so typing/filtering in search doesn't re-render every row (and re-run
+// its per-row hooks) when the row's own props haven't changed.
+export const ContractRow = memo(ContractRowInner)
 
 export function LoadingContractRow() {
   return (

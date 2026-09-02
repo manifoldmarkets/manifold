@@ -227,10 +227,12 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       <Script
         src="https://analytics.umami.is/script.js"
         data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+        strategy="lazyOnload"
       />
 
       <Script
         id="gtm"
+        strategy="lazyOnload"
         dangerouslySetInnerHTML={{
           __html: `
   (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
