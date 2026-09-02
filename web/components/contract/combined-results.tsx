@@ -1,16 +1,11 @@
 import { Answer } from 'common/answer'
 import { Contract } from 'common/contract'
+import { orderCombinedSearchResults } from 'common/search-result-order'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
-import { sortBy } from 'lodash'
 import { Key } from 'react'
 import { PostRow } from '../posts/post-row'
-import {
-  SearchParams,
-  SORT_KEY,
-  SORTS_MIXING_POSTS_AND_MARKETS,
-  TOPIC_FILTER_KEY,
-} from '../search'
+import { SearchParams, QUERY_KEY, SORT_KEY, TOPIC_FILTER_KEY } from '../search'
 import {
   actionColumn,
   boostedColumn,
@@ -59,15 +54,14 @@ export function CombinedResults(props: CombinedResultsProps) {
     searchParams[TOPIC_FILTER_KEY] === 'recent'
       ? undefined
       : searchParams[SORT_KEY]
-  let combinedItems: (Contract | TopLevelPost)[] = []
-  combinedItems =
-    sort && SORTS_MIXING_POSTS_AND_MARKETS.includes(sort)
-      ? sortBy([...contracts, ...posts], (item) => {
-          if (sort === 'newest') return -item.createdTime
-          if (sort === 'score') return -item.importanceScore
-          return 0
-        })
-      : [...contracts, ...posts]
+  const combinedItems = orderCombinedSearchResults(contracts, posts, {
+    sort,
+    // The API deliberately returns exact/lexical markets before its semantic
+    // tail. Raw importance cannot reproduce that relevance ordering, so posts
+    // follow the ordered market block for a text search.
+    preserveContractOrder:
+      sort === 'score' && searchParams[QUERY_KEY].trim().length > 0,
+  })
   if (!combinedItems.length) return null
 
   // Define columns for ContractRow, similar to how ContractsTable did
