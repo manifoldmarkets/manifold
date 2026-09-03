@@ -212,6 +212,7 @@ describe('Chinese-lab share', () => {
       // ...and over the cap it halts like any other unknown.
       const validation = validateLabSharePublication({
         ...res,
+        datesMissingOther: [],
         dates: [
           '2026-08-20',
           '2026-08-21',
@@ -351,6 +352,32 @@ describe('publication validation', () => {
       expect(slug.ok).toBe(false)
       if (!slug.ok) expect(slug.reason).toContain('malformed model slugs')
     }
+  })
+
+  it('requires the `other` row on EVERY window day, not just one', () => {
+    // Six truncated days plus one complete day used to pass on a single
+    // boolean; completeness is per date.
+    const truncated = completeWindow().filter(
+      (r) => !(r.model_permaslug === 'other' && r.date !== '2026-08-26')
+    )
+    for (const feed of ['anthropic', 'chinese-lab'] as const) {
+      const result = computeLabShare(feed, truncated)
+      expect(result.hasExcludedPayload).toBe(true)
+      expect(result.datesMissingOther).toEqual([
+        '2026-08-20',
+        '2026-08-21',
+        '2026-08-22',
+        '2026-08-23',
+        '2026-08-24',
+        '2026-08-25',
+      ])
+      const validation = validateLabSharePublication(result)
+      expect(validation.ok).toBe(false)
+      if (!validation.ok) expect(validation.reason).toContain('truncated')
+    }
+    expect(computeAnthropicShare(completeWindow()).datesMissingOther).toEqual(
+      []
+    )
   })
 
   it('rejects a window with no `other` row', () => {

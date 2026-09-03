@@ -244,6 +244,12 @@ export type LabShareResult = {
   /** True when the aggregated `other` row is present in the payload. */
   hasExcludedPayload: boolean
   /**
+   * Window dates with NO `other` row. OpenRouter emits one aggregate row per
+   * day, so a day without it is a truncated day, and one complete day must
+   * not vouch for six truncated ones — completeness is per date.
+   */
+  datesMissingOther: string[]
+  /**
    * Authors in neither list (Chinese-lab feed only; always empty for the
    * Anthropic feed), and their volume as U/C — the quantity
    * UNKNOWN_AUTHOR_TOKEN_SHARE_CAP bounds.
@@ -315,6 +321,7 @@ export const computeLabShare = (
   const compositeSet = new Set<string>()
   const invalidTokenRowSet = new Set<string>()
   const malformedSlugSet = new Set<string>()
+  const datesWithOther = new Set<string>()
 
   for (const row of rows) {
     const tokens = parseTokens(row.total_tokens)
@@ -327,6 +334,7 @@ export const computeLabShare = (
     // `other` is unclassifiable by construction — never in the denominator.
     if (basePermaslug(row.model_permaslug) === OTHER_MODEL_KEY) {
       otherTokens += tokens
+      datesWithOther.add(row.date)
       continue
     }
 
@@ -371,6 +379,7 @@ export const computeLabShare = (
     invalidTokenRows,
     malformedSlugs,
     hasExcludedPayload: otherTokens > 0n,
+    datesMissingOther: dates.filter((d) => !datesWithOther.has(d)),
     unknownAuthors: [...unknownSet].sort(),
     unknownTokens: finiteBigIntTelemetry(unknownTokens),
     unknownShareOfClassified: ratioOfBigInts(unknownTokens, classifiedTokens),
@@ -484,6 +493,13 @@ export const validateLabSharePublication = (
   }
   if (!result.hasExcludedPayload)
     return { ok: false, reason: 'payload has no excluded `other` tokens' }
+  if (result.datesMissingOther.length > 0)
+    return {
+      ok: false,
+      reason: `truncated day(s) with no \`other\` row: ${result.datesMissingOther.join(
+        ', '
+      )}`,
+    }
   if (
     result.share == null ||
     !Number.isFinite(result.share) ||

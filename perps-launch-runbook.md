@@ -165,6 +165,11 @@ Keep that redesign separate from the capped day-one launch.
    Before creating a market on `crypto-fear-greed`, read the terms section of
    https://alternative.me/crypto/fear-and-greed-index/ and record it in
    `common/src/perps/oracle-attribution.ts`; the entry says why.
+   `openrouter-chinese-lab-share` is registered but creation-disabled and
+   listed in `PERP_LAUNCH_PENDING_MARKETS` until `nex-agi` is placed in
+   `CHINESE_LAB_AUTHORS` or `KNOWN_NON_CHINESE_AUTHORS`; its backfill aborts
+   until then. Promote it in one commit (author line, registry flag, manifest
+   move) and rerun `getPerpLaunchManifestErrors()`.
 5. Review and settle/retire out-of-manifest or legacy prototypes. This changes
    balances; record the intended final oracle point and affected positions
    before executing it.

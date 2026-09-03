@@ -9,6 +9,7 @@ import {
 import { getOracleFeed } from './oracle-feeds'
 import {
   PERP_LAUNCH_MARKETS,
+  PERP_LAUNCH_PENDING_MARKETS,
   getPerpLaunchManifestErrors,
 } from './perps/launch-manifest'
 
@@ -26,7 +27,6 @@ describe('OpenRouter lab-share feed wiring', () => {
     for (const id of ids) {
       const feed = getOracleFeed(id)
       expect([id, feed?.cadence]).toEqual([id, 'daily'])
-      expect([id, feed?.marketCreationEnabled]).toEqual([id, true])
       expect([id, feed?.staleAfterMs]).toEqual([id, openWeight?.staleAfterMs])
       expect([id, feed?.updatePeriodMs]).toEqual([
         id,
@@ -55,7 +55,10 @@ describe('OpenRouter lab-share feed wiring', () => {
 
   it('has launch-manifest entries that require the source as-of', () => {
     for (const id of ids) {
-      const market = PERP_LAUNCH_MARKETS.find((m) => m.feedId === id)
+      const market = [
+        ...PERP_LAUNCH_MARKETS,
+        ...PERP_LAUNCH_PENDING_MARKETS,
+      ].find((m) => m.feedId === id)
       expect([id, market?.requiresSourceAsOf]).toEqual([id, true])
       expect([id, market?.oracleBehavior]).toEqual([id, 'scheduled-step'])
       expect([id, market?.requiredTopics.map((t) => t.name)]).toEqual([
@@ -69,5 +72,32 @@ describe('OpenRouter lab-share feed wiring', () => {
       )?.gameDesign
     ).toContain('THROUGH OpenRouter')
     expect(getPerpLaunchManifestErrors()).toEqual([])
+  })
+
+  it('launches the Anthropic feed and holds the Chinese-lab feed pending', () => {
+    // nex-agi is in neither author list, so the Chinese-lab backfill aborts
+    // and the feed must not be creatable until a human places it. The
+    // manifest check enforces the pairing: pending <=> creation-disabled.
+    expect(
+      getOracleFeed(OPENROUTER_ANTHROPIC_SHARE_FEED_ID)?.marketCreationEnabled
+    ).toBe(true)
+    expect(
+      PERP_LAUNCH_MARKETS.some(
+        (m) => m.feedId === OPENROUTER_ANTHROPIC_SHARE_FEED_ID
+      )
+    ).toBe(true)
+    expect(
+      getOracleFeed(OPENROUTER_CHINESE_LAB_SHARE_FEED_ID)?.marketCreationEnabled
+    ).toBe(false)
+    expect(
+      PERP_LAUNCH_MARKETS.some(
+        (m) => m.feedId === OPENROUTER_CHINESE_LAB_SHARE_FEED_ID
+      )
+    ).toBe(false)
+    const pending = PERP_LAUNCH_PENDING_MARKETS.find(
+      (m) => m.feedId === OPENROUTER_CHINESE_LAB_SHARE_FEED_ID
+    )
+    expect(pending?.pendingReason).toContain('nex-agi')
+    expect(pending?.question).toBe('Chinese-lab share of OpenRouter tokens (%)')
   })
 })

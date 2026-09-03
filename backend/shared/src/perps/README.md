@@ -326,7 +326,21 @@ Feed adapters live next to it:
   (`common/src/perps/open-weight-models.ts`), and the author-level
   `openrouter-anthropic-share` and `openrouter-chinese-lab-share`
   (`common/src/perps/lab-share.ts`, where a new author is a one-line constant
-  and an unplaced author over 1% of tokens halts the Chinese-lab feed).
+  and an unplaced author over 1% of tokens halts the Chinese-lab feed). The
+  Chinese-lab feed is registered but **creation-disabled and pending**
+  (`PERP_LAUNCH_PENDING_MARKETS`) until `nex-agi` is placed in an author
+  list; promotion is one commit. One fetch also gates all three: if the
+  newest complete day in the payload is more than
+  `OPENROUTER_MAX_SOURCE_LAG_DAYS` behind today, nothing publishes, and a
+  point whose dataset `as_of` regresses is refused.
+
+Every slow-feed publisher carries the provider's own timestamp as
+`source_ts` (the VoteHub day, the Fear & Greed reading time, the OpenRouter
+`as_of`) and refuses, under the advisory lock, to publish a value the
+provider stamped EARLIER than the one already on the feed. That is what
+stops a source that briefly regresses (a day dropping out of VoteHub's
+series, a cached older reading) from rolling the executable mark back;
+same-stamp corrections still go through.
 
 **Monotone feeds make bad perps:** a monotone non-decreasing index (the Epoch
 Capabilities Index frontier was prototyped and then removed for this reason)

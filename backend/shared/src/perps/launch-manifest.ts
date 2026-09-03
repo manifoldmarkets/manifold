@@ -258,34 +258,6 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
   },
-  {
-    feedId: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
-    question: 'Chinese-lab share of OpenRouter tokens (%)',
-    requiredTopics: [
-      {
-        name: 'AI',
-        slugByEnvironment: {
-          DEV: 'ai',
-          PROD: 'ai',
-        },
-      },
-    ],
-    oracleBehavior: 'scheduled-step',
-    requiresSourceAsOf: true,
-    gameDesign:
-      'The share of OpenRouter-routed tokens attributed to labs headquartered in China (classified by author slug, list in common/perps/lab-share.ts). Two-sided with coherent theses both ways: open-weight Chinese releases and their price advantage push it up, frontier closed releases and enterprise routing patterns push it down. An author the list cannot place is excluded from both sides and, past 1% of tokens, pauses the feed until a one-line classification is deployed — expect an occasional short pause after a brand-new lab enters the top 50.',
-    latencyArbitrageRisk:
-      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
-    recommended: {
-      maxLeverage: 3,
-      annualMaxFundingRate: 1,
-      fundingSensitivity: 1,
-      maxOraclePriceAgeMs: 6 * HOUR_MS,
-      subsidyLong: 10_000,
-      subsidyShort: 10_000,
-    },
-    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
-  },
   // Tokenized-equity trio (xStocks by Backed). These deliberately track the
   // TOKEN's venue price, not the underlying index: that is what makes the
   // feed free and licence-clean (we composite public crypto-venue quotes,
@@ -421,6 +393,53 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
 // and any future ingest-only feed must be listed here explicitly.
 export const PERP_LAUNCH_EXCLUDED_FEED_IDS: readonly string[] = []
 
+export type PerpPendingLaunchMarketDefinition = PerpLaunchMarketDefinition & {
+  /** What blocks the launch, and what promotes the entry. */
+  pendingReason: string
+}
+
+// Reviewed definitions that are NOT yet launchable. The feed stays in the
+// registry with marketCreationEnabled: false — ingestion, backfill scripts and
+// health checks all run, the admin form refuses to create a market, and the
+// preflight fails any market that appears on it. The reviewed settings live
+// here so promotion is a move, not a rewrite: resolve the reason, enable
+// creation in the registry, move the entry into PERP_LAUNCH_MARKETS. The
+// manifest check enforces that a pending feed is creation-disabled, so the
+// two lists cannot silently disagree.
+export const PERP_LAUNCH_PENDING_MARKETS: readonly PerpPendingLaunchMarketDefinition[] =
+  [
+    {
+      feedId: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+      question: 'Chinese-lab share of OpenRouter tokens (%)',
+      requiredTopics: [
+        {
+          name: 'AI',
+          slugByEnvironment: {
+            DEV: 'ai',
+            PROD: 'ai',
+          },
+        },
+      ],
+      pendingReason:
+        'nex-agi (in the open-weight seed list) is placed in neither CHINESE_LAB_AUTHORS nor KNOWN_NON_CHINESE_AUTHORS; the backfill aborts on it and the live feed halts if it exceeds 1% of tokens. Place the author with evidence, bump CHINESE_LAB_LIST_VERSION, enable creation in the registry, and move this entry into PERP_LAUNCH_MARKETS.',
+      oracleBehavior: 'scheduled-step',
+      requiresSourceAsOf: true,
+      gameDesign:
+        'The share of OpenRouter-routed tokens attributed to labs headquartered in China (classified by author slug, list in common/perps/lab-share.ts). Two-sided with coherent theses both ways: open-weight Chinese releases and their price advantage push it up, frontier closed releases and enterprise routing patterns push it down. An author the list cannot place is excluded from both sides and, past 1% of tokens, pauses the feed until a one-line classification is deployed — expect an occasional short pause after a brand-new lab enters the top 50.',
+      latencyArbitrageRisk:
+        'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+      recommended: {
+        maxLeverage: 3,
+        annualMaxFundingRate: 1,
+        fundingSensitivity: 1,
+        maxOraclePriceAgeMs: 6 * HOUR_MS,
+        subsidyLong: 10_000,
+        subsidyShort: 10_000,
+      },
+      minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+    },
+  ]
+
 // Residual pool value returns to the market creator at settlement. Restrict
 // the launch set to the environment's official Manifold account so a personal
 // admin account cannot accidentally own those economics.
@@ -489,11 +508,91 @@ export const getNominalAnnualFundingRate = (
   return Number.isFinite(annualRate) ? annualRate : Number.NaN
 }
 
+/** Field checks every reviewed definition must pass, launchable or pending. */
+const collectDefinitionErrors = (
+  market: PerpLaunchMarketDefinition,
+  feed: ReturnType<typeof getOracleFeed>,
+  errors: string[]
+) => {
+  if (!market.question.trim())
+    errors.push(`${market.feedId} has no launch question`)
+  if (market.question !== market.question.trim())
+    errors.push(`${market.feedId} launch question has surrounding whitespace`)
+  if (market.question.length > MAX_QUESTION_LENGTH)
+    errors.push(
+      `${market.feedId} launch question exceeds ${MAX_QUESTION_LENGTH} characters`
+    )
+  if (/\bperpetual\b/i.test(market.question))
+    errors.push(
+      `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
+    )
+  if (
+    market.requiresSourceAsOf !==
+    (getOracleAttribution(market.feedId)?.showAsOf === true)
+  )
+    errors.push(
+      `${market.feedId} source-as-of requirement disagrees with its attribution metadata`
+    )
+  if (
+    !Number.isFinite(market.recommended.maxLeverage) ||
+    market.recommended.maxLeverage <= 1 ||
+    market.recommended.maxLeverage > 100
+  )
+    errors.push(`${market.feedId} has an invalid recommended leverage`)
+  if (
+    !Number.isFinite(market.recommended.annualMaxFundingRate) ||
+    market.recommended.annualMaxFundingRate <= 0 ||
+    !Number.isFinite(market.recommended.fundingSensitivity) ||
+    market.recommended.fundingSensitivity <= 0
+  )
+    errors.push(`${market.feedId} has an invalid funding recommendation`)
+  if (
+    !Number.isFinite(market.recommended.subsidyLong) ||
+    market.recommended.subsidyLong <= 0 ||
+    !Number.isFinite(market.recommended.subsidyShort) ||
+    market.recommended.subsidyShort <= 0
+  )
+    errors.push(`${market.feedId} has an invalid backing recommendation`)
+  if (market.requiredTopics.length === 0)
+    errors.push(`${market.feedId} has no required discovery topic`)
+  for (const environment of ['DEV', 'PROD'] as const) {
+    const requiredTopicSlugs = market.requiredTopics.map((topic) =>
+      getPerpLaunchTopicSlug(topic, environment)
+    )
+    if (new Set(requiredTopicSlugs).size !== requiredTopicSlugs.length)
+      errors.push(
+        `${market.feedId} has duplicate ${environment} discovery topics`
+      )
+  }
+  for (const topic of market.requiredTopics) {
+    if (
+      !topic.name ||
+      !getPerpLaunchTopicSlug(topic, 'DEV') ||
+      !getPerpLaunchTopicSlug(topic, 'PROD')
+    )
+      errors.push(`${market.feedId} has an invalid required discovery topic`)
+  }
+  if (
+    feed &&
+    (market.recommended.maxOraclePriceAgeMs < feed.staleAfterMs ||
+      !Number.isFinite(market.recommended.maxOraclePriceAgeMs))
+  )
+    errors.push(
+      `${market.feedId} recommended max oracle age is below its health threshold`
+    )
+}
+
 export const getPerpLaunchManifestErrors = () => {
   const errors: string[] = []
   const feedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+  const pendingIds = PERP_LAUNCH_PENDING_MARKETS.map((market) => market.feedId)
   if (new Set(feedIds).size !== feedIds.length)
     errors.push('launch manifest has duplicate feed ids')
+  if (
+    new Set([...feedIds, ...pendingIds]).size !==
+    feedIds.length + pendingIds.length
+  )
+    errors.push('a feed appears in both the launch and pending manifests')
   for (const environment of ['DEV', 'PROD'] as const) {
     if (!getPerpLaunchCreatorId(environment))
       errors.push(`${environment} has no official launch creator`)
@@ -501,77 +600,32 @@ export const getPerpLaunchManifestErrors = () => {
 
   for (const market of PERP_LAUNCH_MARKETS) {
     const feed = getOracleFeed(market.feedId)
-    if (!market.question.trim())
-      errors.push(`${market.feedId} has no launch question`)
-    if (market.question !== market.question.trim())
-      errors.push(`${market.feedId} launch question has surrounding whitespace`)
-    if (market.question.length > MAX_QUESTION_LENGTH)
-      errors.push(
-        `${market.feedId} launch question exceeds ${MAX_QUESTION_LENGTH} characters`
-      )
-    if (/\bperpetual\b/i.test(market.question))
-      errors.push(
-        `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
-      )
+    collectDefinitionErrors(market, feed, errors)
     if (!feed) {
       errors.push(`${market.feedId} is absent from the oracle registry`)
       continue
     }
     if (!feed.marketCreationEnabled)
       errors.push(`${market.feedId} is disabled for market creation`)
-    if (
-      market.requiresSourceAsOf !==
-      (getOracleAttribution(market.feedId)?.showAsOf === true)
-    )
+  }
+
+  for (const market of PERP_LAUNCH_PENDING_MARKETS) {
+    const feed = getOracleFeed(market.feedId)
+    collectDefinitionErrors(market, feed, errors)
+    if (!market.pendingReason.trim())
+      errors.push(`${market.feedId} is pending without a stated reason`)
+    if (!feed) {
       errors.push(
-        `${market.feedId} source-as-of requirement disagrees with its attribution metadata`
+        `${market.feedId} (pending) is absent from the oracle registry`
       )
-    if (
-      !Number.isFinite(market.recommended.maxLeverage) ||
-      market.recommended.maxLeverage <= 1 ||
-      market.recommended.maxLeverage > 100
-    )
-      errors.push(`${market.feedId} has an invalid recommended leverage`)
-    if (
-      !Number.isFinite(market.recommended.annualMaxFundingRate) ||
-      market.recommended.annualMaxFundingRate <= 0 ||
-      !Number.isFinite(market.recommended.fundingSensitivity) ||
-      market.recommended.fundingSensitivity <= 0
-    )
-      errors.push(`${market.feedId} has an invalid funding recommendation`)
-    if (
-      !Number.isFinite(market.recommended.subsidyLong) ||
-      market.recommended.subsidyLong <= 0 ||
-      !Number.isFinite(market.recommended.subsidyShort) ||
-      market.recommended.subsidyShort <= 0
-    )
-      errors.push(`${market.feedId} has an invalid backing recommendation`)
-    if (market.requiredTopics.length === 0)
-      errors.push(`${market.feedId} has no required discovery topic`)
-    for (const environment of ['DEV', 'PROD'] as const) {
-      const requiredTopicSlugs = market.requiredTopics.map((topic) =>
-        getPerpLaunchTopicSlug(topic, environment)
-      )
-      if (new Set(requiredTopicSlugs).size !== requiredTopicSlugs.length)
-        errors.push(
-          `${market.feedId} has duplicate ${environment} discovery topics`
-        )
+      continue
     }
-    for (const topic of market.requiredTopics) {
-      if (
-        !topic.name ||
-        !getPerpLaunchTopicSlug(topic, 'DEV') ||
-        !getPerpLaunchTopicSlug(topic, 'PROD')
-      )
-        errors.push(`${market.feedId} has an invalid required discovery topic`)
-    }
-    if (
-      market.recommended.maxOraclePriceAgeMs < feed.staleAfterMs ||
-      !Number.isFinite(market.recommended.maxOraclePriceAgeMs)
-    )
+    if (feed.marketCreationEnabled)
       errors.push(
-        `${market.feedId} recommended max oracle age is below its health threshold`
+        `${market.feedId} is pending but enabled for creation; promote it into PERP_LAUNCH_MARKETS or disable creation`
       )
+    if (PERP_LAUNCH_EXCLUDED_FEED_IDS.includes(market.feedId))
+      errors.push(`${market.feedId} is both pending and explicitly excluded`)
   }
 
   for (const feedId of PERP_LAUNCH_EXCLUDED_FEED_IDS) {

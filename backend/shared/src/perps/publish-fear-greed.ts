@@ -69,14 +69,24 @@ export const publishFearGreedPoint = async (
 
   const readLast = async (
     db: SupabaseDirectClient
-  ): Promise<{ ts: number; price: number } | null> => {
-    const row = await db.oneOrNone<{ ts: string; price: number | string }>(
-      `select ts, price from oracle_prices where feed_id = $1
+  ): Promise<{ ts: number; price: number; sourceTs: number | null } | null> => {
+    const row = await db.oneOrNone<{
+      ts: string
+      price: number | string
+      source_ts: string | null
+    }>(
+      `select ts, price, source_ts from oracle_prices where feed_id = $1
        order by ts desc limit 1`,
       [feedId]
     )
     if (!row) return null
-    return { ts: new Date(row.ts).getTime(), price: Number(row.price) }
+    const lastSourceTs =
+      row.source_ts == null ? null : new Date(row.source_ts).getTime()
+    return {
+      ts: new Date(row.ts).getTime(),
+      price: Number(row.price),
+      sourceTs: Number.isFinite(lastSourceTs) ? lastSourceTs : null,
+    }
   }
 
   // `force` is the operator escape hatch, as on the VoteHub feeds: stamp the
@@ -119,6 +129,22 @@ export const publishFearGreedPoint = async (
         status: 'unchanged' as const,
         price: latest.value,
         reason: decision.reason,
+      }
+
+    // Never publish a reading the provider stamped EARLIER than the one
+    // already on the feed. A stale cached response (an older reading, still
+    // inside the 3-day source-age allowance, with a different value) would
+    // otherwise be applied as a fresh move. Equal provider stamps are the
+    // same reading (heartbeats, corrections); older fails closed.
+    if (last?.sourceTs != null && point.sourceTs < last.sourceTs)
+      return {
+        status: 'rejected' as const,
+        reason:
+          `provider reading stamped ${new Date(
+            point.sourceTs
+          ).toISOString()} is older than the one already published ` +
+          `(${new Date(last.sourceTs).toISOString()}); not rolling the mark ` +
+          `back to an earlier reading`,
       }
 
     // Bounds are [1, 100]: a literal 0 print is refused here (and by

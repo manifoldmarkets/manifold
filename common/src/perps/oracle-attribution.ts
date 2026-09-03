@@ -133,7 +133,10 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   // `licence` / `licenceUrl`. If the page turns out NOT to permit commercial
   // reuse with attribution, do not create the market; the registry entry is
   // harmless without one. Until then: a credit and a link, no licence label
-  // we cannot back up (the NESO stance above).
+  // we cannot back up (the NESO stance above). A reviewer of the introducing
+  // PR (#4034, 2026-09-03) with network access reported that the page's API
+  // documentation and terms permit attributed commercial use — encouraging,
+  // but second-hand: the gate stands until the text is pasted here.
   'crypto-fear-greed': {
     source: 'Alternative.me Crypto Fear & Greed Index',
     url: 'https://alternative.me/crypto/fear-and-greed-index/',

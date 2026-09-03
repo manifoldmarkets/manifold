@@ -4,7 +4,10 @@ import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-import { readPublishedSeries } from 'common/perps/votehub-average'
+import {
+  readPublishedSeries,
+  voteHubDaySourceTs,
+} from 'common/perps/votehub-average'
 
 import { log } from 'shared/utils'
 import { insertOraclePrices } from 'shared/oracle'
@@ -78,6 +81,9 @@ if (require.main === module)
       .map((entry) => ({
         ts: dayjs.tz(entry.day, spec.tz).valueOf(),
         price: entry.price,
+        // The live publisher records VoteHub's day as source_ts so it can
+        // refuse to roll back to an earlier day; history carries it too.
+        sourceTs: voteHubDaySourceTs(entry.day) ?? undefined,
       }))
     const fromDay = series[0]?.day ?? 'n/a'
     const toDay = series[series.length - 1]?.day ?? 'n/a'

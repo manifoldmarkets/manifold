@@ -101,11 +101,14 @@ export const TRUMP_APPROVAL_SPEC: VoteHubFeedSpec = {
 /**
  * Democratic share (%) of VoteHub's published 2026 generic-ballot average.
  *
- * ⚠️ KEY AND SHAPE NOT YET VERIFIED AGAINST A LIVE RESPONSE. This spec was
- * written on 2026-09-02 from a build environment whose egress policy blocks
+ * ⚠️ KEY AND SHAPE NOT VERIFIED FROM THIS CODEBASE. This spec was written on
+ * 2026-09-02 from a build environment whose egress policy blocks
  * polling.votehub.com, so the average key (`generic_ballot_2026`), the answer
- * key (`dem`) and the poll choice (`Dem`) are INFERRED from the pattern the
- * verified Trump feed follows (key `trump_approval`, answer key `approve`,
+ * key (`dem`) and the poll choice (`Dem`) were INFERRED from the pattern the
+ * verified Trump feed follows. A reviewer of the introducing PR (#4034,
+ * 2026-09-03) with network access reported that the live series at this key
+ * matched the expected shape; that is second-hand here, so the operator
+ * check below still applies before the first backfill (key `trump_approval`, answer key `approve`,
  * poll choice `Approve` — VoteHub keys the average's answer objects on the
  * lower-cased poll choice) and from the feed-id chosen for this market. Before
  * the backfill is run, confirm all three with
@@ -144,10 +147,11 @@ export const GENERIC_BALLOT_2026_SPEC: VoteHubFeedSpec = {
 /**
  * Favorable (%) from VoteHub's published JD Vance favorability average.
  *
- * ⚠️ KEY AND SHAPE NOT YET VERIFIED AGAINST A LIVE RESPONSE — same caveat and
- * same verification step as GENERIC_BALLOT_2026_SPEC (2026-09-02). Inferred:
- * average key `vance_favorability` (by analogy with `trump_approval`), answer
- * key `favorable`, poll choice `Favorable`.
+ * ⚠️ KEY AND SHAPE NOT VERIFIED FROM THIS CODEBASE — same caveat, same
+ * second-hand confirmation from the PR #4034 review (2026-09-03), and the
+ * same verification step as GENERIC_BALLOT_2026_SPEC. Inferred: average key
+ * `vance_favorability` (by analogy with `trump_approval`), answer key
+ * `favorable`, poll choice `Favorable`.
  *
  * Rules start from the Trump numbers. Favorability polling for a vice
  * president is thinner than presidential approval, so expect the canary to

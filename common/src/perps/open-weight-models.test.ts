@@ -1,5 +1,6 @@
 import { DAY_MS } from '../util/time'
 import {
+  OPENROUTER_MAX_SOURCE_LAG_DAYS,
   OPEN_WEIGHT_MODELS,
   OPEN_WEIGHT_WINDOW_DAYS,
   RankingRow,
@@ -9,8 +10,10 @@ import {
   isCompositeSlug,
   isValidPermaslug,
   newestWindowDates,
+  openRouterSourceLagDays,
   openWeightWindowRange,
   utcDateString,
+  validateOpenRouterSourceFreshness,
   validateOpenWeightPublication,
 } from './open-weight-models'
 
@@ -540,5 +543,65 @@ describe('isValidPermaslug', () => {
     // the read path generates.
     for (const raw of ['qwen/qwen3-max:free', 'z-ai/glm-5.3-20260816:nitro'])
       expect([raw, isValidPermaslug(basePermaslug(raw))]).toEqual([raw, true])
+  })
+})
+
+describe('source freshness', () => {
+  // 2026-09-02T10:00:00Z. Yesterday is the newest COMPLETE day upstream.
+  const now = Date.UTC(2026, 8, 2, 10)
+  const window = (newest: string) => {
+    const rows: RankingRow[] = []
+    const newestMs = Date.parse(`${newest}T00:00:00Z`)
+    for (let i = 6; i >= 0; i--)
+      rows.push(row(utcDateString(newestMs - i * DAY_MS), OPEN, 1))
+    return rows
+  }
+
+  it('measures whole UTC days behind today', () => {
+    expect(openRouterSourceLagDays('2026-09-01', now)).toBe(1)
+    expect(openRouterSourceLagDays('2026-08-30', now)).toBe(3)
+    expect(openRouterSourceLagDays('2026-09-02', now)).toBe(0)
+    expect(openRouterSourceLagDays('2026-09-03', now)).toBe(-1)
+    expect(openRouterSourceLagDays('nope', now)).toBeNull()
+  })
+
+  it('accepts yesterday, a late publish, and the documented maximum', () => {
+    expect(OPENROUTER_MAX_SOURCE_LAG_DAYS).toBe(3)
+    for (const newest of ['2026-09-01', '2026-08-31', '2026-08-30'])
+      expect([
+        newest,
+        validateOpenRouterSourceFreshness({ rows: window(newest), now }),
+      ]).toEqual([newest, null])
+  })
+
+  it('refuses a frozen dataset instead of re-stamping it as fresh', () => {
+    // The failure this exists for: the same seven old days served forever
+    // would otherwise be published hourly with a fresh ts and never trip the
+    // staleness or trading gates.
+    const reason = validateOpenRouterSourceFreshness({
+      rows: window('2026-08-29'),
+      now,
+    })
+    expect(reason).toContain('2026-08-29')
+    expect(reason).toContain('stale')
+  })
+
+  it('refuses an empty or future-dated payload', () => {
+    expect(validateOpenRouterSourceFreshness({ rows: [], now })).toContain(
+      'no dated rows'
+    )
+    expect(
+      validateOpenRouterSourceFreshness({ rows: window('2026-09-03'), now })
+    ).toContain('after today')
+  })
+
+  it('honours a caller-supplied bound', () => {
+    expect(
+      validateOpenRouterSourceFreshness({
+        rows: window('2026-08-31'),
+        now,
+        maxLagDays: 1,
+      })
+    ).not.toBeNull()
   })
 })

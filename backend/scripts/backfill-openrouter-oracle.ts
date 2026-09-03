@@ -17,6 +17,7 @@ import {
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   insertOraclePrices,
 } from 'shared/oracle'
+import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
@@ -81,6 +82,9 @@ if (require.main === module)
         ].join(', ')}`
       )
 
+    const feed = getOracleFeed(feedId)
+    if (!feed) throw new Error(`${feedId} is not registered`)
+
     const now = Date.now()
     const startDate = utcDateString(now - BACKFILL_DAYS * DAY_MS)
     const endDate = utcDateString(now)
@@ -142,11 +146,26 @@ if (require.main === module)
         rejections.push(`${dates[i]}: ${publication.reason}`)
         continue
       }
-      points.push({
+      const point = {
         ts: Date.parse(`${dates[i]}T00:00:00.000Z`) + DAY_MS,
         price: publication.share,
         sourceTs,
-      })
+      }
+      // Every historical point is held to the same registry definition the
+      // live job applies (validateOraclePoint: bounds, positivity, strictly
+      // increasing stamps). A share the live feed would refuse must not enter
+      // history just because it is old — and a real value outside the bounds
+      // is exactly the conversation the bounds exist to force.
+      const rejection = validateOraclePoint(
+        feed,
+        points[points.length - 1] ?? null,
+        point
+      )
+      if (rejection) {
+        rejections.push(`${dates[i]}: ${rejection}`)
+        continue
+      }
+      points.push(point)
     }
 
     if (rejections.length > 0) {

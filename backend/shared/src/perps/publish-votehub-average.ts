@@ -9,6 +9,7 @@ import {
   computePollAveragePoint,
   getCrossCheckGap,
   readPublishedAverage,
+  voteHubDaySourceTs,
 } from 'common/perps/votehub-average'
 
 import { insertOraclePrices } from 'shared/oracle'
@@ -113,16 +114,34 @@ export const publishVoteHubPoint = async (
     .subtract(voteHubFetchLookbackDays(spec), 'day')
     .format('YYYY-MM-DD')
 
+  // The day VoteHub stamped this value travels with the point as source_ts.
+  const sourceTs = voteHubDaySourceTs(published.asOfDay)
+  if (sourceTs == null)
+    return {
+      status: 'rejected',
+      reason: `published as-of day ${published.asOfDay} is not a valid date`,
+    }
+
   const readLast = async (
     db: SupabaseDirectClient
-  ): Promise<{ ts: number; price: number } | null> => {
-    const row = await db.oneOrNone<{ ts: string; price: number | string }>(
-      `select ts, price from oracle_prices where feed_id = $1
+  ): Promise<{ ts: number; price: number; sourceTs: number | null } | null> => {
+    const row = await db.oneOrNone<{
+      ts: string
+      price: number | string
+      source_ts: string | null
+    }>(
+      `select ts, price, source_ts from oracle_prices where feed_id = $1
        order by ts desc limit 1`,
       [feedId]
     )
     if (!row) return null
-    return { ts: new Date(row.ts).getTime(), price: Number(row.price) }
+    const lastSourceTs =
+      row.source_ts == null ? null : new Date(row.source_ts).getTime()
+    return {
+      ts: new Date(row.ts).getTime(),
+      price: Number(row.price),
+      sourceTs: Number.isFinite(lastSourceTs) ? lastSourceTs : null,
+    }
   }
 
   // `force` is the operator escape hatch: during an incident the point of
@@ -218,7 +237,7 @@ export const publishVoteHubPoint = async (
         `value two independent computations disagree about`,
     }
 
-  const point = { price: published.price, ts: observedAt }
+  const point = { price: published.price, ts: observedAt, sourceTs }
   const feed = getOracleFeed(feedId)
   if (!feed)
     return {
@@ -246,6 +265,23 @@ export const publishVoteHubPoint = async (
         status: 'unchanged' as const,
         price: published.price,
         reason: decision.reason,
+      }
+
+    // Never roll the mark back to an EARLIER source day. If VoteHub's series
+    // temporarily loses day D and the latest usable entry becomes D-1 (still
+    // inside maxSourceAgeDays), that older value would otherwise go out as a
+    // fresh observation and be applied as a move. Same-day corrections
+    // (equal source day, different value) and newer days pass; an older day
+    // fails closed until the series catches up. Rows written before
+    // source_ts was recorded carry null and impose no bound.
+    if (last?.sourceTs != null && point.sourceTs < last.sourceTs)
+      return {
+        status: 'rejected' as const,
+        reason:
+          `VoteHub's latest usable day ${published.asOfDay} is earlier than ` +
+          `the day already published (${new Date(last.sourceTs)
+            .toISOString()
+            .slice(0, 10)}); not rolling the mark back to an older day's value`,
       }
 
     // validateOraclePoint rejects `point.ts <= prev.ts`, which under the lock

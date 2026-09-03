@@ -357,7 +357,19 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     id: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
     description:
       'Chinese-lab share of top-50 model tokens on OpenRouter, trailing 7 UTC days (%)',
-    marketCreationEnabled: true,
+    // DISABLED FOR CREATION until every author in the ranked window is
+    // placed. `nex-agi` sits in the open-weight seed list (it ranked in the
+    // past year) but in neither CHINESE_LAB_AUTHORS nor
+    // KNOWN_NON_CHINESE_AUTHORS, because its headquarters could not be
+    // established when the lists were written and the rule is to place an
+    // author on evidence, never by default. Until it is placed the backfill
+    // aborts (cap 0) and the live job publishes only while its tokens stay
+    // under the 1% cap — so a market could not be backed by a full year of
+    // history and could inherit a halted oracle. Ingestion and health checks
+    // run regardless. Promotion is one commit: add the author line, flip
+    // this to true, and move the entry from PERP_LAUNCH_PENDING_MARKETS to
+    // PERP_LAUNCH_MARKETS.
+    marketCreationEnabled: false,
     cadence: 'daily',
     // A group of publishers can plausibly dominate the marketplace; the
     // upper bound is set so that even near-total dominance still publishes.

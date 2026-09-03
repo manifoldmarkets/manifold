@@ -9,6 +9,7 @@ import {
   OPEN_WEIGHT_LIST_VERSION,
   OPEN_WEIGHT_WINDOW_DAYS,
   openWeightWindowRange,
+  validateOpenRouterSourceFreshness,
   validateOpenWeightPublication,
 } from 'common/perps/open-weight-models'
 import {
@@ -90,6 +91,19 @@ const updateOpenRouterShareInternal = async () => {
     return
   }
   const sourceTs = Date.parse(rankings.asOf)
+
+  // Points are stamped at Date.now(), so a frozen upstream response would
+  // otherwise be relaid as fresh every hour and never trip the 3h staleness
+  // or 6h trading gates. Checked once, before any of the three feeds: a
+  // stale dataset is stale for all of them, and it pages.
+  const staleness = validateOpenRouterSourceFreshness({
+    rows: rankings.rows,
+    now,
+  })
+  if (staleness) {
+    log.error(`[openrouter] ${staleness} — skipping every feed`)
+    return
+  }
 
   await guarded('open-weight share', () =>
     publishOpenWeightShare(pg, rankings, now, sourceTs)
@@ -242,8 +256,12 @@ const publishLabShare = async (
 /**
  * The validate → insert → apply sequence, per feed. Fetches the previous
  * point so validateOraclePoint can enforce strictly increasing timestamps
- * against what is already stored; `sourceTs` is mandatory for these feeds
- * (insertOraclePrices refuses a point without it, per OpenRouter's terms).
+ * against what is already stored, and so the dataset `as_of` can be held to
+ * never regress: an older dataset re-served after a newer one must not be
+ * published as a fresh observation. Equal is fine — that is the same day's
+ * dataset re-stamped hourly, by design. `sourceTs` is mandatory for these
+ * feeds (insertOraclePrices refuses a point without it, per OpenRouter's
+ * terms).
  */
 const publishOpenRouterPoint = async (
   pg: SupabaseDirectClient,
@@ -256,20 +274,32 @@ const publishOpenRouterPoint = async (
 ) => {
   const point = { ts: now, price: share, sourceTs }
   const feed = getOracleFeed(feedId)
-  const prev = await pg.oneOrNone<{ ts: string; price: number | string }>(
-    `select ts, price from oracle_prices where feed_id = $1
+  const prev = await pg.oneOrNone<{
+    ts: string
+    price: number | string
+    source_ts: string | null
+  }>(
+    `select ts, price, source_ts from oracle_prices where feed_id = $1
      order by ts desc limit 1`,
     [feedId]
   )
-  const rejection = feed
-    ? validateOraclePoint(
+  const prevSourceTs =
+    prev?.source_ts == null ? null : new Date(prev.source_ts).getTime()
+  const rejection = !feed
+    ? `missing OracleFeedDef for ${feedId}`
+    : prevSourceTs != null &&
+      Number.isFinite(prevSourceTs) &&
+      sourceTs < prevSourceTs
+    ? `dataset as_of ${new Date(sourceTs).toISOString()} is older than the ` +
+      `as_of already published (${new Date(prevSourceTs).toISOString()}); ` +
+      `not relaying a regressed dataset`
+    : validateOraclePoint(
         feed,
         prev
           ? { ts: new Date(prev.ts).getTime(), price: Number(prev.price) }
           : null,
         point
       )
-    : `missing OracleFeedDef for ${feedId}`
   if (rejection) {
     log.error(
       `[openrouter] rejected ${label} ${share.toFixed(3)} — ${rejection}`

@@ -13,6 +13,7 @@ import {
   readPublishedSeries,
   selectPollWindow,
   shiftDay,
+  voteHubDaySourceTs,
 } from './votehub-average'
 import {
   TRUMP_APPROVAL_RULES,
@@ -346,6 +347,20 @@ describe('selectPollWindow / computePollAveragePoint with explicit rules', () =>
     const result = selectPollWindow(polls, '2026-09-01', TRUMP_APPROVAL_RULES)
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.window.spanDays).toBe(14)
+  })
+})
+
+describe('voteHubDaySourceTs', () => {
+  it('is the UTC midnight of the day VoteHub stamped, so days order as numbers', () => {
+    expect(voteHubDaySourceTs('2026-09-01')).toBe(Date.UTC(2026, 8, 1))
+    const earlier = voteHubDaySourceTs('2026-08-31') as number
+    const later = voteHubDaySourceTs('2026-09-01') as number
+    // The publisher's guard: an as-of day EARLIER than the one already on
+    // the feed is refused; equal (a same-day correction) is not.
+    expect(earlier < later).toBe(true)
+    expect(voteHubDaySourceTs('2026-09-01')).toBe(later)
+    expect(voteHubDaySourceTs('2026-02-31')).toBeNull()
+    expect(voteHubDaySourceTs('nope')).toBeNull()
   })
 })
 

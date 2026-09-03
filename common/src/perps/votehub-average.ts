@@ -77,6 +77,15 @@ export const shiftDay = (date: string, days: number): string | null => {
   return new Date(shifted).toISOString().slice(0, 10)
 }
 
+/**
+ * The provider timestamp an oracle point carries for a VoteHub value: the UTC
+ * midnight of the day VoteHub stamped it. Stored as `source_ts` so the
+ * publisher can refuse to roll the mark back to an earlier day's value when
+ * the series temporarily regresses (a day dropping out of the response and
+ * reappearing later) while still allowing same-day corrections.
+ */
+export const voteHubDaySourceTs = (day: string): number | null => parseDay(day)
+
 export const daysBetween = (from: string, to: string): number | null => {
   const a = parseDay(from)
   const b = parseDay(to)

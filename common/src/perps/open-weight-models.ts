@@ -902,6 +902,60 @@ export const openWeightWindowRange = (
 export const utcDateString = (ms: number): string =>
   new Date(ms).toISOString().slice(0, 10)
 
+/**
+ * How far behind today's UTC date the newest complete day in an OpenRouter
+ * payload may be before every index computed from it refuses to publish.
+ *
+ * The hourly job stamps each point at Date.now(), which is what keeps the
+ * 3h feed-staleness and 6h trading gates honest — but only if the payload
+ * underneath is actually moving. A frozen response (the same seven old days
+ * served forever) would otherwise be re-stamped as fresh every hour and
+ * never trip either gate. Normally the newest complete day is yesterday
+ * (lag 1); a late upstream publish makes it 2. Three tolerates that without
+ * relaying a dead dataset for a week.
+ */
+export const OPENROUTER_MAX_SOURCE_LAG_DAYS = 3
+
+/**
+ * Whole UTC days between the newest date in the payload and today's UTC
+ * date, or null when the date does not parse.
+ */
+export const openRouterSourceLagDays = (
+  newestDate: string,
+  nowMs: number
+): number | null => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newestDate)) return null
+  const newestMs = Date.parse(`${newestDate}T00:00:00Z`)
+  const todayMs = Date.parse(`${utcDateString(nowMs)}T00:00:00Z`)
+  if (!Number.isFinite(newestMs) || !Number.isFinite(todayMs)) return null
+  return Math.round((todayMs - newestMs) / DAY_MS)
+}
+
+/**
+ * Reject a payload whose newest complete day is too far behind today. Shared
+ * by every OpenRouter index, checked once per fetch before any of them
+ * publishes. Returns the reason, or null when the source is fresh enough.
+ */
+export const validateOpenRouterSourceFreshness = (args: {
+  rows: RankingRow[]
+  now: number
+  maxLagDays?: number
+}): string | null => {
+  const { rows, now, maxLagDays = OPENROUTER_MAX_SOURCE_LAG_DAYS } = args
+  const newest = newestWindowDates(rows, 1)[0]
+  if (!newest) return 'payload has no dated rows'
+  const lag = openRouterSourceLagDays(newest, now)
+  if (lag == null) return `newest day ${newest} is not a valid date`
+  if (lag < 0)
+    return `newest day ${newest} is after today (${utcDateString(now)})`
+  if (lag > maxLagDays)
+    return (
+      `newest complete day ${newest} is ${lag} days behind ` +
+      `${utcDateString(now)} (max ${maxLagDays}); the source is stale`
+    )
+  return null
+}
+
 /** The newest `days` distinct dates present in `rows`, oldest first. */
 export const newestWindowDates = (
   rows: RankingRow[],
