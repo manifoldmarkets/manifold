@@ -355,7 +355,9 @@ Backfill scripts
 `--feed=<feedId>`) seed chart history before market creation. They are for
 feeds with NO live market: published history is append-only and a backfill
 stamps day boundaries, so on a live feed it would add a second point to every
-day rather than fill a hole.
+day rather than fill a hole. The VoteHub, Fear & Greed and OpenRouter scripts
+check this (`backfill-guard.ts`) and refuse a feed that backs an unresolved
+market unless `--force` is passed.
 
 The executable launch set, conservative initial parameters, feed-specific game
 design notes, and oracle-latency risks live in
@@ -386,9 +388,10 @@ sequence and rollback are in `perps-launch-runbook.md`.
   on change plus a heartbeat, under `[fear-greed]`. The index itself steps
   once a day around 00:00 UTC.
 - `update-openrouter-share.ts` polls hourly and publishes the open-weight,
-  Anthropic-share and Chinese-lab-share feeds from ONE fetch, each through
-  its own validate → insert → apply pass so one refusing never withholds the
-  others, under `[openrouter]`. OpenRouter currently returns complete UTC
+  Anthropic-share and Chinese-lab-share feeds from ONE fetch, each under its
+  own per-feed advisory lock (lock → reread → validate → insert, then apply
+  outside the transaction) so one refusing never withholds the others, under
+  `[openrouter]`. OpenRouter currently returns complete UTC
   days, so most hourly observations repeat the same underlying value; a fresh
   timestamp proves job liveness but does not create intraday price discovery.
 

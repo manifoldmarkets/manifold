@@ -19,6 +19,7 @@ import {
 } from 'shared/oracle'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
 import { log } from 'shared/utils'
+import { assertBackfillTarget } from './backfill-guard'
 import { runScript } from './run-script'
 
 // Backfill an OpenRouter index feed so the market chart has context on day
@@ -41,8 +42,9 @@ import { runScript } from './run-script'
 // do-nothing, so existing rows are left alone even if it is run by accident —
 // but a run against a feed that already has a live market would still append
 // a day-boundary point next to every live Date.now() point. The DEFAULT
-// target (no --feed) is the open-weight feed, which already has a market:
-// only re-run it deliberately.
+// target (no --feed) is the open-weight feed, which already has a market —
+// so the script REFUSES any feed that backs an unresolved market unless
+// --force is passed (assertBackfillTarget), whatever the default says.
 //
 // Two honest limitations, both of which belong in the market description:
 //  - Historical points are classified with the CURRENT list (models for the
@@ -84,6 +86,7 @@ if (require.main === module)
 
     const feed = getOracleFeed(feedId)
     if (!feed) throw new Error(`${feedId} is not registered`)
+    await assertBackfillTarget(pg, feedId)
 
     const now = Date.now()
     const startDate = utcDateString(now - BACKFILL_DAYS * DAY_MS)

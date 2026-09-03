@@ -27,6 +27,7 @@ import {
   insertOraclePrices,
 } from 'shared/oracle'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
+import { advisoryLockQuery } from 'shared/perps/queries'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -64,10 +65,11 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 // window and the same denominator exclusions, so computing them here costs
 // zero additional OpenRouter calls against the 500/day account limit (this
 // job spends 24). Each feed is published INDEPENDENTLY through the same
-// validate → insert → apply sequence, with the previous point read per feed:
-// a refusal or a thrown error on one feed must never withhold the others,
-// and each has its own registry entry, bounds and market. The open-weight
-// path is unchanged; its log lines are kept verbatim.
+// lock → reread → validate → insert → apply sequence, with the previous
+// point read per feed under that feed's advisory lock: a refusal or a thrown
+// error on one feed must never withhold the others, and each has its own
+// registry entry, bounds and market. The open-weight computation is
+// unchanged and its log lines are kept verbatim.
 export const updateOpenRouterShare = async () => {
   try {
     await updateOpenRouterShareInternal()
@@ -254,14 +256,28 @@ const publishLabShare = async (
 }
 
 /**
- * The validate → insert → apply sequence, per feed. Fetches the previous
- * point so validateOraclePoint can enforce strictly increasing timestamps
- * against what is already stored, and so the dataset `as_of` can be held to
- * never regress: an older dataset re-served after a newer one must not be
- * published as a fresh observation. Equal is fine — that is the same day's
- * dataset re-stamped hourly, by design. `sourceTs` is mandatory for these
- * feeds (insertOraclePrices refuses a point without it, per OpenRouter's
- * terms).
+ * The lock → reread → validate → insert → apply sequence, per feed — the
+ * same shape as the VoteHub and Fear & Greed publishers.
+ *
+ * The previous point is read and both checks are made INSIDE a transaction
+ * holding the feed's advisory lock, and the insert happens in that same
+ * transaction. Read-check-insert as three unrelated statements let two
+ * publishers (a second scheduler instance mid-deploy, a manual run) both pass
+ * the checks and both write — which for the as_of guard means an older
+ * dataset could become the executable mark after a newer one was already
+ * published. Croner's `protect` only covers one Cron object in one process.
+ *
+ * Two checks under the lock: validateOraclePoint (bounds, positivity, and a
+ * strictly newer `ts` than what is stored), and the dataset `as_of` may never
+ * regress below the one already published — an older dataset re-served after
+ * a newer one must not be published as a fresh observation. Equal is fine;
+ * that is the same day's dataset re-stamped hourly, by design. `sourceTs` is
+ * mandatory for these feeds (insertOraclePrices refuses a point without it,
+ * per OpenRouter's terms).
+ *
+ * The apply runs OUTSIDE the transaction, exactly as the other publishers
+ * and the fast tick do it: runOracleUpdate takes its own per-contract lock,
+ * and nesting it here would hold both across engine work.
  */
 const publishOpenRouterPoint = async (
   pg: SupabaseDirectClient,
@@ -274,40 +290,59 @@ const publishOpenRouterPoint = async (
 ) => {
   const point = { ts: now, price: share, sourceTs }
   const feed = getOracleFeed(feedId)
-  const prev = await pg.oneOrNone<{
-    ts: string
-    price: number | string
-    source_ts: string | null
-  }>(
-    `select ts, price, source_ts from oracle_prices where feed_id = $1
-     order by ts desc limit 1`,
-    [feedId]
-  )
-  const prevSourceTs =
-    prev?.source_ts == null ? null : new Date(prev.source_ts).getTime()
-  const rejection = !feed
-    ? `missing OracleFeedDef for ${feedId}`
-    : prevSourceTs != null &&
-      Number.isFinite(prevSourceTs) &&
-      sourceTs < prevSourceTs
-    ? `dataset as_of ${new Date(sourceTs).toISOString()} is older than the ` +
-      `as_of already published (${new Date(prevSourceTs).toISOString()}); ` +
-      `not relaying a regressed dataset`
-    : validateOraclePoint(
-        feed,
-        prev
-          ? { ts: new Date(prev.ts).getTime(), price: Number(prev.price) }
-          : null,
-        point
-      )
-  if (rejection) {
+  if (!feed) {
     log.error(
-      `[openrouter] rejected ${label} ${share.toFixed(3)} — ${rejection}`
+      `[openrouter] rejected ${label} ${share.toFixed(
+        3
+      )} — missing OracleFeedDef for ${feedId}`
     )
     return
   }
 
-  await insertOraclePrices(pg, feedId, [point])
+  const outcome = await pg.tx(async (tx) => {
+    await tx.one(advisoryLockQuery(`oracle-publish:${feedId}`))
+    const prev = await tx.oneOrNone<{
+      ts: string
+      price: number | string
+      source_ts: string | null
+    }>(
+      `select ts, price, source_ts from oracle_prices where feed_id = $1
+       order by ts desc limit 1`,
+      [feedId]
+    )
+    const prevSourceTs =
+      prev?.source_ts == null ? null : new Date(prev.source_ts).getTime()
+    const rejection =
+      prevSourceTs != null &&
+      Number.isFinite(prevSourceTs) &&
+      sourceTs < prevSourceTs
+        ? `dataset as_of ${new Date(
+            sourceTs
+          ).toISOString()} is older than the ` +
+          `as_of already published (${new Date(
+            prevSourceTs
+          ).toISOString()}); not relaying a regressed dataset`
+        : validateOraclePoint(
+            feed,
+            prev
+              ? { ts: new Date(prev.ts).getTime(), price: Number(prev.price) }
+              : null,
+            point
+          )
+    if (rejection) return { ok: false as const, rejection }
+    await insertOraclePrices(tx, feedId, [point])
+    return { ok: true as const }
+  })
+
+  if (!outcome.ok) {
+    log.error(
+      `[openrouter] rejected ${label} ${share.toFixed(3)} — ${
+        outcome.rejection
+      }`
+    )
+    return
+  }
+
   await applyOraclePointToLivePerps(pg, feedId, point)
   log(`[openrouter] inserted ${share.toFixed(3)}% ${label} ${detail}`)
 }

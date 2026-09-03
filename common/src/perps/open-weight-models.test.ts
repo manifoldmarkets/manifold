@@ -563,6 +563,9 @@ describe('source freshness', () => {
     expect(openRouterSourceLagDays('2026-09-02', now)).toBe(0)
     expect(openRouterSourceLagDays('2026-09-03', now)).toBe(-1)
     expect(openRouterSourceLagDays('nope', now)).toBeNull()
+    // Impossible calendar dates are invalid, not rolled forward.
+    expect(openRouterSourceLagDays('2026-02-31', now)).toBeNull()
+    expect(openRouterSourceLagDays('2026-13-01', now)).toBeNull()
   })
 
   it('accepts yesterday, a late publish, and the documented maximum', () => {
@@ -586,10 +589,18 @@ describe('source freshness', () => {
     expect(reason).toContain('stale')
   })
 
-  it('refuses an empty or future-dated payload', () => {
+  it('refuses an empty, impossible-dated, or future-dated payload', () => {
     expect(validateOpenRouterSourceFreshness({ rows: [], now })).toContain(
       'no dated rows'
     )
+    // '2026-09-31' sorts newest and does not exist; it must not be read as
+    // October 1st.
+    expect(
+      validateOpenRouterSourceFreshness({
+        rows: [...window('2026-09-01'), row('2026-09-31', OPEN, 1)],
+        now,
+      })
+    ).toContain('not a valid date')
     expect(
       validateOpenRouterSourceFreshness({ rows: window('2026-09-03'), now })
     ).toContain('after today')

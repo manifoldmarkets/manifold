@@ -928,6 +928,10 @@ export const openRouterSourceLagDays = (
   const newestMs = Date.parse(`${newestDate}T00:00:00Z`)
   const todayMs = Date.parse(`${utcDateString(nowMs)}T00:00:00Z`)
   if (!Number.isFinite(newestMs) || !Number.isFinite(todayMs)) return null
+  // Date.parse is lenient about impossible calendar dates: '2026-02-31'
+  // rolls forward to March 3 instead of failing. Round-trip so a provider
+  // typo is reported as invalid rather than measured against a different day.
+  if (utcDateString(newestMs) !== newestDate) return null
   return Math.round((todayMs - newestMs) / DAY_MS)
 }
 

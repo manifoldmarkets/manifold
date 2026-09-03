@@ -5,6 +5,7 @@ import { fetchFearGreedHistory } from 'shared/fear-greed'
 import { CRYPTO_FEAR_GREED_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import { log } from 'shared/utils'
+import { assertBackfillTarget } from './backfill-guard'
 import { runScript } from './run-script'
 
 // Backfill `crypto-fear-greed` from Alternative.me's full history
@@ -27,6 +28,7 @@ if (require.main === module)
   runScript(async ({ pg }) => {
     const feed = getOracleFeed(CRYPTO_FEAR_GREED_FEED_ID)
     if (!feed) throw new Error(`${CRYPTO_FEAR_GREED_FEED_ID} is not registered`)
+    await assertBackfillTarget(pg, CRYPTO_FEAR_GREED_FEED_ID)
 
     const history = await fetchFearGreedHistory()
     log(`fetched ${history.length} readings`)

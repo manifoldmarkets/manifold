@@ -13,6 +13,7 @@ import { log } from 'shared/utils'
 import { insertOraclePrices } from 'shared/oracle'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import { VOTEHUB_FEED_SPECS, fetchVoteHubAverage } from 'shared/votehub-feeds'
+import { assertBackfillTarget } from './backfill-guard'
 import { runScript } from './run-script'
 
 // Backfill a VoteHub average feed from VoteHub's published, time-weighted
@@ -52,6 +53,7 @@ if (require.main === module)
       )
     const feed = getOracleFeed(spec.feedId)
     if (!feed) throw new Error(`${spec.feedId} is not registered`)
+    await assertBackfillTarget(pg, spec.feedId)
 
     // Stamp each day's point from its own calendar date rather than adding a
     // day to a running instant: dayjs.tz(...).add(1,'day') adds 24 UTC hours,
