@@ -21,3 +21,39 @@ export const getSearchRequestDebounceMs = (
   currentQuery !== (lastCompletedQuery ?? initialQuery ?? '')
     ? TERM_CHANGE_DEBOUNCE_MS
     : OTHER_SEARCH_CHANGE_DEBOUNCE_MS
+
+/**
+ * New discovery request fields can be rejected by an old strict API worker,
+ * and a new worker deliberately rejects a badly skewed first-page anchor.
+ * Removing a semantic opt-in is safe on any later page because fallback only
+ * runs on page one. Removing a seen-market anchor is safe only on page one;
+ * doing that later could mix filtered and unfiltered offset spaces.
+ */
+export const shouldRetrySearchWithoutDiscoveryOptions = (
+  freshQuery: boolean,
+  seenMarketCutoffTime: number | undefined,
+  enableSemanticSearch: boolean | undefined,
+  errorCode: number | undefined
+) =>
+  errorCode === 400 &&
+  ((freshQuery && seenMarketCutoffTime !== undefined) ||
+    enableSemanticSearch === true)
+
+/** Keep one visibility-observer chain alive after params invalidate a page. */
+export const shouldRetryStaleSearchRequest = (
+  freshQuery: boolean,
+  requestParamsGeneration: number,
+  currentParamsGeneration: number
+) => !freshQuery && requestParamsGeneration !== currentParamsGeneration
+
+/** Decide whether an intersection observer should page, wait, or stop. */
+export const getLoadMoreRequestAction = (
+  freshRequestPending: boolean,
+  searchParamsChanged: boolean,
+  failedParamsGeneration: number | undefined,
+  currentParamsGeneration: number
+): 'load' | 'wait' | 'stop' => {
+  if (freshRequestPending) return 'wait'
+  if (!searchParamsChanged) return 'load'
+  return failedParamsGeneration === currentParamsGeneration ? 'stop' : 'wait'
+}

@@ -5,10 +5,16 @@ import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import clsx from 'clsx'
 import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
+import { APIError } from 'common/api/utils'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
 import { getPostSearchThreshold } from 'common/search-result-order'
-import { getSearchRequestDebounceMs } from 'common/search-request-coordination'
+import {
+  getLoadMoreRequestAction,
+  getSearchRequestDebounceMs,
+  shouldRetrySearchWithoutDiscoveryOptions,
+  shouldRetryStaleSearchRequest,
+} from 'common/search-request-coordination'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
 import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
@@ -979,6 +985,8 @@ export const useSearchResults = (props: {
     )
 
   const requestId = useRef(0)
+  const paramsGeneration = useRef(0)
+  const failedParamsGeneration = useRef<number>()
   const freshRequestAbortController = useRef<AbortController>()
   const initialQuery = useRef<string>()
   const completedInThisMount = useRef(false)
@@ -1006,14 +1014,17 @@ export const useSearchResults = (props: {
     async (freshQuery?: boolean, contractsOnly?: boolean) => {
       if (!isReady) return true
       // A visibility callback can be queued while the user changes filters.
-      // Retry it after the fresh page lands instead of paging the new params
-      // with an offset and anchor from the old result set.
-      if (
-        !freshQuery &&
-        (freshRequestAbortController.current !== undefined ||
-          searchParamsChanged(searchParams, lastSearchParams))
-      )
-        return true
+      // Wait for the fresh page instead of paging new params from the old
+      // offset. If that fresh request fails, stop the observer's timer loop.
+      if (!freshQuery) {
+        const action = getLoadMoreRequestAction(
+          freshRequestAbortController.current !== undefined,
+          searchParamsChanged(searchParams, lastSearchParams),
+          failedParamsGeneration.current,
+          paramsGeneration.current
+        )
+        if (action !== 'load') return action === 'wait'
+      }
       const {
         q: query,
         s: sort,
@@ -1050,11 +1061,21 @@ export const useSearchResults = (props: {
         // replace the controller after we know this invocation will request.
         if (freshQuery) freshRequestAbortController.current?.abort()
         const abortController = new AbortController()
-        if (freshQuery) freshRequestAbortController.current = abortController
-        const seenMarketCutoffTime = freshQuery
+        if (freshQuery) {
+          freshRequestAbortController.current = abortController
+          failedParamsGeneration.current = undefined
+        }
+        let seenMarketCutoffTime = freshQuery
           ? Date.now()
-          : state.seenMarketCutoffTime ?? Date.now()
+          : state.seenMarketCutoffTime
+        const requestParamsGeneration = paramsGeneration.current
         const id = ++requestId.current
+        const shouldRetryAfterStaleResult = () =>
+          shouldRetryStaleSearchRequest(
+            !!freshQuery,
+            requestParamsGeneration,
+            paramsGeneration.current
+          )
         const finishFreshRequest = () => {
           if (
             freshQuery &&
@@ -1085,7 +1106,7 @@ export const useSearchResults = (props: {
             })
             if (id !== requestId.current) {
               finishFreshRequest()
-              return false
+              return shouldRetryAfterStaleResult()
             }
             const shouldLoadMore = posts.length === postApiParams.limit
             setState({
@@ -1110,59 +1131,104 @@ export const useSearchResults = (props: {
           }
           const endpoint =
             topicSlug === 'recent' ? 'recent-markets' : 'search-markets-full'
+          const usesForYouRoute =
+            forYou === '1' &&
+            query.length === 0 &&
+            filter !== 'news' &&
+            topicSlug.length === 0 &&
+            gids.length === 0 &&
+            (sort === 'score' || sort === 'freshness-score') &&
+            (sweepState === '0' || sweepState === '2')
+          const marketApiParams: APIParams<'search-markets-full'> = {
+            term: query,
+            filter,
+            sort,
+            contractType,
+            ...(() => {
+              const useCursor =
+                !freshQuery && sort === 'newest' && !!state.contracts?.length
+              return useCursor
+                ? {
+                    offset: 0,
+                    beforeTime:
+                      state.contracts![state.contracts!.length - 1]
+                        ?.createdTime,
+                  }
+                : {
+                    offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+                  }
+            })(),
+            limit: CONTRACTS_PER_SEARCH_PAGE,
+            topicSlug: topicSlug !== '' ? topicSlug : undefined,
+            creatorId: additionalFilter?.creatorId,
+            isPrizeMarket: isPrizeMarketString,
+            forYou,
+            token:
+              sweepState === '2' ? 'ALL' : sweepState === '1' ? 'CASH' : 'MANA',
+            gids,
+            liquidity: liquidity === '' ? undefined : parseInt(liquidity),
+            hasBets,
+            enableSemanticSearch:
+              endpoint === 'search-markets-full' && query.trim().length > 0
+                ? true
+                : undefined,
+            seenMarketCutoffTime: usesForYouRoute
+              ? seenMarketCutoffTime
+              : undefined,
+          }
+          const getMarkets = async () => {
+            try {
+              return await api(endpoint, marketApiParams, {
+                signal: abortController.signal,
+              })
+            } catch (error) {
+              if (
+                !shouldRetrySearchWithoutDiscoveryOptions(
+                  !!freshQuery,
+                  marketApiParams.seenMarketCutoffTime,
+                  marketApiParams.enableSemanticSearch,
+                  error instanceof APIError ? error.code : undefined
+                )
+              ) {
+                throw error
+              }
+
+              // A new API rejects a badly skewed page-one anchor; an old
+              // strict worker rejects the new fields. Retrying without the
+              // semantic opt-in is safe on any page because its fallback only
+              // runs on page one. Anchor removal is guarded to page one above.
+              if (freshQuery) seenMarketCutoffTime = undefined
+              const contracts = await api(
+                endpoint,
+                {
+                  ...marketApiParams,
+                  seenMarketCutoffTime: freshQuery
+                    ? undefined
+                    : marketApiParams.seenMarketCutoffTime,
+                  enableSemanticSearch: undefined,
+                },
+                { signal: abortController.signal }
+              )
+              // Semantic fallback never runs after page one, so any unmarked
+              // rows from an old worker are known to be lexical there. Keep a
+              // fresh unmarked response conservative: an intermediate worker
+              // may have returned an unmarked semantic tail.
+              return freshQuery
+                ? contracts
+                : contracts.map((contract) =>
+                    'searchMatchType' in contract
+                      ? contract
+                      : { ...contract, searchMatchType: 'lexical' as const }
+                  )
+            }
+          }
           const searchPromises: Promise<
             | APIResponse<'recent-markets'>
             | APIResponse<'search-markets-full'>
             | APIResponse<'get-posts'>
             | APIResponse<'search-users'>
             | APIResponse<'search-groups'>
-          >[] = [
-            api(
-              endpoint,
-              {
-                term: query,
-                filter,
-                sort,
-                contractType,
-                ...(() => {
-                  const useCursor =
-                    !freshQuery &&
-                    sort === 'newest' &&
-                    !!state.contracts?.length
-                  return useCursor
-                    ? {
-                        offset: 0,
-                        beforeTime:
-                          state.contracts![state.contracts!.length - 1]
-                            ?.createdTime,
-                      }
-                    : {
-                        offset: freshQuery ? 0 : state.contracts?.length ?? 0,
-                      }
-                })(),
-                limit: CONTRACTS_PER_SEARCH_PAGE,
-                topicSlug: topicSlug !== '' ? topicSlug : undefined,
-                creatorId: additionalFilter?.creatorId,
-                isPrizeMarket: isPrizeMarketString,
-                forYou,
-                token:
-                  sweepState === '2'
-                    ? 'ALL'
-                    : sweepState === '1'
-                    ? 'CASH'
-                    : 'MANA',
-                gids,
-                liquidity: liquidity === '' ? undefined : parseInt(liquidity),
-                hasBets,
-                // Server only suppresses on For You; sending it elsewhere only
-                // risks strict-schema rejections from an older API worker
-                // during a rolling deploy.
-                seenMarketCutoffTime:
-                  forYou === '1' ? seenMarketCutoffTime : undefined,
-              },
-              { signal: abortController.signal }
-            ),
-          ]
+          >[] = [getMarkets()]
 
           if (includeUsersAndTopics) {
             searchPromises.push(
@@ -1259,21 +1325,31 @@ export const useSearchResults = (props: {
             return shouldLoadMore
           }
           finishFreshRequest()
+          return shouldRetryAfterStaleResult()
         } catch (error) {
           clearTimeout(timeoutId)
           finishFreshRequest()
           if (error instanceof Error && error.name === 'AbortError') {
             return false
           }
+          if (id !== requestId.current) return shouldRetryAfterStaleResult()
+          if (freshQuery) {
+            failedParamsGeneration.current = requestParamsGeneration
+          }
           console.error('Error fetching search results:', error)
-          if (id === requestId.current) setLoading(false)
+          setLoading(false)
         }
       }
       return false
     }
   )
 
-  const cancelFreshRequest = useEvent(() => {
+  const invalidateCurrentRequests = useEvent(() => {
+    // Load-more requests intentionally do not replace the fresh-request abort
+    // controller, but their result must still become stale as soon as params
+    // change. Advance the generation before checking for a controller.
+    paramsGeneration.current++
+    requestId.current++
     const controller = freshRequestAbortController.current
     if (!controller) return
 
@@ -1281,7 +1357,6 @@ export const useSearchResults = (props: {
     // cannot publish stale state. The debounced effect issues any replacement
     // required by the new params.
     freshRequestAbortController.current = undefined
-    requestId.current++
     controller.abort()
     setLoading(false)
   })
@@ -1290,8 +1365,8 @@ export const useSearchResults = (props: {
   useSafeLayoutEffect(() => {
     // Invalidate a superseded request immediately. Waiting for the next
     // debounced request would let the old response land during that delay.
-    cancelFreshRequest()
-  }, [serializedSearchParams, cancelFreshRequest])
+    invalidateCurrentRequests()
+  }, [serializedSearchParams, invalidateCurrentRequests])
 
   // The URL query reaches searchParams a render after isReady, so the query
   // the page mounted with is whatever the first debounced pass over ready

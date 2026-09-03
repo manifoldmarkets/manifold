@@ -85,13 +85,12 @@ const SEEN_CUTOFF_MAX_CLOCK_AHEAD_MS = 5 * MINUTE_MS
  * the exact case the grace period protects. Clamping it to now() would not
  * help: the clamp resolves to a fresh now() on every page until server time
  * catches up, which is the moving boundary described above. Instead
- * shouldSuppressStaleSeenMarkets refuses an anchor too far ahead of server
- * time, so a fast clock gets no suppression rather than a different set on
- * each page. That check is re-evaluated per request, so a clock ahead by
- * almost exactly the tolerance can see it flip from refused to accepted
- * mid-session and shift one page; that narrow case is accepted over hiding
- * fresh views for every fast clock. A clock running behind only ages the
- * window, which at worst means nothing is suppressed.
+ * shouldSuppressStaleSeenMarkets identifies an anchor too far ahead of server
+ * time. The API rejects that first request so the web client can retry without
+ * an anchor and keep suppression off for the whole result set; silently
+ * returning an unfiltered page would let the decision flip during pagination
+ * as server time catches up. A clock running behind only ages the window,
+ * which at worst means nothing is suppressed.
  */
 export const staleSeenMarketsSql = (
   userId: string,

@@ -18,6 +18,7 @@ import {
   getSearchContractSQL,
   getSemanticSearchContractSQL,
   SearchTypes,
+  shouldSuppressStaleSeenMarkets,
   sortFields,
 } from 'shared/supabase/search-contracts'
 import {
@@ -49,6 +50,7 @@ export const searchMarketsLite: APIHandler<'search-markets'> = async (
   // indistinguishable from real matches to API consumers doing exact-title
   // existence checks, and to the MCP server, which shares this handler.
   const contracts = await search(props, auth?.uid, {
+    markSearchMatches: false,
     allowSemanticFallback: false,
   })
   return contracts.map((c) => toLiteMarket(c, { includeLiteAnswers }))
@@ -59,7 +61,15 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   auth,
   req
 ) => {
+  if (!props.enableSemanticSearch) {
+    return await search(props, auth?.uid, {
+      markSearchMatches: true,
+      allowSemanticFallback: false,
+    })
+  }
+
   return await search(props, auth?.uid, {
+    markSearchMatches: true,
     allowSemanticFallback: true,
     semanticCallerKey: getSemanticCallerKey(auth?.uid, req),
   })
@@ -69,7 +79,10 @@ export const getRecentMarkets: APIHandler<'recent-markets'> = async (
   props,
   auth
 ) => {
-  return await search(props, auth.uid, { allowSemanticFallback: false })
+  return await search(props, auth.uid, {
+    markSearchMatches: false,
+    allowSemanticFallback: false,
+  })
 }
 
 const getSemanticCallerKey = (
@@ -83,8 +96,12 @@ const getSemanticCallerKey = (
 // The caller key only matters when the fallback can run, so tie the two
 // together rather than making every endpoint derive one.
 type SearchOptions =
-  | { allowSemanticFallback: false }
-  | { allowSemanticFallback: true; semanticCallerKey: string }
+  | { markSearchMatches: boolean; allowSemanticFallback: false }
+  | {
+      markSearchMatches: true
+      allowSemanticFallback: true
+      semanticCallerKey: string
+    }
 
 const search = async (
   props: z.infer<typeof searchProps>,
@@ -149,6 +166,22 @@ const search = async (
     isForYou,
     userId,
   })
+  // Silently changing from an unfiltered first page to a filtered later page
+  // would invalidate offset pagination once server time catches a fast client
+  // clock. Make the first request fail explicitly instead; the web client can
+  // then retry without an anchor and keep suppression disabled for that result
+  // set. This also gives new web code a safe fallback against an older strict
+  // API schema during a rolling deployment.
+  if (
+    searchRoute === 'for-you' &&
+    props.seenMarketCutoffTime !== undefined &&
+    !shouldSuppressStaleSeenMarkets(props.seenMarketCutoffTime)
+  ) {
+    throw new APIError(
+      400,
+      'seenMarketCutoffTime is too far ahead of server time'
+    )
+  }
   if (searchRoute === 'basic' || searchRoute === 'for-you') {
     // Enforce blocked users/contracts/topics in the query itself — the
     // client-side filter only patches holes in already-fetched pages.
@@ -250,6 +283,8 @@ const search = async (
       (c) => sortFields[sort].sortCallback(c),
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
+    if (!options.markSearchMatches) return lexicalResults
+
     const markedLexicalResults: FullMarketSearchResult[] = lexicalResults.map(
       (contract) => ({
         ...contract,

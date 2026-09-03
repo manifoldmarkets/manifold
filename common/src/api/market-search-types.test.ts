@@ -15,6 +15,15 @@ describe('searchProps', () => {
 
     expect(result.seenMarketCutoffTime).toBe(1_700_000_000_000)
   })
+
+  it('coerces the semantic-search capability flag', () => {
+    expect(searchProps.parse({ enableSemanticSearch: 'true' })).toMatchObject({
+      enableSemanticSearch: true,
+    })
+    expect(searchProps.parse({ enableSemanticSearch: 'false' })).toMatchObject({
+      enableSemanticSearch: false,
+    })
+  })
 })
 
 describe('getMarketSearchRoute', () => {

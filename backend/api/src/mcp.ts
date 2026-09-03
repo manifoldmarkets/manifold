@@ -27,7 +27,7 @@ import { getUser } from './get-user'
 import { searchMarketsLite } from './search-contracts'
 import { searchUsers } from './search-users'
 
-function getServer(httpRequest: Request): Server {
+function getServer(): Server {
   const server = new Server(
     {
       name: 'manifold-markets',
@@ -282,7 +282,7 @@ function getServer(httpRequest: Request): Server {
             const markets = (await searchMarketsLite(
               searchParams,
               undefined, // auth not required for this endpoint
-              httpRequest
+              {} as Request // minimal request object since it's not used
             )) as LiteMarket[]
 
             const marketsWithProbabilities = markets
@@ -429,7 +429,7 @@ function getServer(httpRequest: Request): Server {
 
 export const handleMcpRequest = async (req: Request, res: Response) => {
   try {
-    const server = getServer(req)
+    const server = getServer()
     const transport: StreamableHTTPServerTransport =
       new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,

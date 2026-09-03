@@ -109,6 +109,10 @@ export const searchProps = z
     liquidity: z.coerce.number().optional(),
     hasBets: z.union([z.literal('1'), z.literal('0')]).optional(),
     includeLiteAnswers: coerceBoolean.optional(),
+    // Capability flag for the internal full-search UI. Keeping semantic
+    // fallback opt-in prevents a new API worker from returning a semantic
+    // tail to an old web bundle that does not understand its ordering marker.
+    enableSemanticSearch: coerceBoolean.optional(),
   })
   .strict()
 
