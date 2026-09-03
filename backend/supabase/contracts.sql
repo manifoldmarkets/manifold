@@ -268,6 +268,21 @@ update of data on public.contracts for each row when (
       or (
         (old.data ->> 'poolShort'::text) is distinct from (new.data ->> 'poolShort'::text)
       )
+      or (
+        (old.data ->> 'oraclePrice'::text) is distinct from (new.data ->> 'oraclePrice'::text)
+      )
+      or (
+        (old.data ->> 'oraclePriceTime'::text) is distinct from (new.data ->> 'oraclePriceTime'::text)
+      )
+      or (
+        (old.data ->> 'oracleSourceTime'::text) is distinct from (new.data ->> 'oracleSourceTime'::text)
+      )
+      or (
+        (old.data ->> 'solvencyHaltTime'::text) is distinct from (new.data ->> 'solvencyHaltTime'::text)
+      )
+      or (
+        (old.data ->> 'solvencyHaltReason'::text) is distinct from (new.data ->> 'solvencyHaltReason'::text)
+      )
     )
   )
 )

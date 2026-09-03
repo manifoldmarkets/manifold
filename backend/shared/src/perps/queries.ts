@@ -305,7 +305,7 @@ export const mergeContractDataQuery = (
 
 export const selectShadowCheckpointQuery = (contractId: string) =>
   pgp.as.format(
-    `select contract_id, accounting_epoch, state, transitions, divergences, last_report
+    `select contract_id, accounting_epoch, state, transitions, divergences, last_report, updated_time
        from contract_perp_shadow_checkpoints where contract_id = $1`,
     [contractId]
   )
@@ -345,10 +345,18 @@ export const deleteShadowCheckpointQuery = (contractId: string) =>
     [contractId]
   )
 
+/**
+ * Latest-wins by the evaluation's own `at` timestamp, not by arrival order:
+ * a rejected attempt's row is written through a detached connection and may
+ * land after a newer evaluation from the transaction path.
+ */
 export const upsertRiskShadowQuery = (contractId: string, data: unknown) =>
   pgp.as.format(
     `insert into contract_perp_risk_shadow (contract_id, data, updated_time)
      values ($1, $2::jsonb, now())
-     on conflict (contract_id) do update set data = excluded.data, updated_time = now()`,
+     on conflict (contract_id) do update
+       set data = excluded.data, updated_time = now()
+       where coalesce((excluded.data->>'at')::numeric, 0)
+             >= coalesce((contract_perp_risk_shadow.data->>'at')::numeric, 0)`,
     [contractId, JSON.stringify(data)]
   )

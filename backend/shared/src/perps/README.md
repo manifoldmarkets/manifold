@@ -440,8 +440,18 @@ so no check ever admits more slack than a later check tolerates: the
 invariant can never accept a claim the payout path refuses, nor the reverse.
 A value above `b` by less than dust is snapped onto `b` in
 `getPerpPositionClaims`: one rounding ulp is never a contingent claim, so it
-can neither be settled at factor 0 nor fail a side-level check.
-`protected-basis.test.ts` pins all of this at M$5m and M$100k scale. Every
+can neither be settled at factor 0 nor fail a side-level check. Tolerance
+classifies dust; it never authorizes cash. Every payout equals the pool debit
+that funds it (`debitPool` returns what the pool actually gave up): a claim
+the pool cannot fully pay is trimmed by the dust the pool lacks — the
+canonically last claimant absorbs it in claim ADL and resolution — and a
+pool never goes below zero. Activation likewise trims a dust reserve
+shortfall from the canonically last row's `b` so `B >= Σb` holds exactly in
+the committed state, never merely within tolerance. The ledger-vs-pools
+escrow check can therefore never drift by tolerated slack, whatever scale a
+later book has. `protected-basis.test.ts` pins all of this at M$20m, M$5m and
+M$100k scale, with the escrow check asserted after every sequential close
+and every batch resolution. Every
 formula reduces to #4030 at `b = c`; every legacy contract mirrors `b = c` at
 the write boundary AND in the database guard.
 
@@ -499,7 +509,9 @@ have (`common/perps/accounting-shadow.ts`, persisted in
 `contract_perp_shadow_checkpoints`): seeded from the live state with `b = c`
 and advanced, under the same contract lock, by the protected counterpart of
 every committed transition — open/add/flip, close, oracle tick, funding,
-subsidy, resolution. After each step the checkpoint is compared with the
+subsidy, resolution, and a HALTED tick too, sampled against the unchanged
+live state, since a legacy transition that throws is exactly the case the
+protected rules may take cleanly. After each step the checkpoint is compared with the
 live state (pools, rows, both invariant sets, the protected vs legacy user
 payout on closes and the creator residual on resolution); the report is
 stored next to the checkpoint and logged as `[perps][accounting-shadow]`
@@ -528,14 +540,21 @@ enforcement boundary (`backend/scripts/sql/perp-accounting-guard-test.sql`
 proves it against the old-writer fixture). The contract row is guarded too
 (`perp_accounting_contract_guard()`): a mode/epoch change needs
 `perp.accounting_transition`, a strictly advancing epoch and an immutable
-`contract_perp_accounting_epochs` record, so a blind flip is impossible; and
-any change to `poolLong`/`poolShort` on a contract that is or becomes
+`contract_perp_accounting_epochs` record whose `previous_mode` is the mode
+being left and whose epoch is exactly the old epoch plus one, so a blind or
+skipping flip is impossible; and any change to a protected contract's
+FINANCIAL fields — `poolLong`/`poolShort`, `oraclePrice`, its timestamps,
+`solvencyHaltTime`/`solvencyHaltReason` — on a contract that is or becomes
 protected needs `perp.accounting_epoch` equal to the contract's epoch (the
-NEW epoch during activation). A contract-only pool patch — the scheduler's
-no-change fast path on an old binary committing a legacy cross-side transfer
-— is therefore refused as firmly as a position write. Activation presents
-the new epoch before the transition GUC and the contract patch. Price and
-halt patches that leave the pools alone are unaffected.
+NEW epoch during activation). A contract-only patch from an old binary —
+the scheduler's no-change fast path committing a legacy cross-side transfer,
+or a price-only write for a tick on which protected accounting would have
+settled a position (which would leave an unhalted, protected-invalid book
+that the version-aware scheduler then skips as a duplicate point) — is
+therefore refused as firmly as a position write. Perp rows are never
+re-keyed to another contract. Activation presents the new epoch before the
+transition GUC and the contract patch; the engine presents it at state load,
+so its own price, halt and pool patches pass.
 Never mix legacy and protected rows inside one contract: readers normalize
 by the contract's mode, and a protected row without `b` fails closed.
 
@@ -551,10 +570,14 @@ The contract patch carries `perpBasisDeficit` (Σ(c − b)) and
 Activation with the last-resort allocation writes one `basis-settlement`
 per reduced position (`trigger: 'activation'`, `cutoverMark`, epoch), so a
 migration-time reduction is as auditable as a settlement-time one. A reducing
-activation (last-resort allocation or activation ADL) executes only against
-the exact book the dry run printed: mark, pools and every row's `q, c, b` are
-digested into a fingerprint (`perpActivationFingerprint`) the live run must
-repeat, so a legacy trade at an identical mark aborts it.
+activation (last-resort allocation, activation ADL, any row left below `c`)
+— and any activation on a stale mark — executes only the exact PLAN the dry
+run printed: the book (mark, pools, every row's `q, c, b, Pe`), every plan
+input (top-ups, allocation policy, ADL approval) and every outcome (each
+row's `b` before and after, trims, final pools, ADL factors) are digested
+(`perpActivationPlanDigest`); the live run recomputes the plan under the lock
+and refuses to commit unless the digest matches, so a legacy trade at an
+identical mark, or a different top-up on the same book, aborts it.
 Basis settlements produce a receipt and a persistent explainer, not a
 notification — product must approve any notification treatment separately.
 

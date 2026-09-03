@@ -108,7 +108,10 @@ export type PerpShadowReport = {
    * supplied.
    */
   payoutDifference: number | null
-  /** Any pool/row difference beyond dust, a missing row, or an error. */
+  /**
+   * Any pool/row difference beyond dust, a missing row, an error, or a
+   * payout/residual the protected rules would have paid differently.
+   */
   divergent: boolean
 }
 
@@ -358,7 +361,11 @@ export const advancePerpShadowCheckpoint = (
     positionDifferences.length > 0 ||
     Math.abs(poolDifference.long) >
       perpDustTolerance(next.pool.L, live.pool.L) ||
-    Math.abs(poolDifference.short) > perpDustTolerance(next.pool.S, live.pool.S)
+    Math.abs(poolDifference.short) >
+      perpDustTolerance(next.pool.S, live.pool.S) ||
+    (payoutDifference !== null &&
+      Math.abs(payoutDifference) >
+        perpDustTolerance(payout ?? 0, livePayout ?? 0))
 
   const report: PerpShadowReport = {
     kind: input.kind,

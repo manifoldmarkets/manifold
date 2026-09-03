@@ -34,6 +34,7 @@ import {
   classifyPerpMigration,
   perpActivationFingerprint,
   PerpActivationPlan,
+  perpActivationPlanDigest,
   PerpActivationPlanOptions,
   perpActivationReductions,
   PerpMigrationReport,
@@ -422,13 +423,14 @@ export type PerpProtectedActivationOptions = PerpActivationPlanOptions & {
   allowStaleMark?: boolean
   /**
    * Required whenever the activation can reduce anyone (the last-resort
-   * allocation, an activation ADL): the digest of mark, pools and positions
-   * the dry run printed. Those plans depend on the whole book, not only the
-   * mark, so they may only execute against exactly the state that was
-   * reviewed; any change — a legacy trade at an identical mark included —
-   * aborts.
+   * allocation, an activation ADL, any b < c) and whenever `allowStaleMark`
+   * is set: the PLAN digest the dry run printed (book fingerprint, every
+   * plan input and every outcome). The live run recomputes the plan under
+   * the lock and refuses to commit unless the digest is identical, so an
+   * approval never authorizes a different haircut — a different top-up on
+   * the same book, or a legacy trade at an identical mark, aborts.
    */
-  confirmedFingerprint?: string
+  confirmedPlan?: string
 }
 
 export type PerpProtectedActivationDryRun = {
@@ -437,8 +439,10 @@ export type PerpProtectedActivationDryRun = {
   mark: number
   markTime: number | undefined
   markFresh: boolean
-  /** Pass back as `confirmedFingerprint`; see PerpProtectedActivationOptions. */
+  /** Digest of the book alone (mark, pools, rows); informational. */
   fingerprint: string
+  /** Pass back as `confirmedPlan`; see PerpProtectedActivationOptions. */
+  planDigest: string
   accounting: PerpAccounting
   plan: PerpActivationPlan
   /** Every row the plan would leave with b < c, with the exact numbers. */
@@ -482,6 +486,12 @@ export const dryRunPerpAccountingProtected = async (
         Date.now()
       ).status === 'fresh',
     fingerprint: perpActivationFingerprint(state, contract.oraclePrice),
+    planDigest: perpActivationPlanDigest(
+      state,
+      contract.oraclePrice,
+      options,
+      plan
+    ),
     accounting,
     plan,
     reductions: perpActivationReductions(plan).map((a) => ({
@@ -532,29 +542,6 @@ export const activatePerpAccountingProtected = async (
     const price = contract.oraclePrice
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
-    // A reducing activation (last-resort allocation, activation ADL) is not
-    // user-conservative and depends on the whole book, so it may only execute
-    // against exactly the state a reviewer saw in the dry run. Mark, pools
-    // and positions are read under the lock and digested; a tick, a legacy
-    // trade, a settlement or a subsidy in between aborts rather than
-    // silently reallocating.
-    const fingerprint = perpActivationFingerprint(state, price)
-    if (
-      options.allocation === 'last-resort-snapshot' ||
-      options.allowActivationAdl
-    ) {
-      if (options.confirmedFingerprint === undefined)
-        throw new APIError(
-          400,
-          'A reducing activation requires confirmedFingerprint: the digest reported by the dry run'
-        )
-      if (options.confirmedFingerprint !== fingerprint)
-        throw new APIError(
-          409,
-          `Book changed since the dry run: reviewed ${options.confirmedFingerprint}, contract is now ${fingerprint} (mark ${price}); re-run the dry run`
-        )
-    }
-
     const plan = planPerpProtectedActivation(state, price, options)
     if (!plan.ok)
       throw new APIError(
@@ -563,6 +550,35 @@ export const activatePerpAccountingProtected = async (
           contract.slug
         }: ${plan.blockers.join('; ')}`
       )
+
+    // A reducing activation (last-resort allocation, activation ADL, any
+    // row left with b < c) is not user-conservative, and a stale-mark
+    // activation trusts a reviewer rather than the clock. Either may only
+    // execute the exact PLAN a reviewer saw in the dry run: the plan is
+    // recomputed under the lock from the locked book and the caller's
+    // options, and its digest — inputs and outcomes alike — must match. A
+    // tick, a legacy trade, a settlement, a subsidy, or a different top-up
+    // or policy in between aborts rather than silently reallocating.
+    const fingerprint = perpActivationFingerprint(state, price)
+    const planDigest = perpActivationPlanDigest(state, price, options, plan)
+    const reducing =
+      options.allocation === 'last-resort-snapshot' ||
+      plan.activationAdl !== null ||
+      plan.reducedAnyBasis
+    if (reducing || options.allowStaleMark) {
+      if (options.confirmedPlan === undefined)
+        throw new APIError(
+          400,
+          `${
+            reducing ? 'A reducing activation' : 'Activating on a stale mark'
+          } requires confirmedPlan: the plan digest reported by the dry run`
+        )
+      if (options.confirmedPlan !== planDigest)
+        throw new APIError(
+          409,
+          `Plan changed since the dry run: reviewed ${options.confirmedPlan}, the locked book now plans ${planDigest} (mark ${price}, book ${fingerprint}); re-run the dry run`
+        )
+    }
 
     // Top-up: real mana from the funder, so the escrow invariant stays checkable.
     const topUps = (['long', 'short'] as const).filter(
@@ -626,8 +642,10 @@ export const activatePerpAccountingProtected = async (
         data: {
           actorId,
           allocation: options.allocation,
-          confirmedFingerprint: options.confirmedFingerprint ?? null,
+          confirmedPlan: options.confirmedPlan ?? null,
+          planDigest,
           fingerprint,
+          trims: plan.trims,
           activationAdl: plan.activationAdl
             ? {
                 adlFactorLong: plan.activationAdl.adlFactorLong,
@@ -669,8 +687,10 @@ export const activatePerpAccountingProtected = async (
           actorId,
           topUp: options.topUp,
           allocation: options.allocation,
-          confirmedFingerprint: options.confirmedFingerprint ?? null,
+          confirmedPlan: options.confirmedPlan ?? null,
+          planDigest,
           fingerprint,
+          trims: plan.trims,
           reducedAnyBasis: plan.reducedAnyBasis,
         }
       ),

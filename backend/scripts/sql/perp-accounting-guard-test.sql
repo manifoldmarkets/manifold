@@ -18,21 +18,25 @@ create temp table guard_test_log (line text);
 -- ---------------------------------------------------------------------
 insert into contracts (id, data)
 values
-  ('guardtest-legacy', '{"mechanism":"perp","outcomeType":"PERP"}'::jsonb),
-  ('guardtest-protected', '{"mechanism":"perp","outcomeType":"PERP"}'::jsonb);
+  ('guardtest-legacy', '{"mechanism":"perp","outcomeType":"PERP","uniqueBettorCount":0}'::jsonb),
+  ('guardtest-protected', '{"mechanism":"perp","outcomeType":"PERP","uniqueBettorCount":0}'::jsonb);
 
--- The protected fixture must be activated through the guarded path: an
--- immutable epoch record first, then the contract flip with the transition
--- GUC set. Without the GUC the flip is refused.
+-- The protected fixture must be activated through the guarded path: one
+-- immutable epoch record per step (legacy -> shadow -> protected), each
+-- advancing the epoch by exactly one and naming the mode it leaves, then
+-- the contract flips with the transition GUC set. Without the GUC a flip is
+-- refused; so is a flip that skips an epoch.
 insert into contract_perp_accounting_epochs
   (contract_id, epoch, accounting_mode, previous_mode, pool_long, pool_short, position_snapshot)
-values ('guardtest-protected', 2, 'protected', 'shadow', 0, 0, '[]'::jsonb);
+values
+  ('guardtest-protected', 1, 'shadow', 'legacy', 0, 0, '[]'::jsonb),
+  ('guardtest-protected', 2, 'protected', 'shadow', 0, 0, '[]'::jsonb);
 
 do $$
 begin
   begin
     update contracts
-    set data = data || '{"perpAccountingMode":"protected","perpAccountingEpoch":2}'::jsonb
+    set data = data || '{"perpAccountingMode":"shadow","perpAccountingEpoch":1}'::jsonb
     where id = 'guardtest-protected';
     raise exception 'ASSERTION FAILED: blind accounting-mode flip was accepted';
   exception when others then
@@ -40,13 +44,25 @@ begin
       raise;
     end if;
   end;
+  perform set_config('perp.accounting_transition', 'true', true);
+  begin
+    update contracts
+    set data = data || '{"perpAccountingMode":"protected","perpAccountingEpoch":2}'::jsonb
+    where id = 'guardtest-protected';
+    raise exception 'ASSERTION FAILED: an epoch-skipping flip was accepted';
+  exception when others then
+    if sqlerrm not like 'PERP accounting guard: contract % accounting epoch must advance by exactly one%' then
+      raise;
+    end if;
+  end;
+  update contracts
+  set data = data || '{"perpAccountingMode":"shadow","perpAccountingEpoch":1}'::jsonb
+  where id = 'guardtest-protected';
+  update contracts
+  set data = data || '{"perpAccountingMode":"protected","perpAccountingEpoch":2}'::jsonb
+  where id = 'guardtest-protected';
+  perform set_config('perp.accounting_transition', '', true);
 end $$;
-
-select set_config('perp.accounting_transition', 'true', true);
-update contracts
-set data = data || '{"perpAccountingMode":"protected","perpAccountingEpoch":2}'::jsonb
-where id = 'guardtest-protected';
-select set_config('perp.accounting_transition', '', true);
 
 -- ---------------------------------------------------------------------
 -- 1. legacy contract: an old writer that never heard of reserve_basis
@@ -216,32 +232,49 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- 5. contract-level pool changes on a protected contract (review P1-1):
---    the old scheduler's price-only fast path can carry a legacy cross-side
---    transfer. Pools may change only with the epoch presented; price-only
---    and halt patches, and legacy contracts, are untouched.
+-- 5. contract-level financial fields on a protected contract (review P1-1
+--    and its price-only variant): the old scheduler's fast path can carry a
+--    legacy cross-side transfer, or commit a mark on which protected
+--    accounting would have settled a position. Pools, the mark and the
+--    halt fields may change only with the epoch presented; non-financial
+--    fields and legacy contracts are untouched.
 -- ---------------------------------------------------------------------
--- fixture pools, written by the version-aware path (epoch presented)
+-- fixture pools and mark, written by the version-aware path (epoch presented)
 select set_config('perp.accounting_epoch', '2', true);
-update contracts set data = data || '{"poolLong":50,"poolShort":100}'::jsonb where id = 'guardtest-protected';
+update contracts set data = data || '{"poolLong":50,"poolShort":100,"oraclePrice":100}'::jsonb where id = 'guardtest-protected';
 select set_config('perp.accounting_epoch', '', true);
 do $$
-declare v_l numeric; v_s numeric;
+declare v_l numeric; v_s numeric; v_p numeric;
 begin
   begin
-    -- exactly the stale scheduler's write: pools move, nothing else does
+    -- exactly the stale scheduler's write: pools move with the mark
     update contracts set data = data || '{"poolLong":80,"poolShort":70,"oraclePrice":101}'::jsonb
      where id = 'guardtest-protected';
     raise exception 'ASSERTION FAILED: old writer moved protected pools through a contract-only patch';
   exception when others then
-    if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2 but this transaction presented epoch none; refusing to change its pools%' then raise; end if;
+    if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2 but this transaction presented epoch none; refusing to change its pools, mark or halt%' then raise; end if;
   end;
-  select (data->>'poolLong')::numeric, (data->>'poolShort')::numeric into v_l, v_s from contracts where id = 'guardtest-protected';
-  if v_l <> 50 or v_s <> 100 then
-    raise exception 'ASSERTION FAILED: protected pools changed (%/%)', v_l, v_s;
+  begin
+    -- the price-only fast path: nothing but the mark
+    update contracts set data = data || '{"oraclePrice":101,"oraclePriceTime":1}'::jsonb where id = 'guardtest-protected';
+    raise exception 'ASSERTION FAILED: old writer committed a price-only tick on a protected contract';
+  exception when others then
+    if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2%' then raise; end if;
+  end;
+  begin
+    -- the halt patch
+    update contracts set data = data || '{"solvencyHaltTime":1,"solvencyHaltReason":"x"}'::jsonb where id = 'guardtest-protected';
+    raise exception 'ASSERTION FAILED: old writer halted a protected contract';
+  exception when others then
+    if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2%' then raise; end if;
+  end;
+  select (data->>'poolLong')::numeric, (data->>'poolShort')::numeric, (data->>'oraclePrice')::numeric
+    into v_l, v_s, v_p from contracts where id = 'guardtest-protected';
+  if v_l <> 50 or v_s <> 100 or v_p <> 100 then
+    raise exception 'ASSERTION FAILED: protected financial fields changed (%/%/%)', v_l, v_s, v_p;
   end if;
-  -- price-only and halt patches are allowed (they move no mana)
-  update contracts set data = data || '{"oraclePrice":101,"solvencyHaltTime":1,"solvencyHaltReason":"x"}'::jsonb where id = 'guardtest-protected';
+  -- non-financial fields are not guarded
+  update contracts set data = data || '{"perpGuardTestNote":"x"}'::jsonb where id = 'guardtest-protected';
   -- a stale epoch is refused too
   perform set_config('perp.accounting_epoch', '1', true);
   begin
@@ -250,23 +283,26 @@ begin
   exception when others then
     if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2 but this transaction presented epoch 1%' then raise; end if;
   end;
-  -- the version-aware writer presents the epoch and may move pools
+  -- the version-aware writer presents the epoch and may move pools, mark and halt
   perform set_config('perp.accounting_epoch', '2', true);
-  update contracts set data = data || '{"poolLong":80,"poolShort":70}'::jsonb where id = 'guardtest-protected';
-  select (data->>'poolLong')::numeric, (data->>'poolShort')::numeric into v_l, v_s from contracts where id = 'guardtest-protected';
-  if v_l <> 80 or v_s <> 70 then
-    raise exception 'ASSERTION FAILED: presented writer could not move protected pools';
+  update contracts set data = data || '{"poolLong":80,"poolShort":70,"oraclePrice":101,"oraclePriceTime":1,"solvencyHaltTime":1,"solvencyHaltReason":"x"}'::jsonb
+   where id = 'guardtest-protected';
+  update contracts set data = data || '{"solvencyHaltTime":null,"solvencyHaltReason":null}'::jsonb where id = 'guardtest-protected';
+  select (data->>'poolLong')::numeric, (data->>'poolShort')::numeric, (data->>'oraclePrice')::numeric
+    into v_l, v_s, v_p from contracts where id = 'guardtest-protected';
+  if v_l <> 80 or v_s <> 70 or v_p <> 101 then
+    raise exception 'ASSERTION FAILED: presented writer could not move protected financial fields';
   end if;
   perform set_config('perp.accounting_epoch', '', true);
   -- legacy contracts are not affected
-  update contracts set data = data || '{"poolLong":80,"poolShort":70}'::jsonb where id = 'guardtest-legacy';
+  update contracts set data = data || '{"poolLong":80,"poolShort":70,"oraclePrice":101,"solvencyHaltTime":1}'::jsonb where id = 'guardtest-legacy';
 end $$;
 
 -- ---------------------------------------------------------------------
 -- 6. activation ordering: the flip that makes a contract protected may carry
 --    a top-up in the same patch only if the NEW epoch was presented first.
 -- ---------------------------------------------------------------------
-insert into contracts (id, data) values ('guardtest-activating', '{"mechanism":"perp","outcomeType":"PERP","poolLong":10,"poolShort":10}'::jsonb);
+insert into contracts (id, data) values ('guardtest-activating', '{"mechanism":"perp","outcomeType":"PERP","uniqueBettorCount":0,"poolLong":10,"poolShort":10}'::jsonb);
 insert into contract_perp_accounting_epochs
   (contract_id, epoch, accounting_mode, previous_mode, pool_long, pool_short, position_snapshot)
 values ('guardtest-activating', 1, 'protected', 'legacy', 10, 10, '[]'::jsonb);
@@ -295,6 +331,37 @@ end $$;
 insert into contract_perp_shadow_checkpoints (contract_id, accounting_epoch, state)
 values ('guardtest-legacy', 0, '{"pool":{"L":1,"S":1},"positions":[]}'::jsonb);
 insert into contract_perp_risk_shadow (contract_id, data) values ('guardtest-protected', '{}'::jsonb);
+
+-- ---------------------------------------------------------------------
+-- 8. hardening: a transition record must name the mode it leaves, and perp
+--    rows are never re-keyed to another contract
+-- ---------------------------------------------------------------------
+insert into contracts (id, data) values ('guardtest-hardening', '{"mechanism":"perp","outcomeType":"PERP","uniqueBettorCount":0}'::jsonb);
+insert into contract_perp_accounting_epochs
+  (contract_id, epoch, accounting_mode, previous_mode, pool_long, pool_short, position_snapshot)
+values ('guardtest-hardening', 1, 'shadow', 'protected', 0, 0, '[]'::jsonb);
+do $$
+begin
+  perform set_config('perp.accounting_transition', 'true', true);
+  begin
+    update contracts set data = data || '{"perpAccountingMode":"shadow","perpAccountingEpoch":1}'::jsonb where id = 'guardtest-hardening';
+    raise exception 'ASSERTION FAILED: a record naming the wrong previous mode authorized a flip';
+  exception when others then
+    if sqlerrm not like 'PERP accounting guard: contract guardtest-hardening epoch 1 has no immutable activation record for legacy -> shadow%' then raise; end if;
+  end;
+  perform set_config('perp.accounting_transition', '', true);
+  if not exists (select 1 from contract_perp_positions where contract_id = 'guardtest-protected') then
+    raise exception 'ASSERTION FAILED: the protected position fixture is missing';
+  end if;
+  perform set_config('perp.accounting_epoch', '2', true);
+  begin
+    update contract_perp_positions set contract_id = 'guardtest-legacy' where contract_id = 'guardtest-protected';
+    raise exception 'ASSERTION FAILED: a protected position was re-keyed to another contract';
+  exception when others then
+    if sqlerrm not like 'PERP accounting guard: contract_perp_positions rows are never re-keyed%' then raise; end if;
+  end;
+  perform set_config('perp.accounting_epoch', '', true);
+end $$;
 
 select 'perp accounting guard test: PASS' as result;
 

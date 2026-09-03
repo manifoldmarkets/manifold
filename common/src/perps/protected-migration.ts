@@ -216,15 +216,24 @@ export type PerpActivationPositionRecord = {
   reserveBasisAfter: number
 }
 
+export type PerpActivationTrim = {
+  userId: string
+  direction: PerpDirection
+  /** Dust removed from this row's b so its pool holds every reserve it promises. */
+  amount: number
+}
+
 export type PerpActivationPlan = {
   ok: boolean
   blockers: string[]
   report: PerpMigrationReport
-  /** State after top-ups and b allocation, before any activation ADL. */
+  /** State after top-ups, b allocation and the dust trim, before any activation ADL. */
   backfilledState: PerpState
   allocations: PerpActivationPositionRecord[]
-  /** True when some row received b < c. */
+  /** True when some row received b < c (beyond dust). */
   reducedAnyBasis: boolean
+  /** Dust trims applied so that B >= Σb holds exactly, not within tolerance. */
+  trims: PerpActivationTrim[]
   /** Null when the backfilled state already satisfies every invariant. */
   activationAdl: PerpProtectedAdlResult | null
   finalState: PerpState
@@ -291,16 +300,50 @@ export const planPerpProtectedActivation = (
     }
   }
 
-  const backfilled: PerpState = {
-    pool: withTopUp.pool,
-    positions: positions.map((p) =>
-      p.size <= 0
-        ? { ...p, reserveBasis: 0 }
-        : p.reserveBasis === undefined
-        ? { ...p, reserveBasis: p.costBasis }
-        : p
-    ),
+  const untrimmed: PerpPosition[] = positions.map((p) =>
+    p.size <= 0
+      ? { ...p, reserveBasis: 0 }
+      : p.reserveBasis === undefined
+      ? { ...p, reserveBasis: p.costBasis }
+      : p
+  )
+  // Committed state must be cash-backed EXACTLY: B >= Σb in real arithmetic,
+  // not within dust. The classifier admits B >= C − dust and the last-resort
+  // allocation lands Σb on B within rounding, so a dust shortfall is
+  // possible here; it is trimmed from the canonically last row's b so the
+  // pool holds every reserve it promises (a claim the pool cannot pay is
+  // not a reserve). A larger shortfall is a blocker.
+  const trims: PerpActivationTrim[] = []
+  const trimmed = untrimmed.map((p) => ({ ...p }))
+  for (const side of ['long', 'short'] as const) {
+    const pool = side === 'long' ? withTopUp.pool.L : withTopUp.pool.S
+    const rows = canonicalPerpPositions(trimmed).filter(
+      (p) => p.direction === side && p.size > 0
+    )
+    const reserved = rows.reduce((sum, p) => sum + (p.reserveBasis ?? 0), 0)
+    const costBasis = rows.reduce((sum, p) => sum + p.costBasis, 0)
+    let shortfall = reserved - pool
+    if (!(shortfall > 0)) continue
+    if (shortfall > perpDustTolerance(pool, reserved, costBasis)) {
+      blockers.push(
+        `${side} pool ${pool} is below its protected reserves ${reserved} after backfill`
+      )
+      continue
+    }
+    for (let i = rows.length - 1; i >= 0 && shortfall > 0; i--) {
+      const row = rows[i]
+      const by = Math.min(row.reserveBasis ?? 0, shortfall)
+      if (by <= 0) continue
+      row.reserveBasis = (row.reserveBasis ?? 0) - by
+      shortfall -= by
+      trims.push({ userId: row.userId, direction: row.direction, amount: by })
+    }
+    if (shortfall > 0)
+      blockers.push(
+        `${side} reserve shortfall ${shortfall} could not be trimmed`
+      )
   }
+  const backfilled: PerpState = { pool: withTopUp.pool, positions: trimmed }
   for (const p of backfilled.positions)
     allocations.push({
       userId: p.userId,
@@ -351,6 +394,7 @@ export const planPerpProtectedActivation = (
     backfilledState: backfilled,
     allocations,
     reducedAnyBasis,
+    trims,
     activationAdl,
     finalState,
     invariantErrors,
@@ -476,8 +520,63 @@ export const perpActivationFingerprint = (state: PerpState, price: number) => {
   const rows = canonicalPerpPositions(
     state.positions.filter((p) => p.size > 0)
   ).map((p) =>
-    [p.userId, p.direction, p.size, p.costBasis, getReserveBasis(p)].join(':')
+    [
+      p.userId,
+      p.direction,
+      p.size,
+      p.costBasis,
+      getReserveBasis(p),
+      p.entryPrice,
+    ].join(':')
   )
   const text = [price, state.pool.L, state.pool.S, ...rows].join('|')
+  return fnv1a32(text, 0x811c9dc5) + fnv1a32(text, 0x9747b28c)
+}
+
+/**
+ * Digest of the whole reviewed PLAN, not only the book it was computed on:
+ * the book fingerprint, every plan input (top-ups, allocation policy,
+ * whether an activation ADL is approved) and every outcome (each row's b
+ * before/after, trims, final pools, ADL factors, blockers). The dry run
+ * prints it; the live run recomputes the plan under the lock and refuses to
+ * commit unless the digest is identical, so an approval can never authorize
+ * a materially different haircut — a different top-up on the same book
+ * included.
+ */
+export const perpActivationPlanDigest = (
+  state: PerpState,
+  price: number,
+  options: PerpActivationPlanOptions,
+  plan: PerpActivationPlan
+) => {
+  const allocations = plan.allocations
+    .slice()
+    .sort((a, b) =>
+      `${a.userId}:${a.direction}` < `${b.userId}:${b.direction}` ? -1 : 1
+    )
+    .map((a) =>
+      [
+        a.userId,
+        a.direction,
+        a.costBasis,
+        a.reserveBasisBefore,
+        a.reserveBasisAfter,
+      ].join(':')
+    )
+  const text = [
+    perpActivationFingerprint(state, price),
+    `topUp:${options.topUp.long}:${options.topUp.short}`,
+    `allocation:${options.allocation}`,
+    `allowAdl:${options.allowActivationAdl}`,
+    `ok:${plan.ok}`,
+    `reduced:${plan.reducedAnyBasis}`,
+    `pools:${plan.finalState.pool.L}:${plan.finalState.pool.S}`,
+    plan.activationAdl
+      ? `adl:${plan.activationAdl.adlFactorLong}:${plan.activationAdl.adlFactorShort}:${plan.activationAdl.settled.length}:${plan.activationAdl.adjusted.length}`
+      : 'adl:none',
+    ...allocations,
+    ...plan.trims.map((t) => `trim:${t.userId}:${t.direction}:${t.amount}`),
+    ...plan.blockers.map((b) => `blocker:${b}`),
+  ].join('|')
   return fnv1a32(text, 0x811c9dc5) + fnv1a32(text, 0x9747b28c)
 }

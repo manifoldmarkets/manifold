@@ -2545,7 +2545,8 @@ export const runOracleUpdate = async (
             ? error.message
             : String(error)
         // The halt patch touches only contract data — no position, event or
-        // ledger row — so it is legal for every writer under the guard.
+        // ledger row. On a protected contract the guard requires the epoch
+        // for price and halt changes too; loadStateForUpdate presented it.
         await pgTrans.one(
           mergeContractDataQuery(contractId, {
             oraclePrice: newPrice,
@@ -2557,6 +2558,29 @@ export const runOracleUpdate = async (
             solvencyHaltTime: contract.solvencyHaltTime ?? appliedTime,
             solvencyHaltReason: reason,
           })
+        )
+        // Both shadows sample the halted tick too, against the UNCHANGED
+        // live financial state: a legacy transition that throws is exactly
+        // the case the protected counterpart may take cleanly (the
+        // five-shorts recovery tick claim-ADLs the long instead of wedging),
+        // and a later price cannot reconstruct that path-dependent step.
+        // Diagnostics only, savepoint-isolated.
+        await riskPolicyShadowForTransition(
+          pgTrans,
+          contract,
+          accounting,
+          state,
+          newPrice,
+          'oracle'
+        )
+        await recordPerpAccountingShadow(
+          pgTrans,
+          contract,
+          accounting,
+          { kind: 'oracle', price: newPrice },
+          state,
+          state,
+          newPrice
         )
         return {
           liquidated: [],

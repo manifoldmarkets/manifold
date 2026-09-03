@@ -11,6 +11,7 @@ import {
   processLiquidations,
 } from './amm'
 import { PerpDirection, PerpPosition } from './position'
+import { isPerpEscrowBalanced } from './escrow'
 import {
   applyPerpProtectedClaimAdl,
   applyPerpProtectedFunding,
@@ -1317,8 +1318,11 @@ describe('one affordability predicate for invariant, ADL, payment and debit', ()
       { userId: 'a', direction: 'long' },
       100
     )
-    expect(close.payout).toBeCloseTo(5 * M, 6)
-    expect(close.contingentPayout).toBeCloseTo(5 * M, 6)
+    // The user is paid exactly what the pool holds — the 5e-7 of dust the
+    // invariant tolerated is trimmed from the payout, never minted — and the
+    // pool lands on exactly 0.
+    expect(close.payout).toBe(4_999_999.9999995)
+    expect(close.contingentPayout).toBe(4_999_999.9999995)
     expect(close.state.pool.S).toBe(0)
     expect(close.state.positions).toHaveLength(0)
     // The same is true through resolution and through a fractional close.
@@ -1782,5 +1786,151 @@ describe('tolerance is scale-independent where residues outlive the state that m
       100
     )
     expect(full).toEqual(legacy)
+  })
+})
+
+describe('payouts equal pool debits: tolerance classifies dust and never authorizes cash (review round 4)', () => {
+  const balanced = (ledger: number, state: PerpState) =>
+    isPerpEscrowBalanced({
+      ledgerBalance: ledger,
+      poolLong: state.pool.L,
+      poolShort: state.pool.S,
+    })
+
+  it('an exactly backed M$20m book stays cash-exact through a dust claim, the small close and the whale close', () => {
+    // A whale long slightly underwater and a M$1 long, pools exactly Σb
+    // (H = 0), no shorts. The tick lifts the small row 1.05e-6 above its b:
+    // above the row's own dust, below the side's, so claim ADL leaves it.
+    // Closing it must not pay that dust out of a short pool that holds 0,
+    // and closing the whale then shrinks the escrow scale to ~M$19 where a
+    // minted 1.05e-6 would have failed the ledger check.
+    const price = 100.000105
+    const state: PerpState = {
+      pool: { L: 2e7 + 1, S: 0 },
+      positions: [
+        pos({
+          userId: 'whale',
+          direction: 'long',
+          size: 2e7,
+          costBasis: 2e7,
+          entryPrice: 100.0002,
+        }),
+        pos({
+          userId: 'small',
+          direction: 'long',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    let ledger = state.pool.L + state.pool.S
+    expect(() => assertPerpProtectedState(state, price)).not.toThrow()
+    const ticked = applyPerpProtectedOracleTransition(state, price)
+    expect(ticked.adlFactorLong).toBe(1)
+    expect(
+      getPerpPositionClaims(ticked.state.positions[1], price).contingent
+    ).toBeGreaterThan(0)
+    expect(balanced(ledger, ticked.state)).toBe(true)
+
+    const small = closePerpProtectedPosition(
+      ticked.state,
+      { userId: 'small', direction: 'long' },
+      price
+    )
+    ledger -= small.payout
+    expect(small.state.pool.S).toBe(0)
+    expect(small.contingentPayout).toBe(0)
+    expect(small.payout).toBe(small.ownPayout)
+    expect(small.payout).toBeLessThanOrEqual(1 + 1.05e-6)
+    expect(balanced(ledger, small.state)).toBe(true)
+    expect(() => assertPerpProtectedState(small.state, price)).not.toThrow()
+
+    const whale = closePerpProtectedPosition(
+      small.state,
+      { userId: 'whale', direction: 'long' },
+      price
+    )
+    ledger -= whale.payout
+    expect(whale.state.pool.L).toBeLessThan(25)
+    expect(whale.state.pool.L).toBeGreaterThanOrEqual(0)
+    expect(balanced(ledger, whale.state)).toBe(true)
+    expect(
+      Math.abs(ledger - whale.state.pool.L - whale.state.pool.S)
+    ).toBeLessThan(1e-8)
+  })
+
+  it('a flat M$1 book funded 7.5e-7 short per side resolves without paying more than the pools hold', () => {
+    const state: PerpState = {
+      pool: { L: 0.99999925, S: 0.99999925 },
+      positions: [
+        pos({
+          userId: 'l',
+          direction: 'long',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 's',
+          direction: 'short',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    const ledger = state.pool.L + state.pool.S
+    expect(() => assertPerpProtectedState(state, 100)).not.toThrow()
+    const resolved = resolvePerpProtectedBatch(state, 100)
+    const paid = resolved.payouts.reduce((sum, p) => sum + p.payout, 0)
+    expect(paid).toBe(ledger)
+    expect(resolved.state.pool).toEqual({ L: 0, S: 0 })
+    expect(resolved.residual).toBe(0)
+    for (const p of resolved.payouts) expect(p.payout).toBe(0.99999925)
+  })
+
+  it('every sequential close and every batch resolution keeps the ledger equal to the pools on random valid books', () => {
+    const random = rng(41)
+    let books = 0
+    for (let trial = 0; trial < 300; trial++) {
+      const price = 100
+      const state = randomState(random, price)
+      try {
+        assertPerpProtectedState(state, price)
+      } catch {
+        continue
+      }
+      books++
+      // Sequential closes in canonical order, tracking the contract ledger.
+      let working = state
+      let ledger = state.pool.L + state.pool.S
+      for (const row of canonicalPerpPositions(state.positions)) {
+        if (row.size <= 0) continue
+        const closed = closePerpProtectedPosition(working, row, price)
+        ledger -= closed.payout
+        expect(closed.payout).toBeCloseTo(
+          state.pool.L +
+            state.pool.S -
+            ledger -
+            (state.pool.L + state.pool.S - (working.pool.L + working.pool.S)),
+          9
+        )
+        expect(closed.state.pool.L).toBeGreaterThanOrEqual(0)
+        expect(closed.state.pool.S).toBeGreaterThanOrEqual(0)
+        expect(balanced(ledger, closed.state)).toBe(true)
+        working = closed.state
+      }
+      // Batch resolution from the same book.
+      const resolved = resolvePerpProtectedBatch(state, price)
+      const paid = resolved.payouts.reduce((sum, p) => sum + p.payout, 0)
+      expect(paid + resolved.residual).toBeCloseTo(
+        state.pool.L + state.pool.S,
+        9
+      )
+      expect(resolved.state.pool.L).toBeGreaterThanOrEqual(0)
+      expect(resolved.state.pool.S).toBeGreaterThanOrEqual(0)
+    }
+    expect(books).toBeGreaterThan(50)
   })
 })

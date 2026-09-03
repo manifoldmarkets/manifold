@@ -187,6 +187,12 @@ declare
   v_epoch bigint;
   v_presented text;
 begin
+  -- A perp row is never re-keyed to another contract: that would move a
+  -- protected position or its history out from under its contract's guard.
+  if tg_op = 'UPDATE' and new.contract_id is distinct from old.contract_id then
+    raise exception 'PERP accounting guard: % rows are never re-keyed to another contract (% -> %)',
+      tg_table_name, old.contract_id, new.contract_id;
+  end if;
   v_contract_id := case when tg_op = 'DELETE' then old.contract_id else new.contract_id end;
 
   select
@@ -287,12 +293,15 @@ for each row execute function perp_accounting_guard();
 --     migration tooling, which sets perp.accounting_transition in the same
 --     transaction, and every transition must advance the epoch and have its
 --     immutable record already written.
---  b) poolLong/poolShort on a protected contract (before OR after this
---     update) may only change in a transaction that presented the contract's
---     epoch — the one the row holds after the update. Without this a
---     pre-protected scheduler could commit a legacy cross-side transfer
---     through its price-only fast path, moving pool balance across sides of
---     a b < c book while touching no guarded row.
+--  b) The financial contract fields of a protected contract (before OR
+--     after this update) — poolLong/poolShort, the oracle mark and its
+--     timestamps, and the solvency-halt fields — may only change in a
+--     transaction that presented the contract's epoch, the one the row holds
+--     after the update. Without this a pre-protected scheduler could commit
+--     a legacy cross-side transfer through its price-only fast path, or a
+--     price-only write for a tick on which protected accounting would have
+--     settled a position, leaving an unhalted protected-invalid book that
+--     the version-aware scheduler then skips as a duplicate point.
 create or replace function perp_accounting_contract_guard()
 returns trigger
 language plpgsql
@@ -318,17 +327,18 @@ begin
       raise exception 'PERP accounting guard: contract % cannot enter unknown accounting mode %',
         new.id, v_new_mode;
     end if;
-    if v_new_epoch <= v_old_epoch then
-      raise exception 'PERP accounting guard: contract % accounting epoch must advance (% -> %)',
+    if v_new_epoch <> v_old_epoch + 1 then
+      raise exception 'PERP accounting guard: contract % accounting epoch must advance by exactly one (% -> %)',
         new.id, v_old_epoch, v_new_epoch;
     end if;
     if not exists (
       select 1 from contract_perp_accounting_epochs e
       where e.contract_id = new.id and e.epoch = v_new_epoch
         and e.accounting_mode = v_new_mode
+        and e.previous_mode = v_old_mode
     ) then
-      raise exception 'PERP accounting guard: contract % epoch % has no immutable activation record',
-        new.id, v_new_epoch;
+      raise exception 'PERP accounting guard: contract % epoch % has no immutable activation record for % -> %',
+        new.id, v_new_epoch, v_old_mode, v_new_mode;
     end if;
   end if;
 
@@ -336,10 +346,15 @@ begin
      and (
        (old.data->>'poolLong') is distinct from (new.data->>'poolLong')
        or (old.data->>'poolShort') is distinct from (new.data->>'poolShort')
+       or (old.data->>'oraclePrice') is distinct from (new.data->>'oraclePrice')
+       or (old.data->>'oraclePriceTime') is distinct from (new.data->>'oraclePriceTime')
+       or (old.data->>'oracleSourceTime') is distinct from (new.data->>'oracleSourceTime')
+       or (old.data->>'solvencyHaltTime') is distinct from (new.data->>'solvencyHaltTime')
+       or (old.data->>'solvencyHaltReason') is distinct from (new.data->>'solvencyHaltReason')
      ) then
     v_presented := nullif(current_setting('perp.accounting_epoch', true), '');
     if v_presented is null or v_presented <> v_new_epoch::text then
-      raise exception 'PERP accounting guard: contract % is protected at epoch % but this transaction presented epoch %; refusing to change its pools',
+      raise exception 'PERP accounting guard: contract % is protected at epoch % but this transaction presented epoch %; refusing to change its pools, mark or halt',
         new.id, v_new_epoch, coalesce(v_presented, 'none');
     end if;
   end if;
@@ -363,6 +378,11 @@ when (
     and (
       (old.data->>'poolLong') is distinct from (new.data->>'poolLong')
       or (old.data->>'poolShort') is distinct from (new.data->>'poolShort')
+      or (old.data->>'oraclePrice') is distinct from (new.data->>'oraclePrice')
+      or (old.data->>'oraclePriceTime') is distinct from (new.data->>'oraclePriceTime')
+      or (old.data->>'oracleSourceTime') is distinct from (new.data->>'oracleSourceTime')
+      or (old.data->>'solvencyHaltTime') is distinct from (new.data->>'solvencyHaltTime')
+      or (old.data->>'solvencyHaltReason') is distinct from (new.data->>'solvencyHaltReason')
     )
   )
 )

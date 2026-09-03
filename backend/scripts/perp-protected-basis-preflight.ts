@@ -18,14 +18,13 @@
 //   # shadow -> protected at the contract's committed mark. ALWAYS dry-run
 //   # first: it prints the exact per-user reserve bases and reductions the
 //   # activation would commit on the current book, without writing, plus the
-//   # book's fingerprint (mark + pools + positions).
+//   # plan digest (book + every plan input + every outcome).
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-protected --dry-run \
 //       [--top-up-long=N --top-up-short=N] [--last-resort-allocation] [--allow-activation-adl]
 //   npx ts-node perp-protected-basis-preflight.ts --contract=<id> --activate-protected \
 //       [--top-up-long=N --top-up-short=N --funder=<userId>] \
-//       [--last-resort-allocation] [--allow-activation-adl] \
-//       [--confirm-fingerprint=<fingerprint from the dry run>; required for either of the two above] \
-//       [--allow-stale-mark] \
+//       [--last-resort-allocation] [--allow-activation-adl] [--allow-stale-mark] \
+//       [--confirm-plan=<plan digest from the dry run>; required for any of the three above] \
 //       --confirm=PERP_ACCOUNTING_PROTECTED
 //
 //   # a shadow checkpoint write failed (see its ERROR line): restart the replay
@@ -154,6 +153,8 @@ const printSimulation = (sim: PerpProtectedSimulation) => {
         sim.shadow.reducedBasisCount
       } updated=${new Date(sim.shadow.updatedTime).toISOString()}`
     )
+  if (sim.shadow)
+    lines.push(`  last shadow report: ${JSON.stringify(sim.shadow.lastReport)}`)
   lines.push(
     `  history: events=${sim.history.eventCount} first=${
       sim.history.firstEventTime === null
@@ -213,7 +214,7 @@ runScript(async ({ pg }) => {
       console.log(
         `dry run ${dry.slug}: mark=${dry.mark} (${
           dry.markFresh ? 'fresh' : 'STALE'
-        }) fingerprint=${dry.fingerprint} accounting=${
+        }) book=${dry.fingerprint} plan=${dry.planDigest} accounting=${
           dry.accounting.mode
         } epoch=${dry.accounting.epoch} ok=${dry.plan.ok}`
       )
@@ -240,9 +241,13 @@ runScript(async ({ pg }) => {
         console.log(
           `  ${dry.reductions.length} position(s) would receive b < c; each gets an immutable basis-settlement receipt (trigger=activation).`
         )
+      for (const t of dry.plan.trims)
+        console.log(
+          `  ${t.userId} ${t.direction}: b trimmed by ${t.amount} (dust) so the pool holds every reserve it promises`
+        )
       if (dry.reductions.length > 0 || dry.plan.activationAdl)
         console.log(
-          `  This activation reduces someone. Re-run with --confirm-fingerprint=${dry.fingerprint} to execute against exactly this book (mark ${dry.mark}); any change aborts.`
+          `  This activation reduces someone. Re-run with --confirm-plan=${dry.planDigest} to execute exactly this plan (mark ${dry.mark}); any change to the book, the top-ups or the policy aborts.`
         )
     }
     if (flag('dry-run')) {
@@ -263,7 +268,7 @@ runScript(async ({ pg }) => {
       ...planOptions,
       allowStaleMark: flag('allow-stale-mark'),
       funderId: arg('funder'),
-      confirmedFingerprint: arg('confirm-fingerprint'),
+      confirmedPlan: arg('confirm-plan'),
     })
     console.log(
       `protected accounting active on ${result.contract.slug} at epoch ${

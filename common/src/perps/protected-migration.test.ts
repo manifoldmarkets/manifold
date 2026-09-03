@@ -6,6 +6,7 @@ import {
   classifyPerpMigration,
   classifyPerpMigrationSide,
   perpActivationFingerprint,
+  perpActivationPlanDigest,
   perpActivationReductions,
   planPerpProtectedActivation,
   verifyPerpAccountingDowngrade,
@@ -434,5 +435,105 @@ describe('perpActivationFingerprint', () => {
         90
       )
     ).toBe(base)
+  })
+})
+
+describe('activation plan digest and dust trim (review round 4)', () => {
+  const lastResort = (topUp: number) => ({
+    topUp: { long: topUp, short: 0 },
+    allocation: 'last-resort-snapshot' as const,
+    allowActivationAdl: false,
+  })
+
+  it('a different top-up on the same book is a different plan, even though the book fingerprint is identical', () => {
+    const state = book(1400)
+    const withTopUp = planPerpProtectedActivation(state, 90, lastResort(50))
+    const without = planPerpProtectedActivation(state, 90, lastResort(0))
+    expect(withTopUp.ok && without.ok).toBe(true)
+    const haircut = (plan: typeof withTopUp) =>
+      plan.allocations.reduce(
+        (sum, a) => sum + (a.reserveBasisBefore - a.reserveBasisAfter),
+        0
+      )
+    expect(haircut(withTopUp)).toBeCloseTo(50, 9)
+    expect(haircut(without)).toBeCloseTo(100, 9)
+    expect(perpActivationFingerprint(state, 90)).toBe(
+      perpActivationFingerprint(state, 90)
+    )
+    const a = perpActivationPlanDigest(state, 90, lastResort(50), withTopUp)
+    const b = perpActivationPlanDigest(state, 90, lastResort(0), without)
+    expect(a).toMatch(/^[0-9a-f]{16}$/)
+    expect(a).not.toBe(b)
+    // Deterministic for the same inputs.
+    expect(
+      perpActivationPlanDigest(
+        state,
+        90,
+        lastResort(50),
+        planPerpProtectedActivation(state, 90, lastResort(50))
+      )
+    ).toBe(a)
+  })
+
+  it('policy inputs are part of the plan even when they change no outcome', () => {
+    const state = book(1500)
+    const options = {
+      topUp: { long: 0, short: 0 },
+      allocation: 'full-basis' as const,
+      allowActivationAdl: false,
+    }
+    const plan = planPerpProtectedActivation(state, 90, options)
+    const withAdl = { ...options, allowActivationAdl: true }
+    const planWithAdl = planPerpProtectedActivation(state, 90, withAdl)
+    expect(plan.activationAdl).toBeNull()
+    expect(planWithAdl.activationAdl).toBeNull()
+    expect(perpActivationPlanDigest(state, 90, options, plan)).not.toBe(
+      perpActivationPlanDigest(state, 90, withAdl, planWithAdl)
+    )
+  })
+
+  it('trims a dust reserve shortfall so the committed pools hold exactly Σb, and blocks a real one', () => {
+    const flat = (pool: number): PerpState => ({
+      pool: { L: pool, S: pool },
+      positions: [
+        pos({
+          userId: 'l',
+          direction: 'long',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 's',
+          direction: 'short',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+      ],
+    })
+    const options = {
+      topUp: { long: 0, short: 0 },
+      allocation: 'full-basis' as const,
+      allowActivationAdl: false,
+    }
+    const plan = planPerpProtectedActivation(flat(0.99999925), 100, options)
+    expect(plan.ok).toBe(true)
+    expect(plan.reducedAnyBasis).toBe(false)
+    expect(plan.trims).toHaveLength(2)
+    for (const trim of plan.trims) expect(trim.amount).toBeCloseTo(7.5e-7, 12)
+    for (const side of ['long', 'short'] as const) {
+      const reserved = plan.finalState.positions
+        .filter((p) => p.direction === side)
+        .reduce((sum, p) => sum + (p.reserveBasis ?? 0), 0)
+      const pool =
+        side === 'long' ? plan.finalState.pool.L : plan.finalState.pool.S
+      expect(reserved).toBeLessThanOrEqual(pool)
+    }
+    expect(perpActivationReductions(plan)).toEqual([])
+
+    const blocked = planPerpProtectedActivation(flat(0.9999), 100, options)
+    expect(blocked.ok).toBe(false)
+    expect(blocked.trims).toEqual([])
   })
 })

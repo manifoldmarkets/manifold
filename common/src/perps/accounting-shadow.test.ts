@@ -321,15 +321,25 @@ describe('accounting shadow: funding, subsidy and resolution counterparts', () =
     expect(step.checkpoint.positions).toEqual([])
     expect(step.checkpoint.divergences).toBe(0)
 
-    // A legacy residual that differs from the protected one shows up in the
-    // payout comparison without being a pool divergence.
+    // A legacy residual that differs materially from the protected one IS a
+    // divergence — the protected rules would have paid the creator
+    // differently — and is counted so it is visible before activation.
     const other = advancePerpShadowCheckpoint(
       checkpoint,
       { kind: 'resolve', price: 100, liveResidual: protectedResidual - 5 },
       { pool: { L: 0, S: 0 }, positions: [] },
       100
     )
-    expect(other.report.divergent).toBe(false)
+    expect(other.report.divergent).toBe(true)
     expect(other.report.payoutDifference).toBeCloseTo(5, 9)
+    expect(other.checkpoint.divergences).toBe(1)
+    // Dust does not count.
+    const dust = advancePerpShadowCheckpoint(
+      checkpoint,
+      { kind: 'resolve', price: 100, liveResidual: protectedResidual - 1e-9 },
+      { pool: { L: 0, S: 0 }, positions: [] },
+      100
+    )
+    expect(dust.report.divergent).toBe(false)
   })
 })

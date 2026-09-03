@@ -7,6 +7,8 @@ import {
   positionToRow,
   presentAccountingEpochQuery,
   rowToPosition,
+  selectShadowCheckpointQuery,
+  upsertRiskShadowQuery,
 } from './queries'
 
 const legacy: PerpAccounting = {
@@ -135,5 +137,28 @@ describe('event persistence stamps', () => {
     expect(presentAccountingEpochQuery(7)).toBe(
       "select set_config('perp.accounting_epoch', '7', true)"
     )
+  })
+})
+
+describe('shadow queries', () => {
+  it('selects every checkpoint column the simulator and preflight read (a missing updated_time crashed the preflight after shadow activation)', () => {
+    const sql = selectShadowCheckpointQuery('c1')
+    for (const column of [
+      'contract_id',
+      'accounting_epoch',
+      'state',
+      'transitions',
+      'divergences',
+      'last_report',
+      'updated_time',
+    ])
+      expect(sql).toContain(column)
+  })
+
+  it('lets a newer risk-shadow evaluation win regardless of arrival order', () => {
+    const sql = upsertRiskShadowQuery('c1', { kind: 'open', at: 5 })
+    expect(sql).toMatch(/on conflict \(contract_id\) do update/)
+    expect(sql).toMatch(/excluded\.data->>'at'/)
+    expect(sql).toMatch(/>=/)
   })
 })

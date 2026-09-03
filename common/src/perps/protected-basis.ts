@@ -114,16 +114,51 @@ export const isPerpClaimBacked = (
   claim <= available + perpClaimTolerance(claim, available, scale)
 
 /**
- * Pool debit with the SAME tolerance as the affordability predicate: a claim
- * the invariant accepted may leave the pool a tolerance below zero, and that
- * is representational dust, not a deficit. Anything larger stays negative so
- * the caller fails closed. The dust floor equals the escrow check's floor,
- * so a snap here never trips the ledger-vs-pools invariant.
+ * Pool debit with the SAME tolerance as the affordability predicate, and the
+ * one rule that keeps the ledger honest: the caller pays exactly what was
+ * debited, never more. A claim the invariant accepted may exceed the pool by
+ * dust; that dust is trimmed from the PAYOUT (the claimant absorbs a
+ * representational ulp) and the pool lands on exactly zero. Anything larger
+ * leaves the pool negative so the caller fails closed. Tolerance classifies
+ * dust here; it never authorizes cash — paying the full claim and snapping
+ * the pool afterwards would mint the difference as an escrow discrepancy
+ * that a later, smaller book cannot absorb.
  */
-const debitPool = (pool: number, amount: number, scale: number) => {
-  const next = pool - amount
-  if (next >= 0) return next === 0 ? 0 : next
-  return next >= -perpClaimTolerance(amount, pool, scale) ? 0 : next
+const debitPool = (
+  pool: number,
+  amount: number,
+  scale: number
+): { pool: number; paid: number } => {
+  if (!(amount > 0)) return { pool, paid: 0 }
+  if (amount <= pool) {
+    const next = pool - amount
+    return { pool: next <= 0 ? 0 : next, paid: amount }
+  }
+  const shortfall = amount - pool
+  if (shortfall <= perpClaimTolerance(amount, pool, scale))
+    return { pool: 0, paid: Math.max(pool, 0) }
+  return { pool: pool - amount, paid: amount }
+}
+
+/**
+ * Trim `residual` from the last entries of a canonically ordered payout
+ * list (largest keys last), so a dust shortfall lands on one deterministic
+ * claimant instead of being minted. Returns what could not be trimmed.
+ */
+const trimPayouts = <T>(
+  entries: T[],
+  residual: number,
+  leg: (entry: T) => number,
+  reduce: (entry: T, by: number) => void
+) => {
+  let remaining = residual
+  for (let i = entries.length - 1; i >= 0 && remaining > 0; i--) {
+    const by = Math.min(leg(entries[i]), remaining)
+    if (by <= 0) continue
+    reduce(entries[i], by)
+    remaining -= by
+  }
+  return remaining
 }
 
 /**
@@ -527,7 +562,7 @@ export const payPerpContingentClaim = (
   claimantSide: PerpDirection,
   claim: number,
   price: number
-): { state: PerpState; settlement: PerpBasisSettlement } => {
+): { state: PerpState; settlement: PerpBasisSettlement; paid: number } => {
   const payingSide = oppositePerpDirection(claimantSide)
   const before = getPerpSideAccounting(state, payingSide, price)
   const claimant = getPerpSideAccounting(state, claimantSide, price)
@@ -556,18 +591,24 @@ export const payPerpContingentClaim = (
       'claim-unpayable',
       `${claimantSide} contingent claim ${claim} needs ${unreservedConsumed} of ${payingSide} unreserved balance but only ${before.unreserved} is available`
     )
-  const pool =
-    payingSide === 'long'
-      ? { L: debitPool(state.pool.L, claim, scale), S: state.pool.S }
-      : { L: state.pool.L, S: debitPool(state.pool.S, claim, scale) }
-  if (pool.L < 0 || pool.S < 0)
+  const debit = debitPool(
+    payingSide === 'long' ? state.pool.L : state.pool.S,
+    claim,
+    scale
+  )
+  if (debit.pool < 0)
     fail(
       'claim-unpayable',
       `${payingSide} pool cannot pay a ${claim} contingent claim`
     )
+  const pool =
+    payingSide === 'long'
+      ? { L: debit.pool, S: state.pool.S }
+      : { L: state.pool.L, S: debit.pool }
   return {
     state: { pool, positions: settled.state.positions },
     settlement: settled.settlement,
+    paid: debit.paid,
   }
 }
 
@@ -691,26 +732,41 @@ export const applyPerpProtectedClaimAdl = (
     })
     .filter((p): p is PerpPosition => p != null)
 
-  const longSettlementPayout = settled
-    .filter((s) => s.position.direction === 'long')
-    .reduce((sum, s) => sum + s.payout, 0)
-  const shortSettlementPayout = settled
-    .filter((s) => s.position.direction === 'short')
-    .reduce((sum, s) => sum + s.payout, 0)
+  // Factor-zero settlements are paid from the side's own pool. Each row is
+  // paid exactly what the pool gives up: a dust shortfall is trimmed from the
+  // canonically last settled row, a larger one fails closed.
+  const settleSide = (side: PerpDirection, pool: number) => {
+    const rows = settled
+      .filter((s) => s.position.direction === side)
+      .sort((a, b) => comparePositionKeys(a.position, b.position))
+    const total = rows.reduce((sum, s) => sum + s.payout, 0)
+    const debit = debitPool(pool, total, snapshot[side].costBasis)
+    if (debit.pool < 0)
+      fail(
+        'claim-unpayable',
+        `${side} pool ${pool} cannot return ${total} of settled protected basis`
+      )
+    const untrimmed = trimPayouts(
+      rows,
+      total - debit.paid,
+      (s) => s.payout,
+      (s, by) => {
+        s.payout -= by
+      }
+    )
+    if (untrimmed > 0)
+      fail(
+        'claim-unpayable',
+        `${side} settlement shortfall ${untrimmed} could not be trimmed`
+      )
+    return debit.pool
+  }
 
   const result: PerpProtectedAdlResult = {
     state: {
       pool: {
-        L: debitPool(
-          state.pool.L,
-          longSettlementPayout,
-          snapshot.long.costBasis
-        ),
-        S: debitPool(
-          state.pool.S,
-          shortSettlementPayout,
-          snapshot.short.costBasis
-        ),
+        L: settleSide('long', state.pool.L),
+        S: settleSide('short', state.pool.S),
       },
       positions: next,
     },
@@ -840,11 +896,11 @@ export const applyPerpProtectedFunding = (
 export type PerpProtectedCloseResult = {
   state: PerpState
   fraction: number
-  /** z·V — what the user receives. */
+  /** What the user receives: exactly the sum of the two pool debits (z·V less any dust the pools could not give up). */
   payout: number
-  /** z·R, debited from the position's own pool. */
+  /** z·R as actually debited from the position's own pool. */
   ownPayout: number
-  /** z·E, debited from the opposing pool after loss settlement. */
+  /** z·E as actually debited from the opposing pool after loss settlement. */
   contingentPayout: number
   /** z·π — the paper's price-only PnL for the closed fraction. */
   pricePnl: number
@@ -901,35 +957,45 @@ export const closePerpProtectedPosition = (
   const z = fraction
   const isFull = z >= 1
   const claims = getPerpPositionClaims(row, price)
-  const payout = z * claims.value
-  const ownPayout = z * claims.own
-  const contingentPayout = z * claims.contingent
+  const ownClaim = z * claims.own
+  const contingentClaim = z * claims.contingent
   const pricePnl = z * getUnrealizedEquity(row, price)
 
-  // Own-pool leg first: it is the position's own reserved margin.
+  // Own-pool leg first: it is the position's own reserved margin. The user
+  // is paid exactly what each pool gives up (see debitPool), so the payout
+  // below always equals the pool deltas and the escrow ledger stays exact.
   const ownScale = getPerpSideAccounting(state, row.direction, price).costBasis
-  const ownPool =
-    row.direction === 'long'
-      ? { L: debitPool(state.pool.L, ownPayout, ownScale), S: state.pool.S }
-      : { L: state.pool.L, S: debitPool(state.pool.S, ownPayout, ownScale) }
-  if (ownPool.L < 0 || ownPool.S < 0)
+  const ownDebit = debitPool(
+    row.direction === 'long' ? state.pool.L : state.pool.S,
+    ownClaim,
+    ownScale
+  )
+  if (ownDebit.pool < 0)
     fail(
       'claim-unpayable',
       `${row.direction} pool cannot return the position's protected basis`
     )
+  const ownPayout = ownDebit.paid
+  const ownPool =
+    row.direction === 'long'
+      ? { L: ownDebit.pool, S: state.pool.S }
+      : { L: state.pool.L, S: ownDebit.pool }
 
   let working: PerpState = { pool: ownPool, positions: state.positions }
   let settlement: PerpBasisSettlement | null = null
-  if (contingentPayout > 0) {
+  let contingentPayout = 0
+  if (contingentClaim > 0) {
     const paid = payPerpContingentClaim(
       working,
       row.direction,
-      contingentPayout,
+      contingentClaim,
       price
     )
     working = paid.state
     settlement = paid.settlement
+    contingentPayout = paid.paid
   }
+  const payout = ownPayout + contingentPayout
 
   const remainingPosition: PerpPosition | null = isFull
     ? null
@@ -1066,21 +1132,47 @@ export const resolvePerpProtectedBatch = (
   )
 
   const scale = snapshot.long.costBasis + snapshot.short.costBasis
-  const L = debitPool(
+  const longDebit = debitPool(
     normalized.pool.L,
     totals.long.own + totals.short.contingent,
     scale
   )
-  const S = debitPool(
+  const shortDebit = debitPool(
     normalized.pool.S,
     totals.short.own + totals.long.contingent,
     scale
   )
-  if (L < 0 || S < 0)
+  if (longDebit.pool < 0 || shortDebit.pool < 0)
     fail(
       'claim-unpayable',
-      `resolution cannot pay every claim from the pools (L=${L}, S=${S})`
+      `resolution cannot pay every claim from the pools (L=${longDebit.pool}, S=${shortDebit.pool})`
     )
+  // Every payout equals a pool debit. A dust shortfall on a pool is trimmed
+  // from the canonically last claimant drawing on it (own leg for that
+  // side, contingent leg for the other), never minted.
+  const legs = (pool: PerpDirection) => ({
+    leg: (p: PerpProtectedResolutionPayout) =>
+      p.position.direction === pool ? p.ownPayout : p.contingentPayout,
+    reduce: (p: PerpProtectedResolutionPayout, by: number) => {
+      if (p.position.direction === pool) p.ownPayout -= by
+      else p.contingentPayout -= by
+      p.payout -= by
+    },
+  })
+  for (const [pool, debit, claimed] of [
+    ['long', longDebit, totals.long.own + totals.short.contingent],
+    ['short', shortDebit, totals.short.own + totals.long.contingent],
+  ] as const) {
+    const { leg, reduce } = legs(pool)
+    const untrimmed = trimPayouts(payouts, claimed - debit.paid, leg, reduce)
+    if (untrimmed > 0)
+      fail(
+        'claim-unpayable',
+        `${pool} resolution shortfall ${untrimmed} could not be trimmed`
+      )
+  }
+  const L = longDebit.pool
+  const S = shortDebit.pool
 
   const consumed = (side: PerpDirection) => {
     const claim = totals[oppositePerpDirection(side)].contingent
