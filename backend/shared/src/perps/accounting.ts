@@ -32,6 +32,7 @@ import {
 } from 'common/perps/protected-basis'
 import {
   classifyPerpMigration,
+  perpActivationConfirmation,
   perpActivationFingerprint,
   PerpActivationPlan,
   perpActivationPlanDigest,
@@ -458,8 +459,9 @@ export type PerpProtectedActivationDryRun = {
 /**
  * The activation, computed and reported without writing anything. The
  * per-user reductions it prints are exactly what activation would commit on
- * this book; a reducing activation must then pass the printed `fingerprint`
- * back as `confirmedFingerprint`.
+ * this book; a reducing activation (and one on a stale mark, or with the
+ * last-resort allocation) must then pass the printed `planDigest` back as
+ * `confirmedPlan`.
  */
 export const dryRunPerpAccountingProtected = async (
   pg: SupabaseDirectClient,
@@ -561,19 +563,18 @@ export const activatePerpAccountingProtected = async (
     // or policy in between aborts rather than silently reallocating.
     const fingerprint = perpActivationFingerprint(state, price)
     const planDigest = perpActivationPlanDigest(state, price, options, plan)
-    const reducing =
-      options.allocation === 'last-resort-snapshot' ||
-      plan.activationAdl !== null ||
-      plan.reducedAnyBasis
-    if (reducing || options.allowStaleMark) {
+    const confirmation = perpActivationConfirmation(options, plan, planDigest)
+    if (confirmation.required !== null) {
       if (options.confirmedPlan === undefined)
         throw new APIError(
           400,
           `${
-            reducing ? 'A reducing activation' : 'Activating on a stale mark'
+            confirmation.required === 'reducing'
+              ? 'A reducing activation'
+              : 'Activating on a stale mark'
           } requires confirmedPlan: the plan digest reported by the dry run`
         )
-      if (options.confirmedPlan !== planDigest)
+      if (!confirmation.matches)
         throw new APIError(
           409,
           `Plan changed since the dry run: reviewed ${options.confirmedPlan}, the locked book now plans ${planDigest} (mark ${price}, book ${fingerprint}); re-run the dry run`
@@ -744,6 +745,16 @@ export const activatePerpAccountingProtected = async (
       )
     }
     assertPerpProtectedState(finalState, price)
+    // Committed pools must hold every reserve they promise in real
+    // arithmetic — not within the invariant's tolerance. The plan's dust
+    // trim guarantees it; this is the fail-closed proof.
+    const finalSnapshot = getPerpAccountingSnapshot(finalState, price)
+    for (const side of ['long', 'short'] as const)
+      if (finalSnapshot[side].reservedBasis > finalSnapshot[side].pool)
+        throw new APIError(
+          500,
+          `${side} pool ${finalSnapshot[side].pool} would be committed below its reserves ${finalSnapshot[side].reservedBasis}; refusing`
+        )
     await assertPerpEscrowBalance(pgTrans, contractId, finalState.pool)
 
     const affectedUsers = Array.from(

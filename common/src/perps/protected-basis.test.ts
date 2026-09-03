@@ -1934,3 +1934,159 @@ describe('payouts equal pool debits: tolerance classifies dust and never authori
     expect(books).toBeGreaterThan(50)
   })
 })
+
+describe('trim edge cases (review round 5)', () => {
+  it('a pool at exactly 0 with several surviving dust rows resolves and settles without a phantom residue', () => {
+    // After a trimmed close lands a pool on exactly 0, the survivors' Σb is
+    // sub-dust. Resolution and factor-0 settlement then pay nothing from
+    // that pool; the float remainder of summing and un-summing the legs is
+    // rounding, not a shortfall.
+    const state: PerpState = {
+      pool: { L: 100 - 1e-7, S: 0 },
+      positions: [
+        pos({
+          userId: 'whale',
+          direction: 'long',
+          size: 100,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: 2.2173115936334316e-7,
+          costBasis: 2.2173115936334316e-7,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'c',
+          direction: 'long',
+          size: 1.4839562759888247e-7,
+          costBasis: 1.4839562759888247e-7,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    expect(() => assertPerpProtectedState(state, 100)).not.toThrow()
+    const closed = closePerpProtectedPosition(
+      state,
+      { userId: 'whale', direction: 'long' },
+      100
+    )
+    expect(closed.state.pool.L).toBe(0)
+    expect(closed.state.positions).toHaveLength(2)
+    expect(() => assertPerpProtectedState(closed.state, 100)).not.toThrow()
+    const resolved = resolvePerpProtectedBatch(closed.state, 100)
+    expect(resolved.state.pool).toEqual({ L: 0, S: 0 })
+    for (const p of resolved.payouts) expect(p.payout).toBe(0)
+    expect(resolved.residual).toBe(0)
+
+    // 2000 random dust pairs on an empty pool: never a throw.
+    const random = rng(7)
+    for (let i = 0; i < 2000; i++) {
+      const dust: PerpState = {
+        pool: { L: 0, S: 0 },
+        positions: [
+          pos({
+            userId: 'a',
+            direction: 'long',
+            size: random() * 4e-7,
+            costBasis: random() * 4e-7,
+            entryPrice: 100,
+          }),
+          pos({
+            userId: 'c',
+            direction: 'long',
+            size: random() * 4e-7,
+            costBasis: random() * 4e-7,
+            entryPrice: 100,
+          }),
+        ].map((p) => ({ ...p, size: p.costBasis })),
+      }
+      expect(() => resolvePerpProtectedBatch(dust, 100)).not.toThrow()
+    }
+  })
+
+  it('a contingent payment never takes the paying pool below the reserves that survive the settlement (M$2bn one-sided scale)', () => {
+    // At Σc = M$2bn the contingent tolerance is the 1e-4 cap, so the
+    // invariant admits a 5e-5 gap. The payment must land the short pool on
+    // exactly its remaining Σb — the claimant absorbs the 5e-5 — or the
+    // post-close check, measured at the short side's own scale (1e-6),
+    // would refuse a close the invariant accepted.
+    const price = 100.0000005
+    const state: PerpState = {
+      pool: { L: 2e9, S: 100 + (10 - 5e-7 - 5e-5) },
+      positions: [
+        pos({
+          userId: 'whale',
+          direction: 'long',
+          size: 2e9,
+          costBasis: 2e9,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 's',
+          direction: 'short',
+          size: 100,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    expect(() => assertPerpProtectedState(state, price)).not.toThrow()
+    const closed = closePerpProtectedPosition(
+      state,
+      { userId: 'whale', direction: 'long' },
+      price
+    )
+    expect(closed.contingentPayout).toBeLessThan(10)
+    expect(closed.contingentPayout).toBeGreaterThan(10 - 1e-4)
+    const short = getPerpAccountingSnapshot(closed.state, price).short
+    expect(closed.state.pool.S).toBeGreaterThanOrEqual(
+      short.reservedBasis - 1e-12
+    )
+    expect(() => assertPerpProtectedState(closed.state, price)).not.toThrow()
+  })
+
+  it('claim ADL at factor zero pays each settled row exactly what its pool gives up, the canonically last row absorbing the dust', () => {
+    const state: PerpState = {
+      pool: { L: 150 - 5e-7, S: 20 },
+      positions: [
+        pos({
+          userId: 'zed',
+          direction: 'long',
+          size: 300,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'amy',
+          direction: 'long',
+          size: 150,
+          costBasis: 50,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'short',
+          direction: 'short',
+          size: 20,
+          costBasis: 20,
+          entryPrice: 105,
+        }),
+      ],
+    }
+    const result = applyPerpProtectedClaimAdl(state, 101)
+    expect(result.adlFactorLong).toBe(0)
+    expect(result.state.pool.L).toBe(0)
+    const payout = (userId: string) =>
+      result.settled.find((s) => s.position.userId === userId)!.payout
+    expect(payout('amy')).toBe(50)
+    expect(payout('zed')).toBeCloseTo(100 - 5e-7, 12)
+    expect(payout('amy') + payout('zed')).toBe(150 - 5e-7)
+
+    const short: PerpState = { ...state, pool: { L: 150 - 5e-3, S: 20 } }
+    expect(() => applyPerpProtectedClaimAdl(short, 101)).toThrow(
+      /cannot return/
+    )
+  })
+})

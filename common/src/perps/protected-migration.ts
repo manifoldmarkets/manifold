@@ -330,17 +330,50 @@ export const planPerpProtectedActivation = (
       )
       continue
     }
+    const trim = (row: PerpPosition, by: number) => {
+      row.reserveBasis = (row.reserveBasis ?? 0) - by
+      const existing = trims.find(
+        (t) => t.userId === row.userId && t.direction === row.direction
+      )
+      if (existing) existing.amount += by
+      else
+        trims.push({ userId: row.userId, direction: row.direction, amount: by })
+    }
     for (let i = rows.length - 1; i >= 0 && shortfall > 0; i--) {
       const row = rows[i]
       const by = Math.min(row.reserveBasis ?? 0, shortfall)
       if (by <= 0) continue
-      row.reserveBasis = (row.reserveBasis ?? 0) - by
+      trim(row, by)
       shortfall -= by
-      trims.push({ userId: row.userId, direction: row.direction, amount: by })
     }
-    if (shortfall > 0)
+    // "Exactly" means in float, on the same sum the invariant computes: the
+    // trimmed rows re-summed in canonical order may still exceed the pool
+    // by an ulp. Take ulps off the canonically last funded row until the
+    // re-summed Σb no longer exceeds the pool (bounded; nothing economic).
+    for (let pass = 0; pass < 16; pass++) {
+      const reservedNow = rows.reduce(
+        (sum, p) => sum + (p.reserveBasis ?? 0),
+        0
+      )
+      const excess = reservedNow - pool
+      if (!(excess > 0)) break
+      const last = [...rows].reverse().find((p) => (p.reserveBasis ?? 0) > 0)
+      if (!last) break
+      trim(
+        last,
+        Math.min(
+          last.reserveBasis ?? 0,
+          Math.max(excess, reservedNow * Number.EPSILON)
+        )
+      )
+    }
+    const reservedFinal = rows.reduce(
+      (sum, p) => sum + (p.reserveBasis ?? 0),
+      0
+    )
+    if (reservedFinal > pool)
       blockers.push(
-        `${side} reserve shortfall ${shortfall} could not be trimmed`
+        `${side} reserve shortfall ${reservedFinal - pool} could not be trimmed`
       )
   }
   const backfilled: PerpState = { pool: withTopUp.pool, positions: trimmed }
@@ -428,7 +461,10 @@ export const verifyPerpAccountingDowngrade = (args: {
       blockers.push(`${p.userId} ${p.direction} has no protected basis`)
       continue
     }
-    if (b !== p.costBasis)
+    // A dust trim at activation is not a reduction (no receipt, no reduced
+    // flag): the same tolerance decides here, or a trimmed contract could
+    // never return to legacy.
+    if (b < p.costBasis - perpDustTolerance(p.costBasis))
       blockers.push(
         `${p.userId} ${p.direction} has reserve basis ${b} below cost basis ${p.costBasis}`
       )
@@ -449,7 +485,10 @@ export const verifyPerpAccountingDowngrade = (args: {
       continue
     }
     const reserveDelta = event.reserveBasisDelta ?? event.costBasisDelta
-    if (reserveDelta !== event.costBasisDelta)
+    if (
+      Math.abs(reserveDelta - event.costBasisDelta) >
+      perpDustTolerance(reserveDelta, event.costBasisDelta)
+    )
       blockers.push(
         `event ${
           event.id ?? 'pending'
@@ -579,4 +618,43 @@ export const perpActivationPlanDigest = (
     ...plan.blockers.map((b) => `blocker:${b}`),
   ].join('|')
   return fnv1a32(text, 0x811c9dc5) + fnv1a32(text, 0x9747b28c)
+}
+
+export type PerpActivationConfirmation = {
+  /** Why a confirmed plan is required, or null when a fresh non-reducing activation may proceed without one. */
+  required: 'reducing' | 'stale-mark' | null
+  /** The confirmed digest equals the plan recomputed under the lock. */
+  matches: boolean
+}
+
+/**
+ * The confirmation gate a live activation applies, pure so it can be pinned:
+ * a reducing plan (last-resort allocation, an activation ADL, any row left
+ * below c) and any activation on a stale mark may only execute the exact
+ * plan a reviewer saw; a fresh, non-reducing plan (every b = c) may proceed
+ * without one.
+ */
+export const perpActivationConfirmation = (
+  options: PerpActivationPlanOptions & {
+    allowStaleMark?: boolean
+    confirmedPlan?: string
+  },
+  plan: PerpActivationPlan,
+  planDigest: string
+): PerpActivationConfirmation => {
+  const reducing =
+    options.allocation === 'last-resort-snapshot' ||
+    plan.activationAdl !== null ||
+    plan.reducedAnyBasis
+  const required = reducing
+    ? 'reducing'
+    : options.allowStaleMark
+    ? 'stale-mark'
+    : null
+  return {
+    required,
+    matches:
+      options.confirmedPlan !== undefined &&
+      options.confirmedPlan === planDigest,
+  }
 }

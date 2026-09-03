@@ -13,7 +13,8 @@
 --   contract_perp_risk_shadow                    isolated risk-policy shadow state
 --   perp_accounting_guard()                      trigger on the three perp tables
 --   perp_accounting_contract_guard()             trigger on contracts (mode/epoch
---                                                flips, protected pool changes)
+--                                                flips; protected pool, mark and
+--                                                halt changes)
 --
 -- Semantics
 --   A contract's mode lives in contracts.data->>'perpAccountingMode'
@@ -39,13 +40,16 @@
 --   old instances is still required operationally, but it is not the
 --   enforcement boundary; this is.
 --
---   Contract-level POOL changes on a protected contract are guarded the same
---   way: a pre-protected scheduler can commit a legacy cross-side transfer
+--   Contract-level FINANCIAL changes on a protected contract are guarded the
+--   same way: poolLong/poolShort, the oracle mark and its timestamps, and the
+--   solvency-halt fields may only change in a transaction that presented the
+--   epoch. A pre-protected scheduler can commit a legacy cross-side transfer
 --   through its price-only fast path without touching a single position or
---   event row, so `contracts` refuses a poolLong/poolShort change on a
---   protected contract unless the transaction presented the epoch. Price and
---   solvency-halt patches remain unguarded: they move no mana, and an old
---   writer halting a market it cannot represent is the conservative outcome.
+--   event row, and can commit a price-only tick on which protected
+--   accounting would have settled a position — an unhalted, protected-invalid
+--   book the version-aware scheduler then skips as a duplicate point. Both
+--   are refused, so that scheduler's whole tick rolls back: the mark freezes
+--   rather than lies, until the version-aware scheduler runs.
 --
 -- DEPLOY ORDER
 --   1. Apply this migration (additive; safe with the current API/scheduler:

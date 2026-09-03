@@ -158,7 +158,14 @@ const trimPayouts = <T>(
     reduce(entries[i], by)
     remaining -= by
   }
-  return remaining
+  // Every leg is consumed only when the residual was the whole claim (the
+  // pool paid nothing). What survives is then fl(Σlegs − leg_n − … − leg_1),
+  // a rounding artifact of the summation, not money: nothing was paid and
+  // every leg is already zero. Classify it as dust rather than failing a
+  // valid book closed.
+  return remaining > 0 && remaining <= perpDustTolerance(residual)
+    ? 0
+    : remaining
 }
 
 /**
@@ -591,11 +598,27 @@ export const payPerpContingentClaim = (
       'claim-unpayable',
       `${claimantSide} contingent claim ${claim} needs ${unreservedConsumed} of ${payingSide} unreserved balance but only ${before.unreserved} is available`
     )
-  const debit = debitPool(
-    payingSide === 'long' ? state.pool.L : state.pool.S,
-    claim,
-    scale
-  )
+  // The paying pool must still hold every reserve it promises AFTER the
+  // payment: the debit is capped at pool − Σb' (the reserves that survive
+  // the loss-first settlement). A claim that reaches past that floor by
+  // dust — admitted by the invariant at the larger scale of both sides'
+  // bases — is trimmed from the claimant, so the committed pool lands on
+  // B >= Σb in real arithmetic and no later, smaller-scale check can refuse
+  // it. Past the tolerance it fails closed as before.
+  const poolBefore = payingSide === 'long' ? state.pool.L : state.pool.S
+  const reservedAfter = getPerpSideAccounting(
+    settled.state,
+    payingSide,
+    price
+  ).reservedBasis
+  const cap = Math.max(poolBefore - reservedAfter, 0)
+  const pastFloor = claim - cap
+  if (!Number.isFinite(pastFloor) || pastFloor > tolerance)
+    fail(
+      'claim-unpayable',
+      `${claimantSide} contingent claim ${claim} would take ${payingSide} pool ${poolBefore} below its remaining reserves ${reservedAfter}`
+    )
+  const debit = debitPool(poolBefore, pastFloor > 0 ? cap : claim, scale)
   if (debit.pool < 0)
     fail(
       'claim-unpayable',

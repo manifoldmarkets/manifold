@@ -2564,24 +2564,28 @@ export const runOracleUpdate = async (
         // the case the protected counterpart may take cleanly (the
         // five-shorts recovery tick claim-ADLs the long instead of wedging),
         // and a later price cannot reconstruct that path-dependent step.
-        // Diagnostics only, savepoint-isolated.
-        await riskPolicyShadowForTransition(
-          pgTrans,
-          contract,
-          accounting,
-          state,
-          newPrice,
-          'oracle'
-        )
-        await recordPerpAccountingShadow(
-          pgTrans,
-          contract,
-          accounting,
-          { kind: 'oracle', price: newPrice },
-          state,
-          state,
-          newPrice
-        )
+        // Once per point: a halted retry of the same duplicate point is the
+        // same transition, not a new one. Diagnostics only,
+        // savepoint-isolated.
+        if (!retryingHalt) {
+          await riskPolicyShadowForTransition(
+            pgTrans,
+            contract,
+            accounting,
+            state,
+            newPrice,
+            'oracle'
+          )
+          await recordPerpAccountingShadow(
+            pgTrans,
+            contract,
+            accounting,
+            { kind: 'oracle', price: newPrice },
+            state,
+            state,
+            newPrice
+          )
+        }
         return {
           liquidated: [],
           adlAdjusted: [],

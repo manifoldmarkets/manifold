@@ -245,9 +245,24 @@ runScript(async ({ pg }) => {
         console.log(
           `  ${t.userId} ${t.direction}: b trimmed by ${t.amount} (dust) so the pool holds every reserve it promises`
         )
-      if (dry.reductions.length > 0 || dry.plan.activationAdl)
+      if (
+        dry.reductions.length > 0 ||
+        dry.plan.activationAdl ||
+        planOptions.allocation === 'last-resort-snapshot' ||
+        !dry.markFresh
+      )
         console.log(
-          `  This activation reduces someone. Re-run with --confirm-plan=${dry.planDigest} to execute exactly this plan (mark ${dry.mark}); any change to the book, the top-ups or the policy aborts.`
+          `  ${
+            !dry.markFresh &&
+            dry.reductions.length === 0 &&
+            !dry.plan.activationAdl
+              ? 'The mark is stale, so activation needs a reviewed plan.'
+              : 'This activation reduces someone.'
+          } Re-run with --confirm-plan=${
+            dry.planDigest
+          } to execute exactly this plan (mark ${
+            dry.mark
+          }); any change to the book, the top-ups or the policy aborts.`
         )
     }
     if (flag('dry-run')) {

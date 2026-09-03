@@ -1,10 +1,12 @@
 import { liquidationPrice, PerpState } from './amm'
 import { PerpDirection, PerpEvent, PerpPosition } from './position'
 import { getPositionValue } from './amm'
+import { getPerpAccountingSnapshot } from './protected-basis'
 import {
   allocateLastResortReserveBasis,
   classifyPerpMigration,
   classifyPerpMigrationSide,
+  perpActivationConfirmation,
   perpActivationFingerprint,
   perpActivationPlanDigest,
   perpActivationReductions,
@@ -535,5 +537,165 @@ describe('activation plan digest and dust trim (review round 4)', () => {
     const blocked = planPerpProtectedActivation(flat(0.9999), 100, options)
     expect(blocked.ok).toBe(false)
     expect(blocked.trims).toEqual([])
+  })
+})
+
+describe('activation trim exactness, confirmation gate and downgrade tolerance (review round 5)', () => {
+  const fullBasis = {
+    topUp: { long: 0, short: 0 },
+    allocation: 'full-basis' as const,
+    allowActivationAdl: false,
+  }
+
+  it('re-sums after trimming so Σb never exceeds the pool in float, even on asymmetric multi-row sides', () => {
+    const state: PerpState = {
+      pool: { L: 4894.271539344855, S: 500 },
+      positions: [
+        pos({
+          userId: 'a',
+          direction: 'long',
+          size: 2832.0008636021144,
+          costBasis: 2832.0008636021144,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 'b',
+          direction: 'long',
+          size: 2062.270676445516,
+          costBasis: 2062.270676445516,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 's',
+          direction: 'short',
+          size: 500,
+          costBasis: 500,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    const plan = planPerpProtectedActivation(state, 100, fullBasis)
+    expect(plan.ok).toBe(true)
+    expect(plan.trims.length).toBeGreaterThan(0)
+    const snapshot = getPerpAccountingSnapshot(plan.finalState, 100)
+    expect(snapshot.long.reservedBasis).toBeLessThanOrEqual(
+      plan.finalState.pool.L
+    )
+    expect(snapshot.short.reservedBasis).toBeLessThanOrEqual(
+      plan.finalState.pool.S
+    )
+    // And across random dust shortfalls on two- to four-row sides.
+    let seed = 11
+    const random = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648
+      return seed / 2147483648
+    }
+    for (let trial = 0; trial < 300; trial++) {
+      const n = 2 + Math.floor(random() * 3)
+      const rows = Array.from({ length: n }, (_, i) =>
+        pos({
+          userId: `u${i}`,
+          direction: 'long',
+          size: 1 + random() * 5000,
+          costBasis: 1 + random() * 5000,
+          entryPrice: 100,
+        })
+      ).map((p) => ({ ...p, size: p.costBasis }))
+      const total = rows.reduce((sum, p) => sum + p.costBasis, 0)
+      const book: PerpState = {
+        pool: { L: total - random() * 9e-7, S: 0 },
+        positions: rows,
+      }
+      const trial_plan = planPerpProtectedActivation(book, 100, fullBasis)
+      expect(trial_plan.ok).toBe(true)
+      const snap = getPerpAccountingSnapshot(trial_plan.finalState, 100)
+      expect(snap.long.reservedBasis).toBeLessThanOrEqual(
+        trial_plan.finalState.pool.L
+      )
+    }
+  })
+
+  it('gates exactly the plans the runbook says: reducing or stale need the reviewed digest, a fresh full-basis plan does not', () => {
+    const state = book(1500)
+    const plan = planPerpProtectedActivation(state, 90, fullBasis)
+    const digest = perpActivationPlanDigest(state, 90, fullBasis, plan)
+    expect(perpActivationConfirmation(fullBasis, plan, digest)).toEqual({
+      required: null,
+      matches: false,
+    })
+    expect(
+      perpActivationConfirmation(
+        { ...fullBasis, allowStaleMark: true },
+        plan,
+        digest
+      ).required
+    ).toBe('stale-mark')
+    const lastResort = {
+      ...fullBasis,
+      allocation: 'last-resort-snapshot' as const,
+    }
+    const reducingPlan = planPerpProtectedActivation(book(1400), 90, lastResort)
+    const reducingDigest = perpActivationPlanDigest(
+      book(1400),
+      90,
+      lastResort,
+      reducingPlan
+    )
+    expect(
+      perpActivationConfirmation(lastResort, reducingPlan, reducingDigest)
+    ).toEqual({ required: 'reducing', matches: false })
+    expect(
+      perpActivationConfirmation(
+        { ...lastResort, confirmedPlan: reducingDigest },
+        reducingPlan,
+        reducingDigest
+      )
+    ).toEqual({ required: 'reducing', matches: true })
+    expect(
+      perpActivationConfirmation(
+        { ...lastResort, confirmedPlan: digest },
+        reducingPlan,
+        reducingDigest
+      ).matches
+    ).toBe(false)
+    // Any row left below c is reducing even under the full-basis policy.
+    expect(
+      perpActivationConfirmation(
+        fullBasis,
+        { ...plan, reducedAnyBasis: true },
+        digest
+      ).required
+    ).toBe('reducing')
+  })
+
+  it('a dust-trimmed activation can still return to legacy: the verifier uses the same tolerance as the receipts', () => {
+    const flat: PerpState = {
+      pool: { L: 0.99999925, S: 0.99999925 },
+      positions: [
+        pos({
+          userId: 'l',
+          direction: 'long',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+        pos({
+          userId: 's',
+          direction: 'short',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 100,
+        }),
+      ],
+    }
+    const plan = planPerpProtectedActivation(flat, 100, fullBasis)
+    expect(plan.ok).toBe(true)
+    expect(plan.trims).toHaveLength(2)
+    const verdict = verifyPerpAccountingDowngrade({
+      positions: plan.finalState.positions,
+      eventsSinceActivation: [],
+      activationReducedBasis: plan.reducedAnyBasis,
+    })
+    expect(verdict.allowed).toBe(true)
   })
 })

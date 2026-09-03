@@ -268,6 +268,13 @@ begin
   exception when others then
     if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2%' then raise; end if;
   end;
+  begin
+    -- the source timestamp alone
+    update contracts set data = data || '{"oracleSourceTime":5}'::jsonb where id = 'guardtest-protected';
+    raise exception 'ASSERTION FAILED: old writer moved oracleSourceTime on a protected contract';
+  exception when others then
+    if sqlerrm not like 'PERP accounting guard: contract guardtest-protected is protected at epoch 2%' then raise; end if;
+  end;
   select (data->>'poolLong')::numeric, (data->>'poolShort')::numeric, (data->>'oraclePrice')::numeric
     into v_l, v_s, v_p from contracts where id = 'guardtest-protected';
   if v_l <> 50 or v_s <> 100 or v_p <> 100 then
@@ -285,12 +292,13 @@ begin
   end;
   -- the version-aware writer presents the epoch and may move pools, mark and halt
   perform set_config('perp.accounting_epoch', '2', true);
-  update contracts set data = data || '{"poolLong":80,"poolShort":70,"oraclePrice":101,"oraclePriceTime":1,"solvencyHaltTime":1,"solvencyHaltReason":"x"}'::jsonb
+  update contracts set data = data || '{"poolLong":80,"poolShort":70,"oraclePrice":101,"oraclePriceTime":1,"oracleSourceTime":5,"solvencyHaltTime":1,"solvencyHaltReason":"x"}'::jsonb
    where id = 'guardtest-protected';
   update contracts set data = data || '{"solvencyHaltTime":null,"solvencyHaltReason":null}'::jsonb where id = 'guardtest-protected';
   select (data->>'poolLong')::numeric, (data->>'poolShort')::numeric, (data->>'oraclePrice')::numeric
     into v_l, v_s, v_p from contracts where id = 'guardtest-protected';
-  if v_l <> 80 or v_s <> 70 or v_p <> 101 then
+  if v_l <> 80 or v_s <> 70 or v_p <> 101
+     or (select (data->>'oracleSourceTime')::numeric from contracts where id = 'guardtest-protected') <> 5 then
     raise exception 'ASSERTION FAILED: presented writer could not move protected financial fields';
   end if;
   perform set_config('perp.accounting_epoch', '', true);
@@ -361,6 +369,17 @@ begin
     if sqlerrm not like 'PERP accounting guard: contract_perp_positions rows are never re-keyed%' then raise; end if;
   end;
   perform set_config('perp.accounting_epoch', '', true);
+  -- protected -> legacy is a transition like any other: exactly one epoch
+  -- further, with a record that names the mode being left
+  insert into contract_perp_accounting_epochs
+    (contract_id, epoch, accounting_mode, previous_mode, pool_long, pool_short, position_snapshot)
+  values ('guardtest-protected', 3, 'legacy', 'protected', 80, 70, '[]'::jsonb);
+  perform set_config('perp.accounting_transition', 'true', true);
+  update contracts set data = data || '{"perpAccountingMode":"legacy","perpAccountingEpoch":3}'::jsonb where id = 'guardtest-protected';
+  perform set_config('perp.accounting_transition', '', true);
+  if (select data->>'perpAccountingMode' from contracts where id = 'guardtest-protected') <> 'legacy' then
+    raise exception 'ASSERTION FAILED: the protected -> legacy downgrade did not apply';
+  end if;
 end $$;
 
 select 'perp accounting guard test: PASS' as result;

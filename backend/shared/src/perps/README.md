@@ -444,8 +444,13 @@ can neither be settled at factor 0 nor fail a side-level check. Tolerance
 classifies dust; it never authorizes cash. Every payout equals the pool debit
 that funds it (`debitPool` returns what the pool actually gave up): a claim
 the pool cannot fully pay is trimmed by the dust the pool lacks — the
-canonically last claimant absorbs it in claim ADL and resolution — and a
-pool never goes below zero. Activation likewise trims a dust reserve
+closing user absorbs it on a close; in claim ADL and resolution the trim
+walks canonically backward from the last claimant, and a remainder that
+survives only because every leg was consumed is summation rounding, not a
+shortfall — and a pool never goes below zero. A contingent payment is also
+capped at the paying pool's reserves that survive the settlement, so the
+paying side lands on `B >= Σb` in real arithmetic whatever scale admitted
+the claim. Activation likewise trims a dust reserve
 shortfall from the canonically last row's `b` so `B >= Σb` holds exactly in
 the committed state, never merely within tolerance. The ledger-vs-pools
 escrow check can therefore never drift by tolerated slack, whatever scale a

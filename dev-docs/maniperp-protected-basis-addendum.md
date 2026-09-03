@@ -56,7 +56,9 @@ q' = s·q,   c' = b + s·(c − b),   b' = b,   Pe' = Pe
 
 which maps `E` to `s·E` and reduces to the paper's `q' = s·q, c' = c` at
 `b = c`. At `s = 0` the row is removed and `b` is paid once from its own
-pool. `originalCostBasis` and fee bases are left alone for `0 < s < 1`. The factor
+pool — exactly what the pool gives up: a shortfall within dust is trimmed
+from the canonically last settled row, never minted. `originalCostBasis` and
+fee bases are left alone for `0 < s < 1`. The factor
 is representability-aware: an allowance below the side's floating-point
 dust snaps `s` to 0 rather than producing a `c'` that rounds above what the
 pool can pay, and a contingent claim below dust is left at `s = 1`.
@@ -71,7 +73,11 @@ delta_i = delta · D_i / D;   b_i' = b_i − delta_i  (never below V_i)
 B' = B − W,   C' = C − delta,   D' = D − delta,   H' = H − (W − delta),   R' = R
 ```
 
-Paper losses are first-loss; `H` funds only the unmatched remainder. The
+Paper losses are first-loss; `H` funds only the unmatched remainder. `W` is
+the amount actually debited: a claim reaching past the paying pool's
+remaining reserves `C'` by dust is trimmed from the claimant, so `B' >= C'`
+holds in real arithmetic; a larger shortfall fails closed and a pool never
+goes negative. Tolerance classifies dust; it never authorizes cash. The
 affected rows keep `q, c, Pe`, value, leverage and liquidation price. The
 allocation uses canonical row order and a deterministic residual; aggregate
 and partitioned settlement agree within the documented float tolerance
@@ -85,7 +91,9 @@ value within dust of `b` is not a contingent claim.
 ## 6. Closing
 
 For fraction `z`: own-pool component `z·R`, opposing component `z·E`
-(paid after §5 with `W = z·E`), survivor scaled by `1 − z` on
+(paid after §5 with `W = z·E`), each as actually debited from its pool; the
+user receives their sum, at most one dust tolerance below `z·V`. The
+survivor is scaled by `1 − z` on
 `q, c, b, originalCostBasis, takerFeeCostBasis`. Capacity never rejects a
 close. A flip closes first, then validates the new leg; the whole flip is
 rejected if the leg does not fit. A partial close must be at least 1% of the
@@ -96,7 +104,11 @@ recorded.
 
 Resolution applies liquidation and claim ADL at the terminal mark, reads
 every `R` and `E` from one immutable state and pays all positions as one
-batch; residual pools follow the existing policy. Liquidity additions raise
+batch, each payout exactly its pool debits with any dust shortfall trimmed
+from the canonically last claimant; residual pools follow the existing
+policy. Activation trims a dust reserve shortfall from the canonically last
+row's `b` so `B >= Σb` holds exactly in the committed state, never merely
+within tolerance. Liquidity additions raise
 `H`; a withdrawal must keep `B >= Σb` and both current-claim inequalities.
 
 ## 8. User contract
