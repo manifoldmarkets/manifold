@@ -3,11 +3,16 @@ import {
   assertPerpFundingConfig,
   getPerpOpenInterestCapacity,
   assertPerpStateSolvent,
+  PerpState,
 } from 'common/perps/amm'
+import {
+  PerpAccounting,
+  readPerpAccounting,
+} from 'common/perps/accounting-mode'
+import { assertPerpProtectedState } from 'common/perps/protected-basis'
 import { isPerpEscrowBalanced } from 'common/perps/escrow'
 import { shouldApplyFunding } from 'common/perps/funding'
 import { getOracleFreshness } from 'common/perps/oracle'
-import { PerpPosition } from 'common/perps/position'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 import {
@@ -20,6 +25,7 @@ import {
   getPerpLaunchTopicSlug,
 } from 'shared/perps/launch-manifest'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
+import { PositionRow, rowToPosition } from 'shared/perps/queries'
 import { getLocalEnv } from 'shared/init-admin'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
@@ -34,21 +40,6 @@ type FeedSnapshot = {
   sourceTs?: number
   oldestTs: number
   pointCount: number
-}
-
-type StoredPositionRow = {
-  contract_id: string
-  user_id: string
-  direction: string
-  size: number | string
-  cost_basis: number | string
-  original_cost_basis: number | string
-  taker_fee_cost_basis: number | string
-  entry_price: number | string
-  leverage: number | string
-  liquidation_price: number | string
-  opened_time: string
-  updated_time: string
 }
 
 const phaseArg = process.argv.find((arg) => arg.startsWith('--phase='))
@@ -801,23 +792,34 @@ if (require.main === module)
           }`
         )
 
-        const positionRows = await pg.manyOrNone<StoredPositionRow>(
+        const positionRows = await pg.manyOrNone<PositionRow>(
           `select * from contract_perp_positions where contract_id = $1`,
           [contract.id]
         )
-        const positions = positionRows.map(toPosition)
-        const state = {
-          pool: { L: contract.poolLong, S: contract.poolShort },
-          positions,
-        }
-        let stateIsSolvent = false
+        // Score the book with the rules its accounting mode actually runs
+        // under: a protected contract is judged by the protected invariants
+        // on its real reserve bases, a legacy/shadow one by #4030 solvency
+        // on the b = c mirror. Reading a protected row without its b, or an
+        // unknown mode, fails closed here exactly as it does in the engine.
+        let solvent: { state: PerpState; accounting: PerpAccounting } | null =
+          null
         try {
-          assertPerpStateSolvent(state, contract.oraclePrice)
-          stateIsSolvent = true
+          const accounting = readPerpAccounting(contract)
+          const positions = positionRows.map((row) =>
+            rowToPosition(row, accounting)
+          )
+          const state: PerpState = {
+            pool: { L: contract.poolLong, S: contract.poolShort },
+            positions,
+          }
+          if (accounting.mode === 'protected')
+            assertPerpProtectedState(state, contract.oraclePrice)
+          else assertPerpStateSolvent(state, contract.oraclePrice)
+          solvent = { state, accounting }
           report(
             'PASS',
             `market ${contract.slug} solvency`,
-            `${positions.length} open positions`
+            `${positions.length} open positions (${accounting.mode} accounting)`
           )
         } catch (error) {
           report(
@@ -826,11 +828,11 @@ if (require.main === module)
             error instanceof Error ? error.message : String(error)
           )
         }
-        if (stateIsSolvent) {
+        if (solvent) {
           for (const side of ['long', 'short'] as const) {
             const capacity = getPerpOpenInterestCapacity(
               side,
-              state,
+              solvent.state,
               contract.oraclePrice
             )
             if (!capacity.isWithinLimit)
@@ -1116,22 +1118,3 @@ if (require.main === module)
         `PERP launch preflight failed with ${failures} failure(s)`
       )
   })
-
-const toPosition = (row: StoredPositionRow): PerpPosition => {
-  if (row.direction !== 'long' && row.direction !== 'short')
-    throw new Error(`Invalid stored PERP direction ${row.direction}`)
-  return {
-    contractId: row.contract_id,
-    userId: row.user_id,
-    direction: row.direction,
-    size: Number(row.size),
-    costBasis: Number(row.cost_basis),
-    originalCostBasis: Number(row.original_cost_basis),
-    takerFeeCostBasis: Number(row.taker_fee_cost_basis),
-    entryPrice: Number(row.entry_price),
-    leverage: Number(row.leverage),
-    liquidationPrice: Number(row.liquidation_price),
-    openedTime: new Date(row.opened_time).getTime(),
-    updatedTime: new Date(row.updated_time).getTime(),
-  }
-}

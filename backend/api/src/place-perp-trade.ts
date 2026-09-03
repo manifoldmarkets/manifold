@@ -37,6 +37,7 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
           direction: position.direction,
           size: position.size,
           costBasis: position.costBasis,
+          reserveBasis: position.reserveBasis ?? position.costBasis,
           originalCostBasis: position.originalCostBasis,
           entryPrice: position.entryPrice,
           leverage: position.leverage,

@@ -25,7 +25,11 @@ export async function getPerpTradeCount(
       .from('contract_perp_events')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
-      .neq('event_type', 'funding')
+      .not(
+        'event_type',
+        'in',
+        '("funding","basis-settlement","accounting-activation")'
+      )
       .not('user_id', 'is', null)
   )
   return count

@@ -85,6 +85,7 @@ export function getBanTypesForAction(action: string): BanType[] {
     // Adding answers affects liquidity (trading), market structure (marketControl), and content (posting)
     'createAnswer': ['posting', 'marketControl', 'trading'],
     'hideComment': ['marketControl'],
+    'hidePerpSuggestion': ['marketControl'],
     'trade': ['trading'],
     'bet': ['trading'],
     'managram': ['posting', 'trading'],  // Blocked by either

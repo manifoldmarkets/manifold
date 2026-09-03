@@ -1259,6 +1259,7 @@ const ExpandedPerpRow = (props: {
         direction: 'long' | 'short' | null
         sizeDelta: number
         originalCostBasisDelta: number
+        reserveBasisDelta: number
         oraclePrice: number
         payout: number | null
         pnl: number | null
@@ -1388,32 +1389,60 @@ const ExpandedPerpRow = (props: {
           <span className="text-ink-500 text-xs font-semibold uppercase">
             Recent activity
           </span>
-          {events.map((e) => (
-            <Row
-              key={e.id}
-              className="text-ink-700 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
-            >
-              <span className="text-ink-500 w-14 capitalize">
-                {e.eventType}
-              </span>
-              {e.direction && <span className="capitalize">{e.direction}</span>}
-              <span>
-                {e.sizeDelta >= 0 ? '+' : ''}
-                {formatMoney(e.sizeDelta)}
-              </span>
-              <span className="text-ink-500">
-                @ {formatPerpPrice(e.oraclePrice, decimals)}
-              </span>
-              {e.payout != null && (
-                <span className="text-ink-500">
-                  payout {formatMoneyPrecise(e.payout)}
+          {events.map((e) =>
+            e.eventType === 'basis-settlement' ? (
+              // A protected-accounting receipt, not a trade: no size or cash
+              // moved. Say what changed — the protected basis — instead of
+              // rendering it as a +M$0 trade.
+              <Row
+                key={e.id}
+                className="text-ink-700 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
+              >
+                <span className="text-ink-500 w-14">Basis</span>
+                {e.direction && (
+                  <span className="capitalize">{e.direction}</span>
+                )}
+                <span>
+                  protected basis {formatMoney(e.reserveBasisDelta)} (
+                  {e.reserveBasisDelta >= 0 ? '+' : '−'}
+                  {formatMoneyPrecise(Math.abs(e.reserveBasisDelta))})
                 </span>
-              )}
-              <span className="text-ink-400 text-xs">
-                <RelativeTimestamp time={e.ts} shortened />
-              </span>
-            </Row>
-          ))}
+                <span className="text-ink-500">
+                  @ {formatPerpPrice(e.oraclePrice, decimals)}
+                </span>
+                <span className="text-ink-400 text-xs">
+                  <RelativeTimestamp time={e.ts} shortened />
+                </span>
+              </Row>
+            ) : (
+              <Row
+                key={e.id}
+                className="text-ink-700 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
+              >
+                <span className="text-ink-500 w-14 capitalize">
+                  {e.eventType}
+                </span>
+                {e.direction && (
+                  <span className="capitalize">{e.direction}</span>
+                )}
+                <span>
+                  {e.sizeDelta >= 0 ? '+' : ''}
+                  {formatMoney(e.sizeDelta)}
+                </span>
+                <span className="text-ink-500">
+                  @ {formatPerpPrice(e.oraclePrice, decimals)}
+                </span>
+                {e.payout != null && (
+                  <span className="text-ink-500">
+                    payout {formatMoneyPrecise(e.payout)}
+                  </span>
+                )}
+                <span className="text-ink-400 text-xs">
+                  <RelativeTimestamp time={e.ts} shortened />
+                </span>
+              </Row>
+            )
+          )}
         </Col>
       )}
     </Col>

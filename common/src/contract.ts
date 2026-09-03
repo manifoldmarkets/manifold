@@ -360,6 +360,19 @@ export type PerpMechanism = {
   // Cleared by the first tick that applies cleanly, e.g. after add-perp-subsidy.
   solvencyHaltTime?: number | null
   solvencyHaltReason?: string | null
+  // Protected-basis accounting (common/perps/accounting-mode). Absent means
+  // legacy #4030 semantics; the mode and epoch are read under the contract
+  // advisory lock and changed only through the guarded migration path —
+  // the database refuses a blind flip. Never mix modes inside one contract.
+  perpAccountingMode?: 'legacy' | 'shadow' | 'protected'
+  perpAccountingEpoch?: number
+  // Workstream B risk policy, independent of the accounting mode. `off`
+  // (absent) or `shadow`; `enforce` is rejected by this build.
+  perpRiskPolicyMode?: 'off' | 'shadow' | 'enforce'
+  // Protected-mode diagnostics, refreshed by every protected transition:
+  // Σ(c − b) across live positions and how many of them have b < c.
+  perpBasisDeficit?: number
+  perpReducedBasisCount?: number
 }
 export type PerpContract = Contract & Perp & PerpMechanism
 

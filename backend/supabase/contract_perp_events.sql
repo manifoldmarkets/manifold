@@ -10,11 +10,16 @@ create table if not exists
     size_delta numeric not null default 0,
     cost_basis_delta numeric not null default 0,
     original_cost_basis_delta numeric not null default 0,
+    reserve_basis_delta numeric not null default 0,
+    accounting_epoch bigint not null default 0,
+    accounting_mode text not null default 'legacy',
     direction text,
     leverage numeric,
     data jsonb,
     constraint contract_perp_events_event_type_check
-      check (event_type in ('open','add','close','liquidation','adl','funding'))
+      check (event_type in ('open','add','close','liquidation','adl','funding','basis-settlement','accounting-activation')),
+    constraint contract_perp_events_accounting_mode_check
+      check (accounting_mode in ('legacy','shadow','protected'))
   );
 
 alter table contract_perp_events enable row level security;
@@ -30,3 +35,6 @@ create index contract_perp_events_user_ts on public.contract_perp_events using b
 drop policy if exists "public read perp events" on contract_perp_events;
 create policy "public read perp events" on contract_perp_events for
 select using (true);
+
+-- Triggers
+create trigger contract_perp_events_accounting_guard before insert on public.contract_perp_events for each row execute function perp_accounting_guard();

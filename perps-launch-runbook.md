@@ -265,3 +265,170 @@ For an incident:
    investigating; unlisting alone does not block a direct API close. Preserve
    immutable history and resolve only against a validated published point.
 5. Rerun the preflight before re-enabling opens.
+
+## Protected-basis accounting
+
+Protected-basis settlement (Workstream A of the ManiPerp protected-basis
+plan) ships dormant: every contract stays on legacy accounting until it is
+migrated through the guarded path below. Read
+`backend/shared/src/perps/README.md`, "Protected-basis settlement", first.
+Nothing in this section has been run against production.
+
+### Controls
+
+- `contracts.data.perpAccountingMode`: `legacy` (absent) | `shadow` |
+  `protected`, with `perpAccountingEpoch`. Changed ONLY by
+  `backend/scripts/perp-protected-basis-preflight.ts`; the database refuses
+  any other flip, and refuses any change to a protected contract's pools,
+  oracle mark or halt fields that does not present the contract's epoch
+  (`perp_accounting_contract_guard`) — an old binary cannot move a
+  protected pool, commit a price-only tick, or halt or unhalt a protected
+  contract, even through a contract-only patch.
+- `contracts.data.perpRiskPolicyMode`: `off` (absent) | `shadow`. Independent
+  Workstream B knob, via `update-perp-config` or the script. `enforce` is not
+  implemented and is rejected.
+- Global `PERP_TRADING_MODE` and the scheduler are still the only operational
+  pause controls. There is no per-contract pause; migrations of live
+  contracts therefore use a global maintenance window.
+
+### Deploy order (load-bearing)
+
+1. Apply `2026090201_perp_protected_basis.sql`. It is additive and safe with
+   the running API and scheduler: their writes are mirrored by the guard, and
+   no contract is protected yet. It backfills `reserve_basis = cost_basis`
+   on every position (the legacy definition).
+2. Deploy the version-aware API. Wait for full rollout and drain every old
+   API instance.
+3. Only then deploy the version-aware scheduler.
+4. Verify the guard against the old-writer fixture on the target
+   environment's database:
+   `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/scripts/sql/perp-accounting-guard-test.sql`
+   (transactional, rolls back; must print `perp accounting guard test: PASS`).
+5. Run the read-only report for every live market and file it with the
+   migration decision:
+   `npx.cmd ts-node perp-protected-basis-preflight.ts`
+
+Until step 3 is complete and step 4 passes, do not move any contract out of
+legacy. An old scheduler writing against a protected contract is rejected by
+the database, which means its ticks halt that market — correct, but an
+incident.
+
+### Migration decision per contract
+
+The report prints, per side, `B`, `C = Σc`, `Rc = Σmin(c, V)`, the class and
+the exact top-up:
+
+- `covered` (`B >= C`): activate with `b = c`, no subsidy.
+- `top-up` (`Rc <= B < C`): fund `C − B` from the official account
+  (`--top-up-long/--top-up-short --funder=<userId>`), then `b = c`. The
+  last-resort snapshot allocation (`--last-resort-allocation`) assigns the
+  deficit to whoever is underwater at the cutover mark; it is NOT
+  user-conservative and needs explicit product approval. It — and any
+  activation ADL — can only run against the exact book a `--dry-run`
+  printed: the dry run prints every position's `b` and reduction plus a
+  digest of the whole plan (book, top-ups, policy, every row's `b` before
+  and after, trims, final pools), and the live run must repeat it as
+  `--confirm-plan=<digest>` or it is refused; a legacy trade, settlement,
+  tick or subsidy in between changes the digest even at an identical mark,
+  and so does a different top-up or policy on the same book. Every reduced
+  position receives an immutable `basis-settlement` receipt
+  (`trigger=activation`).
+- `deficit` (`B < Rc`): do not activate without the full `C − B`. Default is
+  to stay legacy through resolution or recreate the market.
+
+The classes are necessary, not sufficient: the report also says whether
+`b = c` satisfies both current-claim inequalities. If it does not, activation
+needs `--allow-activation-adl` (a reviewed, disclosed claim ADL at the
+cutover mark) or does not happen. A halted contract cannot be migrated;
+clear the halt first.
+
+Prefer launching new, empty markets directly in protected mode (legacy →
+protected is allowed only with zero positions).
+
+### Activation of an existing live contract
+
+Global maintenance window, because there are no per-contract pause controls:
+
+1. `PERP_TRADING_MODE=halted`, roll the API fully, drain old instances.
+2. Pause `update-perps` (funding) globally. Leave the oracle-feed job
+   running: the activation transaction takes the contract lock, so ticks
+   serialize around it, and a fast-feed contract's mark goes stale within
+   `maxOraclePriceAgeMs` (two minutes for the BTC launch config) once ticks
+   stop — the freshness check would then refuse the activation. For a
+   REDUCING activation, whose plan digest pins the mark and the book, pause
+   the feed job too, immediately before the dry run, and pass
+   `--allow-stale-mark` together with `--confirm-plan` if the pause outlasts
+   the freshness window: the reviewed plan, not the clock, is what proves
+   the cutover mark in that case (the code refuses `--allow-stale-mark`
+   without a confirmed plan).
+3. For each approved contract, in order:
+   - `--activate-shadow --confirm=PERP_ACCOUNTING_SHADOW` — done earlier,
+     outside the window, and left running for at least one funding period
+     and several closes on each side. Shadow commits legacy ledgers and
+     stamps rows; alongside, it advances an isolated protected-basis
+     checkpoint (`contract_perp_shadow_checkpoints`) through every
+     transition and compares it with the live state. Read the `shadow`
+     block of the report before activating: `transitions`, `divergences`,
+     `reseeds` and the last report. A divergence where the shadow holds
+     `b < c` and the legacy ledger paid a recovery the shadow would have
+     claim-ADL'd is the expected legacy/protected difference; a re-seed
+     with an error is a state the protected rules could not take and must
+     be understood before activation. A
+     `[perps][accounting-shadow] … must be re-seeded` ERROR line means a
+     checkpoint write failed and the replay has a gap: run
+     `--reseed-shadow --confirm=PERP_ACCOUNTING_SHADOW` and restart the soak.
+   - `--activate-protected --dry-run [...]` — prints the exact per-user
+     reserve bases, reductions, dust trims, cutover mark and plan digest
+     without writing. Required before any `--last-resort-allocation`,
+     `--allow-activation-adl` or `--allow-stale-mark` (they need its plan
+     digest); recommended always.
+   - `--activate-protected [--top-up-... --funder=...] [--last-resort-allocation] [--allow-activation-adl] [--allow-stale-mark] [--confirm-plan=<digest>] --confirm=PERP_ACCOUNTING_PROTECTED`.
+     One transaction under the contract lock: top-up txn, every position
+     rewritten with its `b` and the new epoch, the immutable
+     `contract_perp_accounting_epochs` row, the version flip, the
+     `accounting-activation` event, any activation ADL and its payouts, the
+     metrics rebuild, escrow and invariant checks. The cutover mark is the
+     contract's committed oracle price and must be fresh;
+     `--allow-stale-mark` is accepted only together with a reviewed
+     `--confirm-plan` (step 2).
+   - Re-run the report; every invariant must read true.
+4. Resume the scheduler globally; keep the API `reduce-only`.
+5. Observe repeated clean ticks and funding on the migrated contracts, then
+   restore `enabled`.
+
+### Rollback boundary
+
+Before activation: the schema, the version-aware code and shadow mode are all
+reversible (shadow → legacy: `--downgrade-legacy`).
+
+After activation: `--verify-downgrade` reports whether the immutable records
+still prove nothing v2-divergent happened (every live `b = c`, no
+`basis-settlement`, no partial close, no divergent Δb, no activation
+reduction). Only then does `--downgrade-legacy` succeed. After the first
+divergent mutation a v1 API, scheduler or blind version flip is unsafe. The
+emergency response is:
+
+1. `PERP_TRADING_MODE=halted` or `reduce-only` (reduce-only still runs
+   protected math); pause the scheduler globally if its writes are unsafe.
+2. Leave protected rows intact.
+3. Deploy a forward fix on version-aware code.
+4. Re-run the report; every invariant must hold before trading resumes.
+
+Do not roll the API back while solvency-halt rows exist, and never clear a
+halt by deleting the flag with pending state: clear it through a reviewed
+subsidy and a cleanly re-applied tick, or a coordinated maintenance recovery.
+A halt whose reason starts with `protected accounting (cross-side-transfer)`
+means the book would need a legacy transfer, which protected accounting
+forbids — that is an invariant violation to investigate, not to subsidise
+blindly.
+
+### Workstream B
+
+Set `perpRiskPolicyMode=shadow` on protected contracts once they are stable.
+Read the `[perps][risk-shadow]` lines and the `contract_perp_risk_shadow`
+row (latest evaluation per contract: accepted and compat-rejected opens,
+and every oracle/funding tick; nothing is stamped on financial events, and a
+rejected open's row is written best-effort through a detached connection
+because its transaction rolls back). Enforcement of `U = 1`, the exact stress rule, or any `alpha < 1`
+requires a separate product/risk approval and a separate PR; nothing in this
+build can enforce them.

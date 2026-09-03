@@ -243,3 +243,47 @@ create index question_fts on public.contracts using gin (question_fts);
 drop index if exists question_nostop_fts;
 
 create index question_nostop_fts on public.contracts using gin (question_nostop_fts);
+
+create trigger contracts_perp_accounting_contract_guard before
+update of data on public.contracts for each row when (
+  (
+    (old.data ->> 'perpAccountingMode'::text) is distinct from (new.data ->> 'perpAccountingMode'::text)
+  )
+  or (
+    (old.data ->> 'perpAccountingEpoch'::text) is distinct from (new.data ->> 'perpAccountingEpoch'::text)
+  )
+  or (
+    (
+      (
+        (old.data ->> 'perpAccountingMode'::text) = 'protected'::text
+      )
+      or (
+        (new.data ->> 'perpAccountingMode'::text) = 'protected'::text
+      )
+    )
+    and (
+      (
+        (old.data ->> 'poolLong'::text) is distinct from (new.data ->> 'poolLong'::text)
+      )
+      or (
+        (old.data ->> 'poolShort'::text) is distinct from (new.data ->> 'poolShort'::text)
+      )
+      or (
+        (old.data ->> 'oraclePrice'::text) is distinct from (new.data ->> 'oraclePrice'::text)
+      )
+      or (
+        (old.data ->> 'oraclePriceTime'::text) is distinct from (new.data ->> 'oraclePriceTime'::text)
+      )
+      or (
+        (old.data ->> 'oracleSourceTime'::text) is distinct from (new.data ->> 'oracleSourceTime'::text)
+      )
+      or (
+        (old.data ->> 'solvencyHaltTime'::text) is distinct from (new.data ->> 'solvencyHaltTime'::text)
+      )
+      or (
+        (old.data ->> 'solvencyHaltReason'::text) is distinct from (new.data ->> 'solvencyHaltReason'::text)
+      )
+    )
+  )
+)
+execute function perp_accounting_contract_guard ();

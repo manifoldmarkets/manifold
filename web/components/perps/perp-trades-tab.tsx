@@ -22,15 +22,25 @@ type Event = {
   ts: number
   userId: string | null
   direction: 'long' | 'short' | null
-  eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+  eventType:
+    | 'open'
+    | 'add'
+    | 'close'
+    | 'liquidation'
+    | 'adl'
+    | 'funding'
+    | 'basis-settlement'
   oraclePrice: number
   sizeDelta: number
   costBasisDelta: number
+  reserveBasisDelta: number
   originalCostBasisDelta: number
   leverage: number | null
   payout: number | null
   pnl: number | null
   adlFactor: number | null
+  fraction: number | null
+  reserveBasisAfter: number | null
   isApi: boolean
   userName: string | null
   username: string | null
@@ -186,6 +196,9 @@ const EVENT_LABELS: Record<Event['eventType'], string> = {
   liquidation: 'was liquidated on',
   adl: 'was auto-deleveraged on',
   funding: 'funding',
+  // Never served on the public tape (the endpoint returns these only for a
+  // single user's history); listed so the label map stays total.
+  'basis-settlement': 'had protected basis settled on',
 }
 
 const EventRow = (props: {
@@ -200,6 +213,15 @@ const EventRow = (props: {
       : event.direction === 'short'
       ? 'text-scarlet-600'
       : 'text-ink-600'
+  // A protected-accounting partial close removed only a fraction of the
+  // position; say so, or "closed" reads as the whole thing.
+  const closedFraction =
+    event.eventType === 'close' &&
+    event.fraction != null &&
+    event.fraction > 0 &&
+    event.fraction < 1
+      ? event.fraction
+      : null
 
   // For open/add we show deposited margin (originalCostBasisDelta).
   // For close/liquidation/adl we show payout + PnL from data.
@@ -246,7 +268,9 @@ const EventRow = (props: {
           {/* Aggregate rows (per-tick ADL) carry no direction; drop the
               trailing "on" so the label doesn't dangle before the price. */}
           <span className="text-ink-600">
-            {event.direction
+            {closedFraction != null
+              ? `closed ${Math.round(closedFraction * 100)}% of`
+              : event.direction
               ? EVENT_LABELS[event.eventType]
               : EVENT_LABELS[event.eventType].replace(/ on$/, '')}
           </span>

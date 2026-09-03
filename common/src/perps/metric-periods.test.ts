@@ -329,6 +329,98 @@ describe('calculatePerpMetricPeriods', () => {
     expect(result?.from.day.profit).toBeCloseTo(-65)
   })
 
+  it('replays a protected-basis settlement as a no-op and a partial close by its fraction', () => {
+    // Long opened 40d ago (1000 @ 100 on 100 margin). Yesterday a quarter of
+    // it was closed at 110 (payout 0.25 * 200 = 50) and, separately, an
+    // opposing realized gain settled 20 of its protected basis — which moves
+    // b only. Today the remaining 750 @ 100 on 75 margin is worth 150 at 110.
+    const result = calculatePerpMetricPeriods({
+      currentPositions: [
+        position({
+          size: 750,
+          costBasis: 75,
+          originalCostBasis: 75,
+          reserveBasis: 55,
+          leverage: 10,
+        }),
+      ],
+      events: [
+        event({
+          id: 2,
+          eventType: 'basis-settlement',
+          appliedTime: NOW - DAY_MS / 2,
+          sizeDelta: 0,
+          costBasisDelta: 0,
+          reserveBasisDelta: -20,
+          originalCostBasisDelta: 0,
+          leverage: null,
+          data: { trigger: 'close', reserveBasisAfter: 55 },
+        }),
+        event({
+          id: 3,
+          eventType: 'close',
+          appliedTime: NOW - DAY_MS / 3,
+          oraclePrice: 110,
+          sizeDelta: -250,
+          costBasisDelta: -25,
+          reserveBasisDelta: -25,
+          originalCostBasisDelta: -25,
+          leverage: 10,
+          data: { payout: 50, fraction: 0.25 },
+        }),
+      ],
+      currentPrice: 110,
+      periods: periods(100),
+    })
+
+    // Boundary value: the full 1000 @ 100 worth 100 at the cutoff price.
+    expect(result?.from.day.prevValue).toBeCloseTo(100)
+    expect(result?.from.day.value).toBeCloseTo(150)
+    // 150 now + 50 realized − 100 boundary − 0 new margin.
+    expect(result?.from.day.profit).toBeCloseTo(100)
+  })
+
+  it('fails closed on a basis settlement that claims to move size or cost basis', () => {
+    const result = calculatePerpMetricPeriods({
+      currentPositions: [position()],
+      events: [
+        event({
+          id: 2,
+          eventType: 'basis-settlement',
+          appliedTime: NOW - DAY_MS / 2,
+          sizeDelta: -10,
+          costBasisDelta: 0,
+          reserveBasisDelta: -20,
+        }),
+      ],
+      currentPrice: 100,
+      periods: periods(100),
+    })
+    expect(result).toBeUndefined()
+  })
+
+  it('still fails closed on a partial-looking close without a recorded fraction', () => {
+    const result = calculatePerpMetricPeriods({
+      currentPositions: [
+        position({ size: 750, costBasis: 75, originalCostBasis: 75 }),
+      ],
+      events: [
+        event({
+          id: 3,
+          eventType: 'close',
+          appliedTime: NOW - DAY_MS / 3,
+          sizeDelta: -250,
+          costBasisDelta: -25,
+          originalCostBasisDelta: -25,
+          data: { payout: 50 },
+        }),
+      ],
+      currentPrice: 100,
+      periods: periods(100),
+    })
+    expect(result).toBeUndefined()
+  })
+
   it('treats factor-zero ADL payout as realized period profit', () => {
     const result = calculatePerpMetricPeriods({
       currentPositions: [],

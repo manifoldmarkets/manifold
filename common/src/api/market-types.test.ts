@@ -3,12 +3,14 @@ import { z } from 'zod'
 import { API } from 'common/api/schema'
 import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
+import { PERP_MIN_CLOSE_FRACTION } from 'common/perps/protected-basis'
 import {
   PERP_TAKER_FEE_IMPACT_DEFAULT,
   PERP_TAKER_FEE_IMPACT_MAX,
   PERP_TAKER_FEE_BPS_DEFAULT,
 } from 'common/perps/fees'
 import {
+  closePerpPositionSchema,
   createPerpSchema,
   LiteMarket,
   placePerpTradeSchema,
@@ -356,6 +358,7 @@ describe('update-perp-config props', () => {
       'maxFundingRate',
       'maxLeverage',
       'maxOraclePriceAgeMs',
+      'perpRiskPolicyMode',
       'takerFeeApiBps',
       'takerFeeBps',
       'takerFeeImpact',
@@ -363,13 +366,14 @@ describe('update-perp-config props', () => {
   })
 
   it('accepts each tunable field on its own', () => {
-    const sample: Record<string, number> = {
+    const sample: Record<string, number | string> = {
       maxLeverage: 10,
       maxFundingRate: 0.02,
       takerFeeBps: 10,
       takerFeeImpact: 90,
       takerFeeApiBps: 30,
       maxOraclePriceAgeMs: 10_000,
+      perpRiskPolicyMode: 'shadow',
     }
     for (const field of optionalFields) {
       expect(sample[field]).toBeDefined() // keeps this test honest as fields are added
@@ -379,6 +383,20 @@ describe('update-perp-config props', () => {
       })
       expect([field, parsed.success]).toEqual([field, true])
     }
+  })
+
+  it('never accepts risk-policy enforcement, and never the accounting mode', () => {
+    // Workstream B is shadow-only in this build; the accounting mode is
+    // changed only through the guarded migration path, never by this
+    // endpoint.
+    expect(
+      props.safeParse({ contractId: 'c1', perpRiskPolicyMode: 'enforce' })
+        .success
+    ).toBe(false)
+    expect(
+      props.safeParse({ contractId: 'c1', perpAccountingMode: 'protected' })
+        .success
+    ).toBe(false)
   })
 
   it('still rejects a request that changes nothing', () => {
@@ -401,5 +419,37 @@ describe('update-perp-config props', () => {
         takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX,
       }).success
     ).toBe(true)
+  })
+})
+
+describe('closePerpPositionSchema', () => {
+  const base = {
+    contractId: 'c1',
+    direction: 'long' as const,
+    idempotencyKey: 'abcdefghij',
+    expectedOpenedTime: 0,
+  }
+
+  it('accepts a whole close (omitted or exactly 1) and any fraction at or above the minimum', () => {
+    expect(closePerpPositionSchema.safeParse(base).success).toBe(true)
+    for (const fraction of [1, PERP_MIN_CLOSE_FRACTION, 0.5, 0.999])
+      expect(
+        closePerpPositionSchema.safeParse({ ...base, fraction }).success
+      ).toBe(true)
+  })
+
+  it('rejects fractions that cannot change the position, above one, non-finite, or not numbers', () => {
+    for (const fraction of [
+      PERP_MIN_CLOSE_FRACTION * 0.99,
+      0,
+      -0.5,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      '0.5',
+    ])
+      expect(
+        closePerpPositionSchema.safeParse({ ...base, fraction }).success
+      ).toBe(false)
   })
 })

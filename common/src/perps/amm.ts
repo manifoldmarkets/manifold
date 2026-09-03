@@ -40,7 +40,7 @@ export const getPerpBackingPool = (poolLong: number, poolShort: number) => {
  * fully-backed payout. Clamp only that representational dust; a material
  * deficit remains negative so the engine's solvency checks still fail closed.
  */
-const poolAfterDebit = (pool: number, debit: number) => {
+export const poolAfterDebit = (pool: number, debit: number) => {
   const next = pool - debit
   if (next >= 0) return next === 0 ? 0 : next
 
@@ -97,6 +97,51 @@ export const getUnrealizedEquity = (position: PerpPosition, price: number) => {
 /** Current value of an open position (c + π), floored at 0. */
 export const getPositionValue = (position: PerpPosition, price: number) =>
   Math.max(position.costBasis + getUnrealizedEquity(position, price), 0)
+
+/**
+ * Protected basis `b`. A row that predates the column, or any legacy/shadow
+ * contract row, carries no reserveBasis and reads as `costBasis` — the
+ * legacy mirror `b = c`, under which every formula below reduces to #4030.
+ */
+export const getReserveBasis = (position: PerpPosition) =>
+  position.reserveBasis ?? position.costBasis
+
+/**
+ * A position's claim on its OWN side pool: `R = min(b, V)`. This is the
+ * quantity ADL solvency, exposure capacity and cross-side transfer all
+ * reserve. With `b = c` (every legacy contract) it is exactly the
+ * `min(costBasis, positionValue)` #4030 used.
+ */
+export const getPerpReserve = (position: PerpPosition, price: number) =>
+  Math.min(getReserveBasis(position), getPositionValue(position, price))
+
+/**
+ * Scale q, c (and b when present) by one factor — the funding transform, and
+ * the surviving-row transform of a partial close. Leverage is invariant so
+ * the liquidation price is too; both are recomputed rather than trusted.
+ */
+export const scalePerpPositionBases = (
+  position: PerpPosition,
+  factor: number
+): PerpPosition => {
+  const size = factor * position.size
+  const costBasis = factor * position.costBasis
+  const leverage = getLeverage(size, costBasis)
+  return {
+    ...position,
+    size,
+    costBasis,
+    ...(position.reserveBasis === undefined
+      ? {}
+      : { reserveBasis: factor * position.reserveBasis }),
+    leverage,
+    liquidationPrice: liquidationPrice(
+      position.direction,
+      position.entryPrice,
+      leverage
+    ),
+  }
+}
 
 /**
  * Entry price of two tranches collapsed into one position, such that the
@@ -285,32 +330,13 @@ export const applyFunding = (state: PerpState, fundingRate: number) => {
     g = delta / L
   }
 
+  // The protected basis b scales with q and c by the same factor (protected
+  // plan, "Funding"): a haircut or bonus rescales the whole position, and
+  // the share of its value the own pool protects is unchanged by it.
   const newPositions = state.positions.map((p) => {
     if (p.size <= 0) return p
-    if (p.direction === dominant) {
-      // Haircut.
-      const size = (1 - f) * p.size
-      const costBasis = (1 - f) * p.costBasis
-      const leverage = getLeverage(size, costBasis)
-      return {
-        ...p,
-        size,
-        costBasis,
-        leverage,
-        liquidationPrice: liquidationPrice(p.direction, p.entryPrice, leverage),
-      }
-    }
-    // Minority: scale up.
-    const size = (1 + g) * p.size
-    const costBasis = (1 + g) * p.costBasis
-    const leverage = getLeverage(size, costBasis)
-    return {
-      ...p,
-      size,
-      costBasis,
-      leverage,
-      liquidationPrice: liquidationPrice(p.direction, p.entryPrice, leverage),
-    }
+    // Haircut on the dominant side; minority scales up.
+    return scalePerpPositionBases(p, p.direction === dominant ? 1 - f : 1 + g)
   })
 
   return { pool: { L: newL, S: newS }, positions: newPositions }
@@ -335,10 +361,14 @@ export const processLiquidations = (state: PerpState, price: number) => {
   const positions = state.positions.map((p) => {
     if (!isLiquidated(p, price)) return p
     liquidated.push(p)
+    // Liquidation forfeits the protected basis too: the margin stays in the
+    // pool as unreserved balance (H), which is one reason H cannot be read
+    // as house-funded capital.
     return {
       ...p,
       size: 0,
       costBasis: 0,
+      ...(p.reserveBasis === undefined ? {} : { reserveBasis: 0 }),
       leverage: 0,
     }
   })
@@ -367,14 +397,10 @@ export const applyADL = (state: PerpState, price: number) => {
     .filter((p) => profit(p) > 0)
     .reduce((s, p) => s + profit(p), 0)
 
-  const CS = shorts.reduce(
-    (s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)),
-    0
-  )
-  const CL = longs.reduce(
-    (s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)),
-    0
-  )
+  // Reserves are `min(b, V)`; every legacy row has b = c, so this is the
+  // `min(costBasis, positionValue)` #4030 wrote, expressed once.
+  const CS = shorts.reduce((s, p) => s + getPerpReserve(p, price), 0)
+  const CL = longs.reduce((s, p) => s + getPerpReserve(p, price), 0)
 
   // Cross-side deficit transfer. Margin refunds are senior to unrealized
   // profits, and the two pools sit behind ONE escrow balance.
@@ -554,6 +580,9 @@ export const openPosition = (
       direction,
       size: totalSize,
       costBasis,
+      // An add is fully protected by its own margin: b rises by exactly the
+      // new margin, whatever the existing row's b/c relationship.
+      reserveBasis: getReserveBasis(existing) + newCostBasis,
       originalCostBasis: existing.originalCostBasis + mana,
       takerFeeCostBasis: existing.takerFeeCostBasis ?? 0,
       entryPrice,
@@ -569,6 +598,7 @@ export const openPosition = (
       direction,
       size: newSize,
       costBasis: newCostBasis,
+      reserveBasis: newCostBasis,
       originalCostBasis: mana,
       takerFeeCostBasis: 0,
       entryPrice: oraclePrice,
@@ -710,10 +740,7 @@ const calculateAvailableCover = (
   const oppositeDirection = side === 'long' ? 'short' : 'long'
   const reservedOpposingValue = state.positions
     .filter((p) => p.direction === oppositeDirection && p.size > 0)
-    .reduce(
-      (sum, p) => sum + Math.min(p.costBasis, getPositionValue(p, price)),
-      0
-    )
+    .reduce((sum, p) => sum + getPerpReserve(p, price), 0)
   return opposingPool - reservedOpposingValue
 }
 
@@ -787,11 +814,7 @@ const calculateMatchedCredit = (
   const released = opposing.reduce(
     (sum, p) =>
       sum +
-      Math.max(
-        Math.min(p.costBasis, getPositionValue(p, price)) -
-          Math.min(p.costBasis, getPositionValue(p, movedPrice)),
-        0
-      ),
+      Math.max(getPerpReserve(p, price) - getPerpReserve(p, movedPrice), 0),
     0
   )
   return Math.min(openInterest, released * PERP_OPEN_INTEREST_COVER_MULTIPLE)
@@ -916,7 +939,28 @@ export const assertPerpPositionNumbers = (
   } else if (position.costBasis <= 0 || position.leverage <= 0) {
     throw new Error(`${label} active exposure must have positive margin`)
   }
+
+  // Protected basis, when the row carries one: finite and 0 <= b <= c. The
+  // legacy mirror (absent) needs no check — it IS costBasis.
+  if (position.reserveBasis !== undefined) {
+    const b = position.reserveBasis
+    assertFiniteNumber(`${label} reserve basis`, b)
+    if (b < 0) throw new Error(`${label} reserve basis must be non-negative`)
+    if (b > position.costBasis + reserveBasisTolerance(b, position.costBasis))
+      throw new Error(`${label} reserve basis exceeds its cost basis`)
+    if (position.size === 0 && b !== 0)
+      throw new Error(`${label} has protected basis without active exposure`)
+  }
 }
+
+/**
+ * Dust allowance for `b <= c` comparisons: funding scales both by the same
+ * factor, so the two can differ by an ulp after a long history of ticks.
+ * Absolute-capped, like poolAfterDebit, so a corrupt row cannot buy a
+ * meaningful excess through a scale-relative tolerance.
+ */
+const reserveBasisTolerance = (b: number, c: number) =>
+  Math.min(1e-6, 128 * Number.EPSILON * Math.max(1, Math.abs(b), Math.abs(c)))
 
 /**
  * Structural / numeric sanity for a whole state: finite non-negative pools, a

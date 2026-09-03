@@ -13,6 +13,7 @@ import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
+import { PERP_MIN_CLOSE_FRACTION } from 'common/perps/protected-basis'
 import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
@@ -105,6 +106,9 @@ export type LiteMarket = {
   // number — and it is the input a client needs to size a trade.
   takerFeeApiBps?: number
   resolvedOraclePrice?: number
+  // Which settlement semantics this market commits: `legacy` (#4030) or
+  // `protected` (protected-basis settlement). `shadow` commits legacy.
+  perpAccountingMode?: 'legacy' | 'shadow' | 'protected'
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -252,6 +256,7 @@ export function toLiteMarket(
           takerFeeImpact: getPerpTakerFeeImpact(contract),
           takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
+          perpAccountingMode: contract.perpAccountingMode ?? 'legacy',
         }
       : {}),
 
@@ -702,4 +707,15 @@ export const closePerpPositionSchema = z.object({
   direction: z.enum(['long', 'short']),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
   expectedOpenedTime: z.number().int().nonnegative(),
+  // Fraction of the position to close; omitted = the whole position. Either
+  // exactly 1 or at least PERP_MIN_CLOSE_FRACTION — a smaller close cannot
+  // change the position and would only mint an event and streak credit.
+  // Below 1 is accepted only on markets using protected-basis accounting.
+  fraction: z
+    .number()
+    .lte(1)
+    .refine((z) => z === 1 || z >= PERP_MIN_CLOSE_FRACTION, {
+      message: `fraction must be 1 or at least ${PERP_MIN_CLOSE_FRACTION}`,
+    })
+    .optional(),
 })

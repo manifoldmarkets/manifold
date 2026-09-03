@@ -11,7 +11,8 @@ create table if not exists
     funding_rate numeric not null,
     num_liquidations int not null default 0,
     adl_factor_long numeric not null default 1,
-    adl_factor_short numeric not null default 1
+    adl_factor_short numeric not null default 1,
+    accounting_epoch bigint not null default 0
   );
 
 alter table contract_perp_funding_events enable row level security;
@@ -24,3 +25,6 @@ create unique index contract_perp_funding_events_pkey on public.contract_perp_fu
 drop policy if exists "public read perp funding" on contract_perp_funding_events;
 create policy "public read perp funding" on contract_perp_funding_events for
 select using (true);
+
+-- Triggers
+create trigger contract_perp_funding_events_accounting_guard before insert on public.contract_perp_funding_events for each row execute function perp_accounting_guard();

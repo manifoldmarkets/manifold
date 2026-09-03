@@ -14,6 +14,7 @@ import {
   getUserFacingPnlPercent,
 } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
+import { perpDustTolerance } from 'common/perps/protected-basis'
 import { DAY_MS } from 'common/util/time'
 import {
   formatCountdown,
@@ -29,6 +30,7 @@ import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -39,6 +41,7 @@ type Position = {
   direction: 'long' | 'short'
   size: number
   costBasis: number
+  reserveBasis: number
   originalCostBasis: number
   takerFeeCostBasis: number
   entryPrice: number
@@ -114,7 +117,10 @@ export const PerpPositionPanel = (props: {
               (e) =>
                 e.eventType === 'close' ||
                 e.eventType === 'liquidation' ||
-                (e.eventType === 'adl' && e.payout != null)
+                (e.eventType === 'adl' && e.payout != null) ||
+                // Protected accounting: a receipt that part of this
+                // position's paper loss funded an opposing realized gain.
+                e.eventType === 'basis-settlement'
             )
           )
         })
@@ -193,7 +199,12 @@ export const PerpPositionPanel = (props: {
           oracleTradingPaused={oracleTradingPaused}
         />
       ))}
-      {pastEvents.length > 0 && <PositionHistory events={pastEvents} />}
+      {pastEvents.length > 0 && (
+        <PositionHistory
+          events={pastEvents}
+          protectedAccounting={contract.perpAccountingMode === 'protected'}
+        />
+      )}
     </Col>
   )
 }
@@ -201,13 +212,23 @@ export const PerpPositionPanel = (props: {
 type PerpHistoryEvent = {
   id: number
   ts: number
-  eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+  eventType:
+    | 'open'
+    | 'add'
+    | 'close'
+    | 'liquidation'
+    | 'adl'
+    | 'funding'
+    | 'basis-settlement'
   direction: 'long' | 'short' | null
   sizeDelta: number
   originalCostBasisDelta: number
+  reserveBasisDelta: number
   oraclePrice: number
   payout: number | null
   pnl: number | null
+  fraction: number | null
+  reserveBasisAfter: number | null
 }
 
 // Tombstones for closed/liquidated positions, so the outcome of a position
@@ -216,8 +237,11 @@ type PerpHistoryEvent = {
 // short list reads as "this is everything".
 const HISTORY_PREVIEW_COUNT = 5
 
-const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
-  const { events: allEvents } = props
+const PositionHistory = (props: {
+  events: PerpHistoryEvent[]
+  protectedAccounting: boolean
+}) => {
+  const { events: allEvents, protectedAccounting } = props
   const [expanded, setExpanded] = useState(false)
   const events = expanded
     ? allEvents
@@ -299,15 +323,47 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           )
         }
 
-        // close
+        if (e.eventType === 'basis-settlement') {
+          // Not a cash flow: value, notional and entry are unchanged. What
+          // changed is how much of the position's value its own side still
+          // protects; recovery above that is contingent from here on.
+          const reduced = Math.abs(e.reserveBasisDelta)
+          return (
+            <Row
+              key={e.id}
+              className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
+            >
+              <span className="font-semibold text-amber-600 dark:text-amber-400">
+                Protected basis reduced on {e.direction}
+              </span>
+              <span className="text-ink-700 tabular-nums">
+                −{formatMoneyPrecise(reduced)}
+                {e.reserveBasisAfter != null &&
+                  ` → ${formatMoneyPrecise(e.reserveBasisAfter)} protected`}
+              </span>
+              <span className="text-ink-500 tabular-nums">
+                at {formatPrice(e.oraclePrice, decimals)}
+              </span>
+              <span className="text-ink-400 text-xs">{at}</span>
+            </Row>
+          )
+        }
+
+        // close (full, or a fraction under protected accounting)
         const pnl = e.pnl ?? 0
+        const partial =
+          e.fraction != null && e.fraction > 0 && e.fraction < 1
+            ? e.fraction
+            : null
         return (
           <Row
             key={e.id}
             className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
           >
             <span className="text-ink-700 font-medium">
-              Closed {e.direction}
+              {partial != null
+                ? `Closed ${Math.round(partial * 100)}% of ${e.direction}`
+                : `Closed ${e.direction}`}
             </span>
             <span className="text-ink-700 tabular-nums">
               payout {formatMoneyPrecise(e.payout ?? 0)}
@@ -341,6 +397,8 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
         Liquidation forfeits a position's margin to the pool that pays winning
         positions. Full auto-deleveraging closes excess winning exposure and
         returns its remaining margin.
+        {protectedAccounting &&
+          ' A protected-basis reduction means part of your paper loss already funded an opposing trader’s realized gain: your value and exposure did not change at that moment, but recovery above the protected amount depends on opposing losses and unreserved backing and may be auto-deleveraged.'}
       </span>
     </Col>
   )
@@ -377,6 +435,17 @@ const PositionCard = (props: {
   } as PerpPosition
   const pnl = getUserFacingPnl(position, markPrice)
   const pnlPct = getUserFacingPnlPercent(position, markPrice) * 100
+
+  // Protected-basis accounting: b below c means a realized opposing payout
+  // already consumed part of this position's paper loss. Shown only on
+  // markets that commit those semantics, and only when it actually differs.
+  const protectedAccounting = contract.perpAccountingMode === 'protected'
+  const reserveBasis = Number.isFinite(p.reserveBasis)
+    ? p.reserveBasis
+    : p.costBasis
+  const basisReduced =
+    protectedAccounting &&
+    reserveBasis < p.costBasis - perpDustTolerance(p.costBasis, reserveBasis)
 
   const isLong = p.direction === 'long'
   const accentBar = isLong ? 'bg-teal-500' : 'bg-scarlet-500'
@@ -429,38 +498,58 @@ const PositionCard = (props: {
       : 'text-ink-900'
 
   return (
+    // The card renders at very different widths — full column on the
+    // market page, a phone with large text, the hub's terminal — so its type
+    // steps on the card's own width (@container), in rem so a user's larger
+    // text setting counts as less room. Below that, the header wraps and the
+    // number column can shrink: a flex item's default min-width is its
+    // content, so two wide numbers used to push the P&L block clean out of
+    // the card (overflow-hidden then clipped it).
     <Col
       className={clsx(
-        'border-ink-200 bg-canvas-0 relative overflow-hidden rounded-lg border'
+        'border-ink-200 bg-canvas-0 @container relative overflow-hidden rounded-lg border'
       )}
     >
       <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
       <Col className="gap-3 p-4 pl-5">
         {/* Header: side + leverage badge, then PnL */}
-        <Row className="items-start justify-between gap-2">
-          <Col className="gap-0.5">
+        <Row className="items-start justify-between gap-3">
+          <Col className="min-w-0 gap-0.5">
             <Row className="items-center gap-2">
-              <span className={clsx('font-semibold capitalize', accentText)}>
+              <span
+                className={clsx(
+                  'whitespace-nowrap text-[clamp(13px,4.8cqw,1rem)] font-semibold capitalize',
+                  accentText
+                )}
+              >
                 {p.direction} {formatLeverage(p.leverage)}×
               </span>
             </Row>
-            <div className="text-ink-900 text-2xl font-bold tabular-nums">
+            {/* The two headline numbers must share one line at any card
+                width, so their size follows the card (cqw) between fixed
+                px floors and the desktop sizes. Floors are px, not rem, so
+                a large OS text setting can't re-widen them past the card. */}
+            <div className="text-ink-900 whitespace-nowrap text-[clamp(15px,6.5cqw,1.5rem)] font-bold tabular-nums leading-tight">
               {formatMoney(p.size)}
-              <span className="text-ink-400 ml-1.5 text-sm font-normal">
-                notional
-              </span>
             </div>
-            <div className="text-ink-500 text-xs">
-              {formatMoney(p.originalCostBasis)} margin
+            <div className={clsx('text-ink-500', CARD_LABEL)}>
+              notional · {formatMoney(p.originalCostBasis)} margin
             </div>
           </Col>
-          <Col className="items-end">
-            <div className="text-ink-400 text-xs">Unrealized profit</div>
-            <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
+          <Col className="shrink-0 items-end">
+            <div className={clsx('text-ink-400 whitespace-nowrap', CARD_LABEL)}>
+              Unrealized profit
+            </div>
+            <div
+              className={clsx(
+                'whitespace-nowrap text-[clamp(13px,5.5cqw,1.25rem)] font-bold tabular-nums leading-tight',
+                pnlColor
+              )}
+            >
               {pnl >= 0 ? '+' : ''}
               {formatMoneyPrecise(pnl)}
             </div>
-            <div className={clsx('text-xs tabular-nums', pnlColor)}>
+            <div className={clsx('tabular-nums', CARD_LABEL, pnlColor)}>
               {pnl >= 0 ? '+' : ''}
               {pnlPct.toFixed(2)}%
             </div>
@@ -468,7 +557,7 @@ const PositionCard = (props: {
         </Row>
 
         {/* Price stats grid */}
-        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3 text-sm">
+        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3">
           <PriceStat
             label="Entry"
             value={formatPrice(p.entryPrice, priceDecimals)}
@@ -517,6 +606,20 @@ const PositionCard = (props: {
           </div>
         )}
 
+        {basisReduced && (
+          <div className="text-ink-600 -mt-1 text-xs">
+            <span className="tabular-nums">
+              {formatMoneyPrecise(reserveBasis)} of{' '}
+              {formatMoneyPrecise(p.costBasis)} basis protected
+            </span>{' '}
+            <InfoTooltip
+              text={`Part of this position's paper loss has already funded an opposing trader's realized gain. Your value, exposure, entry and liquidation price did not change when that happened. Value up to ${formatMoneyPrecise(
+                reserveBasis
+              )} stays protected by this side's pool; recovery above it depends on opposing paper losses and unreserved backing and may be auto-deleveraged. No position is ever closed just because a counterparty leaves.`}
+            />
+          </div>
+        )}
+
         {distToLiq < 0.05 && (
           <div className="bg-scarlet-50 text-scarlet-600 rounded-md px-2.5 py-1.5 text-xs font-medium">
             {distToLiq > 0
@@ -544,6 +647,13 @@ const PositionCard = (props: {
   )
 }
 
+// Small type inside the card follows the card's width (cqw) between a px
+// floor and the usual text-xs / text-sm, so three mono prices and the
+// labels above them keep fitting when a phone runs a large text setting.
+// Card widths of ~336px and up get exactly text-xs / text-sm.
+const CARD_LABEL = 'text-[clamp(10px,3.6cqw,0.75rem)]'
+const CARD_VALUE = 'text-[clamp(11px,4.2cqw,0.875rem)]'
+
 // Drop trailing zeros so whole leverages render as "100×" not "100.00×",
 // but fractional ones keep one decimal of precision (e.g. "1.5×").
 const formatLeverage = (leverage: number) => {
@@ -557,18 +667,19 @@ const PriceStat = (props: {
   valueClass?: string
   sublabel?: string
 }) => (
-  <Col className="gap-0.5">
-    <div className="text-ink-500 text-xs">{props.label}</div>
+  <Col className="min-w-0 gap-0.5">
+    <div className={clsx('text-ink-500', CARD_LABEL)}>{props.label}</div>
     <div
       className={clsx(
-        'text-ink-900 font-mono font-semibold tabular-nums',
+        'text-ink-900 whitespace-nowrap font-mono font-semibold tabular-nums',
+        CARD_VALUE,
         props.valueClass
       )}
     >
       {props.value}
     </div>
     {props.sublabel && (
-      <div className="text-ink-400 text-xs">{props.sublabel}</div>
+      <div className={clsx('text-ink-400', CARD_LABEL)}>{props.sublabel}</div>
     )}
   </Col>
 )

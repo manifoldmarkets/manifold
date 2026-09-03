@@ -1,3 +1,4 @@
+import { PerpSuggestion } from '../perps/suggestion'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
@@ -1059,6 +1060,9 @@ export const API = (_apiTypeCheck = {
         direction: 'long' | 'short'
         size: number
         costBasis: number
+        // Protected basis b (common/perps/protected-basis). Equals costBasis
+        // on every market using legacy accounting.
+        reserveBasis: number
         originalCostBasis: number
         entryPrice: number
         leverage: number
@@ -1080,7 +1084,15 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { payout: number; pnl: number },
+    returns: {} as {
+      payout: number
+      pnl: number
+      // Fraction of the position this call closed (1 = the whole position)
+      // and the notional still open afterwards. Partial closes are accepted
+      // only on markets using protected-basis accounting.
+      fraction: number
+      remainingSize: number
+    },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1180,6 +1192,9 @@ export const API = (_apiTypeCheck = {
       // base, which makes such a rate a no-op rather than a reduction.
       effectiveTakerFeeApiBps: number
       maxOraclePriceAgeMs: number
+      // Workstream B risk-policy control: off or shadow. Independent of the
+      // accounting mode, which this endpoint cannot change.
+      perpRiskPolicyMode: 'off' | 'shadow'
     },
     props: z
       .object({
@@ -1220,6 +1235,12 @@ export const API = (_apiTypeCheck = {
         // cadence floor; a value below it would freeze the market between
         // healthy updates.
         maxOraclePriceAgeMs: z.number().int().positive().optional(),
+        // Workstream B shadow evaluation of candidate admission/allowance
+        // policies. `shadow` only computes and logs; nothing it computes can
+        // change a decision. `enforce` is deliberately not accepted by this
+        // build. The ACCOUNTING mode is not tunable here at all — it changes
+        // only through the guarded migration tooling.
+        perpRiskPolicyMode: z.enum(['off', 'shadow']).optional(),
       })
       .strict()
       .refine(
@@ -1233,7 +1254,8 @@ export const API = (_apiTypeCheck = {
           p.takerFeeBps !== undefined ||
           p.takerFeeImpact !== undefined ||
           p.takerFeeApiBps !== undefined ||
-          p.maxOraclePriceAgeMs !== undefined,
+          p.maxOraclePriceAgeMs !== undefined ||
+          p.perpRiskPolicyMode !== undefined,
         { message: 'Provide at least one field to update' }
       ),
   },
@@ -1385,10 +1407,16 @@ export const API = (_apiTypeCheck = {
     // Positions are correctness-critical right after a trade.
     cache: 'no-cache',
     returns: [] as {
+      contractId: string
       userId: string
       direction: 'long' | 'short'
       size: number
       costBasis: number
+      // Protected basis b: the value still backed by the position's own
+      // side pool. Equals costBasis under legacy accounting; below it once
+      // a realized opposing payout has consumed part of this position's
+      // paper loss (see the market explainer).
+      reserveBasis: number
       originalCostBasis: number
       takerFeeCostBasis: number
       entryPrice: number
@@ -1402,8 +1430,71 @@ export const API = (_apiTypeCheck = {
     }[],
     props: z
       .object({
-        contractId: z.string().min(1),
+        // One of contractId / userId is required: a market's book, a user's
+        // book across every perp (the /perps hub polls that in one call), or
+        // one user in one market.
+        contractId: z.string().min(1).optional(),
         userId: z.string().min(1).optional(),
+      })
+      .strict()
+      .refine((p) => p.contractId || p.userId, {
+        message: 'contractId or userId is required',
+      }),
+  },
+  'get-perp-suggestions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Signed-in viewers get their own hasVoted in the same response.
+    preferAuth: true,
+    cache: 'no-store',
+    returns: [] as PerpSuggestion[],
+    props: z
+      .object({
+        limit: z.coerce.number().int().positive().max(100).optional(),
+        // Mods and admins only — silently ignored for everyone else. Returns
+        // moderated rows alongside the live ones, each tagged with `hidden`.
+        includeHidden: coerceBoolean.optional(),
+      })
+      .strict(),
+  },
+  'create-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as PerpSuggestion,
+    props: z
+      .object({
+        name: z.string().min(1).max(200),
+        dataSource: z.string().max(1000).optional(),
+      })
+      .strict(),
+  },
+  'vote-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { votes: number },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        remove: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  // Moderation: mods and admins drop a suggestion out of the public list.
+  // Reversible — the row is flagged, never deleted, so the votes on it
+  // survive an unhide.
+  'hide-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { hidden: boolean },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        // Omitted means hide; pass false to restore.
+        hide: z.boolean().optional(),
       })
       .strict(),
   },
@@ -1417,18 +1508,35 @@ export const API = (_apiTypeCheck = {
     cache: 'no-cache',
     returns: [] as {
       id: number
+      contractId: string
       ts: number
       userId: string | null
       direction: 'long' | 'short' | null
-      eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+      eventType:
+        | 'open'
+        | 'add'
+        | 'close'
+        | 'liquidation'
+        | 'adl'
+        | 'funding'
+        | 'basis-settlement'
       oraclePrice: number
       sizeDelta: number
       costBasisDelta: number
+      // Δb. Mirrors costBasisDelta on legacy markets; 0 on rows written
+      // before the column existed. Only a basis-settlement moves it alone.
+      reserveBasisDelta: number
       originalCostBasisDelta: number
       leverage: number | null
       payout: number | null
       pnl: number | null
       adlFactor: number | null
+      // Fraction of the position a close removed (1 = full), when recorded.
+      fraction: number | null
+      // Protected accounting only: the value the row keeps protected after
+      // a basis settlement, so a holder can read their changed recovery
+      // rights off the receipt.
+      reserveBasisAfter: number | null
       isApi: boolean
       userName: string | null
       username: string | null
@@ -1436,7 +1544,11 @@ export const API = (_apiTypeCheck = {
     }[],
     props: z
       .object({
-        contractId: z.string().min(1),
+        contractId: z.string().min(1).optional(),
+        // A merged, newest-first tape across several markets in ONE query —
+        // the /perps hub's activity feed. Exactly one of contractId /
+        // contractIds.
+        contractIds: z.array(z.string().min(1)).min(1).max(50).optional(),
         userId: z.string().min(1).optional(),
         beforeId: z.coerce.number().int().optional(),
         limit: z.coerce.number().int().positive().max(200).optional(),
@@ -1445,7 +1557,10 @@ export const API = (_apiTypeCheck = {
         // carry no marker and read as manual.
         excludeApi: coerceBoolean.optional(),
       })
-      .strict(),
+      .strict()
+      .refine((p) => !!p.contractId !== !!p.contractIds, {
+        message: 'Exactly one of contractId or contractIds is required',
+      }),
   },
   'get-perp-funding-events': {
     method: 'GET',

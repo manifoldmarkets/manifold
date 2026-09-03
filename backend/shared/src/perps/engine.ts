@@ -27,6 +27,7 @@ import {
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPositionValue,
+  getReserveBasis,
   liquidationPrice as computeLiquidationPrice,
   MIN_PERP_LEVERAGE,
   openPosition as openPositionMath,
@@ -55,6 +56,32 @@ import {
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
+import {
+  PerpAccounting,
+  readPerpAccounting,
+} from 'common/perps/accounting-mode'
+import {
+  applyPerpProtectedFunding,
+  applyPerpProtectedOracleTransition,
+  assertPerpProtectedState,
+  closePerpProtectedPosition,
+  getPerpAccountingSnapshot,
+  PERP_MIN_CLOSE_FRACTION,
+  PerpBasisSettlement,
+  PerpProtectedCloseResult,
+  PerpProtectedInvariantError,
+  resolvePerpProtectedBatch,
+} from 'common/perps/protected-basis'
+import {
+  recordPerpAccountingShadow,
+  recordPerpRiskShadow,
+  recordPerpRiskShadowDetached,
+} from './accounting-shadow'
+import {
+  comparePerpAdmissionPolicies,
+  evaluatePerpClaimAllowanceShadow,
+  PERP_CLAIM_ALLOWANCE_ALPHA_CANDIDATES,
+} from 'common/perps/risk-policy-shadow'
 import {
   decideOracleTransition,
   getOracleFreshness,
@@ -87,6 +114,8 @@ import {
   insertFundingEventQuery,
   insertPerpEventsQuery,
   mergeContractDataQuery,
+  presentAccountingEpochQuery,
+  PositionRow,
   rowToPosition,
   selectContractForUpdateQuery,
   selectLatestOraclePriceQuery,
@@ -105,6 +134,15 @@ import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 type LoadedState = {
   contract: PerpContract
   state: PerpState
+  /** Read under the contract lock, never from a cached contract. */
+  accounting: PerpAccounting
+}
+
+/** The accounting every contract has until it is migrated. */
+const LEGACY_ACCOUNTING: PerpAccounting = {
+  mode: 'legacy',
+  epoch: 0,
+  riskPolicyMode: 'off',
 }
 
 const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
@@ -208,12 +246,46 @@ const loadStateForUpdate = async (
   if (contract.isResolved)
     throw new APIError(400, `Contract ${contractId} is resolved`)
 
-  const positionRows = await pgTrans.any(
+  // Accounting mode and epoch are read HERE, under the same lock as the
+  // pools and positions, so a transition committed by the migration tooling
+  // is observed before any math runs. Unknown or inconsistent values fail
+  // closed: a contract this binary cannot classify must not be traded.
+  let accounting: PerpAccounting
+  try {
+    accounting = readPerpAccounting(contract)
+  } catch (error) {
+    throw new APIError(
+      500,
+      `Contract ${contractId} has an invalid perp accounting configuration: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  }
+  if (accounting.mode === 'protected') {
+    // Present the epoch to the database guard for the rest of this
+    // transaction. Every position/event write on a protected contract is
+    // refused without it — including writes from a binary that predates
+    // protected accounting, which is what makes the guard an enforcement
+    // boundary rather than a convention.
+    await pgTrans.one(presentAccountingEpochQuery(accounting.epoch))
+  }
+
+  const positionRows = await pgTrans.any<PositionRow>(
     selectPositionsForUpdateQuery(contractId)
   )
-  const positions = positionRows.map((r: any) => rowToPosition(r))
+  let positions: PerpPosition[]
+  try {
+    positions = positionRows.map((r) => rowToPosition(r, accounting))
+  } catch (error) {
+    throw new APIError(
+      500,
+      `Contract ${contractId} has a position row this accounting mode cannot read: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  }
 
-  return { contract, state: buildState(contract, positions) }
+  return { contract, state: buildState(contract, positions), accounting }
 }
 
 const getLatestOraclePrice = async (
@@ -314,12 +386,25 @@ const parseStoredPosition = (value: unknown): PerpPosition => {
       500,
       'Invalid position taker fee cost basis in PERP idempotency record'
     )
+  const costBasis = finiteNumber(position.costBasis, 'position cost basis')
+  // Records stored before protected accounting carry no b: legacy mirror.
+  // A protected record without one would misreport b = c on replay.
+  const reserveBasis =
+    position.reserveBasis === undefined
+      ? costBasis
+      : finiteNumber(position.reserveBasis, 'position reserve basis')
+  if (reserveBasis < 0 || reserveBasis > costBasis * (1 + 1e-9) + 1e-9)
+    throw new APIError(
+      500,
+      'Invalid position reserve basis in PERP idempotency record'
+    )
   return {
     userId: position.userId,
     contractId: position.contractId,
     direction: position.direction,
     size: finiteNumber(position.size, 'position size'),
-    costBasis: finiteNumber(position.costBasis, 'position cost basis'),
+    costBasis,
+    reserveBasis,
     originalCostBasis: finiteNumber(
       position.originalCostBasis,
       'position original cost basis'
@@ -441,6 +526,9 @@ const diffForWrite = (
       !prev ||
       prev.size !== p.size ||
       prev.costBasis !== p.costBasis ||
+      // A basis settlement moves ONLY b on the opposing rows; without this
+      // line those rows would never be written.
+      getReserveBasis(prev) !== getReserveBasis(p) ||
       (prev.takerFeeCostBasis ?? 0) !== (p.takerFeeCostBasis ?? 0)
     )
       upserts.push(p)
@@ -488,6 +576,276 @@ const assertUserPerpRowsSound = (state: PerpState, userId: string) => {
         } — refusing to trade against a corrupt position row`
       )
     }
+  }
+}
+
+// -----------------------------------------------------------------------
+// protected-basis helpers
+// -----------------------------------------------------------------------
+
+/**
+ * Turn a protected invariant failure into the API error the caller expects.
+ * Post-trade failures on the user's own request are their 400 (like the
+ * legacy solvency reject); anything else is a server-side fault.
+ */
+const assertPerpProtectedStateOrThrow = (
+  state: PerpState,
+  price: number,
+  status: 400 | 500 = 500,
+  prefix?: string
+) => {
+  try {
+    assertPerpProtectedState(state, price)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new APIError(status, prefix ? `${prefix}: ${message}` : message)
+  }
+}
+
+/** Contract-level diagnostics; nothing under legacy/shadow accounting. */
+const protectedBasisPatch = (
+  state: PerpState,
+  price: number,
+  accounting: PerpAccounting
+) => {
+  if (accounting.mode !== 'protected') return {}
+  const snapshot = getPerpAccountingSnapshot(state, price)
+  return {
+    perpBasisDeficit: snapshot.long.basisDeficit + snapshot.short.basisDeficit,
+    perpReducedBasisCount:
+      snapshot.long.reducedBasisCount + snapshot.short.reducedBasisCount,
+  }
+}
+
+type BasisSettlementTrigger = 'close' | 'partial-close' | 'flip'
+
+/**
+ * One auditable, user-attributed receipt per row whose protected basis a
+ * realized opposing payout consumed. Not a cash flow: size, cost basis and
+ * value are unchanged, and metrics never count it as realized PnL.
+ */
+const buildBasisSettlementEvents = (
+  contract: PerpContract,
+  settlement: PerpBasisSettlement | null,
+  trigger: BasisSettlementTrigger,
+  appliedTime: number,
+  ts: number,
+  oraclePrice: number
+): PerpEvent[] => {
+  if (!settlement || settlement.allocations.length === 0) return []
+  return settlement.allocations.map((allocation) =>
+    asEvent(contract, {
+      userId: allocation.userId,
+      eventType: 'basis-settlement',
+      direction: allocation.direction,
+      leverage: null,
+      sizeDelta: 0,
+      costBasisDelta: 0,
+      reserveBasisDelta: -allocation.delta,
+      originalCostBasisDelta: 0,
+      data: {
+        trigger,
+        reserveBasisBefore: allocation.reserveBasisBefore,
+        reserveBasisAfter: allocation.reserveBasisAfter,
+        value: allocation.value,
+        paperLossBefore: allocation.paperLoss,
+        claim: settlement.claim,
+        claimFromPaperLoss: settlement.settled,
+        claimFromUnreserved: settlement.unreservedConsumed,
+        reason: 'basis-settlement',
+      },
+      appliedTime,
+      ts,
+      oraclePrice,
+    })
+  )
+}
+
+const protectedCloseEventData = (close: PerpProtectedCloseResult) => ({
+  fraction: close.fraction,
+  ownPayout: close.ownPayout,
+  contingentPayout: close.contingentPayout,
+  reserveBasis: close.closedReserveBasis,
+  paperLossSettled: close.settlement?.settled ?? 0,
+  unreservedConsumed: close.settlement?.unreservedConsumed ?? 0,
+  ...(close.remainingPosition
+    ? { remainingSize: close.remainingPosition.size }
+    : {}),
+})
+
+const logBasisSettlement = (
+  contract: PerpContract,
+  settlement: PerpBasisSettlement | null,
+  trigger: BasisSettlementTrigger
+) => {
+  if (!settlement || settlement.claim <= 0) return
+  log(
+    `[perps][protected] basis settled on ${contract.slug}: side=${
+      settlement.side
+    } trigger=${trigger} claim=${settlement.claim.toFixed(
+      4
+    )} fromPaperLoss=${settlement.settled.toFixed(
+      4
+    )} fromUnreserved=${settlement.unreservedConsumed.toFixed(4)} rows=${
+      settlement.allocations.length
+    }`
+  )
+}
+
+const logClaimAdl = (
+  contract: PerpContract,
+  result: {
+    adlFactorLong: number
+    adlFactorShort: number
+    contingentReduced: { long: number; short: number }
+    settled: AdlSettlement[]
+  },
+  trigger: 'oracle' | 'funding' | 'resolution'
+) => {
+  if (result.adlFactorLong >= 1 && result.adlFactorShort >= 1) return
+  log(
+    `[perps][protected] claim ADL on ${
+      contract.slug
+    } (${trigger}): factors long=${result.adlFactorLong.toFixed(
+      6
+    )} short=${result.adlFactorShort.toFixed(
+      6
+    )} contingentReduced long=${result.contingentReduced.long.toFixed(
+      4
+    )} short=${result.contingentReduced.short.toFixed(4)} settledRows=${
+      result.settled.length
+    }`
+  )
+}
+
+/**
+ * Workstream B shadow diagnostics for an admission ATTEMPT — accepted or
+ * rejected by the compatibility gate. READ-ONLY: the result is logged and
+ * (for accepted trades, whose transaction commits) persisted to the isolated
+ * contract_perp_risk_shadow table; it is never written to a financial event
+ * and the trade proceeds exactly as the compatibility gate decided. Never
+ * throws — a failure here is logged and ignored so a shadow policy can never
+ * block a trade.
+ */
+const riskPolicyShadowForOpen = (
+  contract: PerpContract,
+  accounting: PerpAccounting,
+  direction: PerpDirection,
+  postTradeState: PerpState,
+  price: number,
+  compatAccepted: boolean
+): Record<string, unknown> | undefined => {
+  if (accounting.riskPolicyMode !== 'shadow') return undefined
+  try {
+    const comparison = comparePerpAdmissionPolicies(
+      direction,
+      postTradeState,
+      price
+    )
+    const summary = {
+      kind: 'open' as const,
+      direction,
+      compatAccepted,
+      candidateU: comparison.candidate.policy.unreservedMultiple,
+      compatLimit: comparison.compat.limit,
+      compatHeadroom: comparison.compat.headroom,
+      candidateLimit: comparison.candidate.limit,
+      candidateHeadroom: comparison.candidate.headroom,
+      candidateWithinLimit: comparison.candidate.isWithinLimit,
+      candidateStricter: comparison.candidateStricter,
+      matchedCreditCapBinds: comparison.candidate.matchedCreditCapBinds,
+      exactMargin: comparison.exact.margin,
+      exactPasses: comparison.exact.passes,
+      exactImpliedAdlFactor: comparison.exact.impliedStressAdlFactor,
+      exactDisagrees: comparison.exactDisagrees,
+    }
+    if (
+      !compatAccepted ||
+      comparison.candidateStricter ||
+      comparison.exactDisagrees
+    )
+      log(
+        `[perps][risk-shadow] ${
+          contract.slug
+        } ${direction} compatAccepted=${compatAccepted}: compat headroom=${summary.compatHeadroom.toFixed(
+          2
+        )} candidate(U=${
+          summary.candidateU
+        }) headroom=${summary.candidateHeadroom.toFixed(2)} within=${
+          summary.candidateWithinLimit
+        } exact margin=${summary.exactMargin.toFixed(2)} passes=${
+          summary.exactPasses
+        }`
+      )
+    return summary
+  } catch (error) {
+    log.error(
+      `[perps][risk-shadow] ${
+        contract.slug
+      }: shadow admission evaluation failed and was ignored: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+    return undefined
+  }
+}
+
+/**
+ * Projected claim ADL under candidate alphas on a transition (every oracle
+ * tick, including the no-change fast path, and every funding). READ-ONLY:
+ * logged when a candidate would ADL, and persisted to the isolated
+ * contract_perp_risk_shadow table under a savepoint.
+ */
+const riskPolicyShadowForTransition = async (
+  pgTrans: SupabaseTransaction,
+  contract: PerpContract,
+  accounting: PerpAccounting,
+  state: PerpState,
+  price: number,
+  trigger: 'oracle' | 'funding'
+) => {
+  if (accounting.riskPolicyMode !== 'shadow') return
+  try {
+    const alphas = PERP_CLAIM_ALLOWANCE_ALPHA_CANDIDATES.map((alpha) => {
+      const shadow = evaluatePerpClaimAllowanceShadow(state, price, alpha)
+      if (shadow.long.factor < 1 || shadow.short.factor < 1)
+        log(
+          `[perps][risk-shadow] ${
+            contract.slug
+          } ${trigger} alpha=${alpha}: projected claim ADL long factor=${shadow.long.factor.toFixed(
+            6
+          )} amount=${shadow.long.projectedAdlAmount.toFixed(
+            4
+          )} short factor=${shadow.short.factor.toFixed(
+            6
+          )} amount=${shadow.short.projectedAdlAmount.toFixed(4)}`
+        )
+      return {
+        alpha,
+        long: {
+          factor: shadow.long.factor,
+          projectedAdlAmount: shadow.long.projectedAdlAmount,
+        },
+        short: {
+          factor: shadow.short.factor,
+          projectedAdlAmount: shadow.short.projectedAdlAmount,
+        },
+      }
+    })
+    await recordPerpRiskShadow(pgTrans, contract, {
+      kind: trigger,
+      price,
+      at: Date.now(),
+      alphas,
+    })
+  } catch (error) {
+    log.error(
+      `[perps][risk-shadow] ${
+        contract.slug
+      }: shadow allowance evaluation failed and was ignored: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
   }
 }
 
@@ -576,7 +934,10 @@ export const openOrAddPosition = async (
       }
     }
 
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const { contract, state, accounting } = await loadStateForUpdate(
+      pgTrans,
+      contractId
+    )
     const now = Date.now()
 
     // Match the authorization and market-state gates used by ordinary bets.
@@ -730,17 +1091,54 @@ export const openOrAddPosition = async (
     let closePayout = 0
     let closePnl = 0
     let closePricePnl = 0
+    let flipSettlementEvents: PerpEvent[] = []
     if (existingOpposite) {
-      const closeRes = closePositionMath(workingState, existingOpposite, price)
-      workingState = closeRes.state
-      assertPerpStateSolvent(workingState, price)
-      closePayout = closeRes.payout
+      let closeData: Record<string, unknown> = {}
+      let closeReserveBasisDelta: number
+      if (accounting.mode === 'protected') {
+        // Unified R/E close with loss-first settlement of the opposing
+        // side, applied BEFORE the new leg is validated. If the new leg
+        // does not fit, the whole flip is rejected below and nothing here
+        // is persisted; the user can submit a standalone close instead.
+        const closeRes = closePerpProtectedPosition(
+          workingState,
+          existingOpposite,
+          price,
+          1,
+          now
+        )
+        workingState = closeRes.state
+        assertPerpProtectedStateOrThrow(workingState, price)
+        closePayout = closeRes.payout
+        closePricePnl = closeRes.pricePnl
+        closeReserveBasisDelta = -closeRes.closedReserveBasis
+        closeData = protectedCloseEventData(closeRes)
+        flipSettlementEvents = buildBasisSettlementEvents(
+          contract,
+          closeRes.settlement,
+          'flip',
+          now,
+          now,
+          price
+        )
+        logBasisSettlement(contract, closeRes.settlement, 'flip')
+      } else {
+        const closeRes = closePositionMath(
+          workingState,
+          existingOpposite,
+          price
+        )
+        workingState = closeRes.state
+        assertPerpStateSolvent(workingState, price)
+        closePayout = closeRes.payout
+        closePricePnl = closeRes.pnl
+        closeReserveBasisDelta = -existingOpposite.costBasis
+      }
       closePnl = getUserFacingPnlFromPayout(
         closePayout,
         existingOpposite.originalCostBasis,
         existingOpposite.takerFeeCostBasis
       )
-      closePricePnl = closeRes.pnl
       closeEvent = asEvent(contract, {
         userId,
         eventType: 'close',
@@ -748,15 +1146,17 @@ export const openOrAddPosition = async (
         leverage: 0,
         sizeDelta: -existingOpposite.size,
         costBasisDelta: -existingOpposite.costBasis,
+        reserveBasisDelta: closeReserveBasisDelta,
         originalCostBasisDelta: -existingOpposite.originalCostBasis,
         data: {
           payout: closePayout,
           pnl: closePnl,
-          pricePnl: closeRes.pnl,
+          pricePnl: closePricePnl,
           entryPrice: existingOpposite.entryPrice,
           closePrice: price,
           originalCostBasis: existingOpposite.originalCostBasis,
           takerFeeCostBasis: existingOpposite.takerFeeCostBasis ?? 0,
+          ...closeData,
           reason: 'flip',
         },
         appliedTime: now,
@@ -929,6 +1329,23 @@ export const openOrAddPosition = async (
     // over-cap positions can always close, but cannot add further exposure.
     const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
     if (!capacity.isWithinLimit) {
+      // Workstream B, shadow only: a REJECTED attempt is evaluated too, so
+      // the telemetry covers both sides of the compatibility decision. This
+      // transaction is about to roll back, so the evaluation is persisted
+      // through a detached connection (best effort, never awaited).
+      const rejectedShadow = riskPolicyShadowForOpen(
+        contract,
+        accounting,
+        direction,
+        open.state,
+        price,
+        false
+      )
+      if (rejectedShadow)
+        recordPerpRiskShadowDetached(contract, {
+          ...rejectedShadow,
+          at: Date.now(),
+        })
       // The limit depends only on the opposing SIDE (its pool and its own
       // exposure), which an open on this side never touches, so pre-trade
       // headroom is exact — tell the user the largest trade that fits instead
@@ -954,12 +1371,44 @@ export const openOrAddPosition = async (
     // boundary within float dust — a strict `< 1` then rejects every open on
     // the winning side with "solvency 1.000 < 1" (a new position has zero
     // unrealized PnL and cannot move the factor at all).
-    const solv = solvencyFactor(direction, open.state, price)
-    if (solv < 1 - PERP_SOLVENCY_FACTOR_TOLERANCE)
-      throw new APIError(
+    if (accounting.mode === 'protected') {
+      // The full protected invariant set on the post-trade state: 0 <= b <= c,
+      // B >= Σb, and both current-claim inequalities. A fresh leg carries no
+      // contingent claim, so this can only fail on a book already at the
+      // boundary; report it like the legacy solvency reject.
+      assertPerpProtectedStateOrThrow(
+        open.state,
+        price,
         400,
-        `Post-trade solvency ${solv.toFixed(6)} < 1; try lower leverage or size`
+        'Post-trade protected-basis invariants fail; try lower leverage or size'
       )
+    } else {
+      const solv = solvencyFactor(direction, open.state, price)
+      if (solv < 1 - PERP_SOLVENCY_FACTOR_TOLERANCE)
+        throw new APIError(
+          400,
+          `Post-trade solvency ${solv.toFixed(
+            6
+          )} < 1; try lower leverage or size`
+        )
+    }
+
+    // Workstream B, shadow only: evaluated on the ADMITTED post-trade state
+    // and persisted to the isolated shadow table, never to the event. It has
+    // no vote.
+    const riskShadow = riskPolicyShadowForOpen(
+      contract,
+      accounting,
+      direction,
+      open.state,
+      price,
+      true
+    )
+    if (riskShadow)
+      await recordPerpRiskShadow(pgTrans, contract, {
+        ...riskShadow,
+        at: now,
+      })
 
     const { upserts, deletes } = diffForWrite(
       state.positions,
@@ -973,6 +1422,8 @@ export const openOrAddPosition = async (
       leverage: open.position.leverage,
       sizeDelta: open.deltaSize,
       costBasisDelta: open.deltaCostBasis,
+      // New margin is fully protected by the position's own side.
+      reserveBasisDelta: open.deltaCostBasis,
       originalCostBasisDelta: open.deltaOriginalCostBasis,
       data: {
         entryPrice: open.position.entryPrice,
@@ -1029,6 +1480,7 @@ export const openOrAddPosition = async (
       poolLong: open.state.pool.L,
       poolShort: open.state.pool.S,
       ...openInterestPatch(open.state.positions),
+      ...protectedBasisPatch(open.state, price, accounting),
       lastBetTime: now,
       lastUpdatedTime: now,
       volume: (contract.volume ?? 0) + tradeVolume,
@@ -1119,7 +1571,36 @@ export const openOrAddPosition = async (
 
     await assertPerpEscrowBalance(pgTrans, contractId, open.state.pool)
 
-    const newEvents = closeEvent ? [closeEvent, event] : [event]
+    // Accounting shadow: advance the isolated protected-basis checkpoint by
+    // this trade (a flip is one transition there too). Diagnostics only.
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      {
+        kind: 'open',
+        userId,
+        contractId,
+        direction,
+        mana,
+        leverage,
+        fee: openFee,
+        price,
+        now,
+      },
+      state,
+      open.state,
+      price
+    )
+
+    // Settlement receipts belong to OTHER users (the opposing rows whose
+    // paper loss funded the flip's contingent payout); they are inserted in
+    // this same transaction so the reduction and the payout commit together.
+    const newEvents = [
+      ...(closeEvent ? [closeEvent] : []),
+      ...flipSettlementEvents,
+      event,
+    ]
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -1136,8 +1617,8 @@ export const openOrAddPosition = async (
     await pgTrans.multi(
       [
         deletePositionsQuery(contractId, deletes),
-        upsertPositionsQuery(upserts),
-        insertPerpEventsQuery(newEvents),
+        upsertPositionsQuery(upserts, accounting),
+        insertPerpEventsQuery(newEvents, accounting),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
@@ -1166,7 +1647,14 @@ export const closePosition = async (
   idempotencyKey?: string,
   expectedOpenedTime?: number,
   /** See `openOrAddPosition`. */
-  isApi = false
+  isApi = false,
+  /**
+   * Fraction z of the position to close, (0, 1]. Below 1 only on contracts
+   * under protected-basis accounting, whose unified close scales every basis
+   * of the surviving row by 1 − z; legacy contracts reject a partial close
+   * rather than invent semantics the paper never defined for them.
+   */
+  fraction = 1
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (
@@ -1177,6 +1665,13 @@ export const closePosition = async (
   ) {
     throw new APIError(400, 'Invalid expected PERP position opening time')
   }
+  if (!Number.isFinite(fraction) || fraction <= 0 || fraction > 1)
+    throw new APIError(400, 'fraction must be a finite number in (0, 1]')
+  if (fraction < 1 && fraction < PERP_MIN_CLOSE_FRACTION)
+    throw new APIError(
+      400,
+      `fraction must be at least ${PERP_MIN_CLOSE_FRACTION} (or exactly 1 for a full close)`
+    )
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -1198,9 +1693,16 @@ export const closePosition = async (
                 request.expectedOpenedTime,
                 'expected position opening time'
               )
+        // Closes stored before partial closes existed carry no fraction and
+        // were full closes.
+        const storedFraction =
+          request?.fraction === undefined
+            ? 1
+            : finiteNumber(request.fraction, 'close fraction')
         if (
           request?.direction !== direction ||
-          storedExpectedOpenedTime !== expectedOpenedTime
+          storedExpectedOpenedTime !== expectedOpenedTime ||
+          storedFraction !== fraction
         ) {
           throw new APIError(
             409,
@@ -1233,6 +1735,12 @@ export const closePosition = async (
                   originalCostBasis,
                   takerFeeCostBasis
                 ),
+          fraction: storedFraction,
+          remainingSize:
+            typeof response?.remainingSize === 'number' &&
+            Number.isFinite(response.remainingSize)
+              ? response.remainingSize
+              : 0,
           // Callers must not re-run trade side effects (streaks) for a
           // replay — no trade happened on this request.
           replayed: true,
@@ -1240,7 +1748,10 @@ export const closePosition = async (
       }
     }
 
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const { contract, state, accounting } = await loadStateForUpdate(
+      pgTrans,
+      contractId
+    )
 
     // A close moves M$ out of contract escrow, so it is gated exactly like
     // an ordinary share SELL (see fetchContractBetDataAndValidate). In
@@ -1324,37 +1835,113 @@ export const closePosition = async (
     // openOrAddPosition), so exits pay out untouched. The opening fees the
     // position accumulated still land in this close's user-facing pnl via
     // takerFeeCostBasis.
-    const result = closePositionMath(state, position, price)
+    //
+    // Protected accounting routes every close (full or partial) through the
+    // unified R/E split: the own pool returns z·R, the opposing pool pays
+    // z·E after its paper losses are settled loss-first, and the surviving
+    // row scales by 1 − z. Legacy keeps #4030's sign-of-π close exactly.
+    let result: {
+      state: PerpState
+      payout: number
+      pricePnl: number
+      closedSize: number
+      closedCostBasis: number
+      closedReserveBasis: number
+      closedOriginalCostBasis: number
+      closedTakerFeeCostBasis: number
+      remainingPosition: PerpPosition | null
+      settlement: PerpBasisSettlement | null
+      data: Record<string, unknown>
+    }
+    if (accounting.mode === 'protected') {
+      let closeRes: PerpProtectedCloseResult
+      try {
+        closeRes = closePerpProtectedPosition(
+          state,
+          position,
+          price,
+          fraction,
+          now
+        )
+      } catch (error) {
+        throw new APIError(
+          500,
+          error instanceof Error ? error.message : String(error)
+        )
+      }
+      assertPerpProtectedStateOrThrow(closeRes.state, price)
+      logBasisSettlement(
+        contract,
+        closeRes.settlement,
+        fraction < 1 ? 'partial-close' : 'close'
+      )
+      result = {
+        state: closeRes.state,
+        payout: closeRes.payout,
+        pricePnl: closeRes.pricePnl,
+        closedSize: closeRes.closedSize,
+        closedCostBasis: closeRes.closedCostBasis,
+        closedReserveBasis: closeRes.closedReserveBasis,
+        closedOriginalCostBasis: closeRes.closedOriginalCostBasis,
+        closedTakerFeeCostBasis: closeRes.closedTakerFeeCostBasis,
+        remainingPosition: closeRes.remainingPosition,
+        settlement: closeRes.settlement,
+        data: protectedCloseEventData(closeRes),
+      }
+    } else {
+      if (fraction < 1)
+        throw new APIError(
+          400,
+          'Partial closes are only available on markets using protected-basis accounting; close the whole position instead.'
+        )
+      const legacy = closePositionMath(state, position, price)
+      assertPerpStateSolvent(legacy.state, price)
+      result = {
+        state: legacy.state,
+        payout: legacy.payout,
+        pricePnl: legacy.pnl,
+        closedSize: position.size,
+        closedCostBasis: position.costBasis,
+        closedReserveBasis: position.costBasis,
+        closedOriginalCostBasis: position.originalCostBasis,
+        closedTakerFeeCostBasis: position.takerFeeCostBasis ?? 0,
+        remainingPosition: null,
+        settlement: null,
+        data: {},
+      }
+    }
     const payout = result.payout
-    assertPerpStateSolvent(result.state, price)
     const userPnl = getUserFacingPnlFromPayout(
       payout,
-      position.originalCostBasis,
-      position.takerFeeCostBasis
+      result.closedOriginalCostBasis,
+      result.closedTakerFeeCostBasis
     )
+    const remainingSize = result.remainingPosition?.size ?? 0
 
     const event: PerpEvent = asEvent(contract, {
       userId,
       eventType: 'close',
       direction,
-      leverage: 0,
-      sizeDelta: -position.size,
-      costBasisDelta: -position.costBasis,
-      originalCostBasisDelta: -position.originalCostBasis,
+      leverage: result.remainingPosition?.leverage ?? 0,
+      sizeDelta: -result.closedSize,
+      costBasisDelta: -result.closedCostBasis,
+      reserveBasisDelta: -result.closedReserveBasis,
+      originalCostBasisDelta: -result.closedOriginalCostBasis,
       data: {
         payout,
         pnl: userPnl,
-        pricePnl: result.pnl,
+        pricePnl: result.pricePnl,
         entryPrice: position.entryPrice,
         closePrice: price,
-        originalCostBasis: position.originalCostBasis,
-        takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
+        originalCostBasis: result.closedOriginalCostBasis,
+        takerFeeCostBasis: result.closedTakerFeeCostBasis,
+        ...result.data,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,
-              request: { direction, expectedOpenedTime },
-              response: { payout, pnl: userPnl },
+              request: { direction, expectedOpenedTime, fraction },
+              response: { payout, pnl: userPnl, remainingSize },
             }
           : {}),
       },
@@ -1362,15 +1949,26 @@ export const closePosition = async (
       ts: now,
       oraclePrice: price,
     })
+    const settlementEvents = buildBasisSettlementEvents(
+      contract,
+      result.settlement,
+      fraction < 1 ? 'partial-close' : 'close',
+      now,
+      now,
+      price
+    )
+    const newEvents = [event, ...settlementEvents]
 
     const contractPatch = removeUndefinedProps({
       poolLong: result.state.pool.L,
       poolShort: result.state.pool.S,
       ...openInterestPatch(result.state.positions),
+      ...protectedBasisPatch(result.state, price, accounting),
       lastBetTime: now,
       lastUpdatedTime: now,
-      volume: (contract.volume ?? 0) + position.originalCostBasis,
-      volume24Hours: (contract.volume24Hours ?? 0) + position.originalCostBasis,
+      volume: (contract.volume ?? 0) + result.closedOriginalCostBasis,
+      volume24Hours:
+        (contract.volume24Hours ?? 0) + result.closedOriginalCostBasis,
     })
 
     // Credit user balance.
@@ -1388,10 +1986,10 @@ export const closePosition = async (
           data: {
             direction,
             pnl: userPnl,
-            pricePnl: result.pnl,
+            pricePnl: result.pricePnl,
             entryPrice: position.entryPrice,
             closePrice: price,
-            reason: 'close',
+            reason: fraction < 1 ? 'partial-close' : 'close',
           },
         },
         true
@@ -1400,23 +1998,49 @@ export const closePosition = async (
 
     await assertPerpEscrowBalance(pgTrans, contractId, result.state.pool)
 
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      {
+        kind: 'close',
+        userId,
+        direction,
+        fraction,
+        price,
+        now,
+        livePayout: payout,
+      },
+      state,
+      result.state,
+      price
+    )
+
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
       userIds: [userId],
-      newEvents: [event],
+      newEvents,
       finalPositions: result.state.positions,
     })
 
+    // A protected close can touch many opposing rows (their b), plus the
+    // surviving row on a partial close; diff the whole state so the payout,
+    // every basis reduction, the events and the ledger commit together.
+    const { upserts, deletes } = diffForWrite(
+      state.positions,
+      result.state.positions
+    )
     await pgTrans.multi(
       [
-        deletePositionsQuery(contractId, [{ userId, direction }]),
-        insertPerpEventsQuery([event]),
+        deletePositionsQuery(contractId, deletes),
+        upsertPositionsQuery(upserts, accounting),
+        insertPerpEventsQuery(newEvents, accounting),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
     )
 
-    return { payout, pnl: userPnl, replayed: false }
+    return { payout, pnl: userPnl, replayed: false, fraction, remainingSize }
   })
 }
 
@@ -1451,7 +2075,10 @@ export const addPerpPoolSubsidy = async (
   return runPerpTransaction(async (pgTrans) => {
     // Rejects resolved markets and non-MANA tokens, and serializes against
     // every other engine writer on this contract.
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const { contract, state, accounting } = await loadStateForUpdate(
+      pgTrans,
+      contractId
+    )
 
     const funder = await pgTrans.oneOrNone<{ id: string; balance: number }>(
       `select id, balance from users where id = $1 for update`,
@@ -1482,6 +2109,16 @@ export const addPerpPoolSubsidy = async (
       S: state.pool.S + (side === 'short' ? amount : 0),
     }
     await assertPerpEscrowBalance(pgTrans, contractId, pool)
+
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      { kind: 'subsidy', side, amount },
+      state,
+      { pool, positions: state.positions },
+      contract.oraclePrice
+    )
 
     // mergeContractDataQuery ends in `returning *` — .one(), not .none()
     // (see the fast path in runOracleUpdate for the failure mode).
@@ -1577,11 +2214,16 @@ const buildAdlEvents = (
           leverage: after.leverage,
           sizeDelta: after.size - before.size,
           costBasisDelta: after.costBasis - before.costBasis,
+          // Claim ADL keeps b (c' = b + s·(c − b)); legacy keeps c too.
+          reserveBasisDelta: getReserveBasis(after) - getReserveBasis(before),
           originalCostBasisDelta: 0,
           data: {
             adlFactor: scaleFactor,
             sizeBefore: before.size,
             sizeAfter: after.size,
+            costBasisBefore: before.costBasis,
+            costBasisAfter: after.costBasis,
+            reserveBasis: getReserveBasis(after),
           },
           appliedTime,
           ts,
@@ -1596,6 +2238,7 @@ const buildAdlEvents = (
         leverage: 0,
         sizeDelta: -position.size,
         costBasisDelta: -position.costBasis,
+        reserveBasisDelta: -getReserveBasis(position),
         originalCostBasisDelta: -position.originalCostBasis,
         data: {
           adlFactor: 0,
@@ -1630,6 +2273,7 @@ const buildAdlEvents = (
       leverage: null,
       sizeDelta: 0,
       costBasisDelta: 0,
+      reserveBasisDelta: 0,
       originalCostBasisDelta: 0,
       data: {
         adlFactorLong,
@@ -1693,7 +2337,9 @@ export const applyOracleUpdate = (
   state: PerpState,
   newPrice: number,
   ts: number,
-  appliedTime: number
+  appliedTime: number,
+  /** The contract's accounting as read under the lock; legacy when omitted. */
+  accounting: PerpAccounting = LEGACY_ACCOUNTING
 ) => {
   // Structure first, on the INPUT. Liquidation and ADL both drop or zero
   // rows, so a malformed row that reaches them is gone by the time the
@@ -1705,14 +2351,46 @@ export const applyOracleUpdate = (
   // fix. Solvency is still asserted on the OUTPUT below.
   assertPerpStateNumbers(state, newPrice)
 
-  const liqRes = processLiquidations(state, newPrice)
-  const adlRes = applyADL(liqRes.state, newPrice)
-  const finalState = adlRes.state
-  assertPerpStateSolvent(finalState, newPrice)
+  let finalState: PerpState
+  let liquidated: PerpPosition[]
+  let adlAdjusted: AdlAdjustedPosition[]
+  let adlSettled: AdlSettlement[]
+  let adlFactorLong: number
+  let adlFactorShort: number
+  if (accounting.mode === 'protected') {
+    // Liquidation, then generalized claim ADL against E = max(V − b, 0)
+    // with the full D + H allowance. A book that legacy ADL would only have
+    // made representable by a cross-side transfer throws here
+    // (PerpProtectedInvariantError 'cross-side-transfer'); runOracleUpdate
+    // turns that into a solvency halt, never a pool move.
+    const transition = applyPerpProtectedOracleTransition(state, newPrice)
+    finalState = transition.state
+    liquidated = transition.liquidated
+    adlAdjusted = transition.adjusted
+    adlSettled = transition.settled
+    adlFactorLong = transition.adlFactorLong
+    adlFactorShort = transition.adlFactorShort
+    logClaimAdl(contract, transition, 'oracle')
+  } else {
+    const liqRes = processLiquidations(state, newPrice)
+    const adlRes = applyADL(liqRes.state, newPrice)
+    finalState = adlRes.state
+    assertPerpStateSolvent(finalState, newPrice)
+    liquidated = liqRes.liquidated
+    adlAdjusted = collectAdlAdjusted(
+      liqRes.state.positions,
+      finalState.positions,
+      adlRes.adlFactorLong,
+      adlRes.adlFactorShort
+    )
+    adlSettled = adlRes.settled
+    adlFactorLong = adlRes.adlFactorLong
+    adlFactorShort = adlRes.adlFactorShort
+  }
 
   const events: PerpEvent[] = []
 
-  for (const liq of liqRes.liquidated) {
+  for (const liq of liquidated) {
     events.push(
       asEvent(contract, {
         userId: liq.userId,
@@ -1721,6 +2399,7 @@ export const applyOracleUpdate = (
         leverage: 0,
         sizeDelta: -liq.size,
         costBasisDelta: -liq.costBasis,
+        reserveBasisDelta: -getReserveBasis(liq),
         originalCostBasisDelta: -liq.originalCostBasis,
         data: {
           pnl: getUserFacingPnlFromPayout(
@@ -1741,18 +2420,12 @@ export const applyOracleUpdate = (
     )
   }
 
-  const adlAdjusted = collectAdlAdjusted(
-    liqRes.state.positions,
-    finalState.positions,
-    adlRes.adlFactorLong,
-    adlRes.adlFactorShort
-  )
   const adlEvents = buildAdlEvents(
     contract,
     adlAdjusted,
-    adlRes.settled,
-    adlRes.adlFactorLong,
-    adlRes.adlFactorShort,
+    adlSettled,
+    adlFactorLong,
+    adlFactorShort,
     appliedTime,
     ts,
     newPrice
@@ -1762,11 +2435,11 @@ export const applyOracleUpdate = (
   return {
     finalState,
     events,
-    liquidated: liqRes.liquidated,
+    liquidated,
     adlAdjusted,
-    adlSettled: adlRes.settled,
-    adlFactorLong: adlRes.adlFactorLong,
-    adlFactorShort: adlRes.adlFactorShort,
+    adlSettled,
+    adlFactorLong,
+    adlFactorShort,
   }
 }
 
@@ -1790,7 +2463,10 @@ export const runOracleUpdate = async (
             bounds.statementTimeoutMs
           )
         )
-      const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+      const { contract, state, accounting } = await loadStateForUpdate(
+        pgTrans,
+        contractId
+      )
 
       const incomingPoint = { price: newPrice, ts, sourceTs }
       const currentPoint =
@@ -1828,7 +2504,14 @@ export const runOracleUpdate = async (
       const appliedTime = Date.now()
       let applied: ReturnType<typeof applyOracleUpdate>
       try {
-        applied = applyOracleUpdate(contract, state, newPrice, ts, appliedTime)
+        applied = applyOracleUpdate(
+          contract,
+          state,
+          newPrice,
+          ts,
+          appliedTime,
+          accounting
+        )
       } catch (error) {
         // LIVENESS. An accounting assert must never be able to take out price
         // discovery. Before this, a post-transition state that failed
@@ -1851,7 +2534,19 @@ export const runOracleUpdate = async (
         // real but small transfer, and the alternative on the table is a
         // market that is dark for hours. Trading is halted throughout, so
         // nobody can act on the gap.
-        const reason = error instanceof Error ? error.message : String(error)
+        // A protected invariant failure names its kind so the alert line
+        // says WHICH rule refused the book — in particular a nonzero
+        // cross-side transfer, which protected accounting must halt on and
+        // never perform.
+        const reason =
+          error instanceof PerpProtectedInvariantError
+            ? `protected accounting (${error.kind}): ${error.message}`
+            : error instanceof Error
+            ? error.message
+            : String(error)
+        // The halt patch touches only contract data — no position, event or
+        // ledger row. On a protected contract the guard requires the epoch
+        // for price and halt changes too; loadStateForUpdate presented it.
         await pgTrans.one(
           mergeContractDataQuery(contractId, {
             oraclePrice: newPrice,
@@ -1864,6 +2559,33 @@ export const runOracleUpdate = async (
             solvencyHaltReason: reason,
           })
         )
+        // Both shadows sample the halted tick too, against the UNCHANGED
+        // live financial state: a legacy transition that throws is exactly
+        // the case the protected counterpart may take cleanly (the
+        // five-shorts recovery tick claim-ADLs the long instead of wedging),
+        // and a later price cannot reconstruct that path-dependent step.
+        // Once per point: a halted retry of the same duplicate point is the
+        // same transition, not a new one. Diagnostics only,
+        // savepoint-isolated.
+        if (!retryingHalt) {
+          await riskPolicyShadowForTransition(
+            pgTrans,
+            contract,
+            accounting,
+            state,
+            newPrice,
+            'oracle'
+          )
+          await recordPerpAccountingShadow(
+            pgTrans,
+            contract,
+            accounting,
+            { kind: 'oracle', price: newPrice },
+            state,
+            state,
+            newPrice
+          )
+        }
         return {
           liquidated: [],
           adlAdjusted: [],
@@ -1887,6 +2609,7 @@ export const runOracleUpdate = async (
         poolLong: applied.finalState.pool.L,
         poolShort: applied.finalState.pool.S,
         ...openInterestPatch(applied.finalState.positions),
+        ...protectedBasisPatch(applied.finalState, newPrice, accounting),
         oraclePrice: newPrice,
         oraclePriceTime: ts,
         // null deliberately clears metadata if a newer point does not carry it;
@@ -1903,6 +2626,28 @@ export const runOracleUpdate = async (
           ? {}
           : { solvencyHaltTime: null, solvencyHaltReason: null }),
       })
+
+      // Both shadows sample EVERY applied tick, including the no-change fast
+      // path below: a candidate allowance can project ADL, and the protected
+      // shadow can settle or ADL, on a tick the legacy ledger writes nothing
+      // for. Diagnostics only, savepoint-isolated.
+      await riskPolicyShadowForTransition(
+        pgTrans,
+        contract,
+        accounting,
+        applied.finalState,
+        newPrice,
+        'oracle'
+      )
+      await recordPerpAccountingShadow(
+        pgTrans,
+        contract,
+        accounting,
+        { kind: 'oracle', price: newPrice },
+        state,
+        applied.finalState,
+        newPrice
+      )
 
       // Fast path: no liquidations and no ADL means no position changed, so
       // only the contract's cached price needs writing. Without this, a
@@ -1960,9 +2705,9 @@ export const runOracleUpdate = async (
 
       await pgTrans.multi(
         [
-          upsertPositionsQuery(upserts),
+          upsertPositionsQuery(upserts, accounting),
           deletePositionsQuery(contractId, deletes),
-          insertPerpEventsQuery(applied.events),
+          insertPerpEventsQuery(applied.events, accounting),
           mergeContractDataQuery(contractId, contractPatch),
           metricsQuery,
         ].join(';\n')
@@ -2008,7 +2753,10 @@ export const runFunding = async (
   priorOracleResult?: OracleUpdateResult | null
 ): Promise<FundingUpdateResult | null> => {
   return runPerpTransaction(async (pgTrans) => {
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const { contract, state, accounting } = await loadStateForUpdate(
+      pgTrans,
+      contractId
+    )
     const appliedTime = Date.now()
 
     // Halt gate, read from the PERSISTED contract under the lock rather than
@@ -2090,26 +2838,54 @@ export const runFunding = async (
     // Funding scales the receiving side's existing mark-to-market PnL. Apply
     // ADL again at the unchanged oracle price and fail closed on any invalid
     // or under-solvent result before constructing persistence queries.
-    const fundingResult = applyFundingWithSolvency(
-      state,
-      fundingRate,
-      contract.oraclePrice
-    )
-    const next = fundingResult.state
-    const fundedState = fundingResult.fundedState
+    // Protected accounting scales b with q and c (applyFunding does) and
+    // re-runs claim ADL against E = max(V − b, 0); its input must already
+    // satisfy the protected invariants, exactly as the legacy path demands
+    // solvency of its input.
+    let next: PerpState
+    let fundedState: PerpState
+    let adlAdjusted: AdlAdjustedPosition[]
+    let fundingSettled: AdlSettlement[]
+    let fundingAdlFactorLong: number
+    let fundingAdlFactorShort: number
+    if (accounting.mode === 'protected') {
+      const protectedResult = applyPerpProtectedFunding(
+        state,
+        fundingRate,
+        contract.oraclePrice
+      )
+      next = protectedResult.state
+      fundedState = protectedResult.fundedState
+      adlAdjusted = protectedResult.adjusted
+      fundingSettled = protectedResult.settled
+      fundingAdlFactorLong = protectedResult.adlFactorLong
+      fundingAdlFactorShort = protectedResult.adlFactorShort
+      logClaimAdl(contract, protectedResult, 'funding')
+    } else {
+      const fundingResult = applyFundingWithSolvency(
+        state,
+        fundingRate,
+        contract.oraclePrice
+      )
+      next = fundingResult.state
+      fundedState = fundingResult.fundedState
+      adlAdjusted = collectAdlAdjusted(
+        fundedState.positions,
+        next.positions,
+        fundingResult.adlFactorLong,
+        fundingResult.adlFactorShort
+      )
+      fundingSettled = fundingResult.settled
+      fundingAdlFactorLong = fundingResult.adlFactorLong
+      fundingAdlFactorShort = fundingResult.adlFactorShort
+    }
     const { upserts, deletes } = diffForWrite(state.positions, next.positions)
-    const adlAdjusted = collectAdlAdjusted(
-      fundedState.positions,
-      next.positions,
-      fundingResult.adlFactorLong,
-      fundingResult.adlFactorShort
-    )
     const adlEvents = buildAdlEvents(
       contract,
       adlAdjusted,
-      fundingResult.settled,
-      fundingResult.adlFactorLong,
-      fundingResult.adlFactorShort,
+      fundingSettled,
+      fundingAdlFactorLong,
+      fundingAdlFactorShort,
       appliedTime,
       ts,
       contract.oraclePrice
@@ -2118,9 +2894,9 @@ export const runFunding = async (
     // The hourly cycle can apply ADL once for the oracle move and again for
     // funding. Factors compose multiplicatively for the cycle annotation.
     const adlFactorLong =
-      (priorOracleResult?.adlFactorLong ?? 1) * fundingResult.adlFactorLong
+      (priorOracleResult?.adlFactorLong ?? 1) * fundingAdlFactorLong
     const adlFactorShort =
-      (priorOracleResult?.adlFactorShort ?? 1) * fundingResult.adlFactorShort
+      (priorOracleResult?.adlFactorShort ?? 1) * fundingAdlFactorShort
 
     const fundingEvent: PerpFundingEvent = {
       contractId,
@@ -2140,6 +2916,7 @@ export const runFunding = async (
       poolLong: next.pool.L,
       poolShort: next.pool.S,
       ...openInterestPatch(next.positions),
+      ...protectedBasisPatch(next, contract.oraclePrice, accounting),
       lastFundingTime: ts,
       fundingRate,
       lastUpdatedTime: adlEvents.length > 0 ? ts : undefined,
@@ -2169,6 +2946,7 @@ export const runFunding = async (
           leverage: p.leverage,
           sizeDelta,
           costBasisDelta,
+          reserveBasisDelta: getReserveBasis(p) - getReserveBasis(before),
           originalCostBasisDelta: 0,
           data: {
             fundingRate,
@@ -2185,9 +2963,27 @@ export const runFunding = async (
       pgTrans,
       contractId,
       contract.oraclePrice,
-      fundingResult.settled
+      fundingSettled
     )
     await assertPerpEscrowBalance(pgTrans, contractId, next.pool)
+
+    await riskPolicyShadowForTransition(
+      pgTrans,
+      contract,
+      accounting,
+      next,
+      contract.oraclePrice,
+      'funding'
+    )
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      { kind: 'funding', fundingRate, price: contract.oraclePrice },
+      state,
+      next,
+      contract.oraclePrice
+    )
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -2198,10 +2994,10 @@ export const runFunding = async (
 
     await pgTrans.multi(
       [
-        upsertPositionsQuery(upserts),
+        upsertPositionsQuery(upserts, accounting),
         deletePositionsQuery(contractId, deletes),
-        insertPerpEventsQuery(perUserEvents),
-        insertFundingEventQuery(fundingEvent),
+        insertPerpEventsQuery(perUserEvents, accounting),
+        insertFundingEventQuery(fundingEvent, accounting),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
@@ -2210,7 +3006,7 @@ export const runFunding = async (
     return {
       fundingEvent,
       adlAdjusted,
-      adlSettled: fundingResult.settled,
+      adlSettled: fundingSettled,
     }
   })
 }
@@ -2241,10 +3037,11 @@ export const resolvePerp = async (
   // residual-to-creator + mark-resolved in one atomic step, so traders can't
   // sneak trades between the final oracle selection and settlement.
   return runPerpTransaction(async (pgTrans) => {
-    const { contract, state: loaded } = await loadStateForUpdate(
-      pgTrans,
-      contractId
-    )
+    const {
+      contract,
+      state: loaded,
+      accounting,
+    } = await loadStateForUpdate(pgTrans, contractId)
     // Operational prototype replacement can require an empty market. This
     // check runs after acquiring the same contract lock as trades, closing
     // the race between a script's read-only precheck and final resolution.
@@ -2302,7 +3099,8 @@ export const resolvePerp = async (
       loaded,
       finalPrice,
       oracleTs,
-      now
+      now,
+      accounting
     )
 
     const events: PerpEvent[] = [...applied.events]
@@ -2331,20 +3129,70 @@ export const resolvePerp = async (
 
     let runningState = applied.finalState
     await payAdlSettlements(pgTrans, contractId, finalPrice, applied.adlSettled)
-    for (const p of applied.finalState.positions) {
-      if (p.size <= 0) continue
-      const res = closePositionMath(runningState, p, finalPrice)
-      runningState = res.state
-      assertPerpStateSolvent(runningState, finalPrice)
+
+    // Terminal settlements: one deterministic batch from ONE immutable
+    // state under protected accounting (every R and E read at once, own
+    // pools pay ΣR, opposing pools pay ΣE), or #4030's sequential closes
+    // under legacy. Both pay each position its full value at the mark.
+    const terminal: {
+      position: PerpPosition
+      payout: number
+      pricePnl: number
+      extra: Record<string, unknown>
+    }[] = []
+    if (accounting.mode === 'protected') {
+      const batch = resolvePerpProtectedBatch(applied.finalState, finalPrice)
+      runningState = batch.state
+      for (const entry of batch.payouts)
+        terminal.push({
+          position: entry.position,
+          payout: entry.payout,
+          pricePnl: entry.pricePnl,
+          extra: {
+            ownPayout: entry.ownPayout,
+            contingentPayout: entry.contingentPayout,
+            reserveBasis: getReserveBasis(entry.position),
+            fraction: 1,
+          },
+        })
+      log(
+        `[perps][protected] resolution ${
+          contract.slug
+        }: paper loss consumed long=${batch.paperLossConsumed.long.toFixed(
+          4
+        )} short=${batch.paperLossConsumed.short.toFixed(
+          4
+        )} unreserved consumed long=${batch.unreservedConsumed.long.toFixed(
+          4
+        )} short=${batch.unreservedConsumed.short.toFixed(
+          4
+        )} residual=${batch.residual.toFixed(4)}`
+      )
+    } else {
+      for (const p of applied.finalState.positions) {
+        if (p.size <= 0) continue
+        const res = closePositionMath(runningState, p, finalPrice)
+        runningState = res.state
+        assertPerpStateSolvent(runningState, finalPrice)
+        terminal.push({
+          position: p,
+          payout: res.payout,
+          pricePnl: res.pnl,
+          extra: {},
+        })
+      }
+    }
+
+    for (const { position: p, payout, pricePnl, extra } of terminal) {
       const userPnl = getUserFacingPnlFromPayout(
-        res.payout,
+        payout,
         p.originalCostBasis,
         p.takerFeeCostBasis
       )
       closedPositions.push({
         userId: p.userId,
         direction: p.direction,
-        payout: res.payout,
+        payout,
         originalCostBasis: p.originalCostBasis,
         takerFeeCostBasis: p.takerFeeCostBasis ?? 0,
       })
@@ -2356,14 +3204,16 @@ export const resolvePerp = async (
           leverage: 0,
           sizeDelta: -p.size,
           costBasisDelta: -p.costBasis,
+          reserveBasisDelta: -getReserveBasis(p),
           originalCostBasisDelta: -p.originalCostBasis,
           data: {
-            payout: res.payout,
+            payout,
             pnl: userPnl,
-            pricePnl: res.pnl,
+            pricePnl,
             entryPrice: p.entryPrice,
             originalCostBasis: p.originalCostBasis,
             takerFeeCostBasis: p.takerFeeCostBasis ?? 0,
+            ...extra,
             resolvedAt: finalPrice,
             reason: 'resolve-market',
           },
@@ -2373,7 +3223,7 @@ export const resolvePerp = async (
         })
       )
 
-      if (res.payout > 0) {
+      if (payout > 0) {
         await runTxnOutsideBetQueue(
           pgTrans,
           {
@@ -2382,12 +3232,12 @@ export const resolvePerp = async (
             fromType: 'CONTRACT',
             toId: p.userId,
             toType: 'USER',
-            amount: res.payout,
+            amount: payout,
             token: 'M$',
             data: {
               direction: p.direction,
               pnl: userPnl,
-              pricePnl: res.pnl,
+              pricePnl,
               entryPrice: p.entryPrice,
               closePrice: finalPrice,
               reason: 'resolve',
@@ -2421,6 +3271,16 @@ export const resolvePerp = async (
     }
     await assertPerpEscrowBalance(pgTrans, contractId, { L: 0, S: 0 })
 
+    await recordPerpAccountingShadow(
+      pgTrans,
+      contract,
+      accounting,
+      { kind: 'resolve', price: finalPrice, liveResidual: residualPayout },
+      loaded,
+      { pool: { L: 0, S: 0 }, positions: [] },
+      finalPrice
+    )
+
     const contractPatch = removeUndefinedProps({
       poolLong: 0,
       poolShort: 0,
@@ -2436,6 +3296,9 @@ export const resolvePerp = async (
       resolution: 'MKT',
       resolvedOraclePrice: finalPrice,
       lastUpdatedTime: now,
+      ...(accounting.mode === 'protected'
+        ? { perpBasisDeficit: 0, perpReducedBasisCount: 0 }
+        : {}),
     })
 
     const affectedUsers = Array.from(
@@ -2456,7 +3319,7 @@ export const resolvePerp = async (
     await pgTrans.multi(
       [
         deleteContractPositionsQuery(contractId),
-        insertPerpEventsQuery(events),
+        insertPerpEventsQuery(events, accounting),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
@@ -2489,6 +3352,21 @@ export {
   computeLiquidationPrice,
   getLeverage,
   getPositionValue,
+}
+
+// Internal building blocks reused by the accounting-transition tooling
+// (shared/perps/accounting), which must run under the same lock, the same
+// transaction discipline, and the same event/metric writers as the engine.
+export {
+  LEGACY_ACCOUNTING,
+  asEvent,
+  buildAdlEvents,
+  diffForWrite,
+  loadStateForUpdate as loadPerpStateForUpdate,
+  openInterestPatch,
+  parseStoredPosition,
+  payAdlSettlements,
+  runPerpTransaction,
 }
 
 // Silence unused warnings for utility re-exports.
