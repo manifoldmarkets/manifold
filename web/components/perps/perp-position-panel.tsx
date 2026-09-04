@@ -10,9 +10,11 @@ import {
 } from 'common/perps/funding'
 import {
   fundingPerPeriod,
+  getPositionValue,
   getUserFacingPnl,
   getUserFacingPnlPercent,
 } from 'common/perps/pnl'
+import { resolvePerpCloseFraction } from 'common/perps/amm'
 import { PerpPosition } from 'common/perps/position'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -29,6 +31,7 @@ import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -129,7 +132,7 @@ export const PerpPositionPanel = (props: {
   if (!user) return null
   if (!positions.length && !pastEvents.length) return null
 
-  const close = async (direction: 'long' | 'short') => {
+  const close = async (direction: 'long' | 'short', fraction = 1) => {
     if (oracleTradingPaused) {
       toast.error('Closing is paused until the oracle publishes a fresh price')
       return
@@ -138,9 +141,18 @@ export const PerpPositionPanel = (props: {
     try {
       const position = positions.find((p) => p.direction === direction)
       if (!position) throw new Error('Position is no longer open')
-      const fingerprint = [contract.id, direction, position.openedTime].join(
-        ':'
-      )
+      // A partial close leaves openedTime alone, so the fingerprint has to
+      // carry what the close itself is: two 25% closes in a row are separate
+      // trades, and sharing an idempotency key would silently replay the
+      // first instead of running the second. `size` moves after every close,
+      // so a retry of the SAME click still dedupes.
+      const fingerprint = [
+        contract.id,
+        direction,
+        position.openedTime,
+        position.size,
+        fraction,
+      ].join(':')
       const request =
         pendingCloses.current[direction]?.fingerprint === fingerprint
           ? pendingCloses.current[direction]
@@ -151,9 +163,17 @@ export const PerpPositionPanel = (props: {
         direction,
         idempotencyKey: request.idempotencyKey,
         expectedOpenedTime: position.openedTime,
+        ...(fraction < 1 ? { fraction } : {}),
       })
+      // The engine promotes a close whose remainder would be dust, so what
+      // came back — not what was asked for — decides the wording.
+      const closedAll = res.remainingSize <= 0
       toast.success(
-        `Closed ${direction} — payout ${formatMoneyPrecise(
+        `${
+          closedAll
+            ? `Closed ${direction}`
+            : `Closed ${Math.round(res.fraction * 100)}% of ${direction}`
+        } — payout ${formatMoneyPrecise(
           res.payout
         )} (profit ${formatMoneyPrecise(res.pnl)})`
       )
@@ -161,14 +181,19 @@ export const PerpPositionPanel = (props: {
         outcomeType: contract.outcomeType,
         slug: contract.slug,
         contractId: contract.id,
-        shares: position?.size,
+        shares: position.size * res.fraction,
         outcome: direction,
         token: contract.token,
-        perpAction: 'close',
+        perpAction: closedAll ? 'close' : 'partial-close',
+        fraction: res.fraction,
         payout: res.payout,
         pnl: res.pnl,
       })
-      setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
+      // Only a full close may hide the row optimistically. A partial one
+      // keeps the same openedTime, so marking it closed here would hide the
+      // position that is still open — permanently.
+      if (closedAll)
+        setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
       setRefresh((r) => r + 1)
       delete pendingCloses.current[direction]
       // Pools changed; let the page re-poll the contract immediately.
@@ -187,7 +212,7 @@ export const PerpPositionPanel = (props: {
           key={p.direction}
           position={p}
           contract={contract}
-          onClose={() => close(p.direction)}
+          onClose={(fraction) => close(p.direction, fraction)}
           closing={closing === p.direction}
           anyClosing={closing !== null}
           oracleTradingPaused={oracleTradingPaused}
@@ -208,6 +233,7 @@ type PerpHistoryEvent = {
   oraclePrice: number
   payout: number | null
   pnl: number | null
+  fraction: number | null
 }
 
 // Tombstones for closed/liquidated positions, so the outcome of a position
@@ -299,15 +325,20 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           )
         }
 
-        // close
+        // close, whole or partial
         const pnl = e.pnl ?? 0
+        // Closes written before partial closes existed carry no fraction and
+        // were whole ones.
+        const partial = e.fraction != null && e.fraction < 1 ? e.fraction : null
         return (
           <Row
             key={e.id}
             className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
           >
             <span className="text-ink-700 font-medium">
-              Closed {e.direction}
+              {partial != null
+                ? `Closed ${Math.round(partial * 100)}% of ${e.direction}`
+                : `Closed ${e.direction}`}
             </span>
             <span className="text-ink-700 tabular-nums">
               payout {formatMoneyPrecise(e.payout ?? 0)}
@@ -349,7 +380,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
 const PositionCard = (props: {
   position: Position
   contract: PerpContract
-  onClose: () => void
+  onClose: (fraction: number) => void
   closing: boolean
   anyClosing: boolean
   oracleTradingPaused: boolean
@@ -416,6 +447,21 @@ const PositionCard = (props: {
           p.originalCostBasis) *
         100
       : 0
+
+  // How much of the position this close takes. Everything a partial close
+  // pays and leaves behind is LINEAR in the fraction — π, the payout and both
+  // pool debits all scale with q and c — so the preview below is exact, not
+  // an estimate, and the survivor's entry price, leverage and liquidation
+  // price are untouched by construction.
+  const [closeFraction, setCloseFraction] = useState(1)
+  // What the engine will actually take: a remainder that would be dust is
+  // closed too, so the button must not promise a position that will not exist.
+  const effectiveFraction = resolvePerpCloseFraction(p, closeFraction)
+  const isPartial = effectiveFraction < 1
+  const fullPayout = getPositionValue(position, markPrice)
+  const closePayout = effectiveFraction * fullPayout
+  const closePnl = effectiveFraction * pnl
+  const remainingMargin = (1 - effectiveFraction) * p.originalCostBasis
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
@@ -547,18 +593,58 @@ const PositionCard = (props: {
           </div>
         )}
 
-        <Button
-          color="gray-outline"
-          onClick={onClose}
-          loading={closing}
-          disabled={anyClosing || oracleTradingPaused}
-          size="md"
-          className="w-full"
-        >
-          {oracleTradingPaused
-            ? 'Close paused — waiting for oracle'
-            : `Close position @ ${formatPrice(markPrice, priceDecimals)}`}
-        </Button>
+        <Col className="gap-2">
+          <Row className="items-center justify-between gap-2">
+            <span className={clsx('text-ink-500', CARD_LABEL)}>
+              Close how much
+            </span>
+            <ChoicesToggleGroup
+              currentChoice={closeFraction}
+              color="gray"
+              disabled={anyClosing || oracleTradingPaused}
+              choicesMap={{ '25%': 0.25, '50%': 0.5, '75%': 0.75, All: 1 }}
+              setChoice={(choice) => setCloseFraction(choice as number)}
+              toggleClassName="!px-2.5 !py-1"
+              className="!text-xs"
+            />
+          </Row>
+
+          {isPartial && (
+            <div className={clsx('text-ink-500', CARD_LABEL)}>
+              Pays out{' '}
+              <span className="text-ink-700 font-semibold tabular-nums">
+                {formatMoneyPrecise(closePayout)}
+              </span>{' '}
+              and realizes{' '}
+              <span
+                className={clsx(
+                  'font-semibold tabular-nums',
+                  closePnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                )}
+              >
+                {closePnl >= 0 ? '+' : ''}
+                {formatMoneyPrecise(closePnl)}
+              </span>
+              . {formatMoneyPrecise(remainingMargin)} of margin stays open at
+              the same entry price, leverage and liquidation price.
+            </div>
+          )}
+
+          <Button
+            color="gray-outline"
+            onClick={() => onClose(closeFraction)}
+            loading={closing}
+            disabled={anyClosing || oracleTradingPaused}
+            size="md"
+            className="w-full"
+          >
+            {oracleTradingPaused
+              ? 'Close paused — waiting for oracle'
+              : `Close ${
+                  isPartial ? `${Math.round(effectiveFraction * 100)}% of ` : ''
+                }position @ ${formatPrice(markPrice, priceDecimals)}`}
+          </Button>
+        </Col>
       </Col>
     </Col>
   )

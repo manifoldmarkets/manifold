@@ -553,43 +553,178 @@ export const openPosition = (
 export type CloseResult = {
   state: PerpState
   payout: number // mana paid to user
-  pnl: number // π at close
+  pnl: number // π realized on the closed leg
   poolLongDelta: number
   poolShortDelta: number
+  /** Fraction actually closed — 1 for a full close, including a partial one
+   * promoted to a full close because its remainder would have been dust. */
+  fraction: number
+  /** The closed leg's share of the row. Equals the row's own values on a
+   * full close, so callers can stamp events from these unconditionally. */
+  closedSize: number
+  closedCostBasis: number
+  closedOriginalCostBasis: number
+  closedTakerFeeCostBasis: number
+  /** The surviving row, or null when the whole position was closed. */
+  remainingPosition: PerpPosition | null
 }
 
 /**
- * Close a long or short position at the oracle price (paper §2.5, eq. 13–15).
- * Solvency invariant guarantees the opposing pool can cover π > 0.
+ * Smallest fraction of a position a partial close may take.
+ *
+ * Below this the close is not worth the row it writes: it mints an event (and
+ * its streak credit) for a change the trader cannot see, and on a small
+ * position the payout rounds to nothing. A caller wanting less should not
+ * close at all.
+ */
+export const PERP_MIN_CLOSE_FRACTION = 0.01
+
+/**
+ * Margin below which a partial close's REMAINDER is not worth keeping open,
+ * so the close is promoted to a full one.
+ *
+ * Without this, `fraction = 0.9999` leaves a row of a few thousandths of a
+ * mana that still accrues funding every period, still shows on the market
+ * page, and still has to be closed by hand. The bound is on the remaining
+ * COST BASIS rather than on `1 - fraction` because that is the quantity that
+ * has to stay meaningful: a fractional rule would strand dust on a large
+ * position and delete real margin on a small one.
+ */
+export const PERP_MIN_REMAINDER_COST_BASIS = 0.01
+
+/**
+ * The fraction a close will ACTUALLY take, given what the caller asked for.
+ *
+ * Separate from `closePosition` so a caller can price and describe the close
+ * ("this closes your whole position") before committing to it, and so the
+ * promotion rule has exactly one definition.
+ */
+export const resolvePerpCloseFraction = (
+  position: Pick<PerpPosition, 'size' | 'costBasis'>,
+  requested: number
+) => {
+  if (!Number.isFinite(requested) || requested <= 0 || requested > 1)
+    throw new Error('close fraction must be a finite number in (0, 1]')
+  if (requested >= 1) return 1
+  if (requested < PERP_MIN_CLOSE_FRACTION)
+    throw new Error(
+      `close fraction must be at least ${PERP_MIN_CLOSE_FRACTION} or exactly 1`
+    )
+  const remainingSize = position.size - requested * position.size
+  const remainingCostBasis = position.costBasis - requested * position.costBasis
+  if (remainingSize <= 0 || remainingCostBasis < PERP_MIN_REMAINDER_COST_BASIS)
+    return 1
+  return requested
+}
+
+/**
+ * Close all or part of a long or short position at the oracle price (paper
+ * §2.5, eq. 13–15). Solvency invariant guarantees the opposing pool can
+ * cover π > 0.
+ *
+ * A partial close is exactly `fraction` of the full one. π is linear in `q`,
+ * and the payout and both pool debits are linear in π and `c`, so closing
+ * `z` of a row leaves the book in precisely the state it would have been in
+ * had the trader opened `1 - z` of that position and closed a separate `z`
+ * one — which is why the survivor keeps its entry price, its leverage
+ * (ℓ = q/c is invariant under the split) and therefore its liquidation price.
+ * Nothing about the risk of the remaining exposure changes.
  */
 export const closePosition = (
   state: PerpState,
   position: PerpPosition,
-  price: number
+  price: number,
+  /** Fraction of the position to close; 1 (the default) closes all of it.
+   * A fraction whose remainder would be dust is promoted to a full close, so
+   * read `fraction` off the result for what actually happened. */
+  requestedFraction = 1,
+  now = Date.now()
 ): CloseResult => {
-  const π = getUnrealizedEquity(position, price)
+  const fraction = resolvePerpCloseFraction(position, requestedFraction)
+  const isFull = fraction === 1
+
+  const positionFeeBasis = position.takerFeeCostBasis ?? 0
+  const closedSize = isFull ? position.size : fraction * position.size
+  const closedCostBasis = isFull
+    ? position.costBasis
+    : fraction * position.costBasis
+  const closedOriginalCostBasis = isFull
+    ? position.originalCostBasis
+    : fraction * position.originalCostBasis
+  const closedTakerFeeCostBasis = isFull
+    ? positionFeeBasis
+    : fraction * positionFeeBasis
+
+  // Priced on the CLOSED leg. On a full close this is the row itself, so the
+  // arithmetic below is bit-for-bit what it was before partial closes existed.
+  const closedLeg: PerpPosition = isFull
+    ? position
+    : { ...position, size: closedSize, costBasis: closedCostBasis }
+
+  const π = getUnrealizedEquity(closedLeg, price)
   let poolLongDelta = 0
   let poolShortDelta = 0
   let payout = 0
 
   if (π <= 0) {
-    payout = Math.max(position.costBasis + π, 0)
+    payout = Math.max(closedCostBasis + π, 0)
     if (position.direction === 'long') poolLongDelta = -payout
     else poolShortDelta = -payout
   } else {
-    payout = position.costBasis + π
+    payout = closedCostBasis + π
     if (position.direction === 'long') {
-      poolLongDelta = -position.costBasis
+      poolLongDelta = -closedCostBasis
       poolShortDelta = -π
     } else {
-      poolShortDelta = -position.costBasis
+      poolShortDelta = -closedCostBasis
       poolLongDelta = -π
     }
   }
 
-  const positions = state.positions.filter(
-    (p) => !(p.userId === position.userId && p.direction === position.direction)
-  )
+  // The survivor is the row MINUS the closed leg, by subtraction rather than
+  // by scaling with (1 - fraction): the two halves must add back up to the
+  // original exactly, because metric-periods reconstructs the pre-close row
+  // by adding this event's deltas onto the surviving one, and a split that
+  // does not conserve leaves that replay drifting on every partial close.
+  const remainingPosition: PerpPosition | null = isFull
+    ? null
+    : (() => {
+        const size = position.size - closedSize
+        const costBasis = position.costBasis - closedCostBasis
+        // Recomputed rather than carried over: ℓ = q/c is invariant under the
+        // split in exact arithmetic but can move an ulp in float, and the row
+        // has to stay self-consistent for the liquidation scan and for
+        // assertPerpPositionNumbers.
+        const leverage = getLeverage(size, costBasis)
+        return {
+          ...position,
+          size,
+          costBasis,
+          originalCostBasis:
+            position.originalCostBasis - closedOriginalCostBasis,
+          takerFeeCostBasis: positionFeeBasis - closedTakerFeeCostBasis,
+          leverage,
+          liquidationPrice: liquidationPrice(
+            position.direction,
+            position.entryPrice,
+            leverage
+          ),
+          updatedTime: now,
+        }
+      })()
+
+  // Replaced in place rather than filtered and re-appended, so a partial
+  // close does not reorder the book.
+  const positions = remainingPosition
+    ? state.positions.map((p) =>
+        p.userId === position.userId && p.direction === position.direction
+          ? remainingPosition
+          : p
+      )
+    : state.positions.filter(
+        (p) =>
+          !(p.userId === position.userId && p.direction === position.direction)
+      )
 
   return {
     state: {
@@ -609,6 +744,12 @@ export const closePosition = (
     pnl: π,
     poolLongDelta,
     poolShortDelta,
+    fraction,
+    closedSize,
+    closedCostBasis,
+    closedOriginalCostBasis,
+    closedTakerFeeCostBasis,
+    remainingPosition,
   }
 }
 

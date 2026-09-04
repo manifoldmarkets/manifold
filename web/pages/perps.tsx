@@ -992,6 +992,13 @@ const RecentActivity = (props: {
             const liquidated = e.eventType === 'liquidation'
             const closing =
               e.eventType === 'close' || liquidated || e.eventType === 'adl'
+            // A partial close leaves the position open, so the tape must not
+            // report it as an exit. Closes written before partial closes
+            // existed carry no fraction and were whole ones.
+            const partialClose =
+              e.eventType === 'close' && e.fraction != null && e.fraction < 1
+                ? e.fraction
+                : null
             return (
               <button
                 key={e.id}
@@ -1015,7 +1022,9 @@ const RecentActivity = (props: {
                         : undefined
                     }
                   >
-                    {ACTIVITY_VERB[e.eventType]}
+                    {partialClose != null
+                      ? `closed ${Math.round(partialClose * 100)}% of`
+                      : ACTIVITY_VERB[e.eventType]}
                   </span>{' '}
                   {e.leverage != null && !closing && (
                     <span className="font-mono">

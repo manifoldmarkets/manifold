@@ -70,7 +70,8 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
   New markets preserve their per-side initial backing for later preflight
   auditing.
 - `POST /place-perp-trade` — opens or adds to a position.
-- `POST /close-perp-position` — closes a position.
+- `POST /close-perp-position` — closes all of a position, or the
+  `fraction` of it given (see Partial closes).
 - `GET /get-perp-positions` — reads open positions for a contract (optionally
   filtered by `userId`).
 - `GET /get-oracle-price`, `/get-oracle-price-series` — read oracle data.
@@ -96,6 +97,48 @@ Only sub-millimana floating-point dust is tolerated. Creation, open/flip,
 close, factor-zero ADL, funding, and resolution fail atomically if the ledger
 and pools diverge. This is required because the generic transaction primitive
 does not maintain a balance column for `CONTRACT` senders.
+
+## Partial closes
+
+`close-perp-position` takes an optional `fraction` in `(0, 1]`; omitting it
+closes the whole position. The exit math is **linear in the position**: π is
+linear in `q`, and both the payout and the two pool debits are linear in π and
+`c`, so closing `z` of a row pays exactly `z` times what the full close would
+have paid, debits exactly `z` of each pool delta, and leaves the book in
+precisely the state it would have been in had the trader opened `1 − z` of that
+position and closed a separate `z` one.
+
+That is why the survivor keeps its **entry price**, its **leverage**
+(`ℓ = q/c` is invariant under the split) and therefore its **liquidation
+price**. Reducing exposure never moves the price at which what is left gets
+liquidated. `openedTime` is preserved too, so `expectedOpenedTime` still
+matches on the next close.
+
+Three rules keep the split honest:
+
+- The two halves are produced by **subtraction**, not by scaling both with `z`
+  and `1 − z`: they must add back up to the original exactly, because
+  `metric-periods.ts` reconstructs the pre-close row by adding the event's
+  deltas onto the survivor, and a split that does not conserve leaves that
+  replay drifting on every partial close.
+- `PERP_MIN_CLOSE_FRACTION` (1%) is the smallest close worth its own event —
+  below it the trade mints an event and a streak for a change the trader
+  cannot see.
+- `PERP_MIN_REMAINDER_COST_BASIS` promotes a close whose **remainder** would be
+  dust into a full close, so `fraction = 0.9999` cannot strand a row of a few
+  thousandths of a mana that still accrues funding every period. The bound is
+  on the remaining cost basis rather than on `1 − fraction`, because that is
+  the quantity that has to stay meaningful. The response's `fraction` is what
+  actually happened, which can exceed what was asked for; the stored
+  idempotency `request` holds the **requested** value and the `response` the
+  **actual** one.
+
+There is still no fee on a close — the taker fee is charged in full at open —
+so a partial close realizes its own `z` share of the fees the position already
+paid, and the remainder carries the rest. Solvency, the escrow check and the
+open-interest capacity rule all run unchanged: a partial close only ever
+reduces open interest, and its state is asserted with the same
+`assertPerpStateSolvent` the full close uses.
 
 ## Taker fee
 

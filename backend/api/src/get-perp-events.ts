@@ -56,9 +56,11 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
     const payoutRaw = data.payout
     const pnlRaw = data.pnl
     const adlFactorRaw = data.adlFactor
+    const fractionRaw = data.fraction
     const payout = payoutRaw == null ? null : Number(payoutRaw)
     const pnl = pnlRaw == null ? null : Number(pnlRaw)
     const adlFactor = adlFactorRaw == null ? null : Number(adlFactorRaw)
+    const fraction = fractionRaw == null ? null : Number(fractionRaw)
     return {
       id: Number(r.id),
       contractId: r.contract_id,
@@ -85,6 +87,13 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
         adlFactor >= 0 &&
         adlFactor <= 1
           ? adlFactor
+          : null,
+      fraction:
+        fraction != null &&
+        Number.isFinite(fraction) &&
+        fraction > 0 &&
+        fraction <= 1
+          ? fraction
           : null,
       isApi: data.isApi === true,
       userName: r.user_name,

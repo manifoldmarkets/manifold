@@ -270,6 +270,70 @@ describe('calculatePerpMetricPeriods', () => {
     expect(result?.from.day.profitPercent).toBeCloseTo(100)
   })
 
+  it('replays a partial close against the row it left open', () => {
+    // Held 1000 notional on M$100 of margin at Pe = 100. Half a day in,
+    // closed 40% at 110 for a payout of 0.4 x (100 + 100) = M$80, leaving
+    // 600 notional on M$60 at the SAME entry price.
+    const result = calculatePerpMetricPeriods({
+      currentPositions: [
+        position({ size: 600, costBasis: 60, originalCostBasis: 60 }),
+      ],
+      events: [
+        event({
+          id: 2,
+          eventType: 'close',
+          appliedTime: NOW - DAY_MS / 2,
+          oraclePrice: 110,
+          sizeDelta: -400,
+          costBasisDelta: -40,
+          originalCostBasisDelta: -40,
+          // The survivor's leverage, not 0 — a partial close does not flatten.
+          leverage: 10,
+          data: {
+            payout: 80,
+            entryPrice: 100,
+            fraction: 0.4,
+            remainingSize: 600,
+          },
+        }),
+      ],
+      currentPrice: 110,
+      periods: periods(100),
+    })
+
+    // Boundary: the WHOLE position at the cutoff price, worth its margin.
+    // End: M$80 realized plus 600 notional now worth M$120.
+    expect(result?.from.day.invested).toBeCloseTo(100)
+    expect(result?.from.day.profit).toBeCloseTo(100)
+    expect(result?.from.day.profitPercent).toBeCloseTo(100)
+  })
+
+  it('refuses a liquidation that left the position open', () => {
+    // Partial closes relaxed the full-exit rule for closes only: liquidation
+    // forfeits the whole position, so a row surviving one is malformed.
+    expect(
+      calculatePerpMetricPeriods({
+        currentPositions: [
+          position({ size: 600, costBasis: 60, originalCostBasis: 60 }),
+        ],
+        events: [
+          event({
+            id: 2,
+            eventType: 'liquidation',
+            appliedTime: NOW - DAY_MS / 2,
+            oraclePrice: 90,
+            sizeDelta: -400,
+            costBasisDelta: -40,
+            originalCostBasisDelta: -40,
+            data: { payout: 0, entryPrice: 100 },
+          }),
+        ],
+        currentPrice: 90,
+        periods: periods(95),
+      })
+    ).toBeUndefined()
+  })
+
   it('captures liquidation loss relative to boundary equity', () => {
     const result = calculatePerpMetricPeriods({
       currentPositions: [],

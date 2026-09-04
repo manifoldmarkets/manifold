@@ -9,19 +9,32 @@ export const closePerpPosition: APIHandler<'close-perp-position'> = async (
   auth
 ) => {
   assertPerpCloseEnabled()
-  const { contractId, direction, idempotencyKey, expectedOpenedTime } = body
+  const {
+    contractId,
+    direction,
+    idempotencyKey,
+    expectedOpenedTime,
+    fraction,
+  } = body
   const isApi = auth.creds.kind === 'key'
-  const { payout, pnl, replayed } = await closePosition(
+  const {
+    payout,
+    pnl,
+    replayed,
+    fraction: closedFraction,
+    remainingSize,
+  } = await closePosition(
     contractId,
     auth.uid,
     direction,
     idempotencyKey,
     expectedOpenedTime,
-    isApi
+    isApi,
+    fraction ?? 1
   )
 
   return {
-    result: { payout, pnl },
+    result: { payout, pnl, fraction: closedFraction, remainingSize },
     continue: async () => {
       // Closes count toward the prediction streak, mirroring sells on normal
       // markets (sell-shares routes through onCreateBets). An idempotent

@@ -12,7 +12,7 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
-import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
+import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
 import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
@@ -702,4 +702,16 @@ export const closePerpPositionSchema = z.object({
   direction: z.enum(['long', 'short']),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
   expectedOpenedTime: z.number().int().nonnegative(),
+  // Fraction of the position to close; omitted = the whole position. Either
+  // exactly 1 or at least PERP_MIN_CLOSE_FRACTION — a smaller close cannot
+  // change the position and would only mint an event and streak credit. A
+  // fraction whose remainder would be dust closes the whole position instead;
+  // the response's `fraction` says what actually happened.
+  fraction: z
+    .number()
+    .lte(1)
+    .refine((f) => f === 1 || f >= PERP_MIN_CLOSE_FRACTION, {
+      message: `fraction must be 1 or at least ${PERP_MIN_CLOSE_FRACTION}`,
+    })
+    .optional(),
 })
