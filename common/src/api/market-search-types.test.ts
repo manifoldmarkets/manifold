@@ -24,6 +24,16 @@ describe('searchProps', () => {
       enableSemanticSearch: false,
     })
   })
+
+  it('accepts only known discovery experiment variants', () => {
+    expect(searchProps.parse({ discoveryVariant: 'control' })).toMatchObject({
+      discoveryVariant: 'control',
+    })
+    expect(searchProps.parse({ discoveryVariant: 'treatment' })).toMatchObject({
+      discoveryVariant: 'treatment',
+    })
+    expect(() => searchProps.parse({ discoveryVariant: 'preview' })).toThrow()
+  })
 })
 
 describe('getMarketSearchRoute', () => {

@@ -1,9 +1,21 @@
 import {
   getLoadMoreRequestAction,
   getSearchRequestDebounceMs,
+  shouldSendDiscoveryOptions,
   shouldRetrySearchWithoutDiscoveryOptions,
   shouldRetryStaleSearchRequest,
 } from './search-request-coordination'
+
+describe('discovery compatibility mode', () => {
+  it('pins later pages to legacy/control after a first-page fallback', () => {
+    expect(shouldSendDiscoveryOptions(false, true)).toBe(false)
+  })
+
+  it('allows a new result set to try the current discovery options again', () => {
+    expect(shouldSendDiscoveryOptions(true, true)).toBe(true)
+    expect(shouldSendDiscoveryOptions(false, false)).toBe(true)
+  })
+})
 
 describe('getSearchRequestDebounceMs', () => {
   it('keeps the initial blank browse request responsive', () => {
@@ -53,6 +65,7 @@ describe('shouldRetrySearchWithoutDiscoveryOptions', () => {
         true,
         1_700_000_000_000,
         undefined,
+        undefined,
         400
       )
     ).toBe(true)
@@ -60,10 +73,43 @@ describe('shouldRetrySearchWithoutDiscoveryOptions', () => {
 
   it('retries an unsupported semantic-search opt-in on any page', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(true, undefined, true, 400)
+      shouldRetrySearchWithoutDiscoveryOptions(
+        true,
+        undefined,
+        true,
+        undefined,
+        400
+      )
     ).toBe(true)
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(false, undefined, true, 400)
+      shouldRetrySearchWithoutDiscoveryOptions(
+        false,
+        undefined,
+        true,
+        undefined,
+        400
+      )
+    ).toBe(true)
+  })
+
+  it('retries an unsupported experiment arm on any page', () => {
+    expect(
+      shouldRetrySearchWithoutDiscoveryOptions(
+        true,
+        undefined,
+        undefined,
+        'control',
+        400
+      )
+    ).toBe(true)
+    expect(
+      shouldRetrySearchWithoutDiscoveryOptions(
+        false,
+        undefined,
+        undefined,
+        'treatment',
+        400
+      )
     ).toBe(true)
   })
 
@@ -73,7 +119,34 @@ describe('shouldRetrySearchWithoutDiscoveryOptions', () => {
         false,
         1_700_000_000_000,
         undefined,
+        undefined,
         400
+      )
+    ).toBe(false)
+  })
+
+  it('lets control retry an old worker without changing ranking spaces', () => {
+    expect(
+      shouldRetrySearchWithoutDiscoveryOptions(
+        false,
+        undefined,
+        undefined,
+        'control',
+        400,
+        true
+      )
+    ).toBe(true)
+  })
+
+  it('does not switch treatment For You ranking spaces after page one', () => {
+    expect(
+      shouldRetrySearchWithoutDiscoveryOptions(
+        false,
+        undefined,
+        undefined,
+        'treatment',
+        400,
+        true
       )
     ).toBe(false)
   })
@@ -84,11 +157,18 @@ describe('shouldRetrySearchWithoutDiscoveryOptions', () => {
         true,
         1_700_000_000_000,
         undefined,
+        undefined,
         500
       )
     ).toBe(false)
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(true, undefined, undefined, 400)
+      shouldRetrySearchWithoutDiscoveryOptions(
+        true,
+        undefined,
+        undefined,
+        undefined,
+        400
+      )
     ).toBe(false)
   })
 })

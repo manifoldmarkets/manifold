@@ -1,6 +1,7 @@
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   basicSearchSQL,
+  getForYouTopicRankSql,
   getSemanticSearchContractSQL,
   shouldSuppressStaleSeenMarkets,
   staleSeenMarketsSql,
@@ -16,6 +17,31 @@ const semanticSearchArgs = {
   sort: 'score',
   token: 'MANA' as const,
 }
+
+describe('getForYouTopicRankSql', () => {
+  it('keeps the legacy average in control', () => {
+    const sql = getForYouTopicRankSql('importance_score', 'control')
+
+    expect(sql).toContain(
+      'avg(power(coalesce(uti.avg_conversion_score, 0.34698192227708463), 4) * contracts.importance_score)'
+    )
+    expect(sql).not.toContain('0.7 * max')
+  })
+
+  it('uses the niche blend only in treatment', () => {
+    const sql = getForYouTopicRankSql('importance_score', 'treatment')
+
+    expect(sql).toContain('0.7 * max')
+    expect(sql).toContain('0.3 * avg')
+    expect(sql).toContain('* avg(contracts.importance_score)')
+  })
+
+  it('defaults an unversioned caller to control', () => {
+    expect(getForYouTopicRankSql('importance_score', undefined)).not.toContain(
+      '0.7 * max'
+    )
+  })
+})
 
 describe('getSemanticSearchContractSQL', () => {
   it('keeps the requested limit and excludes lexical results', () => {

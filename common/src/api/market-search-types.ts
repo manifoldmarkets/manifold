@@ -113,6 +113,10 @@ export const searchProps = z
     // fallback opt-in prevents a new API worker from returning a semantic
     // tail to an old web bundle that does not understand its ordering marker.
     enableSemanticSearch: coerceBoolean.optional(),
+    // Internal experiment arm. Authenticated requests are independently
+    // assigned by the API; anonymous requests necessarily rely on the
+    // persistent device assignment supplied by the web client.
+    discoveryVariant: z.enum(['control', 'treatment']).optional(),
   })
   .strict()
 

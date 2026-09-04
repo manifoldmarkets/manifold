@@ -5,6 +5,10 @@ import {
 } from 'common/api/market-search-types'
 import { toLiteMarket } from 'common/api/market-types'
 import { Contract } from 'common/contract'
+import {
+  DiscoveryExperimentVariant,
+  getEffectiveDiscoveryExperimentVariant,
+} from 'common/discovery-experiment'
 import { convertContract } from 'common/supabase/contracts'
 import { orderBy, uniqBy } from 'lodash'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
@@ -52,6 +56,7 @@ export const searchMarketsLite: APIHandler<'search-markets'> = async (
   const contracts = await search(props, auth?.uid, {
     markSearchMatches: false,
     allowSemanticFallback: false,
+    discoveryVariant: 'control',
   })
   return contracts.map((c) => toLiteMarket(c, { includeLiteAnswers }))
 }
@@ -61,10 +66,19 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   auth,
   req
 ) => {
-  if (!props.enableSemanticSearch) {
+  // Signed-in assignment is independently reproduced on the server, so a
+  // client cannot accidentally move an account between arms. Anonymous
+  // assignment is device-based and therefore has to be supplied by the web.
+  const discoveryVariant = getEffectiveDiscoveryExperimentVariant({
+    userId: auth?.uid,
+    requestedVariant: props.discoveryVariant,
+  })
+
+  if (discoveryVariant === 'control' || !props.enableSemanticSearch) {
     return await search(props, auth?.uid, {
       markSearchMatches: true,
       allowSemanticFallback: false,
+      discoveryVariant,
     })
   }
 
@@ -72,6 +86,7 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
     markSearchMatches: true,
     allowSemanticFallback: true,
     semanticCallerKey: getSemanticCallerKey(auth?.uid, req),
+    discoveryVariant,
   })
 }
 
@@ -82,6 +97,7 @@ export const getRecentMarkets: APIHandler<'recent-markets'> = async (
   return await search(props, auth.uid, {
     markSearchMatches: false,
     allowSemanticFallback: false,
+    discoveryVariant: 'control',
   })
 }
 
@@ -96,18 +112,34 @@ const getSemanticCallerKey = (
 // The caller key only matters when the fallback can run, so tie the two
 // together rather than making every endpoint derive one.
 type SearchOptions =
-  | { markSearchMatches: boolean; allowSemanticFallback: false }
+  | {
+      markSearchMatches: boolean
+      allowSemanticFallback: false
+      discoveryVariant: DiscoveryExperimentVariant
+    }
   | {
       markSearchMatches: true
       allowSemanticFallback: true
       semanticCallerKey: string
+      discoveryVariant: DiscoveryExperimentVariant
     }
 
 const search = async (
-  props: z.infer<typeof searchProps>,
+  requestProps: z.infer<typeof searchProps>,
   userId: string | undefined,
   options: SearchOptions
 ) => {
+  // Control deliberately ignores a supplied seen anchor. This leaves the
+  // reliability/privacy fixes common to both arms while reproducing the old
+  // product behavior for ranking, repetition, and semantic fallback.
+  const props = {
+    ...requestProps,
+    discoveryVariant: options.discoveryVariant,
+    seenMarketCutoffTime:
+      options.discoveryVariant === 'treatment'
+        ? requestProps.seenMarketCutoffTime
+        : undefined,
+  }
   const {
     term = '',
     filter,

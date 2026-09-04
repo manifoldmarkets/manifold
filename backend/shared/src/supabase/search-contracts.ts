@@ -1,4 +1,5 @@
 import { Contract, isSportsContract } from 'common/contract'
+import { DiscoveryExperimentVariant } from 'common/discovery-experiment'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
 import { getPerpBackingPool } from 'common/perps/amm'
@@ -30,6 +31,7 @@ import {
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 
 const DEFAULT_THRESHOLD = 1000
+const GROUP_SCORE_POWER = 4
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
@@ -162,7 +164,18 @@ type SharedSearchArgs = {
   isPrizeMarket?: boolean
   beforeTime?: number
   seenMarketCutoffTime?: number
+  discoveryVariant?: DiscoveryExperimentVariant
 }
+
+export const getForYouTopicRankSql = (
+  sortByScore: string,
+  discoveryVariant: DiscoveryExperimentVariant | undefined
+) =>
+  discoveryVariant === 'treatment'
+    ? `power(${nicheBlendTopicScoreSql(
+        `coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR})`
+      )}, ${GROUP_SCORE_POWER}) * avg(contracts.${sortByScore})`
+    : `avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})`
 
 export async function getForYouSQL(
   args: SharedSearchArgs & {
@@ -179,6 +192,7 @@ export async function getForYouSQL(
     threshold = DEFAULT_THRESHOLD,
     hasBets,
     seenMarketCutoffTime,
+    discoveryVariant,
   } = args
 
   const userId = args.uid
@@ -211,11 +225,10 @@ export async function getForYouSQL(
       privateUser,
       // Keep the same diversity behavior when a new/low-activity user has no
       // topic scores yet. Ordinary basic browse does not opt into this.
-      suppressStaleSeen: true,
+      suppressStaleSeen: discoveryVariant === 'treatment',
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
-  const GROUP_SCORE_POWER = 4
   const forYou = renderSql(
     buildArray(
       select(
@@ -240,7 +253,8 @@ export async function getForYouSQL(
       // A client-provided session anchor keeps the seen set stable across
       // every offset page. Unanchored callers retain the old unsuppressed
       // behavior so page-one filtering cannot shift their later offsets.
-      shouldSuppressStaleSeenMarkets(seenMarketCutoffTime) &&
+      discoveryVariant === 'treatment' &&
+        shouldSuppressStaleSeenMarkets(seenMarketCutoffTime) &&
         staleSeenMarketsSql(userId, seenMarketCutoffTime),
       privateUserBlocksSql(privateUser),
       withClause(
@@ -267,9 +281,7 @@ export async function getForYouSQL(
       orderBy(`case
       when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)
-      then power(${nicheBlendTopicScoreSql(
-        `coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR})`
-      )}, ${GROUP_SCORE_POWER}) * avg(contracts.${sortByScore})
+      then ${getForYouTopicRankSql(sortByScore, discoveryVariant)}
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2

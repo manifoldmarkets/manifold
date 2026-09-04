@@ -27,17 +27,28 @@ export const getSearchRequestDebounceMs = (
  * and a new worker deliberately rejects a badly skewed first-page anchor.
  * Removing a semantic opt-in is safe on any later page because fallback only
  * runs on page one. Removing a seen-market anchor is safe only on page one;
- * doing that later could mix filtered and unfiltered offset spaces.
+ * removing an experiment arm later is also unsafe for For You because it can
+ * switch ranking spaces underneath offset pagination.
  */
 export const shouldRetrySearchWithoutDiscoveryOptions = (
   freshQuery: boolean,
   seenMarketCutoffTime: number | undefined,
   enableSemanticSearch: boolean | undefined,
-  errorCode: number | undefined
+  discoveryVariant: 'control' | 'treatment' | undefined,
+  errorCode: number | undefined,
+  isForYouRoute = false
 ) =>
   errorCode === 400 &&
   ((freshQuery && seenMarketCutoffTime !== undefined) ||
-    enableSemanticSearch === true)
+    enableSemanticSearch === true ||
+    (discoveryVariant !== undefined &&
+      (freshQuery || !isForYouRoute || discoveryVariant === 'control')))
+
+/** Keep every page in the same ranking space after a compatibility retry. */
+export const shouldSendDiscoveryOptions = (
+  freshQuery: boolean,
+  resultSetUsedCompatibilityFallback: boolean
+) => freshQuery || !resultSetUsedCompatibilityFallback
 
 /** Keep one visibility-observer chain alive after params invalidate a page. */
 export const shouldRetryStaleSearchRequest = (

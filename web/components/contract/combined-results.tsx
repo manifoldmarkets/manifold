@@ -1,10 +1,16 @@
 import { Answer } from 'common/answer'
 import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { Contract } from 'common/contract'
+import {
+  DISCOVERY_RESULT_CLICK_EVENT,
+  DiscoveryResultTracking,
+} from 'common/discovery-experiment'
 import { orderCombinedSearchResults } from 'common/search-result-order'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
 import { Key } from 'react'
+import { track } from 'web/lib/service/analytics'
+import { isABTestAssignmentCurrent } from 'web/hooks/use-ab-test'
 import { PostRow } from '../posts/post-row'
 import { QUERY_KEY, SearchParams, SORT_KEY, TOPIC_FILTER_KEY } from '../search'
 import {
@@ -26,6 +32,7 @@ type CombinedResultsProps = {
   hideAvatars?: boolean
   hideActions?: boolean
   hasBets?: boolean
+  discoveryTracking?: DiscoveryResultTracking
 }
 
 // Type guard to check if an item is a Contract
@@ -51,6 +58,7 @@ export function CombinedResults(props: CombinedResultsProps) {
     hideAvatars,
     hideActions,
     hasBets,
+    discoveryTracking,
   } = props
 
   const sort =
@@ -75,7 +83,7 @@ export function CombinedResults(props: CombinedResultsProps) {
 
   return (
     <>
-      {combinedItems.map((item) => {
+      {combinedItems.map((item, index) => {
         if (isContract(item)) {
           return (
             <ContractRow
@@ -89,6 +97,34 @@ export function CombinedResults(props: CombinedResultsProps) {
               hideAvatar={hideAvatars}
               columns={contractDisplayColumns} // Pass the defined columns
               showPosition={hasBets}
+              onTrackClick={
+                discoveryTracking
+                  ? () => {
+                      if (
+                        !isABTestAssignmentCurrent(
+                          discoveryTracking.assignmentKey
+                        )
+                      ) {
+                        return
+                      }
+                      void track(DISCOVERY_RESULT_CLICK_EVENT, {
+                        contractId: item.id,
+                        schemaVersion: 1,
+                        presentationId: discoveryTracking.presentationId,
+                        resultSetId: discoveryTracking.resultSetId,
+                        variant: discoveryTracking.variant,
+                        assignmentSource: discoveryTracking.source,
+                        sourceComponent: discoveryTracking.sourceComponent,
+                        surface: discoveryTracking.surface,
+                        compatibilityFallback:
+                          discoveryTracking.compatibilityFallback,
+                        rank: index + 1,
+                        itemType: 'market',
+                        matchType: item.searchMatchType ?? 'lexical',
+                      })
+                    }
+                  : undefined
+              }
             />
           )
         } else if (isPost(item)) {
@@ -98,6 +134,33 @@ export function CombinedResults(props: CombinedResultsProps) {
               post={item}
               highlighted={highlightContractIds?.includes(item.id)} // Assuming posts can also be highlighted by ID
               hideAvatar={hideAvatars}
+              onTrackClick={
+                discoveryTracking
+                  ? () => {
+                      if (
+                        !isABTestAssignmentCurrent(
+                          discoveryTracking.assignmentKey
+                        )
+                      ) {
+                        return
+                      }
+                      void track(DISCOVERY_RESULT_CLICK_EVENT, {
+                        schemaVersion: 1,
+                        presentationId: discoveryTracking.presentationId,
+                        resultSetId: discoveryTracking.resultSetId,
+                        variant: discoveryTracking.variant,
+                        assignmentSource: discoveryTracking.source,
+                        sourceComponent: discoveryTracking.sourceComponent,
+                        surface: discoveryTracking.surface,
+                        compatibilityFallback:
+                          discoveryTracking.compatibilityFallback,
+                        rank: index + 1,
+                        itemType: 'post',
+                        postId: item.id,
+                      })
+                    }
+                  : undefined
+              }
             />
           )
         }
