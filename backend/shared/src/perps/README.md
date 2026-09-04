@@ -133,6 +133,23 @@ Three rules keep the split honest:
   idempotency `request` holds the **requested** value and the `response` the
   **actual** one.
 
+A partial close also has to be bound to the row it was **sized against**.
+`expectedOpenedTime` cannot do it: the survivor keeps its `openedTime`, so a
+request sized against the pre-close row passes that check and then applies its
+fraction to the smaller survivor, closing far less than was previewed and
+saying nothing. Callers therefore send `expectedSize`, which is compared to the
+locked row within `PERP_EXPECTED_SIZE_TOLERANCE` — representation dust only, so
+funding scaling the row, an ADL haircut, or another partial close landing first
+all correctly produce a 409. Full closes skip the check: "close everything" is
+unambiguous at any size, and a spurious 409 on the one operation a trader may
+urgently need is a worse failure than any it would prevent.
+
+Partial closes are rate-limited per user (60/hour); full closes are **never**
+rate-limited, for the same reason. The limit exists because the 1% minimum is a
+fraction of the current *remainder*, so repeated 1% closes decay geometrically
+rather than terminating: from an M$100 cost basis it takes ~917 of them to
+reach the dust floor, and more on a larger position.
+
 There is still no fee on a close — the taker fee is charged in full at open —
 so a partial close realizes its own `z` share of the fees the position already
 paid, and the remainder carries the rest. Solvency, the escrow check and the

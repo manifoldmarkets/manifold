@@ -697,21 +697,44 @@ export const placePerpTradeSchema = z.object({
   maxFee: z.number().min(0).optional(),
 })
 
-export const closePerpPositionSchema = z.object({
-  contractId: z.string().min(1),
-  direction: z.enum(['long', 'short']),
-  idempotencyKey: z.string().regex(randomStringRegex).length(10),
-  expectedOpenedTime: z.number().int().nonnegative(),
-  // Fraction of the position to close; omitted = the whole position. Either
-  // exactly 1 or at least PERP_MIN_CLOSE_FRACTION — a smaller close cannot
-  // change the position and would only mint an event and streak credit. A
-  // fraction whose remainder would be dust closes the whole position instead;
-  // the response's `fraction` says what actually happened.
-  fraction: z
-    .number()
-    .lte(1)
-    .refine((f) => f === 1 || f >= PERP_MIN_CLOSE_FRACTION, {
-      message: `fraction must be 1 or at least ${PERP_MIN_CLOSE_FRACTION}`,
-    })
-    .optional(),
-})
+export const closePerpPositionSchema = z
+  .object({
+    contractId: z.string().min(1),
+    direction: z.enum(['long', 'short']),
+    idempotencyKey: z.string().regex(randomStringRegex).length(10),
+    expectedOpenedTime: z.number().int().nonnegative(),
+    // Fraction of the position to close; omitted = the whole position. Either
+    // exactly 1 or at least PERP_MIN_CLOSE_FRACTION — a smaller close cannot
+    // change the position and would only mint an event and streak credit. A
+    // fraction whose remainder would be dust closes the whole position instead;
+    // the response's `fraction` says what actually happened.
+    fraction: z
+      .number()
+      .lte(1)
+      .refine((f) => f === 1 || f >= PERP_MIN_CLOSE_FRACTION, {
+        message: `fraction must be 1 or at least ${PERP_MIN_CLOSE_FRACTION}`,
+      })
+      .optional(),
+    // The notional the caller sized `fraction` against. Checked against the
+    // locked row on a partial close and rejected with a 409 if it has moved,
+    // because `expectedOpenedTime` cannot see an intervening partial close: the
+    // survivor keeps its openedTime. Ignored on a full close, which is
+    // unambiguous at any size.
+    expectedSize: z.number().positive().finite().optional(),
+  })
+  // Required, not optional, for a partial close: without it the race is
+  // simply unguarded, and "close half of whatever happens to be there" is
+  // never what a caller means when they previewed a number. A caller has to
+  // read the position to know it exists, so it always has a size to send; if
+  // it raced, the 409 tells it to re-read rather than executing a trade it
+  // did not preview.
+  .refine(
+    (p) =>
+      p.fraction === undefined ||
+      p.fraction >= 1 ||
+      p.expectedSize !== undefined,
+    {
+      message: 'expectedSize is required when closing part of a position',
+      path: ['expectedSize'],
+    }
+  )

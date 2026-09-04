@@ -593,6 +593,37 @@ export const PERP_MIN_CLOSE_FRACTION = 0.01
 export const PERP_MIN_REMAINDER_COST_BASIS = 0.01
 
 /**
+ * Relative slack between the notional a partial close was sized against and
+ * the row the transaction actually locked.
+ *
+ * Representation dust only — NOT semantic drift. `size` round-trips through a
+ * postgres `numeric` and back, and that is the only difference this is here to
+ * forgive. Anything that genuinely moved the row (funding scaling it, an ADL
+ * haircut, another partial close landing first) must fail the check, because
+ * in every one of those cases the fraction the caller chose was chosen against
+ * a position that no longer exists, and applying it to the survivor silently
+ * executes a different trade than the one they consented to.
+ */
+export const PERP_EXPECTED_SIZE_TOLERANCE = 1e-9
+
+/**
+ * Whether a partial close's `expectedSize` still describes the locked row.
+ *
+ * Relative, so it means the same thing on an M$10 position and an M$10m one.
+ */
+export const perpSizeMatchesExpectation = (
+  actualSize: number,
+  expectedSize: number
+) => {
+  if (!Number.isFinite(actualSize) || !Number.isFinite(expectedSize))
+    return false
+  const scale = Math.max(Math.abs(actualSize), Math.abs(expectedSize), 1)
+  return (
+    Math.abs(actualSize - expectedSize) <= PERP_EXPECTED_SIZE_TOLERANCE * scale
+  )
+}
+
+/**
  * The fraction a close will ACTUALLY take, given what the caller asked for.
  *
  * Separate from `closePosition` so a caller can price and describe the close

@@ -32,6 +32,7 @@ import {
   openPosition as openPositionMath,
   PERP_MIN_CLOSE_FRACTION,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
+  perpSizeMatchesExpectation,
   PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   processLiquidations,
@@ -1145,7 +1146,10 @@ export const closePosition = async (
   /** Fraction of the position to close; 1 (the default) closes all of it.
    * The engine may still close the whole position when the remainder would
    * be dust — the returned `fraction` is what actually happened. */
-  requestedFraction = 1
+  requestedFraction = 1,
+  /** Optimistic-concurrency token for a PARTIAL close: the notional the
+   * caller believed it was taking a fraction OF. See the check below. */
+  expectedSize?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (
@@ -1169,6 +1173,19 @@ export const closePosition = async (
     throw new APIError(
       400,
       `Close fraction must be at least ${PERP_MIN_CLOSE_FRACTION} (or exactly 1 to close the whole position)`
+    )
+  if (
+    expectedSize !== undefined &&
+    (!Number.isFinite(expectedSize) || expectedSize <= 0)
+  )
+    throw new APIError(400, 'Expected position size must be a positive number')
+  const fractionRequestsPartialClose = requestedFraction < 1
+  // The schema already requires it; this is the same rule stated where the
+  // trade is actually executed, so a non-HTTP caller cannot skip the guard.
+  if (fractionRequestsPartialClose && expectedSize === undefined)
+    throw new APIError(
+      400,
+      'Closing part of a position requires the expected position size'
     )
 
   return runPerpTransaction(async (pgTrans) => {
@@ -1197,10 +1214,15 @@ export const closePosition = async (
           request?.fraction === undefined
             ? 1
             : finiteNumber(request.fraction, 'close fraction')
+        const storedExpectedSize =
+          request?.expectedSize === undefined
+            ? undefined
+            : finiteNumber(request.expectedSize, 'expected position size')
         if (
           request?.direction !== direction ||
           storedExpectedOpenedTime !== expectedOpenedTime ||
-          storedRequestedFraction !== requestedFraction
+          storedRequestedFraction !== requestedFraction ||
+          storedExpectedSize !== expectedSize
         ) {
           throw new APIError(
             409,
@@ -1322,6 +1344,28 @@ export const closePosition = async (
         'This position changed after the page loaded. Refresh before closing it.'
       )
     }
+    // A partial close is a fraction OF something, and `expectedOpenedTime`
+    // cannot police what that something was: the survivor of a partial close
+    // keeps its openedTime, so a second request sized against the pre-close
+    // row passes that check and then applies its fraction to the smaller row —
+    // closing far less than was previewed, silently. (Two tabs both showing
+    // 400 and both sending 75%: the first leaves 100, the second takes 75 of
+    // that instead of the 300 it displayed.) Funding and ADL move `size` the
+    // same way, and invalidate the preview for the same reason.
+    //
+    // Full closes deliberately skip this. "Close everything" is unambiguous at
+    // any size, and a spurious 409 on the one operation a trader may urgently
+    // need is a worse failure than any it would prevent.
+    if (
+      fractionRequestsPartialClose &&
+      expectedSize !== undefined &&
+      !perpSizeMatchesExpectation(position.size, expectedSize)
+    ) {
+      throw new APIError(
+        409,
+        'This position changed after the page loaded. Refresh before closing part of it.'
+      )
+    }
 
     // A stale feed would let a user cherry-pick a favorable cached price after
     // watching the real market move. Opens and closes share one predicate.
@@ -1389,6 +1433,7 @@ export const closePosition = async (
                 direction,
                 expectedOpenedTime,
                 fraction: requestedFraction,
+                ...(expectedSize === undefined ? {} : { expectedSize }),
               },
               response: {
                 payout,

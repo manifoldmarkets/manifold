@@ -19,10 +19,12 @@ import {
   mergedEntryPrice,
   MIN_PERP_LEVERAGE,
   openPosition,
+  PERP_EXPECTED_SIZE_TOLERANCE,
   PERP_MIN_CLOSE_FRACTION,
   PERP_MIN_REMAINDER_COST_BASIS,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
+  perpSizeMatchesExpectation,
   processLiquidations,
   resolvePerpCloseFraction,
   solvencyFactor,
@@ -1270,6 +1272,38 @@ describe('partial close', () => {
     }
     return { position, state }
   }
+
+  describe('perpSizeMatchesExpectation', () => {
+    it('forgives representation dust at any scale', () => {
+      expect(perpSizeMatchesExpectation(400, 400)).toBe(true)
+      expect(
+        perpSizeMatchesExpectation(
+          400,
+          400 * (1 + PERP_EXPECTED_SIZE_TOLERANCE / 2)
+        )
+      ).toBe(true)
+      expect(
+        perpSizeMatchesExpectation(
+          12_345_678,
+          12_345_678 * (1 + PERP_EXPECTED_SIZE_TOLERANCE / 2)
+        )
+      ).toBe(true)
+    })
+
+    it('refuses a row that actually moved', () => {
+      // The smallest close that can change a row is 1%, so anything an
+      // intervening close could have done is far outside the tolerance.
+      expect(perpSizeMatchesExpectation(400 * 0.99, 400)).toBe(false)
+      expect(perpSizeMatchesExpectation(100, 400)).toBe(false)
+      // Funding and ADL scale size too, and invalidate the preview the same way.
+      expect(perpSizeMatchesExpectation(400 * 0.999, 400)).toBe(false)
+    })
+
+    it('refuses values it cannot compare', () => {
+      expect(perpSizeMatchesExpectation(NaN, 400)).toBe(false)
+      expect(perpSizeMatchesExpectation(400, Infinity)).toBe(false)
+    })
+  })
 
   describe('resolvePerpCloseFraction', () => {
     const row = { size: 400, costBasis: 100 }

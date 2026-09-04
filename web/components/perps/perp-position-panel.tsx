@@ -163,7 +163,10 @@ export const PerpPositionPanel = (props: {
         direction,
         idempotencyKey: request.idempotencyKey,
         expectedOpenedTime: position.openedTime,
-        ...(fraction < 1 ? { fraction } : {}),
+        // Bind a partial close to the row it was sized against. openedTime
+        // survives a partial close, so it alone cannot tell the engine that
+        // this 75% was 75% OF 400 rather than of whatever is there now.
+        ...(fraction < 1 ? { fraction, expectedSize: position.size } : {}),
       })
       // The engine promotes a close whose remainder would be dust, so what
       // came back — not what was asked for — decides the wording.
@@ -200,6 +203,11 @@ export const PerpPositionPanel = (props: {
       onAction?.()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Close failed')
+      // A 409 here means the row moved under the request and tells the user
+      // to refresh — so refresh, rather than leaving them to do it by hand
+      // against the same stale numbers that just failed.
+      setRefresh((r) => r + 1)
+      onAction?.()
     } finally {
       setClosing(null)
     }
