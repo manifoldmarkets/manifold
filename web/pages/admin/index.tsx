@@ -92,6 +92,10 @@ export default function AdminPage() {
         />
         <LabCard title="⚽ sports markets" href="/admin/sports" />
         <LabCard title="📈 create perp market" href="/admin/create-perp" />
+        <LabCard
+          title="🧭 OpenRouter classifications"
+          href="/admin/model-classifications"
+        />
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="👕 merch management" href="/admin/merch" />
         <LabCard title="🎨 design system" href="/styles" />
@@ -133,13 +137,5 @@ export default function AdminPage() {
         </Row>
       </div>
     </Page>
-  )
-}
-
-const Badge = (props: { src: string; href: string }) => {
-  return (
-    <a href={props.href}>
-      <img src={props.src} alt="" />
-    </a>
   )
 }

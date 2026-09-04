@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import clsx from 'clsx'
+import type { APIResponse } from 'common/api/schema'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -8,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
@@ -23,13 +24,27 @@ import { api } from 'web/lib/api/api'
 export default function AdminModelClassificationsPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin()
-  const { data, refresh } = useAPIGetter('get-model-classifications', {})
+  const isAdminOrMod = useAdminOrMod()
+  const { data, refresh } = useAPIGetter(
+    'get-model-classifications',
+    {},
+    undefined,
+    undefined,
+    isAdmin
+  )
+  const { data: labData, refresh: refreshLabData } = useAPIGetter(
+    'get-openrouter-lab-classifications',
+    {},
+    undefined,
+    undefined,
+    isAdminOrMod
+  )
 
-  if (!isAdmin)
+  if (!isAdminOrMod)
     return (
       <Page trackPageView={false}>
         <NoSEO />
-        <Title>Admin only</Title>
+        <Title>Mods and admins only</Title>
       </Page>
     )
 
@@ -44,80 +59,417 @@ export default function AdminModelClassificationsPage() {
     <Page trackPageView={false}>
       <NoSEO />
       <Col className="mx-auto w-full max-w-4xl gap-4 p-4">
-        <Title>Model classifications</Title>
+        <Title>OpenRouter classifications</Title>
 
-        <Col className="bg-canvas-50 gap-1 rounded p-3 text-sm">
-          <div className="text-ink-700">
-            The open-weight index scores OpenRouter's top 50 on one test:{' '}
-            <b>are the weights publicly downloadable?</b> Downloadable is open;
-            API-only is closed. Unknown models are excluded from both sides of
-            the index, so a wrong call here moves a market people trade.
-          </div>
-          <div className="text-ink-500">
-            Seed list version {data?.seedVersion ?? '—'} · grace window{' '}
-            {data ? Math.round(data.graceWindowMs / 3_600_000) : '—'}h
-          </div>
-        </Col>
+        <LabClassificationSection data={labData} onDone={refreshLabData} />
 
-        {expired.length > 0 && (
-          <div className="bg-scarlet-100 text-scarlet-700 rounded p-3 text-sm">
-            <b>{expired.length} past the grace window.</b> The index is halting
-            on these right now — the feed is not publishing until they are
-            classified.
-          </div>
-        )}
-
-        <Col className="gap-2">
-          <div className="text-ink-700 font-semibold">
-            In the index right now ({ranked.length})
-          </div>
-          {ranked.length === 0 && (
-            <div className="text-ink-500 text-sm">
-              Nothing unclassified is currently ranked — the index is scoring a
-              complete denominator.
+        {isAdmin && (
+          <Col className="gap-4 border-t pt-6">
+            <div className="text-ink-800 text-lg font-semibold">
+              Open-weight models
             </div>
-          )}
-          {ranked.map((model) => (
-            <PendingRow key={model.permaslug} model={model} onDone={refresh} />
-          ))}
-        </Col>
 
-        {backlog.length > 0 && (
-          <Col className="gap-2 pt-2">
-            <div className="text-ink-700 font-semibold">
-              Not yet ranked ({backlog.length})
-            </div>
-            <div className="text-ink-500 text-sm">
-              In OpenRouter's catalog but outside the top 50, so they are not
-              affecting the index. Classifying them ahead of time is what stops
-              the next one becoming an outage.
-            </div>
-            {backlog.map((model) => (
-              <PendingRow
-                key={model.permaslug}
-                model={model}
-                onDone={refresh}
-              />
-            ))}
-          </Col>
-        )}
+            <Col className="bg-canvas-50 gap-1 rounded p-3 text-sm">
+              <div className="text-ink-700">
+                The open-weight index scores OpenRouter's top 50 on one test:{' '}
+                <b>are the weights publicly downloadable?</b> Downloadable is
+                open; API-only is closed. Unknown models are excluded from both
+                sides of the index, so a wrong call here moves a market people
+                trade.
+              </div>
+              <div className="text-ink-500">
+                Seed list version {data?.seedVersion ?? '—'} · grace window{' '}
+                {data ? Math.round(data.graceWindowMs / 3_600_000) : '—'}h
+              </div>
+            </Col>
 
-        {!!data?.recent.length && (
-          <Col className="gap-1 pt-4">
-            <div className="text-ink-700 font-semibold">Recently decided</div>
-            <div className="text-ink-500 text-xs">
-              A verdict can go stale without anything here changing: a publisher
-              may ship weights after launch, which the methodology treats as a
-              reclassification from the release date forward. The nightly audit
-              flags those, so these stay editable.
-            </div>
-            {data.recent.map((r) => (
-              <DecidedRow key={r.permaslug} model={r} onDone={refresh} />
-            ))}
+            {expired.length > 0 && (
+              <div className="bg-scarlet-100 text-scarlet-700 rounded p-3 text-sm">
+                <b>{expired.length} past the grace window.</b> The index is
+                halting on these right now — the feed is not publishing until
+                they are classified.
+              </div>
+            )}
+
+            <Col className="gap-2">
+              <div className="text-ink-700 font-semibold">
+                In the index right now ({ranked.length})
+              </div>
+              {ranked.length === 0 && (
+                <div className="text-ink-500 text-sm">
+                  Nothing unclassified is currently ranked — the index is
+                  scoring a complete denominator.
+                </div>
+              )}
+              {ranked.map((model) => (
+                <PendingRow
+                  key={model.permaslug}
+                  model={model}
+                  onDone={refresh}
+                />
+              ))}
+            </Col>
+
+            {backlog.length > 0 && (
+              <Col className="gap-2 pt-2">
+                <div className="text-ink-700 font-semibold">
+                  Not yet ranked ({backlog.length})
+                </div>
+                <div className="text-ink-500 text-sm">
+                  In OpenRouter's catalog but outside the top 50, so they are
+                  not affecting the index. Classifying them ahead of time is
+                  what stops the next one becoming an outage.
+                </div>
+                {backlog.map((model) => (
+                  <PendingRow
+                    key={model.permaslug}
+                    model={model}
+                    onDone={refresh}
+                  />
+                ))}
+              </Col>
+            )}
+
+            {!!data?.recent.length && (
+              <Col className="gap-1 pt-4">
+                <div className="text-ink-700 font-semibold">
+                  Recently decided
+                </div>
+                <div className="text-ink-500 text-xs">
+                  A verdict can go stale without anything here changing: a
+                  publisher may ship weights after launch, which the methodology
+                  treats as a reclassification from the release date forward.
+                  The nightly audit flags those, so these stay editable.
+                </div>
+                {data.recent.map((r) => (
+                  <DecidedRow key={r.permaslug} model={r} onDone={refresh} />
+                ))}
+              </Col>
+            )}
           </Col>
         )}
       </Col>
     </Page>
+  )
+}
+
+type LabClassificationData = APIResponse<'get-openrouter-lab-classifications'>
+type PendingLabClassification = LabClassificationData['pending'][number]
+type DecidedLabClassification = LabClassificationData['decided'][number]
+type LabClassificationDisplay = PendingLabClassification &
+  Partial<
+    Pick<
+      DecidedLabClassification,
+      | 'isChinese'
+      | 'evidence'
+      | 'sourceUrl'
+      | 'source'
+      | 'classifiedAt'
+      | 'classifiedBy'
+    >
+  >
+
+function LabClassificationSection(props: {
+  data: LabClassificationData | undefined
+  onDone: () => void
+}) {
+  const { data, onDone } = props
+  const pending = data?.pending ?? []
+  const ranked = pending.filter((row) => row.firstRankedAt !== null)
+  const backlog = pending.filter((row) => row.firstRankedAt === null)
+
+  return (
+    <Col className="gap-4">
+      <div>
+        <div className="text-ink-800 text-lg font-semibold">
+          Chinese-lab publishers
+        </div>
+        <div className="text-ink-600 text-sm">
+          Classify where an OpenRouter publisher is headquartered. Normal labs
+          are decided once by author; anonymous or shared namespaces use an
+          exact-model decision. Every verdict needs a short evidence summary and
+          a public source.
+        </div>
+        <div className="text-ink-400 mt-1 text-xs">
+          Audited seed version {data?.seedVersion ?? '—'} · database decisions
+          take effect on the next hourly feed run without a deploy.
+        </div>
+      </div>
+
+      {!data ? (
+        <div className="text-ink-500 text-sm">
+          Loading classification queue…
+        </div>
+      ) : (
+        <>
+          <Col className="gap-2">
+            <div className="text-ink-700 font-semibold">
+              Ranked or backfill-blocking ({ranked.length})
+            </div>
+            {ranked.length === 0 && (
+              <div className="text-ink-500 text-sm">
+                No ranked or historical publisher is waiting for a decision.
+              </div>
+            )}
+            {ranked.map((row) => (
+              <LabClassificationRow
+                key={`${row.subjectType}:${row.subjectSlug}`}
+                row={row}
+                ranked
+                onDone={onDone}
+              />
+            ))}
+          </Col>
+
+          {backlog.length > 0 && (
+            <Col className="gap-2">
+              <div className="text-ink-700 font-semibold">
+                Catalog backlog ({backlog.length})
+              </div>
+              <div className="text-ink-500 text-sm">
+                These are not in the ranked window yet. Deciding them now
+                prevents a future launch from becoming an alert or feed pause.
+              </div>
+              {backlog.map((row) => (
+                <LabClassificationRow
+                  key={`${row.subjectType}:${row.subjectSlug}`}
+                  row={row}
+                  onDone={onDone}
+                />
+              ))}
+            </Col>
+          )}
+
+          {data.decided.length > 0 && (
+            <Col className="gap-2 pt-2">
+              <div className="text-ink-700 font-semibold">
+                Database decisions ({data.decided.length})
+              </div>
+              <div className="text-ink-500 text-xs">
+                Seed entries remain code-reviewed. These newer decisions can be
+                corrected here, with the prior verdict retained in database
+                history.
+              </div>
+              {data.decided.map((row) => (
+                <LabClassificationRow
+                  key={`${row.subjectType}:${row.subjectSlug}`}
+                  row={{
+                    ...row,
+                    discoveredVia: null,
+                    firstSeen: row.classifiedAt,
+                    firstRankedAt: null,
+                  }}
+                  onDone={onDone}
+                />
+              ))}
+            </Col>
+          )}
+        </>
+      )}
+    </Col>
+  )
+}
+
+function LabClassificationRow(props: {
+  row: LabClassificationDisplay
+  ranked?: boolean
+  onDone: () => void
+}) {
+  const { row, ranked = false, onDone } = props
+  const decided = row.isChinese !== undefined
+  const [editing, setEditing] = useState(!decided)
+  const [evidence, setEvidence] = useState(row.evidence ?? '')
+  const [sourceUrl, setSourceUrl] = useState(row.sourceUrl ?? '')
+  const [saving, setSaving] = useState(false)
+
+  const classify = async (isChinese: boolean) => {
+    if (!evidence.trim()) {
+      toast.error('Add a short headquarters evidence summary')
+      return
+    }
+    let url: URL
+    try {
+      url = new URL(sourceUrl.trim())
+    } catch {
+      toast.error('Add a valid public evidence URL')
+      return
+    }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      toast.error('Evidence URL must use http or https')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await api('set-openrouter-lab-classification', {
+        subjectType: row.subjectType,
+        subjectSlug: row.subjectSlug,
+        isChinese,
+        evidence: evidence.trim(),
+        sourceUrl: url.toString(),
+      })
+      toast.success(
+        `${row.subjectSlug} → ${isChinese ? 'Chinese' : 'non-Chinese'}`
+      )
+      setEditing(false)
+      onDone()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const ageHours = Math.max(
+    0,
+    Math.floor((Date.now() - row.firstSeen) / 3_600_000)
+  )
+  const rankedAgeHours =
+    row.firstRankedAt === null
+      ? null
+      : Math.max(0, Math.floor((Date.now() - row.firstRankedAt) / 3_600_000))
+  const decisionChanged =
+    evidence.trim() !== (row.evidence ?? '') ||
+    sourceUrl.trim() !== (row.sourceUrl ?? '')
+
+  return (
+    <Col
+      className={clsx(
+        'gap-2 rounded border p-3',
+        ranked ? 'border-amber-400' : 'border-ink-200'
+      )}
+    >
+      <Row className="flex-wrap items-baseline gap-2">
+        {decided && (
+          <span
+            className={row.isChinese ? 'text-scarlet-600' : 'text-teal-600'}
+          >
+            {row.isChinese ? 'Chinese' : 'non-Chinese'}
+          </span>
+        )}
+        <span className="bg-canvas-100 text-ink-500 rounded px-1.5 py-0.5 text-xs">
+          {row.subjectType}
+        </span>
+        <span className="font-mono text-sm font-semibold">
+          {row.subjectSlug}
+        </span>
+        {!decided && (
+          <span className="text-ink-400 text-xs">
+            seen {ageHours}h ago
+            {rankedAgeHours === null
+              ? ''
+              : ` · ranked ${rankedAgeHours}h ago`}{' '}
+            · via {row.discoveredVia ?? 'unknown'}
+          </span>
+        )}
+        {decided && (
+          <button
+            className="text-primary-600 text-xs hover:underline"
+            onClick={() => setEditing((value) => !value)}
+          >
+            {editing ? 'cancel' : 'change'}
+          </button>
+        )}
+      </Row>
+
+      {(row.exampleModels.length > 0 || row.exampleNames.length > 0) && (
+        <div className="text-ink-500 text-xs">
+          {row.exampleModels.length > 0 && (
+            <>
+              Models:{' '}
+              <span className="font-mono">
+                {row.exampleModels.slice(0, 5).join(', ')}
+              </span>
+              {row.exampleModels.length > 5 &&
+                ` +${row.exampleModels.length - 5} more`}
+            </>
+          )}
+          {row.exampleNames.length > 0 && (
+            <div>
+              OpenRouter names: {row.exampleNames.slice(0, 5).join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+
+      {decided && !editing && (
+        <Col className="gap-0.5 text-xs">
+          <div className="text-ink-600">{row.evidence}</div>
+          {row.sourceUrl && (
+            <a
+              className="text-primary-600 w-fit hover:underline"
+              href={row.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Evidence source ↗
+            </a>
+          )}
+          <div className="text-ink-400">
+            via {row.source ?? 'unknown'}
+            {row.classifiedBy ? ` · by ${row.classifiedBy}` : ''}
+          </div>
+        </Col>
+      )}
+
+      {editing && (
+        <Col className="gap-2">
+          <Input
+            className="h-10 text-sm"
+            placeholder="Evidence summary, e.g. Company’s principal office is Shanghai"
+            value={evidence}
+            maxLength={2_000}
+            onChange={(event) => setEvidence(event.target.value)}
+          />
+          <Input
+            className="h-10 font-mono text-xs"
+            placeholder="https://public-source.example/company/about"
+            type="url"
+            value={sourceUrl}
+            maxLength={2_000}
+            onChange={(event) => setSourceUrl(event.target.value)}
+          />
+          {!!sourceUrl.trim() && (
+            <a
+              className="text-primary-600 w-fit text-xs hover:underline"
+              href={sourceUrl.trim()}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Check source ↗
+            </a>
+          )}
+          <Row className="flex-wrap gap-2">
+            <Button
+              size="xs"
+              color="red"
+              disabled={
+                saving ||
+                (row.isChinese === true && !decisionChanged) ||
+                !evidence.trim() ||
+                !sourceUrl.trim()
+              }
+              onClick={() => classify(true)}
+            >
+              Chinese-headquartered
+            </Button>
+            <Button
+              size="xs"
+              color="green"
+              disabled={
+                saving ||
+                (row.isChinese === false && !decisionChanged) ||
+                !evidence.trim() ||
+                !sourceUrl.trim()
+              }
+              onClick={() => classify(false)}
+            >
+              Non-Chinese
+            </Button>
+          </Row>
+        </Col>
+      )}
+    </Col>
   )
 }
 

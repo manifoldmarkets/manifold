@@ -397,7 +397,9 @@ temporal cap cannot self-heal, because the rejected point remains the
 comparison basis. Validation that has to tell "corrupt" apart from "moved
 fast" belongs in the adapter, where the source is visible: cross-exchange
 agreement in `btc-price.ts`, `validateOpenWeightPublication` in
-`open-weight-models.ts`, and the per-poll range check in `trump-approval.ts`.
+`open-weight-models.ts` (and its sibling `validateLabSharePublication` in
+`lab-share.ts`), the published-value cross-check canary in
+`votehub-average.ts`, and the untrusted-payload parser in `fear-greed.ts`.
 
 Feed adapters live next to it:
 
@@ -408,9 +410,43 @@ Feed adapters live next to it:
   pools (Raydium/Orca account state fetched via `solana-rpc.ts`, decoded in
   `common/src/perps/solana-pools.ts`, unit-tested against captured
   accounts). Chain state only — every venue API evaluated came with terms.
-- `trump-approval.ts` — 14-day rolling approval average (VoteHub).
-- `openrouter-tokens.ts` — trailing seven-day open-weight share of classified
-  top-50 OpenRouter model traffic.
+- `votehub-feeds.ts` — VoteHub's published, time-weighted polling averages,
+  parameterised by a `VoteHubFeedSpec` (average key, answer key, canary poll
+  query, log prefix, rules). Three feeds: `trump-approval-rating` (via the
+  thin `trump-approval.ts` wrapper, unchanged in behaviour),
+  `votehub-generic-ballot-2026` (Democratic share of the 2026 generic
+  ballot), and `vance-favorability` (JD Vance's Favorable share). Always a
+  share, never a margin, so the price is strictly positive. The
+  answer-key-parameterised reader and the cross-check canary live in
+  `common/src/perps/votehub-average.ts`; the publish-on-change plus 12h
+  heartbeat rule every slow feed shares is `common/src/perps/daily-feed-publish.ts`.
+- `fear-greed.ts` — Alternative.me's Crypto Fear & Greed index
+  (`crypto-fear-greed`, 0-100 sentiment points, documented `/fng/` API only).
+  The parser in `common/src/perps/fear-greed.ts` treats every field as
+  untrusted; the registry lower bound is 1 so a literal 0 print pauses the
+  feed instead of publishing a non-positive price.
+- `openrouter-tokens.ts` — one hourly fetch of OpenRouter's top-50 daily
+  token totals prices THREE feeds over the same trailing-7-UTC-day window and
+  the same denominator exclusions: `openrouter-open-weight-share`
+  (`common/src/perps/open-weight-models.ts`), and the author-level
+  `openrouter-anthropic-share` and `openrouter-chinese-lab-share`
+  (`common/src/perps/lab-share.ts`). The audited author/model constants are a
+  seed; the backend overlays operator classifications from
+  `openrouter_lab_classifications`, discovers new subjects from both the
+  catalog and live rankings, and exposes the pending queue at
+  `/admin/model-classifications`. An unresolved subject over 1% of tokens
+  halts only the Chinese-lab feed. One fetch also gates all three: if the
+  newest complete day in the payload is more than
+  `OPENROUTER_MAX_SOURCE_LAG_DAYS` behind today, nothing publishes, and a
+  point whose dataset `as_of` regresses is refused.
+
+Every slow-feed publisher carries the provider's own timestamp as
+`source_ts` (the VoteHub day, the Fear & Greed reading time, the OpenRouter
+`as_of`) and refuses, under the advisory lock, to publish a value the
+provider stamped EARLIER than the one already on the feed. That is what
+stops a source that briefly regresses (a day dropping out of VoteHub's
+series, a cached older reading) from rolling the executable mark back;
+same-stamp corrections still go through.
 
 **Monotone feeds make bad perps:** a monotone non-decreasing index (the Epoch
 Capabilities Index frontier was prototyped and then removed for this reason)
@@ -420,8 +456,14 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,xstocks,trump-approval,openrouter}-oracle.ts`)
-seed chart history before market creation.
+(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter}-oracle.ts`;
+`backfill-votehub-oracle` and `backfill-openrouter-oracle` take
+`--feed=<feedId>`) seed chart history before market creation. They are for
+feeds with NO live market: published history is append-only and a backfill
+stamps day boundaries, so on a live feed it would add a second point to every
+day rather than fill a hole. The VoteHub, Fear & Greed and OpenRouter scripts
+check this (`backfill-guard.ts`) and refuse a feed that backs an unresolved
+market unless `--force` is passed.
 
 The executable launch set, conservative initial parameters, feed-specific game
 design notes, and oracle-latency risks live in
@@ -443,14 +485,31 @@ sequence and rollback are in `perps-launch-runbook.md`.
   contract. The once-per-`FUNDING_PERIOD_MS` funding gate lives INSIDE
   `runFunding`, under the advisory lock, so overlapping ticks can't
   double-fund.
-- `update-trump-approval.ts` writes one daily point.
-- `update-openrouter-share.ts` polls hourly. OpenRouter currently returns
-  complete UTC days, so most hourly observations repeat the same underlying
-  value; a fresh timestamp proves job liveness but does not create intraday
-  price discovery.
+- `update-trump-approval.ts` polls VoteHub every 5 minutes and publishes
+  the Trump average on change plus a 12h heartbeat, under `[trump-approval]`.
+- `update-votehub-averages.ts` does the same for the other VoteHub specs
+  (generic ballot, Vance favorability), every 5 minutes offset two minutes
+  from the Trump job, each spec published independently, under `[votehub]`.
+- `update-fear-greed.ts` polls Alternative.me every 5 minutes and publishes
+  on change plus a heartbeat, under `[fear-greed]`. The index itself steps
+  once a day around 00:00 UTC.
+- `update-openrouter-share.ts` polls hourly and publishes the open-weight,
+  Anthropic-share and Chinese-lab-share feeds from ONE fetch, each under its
+  own per-feed advisory lock (lock → reread → validate → insert, then apply
+  outside the transaction) so one refusing never withholds the others, under
+  `[openrouter]`. OpenRouter currently returns complete UTC
+  days, so most hourly observations repeat the same underlying value; a fresh
+  timestamp proves job liveness but does not create intraday price discovery.
+
+The slow-feed jobs share `daily-feed-failure.ts`: a failed attempt is a
+throttled WARN until the feed has gone 20h without a point, then every
+failure is an ERROR (a feed that has never published is an ERROR too, but
+throttled to one an hour).
 
 Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
-`[update-perps]` — wire GCP log-based alerting to those.
+`[update-perps]`, and the publisher jobs page under `[trump-approval]`,
+`[votehub]`, `[fear-greed]` and `[openrouter]` — wire GCP log-based alerting
+to all of those.
 
 Trading and closes share `getOracleFreshness` from
 `common/src/perps/oracle.ts`. A stale price, missing timestamp, or invalid

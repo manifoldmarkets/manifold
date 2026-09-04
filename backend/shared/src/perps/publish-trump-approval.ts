@@ -1,266 +1,30 @@
-import * as dayjs from 'dayjs'
-import * as timezone from 'dayjs/plugin/timezone'
-import * as utc from 'dayjs/plugin/utc'
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
 import {
-  TRUMP_APPROVAL_MAX_CROSS_CHECK_GAP,
-  TRUMP_APPROVAL_MAX_SOURCE_AGE_DAYS,
-  TRUMP_APPROVAL_MAX_WINDOW_DAYS,
-  computeApprovalPoint,
-  decideApprovalPublish,
-  getApprovalCrossCheckGap,
-  readPublishedApprovalAverage,
-} from 'common/perps/trump-approval'
-
-import { TRUMP_APPROVAL_FEED_ID, insertOraclePrices } from 'shared/oracle'
-import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
-import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
-import { advisoryLockQuery } from 'shared/perps/queries'
+  VoteHubPublishResult,
+  publishVoteHubPoint,
+  voteHubDay,
+} from 'shared/perps/publish-votehub-average'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import {
-  fetchTrumpApprovalAverage,
-  fetchTrumpApprovalPolls,
-  toApprovalPolls,
-} from 'shared/trump-approval'
-import { log } from 'shared/utils'
+import { TRUMP_APPROVAL_SPEC, VOTEHUB_TZ } from 'shared/votehub-feeds'
 
-// Fetch enough poll history to cover the WIDEST window the methodology can
-// ask for, not just the nominal 14 days: when polling goes quiet the window
-// extends to satisfy TRUMP_APPROVAL_MIN_POLLS, and a lookback that stopped at
-// the nominal width would starve exactly the case the floor exists to handle.
-// The extra 21 days is buffer for long fielding periods (some polls span 2+
-// weeks, so their end_date can trail their start_date well past the bound).
-// ...and reach back from the OLDEST day we might value, not from today: the
-// published value can be up to TRUMP_APPROVAL_MAX_SOURCE_AGE_DAYS behind, and
-// the cross-check is computed for that day. Measuring the lookback from today
-// silently delivered a window three days short of what these comments claim.
-const FETCH_LOOKBACK_DAYS =
-  TRUMP_APPROVAL_MAX_WINDOW_DAYS + TRUMP_APPROVAL_MAX_SOURCE_AGE_DAYS + 21
+// The Trump approval publisher: publishVoteHubPoint with TRUMP_APPROVAL_SPEC.
+// The structure (observe → early-out → canary → advisory lock → re-decide →
+// validate → insert → apply) lives in publish-votehub-average.ts and is
+// shared with the other VoteHub feeds; this file keeps the names the
+// scheduler job and the operator scripts have always used.
 
-export const TRUMP_APPROVAL_TZ = 'America/Los_Angeles'
+export const TRUMP_APPROVAL_TZ = VOTEHUB_TZ
 
 export const trumpApprovalDay = (now: number = Date.now()) =>
-  dayjs.tz(dayjs(now), TRUMP_APPROVAL_TZ).format('YYYY-MM-DD')
+  voteHubDay(TRUMP_APPROVAL_SPEC, now)
 
-export type TrumpApprovalPublishResult =
-  | {
-      status: 'published'
-      price: number
-      ts: number
-      /** The day VoteHub stamped the value we published, and how far behind
-       * `today` that is. Surfaced so a published point can be reconciled
-       * against their site without re-deriving it. */
-      asOfDay: string
-      ageDays: number
-      /** Distance from our independent computation, or null when we could not
-       * produce one. Null is "unchecked", never "agrees". */
-      crossCheckGap: number | null
-    }
-  | { status: 'unchanged'; price: number; reason: string }
-  | { status: 'no-polls'; reason: string }
-  | { status: 'rejected'; reason: string }
+export type TrumpApprovalPublishResult = VoteHubPublishResult
 
 /**
- * Publish ONE observation of VoteHub's current approval average, stamped when
- * it becomes available to the market. Corrections append another observation
- * instead of pretending the revised value was tradable from midnight or
- * rewriting a point that liquidations/funding may already have consumed.
- *
- * Every unsuccessful outcome is REPORTED, never logged here: a thrown fetch
- * error and a returned `no-polls` are the same kind of event to a caller
- * that retries, and only the caller knows whether another attempt is coming.
- * Logging failures at this level is what made an hourly retry loop page
- * hourly for a single outage.
+ * Publish ONE observation of VoteHub's current Trump approval average,
+ * stamped when it becomes available to the market. See publishVoteHubPoint.
  */
-export const publishTrumpApprovalPoint = async (
+export const publishTrumpApprovalPoint = (
   pg: SupabaseDirectClient,
   options: { force?: boolean } = {}
-): Promise<TrumpApprovalPublishResult> => {
-  const now = dayjs.tz(dayjs(), TRUMP_APPROVAL_TZ)
-  const today = now.format('YYYY-MM-DD')
-
-  // The price. Fetched first so a failure here costs one request, not two.
-  const averages = await fetchTrumpApprovalAverage()
-  // Stamp the observation the moment it arrives, NOT after the cross-check
-  // below. With the timestamp taken later, a publisher that stalled in the
-  // canary fetch could write its stale reading with a timestamp newer than a
-  // concurrent publisher's fresher one, and the older observation would
-  // become the executable mark. The point is when we saw the value.
-  const observedAt = Date.now()
-  const published = readPublishedApprovalAverage(averages, today)
-  if (!published.ok) return { status: 'no-polls', reason: published.reason }
-
-  const fetchStart = dayjs
-    .utc(published.asOfDay)
-    .subtract(FETCH_LOOKBACK_DAYS, 'day')
-    .format('YYYY-MM-DD')
-
-  const readLast = async (
-    db: SupabaseDirectClient
-  ): Promise<{ ts: number; price: number } | null> => {
-    const row = await db.oneOrNone<{ ts: string; price: number | string }>(
-      `select ts, price from oracle_prices where feed_id = $1
-       order by ts desc limit 1`,
-      [TRUMP_APPROVAL_FEED_ID]
-    )
-    if (!row) return null
-    return { ts: new Date(row.ts).getTime(), price: Number(row.price) }
-  }
-
-  // `force` is the operator escape hatch: during an incident the point of
-  // running this by hand is to put a fresh stamp on the feed before it
-  // crosses maxOraclePriceAgeMs and pauses the engine, which is exactly the
-  // case the unchanged-value gate would otherwise refuse.
-  const decide = (last: { ts: number; price: number } | null) =>
-    options.force
-      ? ({ publish: true, reason: 'forced' } as const)
-      : decideApprovalPublish({ price: published.price, last, now: observedAt })
-
-  // Cheap early-out OUTSIDE the lock. An unchanged reading is the overwhelming
-  // common case at a 5-minute cadence — the value moves about once a day — and
-  // concluding that costs one indexed read rather than a second HTTP request,
-  // a full window computation, and a lock. The authoritative re-check happens
-  // under the lock below; this one is only an optimisation and is allowed to
-  // race.
-  const earlyDecision = decide(await readLast(pg))
-  if (!earlyDecision.publish)
-    return {
-      status: 'unchanged',
-      price: published.price,
-      reason: earlyDecision.reason,
-    }
-
-  // The canary. Computed from the raw polls, never used as the price.
-  //
-  // Its whole contract is that failing to produce it must not withhold a good
-  // published value, so the fetch and the computation are both inside the
-  // try: a timeout or an HTTP error here previously threw straight past the
-  // "unchecked" path and blocked publication, which is the opposite of what
-  // the surrounding comments promised.
-  //
-  // Computed for `published.asOfDay`, NOT for today. The published value can
-  // be a day or two behind, and comparing it against a reference built from
-  // polls it had not seen manufactures a divergence out of nothing but the
-  // date mismatch. Residual: a poll whose end_date precedes asOfDay but which
-  // VoteHub ingested afterwards still lands in our reference and not in
-  // theirs. Filtering on the provider's `created_at` would be a guess at when
-  // they folded it in rather than a fact. The drift it leaves is small — our
-  // own computation moves ~0.17/day on average against a tolerance of 3 —
-  // though that is a mean and not a bound, so an unusually eventful few days
-  // could narrow the margin.
-  let reference: ReturnType<typeof computeApprovalPoint> | null = null
-  try {
-    const polls = await fetchTrumpApprovalPolls(fetchStart)
-    reference = computeApprovalPoint(toApprovalPolls(polls), published.asOfDay)
-  } catch (err) {
-    reference = null
-    log.warn(
-      `[trump-approval] cross-check reference unavailable: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    )
-  }
-  const referencePrice = reference?.ok === true ? reference.price : null
-  const referenceLabel =
-    referencePrice == null ? '?' : referencePrice.toFixed(2)
-  const crossCheckGap =
-    referencePrice == null
-      ? null
-      : getApprovalCrossCheckGap(published.price, referencePrice)
-
-  if (crossCheckGap == null)
-    log.warn(
-      `[trump-approval] publishing ${published.price.toFixed(2)} unchecked — ` +
-        `no independent reference (${
-          reference == null
-            ? 'fetch failed'
-            : reference.ok
-            ? 'gap not computable'
-            : reference.reason
-        })`
-    )
-  else if (crossCheckGap > TRUMP_APPROVAL_MAX_CROSS_CHECK_GAP)
-    return {
-      status: 'rejected',
-      reason:
-        `published average ${published.price.toFixed(2)} (as of ` +
-        `${published.asOfDay}) is ${crossCheckGap.toFixed(2)} from our own ` +
-        `${referenceLabel}, over the ` +
-        `${TRUMP_APPROVAL_MAX_CROSS_CHECK_GAP} tolerance — not publishing a ` +
-        `value two independent computations disagree about`,
-    }
-
-  const point = { price: published.price, ts: observedAt }
-  const feed = getOracleFeed(TRUMP_APPROVAL_FEED_ID)
-  if (!feed)
-    return {
-      status: 'rejected',
-      reason: `missing OracleFeedDef for ${TRUMP_APPROVAL_FEED_ID}`,
-    }
-
-  // Serialize the decide-and-write against every other publisher on this
-  // feed. Croner's `protect` only covers one Cron object inside one process,
-  // so it does nothing about the standalone publish script, a second
-  // scheduler instance during a rolling deploy, or a manual run. Without this
-  // the read of the previous point and the insert are two unrelated
-  // statements, and two publishers can both decide to write.
-  //
-  // The decision is re-made INSIDE the lock against a fresh read, because the
-  // early-out above ran before the cross-check's HTTP call and its answer may
-  // be seconds stale by now.
-  const outcome = await pg.tx(async (tx) => {
-    await tx.one(advisoryLockQuery(`oracle-publish:${TRUMP_APPROVAL_FEED_ID}`))
-    const last = await readLast(tx)
-
-    const decision = decide(last)
-    if (!decision.publish)
-      return {
-        status: 'unchanged' as const,
-        price: published.price,
-        reason: decision.reason,
-      }
-
-    // validateOraclePoint rejects `point.ts <= prev.ts`, which under the lock
-    // is what stops a stalled publisher from rolling the mark backwards onto
-    // an older observation.
-    const rejection = validateOraclePoint(feed, last, point)
-    if (rejection)
-      return {
-        status: 'rejected' as const,
-        reason: `published average ${point.price.toFixed(2)} but ${rejection}`,
-      }
-
-    log(
-      `VoteHub published Trump approval average: ${point.price.toFixed(2)} ` +
-        `(as of ${published.asOfDay}, ${published.ageDays}d old, ` +
-        `${decision.reason}); ` +
-        `${
-          crossCheckGap == null
-            ? 'cross-check unavailable'
-            : `cross-check gap ${crossCheckGap.toFixed(
-                2
-              )} vs our own ${referenceLabel}`
-        } at ${new Date(point.ts).toISOString()}`
-    )
-    await insertOraclePrices(tx, TRUMP_APPROVAL_FEED_ID, [point])
-    return { status: 'published' as const }
-  })
-
-  if (outcome.status !== 'published') return outcome
-
-  // Applied OUTSIDE the publishing transaction, exactly as the fast oracle
-  // path does it: runOracleUpdate takes its own per-contract advisory lock,
-  // and nesting that inside this one would hold both across engine work.
-  await applyOraclePointToLivePerps(pg, TRUMP_APPROVAL_FEED_ID, point)
-  log(`inserted 1 ${TRUMP_APPROVAL_FEED_ID} oracle point for ${today}`)
-  return {
-    status: 'published',
-    price: point.price,
-    ts: point.ts,
-    asOfDay: published.asOfDay,
-    ageDays: published.ageDays,
-    crossCheckGap,
-  }
-}
+): Promise<TrumpApprovalPublishResult> =>
+  publishVoteHubPoint(pg, TRUMP_APPROVAL_SPEC, options)

@@ -15,6 +15,10 @@ import {
 } from 'shared/perps/model-classifications'
 import { classifyModelWithAgent } from 'shared/perps/classify-model-agent'
 import {
+  recordPendingLabSubjectsFromCatalog,
+  resolveLabClassifications,
+} from 'shared/perps/lab-classifications'
+import {
   fetchOpenRouterCatalog,
   OpenRouterCatalogEntry,
 } from 'shared/openrouter-tokens'
@@ -75,6 +79,25 @@ const updateModelClassificationsInternal = async () => {
   const pg = createSupabaseDirectClient()
 
   const catalog = await fetchOpenRouterCatalog()
+
+  // The same catalog fetch also supplies the Chinese-lab author queue. Do
+  // this before the model classifier's early return: an author such as
+  // nex-agi can be new to the lab index even when all of its models already
+  // have open-weight verdicts. Live rankings provide a second discovery path.
+  try {
+    const labClassifications = await resolveLabClassifications(pg)
+    await recordPendingLabSubjectsFromCatalog(
+      pg,
+      catalog,
+      Date.now(),
+      labClassifications
+    )
+  } catch (err) {
+    // This queue is operationally independent of the open-weight model
+    // classifier. A migration/config bug here must not suppress model work.
+    log.error(`[lab-classifier] catalog discovery failed — ${err}`)
+  }
+
   const adjudicated = await pg.manyOrNone<{ permaslug: string }>(
     `select permaslug from model_classifications where open is not null`
   )

@@ -1,0 +1,585 @@
+import {
+  CHINESE_LAB_LIST_VERSION,
+  CHINESE_LAB_MODELS,
+  CHINESE_LAB_AUTHORS,
+  KNOWN_NON_CHINESE_MODELS,
+  KNOWN_NON_CHINESE_AUTHORS,
+  UNKNOWN_AUTHOR_TOKEN_SHARE_CAP,
+  authorOfPermaslug,
+  computeAnthropicShare,
+  computeChineseLabShare,
+  computeLabShare,
+  validateLabSharePublication,
+} from './lab-share'
+import {
+  OPEN_WEIGHT_MODELS,
+  OPEN_WEIGHT_WINDOW_DAYS,
+  RankingRow,
+  UNCLASSIFIED_TOKEN_SHARE_CAP,
+  basePermaslug,
+  isValidPermaslug,
+} from './open-weight-models'
+
+const row = (
+  date: string,
+  model_permaslug: string,
+  total_tokens: string | number
+): RankingRow => ({
+  date,
+  model_permaslug,
+  total_tokens: String(total_tokens),
+})
+
+const D = '2026-08-26'
+
+describe('authorOfPermaslug', () => {
+  it('is the segment before the first slash of the base slug', () => {
+    expect(authorOfPermaslug('anthropic/claude-opus-5-20260723')).toBe(
+      'anthropic'
+    )
+    expect(authorOfPermaslug('z-ai/glm-5.2-20260616')).toBe('z-ai')
+    expect(authorOfPermaslug('meta-llama/llama-3.3-70b-instruct')).toBe(
+      'meta-llama'
+    )
+  })
+
+  it('collapses :free and other variants to the base author', () => {
+    expect(authorOfPermaslug('deepseek/deepseek-r1:free')).toBe('deepseek')
+    expect(authorOfPermaslug('qwen/qwen3-max:nitro')).toBe('qwen')
+  })
+
+  it('rejects malformed keys via isValidPermaslug', () => {
+    for (const bad of ['other', '/x', 'x/', 'a/b/c', 'openai /gpt-4', ''])
+      expect([bad, authorOfPermaslug(bad)]).toEqual([bad, null])
+  })
+})
+
+describe('Anthropic share', () => {
+  it('is Anthropic tokens over every classified token', () => {
+    const rows = [
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'openai/gpt-5.5-20260423', 500),
+      row(D, 'deepseek/deepseek-v4-pro-20260423', 200),
+    ]
+    expect(computeAnthropicShare(rows).share).toBeCloseTo(30)
+  })
+
+  it('excludes `other` and composite slugs from the denominator', () => {
+    const base = [
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'openai/gpt-5.5-20260423', 700),
+    ]
+    const withExcluded = [
+      ...base,
+      row(D, 'other', 5000),
+      row(D, 'openrouter/fusion', 400),
+      row(D, '~z-ai/glm-latest', 100),
+    ]
+    const res = computeAnthropicShare(withExcluded)
+    expect(res.share).toBe(computeAnthropicShare(base).share)
+    expect(res.share).toBeCloseTo(30)
+    expect(res.otherTokens).toBe(5000)
+    expect(res.compositeTokens).toBe(500)
+    expect(res.compositeSlugs).toEqual([
+      'openrouter/fusion',
+      '~z-ai/glm-latest',
+    ])
+    expect(res.hasExcludedPayload).toBe(true)
+  })
+
+  it('keeps cloaked openrouter/* slugs in the denominator, never the numerator', () => {
+    const rows = [
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'openrouter/horizon-beta', 700),
+    ]
+    const res = computeAnthropicShare(rows)
+    expect(res.share).toBeCloseTo(30)
+    expect(res.classifiedTokens).toBe(1000)
+    expect(res.numeratorTokens).toBe(300)
+  })
+
+  it('has no unknown-author concept: every valid author is classified', () => {
+    const rows = [
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'brand-new-lab/model-1', 700),
+    ]
+    const res = computeAnthropicShare(rows)
+    expect(res.unknownAuthors).toEqual([])
+    expect(res.unknownModels).toEqual([])
+    expect(res.unknownTokens).toBe(0)
+    expect(res.share).toBeCloseTo(30)
+  })
+
+  it('collapses :free variants into the same author', () => {
+    const rows = [
+      row(D, 'anthropic/claude-4.5-haiku-20251001', 100),
+      row(D, 'anthropic/claude-4.5-haiku-20251001:free', 100),
+      row(D, 'openai/gpt-oss-120b:free', 200),
+    ]
+    expect(computeAnthropicShare(rows).share).toBeCloseTo(50)
+  })
+
+  it('counts the author exactly, not by substring', () => {
+    const rows = [
+      row(D, 'anthropic/claude-opus-5-20260723', 100),
+      row(D, 'not-anthropic/claude-clone', 100),
+      row(D, 'anthropic-ai/other-thing', 100),
+    ]
+    expect(computeAnthropicShare(rows).share).toBeCloseTo(100 / 3)
+  })
+
+  it('does not apply Chinese exact-model placements to the Anthropic feed', () => {
+    const res = computeAnthropicShare([
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'stealth/ox-alpha', 700),
+    ])
+    expect(res.share).toBeCloseTo(30)
+    expect(res.unknownAuthors).toEqual([])
+    expect(res.unknownModels).toEqual([])
+  })
+})
+
+describe('Chinese-lab share', () => {
+  it('is Chinese-lab tokens over every classified token', () => {
+    const rows = [
+      row(D, 'deepseek/deepseek-v4-pro-20260423', 250),
+      row(D, 'qwen/qwen3.7-flash-20260727', 250),
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'openai/gpt-5.5-20260423', 200),
+    ]
+    const res = computeChineseLabShare(rows)
+    expect(res.share).toBeCloseTo(50)
+    expect(res.unknownAuthors).toEqual([])
+  })
+
+  it('excludes an unknown author from both sides and reports it', () => {
+    const rows = [
+      row(D, 'deepseek/deepseek-v4-pro-20260423', 500),
+      row(D, 'openai/gpt-5.5-20260423', 500),
+      row(D, 'mystery-lab/model-x', 100_000),
+    ]
+    const res = computeChineseLabShare(rows)
+    // A huge unknown must not drag the index toward either side.
+    expect(res.share).toBeCloseTo(50)
+    expect(res.unknownAuthors).toEqual(['mystery-lab'])
+    expect(res.unknownModels).toEqual([])
+    expect(res.unknownTokens).toBe(100_000)
+    expect(res.classifiedTokens).toBe(1000)
+    expect(res.unknownShareOfClassified).toBeCloseTo(100)
+  })
+
+  it('reports one unknown author across its :free variant and several models', () => {
+    const rows = [
+      row(D, 'deepseek/deepseek-v4-pro-20260423', 500),
+      row(D, 'openai/gpt-5.5-20260423', 500),
+      row(D, 'mystery-lab/model-x', 3),
+      row(D, 'mystery-lab/model-x:free', 2),
+      row(D, 'mystery-lab/model-y', 1),
+    ]
+    const res = computeChineseLabShare(rows)
+    expect(res.unknownAuthors).toEqual(['mystery-lab'])
+    expect(res.unknownTokens).toBe(6)
+    expect(res.unknownShareOfClassified).toBeCloseTo(0.006)
+  })
+
+  it('honours caller-supplied author lists', () => {
+    const rows = [
+      row(D, 'mystery-lab/model-x', 500),
+      row(D, 'openai/gpt-5.5-20260423', 500),
+    ]
+    expect(computeChineseLabShare(rows).unknownAuthors).toEqual(['mystery-lab'])
+    const placed = computeChineseLabShare(rows, OPEN_WEIGHT_WINDOW_DAYS, {
+      chinese: { ...CHINESE_LAB_AUTHORS, 'mystery-lab': { evidence: 'test' } },
+      nonChinese: KNOWN_NON_CHINESE_AUTHORS,
+    })
+    expect(placed.unknownAuthors).toEqual([])
+    expect(placed.share).toBeCloseTo(50)
+  })
+
+  it('applies exact-model placements before author placements', () => {
+    const classifications = {
+      chinese: { chinese: { evidence: 'test' } },
+      nonChinese: { western: { evidence: 'test' } },
+      chineseModels: {
+        'western/chinese-exception': { evidence: 'test' },
+      },
+      nonChineseModels: {
+        'chinese/non-chinese-exception': { evidence: 'test' },
+      },
+    }
+    const res = computeChineseLabShare(
+      [
+        row(D, 'western/chinese-exception', 300),
+        row(D, 'western/ordinary', 200),
+        row(D, 'chinese/non-chinese-exception', 100),
+        row(D, 'chinese/ordinary', 400),
+      ],
+      OPEN_WEIGHT_WINDOW_DAYS,
+      classifications
+    )
+    expect(res.share).toBeCloseTo(70)
+    expect(res.unknownAuthors).toEqual([])
+    expect(res.unknownModels).toEqual([])
+  })
+
+  it('classifies the revealed stealth model without classifying its author', () => {
+    const revealed = computeChineseLabShare([
+      row(D, 'stealth/ox-alpha', 300),
+      row(D, 'openai/gpt-5.5-20260423', 700),
+    ])
+    expect(revealed.share).toBeCloseTo(30)
+    expect(revealed.unknownAuthors).toEqual([])
+    expect(revealed.unknownModels).toEqual([])
+
+    const future = computeChineseLabShare([
+      row(D, 'stealth/future-anonymous-preview', 10),
+      row(D, 'openai/gpt-5.5-20260423', 1000),
+    ])
+    expect(future.share).toBe(0)
+    expect(future.unknownAuthors).toEqual([])
+    expect(future.unknownModels).toEqual(['stealth/future-anonymous-preview'])
+    expect(future.unknownTokens).toBe(10)
+  })
+
+  it('normalises variants for exact placements and pending model reports', () => {
+    const placed = computeChineseLabShare([
+      row(D, 'stealth/ox-alpha', 100),
+      row(D, 'stealth/ox-alpha:free', 200),
+      row(D, 'openai/gpt-5.5-20260423', 700),
+    ])
+    expect(placed.share).toBeCloseTo(30)
+
+    const pending = computeChineseLabShare([
+      row(D, 'stealth/next:free', 2),
+      row(D, 'stealth/next:nitro', 3),
+      row(D, 'openai/gpt-5.5-20260423', 1000),
+    ])
+    expect(pending.unknownModels).toEqual(['stealth/next'])
+    expect(pending.unknownTokens).toBe(5)
+  })
+
+  it('keeps cloaked openrouter/* slugs in the denominator, never the numerator', () => {
+    const rows = [
+      row(D, 'deepseek/deepseek-v4-pro-20260423', 300),
+      row(D, 'openrouter/horizon-beta', 700),
+    ]
+    const res = computeChineseLabShare(rows)
+    expect(res.unknownAuthors).toEqual([])
+    expect(res.share).toBeCloseTo(30)
+  })
+
+  it('treats Object.prototype-named authors as unknown, not as listed', () => {
+    // The author segment is untrusted. A truthy plain-object lookup would
+    // have put `constructor/x` into the NUMERATOR silently, and an
+    // `__proto__` object key would have vanished from the reported list.
+    for (const author of [
+      'constructor',
+      '__proto__',
+      'toString',
+      'hasOwnProperty',
+    ]) {
+      const rows = [
+        row(D, 'deepseek/deepseek-v4-pro-20260423', 500),
+        row(D, 'openai/gpt-5.5-20260423', 500),
+        row(D, `${author}/mystery-model`, 100),
+      ]
+      const res = computeChineseLabShare(rows)
+      expect([author, res.unknownAuthors]).toEqual([author, [author]])
+      expect([author, res.unknownTokens]).toEqual([author, 100])
+      expect([author, res.numeratorTokens]).toEqual([author, 500])
+      expect([author, res.share]).toEqual([author, 50])
+      // ...and over the cap it halts like any other unknown.
+      const validation = validateLabSharePublication({
+        ...res,
+        datesMissingOther: [],
+        dates: [
+          '2026-08-20',
+          '2026-08-21',
+          '2026-08-22',
+          '2026-08-23',
+          '2026-08-24',
+          '2026-08-25',
+          '2026-08-26',
+        ],
+        hasExcludedPayload: true,
+      })
+      expect([author, validation.ok]).toEqual([author, false])
+    }
+  })
+})
+
+describe('publication validation', () => {
+  const completeWindow = (extra: RankingRow[] = []) => {
+    const rows: RankingRow[] = []
+    for (let day = 20; day <= 26; day++) {
+      const date = `2026-08-${day}`
+      rows.push(row(date, 'anthropic/claude-opus-5-20260723', 300))
+      rows.push(row(date, 'deepseek/deepseek-v4-pro-20260423', 400))
+      rows.push(row(date, 'openai/gpt-5.5-20260423', 300))
+      rows.push(row(date, 'other', 1000))
+    }
+    return [...rows, ...extra]
+  }
+
+  it('accepts a complete, classified payload for both feeds', () => {
+    expect(
+      validateLabSharePublication(computeAnthropicShare(completeWindow()))
+    ).toEqual({
+      ok: true,
+      share: 30,
+      unknownAuthors: [],
+      unknownModels: [],
+      unknownShareOfClassified: 0,
+    })
+    expect(
+      validateLabSharePublication(computeChineseLabShare(completeWindow()))
+    ).toEqual({
+      ok: true,
+      share: 40,
+      unknownAuthors: [],
+      unknownModels: [],
+      unknownShareOfClassified: 0,
+    })
+  })
+
+  it('refuses the Chinese-lab feed when unknown authors exceed the cap', () => {
+    // 1000 unknown against 7000 classified — 14%, far over the 1% cap.
+    const res = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 1000)])
+    )
+    const validation = validateLabSharePublication(res)
+    expect(validation.ok).toBe(false)
+    if (validation.ok) return
+    expect(validation.reason).toContain('mystery-lab')
+    expect(validation.reason).toContain('classify the pending subject')
+  })
+
+  it('publishes the Chinese-lab feed under the cap and names the unknown', () => {
+    // 35 unknown against 7000 classified = 0.5%, inside the 1% cap.
+    const res = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 35)])
+    )
+    const validation = validateLabSharePublication(res)
+    expect(validation.ok).toBe(true)
+    if (!validation.ok) return
+    expect(validation.share).toBeCloseTo(40)
+    expect(validation.unknownAuthors).toEqual(['mystery-lab'])
+    expect(validation.unknownModels).toEqual([])
+    expect(validation.unknownShareOfClassified).toBeCloseTo(0.005)
+  })
+
+  it('publishes under the cap and names a pending model-scoped subject', () => {
+    const res = computeChineseLabShare(
+      completeWindow([row(D, 'stealth/future-preview:free', 35)])
+    )
+    const validation = validateLabSharePublication(res)
+    expect(validation.ok).toBe(true)
+    if (!validation.ok) return
+    expect(validation.unknownAuthors).toEqual([])
+    expect(validation.unknownModels).toEqual(['stealth/future-preview'])
+    expect(validation.unknownShareOfClassified).toBeCloseTo(0.005)
+  })
+
+  it('publishes exactly at the cap and halts just above it', () => {
+    // 70 unknown against 7000 classified is exactly 1%; 71 is over.
+    const at = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 70)])
+    )
+    expect(validateLabSharePublication(at).ok).toBe(true)
+    const over = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 71)])
+    )
+    expect(validateLabSharePublication(over).ok).toBe(false)
+  })
+
+  it('halts on any unknown when the cap is zero (backfill posture)', () => {
+    const res = computeChineseLabShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 1)])
+    )
+    expect(validateLabSharePublication(res, { unknownShareCap: 0 }).ok).toBe(
+      false
+    )
+  })
+
+  it('an unknown author never affects the Anthropic feed', () => {
+    const res = computeAnthropicShare(
+      completeWindow([row(D, 'mystery-lab/model-x', 1_000_000)])
+    )
+    const validation = validateLabSharePublication(res)
+    expect(validation.ok).toBe(true)
+    if (validation.ok) expect(validation.unknownAuthors).toEqual([])
+  })
+
+  it('fails closed on an incomplete or gapped window for both feeds', () => {
+    const short = completeWindow().filter((r) => r.date !== '2026-08-20')
+    for (const feed of ['anthropic', 'chinese-lab'] as const) {
+      const validation = validateLabSharePublication(
+        computeLabShare(feed, short)
+      )
+      expect(validation.ok).toBe(false)
+      if (!validation.ok) expect(validation.reason).toContain('incomplete')
+    }
+    const gapped = completeWindow().filter((r) => r.date !== '2026-08-23')
+    gapped.push(row('2026-08-27', 'anthropic/claude-opus-5-20260723', 1))
+    gapped.push(row('2026-08-27', 'other', 1))
+    const gapValidation = validateLabSharePublication(
+      computeAnthropicShare(gapped)
+    )
+    expect(gapValidation.ok).toBe(false)
+    if (!gapValidation.ok)
+      expect(gapValidation.reason).toContain('non-consecutive')
+  })
+
+  it('fails closed on malformed rows for both feeds', () => {
+    const badTokens = completeWindow([
+      row(D, 'openai/gpt-5.5-20260423', 'not-a-number'),
+    ])
+    const badSlug = completeWindow([row(D, 'a/b/c', 10)])
+    for (const feed of ['anthropic', 'chinese-lab'] as const) {
+      const tokens = validateLabSharePublication(
+        computeLabShare(feed, badTokens)
+      )
+      expect(tokens.ok).toBe(false)
+      if (!tokens.ok) expect(tokens.reason).toContain('malformed token')
+      const slug = validateLabSharePublication(computeLabShare(feed, badSlug))
+      expect(slug.ok).toBe(false)
+      if (!slug.ok) expect(slug.reason).toContain('malformed model slugs')
+    }
+  })
+
+  it('requires the `other` row on EVERY window day, not just one', () => {
+    // Six truncated days plus one complete day used to pass on a single
+    // boolean; completeness is per date.
+    const truncated = completeWindow().filter(
+      (r) => !(r.model_permaslug === 'other' && r.date !== '2026-08-26')
+    )
+    for (const feed of ['anthropic', 'chinese-lab'] as const) {
+      const result = computeLabShare(feed, truncated)
+      expect(result.hasExcludedPayload).toBe(true)
+      expect(result.datesMissingOther).toEqual([
+        '2026-08-20',
+        '2026-08-21',
+        '2026-08-22',
+        '2026-08-23',
+        '2026-08-24',
+        '2026-08-25',
+      ])
+      const validation = validateLabSharePublication(result)
+      expect(validation.ok).toBe(false)
+      if (!validation.ok) expect(validation.reason).toContain('truncated')
+    }
+    expect(computeAnthropicShare(completeWindow()).datesMissingOther).toEqual(
+      []
+    )
+  })
+
+  it('rejects a window with no `other` row', () => {
+    const noOther = completeWindow().filter(
+      (r) => r.model_permaslug !== 'other'
+    )
+    expect(validateLabSharePublication(computeAnthropicShare(noOther)).ok).toBe(
+      false
+    )
+  })
+
+  it('returns null rather than 0 when nothing is classified', () => {
+    expect(computeAnthropicShare([row(D, 'other', 100)]).share).toBeNull()
+    expect(computeChineseLabShare([]).share).toBeNull()
+  })
+
+  it('sums past Number.MAX_SAFE_INTEGER without losing units', () => {
+    const big = '9007199254740993'
+    const rows = [
+      row(D, 'anthropic/claude-opus-5-20260723', big),
+      row(D, 'openai/gpt-5.5-20260423', big),
+    ]
+    expect(computeAnthropicShare(rows).share).toBeCloseTo(50)
+  })
+})
+
+describe('the classification seed', () => {
+  it('reuse the open-weight cap number — 1% of classified tokens', () => {
+    expect(UNKNOWN_AUTHOR_TOKEN_SHARE_CAP).toBe(UNCLASSIFIED_TOKEN_SHARE_CAP)
+    expect(UNKNOWN_AUTHOR_TOKEN_SHARE_CAP).toBe(0.01)
+  })
+
+  it('never place an author on both sides', () => {
+    for (const author of Object.keys(CHINESE_LAB_AUTHORS))
+      expect([author, KNOWN_NON_CHINESE_AUTHORS[author]]).toEqual([
+        author,
+        undefined,
+      ])
+  })
+
+  it('never places an exact model on both sides', () => {
+    for (const model of Object.keys(CHINESE_LAB_MODELS))
+      expect([model, KNOWN_NON_CHINESE_MODELS[model]]).toEqual([
+        model,
+        undefined,
+      ])
+  })
+
+  it('carry evidence for every entry', () => {
+    for (const [author, entry] of [
+      ...Object.entries(CHINESE_LAB_AUTHORS),
+      ...Object.entries(KNOWN_NON_CHINESE_AUTHORS),
+    ]) {
+      expect([author, entry.evidence.trim().length > 0]).toEqual([author, true])
+      // Keyed on a bare author segment, never a slug.
+      expect([author, author.includes('/')]).toEqual([author, false])
+    }
+    for (const [model, entry] of [
+      ...Object.entries(CHINESE_LAB_MODELS),
+      ...Object.entries(KNOWN_NON_CHINESE_MODELS),
+    ]) {
+      expect([model, entry.evidence.trim().length > 0]).toEqual([model, true])
+      expect([model, isValidPermaslug(model)]).toEqual([model, true])
+      expect([model, basePermaslug(model)]).toEqual([model, model])
+    }
+  })
+
+  it('covers every author in the open-weight seed list', () => {
+    // "unknown" must mean genuinely new, not an omission from the audited
+    // open-weight seed that ships beside this one.
+    const seedAuthors = new Set(
+      Object.keys(OPEN_WEIGHT_MODELS).map((slug) =>
+        slug.slice(0, slug.indexOf('/'))
+      )
+    )
+    const unplaced = [...seedAuthors].filter(
+      (author) =>
+        !CHINESE_LAB_AUTHORS[author] && !KNOWN_NON_CHINESE_AUTHORS[author]
+    )
+    expect(unplaced).toEqual([])
+  })
+
+  it('contains the current known placements', () => {
+    expect(CHINESE_LAB_LIST_VERSION).toBe('2026-09-04')
+    expect(KNOWN_NON_CHINESE_AUTHORS.anthropic).toBeDefined()
+    expect(KNOWN_NON_CHINESE_AUTHORS.thinkingmachines).toBeDefined()
+    expect(CHINESE_LAB_MODELS['stealth/ox-alpha']).toBeDefined()
+    expect(CHINESE_LAB_AUTHORS.stealth).toBeUndefined()
+    expect(KNOWN_NON_CHINESE_AUTHORS.stealth).toBeUndefined()
+    for (const author of [
+      'qwen',
+      'deepseek',
+      'z-ai',
+      'moonshotai',
+      'xiaomi',
+      'minimax',
+      'inclusionai',
+      'tencent',
+      'stepfun',
+      'bytedance-seed',
+      'baai',
+      'alibaba',
+      'kwaipilot',
+      'nex-agi',
+      'dots-studio',
+    ])
+      expect([author, CHINESE_LAB_AUTHORS[author] != null]).toEqual([
+        author,
+        true,
+      ])
+  })
+})
