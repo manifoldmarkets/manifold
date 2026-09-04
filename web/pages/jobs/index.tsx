@@ -199,17 +199,20 @@ export default function JobsPage() {
         url="/jobs"
       />
       <Col className="mx-auto w-full max-w-3xl gap-8 p-4 py-8">
-        <Row className="items-center gap-2">
-          <BackButton />
-          <Col className="gap-2">
+        {/* Back arrow sits inline with the heading only — the subtitle drops
+            below the whole row, so the arrow doesn't float against the centre
+            of a two-line block. */}
+        <Col className="gap-2">
+          <Row className="items-center gap-2">
+            <BackButton />
             <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
               Job Board
             </h1>
-            <p className="text-ink-500 max-w-xl text-base leading-relaxed">
-              Curated jobs by employers who value forecasting
-            </p>
-          </Col>
-        </Row>
+          </Row>
+          <p className="text-ink-500 max-w-xl text-base leading-relaxed">
+            Curated jobs by employers who value forecasting
+          </p>
+        </Col>
 
         <JobInterestCard />
 
