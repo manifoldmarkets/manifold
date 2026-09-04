@@ -1502,6 +1502,7 @@ describe('partial close', () => {
 
     it('passes a valid partial through and reads 1 as a full close', () => {
       expect(resolvePerpCloseFraction(row, 0.25)).toBe(0.25)
+      expect(resolvePerpCloseFraction(row, 0.333)).toBe(0.333)
       expect(resolvePerpCloseFraction(row, PERP_MIN_CLOSE_FRACTION)).toBe(
         PERP_MIN_CLOSE_FRACTION
       )

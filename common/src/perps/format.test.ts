@@ -75,6 +75,12 @@ describe('formatPerpClosePercent', () => {
     expect(formatPerpClosePercent(0.75)).toBe('75%')
   })
 
+  it('keeps the precision of arbitrary close amounts', () => {
+    expect(formatPerpClosePercent(0.333)).toBe('33.3%')
+    expect(formatPerpClosePercent(1 / 3)).toBe('33.33%')
+    expect(formatPerpClosePercent(0.2501)).toBe('25.01%')
+  })
+
   it('never renders a surviving position as fully closed', () => {
     expect(formatPerpClosePercent(0.995)).toBe('99.5%')
     expect(formatPerpClosePercent(0.999)).toBe('99.9%')

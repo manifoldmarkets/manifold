@@ -37,20 +37,22 @@ export const formatPrice = (value: number, decimals: number) => {
 
 /**
  * Render the fraction taken by a close without ever rounding a real partial
- * close up to 100%. Most values stay at the existing whole-percent precision;
- * values close enough to 1 to round to 100 keep up to two truncated decimals
- * instead, so the label cannot claim the survivor is gone.
+ * close up to 100%. Values keep up to two decimal places so arbitrary close
+ * amounts are represented faithfully. If normal rounding would carry a real
+ * partial close to 100, truncate instead so the label cannot claim the
+ * survivor is gone.
  */
 export const formatPerpClosePercent = (fraction: number) => {
   if (!Number.isFinite(fraction) || fraction <= 0) return '0%'
   if (fraction >= 1) return '100%'
 
   const percent = fraction * 100
-  const roundedWhole = Math.round(percent)
-  if (roundedWhole < 100) return `${roundedWhole}%`
-
-  const truncatedHundredths = Math.floor(percent * 100) / 100
-  return `${truncatedHundredths.toFixed(2).replace(/\.?0+$/, '')}%`
+  const roundedHundredths = Math.round(percent * 100) / 100
+  const displayPercent =
+    roundedHundredths < 100
+      ? roundedHundredths
+      : Math.floor(percent * 100) / 100
+  return `${displayPercent.toFixed(2).replace(/\.?0+$/, '')}%`
 }
 
 /**

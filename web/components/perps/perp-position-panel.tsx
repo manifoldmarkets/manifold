@@ -14,7 +14,10 @@ import {
   getUserFacingPnl,
   getUserFacingPnlPercent,
 } from 'common/perps/pnl'
-import { resolvePerpCloseFraction } from 'common/perps/amm'
+import {
+  PERP_MIN_CLOSE_FRACTION,
+  resolvePerpCloseFraction,
+} from 'common/perps/amm'
 import { PerpPosition } from 'common/perps/position'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -32,7 +35,8 @@ import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { Input } from 'web/components/widgets/input'
+import { Slider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -462,15 +466,38 @@ const PositionCard = (props: {
   // pool debits all scale with q and c — so the preview below is exact, not
   // an estimate, and the survivor's entry price, leverage and liquidation
   // price are untouched by construction.
-  const [closeFraction, setCloseFraction] = useState(1)
+  const [closePercent, setClosePercent] = useState<number | undefined>(100)
+  const closePercentError =
+    closePercent == null || !Number.isFinite(closePercent)
+      ? 'Enter a percentage to close.'
+      : closePercent < MIN_CLOSE_PERCENT
+      ? `Minimum close is ${MIN_CLOSE_PERCENT}%.`
+      : closePercent > 100
+      ? 'Maximum close is 100%.'
+      : null
+  const closeFraction =
+    closePercent != null &&
+    Number.isFinite(closePercent) &&
+    closePercent >= MIN_CLOSE_PERCENT &&
+    closePercent <= 100
+      ? closePercent / 100
+      : null
   // What the engine will actually take: a remainder that would be dust is
   // closed too, so the button must not promise a position that will not exist.
-  const effectiveFraction = resolvePerpCloseFraction(p, closeFraction)
-  const isPartial = effectiveFraction < 1
+  const effectiveFraction =
+    closeFraction == null ? null : resolvePerpCloseFraction(p, closeFraction)
+  const isPartial = effectiveFraction != null && effectiveFraction < 1
+  const isDustPromoted =
+    closeFraction != null && closeFraction < 1 && effectiveFraction === 1
   const fullPayout = getPositionValue(position, markPrice)
-  const closePayout = effectiveFraction * fullPayout
-  const closePnl = effectiveFraction * pnl
-  const remainingMargin = (1 - effectiveFraction) * p.originalCostBasis
+  const closePayout = (effectiveFraction ?? 0) * fullPayout
+  const closePnl = (effectiveFraction ?? 0) * pnl
+  const remainingMargin = (1 - (effectiveFraction ?? 1)) * p.originalCostBasis
+  const sliderClosePercent =
+    closePercent != null && Number.isFinite(closePercent)
+      ? Math.min(100, Math.max(MIN_CLOSE_PERCENT, closePercent))
+      : 100
+  const closePercentErrorId = `close-percent-error-${direction}`
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
@@ -607,16 +634,58 @@ const PositionCard = (props: {
             <span className={clsx('text-ink-500', CARD_LABEL)}>
               Close how much
             </span>
-            <ChoicesToggleGroup
-              currentChoice={closeFraction}
-              color="gray"
-              disabled={anyClosing || oracleTradingPaused}
-              choicesMap={{ '25%': 0.25, '50%': 0.5, '75%': 0.75, All: 1 }}
-              setChoice={(choice) => setCloseFraction(choice as number)}
-              toggleClassName="!px-2.5 !py-1"
-              className="!text-xs"
-            />
+            <div className="relative w-28">
+              <Input
+                aria-label="Percentage of position to close"
+                type="number"
+                inputMode="decimal"
+                min={MIN_CLOSE_PERCENT}
+                max={100}
+                step="any"
+                value={closePercent ?? ''}
+                error={closePercentError != null}
+                aria-invalid={closePercentError != null}
+                aria-describedby={
+                  closePercentError != null ? closePercentErrorId : undefined
+                }
+                disabled={anyClosing || oracleTradingPaused}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setClosePercent(value === '' ? undefined : Number(value))
+                }}
+                className="!h-9 !pr-8 text-right font-semibold tabular-nums"
+              />
+              <span className="text-ink-500 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm">
+                %
+              </span>
+            </div>
           </Row>
+
+          <Slider
+            min={MIN_CLOSE_PERCENT}
+            max={100}
+            step={0.1}
+            amount={sliderClosePercent}
+            onChange={setClosePercent}
+            disabled={anyClosing || oracleTradingPaused}
+            color="gray"
+            ariaLabel="Close percentage slider"
+            ariaValueText={`${sliderClosePercent}% of position`}
+          />
+
+          {closePercentError != null && (
+            <div id={closePercentErrorId} className="text-error text-xs">
+              {closePercentError}
+            </div>
+          )}
+
+          {isDustPromoted && (
+            <div className="text-ink-500 text-xs">
+              That would leave less than the minimum margin, so the full
+              position will close.
+            </div>
+          )}
 
           {isPartial && (
             <div className={clsx('text-ink-500', CARD_LABEL)}>
@@ -641,14 +710,18 @@ const PositionCard = (props: {
 
           <Button
             color="gray-outline"
-            onClick={() => onClose(closeFraction)}
+            onClick={() => closeFraction != null && onClose(closeFraction)}
             loading={closing}
-            disabled={anyClosing || oracleTradingPaused}
+            disabled={
+              anyClosing || oracleTradingPaused || closeFraction == null
+            }
             size="md"
             className="w-full"
           >
             {oracleTradingPaused
               ? 'Close paused — waiting for oracle'
+              : closeFraction == null || effectiveFraction == null
+              ? 'Enter a valid close percentage'
               : `Close ${
                   isPartial
                     ? `${formatPerpClosePercent(effectiveFraction)} of `
@@ -667,6 +740,7 @@ const PositionCard = (props: {
 // Card widths of ~336px and up get exactly text-xs / text-sm.
 const CARD_LABEL = 'text-[clamp(10px,3.6cqw,0.75rem)]'
 const CARD_VALUE = 'text-[clamp(11px,4.2cqw,0.875rem)]'
+const MIN_CLOSE_PERCENT = PERP_MIN_CLOSE_FRACTION * 100
 
 // Drop trailing zeros so whole leverages render as "100×" not "100.00×",
 // but fractional ones keep one decimal of precision (e.g. "1.5×").
