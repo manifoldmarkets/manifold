@@ -11,6 +11,7 @@ import {
   getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
+  getPerpOpenInterestCapacityForOpen,
   getPositionValue,
   getUnrealizedEquity,
   imbalance,
@@ -977,6 +978,9 @@ describe('open interest capacity', () => {
     expect(capacity).toEqual({
       openInterest: 9999,
       availableCover: 1000,
+      // No short positions exist, so there is nothing to credit and the cap
+      // is exactly the pre-netting one.
+      matchedCredit: 0,
       limit: 10_000,
       headroom: 1,
       isWithinLimit: true,
@@ -1006,8 +1010,12 @@ describe('open interest capacity', () => {
     const capacity = getPerpOpenInterestCapacity('long', state, 100)
     expect(capacity.openInterest).toBe(0)
     expect(capacity.availableCover).toBe(1000)
-    expect(capacity.limit).toBe(10_000)
-    expect(capacity.headroom).toBe(10_000)
+    // The short's own M$1000 of notional is credited on top: over an adverse
+    // move it is the shorts who fund the longs, up to their M$500 of margin
+    // (10 x 500 = 5000 of notional headroom, so their own 1000 binds).
+    expect(capacity.matchedCredit).toBe(1000)
+    expect(capacity.limit).toBe(11_000)
+    expect(capacity.headroom).toBe(11_000)
   })
 
   it('releases an opposite-side unrealized loss into available cover', () => {
@@ -1025,7 +1033,178 @@ describe('open interest capacity', () => {
     // At 140 the short has lost M$400, so only M$100 remains refundable.
     const capacity = getPerpOpenInterestCapacity('long', state, 140)
     expect(capacity.availableCover).toBeCloseTo(1400, 10)
-    expect(capacity.limit).toBeCloseTo(14_000, 10)
+    expect(capacity.matchedCredit).toBe(1000)
+    expect(capacity.limit).toBeCloseTo(15_000, 10)
+  })
+
+  it('credits the opposing side notional it funds from its own losses', () => {
+    const base: PerpState = {
+      pool: { L: 1000, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 4000,
+          costBasis: 1000,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    // Opposing pool 1000, all of it reserved as the short's own refundable
+    // basis: zero unreserved cover, so the old rule granted zero long capacity
+    // despite 4000 of short notional standing in front of it.
+    const capacity = getPerpOpenInterestCapacity('long', base, 100)
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(4000)
+    expect(capacity.limit).toBe(4000)
+    expect(capacity.headroom).toBe(4000)
+  })
+
+  it('caps the credit by the opposing side margin, not its notional', () => {
+    // 100x shorts: 10_000 of notional standing on 100 of margin. They can fund
+    // only 100 of losses before liquidating, so credit 10 x 100, not 10_000.
+    const state: PerpState = {
+      pool: { L: 1000, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 10_000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const capacity = getPerpOpenInterestCapacity('long', state, 100)
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(1000)
+    expect(capacity.limit).toBe(1000)
+  })
+
+  it('lets a short-heavy book take the long trade that balances it', () => {
+    // Shape of the BTC market on 2026-08-31: more short notional than long,
+    // yet the long side was the one being refused.
+    const state: PerpState = {
+      pool: { L: 1000, S: 200 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 2000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 3000,
+          costBasis: 150,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const long = getPerpOpenInterestCapacity('long', state, 100)
+    expect(long.openInterest).toBe(2000)
+    // Old rule: 10 x (200 - 150) = 500, under the 2000 of long OI already
+    // open, so the book could not take another M$1 of long.
+    expect(long.availableCover).toBe(50)
+    expect(long.matchedCredit).toBe(1500)
+    expect(long.limit).toBe(2000)
+    expect(long.isWithinLimit).toBe(true)
+  })
+
+  it('previews a flip against the book after closing the opposite position', () => {
+    const shortToClose = makePosition({
+      userId: 'flipper',
+      direction: 'short',
+      size: 1000,
+      costBasis: 500,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 1500 },
+      positions: [
+        makePosition({
+          userId: 'other',
+          direction: 'long',
+          size: 8000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        shortToClose,
+      ],
+    }
+
+    // Against the current book the short supplies 1000 of matched credit,
+    // making 3000 appear available. A flat close pays its M$500 basis out of
+    // pool S and removes that credit, so the opening leg can use only 2000.
+    expect(getPerpOpenInterestCapacity('long', state, 100).headroom).toBe(3000)
+    expect(
+      getPerpOpenInterestCapacityForOpen('long', state, 100, shortToClose)
+        .headroom
+    ).toBe(2000)
+  })
+
+  it('credits nothing for an opposing side that is in profit', () => {
+    // Review counterexample. The short is 500 up at the mark, so its reserve is
+    // clamped at its 100 of cost basis and STAYS there across the whole move
+    // this cap is sized for — an adverse tick frees none of the pool. Crediting
+    // its reserve outright would admit 1000 of long notional whose cover is
+    // zero, and factor-zero ADL would take it out on its first profitable tick.
+    const profitableOpponent: PerpState = {
+      pool: { L: 500, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 1000,
+          costBasis: 100,
+          entryPrice: 200,
+        }),
+      ],
+    }
+
+    const capacity = getPerpOpenInterestCapacity(
+      'long',
+      profitableOpponent,
+      100
+    )
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(0)
+    expect(capacity.limit).toBe(0)
+    expect(capacity.headroom).toBe(0)
+
+    // The same short, now at a mark where it is underwater, does release its
+    // margin over the move and is credited for it.
+    const underwater = getPerpOpenInterestCapacity(
+      'long',
+      profitableOpponent,
+      210
+    )
+    expect(underwater.matchedCredit).toBeGreaterThan(0)
+  })
+
+  it('never promises more than the whole opposing pool', () => {
+    // A book whose long side is already short of its own reserve: cover floors
+    // at 0 and the reserved value exceeds pool.L, so the raw credit would hand
+    // the shorts more notional than the long pool could ever fund.
+    const wedged: PerpState = {
+      pool: { L: 100, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const short = getPerpOpenInterestCapacity('short', wedged, 100)
+    expect(short.availableCover).toBe(-100)
+    expect(short.matchedCredit).toBe(1000)
+    expect(short.limit).toBe(1000)
+    expect(short.limit).toBeLessThanOrEqual(
+      wedged.pool.L * PERP_OPEN_INTEREST_COVER_MULTIPLE
+    )
   })
 
   it('fails closed on non-finite aggregate exposure', () => {
@@ -1248,5 +1427,163 @@ describe('assertPerpStateNumbers ordering vs the risk transitions', () => {
     expect(() => assertPerpStateSolvent(insolvent, 150)).toThrow()
     const repaired = applyADL(insolvent, 150)
     expect(() => assertPerpStateSolvent(repaired.state, 150)).not.toThrow()
+  })
+})
+
+describe('applyADL cross-side deficit transfer', () => {
+  // pool.L cannot cover the long book's own refundable margin, because short
+  // profits were paid out of L against long paper losses that then recovered.
+  // pool.S is fat. This is the shape of both production wedges.
+  const wedged = (): PerpState => ({
+    pool: { L: 100, S: 1000 },
+    positions: [
+      makePosition({
+        direction: 'long',
+        size: 1000,
+        costBasis: 200,
+        entryPrice: 100,
+      }),
+      makePosition({
+        direction: 'short',
+        size: 100,
+        costBasis: 10,
+        entryPrice: 100,
+      }),
+    ],
+  })
+
+  it('is load-bearing: the book is unrepresentable without it', () => {
+    // Guards the premise. If this stops throwing, the rest of the block is
+    // asserting nothing.
+    expect(() => assertPerpStateSolvent(wedged(), 110)).toThrow(
+      'short solvency factor must be finite or +Infinity'
+    )
+  })
+
+  it('moves exactly the deficit and leaves the state solvent', () => {
+    const result = applyADL(wedged(), 110)
+
+    expect(result.crossSideTransfer).toBeCloseTo(100, 10)
+    expect(result.state.pool.L).toBeCloseTo(200, 10)
+    expect(result.state.pool.S).toBeCloseTo(900, 10)
+    expect(() => assertPerpStateSolvent(result.state, 110)).not.toThrow()
+  })
+
+  it('conserves total escrow', () => {
+    const before = wedged()
+    const result = applyADL(before, 110)
+
+    expect(result.state.pool.L + result.state.pool.S).toBeCloseTo(
+      before.pool.L + before.pool.S,
+      10
+    )
+  })
+
+  it('does nothing at all to a book that is already covered', () => {
+    const healthy: PerpState = {
+      pool: { L: 1000, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 500,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const result = applyADL(healthy, 110)
+    expect(result.crossSideTransfer).toBe(0)
+    expect(result.state.pool).toEqual(healthy.pool)
+    expect(result.adlFactorLong).toBe(1)
+    expect(result.adlFactorShort).toBe(1)
+  })
+
+  it('transfers in the other direction too', () => {
+    const shortSideWedged: PerpState = {
+      pool: { L: 1000, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'long',
+          size: 100,
+          costBasis: 10,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const result = applyADL(shortSideWedged, 90)
+    expect(result.crossSideTransfer).toBeCloseTo(-100, 10)
+    expect(result.state.pool.S).toBeCloseTo(200, 10)
+    expect(result.state.pool.L).toBeCloseTo(900, 10)
+    expect(() => assertPerpStateSolvent(result.state, 90)).not.toThrow()
+  })
+
+  it('still fails closed when the whole pot cannot cover the book', () => {
+    // Nothing to donate: the deficit is real at the contract level, not an
+    // artifact of the partition. The engine's liveness path handles this one.
+    const globallyInsolvent: PerpState = {
+      pool: { L: 100, S: 0 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 100,
+          costBasis: 10,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const result = applyADL(globallyInsolvent, 110)
+    expect(result.crossSideTransfer).toBe(0)
+    expect(() => assertPerpStateSolvent(result.state, 110)).toThrow()
+  })
+
+  it('declines to donate at all when it cannot cover the whole deficit', () => {
+    const thinDonor: PerpState = {
+      pool: { L: 100, S: 40 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 100,
+          costBasis: 10,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    // The deficit is 100 and S holds only 40 spare. Moving those 40 would
+    // leave the book just as unrepresentable while draining the donor to zero,
+    // which drives the opposing ADL factor to 0 and settles a position against
+    // a pool that cannot pay it. Leave the state exactly as it was and let the
+    // engine's liveness path deal with it.
+    const result = applyADL(thinDonor, 110)
+    expect(result.crossSideTransfer).toBe(0)
+    expect(result.state.pool).toEqual(thinDonor.pool)
+    expect(() => assertPerpStateSolvent(result.state, 110)).toThrow()
   })
 })
