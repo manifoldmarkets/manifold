@@ -97,16 +97,21 @@ function JobCard({ job }: { job: Job }) {
   return (
     <div className="border-ink-200 bg-canvas-0 overflow-hidden rounded-lg border transition-shadow hover:shadow-sm">
       {/* Card header — always visible */}
+      {/* The whole header is the toggle, so it needs to look pressable:
+          pointer cursor + a faint hover wash, otherwise the only affordance is
+          the "Show role" text in the corner. */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-6 py-5 text-left"
+        className="hover:bg-canvas-50 w-full cursor-pointer px-6 py-5 text-left transition-colors"
         aria-expanded={open}
       >
         <Col className="gap-2">
           <Row className="items-start justify-between gap-3">
-            <h2 className="text-ink-1000 text-lg font-bold sm:text-xl md:text-2xl">
+            {/* h3, under the company's h2 — and capped at text-xl so a role
+                never outsizes the company heading above it. */}
+            <h3 className="text-ink-1000 text-lg font-bold sm:text-xl">
               {job.title}
-            </h2>
+            </h3>
             <span className="text-ink-400 shrink-0 pt-1 font-mono text-[10px] uppercase tracking-widest">
               Full time
             </span>
@@ -173,7 +178,7 @@ function JobCard({ job }: { job: Job }) {
           <Row className="items-center justify-between">
             <button
               onClick={() => setOpen(false)}
-              className="text-primary-600 font-mono text-sm font-medium"
+              className="text-primary-600 hover:text-primary-700 font-mono text-sm font-medium transition-colors"
             >
               Hide ↑
             </button>
@@ -216,19 +221,36 @@ export default function JobsPage() {
 
         <JobInterestCard />
 
-        <Col className="gap-3">
+        {/* gap-4 inside the company block vs the page's gap-8 between
+            sections, so the listings read as belonging to the company header
+            rather than floating equidistant from everything. */}
+        <Col className="gap-4">
           <Col className="gap-1">
-            <h2 className="text-ink-1000 text-xl font-semibold">
-              MNX - The AI Exchange
-            </h2>
-            <p className="text-ink-500 text-sm leading-relaxed">
+            {/* Role count sits beside the company name rather than orphaned
+                under the description, where it read as a third stray line. */}
+            <Row className="items-baseline justify-between gap-3">
+              <Row className="items-baseline gap-2">
+                <h2 className="text-ink-1000 text-xl font-semibold">
+                  MNX — The AI Exchange
+                </h2>
+                <a
+                  href="https://mnx.fi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:text-primary-700 shrink-0 text-xs"
+                >
+                  mnx.fi ↗
+                </a>
+              </Row>
+              <span className="text-ink-400 shrink-0 font-mono text-xs uppercase tracking-wider">
+                {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
+              </span>
+            </Row>
+            <p className="text-ink-500 max-w-xl text-sm leading-relaxed">
               MNX is building the financial architecture for the AI era. We are
               a small, highly talented, and maximally AI-pilled team based in
               San Francisco.
             </p>
-            <span className="text-ink-400 mt-1 font-mono text-xs uppercase tracking-wider">
-              {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
-            </span>
           </Col>
           {JOBS.map((job) => (
             <JobCard key={job.title} job={job} />

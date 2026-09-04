@@ -41,6 +41,9 @@ export function JobInterestCard() {
 
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(true)
+  // Separate from `collapsed`, which belongs to the registered-state panel.
+  // Starts expanded: an unregistered visitor hasn't seen the pitch yet.
+  const [pitchCollapsed, setPitchCollapsed] = useState(false)
   const [skills, setSkills] = useState<JobSkill[]>([])
   const [interests, setInterests] = useState<JobInterest[]>([])
   const [region, setRegion] = useState<JobRegion | null>(null)
@@ -169,18 +172,35 @@ export function JobInterestCard() {
 
   return (
     <div className="border-primary-200 bg-canvas-0 rounded-lg border p-5">
+      {/* Collapsible like the registered state, so someone who isn't job
+          hunting can fold this away and get to the listings. The toggle is
+          suppressed while the form is open — collapsing a half-filled form
+          would throw away their selections with no warning. */}
       <Col className="gap-1">
-        <h3 className="text-ink-1000 text-lg font-semibold">
-          Looking for a role? Let employers reach you
-        </h3>
-        <p className="text-ink-600 max-w-xl text-sm leading-relaxed">
-          Tag your strengths and what you're after. We'll aim to connect you
-          with employers hiring from the community, and may notify you of
-          relevant postings.
-        </p>
+        <button
+          onClick={() => open || setPitchCollapsed((c) => !c)}
+          className="flex items-start justify-between gap-3 text-left"
+          aria-expanded={!pitchCollapsed}
+        >
+          <h3 className="text-ink-1000 text-lg font-semibold">
+            Looking for a role? Let employers reach you
+          </h3>
+          {!open && (
+            <span className="text-primary-600 shrink-0 pt-1 font-mono text-sm font-medium">
+              {pitchCollapsed ? 'Show ↓' : 'Hide ↑'}
+            </span>
+          )}
+        </button>
+        {!pitchCollapsed && (
+          <p className="text-ink-600 max-w-xl text-sm leading-relaxed">
+            Tag your strengths and what you're after. We'll aim to connect you
+            with employers hiring from the community, and may notify you of
+            relevant postings.
+          </p>
+        )}
       </Col>
 
-      {!user ? (
+      {pitchCollapsed ? null : !user ? (
         <Button className="mt-4" color="indigo" onClick={() => firebaseLogin()}>
           Sign in to register interest
         </Button>
