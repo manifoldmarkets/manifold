@@ -497,7 +497,7 @@ const PositionCard = (props: {
     closePercent != null && Number.isFinite(closePercent)
       ? Math.min(100, Math.max(MIN_CLOSE_PERCENT, closePercent))
       : 100
-  const closePercentErrorId = `close-percent-error-${direction}`
+  const closePercentErrorId = `close-percent-error-${p.direction}`
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
