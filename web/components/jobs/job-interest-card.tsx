@@ -122,7 +122,7 @@ export function JobInterestCard() {
   // Registered and not editing → a collapsible summary panel.
   if (registered && !open) {
     return (
-      <div className="border-primary-200 bg-primary-50/50 dark:border-primary-800 dark:bg-primary-950/20 rounded-xl border p-4 sm:p-5">
+      <div className="border-primary-200 bg-canvas-0 dark:border-primary-800 rounded-xl border p-4 sm:p-5">
         <Col className="gap-3">
           <button
             type="button"
@@ -180,7 +180,7 @@ export function JobInterestCard() {
   }
 
   return (
-    <div className="border-primary-200 bg-primary-50/50 dark:border-primary-800 dark:bg-primary-950/20 rounded-xl border p-4 sm:p-5">
+    <div className="border-primary-200 bg-canvas-0 dark:border-primary-800 rounded-xl border p-4 sm:p-5">
       <Col className="gap-2">
         {open ? (
           <h3 className="text-ink-1000 text-lg font-semibold">

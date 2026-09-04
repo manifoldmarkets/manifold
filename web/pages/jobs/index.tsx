@@ -119,7 +119,7 @@ function JobCard({ job }: { job: Job }) {
             <h3 className="text-ink-1000 text-lg font-bold sm:text-xl">
               {job.title}
             </h3>
-            <span className="bg-canvas-100 text-ink-600 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
+            <span className="text-ink-400 shrink-0 pt-1 font-mono text-xs uppercase tracking-wider">
               Full time
             </span>
           </Row>
@@ -250,7 +250,7 @@ export default function JobsPage() {
                 in San Francisco.
               </p>
             </div>
-            <span className="bg-canvas-100 text-ink-600 shrink-0 self-start rounded-full px-3 py-1 text-sm font-medium">
+            <span className="text-ink-400 shrink-0 self-start font-mono text-xs uppercase tracking-wider sm:pt-1">
               {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
             </span>
           </div>
