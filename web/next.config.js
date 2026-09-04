@@ -138,6 +138,13 @@ module.exports = {
         permanent: false,
       },
       {
+        // The data dumps + commercial licensing page lives on the docs site.
+        // Not permanent: we may want to bring this on-site later.
+        source: '/data',
+        destination: 'https://docs.manifold.markets/data',
+        permanent: false,
+      },
+      {
         source: '/privacy',
         destination: 'https://docs.manifold.markets/privacy-policy',
         permanent: true,
