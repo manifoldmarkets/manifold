@@ -34,6 +34,7 @@ import {
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { Slider } from 'web/components/widgets/slider'
@@ -140,7 +141,7 @@ export const PerpPositionPanel = (props: {
   const close = async (direction: 'long' | 'short', fraction = 1) => {
     if (oracleTradingPaused) {
       toast.error('Closing is paused until the oracle publishes a fresh price')
-      return
+      return false
     }
     setClosing(direction)
     try {
@@ -206,6 +207,7 @@ export const PerpPositionPanel = (props: {
       delete pendingCloses.current[direction]
       // Pools changed; let the page re-poll the contract immediately.
       onAction?.()
+      return true
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Close failed')
       // A 409 here means the row moved under the request and tells the user
@@ -213,6 +215,7 @@ export const PerpPositionPanel = (props: {
       // against the same stale numbers that just failed.
       setRefresh((r) => r + 1)
       onAction?.()
+      return false
     } finally {
       setClosing(null)
     }
@@ -393,7 +396,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
 const PositionCard = (props: {
   position: Position
   contract: PerpContract
-  onClose: (fraction: number) => void
+  onClose: (fraction: number) => Promise<boolean>
   closing: boolean
   anyClosing: boolean
   oracleTradingPaused: boolean
@@ -466,6 +469,7 @@ const PositionCard = (props: {
   // pool debits all scale with q and c — so the preview below is exact, not
   // an estimate, and the survivor's entry price, leverage and liquidation
   // price are untouched by construction.
+  const [closeModalOpen, setCloseModalOpen] = useState(false)
   const [closePercent, setClosePercent] = useState<number | undefined>(100)
   const closePercentError =
     closePercent == null || !Number.isFinite(closePercent)
@@ -629,106 +633,191 @@ const PositionCard = (props: {
           </div>
         )}
 
-        <Col className="gap-2">
-          <Row className="items-center justify-between gap-2">
-            <span className={clsx('text-ink-500', CARD_LABEL)}>
-              Close how much
-            </span>
-            <div className="relative w-28">
-              <Input
-                aria-label="Percentage of position to close"
-                type="number"
-                inputMode="decimal"
-                min={MIN_CLOSE_PERCENT}
-                max={100}
-                step="any"
-                value={closePercent ?? ''}
-                error={closePercentError != null}
-                aria-invalid={closePercentError != null}
-                aria-describedby={
-                  closePercentError != null ? closePercentErrorId : undefined
-                }
-                disabled={anyClosing || oracleTradingPaused}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setClosePercent(value === '' ? undefined : Number(value))
-                }}
-                className="!h-9 !pr-8 text-right font-semibold tabular-nums"
-              />
-              <span className="text-ink-500 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm">
-                %
-              </span>
-            </div>
-          </Row>
+        <Button
+          color="gray-outline"
+          onClick={() => {
+            setClosePercent(100)
+            setCloseModalOpen(true)
+          }}
+          loading={closing}
+          disabled={anyClosing || oracleTradingPaused}
+          size="md"
+          className="w-full"
+        >
+          {oracleTradingPaused
+            ? 'Close paused — waiting for oracle'
+            : 'Close position'}
+        </Button>
 
-          <Slider
-            min={MIN_CLOSE_PERCENT}
-            max={100}
-            step={0.1}
-            amount={sliderClosePercent}
-            onChange={setClosePercent}
-            disabled={anyClosing || oracleTradingPaused}
-            color="gray"
-            ariaLabel="Close percentage slider"
-            ariaValueText={`${sliderClosePercent}% of position`}
-          />
-
-          {closePercentError != null && (
-            <div id={closePercentErrorId} className="text-error text-xs">
-              {closePercentError}
-            </div>
-          )}
-
-          {isDustPromoted && (
-            <div className="text-ink-500 text-xs">
-              That would leave less than the minimum margin, so the full
-              position will close.
-            </div>
-          )}
-
-          {isPartial && (
-            <div className={clsx('text-ink-500', CARD_LABEL)}>
-              Pays out{' '}
-              <span className="text-ink-700 font-semibold tabular-nums">
-                {formatMoneyPrecise(closePayout)}
-              </span>{' '}
-              and realizes{' '}
-              <span
-                className={clsx(
-                  'font-semibold tabular-nums',
-                  closePnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                )}
-              >
-                {closePnl >= 0 ? '+' : ''}
-                {formatMoneyPrecise(closePnl)}
-              </span>
-              . {formatMoneyPrecise(remainingMargin)} of margin stays open at
-              the same entry price, leverage and liquidation price.
-            </div>
-          )}
-
-          <Button
-            color="gray-outline"
-            onClick={() => closeFraction != null && onClose(closeFraction)}
-            loading={closing}
-            disabled={
-              anyClosing || oracleTradingPaused || closeFraction == null
-            }
-            size="md"
-            className="w-full"
+        {closeModalOpen && (
+          <Modal
+            open={closeModalOpen}
+            setOpen={setCloseModalOpen}
+            size="sm"
+            ariaLabel={`Close ${p.direction} position`}
           >
-            {oracleTradingPaused
-              ? 'Close paused — waiting for oracle'
-              : closeFraction == null || effectiveFraction == null
-              ? 'Enter a valid close percentage'
-              : `Close ${
-                  isPartial
-                    ? `${formatPerpClosePercent(effectiveFraction)} of `
-                    : ''
-                }position @ ${formatPrice(markPrice, priceDecimals)}`}
-          </Button>
-        </Col>
+            <Col className="bg-canvas-0 gap-5 rounded-t-xl px-5 py-6 sm:rounded-xl sm:px-8">
+              <div>
+                <h2 className="text-ink-900 text-xl font-semibold">
+                  Close {p.direction} position
+                </h2>
+                <p className="text-ink-500 mt-1 text-sm">
+                  {formatMoney(p.size)} notional at the latest oracle price of{' '}
+                  {formatPrice(markPrice, priceDecimals)}. Closing is free.
+                </p>
+              </div>
+
+              <Col className="gap-2">
+                <Col className="gap-1">
+                  <span className="text-ink-600 text-sm">Close amount (%)</span>
+                  <div className="relative w-full">
+                    <Input
+                      aria-label="Percentage of position to close"
+                      type="number"
+                      inputMode="decimal"
+                      min={MIN_CLOSE_PERCENT}
+                      max={100}
+                      step="any"
+                      value={closePercent ?? ''}
+                      error={closePercentError != null}
+                      aria-invalid={closePercentError != null}
+                      aria-describedby={
+                        closePercentError != null
+                          ? closePercentErrorId
+                          : undefined
+                      }
+                      disabled={anyClosing || oracleTradingPaused}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setClosePercent(
+                          value === '' ? undefined : Number(value)
+                        )
+                      }}
+                      className="h-[60px] w-full min-w-0 !pr-40 !text-xl tabular-nums"
+                    />
+                    <Row className="absolute right-2 top-3.5 gap-1.5">
+                      {[-5, -1, 1, 5].map((increment) => (
+                        <button
+                          key={increment}
+                          type="button"
+                          aria-label={`${
+                            increment < 0 ? 'Decrease' : 'Increase'
+                          } close percentage by ${Math.abs(increment)}`}
+                          className="bg-canvas-100 hover:bg-ink-200 rounded-md px-2 py-1.5 text-sm"
+                          disabled={anyClosing || oracleTradingPaused}
+                          onClick={() =>
+                            setClosePercent((percent) =>
+                              Math.min(
+                                100,
+                                Math.max(
+                                  MIN_CLOSE_PERCENT,
+                                  (percent ?? MIN_CLOSE_PERCENT) + increment
+                                )
+                              )
+                            )
+                          }
+                        >
+                          {increment > 0 ? `+${increment}` : increment}
+                        </button>
+                      ))}
+                    </Row>
+                  </div>
+                </Col>
+
+                <Slider
+                  min={MIN_CLOSE_PERCENT}
+                  max={100}
+                  step={0.1}
+                  amount={sliderClosePercent}
+                  onChange={setClosePercent}
+                  disabled={anyClosing || oracleTradingPaused}
+                  color="gray"
+                  ariaLabel="Close percentage slider"
+                  ariaValueText={`${sliderClosePercent}% of position`}
+                />
+
+                {closePercentError != null && (
+                  <div id={closePercentErrorId} className="text-error text-xs">
+                    {closePercentError}
+                  </div>
+                )}
+
+                {isDustPromoted && (
+                  <div className="text-ink-500 text-xs">
+                    That would leave less than the minimum margin, so the full
+                    position will close.
+                  </div>
+                )}
+              </Col>
+
+              {closeFraction != null && (
+                <Col className="gap-2.5 text-sm">
+                  <Row className="items-center justify-between gap-3">
+                    <span className="text-ink-500">Realized P&amp;L</span>
+                    <span
+                      className={clsx(
+                        'font-medium tabular-nums',
+                        closePnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                      )}
+                    >
+                      {closePnl >= 0 ? '+' : ''}
+                      {formatMoneyPrecise(closePnl)}
+                    </span>
+                  </Row>
+
+                  {isPartial && (
+                    <>
+                      <Row className="items-center justify-between gap-3">
+                        <span className="text-ink-500">Margin remaining</span>
+                        <span className="text-ink-900 tabular-nums">
+                          {formatMoneyPrecise(remainingMargin)}
+                        </span>
+                      </Row>
+                      <p className="text-ink-400 text-xs">
+                        The remainder keeps its entry price, leverage and
+                        liquidation price.
+                      </p>
+                    </>
+                  )}
+
+                  <div className="border-ink-200 my-1 border-t" />
+
+                  <Row className="items-center justify-between gap-3">
+                    <span className="text-ink-900 font-medium">Payout</span>
+                    <span className="text-ink-900 text-lg font-semibold tabular-nums">
+                      {formatMoneyPrecise(closePayout)}
+                    </span>
+                  </Row>
+                </Col>
+              )}
+
+              <Button
+                color="indigo"
+                onClick={async () => {
+                  if (closeFraction != null && (await onClose(closeFraction)))
+                    setCloseModalOpen(false)
+                }}
+                loading={closing}
+                disabled={
+                  anyClosing || oracleTradingPaused || closeFraction == null
+                }
+                size="xl"
+                className="w-full"
+              >
+                {oracleTradingPaused
+                  ? 'Close paused — waiting for oracle'
+                  : closeFraction == null || effectiveFraction == null
+                  ? 'Enter a valid close percentage'
+                  : isPartial
+                  ? `Close ${formatPerpClosePercent(
+                      effectiveFraction
+                    )} of position`
+                  : 'Close entire position'}
+              </Button>
+            </Col>
+          </Modal>
+        )}
       </Col>
     </Col>
   )
