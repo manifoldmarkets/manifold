@@ -325,11 +325,12 @@ Feed adapters live next to it:
   the same denominator exclusions: `openrouter-open-weight-share`
   (`common/src/perps/open-weight-models.ts`), and the author-level
   `openrouter-anthropic-share` and `openrouter-chinese-lab-share`
-  (`common/src/perps/lab-share.ts`, where a new author is a one-line constant
-  and an unplaced author over 1% of tokens halts the Chinese-lab feed). The
-  Chinese-lab feed is registered but **creation-disabled and pending**
-  (`PERP_LAUNCH_PENDING_MARKETS`) until `nex-agi` is placed in an author
-  list; promotion is one commit. One fetch also gates all three: if the
+  (`common/src/perps/lab-share.ts`). The audited author/model constants are a
+  seed; the backend overlays operator classifications from
+  `openrouter_lab_classifications`, discovers new subjects from both the
+  catalog and live rankings, and exposes the pending queue at
+  `/admin/model-classifications`. An unresolved subject over 1% of tokens
+  halts only the Chinese-lab feed. One fetch also gates all three: if the
   newest complete day in the payload is more than
   `OPENROUTER_MAX_SOURCE_LAG_DAYS` behind today, nothing publishes, and a
   point whose dataset `as_of` regresses is refused.

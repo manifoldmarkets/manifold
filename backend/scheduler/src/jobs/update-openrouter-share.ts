@@ -17,6 +17,10 @@ import {
   resolveModelClassifications,
 } from 'shared/perps/model-classifications'
 import {
+  recordUnclassifiedLabSubjectsInRankings,
+  resolveLabClassifications,
+} from 'shared/perps/lab-classifications'
+import {
   OpenRouterRankings,
   fetchOpenRouterRankings,
 } from 'shared/openrouter-tokens'
@@ -222,24 +226,61 @@ const publishLabShare = async (
   sourceTs: number
 ) => {
   const label = feed === 'anthropic' ? 'anthropic share' : 'chinese-lab share'
-  const result = computeLabShare(feed, rankings.rows, OPEN_WEIGHT_WINDOW_DAYS)
+  // Anthropic is an exact author comparison and needs no classification
+  // state. Chinese-lab placements are the audited seed plus operator rows,
+  // resolved on every tick so a queue decision takes effect without a deploy.
+  const classifications =
+    feed === 'chinese-lab' ? await resolveLabClassifications(pg) : undefined
+  const result = computeLabShare(
+    feed,
+    rankings.rows,
+    OPEN_WEIGHT_WINDOW_DAYS,
+    classifications
+  )
+
+  // Rankings are the authoritative fallback discovery surface: OpenRouter can
+  // rank a model that is absent from /models. Record before validation so the
+  // same tick that warns or halts also creates the operator's remedy.
+  if (
+    feed === 'chinese-lab' &&
+    (result.unknownAuthors.length > 0 || result.unknownModels.length > 0)
+  )
+    await recordUnclassifiedLabSubjectsInRankings(
+      pg,
+      {
+        unknownAuthors: result.unknownAuthors,
+        unknownModels: result.unknownModels,
+      },
+      now
+    )
 
   const publication = validateLabSharePublication(result)
   if (!publication.ok) {
-    // For the Chinese-lab feed the reason names the unknown author(s), their
-    // share of tokens, and the two constants one of which needs a line. That
-    // is the whole maintenance path (see lab-share.ts), so it pages.
+    // For the Chinese-lab feed the reason names every pending author/model
+    // and its aggregate token share. The queue row was written above, so the
+    // error points at work an operator can clear without a deploy.
     log.error(`[openrouter] ${label} halted — ${publication.reason}`)
     return
   }
-  if (publication.unknownAuthors.length > 0)
+  if (
+    publication.unknownAuthors.length > 0 ||
+    publication.unknownModels.length > 0
+  )
     log.warn(
-      `[openrouter] ${label} publishing with unknown author(s) ` +
-        `${publication.unknownAuthors.join(', ')} excluded from both sides (${(
+      `[openrouter] ${label} publishing with pending subject(s) ` +
+        `${[
+          ...publication.unknownAuthors.map((author) => `author:${author}`),
+          ...publication.unknownModels.map((model) => `model:${model}`),
+        ].join(', ')} excluded from both sides (${(
           publication.unknownShareOfClassified * 100
         ).toFixed(3)}% of classified tokens); ` +
-        `add to CHINESE_LAB_AUTHORS or KNOWN_NON_CHINESE_AUTHORS`
+        `review at /admin/model-classifications`
     )
+
+  const classificationDetail =
+    feed === 'anthropic'
+      ? 'exact author anthropic'
+      : `author/model seed ${CHINESE_LAB_LIST_VERSION} + DB overrides`
 
   await publishOpenRouterPoint(
     pg,
@@ -249,7 +290,7 @@ const publishLabShare = async (
     now,
     sourceTs,
     `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +
-      `(${result.dates.length}d, as_of ${rankings.asOf}, authors ${CHINESE_LAB_LIST_VERSION}; ` +
+      `(${result.dates.length}d, as_of ${rankings.asOf}, ${classificationDetail}; ` +
       `other ${result.otherTokens.toExponential(3)} and composite ` +
       `${result.compositeTokens.toExponential(3)} tokens excluded)`
   )

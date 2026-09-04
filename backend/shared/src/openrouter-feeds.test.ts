@@ -74,10 +74,7 @@ describe('OpenRouter lab-share feed wiring', () => {
     expect(getPerpLaunchManifestErrors()).toEqual([])
   })
 
-  it('launches the Anthropic feed and holds the Chinese-lab feed pending', () => {
-    // nex-agi is in neither author list, so the Chinese-lab backfill aborts
-    // and the feed must not be creatable until a human places it. The
-    // manifest check enforces the pairing: pending <=> creation-disabled.
+  it('launches both lab-share feeds after the Chinese seed is complete', () => {
     expect(
       getOracleFeed(OPENROUTER_ANTHROPIC_SHARE_FEED_ID)?.marketCreationEnabled
     ).toBe(true)
@@ -88,16 +85,16 @@ describe('OpenRouter lab-share feed wiring', () => {
     ).toBe(true)
     expect(
       getOracleFeed(OPENROUTER_CHINESE_LAB_SHARE_FEED_ID)?.marketCreationEnabled
-    ).toBe(false)
+    ).toBe(true)
     expect(
       PERP_LAUNCH_MARKETS.some(
         (m) => m.feedId === OPENROUTER_CHINESE_LAB_SHARE_FEED_ID
       )
+    ).toBe(true)
+    expect(
+      PERP_LAUNCH_PENDING_MARKETS.some(
+        (m) => m.feedId === OPENROUTER_CHINESE_LAB_SHARE_FEED_ID
+      )
     ).toBe(false)
-    const pending = PERP_LAUNCH_PENDING_MARKETS.find(
-      (m) => m.feedId === OPENROUTER_CHINESE_LAB_SHARE_FEED_ID
-    )
-    expect(pending?.pendingReason).toContain('nex-agi')
-    expect(pending?.question).toBe('Chinese-lab share of OpenRouter tokens (%)')
   })
 })

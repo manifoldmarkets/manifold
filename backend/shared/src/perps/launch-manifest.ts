@@ -258,6 +258,34 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
   },
+  {
+    feedId: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+    question: 'Chinese-lab share of OpenRouter tokens (%)',
+    requiredTopics: [
+      {
+        name: 'AI',
+        slugByEnvironment: {
+          DEV: 'ai',
+          PROD: 'ai',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: true,
+    gameDesign:
+      'The share of OpenRouter-routed tokens attributed to labs headquartered in China. Two-sided with coherent theses both ways: open-weight Chinese releases and their price advantage push it up, frontier closed releases and enterprise routing patterns push it down. New authors enter a database-backed review queue; an unresolved author is excluded from both sides and, past 1% of tokens, pauses the feed until an operator classifies it.',
+    latencyArbitrageRisk:
+      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 6 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
   // Tokenized-equity trio (xStocks by Backed). These deliberately track the
   // TOKEN's venue price, not the underlying index: that is what makes the
   // feed free and licence-clean (we composite public crypto-venue quotes,
@@ -407,38 +435,7 @@ export type PerpPendingLaunchMarketDefinition = PerpLaunchMarketDefinition & {
 // manifest check enforces that a pending feed is creation-disabled, so the
 // two lists cannot silently disagree.
 export const PERP_LAUNCH_PENDING_MARKETS: readonly PerpPendingLaunchMarketDefinition[] =
-  [
-    {
-      feedId: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
-      question: 'Chinese-lab share of OpenRouter tokens (%)',
-      requiredTopics: [
-        {
-          name: 'AI',
-          slugByEnvironment: {
-            DEV: 'ai',
-            PROD: 'ai',
-          },
-        },
-      ],
-      pendingReason:
-        'nex-agi (in the open-weight seed list) is placed in neither CHINESE_LAB_AUTHORS nor KNOWN_NON_CHINESE_AUTHORS; the backfill aborts on it and the live feed halts if it exceeds 1% of tokens. Place the author with evidence, bump CHINESE_LAB_LIST_VERSION, enable creation in the registry, and move this entry into PERP_LAUNCH_MARKETS.',
-      oracleBehavior: 'scheduled-step',
-      requiresSourceAsOf: true,
-      gameDesign:
-        'The share of OpenRouter-routed tokens attributed to labs headquartered in China (classified by author slug, list in common/perps/lab-share.ts). Two-sided with coherent theses both ways: open-weight Chinese releases and their price advantage push it up, frontier closed releases and enterprise routing patterns push it down. An author the list cannot place is excluded from both sides and, past 1% of tokens, pauses the feed until a one-line classification is deployed — expect an occasional short pause after a brand-new lab enters the top 50.',
-      latencyArbitrageRisk:
-        'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
-      recommended: {
-        maxLeverage: 3,
-        annualMaxFundingRate: 1,
-        fundingSensitivity: 1,
-        maxOraclePriceAgeMs: 6 * HOUR_MS,
-        subsidyLong: 10_000,
-        subsidyShort: 10_000,
-      },
-      minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
-    },
-  ]
+  []
 
 // Residual pool value returns to the market creator at settlement. Restrict
 // the launch set to the environment's official Manifold account so a personal

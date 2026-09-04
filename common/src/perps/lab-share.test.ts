@@ -1,5 +1,8 @@
 import {
+  CHINESE_LAB_LIST_VERSION,
+  CHINESE_LAB_MODELS,
   CHINESE_LAB_AUTHORS,
+  KNOWN_NON_CHINESE_MODELS,
   KNOWN_NON_CHINESE_AUTHORS,
   UNKNOWN_AUTHOR_TOKEN_SHARE_CAP,
   authorOfPermaslug,
@@ -13,6 +16,8 @@ import {
   OPEN_WEIGHT_WINDOW_DAYS,
   RankingRow,
   UNCLASSIFIED_TOKEN_SHARE_CAP,
+  basePermaslug,
+  isValidPermaslug,
 } from './open-weight-models'
 
 const row = (
@@ -100,6 +105,7 @@ describe('Anthropic share', () => {
     ]
     const res = computeAnthropicShare(rows)
     expect(res.unknownAuthors).toEqual([])
+    expect(res.unknownModels).toEqual([])
     expect(res.unknownTokens).toBe(0)
     expect(res.share).toBeCloseTo(30)
   })
@@ -120,6 +126,16 @@ describe('Anthropic share', () => {
       row(D, 'anthropic-ai/other-thing', 100),
     ]
     expect(computeAnthropicShare(rows).share).toBeCloseTo(100 / 3)
+  })
+
+  it('does not apply Chinese exact-model placements to the Anthropic feed', () => {
+    const res = computeAnthropicShare([
+      row(D, 'anthropic/claude-opus-5-20260723', 300),
+      row(D, 'stealth/ox-alpha', 700),
+    ])
+    expect(res.share).toBeCloseTo(30)
+    expect(res.unknownAuthors).toEqual([])
+    expect(res.unknownModels).toEqual([])
   })
 })
 
@@ -146,6 +162,7 @@ describe('Chinese-lab share', () => {
     // A huge unknown must not drag the index toward either side.
     expect(res.share).toBeCloseTo(50)
     expect(res.unknownAuthors).toEqual(['mystery-lab'])
+    expect(res.unknownModels).toEqual([])
     expect(res.unknownTokens).toBe(100_000)
     expect(res.classifiedTokens).toBe(1000)
     expect(res.unknownShareOfClassified).toBeCloseTo(100)
@@ -177,6 +194,68 @@ describe('Chinese-lab share', () => {
     })
     expect(placed.unknownAuthors).toEqual([])
     expect(placed.share).toBeCloseTo(50)
+  })
+
+  it('applies exact-model placements before author placements', () => {
+    const classifications = {
+      chinese: { chinese: { evidence: 'test' } },
+      nonChinese: { western: { evidence: 'test' } },
+      chineseModels: {
+        'western/chinese-exception': { evidence: 'test' },
+      },
+      nonChineseModels: {
+        'chinese/non-chinese-exception': { evidence: 'test' },
+      },
+    }
+    const res = computeChineseLabShare(
+      [
+        row(D, 'western/chinese-exception', 300),
+        row(D, 'western/ordinary', 200),
+        row(D, 'chinese/non-chinese-exception', 100),
+        row(D, 'chinese/ordinary', 400),
+      ],
+      OPEN_WEIGHT_WINDOW_DAYS,
+      classifications
+    )
+    expect(res.share).toBeCloseTo(70)
+    expect(res.unknownAuthors).toEqual([])
+    expect(res.unknownModels).toEqual([])
+  })
+
+  it('classifies the revealed stealth model without classifying its author', () => {
+    const revealed = computeChineseLabShare([
+      row(D, 'stealth/ox-alpha', 300),
+      row(D, 'openai/gpt-5.5-20260423', 700),
+    ])
+    expect(revealed.share).toBeCloseTo(30)
+    expect(revealed.unknownAuthors).toEqual([])
+    expect(revealed.unknownModels).toEqual([])
+
+    const future = computeChineseLabShare([
+      row(D, 'stealth/future-anonymous-preview', 10),
+      row(D, 'openai/gpt-5.5-20260423', 1000),
+    ])
+    expect(future.share).toBe(0)
+    expect(future.unknownAuthors).toEqual([])
+    expect(future.unknownModels).toEqual(['stealth/future-anonymous-preview'])
+    expect(future.unknownTokens).toBe(10)
+  })
+
+  it('normalises variants for exact placements and pending model reports', () => {
+    const placed = computeChineseLabShare([
+      row(D, 'stealth/ox-alpha', 100),
+      row(D, 'stealth/ox-alpha:free', 200),
+      row(D, 'openai/gpt-5.5-20260423', 700),
+    ])
+    expect(placed.share).toBeCloseTo(30)
+
+    const pending = computeChineseLabShare([
+      row(D, 'stealth/next:free', 2),
+      row(D, 'stealth/next:nitro', 3),
+      row(D, 'openai/gpt-5.5-20260423', 1000),
+    ])
+    expect(pending.unknownModels).toEqual(['stealth/next'])
+    expect(pending.unknownTokens).toBe(5)
   })
 
   it('keeps cloaked openrouter/* slugs in the denominator, never the numerator', () => {
@@ -249,6 +328,7 @@ describe('publication validation', () => {
       ok: true,
       share: 30,
       unknownAuthors: [],
+      unknownModels: [],
       unknownShareOfClassified: 0,
     })
     expect(
@@ -257,6 +337,7 @@ describe('publication validation', () => {
       ok: true,
       share: 40,
       unknownAuthors: [],
+      unknownModels: [],
       unknownShareOfClassified: 0,
     })
   })
@@ -270,8 +351,7 @@ describe('publication validation', () => {
     expect(validation.ok).toBe(false)
     if (validation.ok) return
     expect(validation.reason).toContain('mystery-lab')
-    expect(validation.reason).toContain('CHINESE_LAB_AUTHORS')
-    expect(validation.reason).toContain('KNOWN_NON_CHINESE_AUTHORS')
+    expect(validation.reason).toContain('classify the pending subject')
   })
 
   it('publishes the Chinese-lab feed under the cap and names the unknown', () => {
@@ -284,6 +364,19 @@ describe('publication validation', () => {
     if (!validation.ok) return
     expect(validation.share).toBeCloseTo(40)
     expect(validation.unknownAuthors).toEqual(['mystery-lab'])
+    expect(validation.unknownModels).toEqual([])
+    expect(validation.unknownShareOfClassified).toBeCloseTo(0.005)
+  })
+
+  it('publishes under the cap and names a pending model-scoped subject', () => {
+    const res = computeChineseLabShare(
+      completeWindow([row(D, 'stealth/future-preview:free', 35)])
+    )
+    const validation = validateLabSharePublication(res)
+    expect(validation.ok).toBe(true)
+    if (!validation.ok) return
+    expect(validation.unknownAuthors).toEqual([])
+    expect(validation.unknownModels).toEqual(['stealth/future-preview'])
     expect(validation.unknownShareOfClassified).toBeCloseTo(0.005)
   })
 
@@ -404,7 +497,7 @@ describe('publication validation', () => {
   })
 })
 
-describe('the author lists', () => {
+describe('the classification seed', () => {
   it('reuse the open-weight cap number — 1% of classified tokens', () => {
     expect(UNKNOWN_AUTHOR_TOKEN_SHARE_CAP).toBe(UNCLASSIFIED_TOKEN_SHARE_CAP)
     expect(UNKNOWN_AUTHOR_TOKEN_SHARE_CAP).toBe(0.01)
@@ -418,6 +511,14 @@ describe('the author lists', () => {
       ])
   })
 
+  it('never places an exact model on both sides', () => {
+    for (const model of Object.keys(CHINESE_LAB_MODELS))
+      expect([model, KNOWN_NON_CHINESE_MODELS[model]]).toEqual([
+        model,
+        undefined,
+      ])
+  })
+
   it('carry evidence for every entry', () => {
     for (const [author, entry] of [
       ...Object.entries(CHINESE_LAB_AUTHORS),
@@ -427,11 +528,19 @@ describe('the author lists', () => {
       // Keyed on a bare author segment, never a slug.
       expect([author, author.includes('/')]).toEqual([author, false])
     }
+    for (const [model, entry] of [
+      ...Object.entries(CHINESE_LAB_MODELS),
+      ...Object.entries(KNOWN_NON_CHINESE_MODELS),
+    ]) {
+      expect([model, entry.evidence.trim().length > 0]).toEqual([model, true])
+      expect([model, isValidPermaslug(model)]).toEqual([model, true])
+      expect([model, basePermaslug(model)]).toEqual([model, model])
+    }
   })
 
-  it('cover every author in the open-weight seed list except the ones the header names', () => {
-    // "unknown" must mean genuinely new. The single deliberate omission is
-    // nex-agi, whose headquarters is left for a human to place.
+  it('covers every author in the open-weight seed list', () => {
+    // "unknown" must mean genuinely new, not an omission from the audited
+    // open-weight seed that ships beside this one.
     const seedAuthors = new Set(
       Object.keys(OPEN_WEIGHT_MODELS).map((slug) =>
         slug.slice(0, slug.indexOf('/'))
@@ -441,11 +550,16 @@ describe('the author lists', () => {
       (author) =>
         !CHINESE_LAB_AUTHORS[author] && !KNOWN_NON_CHINESE_AUTHORS[author]
     )
-    expect(unplaced).toEqual(['nex-agi'])
+    expect(unplaced).toEqual([])
   })
 
-  it('classify Anthropic as non-Chinese and the seed Chinese labs as Chinese', () => {
+  it('contains the current known placements', () => {
+    expect(CHINESE_LAB_LIST_VERSION).toBe('2026-09-04')
     expect(KNOWN_NON_CHINESE_AUTHORS.anthropic).toBeDefined()
+    expect(KNOWN_NON_CHINESE_AUTHORS.thinkingmachines).toBeDefined()
+    expect(CHINESE_LAB_MODELS['stealth/ox-alpha']).toBeDefined()
+    expect(CHINESE_LAB_AUTHORS.stealth).toBeUndefined()
+    expect(KNOWN_NON_CHINESE_AUTHORS.stealth).toBeUndefined()
     for (const author of [
       'qwen',
       'deepseek',
@@ -460,6 +574,8 @@ describe('the author lists', () => {
       'baai',
       'alibaba',
       'kwaipilot',
+      'nex-agi',
+      'dots-studio',
     ])
       expect([author, CHINESE_LAB_AUTHORS[author] != null]).toEqual([
         author,
