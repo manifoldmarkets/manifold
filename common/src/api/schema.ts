@@ -41,6 +41,7 @@ import {
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
+import type { PerpPoolStats } from 'common/perps/pool-accounting'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -2711,6 +2712,18 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limitDays: z.coerce.number(),
+      })
+      .strict(),
+  },
+  'get-perp-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as PerpPoolStats,
+    props: z
+      .object({
+        limitDays: z.coerce.number().int().min(1).max(730).default(365),
       })
       .strict(),
   },

@@ -35,6 +35,8 @@ import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import { SHOP_ITEMS, getTicketItems } from 'common/src/shop/items'
+import type { PerpPoolStats } from 'common/perps/pool-accounting'
+import { PerpStatsTab } from 'web/components/stats/perp-stats'
 
 export const getStaticProps = async () => {
   try {
@@ -47,6 +49,7 @@ export const getStaticProps = async () => {
       topMarketsYesterday,
       shopStats,
       idenfyStats,
+      perpStats,
     ] = await Promise.all([
       getStats(),
       api('get-mana-summary-stats', { limitDays: 100 }),
@@ -64,6 +67,7 @@ export const getStaticProps = async () => {
       api('get-top-markets-yesterday', {}),
       api('get-shop-stats', { limitDays: 100 }),
       api('get-idenfy-stats', { limitDays: 100 }),
+      api('get-perp-stats', { limitDays: 365 }).catch(() => null),
     ])
 
     return {
@@ -76,6 +80,7 @@ export const getStaticProps = async () => {
         topMarketsYesterday,
         shopStats,
         idenfyStats,
+        perpStats,
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -153,6 +158,7 @@ export default function Analytics(props: {
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
   idenfyStats?: IdenfyStats
+  perpStats?: PerpPoolStats | null
   totalRedeemable: number
 }) {
   const {
@@ -164,6 +170,7 @@ export default function Analytics(props: {
     topMarketsYesterday,
     shopStats,
     idenfyStats,
+    perpStats,
   } = props
 
   if (!stats) {
@@ -186,6 +193,7 @@ export default function Analytics(props: {
         topMarketsYesterday={topMarketsYesterday}
         shopStats={shopStats}
         idenfyStats={idenfyStats}
+        perpStats={perpStats}
       />
     </Page>
   )
@@ -1237,6 +1245,7 @@ export function CustomAnalytics(props: {
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
   idenfyStats?: IdenfyStats
+  perpStats?: PerpPoolStats | null
 }) {
   const {
     stats,
@@ -1247,11 +1256,12 @@ export function CustomAnalytics(props: {
     topMarketsYesterday,
     shopStats,
     idenfyStats,
+    perpStats,
   } = props
   const [localStats, setLocalStats] = useState(stats)
 
   return (
-    <Col className="px-4 sm:pl-6 sm:pr-16">
+    <Col className="min-w-0 px-4 sm:pl-6 sm:pr-16">
       <QueryUncontrolledTabs
         className="mb-4"
         defaultIndex={0}
@@ -1290,6 +1300,15 @@ export function CustomAnalytics(props: {
             queryString: 'purchases',
             content: <PurchasesTab shopStats={shopStats} />,
           },
+          ...(perpStats
+            ? [
+                {
+                  title: 'Perps',
+                  queryString: 'perps',
+                  content: <PerpStatsTab stats={perpStats} />,
+                },
+              ]
+            : []),
         ]}
       />
     </Col>
