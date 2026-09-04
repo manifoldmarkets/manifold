@@ -2,7 +2,11 @@ import clsx from 'clsx'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import {
+  formatPerpClosePercent,
+  formatPrice,
+  inferPriceDecimals,
+} from 'common/perps/format'
 import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -255,7 +259,7 @@ const EventRow = (props: {
               trailing "on" so the label doesn't dangle before the price. */}
           <span className="text-ink-600">
             {partialClose != null
-              ? `closed ${Math.round(partialClose * 100)}% of`
+              ? `closed ${formatPerpClosePercent(partialClose)} of`
               : event.direction
               ? EVENT_LABELS[event.eventType]
               : EVENT_LABELS[event.eventType].replace(/ on$/, '')}

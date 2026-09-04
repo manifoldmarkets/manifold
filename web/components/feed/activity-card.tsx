@@ -18,6 +18,7 @@ import {
 } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import type { PerpTradeActivity } from 'common/perps/activity'
+import { formatPerpClosePercent } from 'common/perps/format'
 import { PrivateUser, User } from 'common/user'
 import { shortFormatNumber } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
@@ -492,7 +493,7 @@ const PerpTradeLog = memo(function PerpTradeLog(props: {
     Number.isFinite(trade.fraction) &&
     trade.fraction > 0 &&
     trade.fraction < 1
-      ? Math.round(trade.fraction * 100)
+      ? formatPerpClosePercent(trade.fraction)
       : null
 
   return (
@@ -534,7 +535,7 @@ const PerpTradeLog = memo(function PerpTradeLog(props: {
           )}
           {partialPercent !== null && (
             <span className="text-ink-600">
-              {partialPercent}% of the position — the rest stays open
+              {partialPercent} of the position — the rest stays open
             </span>
           )}
           <RelativeTimestamp

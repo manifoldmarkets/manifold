@@ -19,6 +19,7 @@ import { fromNow } from 'client-common/lib/time'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   formatCountdown,
+  formatPerpClosePercent,
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
@@ -1023,7 +1024,7 @@ const RecentActivity = (props: {
                     }
                   >
                     {partialClose != null
-                      ? `closed ${Math.round(partialClose * 100)}% of`
+                      ? `closed ${formatPerpClosePercent(partialClose)} of`
                       : ACTIVITY_VERB[e.eventType]}
                   </span>{' '}
                   {e.leverage != null && !closing && (

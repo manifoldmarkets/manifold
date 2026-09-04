@@ -19,6 +19,7 @@ import { PerpPosition } from 'common/perps/position'
 import { DAY_MS } from 'common/util/time'
 import {
   formatCountdown,
+  formatPerpClosePercent,
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
@@ -175,7 +176,7 @@ export const PerpPositionPanel = (props: {
         `${
           closedAll
             ? `Closed ${direction}`
-            : `Closed ${Math.round(res.fraction * 100)}% of ${direction}`
+            : `Closed ${formatPerpClosePercent(res.fraction)} of ${direction}`
         } — payout ${formatMoneyPrecise(
           res.payout
         )} (profit ${formatMoneyPrecise(res.pnl)})`
@@ -345,7 +346,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           >
             <span className="text-ink-700 font-medium">
               {partial != null
-                ? `Closed ${Math.round(partial * 100)}% of ${e.direction}`
+                ? `Closed ${formatPerpClosePercent(partial)} of ${e.direction}`
                 : `Closed ${e.direction}`}
             </span>
             <span className="text-ink-700 tabular-nums">
