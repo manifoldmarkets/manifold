@@ -650,7 +650,9 @@ const PositionCard = (props: {
             {oracleTradingPaused
               ? 'Close paused — waiting for oracle'
               : `Close ${
-                  isPartial ? `${Math.round(effectiveFraction * 100)}% of ` : ''
+                  isPartial
+                    ? `${formatPerpClosePercent(effectiveFraction)} of `
+                    : ''
                 }position @ ${formatPrice(markPrice, priceDecimals)}`}
           </Button>
         </Col>
