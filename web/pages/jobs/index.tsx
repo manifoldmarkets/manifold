@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { useId, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
@@ -82,116 +85,118 @@ const JOBS: Job[] = [
 
 function MetaField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-row items-baseline gap-3 sm:flex-col sm:items-start sm:gap-0">
-      <span className="text-ink-400 w-20 shrink-0 font-mono text-[10px] uppercase tracking-widest sm:w-auto">
+    <div className="flex items-baseline gap-2">
+      <dt className="text-ink-400 shrink-0 font-mono text-xs uppercase tracking-wide">
         {label}
-      </span>
-      <span className="text-ink-700 text-sm font-medium">{value}</span>
+      </dt>
+      <dd className="text-ink-700 text-sm font-medium">{value}</dd>
     </div>
   )
 }
 
 function JobCard({ job }: { job: Job }) {
   const [open, setOpen] = useState(false)
+  const detailsId = useId()
 
   return (
-    <div className="border-ink-200 bg-canvas-0 overflow-hidden rounded-lg border transition-shadow hover:shadow-sm">
-      {/* Card header — always visible */}
-      {/* The whole header is the toggle, so it needs to look pressable:
-          pointer cursor + a faint hover wash, otherwise the only affordance is
-          the "Show role" text in the corner. */}
+    <article
+      className={clsx(
+        'bg-canvas-0 overflow-hidden rounded-xl border transition-all',
+        open
+          ? 'border-primary-300 shadow-sm'
+          : 'border-ink-200 hover:border-ink-300 hover:shadow-sm'
+      )}
+    >
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        className="hover:bg-canvas-50 w-full cursor-pointer px-6 py-5 text-left transition-colors"
+        className="hover:bg-canvas-50 focus-visible:ring-primary-500 group w-full cursor-pointer px-5 py-5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-6"
         aria-expanded={open}
+        aria-controls={detailsId}
       >
-        <Col className="gap-2">
+        <Col className="gap-3">
           <Row className="items-start justify-between gap-3">
-            {/* h3, under the company's h2 — and capped at text-xl so a role
-                never outsizes the company heading above it. */}
             <h3 className="text-ink-1000 text-lg font-bold sm:text-xl">
               {job.title}
             </h3>
-            <span className="text-ink-400 shrink-0 pt-1 font-mono text-[10px] uppercase tracking-widest">
+            <span className="bg-canvas-100 text-ink-600 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
               Full time
             </span>
           </Row>
-          <p className="text-ink-600 text-sm leading-relaxed">{job.blurb}</p>
+          <p className="text-ink-600 text-base leading-relaxed">{job.blurb}</p>
 
-          {/* Compact vertical stack on mobile; horizontal spread on desktop.
-              Toggle drops below on mobile, inline bottom-right on sm+. */}
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-            <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-8">
+          <div className="border-ink-100 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <dl className="flex flex-wrap gap-x-6 gap-y-2">
               <MetaField label="Location" value={job.location} />
               <MetaField label="Comp" value={job.comp} />
               <MetaField label="Stage" value={job.stage} />
-            </div>
+            </dl>
 
-            <span className="text-primary-600 shrink-0 self-end font-mono text-sm font-medium">
-              {open ? 'Hide ↑' : 'Show role ↓'}
+            <span className="text-primary-600 group-hover:text-primary-700 flex shrink-0 items-center gap-1 self-end text-sm font-semibold sm:self-auto">
+              {open ? 'Hide details' : 'View details'}
+              {open ? (
+                <ChevronUpIcon className="h-4 w-4" aria-hidden />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4" aria-hidden />
+              )}
             </span>
           </div>
         </Col>
       </button>
 
-      {/* Expandable body */}
-      {open && (
-        <div className="border-ink-100 border-t px-6 pb-6 pt-5">
-          <p className="text-ink-700 mb-6 text-sm leading-relaxed">
-            {job.intro}
-          </p>
+      <div
+        id={detailsId}
+        hidden={!open}
+        className="border-ink-100 bg-canvas-50/50 border-t px-5 pb-6 pt-5 sm:px-6"
+      >
+        <p className="text-ink-700 mb-6 text-base leading-relaxed">
+          {job.intro}
+        </p>
 
-          <div className="mb-5">
-            <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
-              What you'll do
-            </span>
-            <ul className="flex flex-col gap-2">
-              {job.whatYoullDo.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-ink-700 flex gap-2.5 text-sm leading-relaxed"
-                >
-                  <span className="text-ink-300 mt-0.5 shrink-0">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <section className="mb-6">
+          <h4 className="text-ink-900 mb-3 text-sm font-semibold">
+            What you'll do
+          </h4>
+          <ul className="marker:text-primary-400 flex list-disc flex-col gap-2 pl-5">
+            {job.whatYoullDo.map((item, i) => (
+              <li key={i} className="text-ink-700 text-base leading-relaxed">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          <div className="mb-6">
-            <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
-              What we're looking for
-            </span>
-            <ul className="flex flex-col gap-2">
-              {job.whatWereLookingFor.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-ink-700 flex gap-2.5 text-sm leading-relaxed"
-                >
-                  <span className="text-ink-300 mt-0.5 shrink-0">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <section className="mb-6">
+          <h4 className="text-ink-900 mb-3 text-sm font-semibold">
+            What we're looking for
+          </h4>
+          <ul className="marker:text-primary-400 flex list-disc flex-col gap-2 pl-5">
+            {job.whatWereLookingFor.map((item, i) => (
+              <li key={i} className="text-ink-700 text-base leading-relaxed">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          <Row className="items-center justify-between">
-            <button
-              onClick={() => setOpen(false)}
-              className="text-primary-600 hover:text-primary-700 font-mono text-sm font-medium transition-colors"
-            >
-              Hide ↑
-            </button>
-            <a
-              href={`mailto:${job.contactEmail}`}
-              className="bg-primary-600 hover:bg-primary-700 rounded-md px-5 py-2 font-mono text-sm text-white transition-colors"
-            >
-              Apply →
-            </a>
-          </Row>
-        </div>
-      )}
-    </div>
+        <Row className="flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 flex items-center gap-1 rounded text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2"
+          >
+            Hide details
+            <ChevronUpIcon className="h-4 w-4" aria-hidden />
+          </button>
+          <a
+            href={`mailto:${job.contactEmail}`}
+            className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 rounded-md px-5 py-2 text-sm font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            Apply by email →
+          </a>
+        </Row>
+      </div>
+    </article>
   )
 }
 
@@ -203,11 +208,8 @@ export default function JobsPage() {
         description="Curated jobs by employers who value forecasting."
         url="/jobs"
       />
-      <Col className="mx-auto w-full max-w-3xl gap-8 p-4 py-8">
-        {/* Back arrow sits inline with the heading only — the subtitle drops
-            below the whole row, so the arrow doesn't float against the centre
-            of a two-line block. */}
-        <Col className="gap-2">
+      <Col className="mx-auto w-full max-w-4xl gap-7 px-4 py-8 sm:px-6 sm:py-10">
+        <header className="flex flex-col gap-2">
           <Row className="items-center gap-2">
             <BackButton />
             <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
@@ -217,57 +219,60 @@ export default function JobsPage() {
           <p className="text-ink-500 max-w-xl text-base leading-relaxed">
             Curated jobs by employers who value forecasting
           </p>
-        </Col>
+        </header>
 
         <JobInterestCard />
 
-        {/* gap-4 inside the company block vs the page's gap-8 between
-            sections, so the listings read as belonging to the company header
-            rather than floating equidistant from everything. */}
-        <Col className="gap-4">
-          <Col className="gap-1">
-            {/* Role count sits beside the company name rather than orphaned
-                under the description, where it read as a third stray line. */}
-            <Row className="items-baseline justify-between gap-3">
-              <Row className="items-baseline gap-2">
-                <h2 className="text-ink-1000 text-xl font-semibold">
+        <section aria-labelledby="mnx-heading" className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h2
+                  id="mnx-heading"
+                  className="text-ink-1000 text-xl font-semibold"
+                >
                   MNX — The AI Exchange
                 </h2>
                 <a
                   href="https://mnx.fi"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-600 hover:text-primary-700 shrink-0 text-xs"
+                  aria-label="Visit the MNX website"
+                  className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 flex shrink-0 items-center gap-1 rounded text-sm font-medium focus:outline-none focus-visible:ring-2"
                 >
-                  mnx.fi ↗
+                  mnx.fi
+                  <ExternalLinkIcon className="h-3.5 w-3.5" aria-hidden />
                 </a>
-              </Row>
-              <span className="text-ink-400 shrink-0 font-mono text-xs uppercase tracking-wider">
-                {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
-              </span>
-            </Row>
-            <p className="text-ink-500 max-w-xl text-sm leading-relaxed">
-              MNX is building the financial architecture for the AI era. We are
-              a small, highly talented, and maximally AI-pilled team based in
-              San Francisco.
-            </p>
-          </Col>
-          {JOBS.map((job) => (
-            <JobCard key={job.title} job={job} />
-          ))}
-        </Col>
+              </div>
+              <p className="text-ink-500 max-w-2xl text-base leading-relaxed">
+                MNX is building the financial architecture for the AI era. We
+                are a small, highly talented, and maximally AI-pilled team based
+                in San Francisco.
+              </p>
+            </div>
+            <span className="bg-canvas-100 text-ink-600 shrink-0 self-start rounded-full px-3 py-1 text-sm font-medium">
+              {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
+            </span>
+          </div>
 
-        <div className="border-ink-100 border-t pt-6">
-          <p className="text-ink-400 text-sm">
+          <div className="flex flex-col gap-3">
+            {JOBS.map((job) => (
+              <JobCard key={job.title} job={job} />
+            ))}
+          </div>
+        </section>
+
+        <aside className="border-ink-200 bg-canvas-50 rounded-lg border px-5 py-4">
+          <p className="text-ink-600 text-sm">
             Hiring in trading, AI, or fintech?{' '}
             <a
               href="mailto:info@manifold.markets"
-              className="text-primary-600 hover:text-primary-700"
+              className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 rounded font-medium focus:outline-none focus-visible:ring-2"
             >
               Get in touch to list a role.
             </a>
           </p>
-        </div>
+        </aside>
       </Col>
     </Page>
   )

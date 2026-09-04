@@ -1,3 +1,4 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -121,18 +122,24 @@ export function JobInterestCard() {
   // Registered and not editing → a collapsible summary panel.
   if (registered && !open) {
     return (
-      <div className="border-primary-200 bg-canvas-0 rounded-lg border p-5">
+      <div className="border-primary-200 bg-primary-50/50 dark:border-primary-800 dark:bg-primary-950/20 rounded-xl border p-4 sm:p-5">
         <Col className="gap-3">
           <button
+            type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className="flex items-center justify-between gap-3 text-left"
+            className="focus-visible:ring-primary-500 flex w-full cursor-pointer items-center justify-between gap-3 rounded text-left focus:outline-none focus-visible:ring-2"
             aria-expanded={!collapsed}
           >
-            <h3 className="text-ink-1000 text-lg font-semibold">
+            <h3 className="text-ink-1000 text-base font-semibold sm:text-lg">
               You're on the list for new roles
             </h3>
-            <span className="text-primary-600 shrink-0 font-mono text-sm font-medium">
-              {collapsed ? 'Show ↓' : 'Hide ↑'}
+            <span className="text-primary-600 flex shrink-0 items-center gap-1 text-sm font-semibold">
+              {collapsed ? 'Show' : 'Hide'}
+              {collapsed ? (
+                <ChevronDownIcon className="h-4 w-4" aria-hidden />
+              ) : (
+                <ChevronUpIcon className="h-4 w-4" aria-hidden />
+              )}
             </span>
           </button>
 
@@ -150,15 +157,17 @@ export function JobInterestCard() {
               </Row>
               <Row className="items-center gap-4">
                 <button
+                  type="button"
                   onClick={() => setOpen(true)}
-                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                  className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 rounded text-sm font-medium focus:outline-none focus-visible:ring-2"
                 >
                   Update preferences
                 </button>
                 <button
+                  type="button"
                   onClick={remove}
                   disabled={saving}
-                  className="text-ink-500 hover:text-ink-700 text-sm disabled:opacity-50"
+                  className="text-ink-500 hover:text-ink-700 focus-visible:ring-primary-500 rounded text-sm focus:outline-none focus-visible:ring-2 disabled:opacity-50"
                 >
                   Remove me
                 </button>
@@ -171,28 +180,34 @@ export function JobInterestCard() {
   }
 
   return (
-    <div className="border-primary-200 bg-canvas-0 rounded-lg border p-5">
-      {/* Collapsible like the registered state, so someone who isn't job
-          hunting can fold this away and get to the listings. The toggle is
-          suppressed while the form is open — collapsing a half-filled form
-          would throw away their selections with no warning. */}
-      <Col className="gap-1">
-        <button
-          onClick={() => open || setPitchCollapsed((c) => !c)}
-          className="flex items-start justify-between gap-3 text-left"
-          aria-expanded={!pitchCollapsed}
-        >
+    <div className="border-primary-200 bg-primary-50/50 dark:border-primary-800 dark:bg-primary-950/20 rounded-xl border p-4 sm:p-5">
+      <Col className="gap-2">
+        {open ? (
           <h3 className="text-ink-1000 text-lg font-semibold">
             Looking for a role? Let employers reach you
           </h3>
-          {!open && (
-            <span className="text-primary-600 shrink-0 pt-1 font-mono text-sm font-medium">
-              {pitchCollapsed ? 'Show ↓' : 'Hide ↑'}
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPitchCollapsed((c) => !c)}
+            className="focus-visible:ring-primary-500 flex w-full cursor-pointer items-center justify-between gap-3 rounded text-left focus:outline-none focus-visible:ring-2"
+            aria-expanded={!pitchCollapsed}
+          >
+            <h3 className="text-ink-1000 text-base font-semibold sm:text-lg">
+              Looking for a role? Let employers reach you
+            </h3>
+            <span className="text-primary-600 flex shrink-0 items-center gap-1 text-sm font-semibold">
+              {pitchCollapsed ? 'Show' : 'Hide'}
+              {pitchCollapsed ? (
+                <ChevronDownIcon className="h-4 w-4" aria-hidden />
+              ) : (
+                <ChevronUpIcon className="h-4 w-4" aria-hidden />
+              )}
             </span>
-          )}
-        </button>
+          </button>
+        )}
         {!pitchCollapsed && (
-          <p className="text-ink-600 max-w-xl text-sm leading-relaxed">
+          <p className="text-ink-600 max-w-2xl text-base leading-relaxed">
             Tag your strengths and what you're after. We'll aim to connect you
             with employers hiring from the community, and may notify you of
             relevant postings.
@@ -206,13 +221,14 @@ export function JobInterestCard() {
         </Button>
       ) : !open ? (
         <button
+          type="button"
           onClick={() => setOpen(true)}
-          className="text-primary-600 hover:text-primary-700 mt-3 self-start text-sm font-medium"
+          className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 mt-3 self-start rounded text-sm font-semibold focus:outline-none focus-visible:ring-2"
         >
           Register interest →
         </button>
       ) : (
-        <Col className="mt-4 gap-4">
+        <Col className="border-primary-100 mt-4 gap-5 border-t pt-4">
           <Col className="gap-2">
             <span className="text-ink-500 font-mono text-xs uppercase tracking-widest">
               Your strengths
@@ -223,6 +239,7 @@ export function JobInterestCard() {
                   key={s}
                   selected={skills.includes(s)}
                   onSelect={() => setSkills((a) => toggle(a, s))}
+                  className="h-8 px-3"
                 >
                   {JOB_SKILL_LABELS[s]}
                 </PillButton>
@@ -240,6 +257,7 @@ export function JobInterestCard() {
                   key={i}
                   selected={interests.includes(i)}
                   onSelect={() => setInterests((a) => toggle(a, i))}
+                  className="h-8 px-3"
                 >
                   {JOB_INTEREST_LABELS[i]}
                 </PillButton>
@@ -257,6 +275,7 @@ export function JobInterestCard() {
                   key={r}
                   selected={region === r}
                   onSelect={() => setRegion((cur) => (cur === r ? null : r))}
+                  className="h-8 px-3"
                 >
                   {JOB_REGION_LABELS[r]}
                 </PillButton>
@@ -264,7 +283,7 @@ export function JobInterestCard() {
             </Row>
           </Col>
 
-          <Row className="items-center gap-4">
+          <Row className="flex-wrap items-center gap-4">
             <Button
               color="indigo"
               loading={saving}
@@ -274,8 +293,9 @@ export function JobInterestCard() {
               {registered ? 'Save changes' : "I'm interested"}
             </Button>
             <button
+              type="button"
               onClick={cancel}
-              className="text-ink-500 hover:text-ink-700 text-sm"
+              className="text-ink-500 hover:text-ink-700 focus-visible:ring-primary-500 rounded text-sm focus:outline-none focus-visible:ring-2"
             >
               Cancel
             </button>
