@@ -127,7 +127,12 @@ export async function getStaticProps() {
 const FEED_TICKERS: Record<string, string> = {
   'btc-usd': 'BTC',
   'trump-approval-rating': 'TRUMP',
+  'votehub-generic-ballot-2026': 'BALLOT',
+  'vance-favorability': 'VANCE',
+  'crypto-fear-greed': 'FEAR',
   'openrouter-open-weight-share': 'OPENW',
+  'openrouter-anthropic-share': 'ANTH',
+  'openrouter-chinese-lab-share': 'CNLAB',
   'spyx-usd': 'SPYx',
   'qqqx-usd': 'QQQx',
   'nvdax-usd': 'NVDAx',
@@ -141,7 +146,11 @@ const tickerOf = (c: PerpContract) =>
 
 const PERCENT_FEEDS = new Set([
   'trump-approval-rating',
+  'votehub-generic-ballot-2026',
+  'vance-favorability',
   'openrouter-open-weight-share',
+  'openrouter-anthropic-share',
+  'openrouter-chinese-lab-share',
 ])
 
 const displayPrice = (c: PerpContract) => {

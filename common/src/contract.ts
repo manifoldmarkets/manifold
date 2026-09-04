@@ -353,6 +353,13 @@ export type PerpMechanism = {
   lastFundingTime?: number
   fundingRate?: number // last applied rate; +ve = longs pay
   resolvedOraclePrice?: number
+  // Set when an oracle tick's post-transition state could not be made solvent
+  // even after ADL and the cross-side deficit transfer. The tick still commits
+  // the new price (a frozen mark is its own exploit surface), so the freshness
+  // gate no longer protects the book — this halts trading explicitly instead.
+  // Cleared by the first tick that applies cleanly, e.g. after add-perp-subsidy.
+  solvencyHaltTime?: number | null
+  solvencyHaltReason?: string | null
 }
 export type PerpContract = Contract & Perp & PerpMechanism
 

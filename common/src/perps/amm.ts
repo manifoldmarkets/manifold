@@ -376,8 +376,52 @@ export const applyADL = (state: PerpState, price: number) => {
     0
   )
 
-  const sL = EL > 0 ? (S - CS) / EL : 1
-  const sS = ES > 0 ? (L - CL) / ES : 1
+  // Cross-side deficit transfer. Margin refunds are senior to unrealized
+  // profits, and the two pools sit behind ONE escrow balance.
+  //
+  // A side's pool can fall below that side's own refundable margin when
+  // realized profits were paid to the opposing side against unrealized
+  // losses that later recovered (UK carbon 2026-08-07, and the OpenRouter
+  // open-weight share market 2026-08-29). ADL alone cannot repair that
+  // state: it scales profits and never cost bases, so the factor clamps to
+  // 0, every winner is settled and removed, and the deficit is still there
+  // with no profit left to scale against. assertPerpStateSolvent then sees
+  // -Infinity and the oracle apply fail-closes — forever, at a stale price.
+  //
+  // assertPerpEscrowBalance checks L + S against one contract balance, so
+  // the L/S split is an accounting convention rather than a custody
+  // boundary. Before pricing ADL, if one side is short of its own reserve and
+  // the other holds at least that much above its reserve, move the deficit
+  // across. At most one direction is non-zero — a side in deficit has no
+  // surplus by construction. Total escrow is unchanged and no user balance
+  // moves. A book that was already covered transfers exactly zero, so this is
+  // inert on every market that was not wedged.
+  //
+  // All-or-nothing on purpose. A partial transfer cannot make the book
+  // representable — the recipient's cover is still negative afterwards, so the
+  // assert throws either way — but it DOES change the ADL factors on the way
+  // there, and a donor drained to exactly zero pushes the opposing factor to 0,
+  // which settles that side and overdraws its pool. Transferring only when the
+  // donor fully covers the deficit means this can turn a throw into a success
+  // and can never reshape a path that was going to throw regardless.
+  const surplusL = L - CL
+  const surplusS = S - CS
+  const transferToL = surplusL < 0 && surplusS >= -surplusL ? -surplusL : 0
+  const transferToS = surplusS < 0 && surplusL >= -surplusS ? -surplusS : 0
+  /** Positive = moved S -> L, negative = moved L -> S. */
+  const crossSideTransfer = transferToL - transferToS
+  // Assign the RECIPIENT its reserve exactly rather than computing
+  // `L + (CL - L)`, which is not exactly CL in float and can leave cover one
+  // ULP negative. That is not a rounding nuisance here: the -Infinity branch of
+  // solvencyFactor has no tolerance, so a single ULP of negative cover on a
+  // side with no profit left is the difference between unwedging and staying
+  // wedged. The donor absorbs the same value, so escrow moves by at most one
+  // ULP, which assertPerpEscrowBalance tolerates.
+  const adjustedL = transferToL > 0 ? CL : L - transferToS
+  const adjustedS = transferToS > 0 ? CS : S - transferToL
+
+  const sL = EL > 0 ? (adjustedS - CS) / EL : 1
+  const sS = ES > 0 ? (adjustedL - CL) / ES : 1
 
   const adlFactorLong = sL < 1 ? Math.max(sL, 0) : 1
   const adlFactorShort = sS < 1 ? Math.max(sS, 0) : 1
@@ -432,14 +476,15 @@ export const applyADL = (state: PerpState, price: number) => {
   return {
     state: {
       pool: {
-        L: poolAfterDebit(L, longSettlementPayout),
-        S: poolAfterDebit(S, shortSettlementPayout),
+        L: poolAfterDebit(adjustedL, longSettlementPayout),
+        S: poolAfterDebit(adjustedS, shortSettlementPayout),
       },
       positions,
     },
     adlFactorLong,
     adlFactorShort,
     settled,
+    crossSideTransfer,
   }
 }
 
@@ -788,17 +833,23 @@ export const closePosition = (
 
 /**
  * Launch guardrail beyond the ManiPerp paper: aggregate exposure on either
- * side may not exceed this multiple of unreserved opposing-pool cover.
+ * side may not exceed this multiple of the backing the opposing side provides.
  *
  * This still permits high leverage for small positions, while preventing a
  * freshly opened position (which has no unrealized profit yet) from creating
  * effectively unlimited future claims against a finite pool.
+ *
+ * Read it as an adverse move of 1/M where M is this multiple: the cap is sized
+ * so this side's profit over a 10% move still fits the backing available for
+ * it. See `calculateMatchedCredit` for the derivation.
  */
 export const PERP_OPEN_INTEREST_COVER_MULTIPLE = 10
 
 export type PerpOpenInterestCapacity = {
   openInterest: number
   availableCover: number
+  /** Notional the opposing book funds out of its own losses. */
+  matchedCredit: number
   limit: number
   headroom: number
   isWithinLimit: boolean
@@ -839,12 +890,93 @@ const calculateAvailableCover = (
 }
 
 /**
+ * Notional the OPPOSING book can fund out of its own losses.
+ *
+ * The cap exists to bound the drain on the opposing pool from this side's
+ * profits over an adverse move of x = 1 / PERP_OPEN_INTEREST_COVER_MULTIPLE.
+ * Over such a move:
+ *
+ *   this side's profit ≈ x · OI(side)
+ *   released           = R(opp, P) − R(opp, P'), the opposing reserve that
+ *                        actually stops being reserved as the move goes
+ *                        against them — and it is released INTO the very pool
+ *                        that pays this side.
+ *   net drain          ≈ x · OI(side) − released
+ *
+ * Requiring `net drain ≤ availableCover` and multiplying through by the
+ * multiple M = 1/x gives
+ *
+ *   OI(side) ≤ M · availableCover + M · released
+ *
+ * and the second term is this credit.
+ *
+ * ⚠️ `released` must be evaluated at BOTH prices. R is
+ * `min(costBasis, positionValue)`, which is FLAT in price wherever the
+ * opposing position is in profit — value exceeds cost basis, the `min` clamps
+ * to cost basis, and an adverse move releases nothing at all. Crediting
+ * `M · R(opp, P)` instead (the first version of this) hands out capacity
+ * against margin that the move never frees: mark 100, a short of size 1000 at
+ * entry 200 with 100 of basis against a 100 short pool reserves its whole 100,
+ * so the naive form credits 1000 of long notional — and at mark 110 that short
+ * is still deeply profitable, still reserves the entire pool, and the new long
+ * has zero cover and is factor-zero ADL'd on its first profitable tick.
+ *
+ * Because R is non-increasing over an adverse move and can fall by at most the
+ * position's own loss, `released ≤ x · OI(opp)`, so `M · released ≤ OI(opp)`;
+ * the explicit `min` against opposing OI below is therefore belt-and-braces
+ * against float, not the binding constraint. And since `released ≤ R(opp, P)`,
+ * the two terms telescope wherever cover is non-negative:
+ *
+ *   M · (pool − R) + M · released  ≤  M · pool
+ *
+ * so the cap can never promise more than the whole opposing pool over the move
+ * it is sized for.
+ *
+ * Without this term the cap compares a NOTIONAL quantity against a MARGIN one
+ * and never looks at opposing notional at all, so a market can refuse the
+ * trade that would balance it while still accepting the trade that worsens
+ * the imbalance. Measured on prod 2026-08-31: the BTC market held 734,349
+ * long vs 928,994 short of notional — a short-heavy book — with 1,129 of long
+ * headroom against 544,752 of short headroom, and was rejecting M$110 longs.
+ */
+const calculateMatchedCredit = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+) => {
+  const oppositeDirection = side === 'long' ? 'short' : 'long'
+  const opposing = state.positions.filter(
+    (p) => p.direction === oppositeDirection && p.size > 0
+  )
+  // The move this cap is sized for, in the direction that hurts the opposing
+  // side: up for a long book, down for a short one.
+  const x = 1 / PERP_OPEN_INTEREST_COVER_MULTIPLE
+  const movedPrice = side === 'long' ? price * (1 + x) : price * (1 - x)
+
+  const openInterest = opposing.reduce((sum, p) => sum + p.size, 0)
+  // Per position, and floored at zero: one holder whose reserve does not move
+  // must not have another's release netted away against it.
+  const released = opposing.reduce(
+    (sum, p) =>
+      sum +
+      Math.max(
+        Math.min(p.costBasis, getPositionValue(p, price)) -
+          Math.min(p.costBasis, getPositionValue(p, movedPrice)),
+        0
+      ),
+    0
+  )
+  return Math.min(openInterest, released * PERP_OPEN_INTEREST_COVER_MULTIPLE)
+}
+
+/**
  * Aggregate side capacity at the current oracle price.
  *
  * `availableCover` deliberately deducts each opposite-side position's current
  * refundable value, capped at its cost basis. This is the same reserve used by
  * the ADL solvency calculation, so committed trader margin is not counted as
- * free backing for new exposure.
+ * free backing for new exposure. `matchedCredit` then adds back the exposure
+ * the opposing book funds out of its own losses — see above.
  */
 export const getPerpOpenInterestCapacity = (
   side: PerpDirection,
@@ -861,16 +993,56 @@ export const getPerpOpenInterestCapacity = (
   const availableCover = calculateAvailableCover(side, state, price)
   assertFiniteNumber(`${side} available cover`, availableCover)
 
-  const limit = Math.max(availableCover, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE
+  const matchedCredit = calculateMatchedCredit(side, state, price)
+  assertFiniteNumber(`${side} matched credit`, matchedCredit)
+
+  // The telescoping above holds only where cover is non-negative. On a book
+  // that is already short of its own reserve, cover floors at 0 while the
+  // credit keeps counting reserved value the pool does not actually hold, so
+  // bound the result explicitly: over a 1/M move this side's profit is OI/M,
+  // and the most the opposing side can ever fund is its entire pool. This is a
+  // no-op on every healthy book.
+  const opposingPool = side === 'long' ? state.pool.S : state.pool.L
+  const limit = Math.min(
+    Math.max(availableCover, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE +
+      matchedCredit,
+    Math.max(opposingPool, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE
+  )
   assertFiniteNumber(`${side} open interest limit`, limit)
 
   return {
     openInterest,
     availableCover,
+    matchedCredit,
     limit,
     headroom: Math.max(limit - openInterest, 0),
     isWithinLimit: isPerpOpenInterestWithinLimit(openInterest, limit),
   }
+}
+
+/**
+ * Capacity seen by the opening leg of a trade.
+ *
+ * A flip closes the trader's opposite-side position first. That close changes
+ * both the opposing pool and the opposing open interest used by the cap, so a
+ * client preview against the unmodified book can promise headroom that the
+ * atomic engine correctly rejects after performing the close.
+ */
+export const getPerpOpenInterestCapacityForOpen = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number,
+  positionToClose?: PerpPosition
+): PerpOpenInterestCapacity => {
+  // Validate before closing so a malformed row cannot disappear during the
+  // simulated transition and turn into a plausible-looking preview.
+  assertPerpStateNumbers(state, price)
+  if (positionToClose?.direction === side)
+    throw new Error('capacity preview may only close the opposite side')
+  const stateBeforeOpen = positionToClose
+    ? closePosition(state, positionToClose, price).state
+    : state
+  return getPerpOpenInterestCapacity(side, stateBeforeOpen, price)
 }
 
 /**

@@ -8,10 +8,21 @@ export const MANIFOLD_DAU_FEED_ID = 'manifold-dau'
 export const TRUMP_APPROVAL_FEED_ID = 'trump-approval-rating'
 export const BTC_USD_FEED_ID = 'btc-usd'
 export const OPENROUTER_OPEN_WEIGHT_FEED_ID = 'openrouter-open-weight-share'
+// Two more indexes computed from the SAME rankings payload the open-weight
+// job already fetches (no additional OpenRouter calls) — see
+// common/perps/lab-share.ts.
+export const OPENROUTER_ANTHROPIC_SHARE_FEED_ID = 'openrouter-anthropic-share'
+export const OPENROUTER_CHINESE_LAB_SHARE_FEED_ID =
+  'openrouter-chinese-lab-share'
 export const SPYX_USD_FEED_ID = 'spyx-usd'
 export const QQQX_USD_FEED_ID = 'qqqx-usd'
 export const GLDX_USD_FEED_ID = 'gldx-usd'
 export const NVDAX_USD_FEED_ID = 'nvdax-usd'
+// VoteHub published averages beyond Trump approval. Same publisher, same
+// licence, different answer key — see backend/shared/src/votehub-feeds.ts.
+export const VOTEHUB_GENERIC_BALLOT_2026_FEED_ID = 'votehub-generic-ballot-2026'
+export const VANCE_FAVORABILITY_FEED_ID = 'vance-favorability'
+export const CRYPTO_FEAR_GREED_FEED_ID = 'crypto-fear-greed'
 
 // Append oracle price points for a feed. Published history is immutable:
 // duplicate (feed_id, ts) values remain unchanged even if a source later

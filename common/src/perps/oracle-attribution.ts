@@ -14,13 +14,23 @@
 // Verification status of each claim below, because asserting a licence we
 // haven't read is its own problem:
 //   - OpenRouter — their dataset terms specify the exact credit line,
-//     including the data's as-of time. Hence `showAsOf`.
+//     including the data's as-of time. Hence `showAsOf`. The Anthropic-share
+//     and Chinese-lab-share feeds are computed from the same dataset payload
+//     and carry the identical credit; `showAsOf` on them is what makes
+//     insertOraclePrices refuse a point without the dataset's `as_of`.
 //   - VoteHub — their API documentation states "This API is licensed under
 //     Creative Commons Attribution 4.0 International". Read directly, so it
-//     carries a licence label and a link to the licence deed.
+//     carries a licence label and a link to the licence deed. The same
+//     documentation page covers every `/averages/<key>/values` endpoint, so
+//     the generic-ballot and Vance favorability feeds carry the same credit.
 //   - NESO — publishes under an open licence requiring attribution, but the
 //     exact current licence text was NOT read directly. So it gets a credit
 //     and a link, and no licence label we can't back up.
+//   - Alternative.me (Crypto Fear & Greed) — same status as NESO, see the
+//     entry: the terms section of their index page could not be fetched
+//     from the environment the feed was written in, so it carries a credit
+//     and a link and no licence label, and reading that page is an operator
+//     gate before a market is created on the feed.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -60,6 +70,17 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     url: 'https://openrouter.ai/rankings',
     showAsOf: true,
   },
+  // Same dataset, same terms, same credit line with the as-of stamp.
+  'openrouter-anthropic-share': {
+    source: 'OpenRouter (openrouter.ai/rankings)',
+    url: 'https://openrouter.ai/rankings',
+    showAsOf: true,
+  },
+  'openrouter-chinese-lab-share': {
+    source: 'OpenRouter (openrouter.ai/rankings)',
+    url: 'https://openrouter.ai/rankings',
+    showAsOf: true,
+  },
   // Retained after the feed itself was removed from the backend registry
   // (market sunset 2026-08-10). The resolved market's page still charts the
   // NESO history we ingested, so the credit is still owed — this entry going
@@ -80,6 +101,45 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     // which is why the licence link is required rather than ornamental.
     licence: 'CC BY 4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  // Two more VoteHub published averages, read from the same
+  // polling.votehub.com API under the same documentation and therefore the
+  // same CC BY 4.0 statement quoted above (verified for the Trump feed; the
+  // statement covers the API as a whole, not one endpoint). Identical credit,
+  // identical obligation: the credit IS the compliance.
+  'votehub-generic-ballot-2026': {
+    source: 'VoteHub',
+    url: 'https://votehub.com',
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  'vance-favorability': {
+    source: 'VoteHub',
+    url: 'https://votehub.com',
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  // ⚠️ TERMS NOT YET READ DIRECTLY (2026-09-02). The feed was written in a
+  // build environment whose egress policy blocks alternative.me, so the
+  // section of https://alternative.me/crypto/fear-and-greed-index/ that
+  // states the terms for using the data could not be fetched and is NOT
+  // quoted here. Prior research expects it to permit use, including
+  // commercial use, provided the index is credited with a link next to the
+  // displayed data — which is exactly what this entry renders under the
+  // chart on the market page and on the /perps hub. But an expectation is
+  // not a licence: before an admin creates a market on `crypto-fear-greed`,
+  // someone must read that page, paste the relevant sentence(s) verbatim
+  // into this comment with the date, and — only if the page names one — set
+  // `licence` / `licenceUrl`. If the page turns out NOT to permit commercial
+  // reuse with attribution, do not create the market; the registry entry is
+  // harmless without one. Until then: a credit and a link, no licence label
+  // we cannot back up (the NESO stance above). A reviewer of the introducing
+  // PR (#4034, 2026-09-03) with network access reported that the page's API
+  // documentation and terms permit attributed commercial use — encouraging,
+  // but second-hand: the gate stands until the text is pasted here.
+  'crypto-fear-greed': {
+    source: 'Alternative.me Crypto Fear & Greed Index',
+    url: 'https://alternative.me/crypto/fear-and-greed-index/',
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

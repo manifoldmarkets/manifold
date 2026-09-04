@@ -1,15 +1,21 @@
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
+import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
 
 import { fetchBtcUsdSpot } from './btc-price'
 import {
   BTC_USD_FEED_ID,
+  CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
   NVDAX_USD_FEED_ID,
+  OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+  OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
+  VANCE_FAVORABILITY_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
 } from './oracle'
 import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 
@@ -232,6 +238,72 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // often we look at it. The live market carries its own frozen 24h value.
     updatePeriodMs: DAY_MS,
   },
+  // The other VoteHub averages. Same publisher structure as Trump (polled
+  // every 5 minutes by update-votehub-averages, published on change plus a
+  // 12h heartbeat), same 26h dead-man threshold, same once-a-day
+  // updatePeriodMs so a new market's funding period matches how often the
+  // number actually moves. Bounds are wide on purpose and reject only
+  // unit-confused garbage (a 0-1 fraction, a margin, a percent-of-percent):
+  // corruption is caught at the source by readPublishedAverage, which
+  // rejects a published value outside (0,100) or staler than
+  // maxSourceAgeDays, and by the cross-check canary, which refuses to publish
+  // a value our own poll average disagrees with by more than the spec's
+  // tolerance.
+  {
+    id: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+    description:
+      "Democratic share (%) of VoteHub's published 2026 generic-ballot average",
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // A major party's generic-ballot share has sat between the high 30s and
+    // the mid 50s for as long as the question has been polled; 20-80 leaves
+    // room for any real result and still catches a margin (D-R, typically
+    // single digits) or a fraction being published in its place.
+    minPrice: 20,
+    maxPrice: 80,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  {
+    id: VANCE_FAVORABILITY_FEED_ID,
+    description:
+      "Favorable (%) from VoteHub's published JD Vance favorability average",
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // Same bounds as Trump approval: favorability of a national politician
+    // ranges more widely than a party's ballot share, and 10-90 still rejects
+    // a net-favorability margin or a 0-1 fraction.
+    minPrice: 10,
+    maxPrice: 90,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  {
+    id: CRYPTO_FEAR_GREED_FEED_ID,
+    description:
+      'Alternative.me Crypto Fear & Greed index (0-100 sentiment points)',
+    marketCreationEnabled: true,
+    // Own job (update-fear-greed, every 5 minutes, publishes on change plus
+    // a 12h heartbeat); the value itself steps once a day around 00:00 UTC.
+    cadence: 'daily',
+    // The index is an integer on [0, 100]. The LOWER bound is 1, not 0, on
+    // purpose: oracle prices must be strictly positive
+    // (validateBasicOraclePoint), so a literal 0 print cannot be published
+    // under any bounds. That is acceptable — the index has never printed 0;
+    // its historical floor is in the single digits — and the failure mode is
+    // the safe one: if it ever does print 0 the publisher rejects the point,
+    // nothing is written, the market pauses at its maxOraclePriceAgeMs stale
+    // gate, and trading resumes on the next non-zero print. Pausing beats
+    // publishing a non-positive price or inventing a floor. Everything else
+    // the parser already enforces (integer, in range, provider error flag,
+    // parseable timestamp) — see common/perps/fear-greed.ts.
+    minPrice: 1,
+    maxPrice: FEAR_GREED_MAX,
+    staleAfterMs: 26 * HOUR_MS,
+    // Steps once a day, so a new market's funding period matches how often
+    // the number moves rather than how often we look at it.
+    updatePeriodMs: DAY_MS,
+  },
   {
     id: OPENROUTER_OPEN_WEIGHT_FEED_ID,
     description: 'Open-weight share of top-50 model tokens on OpenRouter (%)',
@@ -255,6 +327,48 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // a new VALUE, and we write a point every hour — so a 24h period would
     // free-run to an arbitrary time and let anyone flat at that instant pay
     // nothing.
+    updatePeriodMs: HOUR_MS,
+  },
+  // Two more indexes over the SAME OpenRouter payload, computed by the same
+  // hourly job from the rows it already fetched — no additional API calls
+  // against the 500/day account limit. Same window, same denominator, same
+  // exclusions as the open-weight index (common/perps/lab-share.ts), so the
+  // three are one comparable family, and the same cadence, staleness and
+  // funding reasoning as the entry above. Corruption is caught at the
+  // source by validateLabSharePublication: malformed rows or slugs and an
+  // incomplete window fail both feeds closed, and the Chinese-lab feed also
+  // refuses to publish when authors it cannot place exceed
+  // UNKNOWN_AUTHOR_TOKEN_SHARE_CAP.
+  {
+    id: OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+    description:
+      'Anthropic share of top-50 model tokens on OpenRouter, trailing 7 UTC days (%)',
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // A single publisher's share of a marketplace: anywhere from a few
+    // percent to a clear majority is a real reading, and the bounds only
+    // reject a 0-1 fraction or a share of the wrong population.
+    minPrice: 1,
+    maxPrice: 90,
+    staleAfterMs: 3 * HOUR_MS,
+    updatePeriodMs: HOUR_MS,
+  },
+  {
+    id: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+    description:
+      'Chinese-lab share of top-50 model tokens on OpenRouter, trailing 7 UTC days (%)',
+    // New authors are discovered into the operator queue and resolved from
+    // the DB on each hourly tick. The audited seed covers the historical
+    // backfill, including exact-model attribution for the anonymous
+    // stealth/ox-alpha preview; future unknown volume still fails closed at
+    // UNKNOWN_AUTHOR_TOKEN_SHARE_CAP.
+    marketCreationEnabled: true,
+    cadence: 'daily',
+    // A group of publishers can plausibly dominate the marketplace; the
+    // upper bound is set so that even near-total dominance still publishes.
+    minPrice: 1,
+    maxPrice: 95,
+    staleAfterMs: 3 * HOUR_MS,
     updatePeriodMs: HOUR_MS,
   },
 ]

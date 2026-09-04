@@ -5,12 +5,17 @@ import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 import {
   BTC_USD_FEED_ID,
+  CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
   NVDAX_USD_FEED_ID,
+  OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+  OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   QQQX_USD_FEED_ID,
   SPYX_USD_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
+  VANCE_FAVORABILITY_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
 } from '../oracle'
 import { getOracleFeed } from '../oracle-feeds'
 
@@ -106,6 +111,94 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
   },
+  // The other two VoteHub averages: same publisher, same cadence, same
+  // conservative settings as the Trump market. Both are shares, never
+  // margins, so the price is always positive and both directions are
+  // tradeable.
+  {
+    feedId: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+    question: 'Democratic share of 2026 generic ballot (VoteHub avg, %)',
+    requiredTopics: [
+      {
+        name: 'Politics',
+        slugByEnvironment: {
+          DEV: 'politics-default',
+          PROD: 'politics-default',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
+    gameDesign:
+      "Two-sided: the Democratic share of the generic ballot moves with the national environment and has coherent theses on both sides, but VoteHub's time-weighted average is slow and often unchanged between poll releases. The midterm is 2026-11-03; polling of a 2026 generic ballot stops after it and the published average goes quiet, so this market needs a close date or a resolution plan (settle at the last published average) set before then rather than being left to run into a frozen feed.",
+    latencyArbitrageRisk:
+      "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: VANCE_FAVORABILITY_FEED_ID,
+    question: 'JD Vance favorability (VoteHub avg, %)',
+    requiredTopics: [
+      {
+        name: 'Politics',
+        slugByEnvironment: {
+          DEV: 'politics-default',
+          PROD: 'politics-default',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
+    gameDesign:
+      "Two-sided political exposure on a figure whose standing is contested in both directions, priced as the Favorable share rather than net favorability so the level is always positive. Favorability is polled less often than presidential approval, so expect longer flat stretches between releases than the Trump market shows, and expect the independent cross-check to report 'unchecked' more often.",
+    latencyArbitrageRisk:
+      "Same as the other VoteHub feeds: the value is public and the feed is polled every 5 minutes against VoteHub's max-age=300 cache, so a trader can see a new average at most a few minutes before the market does. Fewer polls means fewer, larger steps, each of them public before the poll reaches the market.",
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: CRYPTO_FEAR_GREED_FEED_ID,
+    question: 'Crypto Fear & Greed index (Alternative.me)',
+    requiredTopics: [
+      {
+        name: 'Crypto',
+        slugByEnvironment: {
+          DEV: 'crypto-default',
+          PROD: 'crypto-speculation',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
+    gameDesign:
+      'A bounded 0-100 sentiment gauge that is mean-reverting by construction and genuinely two-sided: extreme readings in either direction tend to revert, momentum traders and contrarians both have a thesis, and the index is decorrelated enough from BTC spot to be its own market rather than a proxy for the BTC perp. It steps once a day, so expect long flat stretches between moves.',
+    latencyArbitrageRisk:
+      'The new daily value is public on alternative.me at roughly 00:00 UTC and the feed is polled every 5 minutes, so the window in which a trader can see the new print before the market marks it is bounded by that poll. The step is predictable in timing but not in direction or size.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
   {
     feedId: OPENROUTER_OPEN_WEIGHT_FEED_ID,
     question: 'Open-weight AI token share on OpenRouter (%)',
@@ -122,6 +215,65 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     requiresSourceAsOf: true,
     gameDesign:
       'The trailing share can rise or fall and has coherent AI-adoption theses in both directions.',
+    latencyArbitrageRisk:
+      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 6 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  // Two more indexes over the same OpenRouter payload (lab-share.ts), with
+  // the open-weight entry's settings: same source, same cadence, same
+  // dataset terms (hence requiresSourceAsOf).
+  {
+    feedId: OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
+    question: 'Anthropic share of OpenRouter tokens (%)',
+    requiredTopics: [
+      {
+        name: 'AI',
+        slugByEnvironment: {
+          DEV: 'ai',
+          PROD: 'ai',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: true,
+    gameDesign:
+      "Measures tokens routed THROUGH OpenRouter to Anthropic models, not Anthropic's total usage: most Anthropic traffic goes direct to Anthropic and the cloud providers and never touches OpenRouter, so this is a proxy for third-party-routed demand, not for Anthropic's market share. Read that way it is genuinely two-sided — a new Claude release, a pricing change, a competitor launch, or a shift in what OpenRouter's own user base builds all move it in either direction — and the trailing 7-day window keeps any single day's step small.",
+    latencyArbitrageRisk:
+      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 6 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
+    question: 'Chinese-lab share of OpenRouter tokens (%)',
+    requiredTopics: [
+      {
+        name: 'AI',
+        slugByEnvironment: {
+          DEV: 'ai',
+          PROD: 'ai',
+        },
+      },
+    ],
+    oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: true,
+    gameDesign:
+      'The share of OpenRouter-routed tokens attributed to labs headquartered in China. Two-sided with coherent theses both ways: open-weight Chinese releases and their price advantage push it up, frontier closed releases and enterprise routing patterns push it down. New authors enter a database-backed review queue; an unresolved author is excluded from both sides and, past 1% of tokens, pauses the feed until an operator classifies it.',
     latencyArbitrageRisk:
       'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
     recommended: {
@@ -269,6 +421,22 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
 // and any future ingest-only feed must be listed here explicitly.
 export const PERP_LAUNCH_EXCLUDED_FEED_IDS: readonly string[] = []
 
+export type PerpPendingLaunchMarketDefinition = PerpLaunchMarketDefinition & {
+  /** What blocks the launch, and what promotes the entry. */
+  pendingReason: string
+}
+
+// Reviewed definitions that are NOT yet launchable. The feed stays in the
+// registry with marketCreationEnabled: false — ingestion, backfill scripts and
+// health checks all run, the admin form refuses to create a market, and the
+// preflight fails any market that appears on it. The reviewed settings live
+// here so promotion is a move, not a rewrite: resolve the reason, enable
+// creation in the registry, move the entry into PERP_LAUNCH_MARKETS. The
+// manifest check enforces that a pending feed is creation-disabled, so the
+// two lists cannot silently disagree.
+export const PERP_LAUNCH_PENDING_MARKETS: readonly PerpPendingLaunchMarketDefinition[] =
+  []
+
 // Residual pool value returns to the market creator at settlement. Restrict
 // the launch set to the environment's official Manifold account so a personal
 // admin account cannot accidentally own those economics.
@@ -308,6 +476,18 @@ export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
     maxEndAgeMs: 30 * MINUTE_MS,
     maxRunMs: 2 * MINUTE_MS,
   },
+  {
+    jobName: 'update-votehub-averages',
+    // The other VoteHub averages, on the Trump job's cadence and bounds.
+    maxEndAgeMs: 30 * MINUTE_MS,
+    maxRunMs: 2 * MINUTE_MS,
+  },
+  {
+    jobName: 'update-fear-greed',
+    // Every 5 minutes, one small fetch.
+    maxEndAgeMs: 30 * MINUTE_MS,
+    maxRunMs: 2 * MINUTE_MS,
+  },
 ] as const
 
 export const getNominalAnnualFundingRate = (
@@ -325,11 +505,91 @@ export const getNominalAnnualFundingRate = (
   return Number.isFinite(annualRate) ? annualRate : Number.NaN
 }
 
+/** Field checks every reviewed definition must pass, launchable or pending. */
+const collectDefinitionErrors = (
+  market: PerpLaunchMarketDefinition,
+  feed: ReturnType<typeof getOracleFeed>,
+  errors: string[]
+) => {
+  if (!market.question.trim())
+    errors.push(`${market.feedId} has no launch question`)
+  if (market.question !== market.question.trim())
+    errors.push(`${market.feedId} launch question has surrounding whitespace`)
+  if (market.question.length > MAX_QUESTION_LENGTH)
+    errors.push(
+      `${market.feedId} launch question exceeds ${MAX_QUESTION_LENGTH} characters`
+    )
+  if (/\bperpetual\b/i.test(market.question))
+    errors.push(
+      `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
+    )
+  if (
+    market.requiresSourceAsOf !==
+    (getOracleAttribution(market.feedId)?.showAsOf === true)
+  )
+    errors.push(
+      `${market.feedId} source-as-of requirement disagrees with its attribution metadata`
+    )
+  if (
+    !Number.isFinite(market.recommended.maxLeverage) ||
+    market.recommended.maxLeverage <= 1 ||
+    market.recommended.maxLeverage > 100
+  )
+    errors.push(`${market.feedId} has an invalid recommended leverage`)
+  if (
+    !Number.isFinite(market.recommended.annualMaxFundingRate) ||
+    market.recommended.annualMaxFundingRate <= 0 ||
+    !Number.isFinite(market.recommended.fundingSensitivity) ||
+    market.recommended.fundingSensitivity <= 0
+  )
+    errors.push(`${market.feedId} has an invalid funding recommendation`)
+  if (
+    !Number.isFinite(market.recommended.subsidyLong) ||
+    market.recommended.subsidyLong <= 0 ||
+    !Number.isFinite(market.recommended.subsidyShort) ||
+    market.recommended.subsidyShort <= 0
+  )
+    errors.push(`${market.feedId} has an invalid backing recommendation`)
+  if (market.requiredTopics.length === 0)
+    errors.push(`${market.feedId} has no required discovery topic`)
+  for (const environment of ['DEV', 'PROD'] as const) {
+    const requiredTopicSlugs = market.requiredTopics.map((topic) =>
+      getPerpLaunchTopicSlug(topic, environment)
+    )
+    if (new Set(requiredTopicSlugs).size !== requiredTopicSlugs.length)
+      errors.push(
+        `${market.feedId} has duplicate ${environment} discovery topics`
+      )
+  }
+  for (const topic of market.requiredTopics) {
+    if (
+      !topic.name ||
+      !getPerpLaunchTopicSlug(topic, 'DEV') ||
+      !getPerpLaunchTopicSlug(topic, 'PROD')
+    )
+      errors.push(`${market.feedId} has an invalid required discovery topic`)
+  }
+  if (
+    feed &&
+    (market.recommended.maxOraclePriceAgeMs < feed.staleAfterMs ||
+      !Number.isFinite(market.recommended.maxOraclePriceAgeMs))
+  )
+    errors.push(
+      `${market.feedId} recommended max oracle age is below its health threshold`
+    )
+}
+
 export const getPerpLaunchManifestErrors = () => {
   const errors: string[] = []
   const feedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+  const pendingIds = PERP_LAUNCH_PENDING_MARKETS.map((market) => market.feedId)
   if (new Set(feedIds).size !== feedIds.length)
     errors.push('launch manifest has duplicate feed ids')
+  if (
+    new Set([...feedIds, ...pendingIds]).size !==
+    feedIds.length + pendingIds.length
+  )
+    errors.push('a feed appears in both the launch and pending manifests')
   for (const environment of ['DEV', 'PROD'] as const) {
     if (!getPerpLaunchCreatorId(environment))
       errors.push(`${environment} has no official launch creator`)
@@ -337,77 +597,32 @@ export const getPerpLaunchManifestErrors = () => {
 
   for (const market of PERP_LAUNCH_MARKETS) {
     const feed = getOracleFeed(market.feedId)
-    if (!market.question.trim())
-      errors.push(`${market.feedId} has no launch question`)
-    if (market.question !== market.question.trim())
-      errors.push(`${market.feedId} launch question has surrounding whitespace`)
-    if (market.question.length > MAX_QUESTION_LENGTH)
-      errors.push(
-        `${market.feedId} launch question exceeds ${MAX_QUESTION_LENGTH} characters`
-      )
-    if (/\bperpetual\b/i.test(market.question))
-      errors.push(
-        `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
-      )
+    collectDefinitionErrors(market, feed, errors)
     if (!feed) {
       errors.push(`${market.feedId} is absent from the oracle registry`)
       continue
     }
     if (!feed.marketCreationEnabled)
       errors.push(`${market.feedId} is disabled for market creation`)
-    if (
-      market.requiresSourceAsOf !==
-      (getOracleAttribution(market.feedId)?.showAsOf === true)
-    )
+  }
+
+  for (const market of PERP_LAUNCH_PENDING_MARKETS) {
+    const feed = getOracleFeed(market.feedId)
+    collectDefinitionErrors(market, feed, errors)
+    if (!market.pendingReason.trim())
+      errors.push(`${market.feedId} is pending without a stated reason`)
+    if (!feed) {
       errors.push(
-        `${market.feedId} source-as-of requirement disagrees with its attribution metadata`
+        `${market.feedId} (pending) is absent from the oracle registry`
       )
-    if (
-      !Number.isFinite(market.recommended.maxLeverage) ||
-      market.recommended.maxLeverage <= 1 ||
-      market.recommended.maxLeverage > 100
-    )
-      errors.push(`${market.feedId} has an invalid recommended leverage`)
-    if (
-      !Number.isFinite(market.recommended.annualMaxFundingRate) ||
-      market.recommended.annualMaxFundingRate <= 0 ||
-      !Number.isFinite(market.recommended.fundingSensitivity) ||
-      market.recommended.fundingSensitivity <= 0
-    )
-      errors.push(`${market.feedId} has an invalid funding recommendation`)
-    if (
-      !Number.isFinite(market.recommended.subsidyLong) ||
-      market.recommended.subsidyLong <= 0 ||
-      !Number.isFinite(market.recommended.subsidyShort) ||
-      market.recommended.subsidyShort <= 0
-    )
-      errors.push(`${market.feedId} has an invalid backing recommendation`)
-    if (market.requiredTopics.length === 0)
-      errors.push(`${market.feedId} has no required discovery topic`)
-    for (const environment of ['DEV', 'PROD'] as const) {
-      const requiredTopicSlugs = market.requiredTopics.map((topic) =>
-        getPerpLaunchTopicSlug(topic, environment)
-      )
-      if (new Set(requiredTopicSlugs).size !== requiredTopicSlugs.length)
-        errors.push(
-          `${market.feedId} has duplicate ${environment} discovery topics`
-        )
+      continue
     }
-    for (const topic of market.requiredTopics) {
-      if (
-        !topic.name ||
-        !getPerpLaunchTopicSlug(topic, 'DEV') ||
-        !getPerpLaunchTopicSlug(topic, 'PROD')
-      )
-        errors.push(`${market.feedId} has an invalid required discovery topic`)
-    }
-    if (
-      market.recommended.maxOraclePriceAgeMs < feed.staleAfterMs ||
-      !Number.isFinite(market.recommended.maxOraclePriceAgeMs)
-    )
+    if (feed.marketCreationEnabled)
       errors.push(
-        `${market.feedId} recommended max oracle age is below its health threshold`
+        `${market.feedId} is pending but enabled for creation; promote it into PERP_LAUNCH_MARKETS or disable creation`
       )
+    if (PERP_LAUNCH_EXCLUDED_FEED_IDS.includes(market.feedId))
+      errors.push(`${market.feedId} is both pending and explicitly excluded`)
   }
 
   for (const feedId of PERP_LAUNCH_EXCLUDED_FEED_IDS) {

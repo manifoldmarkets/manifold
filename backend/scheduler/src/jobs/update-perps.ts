@@ -107,6 +107,16 @@ const updateOnePerp = async (contract: PerpContract) => {
       latest.ts,
       latest.sourceTs
     )
+    if (oracleResult?.solvencyHalt) {
+      // Price committed, state did not, trading halted. Funding would only
+      // re-derive the same failure (applyFundingWithSolvency asserts solvency
+      // on its INPUT), so stop here and page once rather than twice.
+      log.error(
+        `[update-perps] ${contract.slug}: oracle price applied but state is not solvent, trading halted and funding skipped: ${oracleResult.solvencyHalt.reason}`
+      )
+      return
+    }
+
     if (oracleResult) {
       // Best-effort, like apply-oracle-point does. This only touches the DB
       // when liquidations or ADL occurred, i.e. exactly the runs whose

@@ -11,12 +11,11 @@ import { PerpContract } from 'common/contract'
 import {
   assertPerpPositionNumbers,
   getPerpBackingPool,
-  getPerpOpenInterestCapacity,
+  getPerpOpenInterestCapacityForOpen,
   getPositionValue,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
   mergedEntryPrice,
-  PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
 import {
   assertPerpTakerFeeConfig,
@@ -354,16 +353,20 @@ export const PerpBetPanel = (props: {
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
-      return getPerpOpenInterestCapacity(
+      const state = {
+        pool: { L: contract.poolLong, S: contract.poolShort },
+        positions: positions.map((position) => ({
+          ...position,
+          contractId: contract.id,
+        })),
+      }
+      return getPerpOpenInterestCapacityForOpen(
         direction,
-        {
-          pool: { L: contract.poolLong, S: contract.poolShort },
-          positions: positions.map((position) => ({
-            ...position,
-            contractId: contract.id,
-          })),
-        },
-        price
+        state,
+        price,
+        isFlip && myPosition
+          ? { ...myPosition, contractId: contract.id }
+          : undefined
       )
     } catch {
       // The engine remains authoritative. Avoid turning corrupt or transiently
@@ -375,6 +378,8 @@ export const PerpBetPanel = (props: {
     contract.poolLong,
     contract.poolShort,
     direction,
+    isFlip,
+    myPosition,
     positions,
     price,
   ])
@@ -670,8 +675,7 @@ export const PerpBetPanel = (props: {
           ) : (
             <>
               {formatMoney(capacity.headroom)} additional {direction} notional
-              capacity at the {PERP_OPEN_INTEREST_COVER_MULTIPLE}× backing
-              limit.
+              capacity at the backing limit.
             </>
           )}
         </div>

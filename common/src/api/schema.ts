@@ -1169,6 +1169,66 @@ export const API = (_apiTypeCheck = {
         message: 'An open classification must cite a public weights repo',
       }),
   },
+  // Runtime maintenance for the Chinese-lab OpenRouter index. Ordinary
+  // publishers are classified once at author scope; anonymous/shared
+  // namespaces can instead receive an exact-model verdict.
+  'get-openrouter-lab-classifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      pending: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        discoveredVia: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        firstSeen: number
+        firstRankedAt: number | null
+      }[]
+      decided: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        isChinese: boolean
+        evidence: string
+        sourceUrl: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        source: 'auto' | 'admin'
+        classifiedAt: number
+        classifiedBy: string | null
+      }[]
+      seedVersion: string
+    },
+    props: z.object({}).strict(),
+  },
+  'set-openrouter-lab-classification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      success: true
+      subjectType: 'author' | 'model'
+      subjectSlug: string
+      isChinese: boolean
+    },
+    props: z
+      .object({
+        subjectType: z.enum(['author', 'model']),
+        subjectSlug: z.string().trim().min(1).max(300),
+        isChinese: z.boolean(),
+        evidence: z.string().trim().min(1).max(2_000),
+        sourceUrl: z
+          .string()
+          .trim()
+          .url()
+          .max(2_000)
+          .refine((url) => /^https?:\/\//i.test(url), {
+            message: 'Evidence URL must use http or https',
+          }),
+      })
+      .strict(),
+  },
   // Admin-only live risk tuning; undocumented deliberately — internal
   // operator tooling, not part of the public perp API surface.
   'update-perp-config': {

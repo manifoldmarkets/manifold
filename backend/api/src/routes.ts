@@ -79,6 +79,10 @@ import {
   getModelClassifications,
   setModelClassification,
 } from './model-classifications'
+import {
+  getOpenRouterLabClassifications,
+  setOpenRouterLabClassification,
+} from './openrouter-lab-classifications'
 import { getOraclePrice, getOraclePriceSeries } from './get-oracle-price'
 import { getKnownOracleFeeds } from './get-known-oracle-feeds'
 import { internalWriteOraclePrice } from './internal-write-oracle-price'
@@ -457,6 +461,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'add-perp-subsidy': addPerpSubsidy,
   'get-model-classifications': getModelClassifications,
   'set-model-classification': setModelClassification,
+  'get-openrouter-lab-classifications': getOpenRouterLabClassifications,
+  'set-openrouter-lab-classification': setOpenRouterLabClassification,
   'get-oracle-price': getOraclePrice,
   'get-oracle-price-series': getOraclePriceSeries,
   'get-known-oracle-feeds': getKnownOracleFeeds,
