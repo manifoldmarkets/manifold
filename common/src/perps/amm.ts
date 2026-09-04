@@ -849,6 +849,31 @@ export const getPerpOpenInterestCapacity = (
 }
 
 /**
+ * Capacity seen by the opening leg of a trade.
+ *
+ * A flip closes the trader's opposite-side position first. That close changes
+ * both the opposing pool and the opposing open interest used by the cap, so a
+ * client preview against the unmodified book can promise headroom that the
+ * atomic engine correctly rejects after performing the close.
+ */
+export const getPerpOpenInterestCapacityForOpen = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number,
+  positionToClose?: PerpPosition
+): PerpOpenInterestCapacity => {
+  // Validate before closing so a malformed row cannot disappear during the
+  // simulated transition and turn into a plausible-looking preview.
+  assertPerpStateNumbers(state, price)
+  if (positionToClose?.direction === side)
+    throw new Error('capacity preview may only close the opposite side')
+  const stateBeforeOpen = positionToClose
+    ? closePosition(state, positionToClose, price).state
+    : state
+  return getPerpOpenInterestCapacity(side, stateBeforeOpen, price)
+}
+
+/**
  * Solvency factor for a side (>= 1 means fully solvent). Used to refuse opens
  * that would immediately require ADL.
  */

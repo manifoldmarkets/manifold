@@ -11,6 +11,7 @@ import {
   getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
+  getPerpOpenInterestCapacityForOpen,
   getPositionValue,
   getUnrealizedEquity,
   imbalance,
@@ -1109,6 +1110,38 @@ describe('open interest capacity', () => {
     expect(long.matchedCredit).toBe(1500)
     expect(long.limit).toBe(2000)
     expect(long.isWithinLimit).toBe(true)
+  })
+
+  it('previews a flip against the book after closing the opposite position', () => {
+    const shortToClose = makePosition({
+      userId: 'flipper',
+      direction: 'short',
+      size: 1000,
+      costBasis: 500,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 1500 },
+      positions: [
+        makePosition({
+          userId: 'other',
+          direction: 'long',
+          size: 8000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        shortToClose,
+      ],
+    }
+
+    // Against the current book the short supplies 1000 of matched credit,
+    // making 3000 appear available. A flat close pays its M$500 basis out of
+    // pool S and removes that credit, so the opening leg can use only 2000.
+    expect(getPerpOpenInterestCapacity('long', state, 100).headroom).toBe(3000)
+    expect(
+      getPerpOpenInterestCapacityForOpen('long', state, 100, shortToClose)
+        .headroom
+    ).toBe(2000)
   })
 
   it('credits nothing for an opposing side that is in profit', () => {
