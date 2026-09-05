@@ -383,11 +383,6 @@ const getDesktopNav = (
         name: 'Reports',
         href: '/reports',
         icon: ReportsIcon,
-      },
-      options.isAdminOrMod && {
-        name: 'AI classifications',
-        href: '/admin/model-classifications',
-        icon: SparklesIcon,
       }
     )
 
@@ -456,11 +451,6 @@ const getMobileNav = (
       name: 'Reports',
       href: '/reports',
       icon: ReportsIcon,
-    },
-    isAdminOrMod && {
-      name: 'AI classifications',
-      href: '/admin/model-classifications',
-      icon: SparklesIcon,
     },
     // Show shop when enabled OR for admins (testing). On mobile we omit the
     // "$10k prize" pill because the Prize Drawing tab above already advertises
