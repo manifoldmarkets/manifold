@@ -141,12 +141,15 @@ export const getReports = async (p: {
   limit: number
   offset?: number
   after?: { createdTime?: number | undefined }
+  /** Oldest first, instead of the default newest first. */
+  ascending?: boolean
 }) => {
+  const ascending = p.ascending ?? false
   const q = db
     .from('reports')
     .select()
     .is('dismissed_by_user_id', null)
-    .order('created_time', { ascending: false })
+    .order('created_time', { ascending })
 
   if (p.offset) {
     q.range(p.offset, p.limit + p.offset)
@@ -155,7 +158,9 @@ export const getReports = async (p: {
   }
 
   if (p.after?.createdTime) {
-    q.lt('created_time', millisToTs(p.after.createdTime))
+    const cursor = millisToTs(p.after.createdTime)
+    if (ascending) q.gt('created_time', cursor)
+    else q.lt('created_time', cursor)
   }
 
   const { data } = await run(q)

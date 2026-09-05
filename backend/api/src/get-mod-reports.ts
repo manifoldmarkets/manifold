@@ -4,7 +4,11 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getModReports: APIHandler<'get-mod-reports'> = async (props) => {
   const pg = createSupabaseDirectClient()
-  const { statuses, limit, offset, count } = props
+  const { statuses, limit, offset, count, order } = props
+
+  if (statuses.length === 0) {
+    return { status: 'success', count: 0, reports: [] }
+  }
 
   if (count) {
     const total = await pg.one<{ count: number }>(
@@ -34,7 +38,7 @@ export const getModReports: APIHandler<'get-mod-reports'> = async (props) => {
     join users creator on creator.id = c.creator_id
     join users owner on owner.id = mr.user_id
     where mr.status in ($1:list)
-    order by mr.created_time desc
+    order by mr.created_time ${order === 'asc' ? 'asc' : 'desc'}
     limit $2
     offset $3
   `,

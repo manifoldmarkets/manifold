@@ -3,7 +3,10 @@ import { api } from 'web/lib/api/api'
 import { ModReport, ReportStatus } from 'common/src/mod-report'
 import { keyBy, mapValues } from 'lodash'
 
-export const useModReports = (statuses: ReportStatus[]) => {
+export const useModReports = (
+  statuses: ReportStatus[],
+  order: 'asc' | 'desc' = 'desc'
+) => {
   const [reports, setReports] = useState<ModReport[] | undefined>(undefined)
   const [reportStatuses, setReportStatuses] = useState<{
     [key: number]: ReportStatus
@@ -13,20 +16,26 @@ export const useModReports = (statuses: ReportStatus[]) => {
   }>({})
 
   const getModReports = async () => {
+    if (statuses.length === 0) {
+      setReports([])
+      return
+    }
     try {
       const response = await api('get-mod-reports', {
         statuses,
         limit: 50,
         offset: 0,
+        order,
       })
       if (response && response.status === 'success') {
         const newReports = response.reports
 
-        const sortedReports = newReports.sort(
-          (a: ModReport, b: ModReport) =>
-            new Date(b.created_time).getTime() -
-            new Date(a.created_time).getTime()
-        )
+        const sortedReports = newReports.sort((a: ModReport, b: ModReport) => {
+          const diff =
+            new Date(a.created_time).getTime() -
+            new Date(b.created_time).getTime()
+          return order === 'asc' ? diff : -diff
+        })
 
         setReports(sortedReports)
 
@@ -46,7 +55,7 @@ export const useModReports = (statuses: ReportStatus[]) => {
 
   useEffect(() => {
     getModReports()
-  }, [JSON.stringify(statuses)])
+  }, [JSON.stringify(statuses), order])
 
   return {
     reports,
