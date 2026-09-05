@@ -8,6 +8,7 @@ import { getBoostHistory } from 'api/get-boost-history'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
+import { getPerpStats } from 'api/get-perp-stats'
 import { getNotifications } from 'api/get-notifications'
 import {
   getChannelMemberships,
@@ -494,6 +495,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-contract-positions': searchContractPositions,
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
+  'get-perp-stats': getPerpStats,
   'get-active-user-mana-stats': getActiveUserManaStats,
   'get-top-markets-yesterday': getTopMarketsYesterday,
   'register-gidx': register,

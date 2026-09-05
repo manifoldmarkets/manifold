@@ -682,6 +682,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_perp_pool_events: {
+        Row: {
+          applied_ts: string
+          cash_in: number
+          cash_out: number
+          contract_id: string
+          data: Json | null
+          event_type: string
+          id: number
+          oracle_price: number | null
+          oracle_ts: string | null
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+        }
+        Insert: {
+          applied_ts?: string
+          cash_in?: number
+          cash_out?: number
+          contract_id: string
+          data?: Json | null
+          event_type: string
+          id?: number
+          oracle_price?: number | null
+          oracle_ts?: string | null
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+        }
+        Update: {
+          applied_ts?: string
+          cash_in?: number
+          cash_out?: number
+          contract_id?: string
+          data?: Json | null
+          event_type?: string
+          id?: number
+          oracle_price?: number | null
+          oracle_ts?: string | null
+          pool_long_after?: number
+          pool_long_before?: number
+          pool_short_after?: number
+          pool_short_before?: number
+        }
+        Relationships: []
+      }
       contract_perp_positions: {
         Row: {
           contract_id: string

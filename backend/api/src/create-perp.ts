@@ -22,6 +22,7 @@ import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
+import { insertPerpPoolEventQuery } from 'shared/perps/queries'
 import {
   PERP_LAUNCH_MARKETS,
   getPerpLaunchCreatorId,
@@ -322,6 +323,20 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       L: subsidyLong,
       S: subsidyShort,
     })
+    await tx.none(
+      insertPerpPoolEventQuery({
+        contractId: contract.id,
+        eventType: 'create',
+        appliedTime: now,
+        oracleTime: oraclePoint.ts,
+        oraclePrice: oraclePoint.price,
+        poolBefore: { L: 0, S: 0 },
+        poolAfter: { L: subsidyLong, S: subsidyShort },
+        cashIn: totalSubsidy,
+        cashOut: 0,
+        data: { subsidyLong, subsidyShort },
+      })
+    )
 
     const userRow = await tx.oneOrNone(
       `select * from users where id = $1 limit 1`,

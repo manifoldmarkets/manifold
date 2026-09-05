@@ -205,6 +205,7 @@ if (require.main === module)
         'index PERP lifetime accounting',
         'public.contract_perp_events_user_contract_lifetime',
       ],
+      ['table PERP pool accounting ledger', 'public.contract_perp_pool_events'],
     ] as const
     await inspect('database schema', async () => {
       for (const [label, relation] of schemaChecks) {

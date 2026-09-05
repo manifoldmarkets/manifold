@@ -7,6 +7,8 @@ import {
   PerpFundingEvent,
   PerpPosition,
 } from 'common/perps/position'
+import { assertPerpPoolEventBalanced } from 'common/perps/pool-accounting'
+import type { PerpPoolEvent } from 'common/perps/pool-accounting'
 import {
   bulkInsertQuery,
   bulkUpsertQuery,
@@ -143,6 +145,28 @@ export const insertFundingEventQuery = (fe: PerpFundingEvent) => {
     adl_factor_short: fe.adlFactorShort,
   }
   return bulkInsertQuery('contract_perp_funding_events', [row], false)
+}
+
+export const insertPerpPoolEventQuery = (event: PerpPoolEvent) => {
+  assertPerpPoolEventBalanced(event)
+  const row: Tables['contract_perp_pool_events']['Insert'] = {
+    contract_id: event.contractId,
+    event_type: event.eventType,
+    applied_ts: new Date(event.appliedTime).toISOString(),
+    oracle_ts:
+      event.oracleTime == null
+        ? null
+        : new Date(event.oracleTime).toISOString(),
+    oracle_price: event.oraclePrice ?? null,
+    pool_long_before: event.poolBefore.L,
+    pool_long_after: event.poolAfter.L,
+    pool_short_before: event.poolBefore.S,
+    pool_short_after: event.poolAfter.S,
+    cash_in: event.cashIn,
+    cash_out: event.cashOut,
+    data: (event.data ?? null) as any,
+  }
+  return bulkInsertQuery('contract_perp_pool_events', [row], false)
 }
 
 // Merges fields into `contracts.data` jsonb. Works for any keys and is
