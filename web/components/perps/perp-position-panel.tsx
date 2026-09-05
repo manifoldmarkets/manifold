@@ -515,53 +515,59 @@ const PositionCard = (props: {
       : 'text-ink-900'
 
   return (
-    // The card renders at very different widths — full column on the
-    // market page, a phone with large text, the hub's terminal — so its type
-    // steps on the card's own width (@container), in rem so a user's larger
-    // text setting counts as less room. Below that, the header wraps and the
-    // number column can shrink: a flex item's default min-width is its
-    // content, so two wide numbers used to push the P&L block clean out of
-    // the card (overflow-hidden then clipped it).
+    // Match the compact holdings summaries elsewhere on the site. The
+    // three-column stats scale with the card so they also fit the hub on phones.
     <Col
       className={clsx(
         'border-ink-200 bg-canvas-0 @container relative overflow-hidden rounded-lg border'
       )}
     >
       <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
-      <Col className="gap-3 p-4 pl-5">
-        {/* Header: side + leverage badge, then PnL */}
-        <Row className="items-start justify-between gap-3">
-          <Col className="min-w-0 gap-0.5">
-            <Row className="items-center gap-2">
-              <span
+      <Col className="gap-2 p-3 pl-4">
+        <Row className="items-center justify-between gap-3">
+          <span
+            className={clsx('text-sm font-semibold capitalize', accentText)}
+          >
+            {p.direction} {formatLeverage(p.leverage)}×
+          </span>
+          <Button
+            color="gray-outline"
+            onClick={() => {
+              setClosePercent(100)
+              setCloseModalOpen(true)
+            }}
+            loading={closing}
+            disabled={anyClosing || oracleTradingPaused}
+            size="xs"
+            className="shrink-0 !py-1"
+          >
+            Close
+          </Button>
+        </Row>
+
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Notional', value: formatMoney(p.size) },
+            { label: 'Margin', value: formatMoney(p.originalCostBasis) },
+          ].map(({ label, value }) => (
+            <Col key={label} className="min-w-0 gap-0.5">
+              <div className={clsx('text-ink-500', CARD_LABEL)}>{label}</div>
+              <div
                 className={clsx(
-                  'whitespace-nowrap text-[clamp(13px,4.8cqw,1rem)] font-semibold capitalize',
-                  accentText
+                  'text-ink-900 font-medium tabular-nums',
+                  CARD_VALUE
                 )}
               >
-                {p.direction} {formatLeverage(p.leverage)}×
-              </span>
-            </Row>
-            {/* The two headline numbers must share one line at any card
-                width, so their size follows the card (cqw) between fixed
-                px floors and the desktop sizes. Floors are px, not rem, so
-                a large OS text setting can't re-widen them past the card. */}
-            <div className="text-ink-900 whitespace-nowrap text-[clamp(15px,6.5cqw,1.5rem)] font-bold tabular-nums leading-tight">
-              {formatMoney(p.size)}
-            </div>
+                {value}
+              </div>
+            </Col>
+          ))}
+          <Col className="min-w-0 gap-0.5">
             <div className={clsx('text-ink-500', CARD_LABEL)}>
-              notional · {formatMoney(p.originalCostBasis)} margin
-            </div>
-          </Col>
-          <Col className="shrink-0 items-end">
-            <div className={clsx('text-ink-400 whitespace-nowrap', CARD_LABEL)}>
-              Unrealized profit
+              Unrealized P&amp;L
             </div>
             <div
-              className={clsx(
-                'whitespace-nowrap text-[clamp(13px,5.5cqw,1.25rem)] font-bold tabular-nums leading-tight',
-                pnlColor
-              )}
+              className={clsx('font-medium tabular-nums', CARD_VALUE, pnlColor)}
             >
               {pnl >= 0 ? '+' : ''}
               {formatMoneyPrecise(pnl)}
@@ -571,10 +577,10 @@ const PositionCard = (props: {
               {pnlPct.toFixed(2)}%
             </div>
           </Col>
-        </Row>
+        </div>
 
         {/* Price stats grid */}
-        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3">
+        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-2">
           <PriceStat
             label="Entry"
             value={formatPrice(p.entryPrice, priceDecimals)}
@@ -599,7 +605,7 @@ const PositionCard = (props: {
             paragraph-length value right-aligned across the card read as two
             disconnected columns. */}
         {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
-          <div className="-mt-1 text-sm">
+          <div className="text-xs">
             <span
               className={clsx(
                 'tabular-nums',
@@ -633,21 +639,11 @@ const PositionCard = (props: {
           </div>
         )}
 
-        <Button
-          color="gray-outline"
-          onClick={() => {
-            setClosePercent(100)
-            setCloseModalOpen(true)
-          }}
-          loading={closing}
-          disabled={anyClosing || oracleTradingPaused}
-          size="md"
-          className="w-full"
-        >
-          {oracleTradingPaused
-            ? 'Close paused — waiting for oracle'
-            : 'Close position'}
-        </Button>
+        {oracleTradingPaused && (
+          <div className="text-ink-500 text-xs">
+            Closing is paused until the oracle updates.
+          </div>
+        )}
 
         {closeModalOpen && (
           <Modal
@@ -827,8 +823,8 @@ const PositionCard = (props: {
 // floor and the usual text-xs / text-sm, so three mono prices and the
 // labels above them keep fitting when a phone runs a large text setting.
 // Card widths of ~336px and up get exactly text-xs / text-sm.
-const CARD_LABEL = 'text-[clamp(10px,3.6cqw,0.75rem)]'
-const CARD_VALUE = 'text-[clamp(11px,4.2cqw,0.875rem)]'
+const CARD_LABEL = 'text-[clamp(10px,3.6cqw,0.75rem)] leading-4'
+const CARD_VALUE = 'text-[clamp(11px,4.2cqw,0.875rem)] leading-5'
 const MIN_CLOSE_PERCENT = PERP_MIN_CLOSE_FRACTION * 100
 
 // Drop trailing zeros so whole leverages render as "100×" not "100.00×",
