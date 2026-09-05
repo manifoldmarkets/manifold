@@ -58,7 +58,7 @@ export function ScheduleList(props: {
   if (loading && games.length === 0) {
     return (
       <Col className="gap-2">
-        <SectionHeader label="Up next" />
+        <SectionHeader label="Today" />
         <GameRowSkeleton />
         <GameRowSkeleton />
         <GameRowSkeleton />
@@ -87,7 +87,7 @@ export function ScheduleList(props: {
           ))}
         </Col>
       )}
-      {days.map((day, i) => (
+      {days.map((day) => (
         <Col key={day.key} className="gap-2">
           <SectionHeader
             label={day.label}
@@ -97,7 +97,6 @@ export function ScheduleList(props: {
                 : undefined
             }
             count={day.games.length}
-            first={i === 0 && live.length === 0}
           />
           {day.games.map((g) => (
             <GameRow key={g.id} game={g} showLeague={showLeague} />
@@ -161,7 +160,6 @@ export function SectionHeader(props: {
   sublabel?: string
   count?: number
   accent?: boolean
-  first?: boolean
 }) {
   const { label, sublabel, count, accent } = props
   return (

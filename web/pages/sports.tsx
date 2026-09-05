@@ -19,6 +19,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useSportsSchedule } from 'web/hooks/use-sports-schedule'
 import { useUser } from 'web/hooks/use-user'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 // The old page used ?tab=NFL etc.; keep those links working.
 const LEGACY_TAB_TO_SPORT: Record<string, SportSelection> = {
@@ -43,10 +44,11 @@ export default function SportsPage() {
   useSaveScroll('sports', true)
   const router = useRouter()
 
-  const [savedSport, setSavedSport] = usePersistentLocalState<SportSelection>(
-    'all',
-    'sports-page-sport'
-  )
+  const [savedSport, setSavedSport, storageReady] =
+    usePersistentLocalState<SportSelection>('all', 'sports-page-sport')
+  // Fetch only once both the URL and the remembered sport are known, so the
+  // page never requests (and flashes) the wrong sport first.
+  const ready = router.isReady && (storageReady || !safeLocalStorage)
 
   const querySport = useMemo((): SportSelection | undefined => {
     if (!router.isReady) return undefined
@@ -54,7 +56,9 @@ export default function SportsPage() {
     const value = (Array.isArray(raw) ? raw[0] : raw)?.toLowerCase()
     if (!value) return undefined
     if (isSportSelection(value)) return value
-    return LEGACY_TAB_TO_SPORT[value]
+    return Object.prototype.hasOwnProperty.call(LEGACY_TAB_TO_SPORT, value)
+      ? LEGACY_TAB_TO_SPORT[value]
+      : undefined
   }, [router.isReady, router.query.sport, router.query.tab])
 
   // Stored values are user data: validate before trusting them.
@@ -68,7 +72,7 @@ export default function SportsPage() {
   // A sport restored from storage shows up in the address bar too, so the
   // page and the URL never disagree.
   useEffect(() => {
-    if (!router.isReady || querySport || restored === 'all') return
+    if (!ready || querySport || restored === 'all') return
     router.replace(
       {
         pathname: router.pathname,
@@ -77,7 +81,7 @@ export default function SportsPage() {
       undefined,
       { shallow: true }
     )
-  }, [router.isReady])
+  }, [ready])
 
   const setSelected = (sport: SportSelection) => {
     // "Live" is a moment, not a preference: remember the sport underneath it.
@@ -94,8 +98,7 @@ export default function SportsPage() {
 
   const scheduleSport: SportKey | 'all' =
     requested === 'live' ? 'all' : requested
-  // Don't fetch until the router has told us which sport the URL asks for.
-  const { schedule, loading } = useSportsSchedule(scheduleSport, router.isReady)
+  const { schedule, loading } = useSportsSchedule(scheduleSport, ready)
   // If nothing is live any more, the Live chip is gone: fall back to All.
   const selected: SportSelection =
     requested === 'live' && schedule && schedule.liveCount === 0
@@ -158,7 +161,7 @@ export default function SportsPage() {
             />
           </Col>
           {/* Right rail on desktop; stacks under the schedule on phones. */}
-          <SportsMarketSections sport={scheduleSport} />
+          <SportsMarketSections sport={scheduleSport} enabled={ready} />
         </div>
 
         <p className="text-ink-400 px-1 pb-2 text-[11px]">
@@ -186,12 +189,14 @@ function EmptySchedule(props: { selected: SportSelection; label: string }) {
       <span className="text-ink-900 text-sm font-semibold">
         {selected === 'live'
           ? 'Nothing is live right now'
+          : selected === 'all'
+          ? 'No scheduled games in the next two weeks'
           : `No scheduled ${label} games in the next two weeks`}
       </span>
       <span className="text-ink-500 max-w-sm text-xs">
         {selected === 'live'
           ? 'Games move here at kickoff. Until then, check what’s up next.'
-          : 'Game markets appear here automatically a few days before kickoff. In the meantime, trade the trending and season-long markets below.'}
+          : 'Game markets appear here automatically a few days before kickoff. In the meantime, trade the trending and season-long markets on this page.'}
       </span>
       {selected !== 'all' && (
         <Row className="mt-2 flex-wrap justify-center gap-1.5 text-xs">

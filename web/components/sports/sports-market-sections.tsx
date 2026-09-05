@@ -20,8 +20,10 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 export function SportsMarketSections(props: {
   sport: SportKey | 'all'
   className?: string
+  /** Hold the fetches until the page knows which sport it is showing. */
+  enabled?: boolean
 }) {
-  const { sport, className } = props
+  const { sport, className, enabled = true } = props
   const gids = sportGroupIds(sport).join(',')
   const label = sport === 'all' ? 'sports' : SPORT_BY_KEY[sport]?.label ?? ''
   const slug = sport === 'all' ? 'sports-default' : SPORT_BY_KEY[sport]?.slug
@@ -36,19 +38,22 @@ export function SportsMarketSections(props: {
     'search-markets-full',
     { term: '', filter: 'open', sort: 'score', gids, limit: 30 },
     undefined,
-    `sports-trending-${sport}`
+    `sports-trending-${sport}`,
+    enabled
   )
   const futures = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'open', sort: 'liquidity', gids, limit: 40 },
     undefined,
-    `sports-futures-${sport}`
+    `sports-futures-${sport}`,
+    enabled
   )
   const resolved = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'resolved', sort: 'resolve-date', gids, limit: 20 },
     undefined,
-    `sports-resolved-${sport}`
+    `sports-resolved-${sport}`,
+    enabled
   )
 
   const now = Date.now()
@@ -74,7 +79,9 @@ export function SportsMarketSections(props: {
   return (
     <Col className={clsx('gap-5', className)}>
       <MarketSection
-        title={`Trending in ${label}`}
+        title={
+          sport === 'all' ? 'Trending across sports' : `Trending in ${label}`
+        }
         contracts={trendingMarkets}
         loading={trending.loading && !trending.data}
         seeAllHref={seeAllHref}

@@ -6,7 +6,7 @@ import {
   SportKey,
   SportsScheduleResponse,
 } from 'common/sports-schedule'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { HOUR_MS } from 'common/util/time'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
@@ -49,10 +49,10 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
     for (const g of games) {
       if (g.status === 'finished') continue
       out.push(`contract/${g.id}/updated-answers`)
-      // Scores only flow once a game is close to (or past) kickoff.
-      if (g.kickoffKnown && g.startTime - now < DAY_MS) {
-        out.push(`contract/${g.id}/sports-live`)
-      }
+      // The poller only broadcasts around kickoff, so the topic is idle until
+      // then; subscribing early means the first in-play tick flips the row to
+      // live without waiting for a refetch. Community games have no feed.
+      if (g.kickoffKnown) out.push(`contract/${g.id}/sports-live`)
     }
     return out
   }, [games.map((g) => `${g.id}:${g.status}`).join(',')])

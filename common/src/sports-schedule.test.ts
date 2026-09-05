@@ -51,7 +51,7 @@ describe('splitFlag', () => {
 describe('teamAliases / mentionsTeam', () => {
   it('derives nickname, city and abbreviation aliases', () => {
     const aliases = teamAliases('Kansas City Chiefs', 'KC').map((a) => a.alias)
-    expect(aliases).toEqual(['Kansas City Chiefs', 'Chiefs', 'KC'])
+    expect(aliases).toEqual(['Kansas City Chiefs', 'Chiefs'])
   })
   it('does not use generic trailing words as aliases', () => {
     const aliases = teamAliases('Manchester United').map((a) => a.alias)
@@ -64,9 +64,18 @@ describe('teamAliases / mentionsTeam', () => {
     expect(mentionsTeam('Jetstream forecast', jets)).toBe(false)
   })
   it('requires short abbreviations to be upper case', () => {
-    const chiefs = teamAliases('Kansas City Chiefs', 'KC')
-    expect(mentionsTeam('KC -3.5 vs BUF?', chiefs)).toBe(true)
-    expect(mentionsTeam('will kc barbecue be good', chiefs)).toBe(false)
+    const chiefs = teamAliases('Kansas City Chiefs', 'KAN')
+    expect(mentionsTeam('KAN -3.5 vs BUF?', chiefs)).toBe(true)
+    expect(mentionsTeam('will kan barbecue be good', chiefs)).toBe(false)
+  })
+  it('ignores two-letter codes and ticker-style prefixes', () => {
+    const saints = teamAliases('New Orleans Saints', 'NO')
+    expect(saints.map((a) => a.alias)).toEqual(['New Orleans Saints', 'Saints'])
+    expect(mentionsTeam('Will NO team score 50+?', saints)).toBe(false)
+    const chiefs = teamAliases('Kansas City Chiefs', 'KAN')
+    expect(mentionsTeam('$KAN to the moon', chiefs)).toBe(false)
+    // A community market whose answer is literally the code keeps it.
+    expect(teamAliases('LA', 'LA').map((a) => a.alias)).toEqual(['LA'])
   })
   it('strips flags before matching', () => {
     const brazil = teamAliases('🇧🇷 Brazil', '🇧🇷BRA')
@@ -402,7 +411,10 @@ describe('review follow-ups', () => {
     expect(sox).toContain('Red Sox')
     expect(sox).not.toContain('Sox')
     const leafs = teamAliases('Toronto Maple Leafs').map((a) => a.alias)
-    expect(leafs).toContain('Maple Leafs')
+    expect(leafs).toContain('Leafs')
+    expect(teamAliases('Chicago White Sox').map((a) => a.alias)).toContain(
+      'White Sox'
+    )
   })
   it('reads "A @ B" as A away at B', () => {
     expect(parseVersusQuestion('Lakers @ Celtics')).toEqual({

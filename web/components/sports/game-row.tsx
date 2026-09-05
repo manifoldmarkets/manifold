@@ -138,24 +138,12 @@ export function GameRow(props: {
         className
       )}
     >
+      {/* Clicking anywhere on the row expands it (mouse convenience); the
+          keyboard / screen-reader control is the real button on the right,
+          so no button is nested inside another. */}
       <div
-        role="button"
-        tabIndex={0}
+        role="presentation"
         onClick={toggle}
-        onKeyDown={(e) => {
-          // Only when the row itself is focused: the price chips inside are
-          // real buttons and handle their own Enter / Space.
-          if (e.target !== e.currentTarget) return
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            toggle()
-          }
-        }}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        aria-label={`${game.home.name} vs ${game.away.name}: ${
-          expanded ? 'hide' : 'show'
-        } related markets`}
         className="grid cursor-pointer grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:gap-x-3 sm:px-3"
       >
         {/* Kickoff / live clock / final */}
@@ -270,10 +258,22 @@ export function GameRow(props: {
 
         {/* Expander */}
         <Col className="items-end gap-1 self-center">
-          <Row
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={panelId}
+            aria-label={`${game.home.name} vs ${game.away.name}: ${
+              expanded ? 'hide' : 'show'
+            } related markets`}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggle()
+            }}
             className={clsx(
-              'items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors',
-              expanded ? 'text-primary-700 bg-primary-50' : 'text-ink-500'
+              'flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors',
+              expanded
+                ? 'text-primary-700 bg-primary-50'
+                : 'text-ink-500 hover:text-ink-700'
             )}
           >
             <span className="hidden sm:inline">
@@ -288,7 +288,7 @@ export function GameRow(props: {
                 expanded && 'rotate-180'
               )}
             />
-          </Row>
+          </button>
           <span className="text-ink-400 hidden text-[11px] sm:block">
             Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount} traders
           </span>
@@ -336,7 +336,7 @@ function TeamLine(props: {
           lost && 'text-ink-500 line-through decoration-transparent'
         )}
       >
-        <span className="sm:hidden">{teamDisplayName(team.name)}</span>
+        <span className="sm:hidden">{mobileTeamName(team)}</span>
         <span className="hidden sm:inline">{team.name}</span>
       </span>
       {won && (
@@ -433,6 +433,17 @@ export function PriceChip(props: {
       {pct}%
     </button>
   )
+}
+
+/**
+ * Phones get the pipeline's short name when it is a real name ("Man City"),
+ * otherwise a nickname derived from the full name ("Chiefs"). Three-letter
+ * codes (BRA, KC) are left to the badge.
+ */
+function mobileTeamName(team: ScheduleTeam) {
+  const short = team.shortName?.trim()
+  if (short && short !== team.name && short.length > 3) return short
+  return teamDisplayName(team.name)
 }
 
 /** "67" → "67'", "HT" → "HT", "Q3 4:21" → as is. */

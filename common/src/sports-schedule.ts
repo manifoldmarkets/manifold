@@ -288,6 +288,13 @@ const GENERIC_TEAM_WORDS = new Set([
   'hotspur',
   'madrid',
   'milan',
+  'milano',
+  'münchen',
+  'munich',
+  'fútbol',
+  'futbol',
+  'bulls',
+  'tide',
   'korea',
   'ireland',
   'guinea',
@@ -318,7 +325,7 @@ export function teamDisplayName(name: string, maxLength = 14): string {
   const plain = splitFlag(name).name.trim()
   if (plain.length <= maxLength) return plain
   // "Bosnia and Herzegovina", "Republic of Ireland": the last word misleads.
-  if (/\s(and|of|&)\s/i.test(plain)) return plain
+  if (/\s(and|of|&|de|del|di|da|do|e)\s/i.test(plain)) return plain
   const words = plain.split(/\s+/)
   if (words.length >= 2) {
     const last = words[words.length - 1]
@@ -453,14 +460,14 @@ export function teamAliases(
     const lastOk =
       !GENERIC_TEAM_WORDS.has(last.toLowerCase()) && last.length >= 4
     if (lastOk) push(last)
-    // Two-word nicknames: "Boston Red Sox" → "Red Sox", "Toronto Maple Leafs"
-    // → "Maple Leafs", "Portland Trail Blazers" → "Trail Blazers".
+    // Two-word nicknames when the last word alone is too short or generic:
+    // "Boston Red Sox" → "Red Sox", "Chicago White Sox" → "White Sox".
     if (words.length >= 3) {
       const lastTwo = words.slice(-2).join(' ')
       const penult = words[words.length - 2]
       if (
+        !lastOk &&
         !GENERIC_TEAM_WORDS.has(penult.toLowerCase()) &&
-        (!lastOk || /^[A-Z]/.test(penult)) &&
         lastTwo.length >= 6
       ) {
         push(lastTwo)
@@ -471,7 +478,12 @@ export function teamAliases(
   }
   if (shortText) {
     const short = splitFlag(shortText).name.trim()
-    if (short.length >= 2 && short.length <= 4 && /^[A-Z]+$/.test(short)) {
+    // Two-letter codes (LA, NO, NE, SF…) are everyday words in capitals too,
+    // so only three- and four-letter codes count as aliases, unless the code
+    // is literally the team's name (a community market whose answer is "LA").
+    if (short.length >= 3 && short.length <= 4 && /^[A-Z]+$/.test(short)) {
+      push(short, true)
+    } else if (short.length === 2 && short === plain) {
       push(short, true)
     } else if (short.length >= 4) {
       push(short)
@@ -495,7 +507,8 @@ export function compileTeamMatcher(
     regexes: aliases.map(
       ({ alias, caseSensitive }) =>
         new RegExp(
-          `(^|[^\\p{L}\\p{N}])${escapeRegex(alias)}(?=$|[^\\p{L}\\p{N}])`,
+          // A ticker-style prefix ($KC, #LA, @NE) is not a team mention.
+          `(^|[^\\p{L}\\p{N}#$@])${escapeRegex(alias)}(?=$|[^\\p{L}\\p{N}])`,
           caseSensitive ? 'u' : 'iu'
         )
     ),
