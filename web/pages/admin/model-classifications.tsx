@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import clsx from 'clsx'
 import type { APIResponse } from 'common/api/schema'
@@ -11,6 +11,7 @@ import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
 
@@ -58,8 +59,10 @@ export default function AdminModelClassificationsPage() {
   return (
     <Page trackPageView={false}>
       <NoSEO />
-      <Col className="mx-auto w-full max-w-4xl gap-4 p-4">
+      <Col className="mx-auto w-full max-w-5xl gap-4 p-4">
         <Title>OpenRouter classifications</Title>
+
+        <HowThisWorks isAdmin={isAdmin} />
 
         <LabClassificationSection data={labData} onDone={refreshLabData} />
 
@@ -150,6 +153,115 @@ export default function AdminModelClassificationsPage() {
         )}
       </Col>
     </Page>
+  )
+}
+
+// Without this the page is a wall of unlabelled boxes. It holds two unrelated
+// review queues that happen to share a data source: one asks where a publisher
+// is headquartered, the other asks whether a model's weights are downloadable.
+// Different questions, different evidence bars, both feeding live markets.
+//
+// Collapsible and persisted, because it is scaffolding for the first few
+// visits and noise after that.
+function HowThisWorks(props: { isAdmin: boolean }) {
+  const { isAdmin } = props
+  const [open, setOpen] = usePersistentLocalState(
+    true,
+    'model-classifications-guide-open'
+  )
+
+  return (
+    <Col className="border-primary-200 bg-primary-50 gap-3 rounded-lg border p-4">
+      <Row className="items-center justify-between gap-2">
+        <div className="text-ink-900 font-semibold">How this page works</div>
+        <button
+          className="text-primary-600 text-sm hover:underline"
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? 'hide' : 'show'}
+        </button>
+      </Row>
+
+      {open && (
+        <>
+          <div className="text-ink-700 text-sm">
+            Two independent review queues. Each one resolves a question the
+            nightly watcher could not answer on its own, and each one feeds a
+            live market — so a wrong call here moves a number people traded on.
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Col className="bg-canvas-0 gap-1 rounded border-l-4 border-l-amber-400 p-3 text-sm">
+              <div className="text-ink-900 font-semibold">
+                Chinese-lab publishers
+              </div>
+              <div className="text-ink-700">
+                <b>Where is this publisher headquartered?</b> Most are decided
+                once per author; anonymous or shared namespaces are decided per
+                exact model instead.
+              </div>
+              <div className="text-ink-600">
+                Needs a one-line evidence summary <i>and</i> a public source URL
+                — the verdict buttons stay disabled until both are filled in.
+                Mods and admins.
+              </div>
+            </Col>
+
+            {isAdmin && (
+              <Col className="bg-canvas-0 border-l-primary-400 gap-1 rounded border-l-4 p-3 text-sm">
+                <div className="text-ink-900 font-semibold">
+                  Open-weight models
+                </div>
+                <div className="text-ink-700">
+                  <b>Are the weights publicly downloadable?</b> Downloadable is
+                  open, API-only is closed. Anything still unknown is dropped
+                  from both sides of the index.
+                </div>
+                <div className="text-ink-600">
+                  An open call needs the HuggingFace repo that proves it. A
+                  closed call needs nothing. Admins only.
+                </div>
+              </Col>
+            )}
+          </div>
+
+          <Col className="gap-1.5 text-sm">
+            <div className="text-ink-900 font-semibold">Working a row</div>
+            <ol className="text-ink-700 ml-5 list-decimal space-y-1">
+              <li>
+                <b>Start at the top.</b> The first list in each section is
+                ranked — those models are in the index right now. A red border
+                means the grace window has run out and the feed is paused until
+                you decide.
+              </li>
+              <li>
+                <b>Read “Research says”, then distrust it.</b> It is a
+                recommendation; nothing has been applied. Expand the searches it
+                ran — a search returning nothing is the actual evidence, the
+                prose describing it is not.
+              </li>
+              <li>
+                <b>Open the link and confirm it.</b> “check repo ↗” and
+                “Evidence source ↗” open in a new tab. Verification proves a
+                repo is public and holds weights, not that it is <i>this</i>{' '}
+                model — a sibling in the same family passes the same checks.
+              </li>
+              <li>
+                <b>Click the verdict.</b> It saves immediately and the queue
+                refreshes.
+              </li>
+            </ol>
+          </Col>
+
+          <div className="text-ink-600 text-sm">
+            <b>Changed your mind?</b> Every decided row keeps a “change” link.
+            Verdicts do go stale — a publisher can ship weights weeks after
+            launch — so correcting one is a normal part of this page, not an
+            escape hatch.
+          </div>
+        </>
+      )}
+    </Col>
   )
 }
 
@@ -276,6 +388,7 @@ function LabClassificationRow(props: {
   onDone: () => void
 }) {
   const { row, ranked = false, onDone } = props
+  const fieldId = useId()
   const decided = row.isChinese !== undefined
   const [editing, setEditing] = useState(!decided)
   const [evidence, setEvidence] = useState(row.evidence ?? '')
@@ -373,7 +486,7 @@ function LabClassificationRow(props: {
       </Row>
 
       {(row.exampleModels.length > 0 || row.exampleNames.length > 0) && (
-        <div className="text-ink-500 text-xs">
+        <div className="text-ink-600 text-sm">
           {row.exampleModels.length > 0 && (
             <>
               Models:{' '}
@@ -393,8 +506,8 @@ function LabClassificationRow(props: {
       )}
 
       {decided && !editing && (
-        <Col className="gap-0.5 text-xs">
-          <div className="text-ink-600">{row.evidence}</div>
+        <Col className="gap-0.5 text-sm">
+          <div className="text-ink-700">{row.evidence}</div>
           {row.sourceUrl && (
             <a
               className="text-primary-600 w-fit hover:underline"
@@ -405,7 +518,7 @@ function LabClassificationRow(props: {
               Evidence source ↗
             </a>
           )}
-          <div className="text-ink-400">
+          <div className="text-ink-500 text-xs">
             via {row.source ?? 'unknown'}
             {row.classifiedBy ? ` · by ${row.classifiedBy}` : ''}
           </div>
@@ -413,25 +526,43 @@ function LabClassificationRow(props: {
       )}
 
       {editing && (
-        <Col className="gap-2">
-          <Input
-            className="h-10 text-sm"
-            placeholder="Evidence summary, e.g. Company’s principal office is Shanghai"
-            value={evidence}
-            maxLength={2_000}
-            onChange={(event) => setEvidence(event.target.value)}
-          />
-          <Input
-            className="h-10 font-mono text-xs"
-            placeholder="https://public-source.example/company/about"
-            type="url"
-            value={sourceUrl}
-            maxLength={2_000}
-            onChange={(event) => setSourceUrl(event.target.value)}
-          />
+        <Col className="gap-3">
+          <Col className="gap-1">
+            <label
+              className="text-ink-700 text-sm font-medium"
+              htmlFor={`${fieldId}-evidence`}
+            >
+              Evidence summary
+            </label>
+            <Input
+              id={`${fieldId}-evidence`}
+              className="text-sm"
+              placeholder="e.g. Company’s principal office is Shanghai"
+              value={evidence}
+              maxLength={2_000}
+              onChange={(event) => setEvidence(event.target.value)}
+            />
+          </Col>
+          <Col className="gap-1">
+            <label
+              className="text-ink-700 text-sm font-medium"
+              htmlFor={`${fieldId}-source-url`}
+            >
+              Public source URL
+            </label>
+            <Input
+              id={`${fieldId}-source-url`}
+              className="font-mono text-sm"
+              placeholder="https://public-source.example/company/about"
+              type="url"
+              value={sourceUrl}
+              maxLength={2_000}
+              onChange={(event) => setSourceUrl(event.target.value)}
+            />
+          </Col>
           {!!sourceUrl.trim() && (
             <a
-              className="text-primary-600 w-fit text-xs hover:underline"
+              className="text-primary-600 w-fit text-sm hover:underline"
               href={sourceUrl.trim()}
               target="_blank"
               rel="noreferrer"
@@ -441,7 +572,7 @@ function LabClassificationRow(props: {
           )}
           <Row className="flex-wrap gap-2">
             <Button
-              size="xs"
+              size="sm"
               color="red"
               disabled={
                 saving ||
@@ -454,7 +585,7 @@ function LabClassificationRow(props: {
               Chinese-headquartered
             </Button>
             <Button
-              size="xs"
+              size="sm"
               color="green"
               disabled={
                 saving ||
@@ -541,16 +672,18 @@ function DecidedRow(props: {
       </Row>
 
       {editing && (
-        <Row className="flex-wrap items-center gap-2 pb-2 pl-4">
-          <Input
-            className="w-72 font-mono text-xs"
-            placeholder="HuggingFace repo backing an open call"
-            value={weights}
-            onChange={(e) => setWeights(e.target.value)}
-          />
+        <Row className="flex-wrap items-center gap-3 pb-2 pl-4">
+          <div className="w-full sm:w-96">
+            <Input
+              className="w-full font-mono text-sm"
+              placeholder="HuggingFace repo backing an open call"
+              value={weights}
+              onChange={(e) => setWeights(e.target.value)}
+            />
+          </div>
           {!!weights.trim() && (
             <a
-              className="text-primary-600 text-xs hover:underline"
+              className="text-primary-600 text-sm hover:underline"
               href={`https://huggingface.co/${weights.trim()}`}
               target="_blank"
               rel="noreferrer"
@@ -667,7 +800,7 @@ function PendingRow(props: {
       </Row>
 
       {model.agentReasoning && (
-        <Col className="bg-canvas-50 gap-1 rounded p-2 text-xs">
+        <Col className="bg-canvas-50 gap-1.5 rounded p-3 text-sm">
           <div className="text-ink-700 font-semibold">
             Research says:{' '}
             {model.agentRecommendation === 'closed' ? (
@@ -703,24 +836,24 @@ function PendingRow(props: {
               not. Collapsed so the queue stays skimmable. */}
           {model.agentSearches.length > 0 ? (
             <details className="mt-1">
-              <summary className="text-ink-500 cursor-pointer select-none">
-                {model.agentSearches.length} search
+              <summary className="text-primary-600 cursor-pointer select-none hover:underline">
+                Show the {model.agentSearches.length} search
                 {model.agentSearches.length === 1 ? '' : 'es'} it ran — check
                 these, not the summary
               </summary>
-              <Col className="mt-1 gap-2">
+              <Col className="mt-2 gap-3">
                 {model.agentSearches.map((search, i) => (
-                  <Col
-                    key={i}
-                    className="border-ink-200 gap-0.5 border-l-2 pl-2"
-                  >
-                    <div className="text-ink-700 font-mono">
+                  <Col key={i} className="border-ink-200 gap-1 border-l-2 pl-3">
+                    <div className="text-ink-700 break-all font-mono text-xs">
                       {search.tool}
                       {search.input && (
                         <span className="text-ink-500"> {search.input}</span>
                       )}
                     </div>
-                    <div className="text-ink-600 whitespace-pre-wrap font-mono">
+                    {/* Capped and scrollable: a single chatty search used to
+                        run for screens and push the verdict buttons out of
+                        sight, which is how a row gets skipped. */}
+                    <div className="bg-canvas-0 text-ink-700 max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded p-2 font-mono text-xs">
                       {search.result || '(no output recorded)'}
                     </div>
                   </Col>
@@ -734,7 +867,7 @@ function PendingRow(props: {
             </div>
           )}
 
-          <div className="text-ink-400">
+          <div className="text-ink-500 text-xs">
             A recommendation, not a classification — nothing was applied. That
             includes an open verdict: verification proves the repo is public and
             carries weights, and the name check proves it looks like this model,
@@ -744,16 +877,18 @@ function PendingRow(props: {
         </Col>
       )}
 
-      <Row className="flex-wrap items-center gap-2">
-        <Input
-          className="w-72 font-mono text-xs"
-          placeholder="HuggingFace repo, e.g. deepseek-ai/DeepSeek-V4-Pro"
-          value={weights}
-          onChange={(e) => setWeights(e.target.value)}
-        />
+      <Row className="flex-wrap items-center gap-3">
+        <div className="w-full sm:w-96">
+          <Input
+            className="w-full font-mono text-sm"
+            placeholder="HuggingFace repo, e.g. deepseek-ai/DeepSeek-V4-Pro"
+            value={weights}
+            onChange={(e) => setWeights(e.target.value)}
+          />
+        </div>
         {!!weights.trim() && (
           <a
-            className="text-primary-600 text-xs hover:underline"
+            className="text-primary-600 text-sm hover:underline"
             href={`https://huggingface.co/${weights.trim()}`}
             target="_blank"
             rel="noreferrer"
@@ -762,7 +897,7 @@ function PendingRow(props: {
           </a>
         )}
         <a
-          className="text-primary-600 text-xs hover:underline"
+          className="text-primary-600 text-sm hover:underline"
           href={`https://openrouter.ai/${model.permaslug.split(':')[0]}`}
           target="_blank"
           rel="noreferrer"
@@ -773,7 +908,7 @@ function PendingRow(props: {
 
       <Row className="gap-2">
         <Button
-          size="xs"
+          size="sm"
           color="green"
           disabled={saving}
           onClick={() => classify(true)}
@@ -781,7 +916,7 @@ function PendingRow(props: {
           Open — weights public
         </Button>
         <Button
-          size="xs"
+          size="sm"
           color="gray"
           disabled={saving}
           onClick={() => classify(false)}
