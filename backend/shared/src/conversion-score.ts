@@ -4,7 +4,7 @@ import {
   DEFAULT_CONVERSION_SCORE_DENOMINATOR,
   DEFAULT_CONVERSION_SCORE_NUMERATOR,
 } from 'common/new-contract'
-import { chunk } from 'lodash'
+import { chunk, uniq } from 'lodash'
 
 // The aggregates below are the expensive part — count(distinct user_id) over
 // user_contract_views, user_contract_interactions and user_view_events for a
@@ -29,22 +29,72 @@ import { chunk } from 'lodash'
 // batch write deadlocked against other multi-row contracts writers). Skipping
 // means the write never waits, so it can neither deadlock nor sit on a lock it
 // already holds — a perp's included — while a bet or oracle tick finishes on
-// another row. A skipped contract keeps last hour's score and is rescored on
-// the next run.
+// another row.
+//
+// A skipped contract cannot simply be left for "the next run": the candidate
+// query below only sees contracts VIEWED IN THE LAST HOUR, so one that is
+// locked now and gets no further views would never be reconsidered and its
+// score would freeze indefinitely. Skipped ids are therefore carried forward
+// in `pendingRescoreIds` and unioned into the next run's candidates,
+// independently of that rolling activity window.
+
+// Ids whose write we intended but did not land, carried between runs. The
+// scheduler is long-lived, so this survives from one hourly firing to the
+// next; a process restart drops it, after which a contract is rescored the
+// next time it is viewed — the same exposure the job had before this change,
+// and this is a discovery ranking, not money.
+let pendingRescoreIds: string[] = []
+
+// Bounds the carry-forward if something keeps a row locked indefinitely.
+// Ids are ~12 chars, so this is tens of KB at worst.
+const MAX_PENDING_RESCORE_IDS = 10_000
+
+type RowMapper<T> = (row: Record<string, any>) => T
+
+// The slice of the pg client this job uses, so the retry behaviour below can
+// be tested without a live database (the repo has no DB test harness).
+export type ConversionScoreDb = {
+  map<T>(query: string, values: unknown[], cb: RowMapper<T>): Promise<T[]>
+  manyOrNone<T>(query: string, values: unknown[]): Promise<T[]>
+  tx<T>(cb: (tx: ConversionScoreTx) => Promise<T>): Promise<T>
+}
+export type ConversionScoreTx = {
+  map<T>(query: string, values: unknown[], cb: RowMapper<T>): Promise<T[]>
+  none(query: string, values: unknown[]): Promise<null>
+}
+
 export async function calculateConversionScore() {
-  const pg = createSupabaseDirectClient()
+  pendingRescoreIds = await rescoreConversionScores(
+    createSupabaseDirectClient(),
+    pendingRescoreIds
+  )
+}
+
+// Returns the ids that still need writing, for the next run to retry.
+export async function rescoreConversionScores(
+  pg: ConversionScoreDb,
+  carriedOverIds: string[] = []
+): Promise<string[]> {
   log('Loading contract data...')
-  const contractIds = await pg.map(
+  const viewedIds = await pg.map(
     `select distinct contract_id from user_view_events
         where created_time > now() - interval '1 hour'`,
     [],
-    (c) => c.contract_id
+    (c) => c.contract_id as string
   )
+  // Retries first: a contract that has been waiting since an earlier run is
+  // the one at risk of never being rescored at all.
+  const contractIds = uniq([...carriedOverIds, ...viewedIds])
+  if (carriedOverIds.length > 0)
+    log(
+      `Retrying ${carriedOverIds.length} contracts skipped by an earlier run.`
+    )
   const chunks = chunk(contractIds, 100)
   log(
     `Processing conversion scores for ${contractIds.length} contracts in ${chunks.length} chunks...`
   )
   let processed = 0
+  const stillPending: string[] = []
   for (const chunk of chunks) {
     const scores = await pg
       .manyOrNone<{ id: string; score: string }>(
@@ -146,6 +196,11 @@ export async function calculateConversionScore() {
         return null
       })
 
+    // A failed compute is the same defect class as a skipped write — a
+    // rescore we intended and did not do — so the chunk is retried too
+    // rather than waiting on the contracts happening to be viewed again.
+    if (scores === null) stillPending.push(...chunk)
+
     // The score travels as text: conversion_score is an unconstrained numeric,
     // and the default numeric parser (parseFloat) would round the server-side
     // value through a double on the way back. Number() is only used to check
@@ -156,7 +211,7 @@ export async function calculateConversionScore() {
       Number.isFinite(Number(row.score))
     )
     if (writable.length > 0) {
-      const written = await pg
+      const writtenIds = await pg
         .tx(async (tx) => {
           const lockedIds = new Set(
             await tx.map(
@@ -177,21 +232,33 @@ export async function calculateConversionScore() {
                where c.id = v.id`,
               [rows.map((row) => row.id), rows.map((row) => row.score)]
             )
-          return rows.length
+          return rows.map((row) => row.id)
         })
         .catch((e) => {
           log('Error on set conversion scores', e)
-          return 0
+          return [] as string[]
         })
-      const skipped = writable.length - written
-      if (skipped > 0)
+      const written = new Set(writtenIds)
+      const skipped = writable
+        .map((row) => row.id)
+        .filter((id) => !written.has(id))
+      if (skipped.length > 0) {
+        stillPending.push(...skipped)
         log(
-          `Skipped ${skipped} contracts whose rows were locked; they keep their previous conversion score until the next run.`
+          `Skipped ${skipped.length} contracts whose rows were locked; they keep their previous score and are retried next run.`
         )
+      }
     }
 
     processed += chunk.length
     log(`Finished processing conversion scores for ${processed} contracts.`)
   }
+
+  // Newest retries win if something is persistently locked, so a permanently
+  // stuck id cannot crowd out fresher ones forever.
+  const pending = uniq(stillPending).slice(-MAX_PENDING_RESCORE_IDS)
+  if (pending.length > 0)
+    log(`Carrying ${pending.length} contracts forward to the next run.`)
   log('Done.')
+  return pending
 }
