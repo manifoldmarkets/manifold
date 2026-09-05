@@ -946,22 +946,6 @@ export function SportsDashboardPage({
 
   return (
     <Page trackPageView={trackPageView}>
-      <style>{`
-        :root {
-          --sports-team-a: #1A7A9A;
-          --sports-team-a-vibrant: #0A8FAD;
-          --sports-team-b: #8B3A52;
-          --sports-team-b-vibrant: #C4436E;
-          --sports-draw: #6B7A8E;
-          --sports-draw-vibrant: #7A8CA0;
-        }
-        .dark {
-          --sports-team-a-vibrant: #25C4E8;
-          --sports-team-b-vibrant: #E85A8A;
-          --sports-draw: #7A8A9E;
-          --sports-draw-vibrant: #A8AABF;
-        }
-      `}</style>
       <Head>
         <title>{title} | Manifold</title>
       </Head>
