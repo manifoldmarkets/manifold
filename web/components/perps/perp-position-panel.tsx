@@ -2,6 +2,13 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
+import {
+  canEnterPerpCloseMana,
+  getPerpCloseAmountError,
+  perpCloseAmountFromFraction,
+  perpCloseAmountFromInput,
+  PerpCloseAmount,
+} from 'common/perps/close-amount'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   fundingPeriodUnit,
@@ -38,6 +45,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Slider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
@@ -464,28 +472,39 @@ const PositionSummary = (props: {
         100
       : 0
 
-  // How much of the position this close takes. Everything a partial close
-  // pays and leaves behind is LINEAR in the fraction — π, the payout and both
-  // pool debits all scale with q and c — so the preview below is exact, not
-  // an estimate, and the survivor's entry price, leverage and liquidation
-  // price are untouched by construction.
+  // Payout is linear in the selected fraction at a given price. Keep that
+  // fraction stable when switching units or receiving a new oracle quote;
+  // typing a new mana amount sizes it against the latest payout instead.
+  // The final payout can differ if the price moves before execution.
+  const fullPayout = getPositionValue(position, markPrice)
   const [closeModalOpen, setCloseModalOpen] = useState(false)
-  const [closePercent, setClosePercent] = useState<number | undefined>(100)
-  const closePercentError =
-    closePercent == null || !Number.isFinite(closePercent)
-      ? 'Enter a percentage to close.'
-      : closePercent < MIN_CLOSE_PERCENT
-      ? `Minimum close is ${MIN_CLOSE_PERCENT}%.`
-      : closePercent > 100
-      ? 'Maximum close is 100%.'
+  const [closeAmount, setCloseAmount] = useState<PerpCloseAmount>(() =>
+    perpCloseAmountFromFraction(1, 'percent', fullPayout)
+  )
+  const isMana = closeAmount.unit === 'mana'
+  const manaAvailable = canEnterPerpCloseMana(fullPayout)
+  const amountUnavailable = isMana && !manaAvailable
+  const amountDisabled = anyClosing || oracleTradingPaused || amountUnavailable
+  const amountError = getPerpCloseAmountError(closeAmount, fullPayout)
+  const closeAmountError =
+    amountError === 'unavailable'
+      ? 'No positive payout is available. Switch to % to close this position.'
+      : amountError === 'missing'
+      ? `Enter ${isMana ? 'a mana amount' : 'a percentage'} to close.`
+      : amountError === 'below-minimum'
+      ? `Minimum close is ${MIN_CLOSE_PERCENT}%${
+          isMana
+            ? ` (about ${formatMoneyPrecise(
+                fullPayout * PERP_MIN_CLOSE_FRACTION
+              )} returned)`
+            : ''
+        }.`
+      : amountError === 'above-maximum'
+      ? isMana
+        ? `Amount exceeds the available payout. Use Max to close everything.`
+        : 'Maximum close is 100%.'
       : null
-  const closeFraction =
-    closePercent != null &&
-    Number.isFinite(closePercent) &&
-    closePercent >= MIN_CLOSE_PERCENT &&
-    closePercent <= 100
-      ? closePercent / 100
-      : null
+  const closeFraction = amountError == null ? closeAmount.fraction : null
   // What the engine will actually take: a remainder that would be dust is
   // closed too, so the button must not promise a position that will not exist.
   const effectiveFraction =
@@ -493,15 +512,40 @@ const PositionSummary = (props: {
   const isPartial = effectiveFraction != null && effectiveFraction < 1
   const isDustPromoted =
     closeFraction != null && closeFraction < 1 && effectiveFraction === 1
-  const fullPayout = getPositionValue(position, markPrice)
   const closePayout = (effectiveFraction ?? 0) * fullPayout
   const closePnl = (effectiveFraction ?? 0) * pnl
   const remainingMargin = (1 - (effectiveFraction ?? 1)) * p.originalCostBasis
   const sliderClosePercent =
-    closePercent != null && Number.isFinite(closePercent)
-      ? Math.min(100, Math.max(MIN_CLOSE_PERCENT, closePercent))
+    closeAmount.fraction != null && Number.isFinite(closeAmount.fraction)
+      ? Math.min(100, Math.max(MIN_CLOSE_PERCENT, closeAmount.fraction * 100))
       : 100
-  const closePercentErrorId = `close-percent-error-${p.direction}`
+  const closeAmountErrorId = `close-amount-error-${p.direction}`
+  const closeAmountHintId = `close-amount-hint-${p.direction}`
+  const setCloseFraction = (fraction: number) =>
+    setCloseAmount(
+      perpCloseAmountFromFraction(fraction, closeAmount.unit, fullPayout)
+    )
+  const adjustCloseAmount = (increment: number) => {
+    const max = isMana ? fullPayout : 100
+    const min = max * PERP_MIN_CLOSE_FRACTION
+    const current = Number(closeAmount.input)
+    const amount = Math.min(
+      max,
+      Math.max(min, (Number.isFinite(current) ? current : min) + increment)
+    )
+    const selection = perpCloseAmountFromInput(
+      String(amount),
+      closeAmount.unit,
+      fullPayout
+    )
+    setCloseAmount(
+      perpCloseAmountFromFraction(
+        selection.fraction,
+        closeAmount.unit,
+        fullPayout
+      )
+    )
+  }
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
@@ -566,7 +610,9 @@ const PositionSummary = (props: {
         <Button
           color="gray-outline"
           onClick={() => {
-            setClosePercent(100)
+            setCloseAmount(
+              perpCloseAmountFromFraction(1, 'percent', fullPayout)
+            )
             setCloseModalOpen(true)
           }}
           loading={closing}
@@ -668,75 +714,130 @@ const PositionSummary = (props: {
 
             <Col className="gap-2">
               <Col className="gap-1">
-                <span className="text-ink-600 text-sm">Close amount (%)</span>
+                <Row className="flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <span className="text-ink-600 text-sm">Close amount</span>
+                  <ChoicesToggleGroup
+                    choicesMap={{ '%': 'percent', Mana: 'mana' }}
+                    currentChoice={closeAmount.unit}
+                    setChoice={(unit) => {
+                      if (unit === 'percent' || unit === 'mana')
+                        setCloseAmount(
+                          perpCloseAmountFromFraction(
+                            closeAmount.fraction,
+                            unit,
+                            fullPayout
+                          )
+                        )
+                    }}
+                    disabled={anyClosing || oracleTradingPaused}
+                    disabledOptions={manaAvailable ? [] : ['mana']}
+                    color="gray"
+                    className="!p-0.5"
+                    toggleClassName="!my-0 !px-3 !py-1 text-xs"
+                  />
+                </Row>
                 <div className="relative w-full">
+                  {isMana && (
+                    <span
+                      aria-hidden
+                      className="text-ink-500 pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-xl"
+                    >
+                      Ṁ
+                    </span>
+                  )}
                   <Input
-                    aria-label="Percentage of position to close"
+                    aria-label={
+                      isMana
+                        ? 'Estimated mana to receive'
+                        : 'Percentage of position to close'
+                    }
                     type="number"
                     inputMode="decimal"
-                    min={MIN_CLOSE_PERCENT}
-                    max={100}
                     step="any"
-                    value={closePercent ?? ''}
-                    error={closePercentError != null}
-                    aria-invalid={closePercentError != null}
-                    aria-describedby={
-                      closePercentError != null
-                        ? closePercentErrorId
-                        : undefined
-                    }
-                    disabled={anyClosing || oracleTradingPaused}
+                    value={closeAmount.input}
+                    error={closeAmountError != null}
+                    aria-invalid={closeAmountError != null}
+                    aria-describedby={`${closeAmountHintId}${
+                      closeAmountError != null ? ` ${closeAmountErrorId}` : ''
+                    }`}
+                    disabled={amountDisabled}
                     onFocus={(e) => e.target.select()}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setClosePercent(value === '' ? undefined : Number(value))
-                    }}
-                    className="h-[60px] w-full min-w-0 !pr-40 !text-xl tabular-nums"
+                    onChange={(e) =>
+                      setCloseAmount(
+                        perpCloseAmountFromInput(
+                          e.target.value,
+                          closeAmount.unit,
+                          fullPayout
+                        )
+                      )
+                    }
+                    className={clsx(
+                      'h-[60px] w-full min-w-0 !pr-16 !text-xl tabular-nums',
+                      isMana && '!pl-10'
+                    )}
                   />
-                  <Row className="absolute right-2 top-3.5 gap-1.5">
-                    {[-5, -1, 1, 5].map((increment) => (
-                      <button
-                        key={increment}
-                        type="button"
-                        aria-label={`${
-                          increment < 0 ? 'Decrease' : 'Increase'
-                        } close percentage by ${Math.abs(increment)}`}
-                        className="bg-canvas-100 hover:bg-ink-200 rounded-md px-2 py-1.5 text-sm"
-                        disabled={anyClosing || oracleTradingPaused}
-                        onClick={() =>
-                          setClosePercent((percent) =>
-                            Math.min(
-                              100,
-                              Math.max(
-                                MIN_CLOSE_PERCENT,
-                                (percent ?? MIN_CLOSE_PERCENT) + increment
-                              )
-                            )
-                          )
-                        }
-                      >
-                        {increment > 0 ? `+${increment}` : increment}
-                      </button>
-                    ))}
-                  </Row>
+                  <button
+                    type="button"
+                    className="text-primary-600 hover:text-primary-700 absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium disabled:opacity-50"
+                    disabled={amountDisabled}
+                    onClick={() => setCloseFraction(1)}
+                  >
+                    Max
+                  </button>
                 </div>
               </Col>
 
-              <Slider
-                min={MIN_CLOSE_PERCENT}
-                max={100}
-                step={0.1}
-                amount={sliderClosePercent}
-                onChange={setClosePercent}
-                disabled={anyClosing || oracleTradingPaused}
-                color="gray"
-                ariaLabel="Close percentage slider"
-                ariaValueText={`${sliderClosePercent}% of position`}
-              />
+              <Row className="items-center gap-4">
+                <Slider
+                  min={MIN_CLOSE_PERCENT}
+                  max={100}
+                  step={0.1}
+                  amount={sliderClosePercent}
+                  onChange={(percent) => setCloseFraction(percent / 100)}
+                  disabled={amountDisabled}
+                  color="gray"
+                  className="min-w-0 flex-1"
+                  ariaLabel="Close amount slider"
+                  ariaValueText={
+                    isMana
+                      ? `About ${formatMoneyPrecise(
+                          (sliderClosePercent / 100) * fullPayout
+                        )} returned (${formatPerpClosePercent(
+                          sliderClosePercent / 100
+                        )} of position)`
+                      : `${sliderClosePercent}% of position`
+                  }
+                />
+                <Row className="shrink-0 gap-1.5">
+                  {[-5, -1, 1, 5].map((increment) => (
+                    <button
+                      key={increment}
+                      type="button"
+                      aria-label={`${
+                        increment < 0 ? 'Decrease' : 'Increase'
+                      } close ${isMana ? 'mana' : 'percentage'} by ${Math.abs(
+                        increment
+                      )}`}
+                      className="bg-canvas-100 hover:bg-ink-200 rounded-md px-2 py-1.5 text-sm disabled:opacity-50"
+                      disabled={amountDisabled}
+                      onClick={() => adjustCloseAmount(increment)}
+                    >
+                      {increment > 0 ? `+${increment}` : increment}
+                    </button>
+                  ))}
+                </Row>
+              </Row>
 
-              {closePercentError != null && (
-                <div id={closePercentErrorId} className="text-error text-xs">
-                  {closePercentError}
+              <p id={closeAmountHintId} className="text-ink-500 text-xs">
+                {isMana
+                  ? 'Mana is the estimated amount returned, not position size. '
+                  : ''}
+                Final payout can change with the price.
+              </p>
+
+              {closeAmountError != null && (
+                <div id={closeAmountErrorId} className="text-error text-xs">
+                  {closeAmountError}
                 </div>
               )}
 
@@ -781,7 +882,9 @@ const PositionSummary = (props: {
                 <div className="border-ink-200 my-1 border-t" />
 
                 <Row className="items-center justify-between gap-3">
-                  <span className="text-ink-900 font-medium">Payout</span>
+                  <span className="text-ink-900 font-medium">
+                    Estimated payout
+                  </span>
                   <span className="text-ink-900 text-lg font-semibold tabular-nums">
                     {formatMoneyPrecise(closePayout)}
                   </span>
@@ -805,7 +908,7 @@ const PositionSummary = (props: {
               {oracleTradingPaused
                 ? 'Close paused — waiting for oracle'
                 : closeFraction == null || effectiveFraction == null
-                ? 'Enter a valid close percentage'
+                ? 'Enter a valid close amount'
                 : isPartial
                 ? `Close ${formatPerpClosePercent(
                     effectiveFraction
