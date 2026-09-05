@@ -1,16 +1,18 @@
 import { Answer } from 'common/answer'
+import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { Contract } from 'common/contract'
+import {
+  DISCOVERY_RESULT_CLICK_EVENT,
+  DiscoveryResultTracking,
+} from 'common/discovery-experiment'
+import { orderCombinedSearchResults } from 'common/search-result-order'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
-import { sortBy } from 'lodash'
 import { Key } from 'react'
+import { track } from 'web/lib/service/analytics'
+import { isABTestAssignmentCurrent } from 'web/hooks/use-ab-test'
 import { PostRow } from '../posts/post-row'
-import {
-  SearchParams,
-  SORT_KEY,
-  SORTS_MIXING_POSTS_AND_MARKETS,
-  TOPIC_FILTER_KEY,
-} from '../search'
+import { QUERY_KEY, SearchParams, SORT_KEY, TOPIC_FILTER_KEY } from '../search'
 import {
   actionColumn,
   boostedColumn,
@@ -21,7 +23,7 @@ import {
 import { ContractRow } from './contracts-table'
 
 type CombinedResultsProps = {
-  contracts: Contract[]
+  contracts: FullMarketSearchResult[]
   posts: TopLevelPost[]
   searchParams: SearchParams
   onContractClick?: (contract: Contract) => void
@@ -30,10 +32,13 @@ type CombinedResultsProps = {
   hideAvatars?: boolean
   hideActions?: boolean
   hasBets?: boolean
+  discoveryTracking?: DiscoveryResultTracking
 }
 
 // Type guard to check if an item is a Contract
-function isContract(item: Contract | TopLevelPost): item is Contract {
+function isContract(
+  item: FullMarketSearchResult | TopLevelPost
+): item is FullMarketSearchResult {
   return 'mechanism' in item
 }
 
@@ -53,21 +58,18 @@ export function CombinedResults(props: CombinedResultsProps) {
     hideAvatars,
     hideActions,
     hasBets,
+    discoveryTracking,
   } = props
 
   const sort =
     searchParams[TOPIC_FILTER_KEY] === 'recent'
       ? undefined
       : searchParams[SORT_KEY]
-  let combinedItems: (Contract | TopLevelPost)[] = []
-  combinedItems =
-    sort && SORTS_MIXING_POSTS_AND_MARKETS.includes(sort)
-      ? sortBy([...contracts, ...posts], (item) => {
-          if (sort === 'newest') return -item.createdTime
-          if (sort === 'score') return -item.importanceScore
-          return 0
-        })
-      : [...contracts, ...posts]
+  const combinedItems = orderCombinedSearchResults(contracts, posts, {
+    sort,
+    preserveUnmarkedContractOrder:
+      sort === 'score' && searchParams[QUERY_KEY].trim().length > 0,
+  })
   if (!combinedItems.length) return null
 
   // Define columns for ContractRow, similar to how ContractsTable did
@@ -81,7 +83,7 @@ export function CombinedResults(props: CombinedResultsProps) {
 
   return (
     <>
-      {combinedItems.map((item) => {
+      {combinedItems.map((item, index) => {
         if (isContract(item)) {
           return (
             <ContractRow
@@ -95,6 +97,34 @@ export function CombinedResults(props: CombinedResultsProps) {
               hideAvatar={hideAvatars}
               columns={contractDisplayColumns} // Pass the defined columns
               showPosition={hasBets}
+              onTrackClick={
+                discoveryTracking
+                  ? () => {
+                      if (
+                        !isABTestAssignmentCurrent(
+                          discoveryTracking.assignmentKey
+                        )
+                      ) {
+                        return
+                      }
+                      void track(DISCOVERY_RESULT_CLICK_EVENT, {
+                        contractId: item.id,
+                        schemaVersion: 1,
+                        presentationId: discoveryTracking.presentationId,
+                        resultSetId: discoveryTracking.resultSetId,
+                        variant: discoveryTracking.variant,
+                        assignmentSource: discoveryTracking.source,
+                        sourceComponent: discoveryTracking.sourceComponent,
+                        surface: discoveryTracking.surface,
+                        compatibilityFallback:
+                          discoveryTracking.compatibilityFallback,
+                        rank: index + 1,
+                        itemType: 'market',
+                        matchType: item.searchMatchType ?? 'lexical',
+                      })
+                    }
+                  : undefined
+              }
             />
           )
         } else if (isPost(item)) {
@@ -104,6 +134,33 @@ export function CombinedResults(props: CombinedResultsProps) {
               post={item}
               highlighted={highlightContractIds?.includes(item.id)} // Assuming posts can also be highlighted by ID
               hideAvatar={hideAvatars}
+              onTrackClick={
+                discoveryTracking
+                  ? () => {
+                      if (
+                        !isABTestAssignmentCurrent(
+                          discoveryTracking.assignmentKey
+                        )
+                      ) {
+                        return
+                      }
+                      void track(DISCOVERY_RESULT_CLICK_EVENT, {
+                        schemaVersion: 1,
+                        presentationId: discoveryTracking.presentationId,
+                        resultSetId: discoveryTracking.resultSetId,
+                        variant: discoveryTracking.variant,
+                        assignmentSource: discoveryTracking.source,
+                        sourceComponent: discoveryTracking.sourceComponent,
+                        surface: discoveryTracking.surface,
+                        compatibilityFallback:
+                          discoveryTracking.compatibilityFallback,
+                        rank: index + 1,
+                        itemType: 'post',
+                        postId: item.id,
+                      })
+                    }
+                  : undefined
+              }
             />
           )
         }

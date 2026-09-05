@@ -104,6 +104,8 @@ export function AuthProvider(props: {
   // Whether this page session has ever observed a signed-in Firebase user. Gates
   // the sign-out we forward to the native app — see the null branch below.
   const sawFbUser = useRef(false)
+  const committedUserId = useRef(user?.id)
+  committedUserId.current = user?.id
 
   const authUser = !user
     ? user
@@ -204,6 +206,18 @@ export function AuthProvider(props: {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
+        // Firebase switches its request credential before the profile lookup
+        // below finishes. Mark real identity changes transitional immediately
+        // so requests cannot use the previous app user with the new token.
+        // Ordinary same-user token refreshes should not blank the UI.
+        if (fbUser?.uid !== committedUserId.current) {
+          setAuthLoaded(false)
+          // A known anonymous context does not carry authLoaded, so changing
+          // null to undefined is what makes consumers wait during login.
+          if (fbUser && committedUserId.current === undefined) {
+            setUser(undefined)
+          }
+        }
         if (fbUser) {
           sawFbUser.current = true
           setUserCookie(fbUser.toJSON())

@@ -1,15 +1,45 @@
 'use client'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import clsx from 'clsx'
+import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
+import { APIError } from 'common/api/utils'
+import { getForcedABTestVariant } from 'common/ab-test'
 import { Contract } from 'common/contract'
+import {
+  DISCOVERY_EXPERIMENT_NAME,
+  DISCOVERY_EXPERIMENT_VARIANTS,
+  DISCOVERY_EXPOSURE_EVENT,
+  DISCOVERY_RESULTS_EVENT,
+  DISCOVERY_SEARCH_ABORT_EVENT,
+  DISCOVERY_SEARCH_ERROR_EVENT,
+  DISCOVERY_SEARCH_REQUEST_EVENT,
+  DiscoveryExperimentAssignmentSource,
+  DiscoveryExperimentSurface,
+  DiscoveryExperimentVariant,
+  DiscoveryResultTracking,
+  getDiscoveryQueryLengthBucket,
+} from 'common/discovery-experiment'
 import { LiteGroup } from 'common/group'
+import {
+  getPostSearchThreshold,
+  orderCombinedSearchResults,
+} from 'common/search-result-order'
+import {
+  getLoadMoreRequestAction,
+  getSearchRequestDebounceMs,
+  shouldSendDiscoveryOptions,
+  shouldRetrySearchWithoutDiscoveryOptions,
+  shouldRetryStaleSearchRequest,
+} from 'common/search-request-coordination'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
+import { randomString } from 'common/util/random'
+import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -31,9 +61,13 @@ import { DAY_MS } from 'common/util/time'
 import { isEqual } from 'lodash'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import {
+  isABTestAssignmentCurrent,
+  useABTestAssignment,
+} from 'web/hooks/use-ab-test'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { CombinedResults } from './contract/combined-results'
 import { LoadingContractRow } from './contract/contracts-table'
@@ -48,6 +82,7 @@ import { LiveRegion } from './widgets/live-region'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
+const MAX_TRACKED_DISCOVERY_ITEMS = 100
 
 export const SORTS = [
   { label: 'Best', value: 'score' },
@@ -187,11 +222,22 @@ export type SupabaseAdditionalFilter = {
 }
 
 export type SearchState = {
-  contracts: Contract[] | undefined
+  contracts: FullMarketSearchResult[] | undefined
   users: FullUser[] | undefined
   topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
   posts: TopLevelPost[] | undefined
+  seenMarketCutoffTime: number | undefined
+  discoveryVariant: DiscoveryExperimentVariant | undefined
+  discoveryAssignmentSource: DiscoveryExperimentAssignmentSource | undefined
+  discoveryAssignmentKey: string | undefined
+  discoverySurface: DiscoveryExperimentSurface | undefined
+  discoveryResultSetId: string | undefined
+  discoveryLoadedPageCount: number
+  discoveryCompatibilityFallback: boolean
+  discoverySemanticEligible: boolean | undefined
+  discoverySemanticMarketCount: number | undefined
+  discoveryInitialLatencyMs: number | undefined
 }
 
 type SearchProps = {
@@ -300,6 +346,27 @@ export function Search(props: SearchProps) {
 
   const isMobile = useIsMobile()
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const user = useUser()
+  const isAuthorized = useIsAuthorized()
+  const forcedDiscoveryVariant = getForcedABTestVariant(
+    user?.id,
+    DISCOVERY_EXPERIMENT_VARIANTS
+  )
+  const discoveryAssignment = useABTestAssignment(
+    DISCOVERY_EXPERIMENT_NAME,
+    DISCOVERY_EXPERIMENT_VARIANTS,
+    {
+      isReady: isAuthorized !== undefined,
+      userId: user?.id,
+      forcedVariant: forcedDiscoveryVariant,
+    }
+  )
+  const discoveryVariant = discoveryAssignment?.variant
+  const discoveryAssignmentKey = discoveryAssignment
+    ? `${discoveryAssignment.assignmentUnit}:${discoveryAssignment.assignmentId}`
+    : undefined
+  const discoveryAssignmentSource: DiscoveryExperimentAssignmentSource =
+    forcedDiscoveryVariant ? 'forced' : user ? 'user-hash' : 'device-hash'
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -344,14 +411,25 @@ export function Search(props: SearchProps) {
     loadMoreContracts,
     refreshContracts,
     posts,
+    discoveryTracking,
   } = useSearchResults({
     persistPrefix,
     searchParams: searchParams,
     includeUsersAndTopics: showSearchTypes,
-    isReady,
+    isReady: isReady && discoveryVariant !== undefined,
+    discoveryVariant,
+    discoveryAssignmentSource,
+    discoveryAssignmentKey,
     additionalFilter,
   })
   const visible = useIsPageVisible()
+  useTrackDiscoveryExposure({
+    contracts,
+    posts,
+    searchParams,
+    tracking: discoveryTracking,
+    visible,
+  })
   useEffect(() => {
     if (visible && refreshOnVisible) {
       refreshContracts()
@@ -465,7 +543,6 @@ export function Search(props: SearchProps) {
     : undefined
   const selectedAll =
     !selectedTopic && !selectedFollowed && !searchParams[TOPIC_FILTER_KEY]
-  const user = useUser()
   const {
     data: followedGroupsData,
     loading: isLoadingFollowedGroups,
@@ -757,6 +834,14 @@ export function Search(props: SearchProps) {
             extraFilterPills={extraFilterPills}
           />
         )}
+        {isWholePage && forcedDiscoveryVariant && discoveryVariant && (
+          <div
+            className="text-ink-400 px-2 text-right text-xs"
+            title="This QA account has a fixed discovery experiment assignment."
+          >
+            Discovery v1 · {capitalize(discoveryVariant)}
+          </div>
+        )}
       </Col>
       <Spacer h={1} />
       <div id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
@@ -865,6 +950,7 @@ export function Search(props: SearchProps) {
                 hideAvatars={hideAvatars}
                 hideActions={hideActions}
                 hasBets={hasBets}
+                discoveryTracking={discoveryTracking}
               />
             ) : null}
             <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
@@ -950,6 +1036,17 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   topics: undefined,
   shouldLoadMore: true,
   posts: undefined,
+  seenMarketCutoffTime: undefined,
+  discoveryVariant: undefined,
+  discoveryAssignmentSource: undefined,
+  discoveryAssignmentKey: undefined,
+  discoverySurface: undefined,
+  discoveryResultSetId: undefined,
+  discoveryLoadedPageCount: 0,
+  discoveryCompatibilityFallback: false,
+  discoverySemanticEligible: undefined,
+  discoverySemanticMarketCount: undefined,
+  discoveryInitialLatencyMs: undefined,
 }
 
 export const useSearchResults = (props: {
@@ -957,9 +1054,24 @@ export const useSearchResults = (props: {
   searchParams: SearchParams
   includeUsersAndTopics: boolean
   isReady: boolean
+  discoveryVariant?: DiscoveryExperimentVariant
+  discoveryAssignmentSource?: DiscoveryExperimentAssignmentSource
+  discoveryAssignmentKey?: string
   additionalFilter?: SupabaseAdditionalFilter
 }) => {
-  const { persistPrefix, searchParams, isReady, additionalFilter } = props
+  const {
+    persistPrefix,
+    searchParams,
+    isReady,
+    discoveryVariant,
+    discoveryAssignmentSource,
+    discoveryAssignmentKey,
+    additionalFilter,
+  } = props
+  // The treatment still applies to every Search instance, but the primary
+  // experiment scorecard is Browse-only. Avoid multiplying user_events write
+  // volume for embedded/topic search instances that the analysis excludes.
+  const trackDiscoveryExperiment = persistPrefix === 'search'
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
@@ -973,6 +1085,18 @@ export const useSearchResults = (props: {
     )
 
   const requestId = useRef(0)
+  const paramsGeneration = useRef(0)
+  const failedParamsGeneration = useRef<number>()
+  const freshRequestAbortController = useRef<AbortController>()
+  const initialQuery = useRef<string>()
+  const completedInThisMount = useRef(false)
+
+  useEffect(
+    () => () => {
+      freshRequestAbortController.current?.abort()
+    },
+    []
+  )
 
   // Helper function to check if search parameters have meaningfully changed
   const searchParamsChanged = (
@@ -986,9 +1110,28 @@ export const useSearchResults = (props: {
     )
   }
 
+  const requestParamsChanged = () =>
+    searchParamsChanged(searchParams, lastSearchParams) ||
+    state.discoveryAssignmentKey !== discoveryAssignmentKey ||
+    state.discoveryVariant !== discoveryVariant
+
   const querySearchResults = useEvent(
     async (freshQuery?: boolean, contractsOnly?: boolean) => {
-      if (!isReady) return true
+      if (!isReady || !isABTestAssignmentCurrent(discoveryAssignmentKey)) {
+        return true
+      }
+      // A visibility callback can be queued while the user changes filters.
+      // Wait for the fresh page instead of paging new params from the old
+      // offset. If that fresh request fails, stop the observer's timer loop.
+      if (!freshQuery) {
+        const action = getLoadMoreRequestAction(
+          freshRequestAbortController.current !== undefined,
+          requestParamsChanged(),
+          failedParamsGeneration.current,
+          paramsGeneration.current
+        )
+        if (action !== 'load') return action === 'wait'
+      }
       const {
         q: query,
         s: sort,
@@ -1002,6 +1145,19 @@ export const useSearchResults = (props: {
         li: liquidity,
         hb: hasBets,
       } = searchParams
+      const usesForYouRoute =
+        forYou === '1' &&
+        query.length === 0 &&
+        filter !== 'news' &&
+        topicSlug.length === 0 &&
+        gids.length === 0 &&
+        (sort === 'score' || sort === 'freshness-score') &&
+        (sweepState === '0' || sweepState === '2')
+      const discoverySurface: DiscoveryExperimentSurface = query.trim()
+        ? 'text-search'
+        : usesForYouRoute
+        ? 'for-you'
+        : 'browse'
 
       const shouldSearchPostsWithContracts =
         SORTS_MIXING_POSTS_AND_MARKETS.includes(sort) &&
@@ -1021,7 +1177,51 @@ export const useSearchResults = (props: {
         !contractsOnly && props.includeUsersAndTopics
 
       if (freshQuery || state.shouldLoadMore) {
+        const discoveryResultSetId = freshQuery
+          ? randomString(16)
+          : state.discoveryResultSetId ?? randomString(16)
+        const discoveryPage = freshQuery
+          ? 0
+          : state.discoveryLoadedPageCount ?? 0
+        const requestStartedAt = Date.now()
+        let discoveryRequestAttemptId: string | undefined
+        let usedCompatibilityFallback = freshQuery
+          ? false
+          : state.discoveryCompatibilityFallback ?? false
+        const sendDiscoveryOptions = shouldSendDiscoveryOptions(
+          !!freshQuery,
+          usedCompatibilityFallback
+        )
+        // A no-op load-more must not cancel an active fresh search. Only
+        // replace the controller after we know this invocation will request.
+        if (freshQuery) freshRequestAbortController.current?.abort()
+        const abortController = new AbortController()
+        if (freshQuery) {
+          freshRequestAbortController.current = abortController
+          failedParamsGeneration.current = undefined
+        }
+        let seenMarketCutoffTime =
+          discoveryVariant === 'treatment'
+            ? freshQuery
+              ? Date.now()
+              : state.seenMarketCutoffTime
+            : undefined
+        const requestParamsGeneration = paramsGeneration.current
         const id = ++requestId.current
+        const shouldRetryAfterStaleResult = () =>
+          shouldRetryStaleSearchRequest(
+            !!freshQuery,
+            requestParamsGeneration,
+            paramsGeneration.current
+          )
+        const finishFreshRequest = () => {
+          if (
+            freshQuery &&
+            freshRequestAbortController.current === abortController
+          ) {
+            freshRequestAbortController.current = undefined
+          }
+        }
         let timeoutId: NodeJS.Timeout | undefined
         if (freshQuery) {
           timeoutId = setTimeout(() => {
@@ -1039,7 +1239,16 @@ export const useSearchResults = (props: {
         }
         try {
           if (contractType === 'POSTS') {
-            const posts = await api('get-posts', postApiParams)
+            const posts = await api('get-posts', postApiParams, {
+              signal: abortController.signal,
+            })
+            if (
+              id !== requestId.current ||
+              !isABTestAssignmentCurrent(discoveryAssignmentKey)
+            ) {
+              finishFreshRequest()
+              return shouldRetryAfterStaleResult()
+            }
             const shouldLoadMore = posts.length === postApiParams.limit
             setState({
               contracts: [],
@@ -1047,61 +1256,154 @@ export const useSearchResults = (props: {
               topics: undefined,
               posts: uniqBy(buildArray(state.posts, posts), 'id'),
               shouldLoadMore,
+              seenMarketCutoffTime,
+              discoveryVariant,
+              discoveryAssignmentSource,
+              discoveryAssignmentKey,
+              discoverySurface,
+              discoveryResultSetId: undefined,
+              discoveryLoadedPageCount: 0,
+              discoveryCompatibilityFallback: false,
+              discoverySemanticEligible: undefined,
+              discoverySemanticMarketCount: undefined,
+              discoveryInitialLatencyMs: undefined,
             })
 
             // Store the search params that were used for this query
             if (freshQuery) {
               setLastSearchParams(searchParams)
+              completedInThisMount.current = true
             }
 
             clearTimeout(timeoutId)
+            finishFreshRequest()
             setLoading(false)
             return shouldLoadMore
           }
           const endpoint =
             topicSlug === 'recent' ? 'recent-markets' : 'search-markets-full'
+          if (
+            trackDiscoveryExperiment &&
+            isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+            discoveryVariant &&
+            discoveryAssignmentSource
+          ) {
+            discoveryRequestAttemptId = randomString(16)
+            void track(DISCOVERY_SEARCH_REQUEST_EVENT, {
+              schemaVersion: 1,
+              requestAttemptId: discoveryRequestAttemptId,
+              resultSetId: discoveryResultSetId,
+              variant: discoveryVariant,
+              assignmentSource: discoveryAssignmentSource,
+              sourceComponent: persistPrefix,
+              surface: discoverySurface,
+              page: discoveryPage,
+              isFresh: !!freshQuery,
+            })
+          }
+          const marketApiParams: APIParams<'search-markets-full'> = {
+            term: query,
+            filter,
+            sort,
+            contractType,
+            ...(() => {
+              const useCursor =
+                !freshQuery && sort === 'newest' && !!state.contracts?.length
+              return useCursor
+                ? {
+                    offset: 0,
+                    beforeTime:
+                      state.contracts![state.contracts!.length - 1]
+                        ?.createdTime,
+                  }
+                : {
+                    offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+                  }
+            })(),
+            limit: CONTRACTS_PER_SEARCH_PAGE,
+            topicSlug: topicSlug !== '' ? topicSlug : undefined,
+            creatorId: additionalFilter?.creatorId,
+            isPrizeMarket: isPrizeMarketString,
+            forYou,
+            token:
+              sweepState === '2' ? 'ALL' : sweepState === '1' ? 'CASH' : 'MANA',
+            gids,
+            liquidity: liquidity === '' ? undefined : parseInt(liquidity),
+            hasBets,
+            discoveryVariant: sendDiscoveryOptions
+              ? discoveryVariant
+              : undefined,
+            enableSemanticSearch:
+              sendDiscoveryOptions &&
+              discoveryVariant === 'treatment' &&
+              endpoint === 'search-markets-full' &&
+              query.trim().length > 0
+                ? true
+                : undefined,
+            seenMarketCutoffTime:
+              sendDiscoveryOptions &&
+              discoveryVariant === 'treatment' &&
+              usesForYouRoute
+                ? seenMarketCutoffTime
+                : undefined,
+          }
+          const getMarkets = async () => {
+            try {
+              return await api(endpoint, marketApiParams, {
+                signal: abortController.signal,
+              })
+            } catch (error) {
+              if (
+                !shouldRetrySearchWithoutDiscoveryOptions(
+                  !!freshQuery,
+                  marketApiParams.seenMarketCutoffTime,
+                  marketApiParams.enableSemanticSearch,
+                  marketApiParams.discoveryVariant,
+                  error instanceof APIError ? error.code : undefined,
+                  usesForYouRoute
+                )
+              ) {
+                throw error
+              }
+
+              // A new API rejects a badly skewed page-one anchor; an old
+              // strict worker rejects the new fields. Retrying without the
+              // semantic opt-in is safe on any page because its fallback only
+              // runs on page one. Anchor removal is guarded to page one above.
+              if (freshQuery) seenMarketCutoffTime = undefined
+              usedCompatibilityFallback = true
+              const contracts = await api(
+                endpoint,
+                {
+                  ...marketApiParams,
+                  seenMarketCutoffTime: freshQuery
+                    ? undefined
+                    : marketApiParams.seenMarketCutoffTime,
+                  enableSemanticSearch: undefined,
+                  discoveryVariant: undefined,
+                },
+                { signal: abortController.signal }
+              )
+              // Semantic fallback never runs after page one, so any unmarked
+              // rows from an old worker are known to be lexical there. Keep a
+              // fresh unmarked response conservative: an intermediate worker
+              // may have returned an unmarked semantic tail.
+              return freshQuery
+                ? contracts
+                : contracts.map((contract) =>
+                    'searchMatchType' in contract
+                      ? contract
+                      : { ...contract, searchMatchType: 'lexical' as const }
+                  )
+            }
+          }
           const searchPromises: Promise<
             | APIResponse<'recent-markets'>
             | APIResponse<'search-markets-full'>
             | APIResponse<'get-posts'>
             | APIResponse<'search-users'>
             | APIResponse<'search-groups'>
-          >[] = [
-            api(endpoint, {
-              term: query,
-              filter,
-              sort,
-              contractType,
-              ...(() => {
-                const useCursor =
-                  !freshQuery && sort === 'newest' && !!state.contracts?.length
-                return useCursor
-                  ? {
-                      offset: 0,
-                      beforeTime:
-                        state.contracts![state.contracts!.length - 1]
-                          ?.createdTime,
-                    }
-                  : {
-                      offset: freshQuery ? 0 : state.contracts?.length ?? 0,
-                    }
-              })(),
-              limit: CONTRACTS_PER_SEARCH_PAGE,
-              topicSlug: topicSlug !== '' ? topicSlug : undefined,
-              creatorId: additionalFilter?.creatorId,
-              isPrizeMarket: isPrizeMarketString,
-              forYou,
-              token:
-                sweepState === '2'
-                  ? 'ALL'
-                  : sweepState === '1'
-                  ? 'CASH'
-                  : 'MANA',
-              gids,
-              liquidity: liquidity === '' ? undefined : parseInt(liquidity),
-              hasBets,
-            }),
-          ]
+          >[] = [getMarkets()]
 
           if (includeUsersAndTopics) {
             searchPromises.push(
@@ -1114,13 +1416,20 @@ export const useSearchResults = (props: {
             )
           }
           if (shouldSearchPostsWithContracts) {
-            searchPromises.push(api('get-posts', postApiParams))
+            searchPromises.push(
+              api('get-posts', postApiParams, {
+                signal: abortController.signal,
+              })
+            )
           }
 
           const results = await Promise.all(searchPromises)
 
-          if (id === requestId.current) {
-            const newContracts = results[0] as Contract[]
+          if (
+            id === requestId.current &&
+            isABTestAssignmentCurrent(discoveryAssignmentKey)
+          ) {
+            const newContracts = results[0] as FullMarketSearchResult[]
             let postResultIndex = 1
             const newUsers = includeUsersAndTopics
               ? (results[postResultIndex++] as FullUser[])
@@ -1138,42 +1447,18 @@ export const useSearchResults = (props: {
             const freshContracts = freshQuery
               ? newContracts
               : buildArray(state.contracts, newContracts)
-            const bottomScoreFromAllContracts =
-              sort === 'score'
-                ? minBy(freshContracts, 'importanceScore')?.importanceScore
-                : minBy(freshContracts, 'createdTime')?.createdTime
 
             // This is necessary bc the posts are in a different table than the contracts.
             // TODO: this is bad and will leave posts out of the search results randomly.
             // We should fix this by joining the posts table to the contracts table or something.
-            let postFilteringThreshold: number | undefined
-            if (sort === 'score') {
-              if (
-                !freshQuery &&
-                state.contracts &&
-                state.contracts.length > 0
-              ) {
-                postFilteringThreshold = minBy(
-                  state.contracts,
-                  'importanceScore'
-                )?.importanceScore
-              } else {
-                postFilteringThreshold = bottomScoreFromAllContracts
-              }
-            } else {
-              if (
-                !freshQuery &&
-                state.contracts &&
-                state.contracts.length > 0
-              ) {
-                postFilteringThreshold = minBy(
-                  state.contracts,
-                  'createdTime'
-                )?.createdTime
-              } else {
-                postFilteringThreshold = bottomScoreFromAllContracts
-              }
-            }
+            const contractsBeforeNewPosts =
+              !freshQuery && state.contracts?.length
+                ? state.contracts
+                : freshContracts
+            const postFilteringThreshold = getPostSearchThreshold(
+              contractsBeforeNewPosts,
+              sort === 'score' ? 'score' : 'newest'
+            )
             const freshPosts =
               freshQuery || !state.posts
                 ? newPostsResults
@@ -1191,8 +1476,41 @@ export const useSearchResults = (props: {
                     'id'
                   )
 
+            // Semantic rows only pad page one, so they never imply a page two.
             const shouldLoadMore =
-              newContracts.length === CONTRACTS_PER_SEARCH_PAGE
+              newContracts.filter((c) => c.searchMatchType !== 'semantic')
+                .length === CONTRACTS_PER_SEARCH_PAGE
+
+            const lexicalMarketCount = newContracts.filter(
+              (contract) => contract.searchMatchType !== 'semantic'
+            ).length
+            const semanticMarketCount = newContracts.length - lexicalMarketCount
+            const requestLatencyMs = Date.now() - requestStartedAt
+            // Match the API's pre-embedding cleanup so the low-hit segment is
+            // classified identically in both experiment arms.
+            const normalizedQuery = query
+              .replace(/['"]/g, '')
+              .trim()
+              .replace(/\s+/g, ' ')
+            const lowerQuery = normalizedQuery.toLowerCase()
+            const semanticEligible =
+              !!freshQuery &&
+              endpoint === 'search-markets-full' &&
+              sort !== 'newest' &&
+              !lowerQuery.startsWith('https://') &&
+              !lowerQuery.startsWith('http://') &&
+              normalizedQuery.length >= 3 &&
+              normalizedQuery.length <= 200 &&
+              lexicalMarketCount < Math.min(CONTRACTS_PER_SEARCH_PAGE, 5)
+            const resultSetSemanticEligible = freshQuery
+              ? semanticEligible
+              : state.discoverySemanticEligible ?? false
+            const resultSetSemanticMarketCount = freshQuery
+              ? semanticMarketCount
+              : state.discoverySemanticMarketCount ?? 0
+            const resultSetInitialLatencyMs = freshQuery
+              ? requestLatencyMs
+              : state.discoveryInitialLatencyMs ?? requestLatencyMs
 
             setState({
               contracts: freshContracts,
@@ -1200,19 +1518,126 @@ export const useSearchResults = (props: {
               topics: includeUsersAndTopics ? newTopics?.lite : state.topics,
               posts: freshPosts,
               shouldLoadMore,
+              seenMarketCutoffTime,
+              discoveryVariant,
+              discoveryAssignmentSource,
+              discoveryAssignmentKey,
+              discoverySurface,
+              discoveryResultSetId,
+              discoveryLoadedPageCount: discoveryPage + 1,
+              discoveryCompatibilityFallback: usedCompatibilityFallback,
+              discoverySemanticEligible: resultSetSemanticEligible,
+              discoverySemanticMarketCount: resultSetSemanticMarketCount,
+              discoveryInitialLatencyMs: resultSetInitialLatencyMs,
             })
+
+            if (
+              trackDiscoveryExperiment &&
+              isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+              discoveryVariant &&
+              discoveryAssignmentSource
+            ) {
+              void track(DISCOVERY_RESULTS_EVENT, {
+                schemaVersion: 1,
+                requestAttemptId: discoveryRequestAttemptId,
+                resultSetId: discoveryResultSetId,
+                variant: discoveryVariant,
+                assignmentSource: discoveryAssignmentSource,
+                sourceComponent: persistPrefix,
+                surface: discoverySurface,
+                page: discoveryPage,
+                isFresh: !!freshQuery,
+                resultCount: freshContracts.length + (freshPosts?.length ?? 0),
+                pageResultCount:
+                  newContracts.length + (newPostsResults?.length ?? 0),
+                lexicalMarketCount,
+                semanticMarketCount,
+                semanticEligible,
+                postCount: freshPosts?.length ?? 0,
+                queryLengthBucket: getDiscoveryQueryLengthBucket(query),
+                sort,
+                filter,
+                compatibilityFallback: usedCompatibilityFallback,
+                latencyMs: requestLatencyMs,
+                // Store page deltas so telemetry stays linear as people load
+                // more. The exposure event records exact rendered ordering.
+                items: [
+                  ...newContracts.map((item) => ({
+                    id: item.id,
+                    itemType: 'market',
+                    matchType: item.searchMatchType ?? 'lexical',
+                  })),
+                  ...(newPostsResults ?? []).map((item) => ({
+                    id: item.id,
+                    itemType: 'post',
+                  })),
+                ],
+              })
+            }
 
             // Store the search params that were used for this query
             if (freshQuery) {
               setLastSearchParams(searchParams)
+              completedInThisMount.current = true
             }
 
             clearTimeout(timeoutId)
+            finishFreshRequest()
             setLoading(false)
 
             return shouldLoadMore
           }
+          finishFreshRequest()
+          return shouldRetryAfterStaleResult()
         } catch (error) {
+          clearTimeout(timeoutId)
+          finishFreshRequest()
+          if (error instanceof Error && error.name === 'AbortError') {
+            if (
+              discoveryRequestAttemptId &&
+              isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+              discoveryVariant &&
+              discoveryAssignmentSource
+            ) {
+              void track(DISCOVERY_SEARCH_ABORT_EVENT, {
+                schemaVersion: 1,
+                requestAttemptId: discoveryRequestAttemptId,
+                variant: discoveryVariant,
+                assignmentSource: discoveryAssignmentSource,
+                sourceComponent: persistPrefix,
+                surface: discoverySurface,
+                page: discoveryPage,
+                isFresh: !!freshQuery,
+                latencyMs: Date.now() - requestStartedAt,
+              })
+            }
+            return false
+          }
+          if (id !== requestId.current) return shouldRetryAfterStaleResult()
+          if (freshQuery) {
+            failedParamsGeneration.current = requestParamsGeneration
+          }
+          if (
+            discoveryRequestAttemptId &&
+            isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+            discoveryVariant &&
+            discoveryAssignmentSource
+          ) {
+            void track(DISCOVERY_SEARCH_ERROR_EVENT, {
+              schemaVersion: 1,
+              requestAttemptId: discoveryRequestAttemptId,
+              variant: discoveryVariant,
+              assignmentSource: discoveryAssignmentSource,
+              sourceComponent: persistPrefix,
+              surface: discoverySurface,
+              page: discoveryPage,
+              isFresh: !!freshQuery,
+              compatibilityFallback: usedCompatibilityFallback,
+              errorCode: error instanceof APIError ? error.code : undefined,
+              errorType: error instanceof Error ? error.name : typeof error,
+              latencyMs: Date.now() - requestStartedAt,
+            })
+          }
           console.error('Error fetching search results:', error)
           setLoading(false)
         }
@@ -1221,51 +1646,199 @@ export const useSearchResults = (props: {
     }
   )
 
-  useDebouncedEffect(
-    () => {
-      if (!state.contracts?.length) {
-        querySearchResults(true)
-      }
-    },
-    50,
-    [isReady]
+  const invalidateCurrentRequests = useEvent(() => {
+    // Load-more requests intentionally do not replace the fresh-request abort
+    // controller, but their result must still become stale as soon as params
+    // change. Advance the generation before checking for a controller.
+    paramsGeneration.current++
+    requestId.current++
+    const controller = freshRequestAbortController.current
+    if (!controller) return
+
+    // Invalidate before aborting so even an already-resolved continuation
+    // cannot publish stale state. The debounced effect issues any replacement
+    // required by the new params.
+    freshRequestAbortController.current = undefined
+    controller.abort()
+    setLoading(false)
+  })
+
+  const serializedSearchParams = JSON.stringify({
+    searchParams,
+    discoveryAssignmentKey,
+    discoveryVariant,
+  })
+  useSafeLayoutEffect(() => {
+    // Invalidate a superseded request immediately. Waiting for the next
+    // debounced request would let the old response land during that delay.
+    invalidateCurrentRequests()
+  }, [serializedSearchParams, invalidateCurrentRequests])
+
+  // The URL query reaches searchParams a render after isReady, so the query
+  // the page mounted with is whatever the first debounced pass over ready
+  // params sees. Until then the current query stands in for it, which keeps
+  // a deep-linked load as responsive as a blank one.
+  // lastSearchParams outlives this mount, so until a request completes here
+  // it may describe an earlier visit, and a deep-linked query would look
+  // typed next to it.
+  const requestDebounceMs = getSearchRequestDebounceMs(
+    searchParams[QUERY_KEY],
+    completedInThisMount.current ? lastSearchParams?.[QUERY_KEY] : undefined,
+    initialQuery.current ?? searchParams[QUERY_KEY]
   )
   useDebouncedEffect(
     () => {
-      // Only do a fresh query if search parameters have meaningfully changed
-      if (searchParamsChanged(searchParams, lastSearchParams)) {
+      // Whether this pass issues the first request or finds results restored
+      // from an earlier visit, the query it sees is the one this mount
+      // committed to, so typing after it waits like a keystroke.
+      if (isReady && initialQuery.current === undefined) {
+        initialQuery.current = searchParams[QUERY_KEY]
+      }
+      // One effect avoids duplicate initial requests. Term typing waits long
+      // enough for ordinary keystroke bursts to settle; filter changes stay
+      // responsive.
+      if (state.contracts === undefined || requestParamsChanged()) {
         querySearchResults(true)
       }
     },
-    50,
-    [JSON.stringify(searchParams)]
+    requestDebounceMs,
+    [isReady, serializedSearchParams]
   )
 
-  const contracts = state.contracts
-    ? uniqBy(
-        state.contracts.filter((c) => {
-          return (
-            !additionalFilter?.excludeContractIds?.includes(c.id) &&
-            !additionalFilter?.excludeGroupSlugs?.some((slug) =>
-              c.groupSlugs?.includes(slug)
-            ) &&
-            !additionalFilter?.excludeUserIds?.includes(c.creatorId)
-          )
-        }),
-        'id'
-      )
-    : undefined
+  // Persistent results are shared by the component key, so never render one
+  // account's personalized rows (or stale params) while a replacement loads.
+  const hasCurrentResults = !requestParamsChanged()
+  const contracts =
+    hasCurrentResults && state.contracts
+      ? uniqBy(
+          state.contracts.filter((c) => {
+            return (
+              !additionalFilter?.excludeContractIds?.includes(c.id) &&
+              !additionalFilter?.excludeGroupSlugs?.some((slug) =>
+                c.groupSlugs?.includes(slug)
+              ) &&
+              !additionalFilter?.excludeUserIds?.includes(c.creatorId)
+            )
+          }),
+          'id'
+        )
+      : undefined
+
+  // A result set can be restored from the in-memory cache on a later visit.
+  // Give each mounted presentation its own denominator while keeping the
+  // result-set ID stable for response/page diagnostics.
+  const discoveryPresentationId = useMemo(
+    () => (state.discoveryResultSetId ? randomString(16) : undefined),
+    [state.discoveryResultSetId]
+  )
+
+  const stateAssignmentKey = state.discoveryAssignmentKey
+  const discoveryTracking: DiscoveryResultTracking | undefined =
+    trackDiscoveryExperiment &&
+    stateAssignmentKey &&
+    state.discoveryResultSetId &&
+    discoveryPresentationId &&
+    state.discoveryVariant &&
+    state.discoveryAssignmentSource &&
+    state.discoverySurface &&
+    state.discoverySemanticEligible !== undefined &&
+    state.discoverySemanticMarketCount !== undefined &&
+    state.discoveryInitialLatencyMs !== undefined &&
+    stateAssignmentKey === discoveryAssignmentKey &&
+    state.discoveryVariant === discoveryVariant &&
+    isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+    !requestParamsChanged()
+      ? {
+          assignmentKey: stateAssignmentKey,
+          resultSetId: state.discoveryResultSetId,
+          presentationId: discoveryPresentationId,
+          variant: state.discoveryVariant,
+          source: state.discoveryAssignmentSource,
+          sourceComponent: persistPrefix,
+          surface: state.discoverySurface,
+          semanticEligible: state.discoverySemanticEligible,
+          semanticMarketCount: state.discoverySemanticMarketCount,
+          initialLatencyMs: state.discoveryInitialLatencyMs,
+          compatibilityFallback: state.discoveryCompatibilityFallback ?? false,
+        }
+      : undefined
 
   return {
     contracts,
-    users: state.users,
-    topics: state.topics,
+    users: hasCurrentResults ? state.users : undefined,
+    topics: hasCurrentResults ? state.topics : undefined,
     loading,
-    shouldLoadMore: state.shouldLoadMore,
+    shouldLoadMore: hasCurrentResults ? state.shouldLoadMore : true,
     loadMoreContracts: () => querySearchResults(false, true),
     refreshContracts: () => querySearchResults(true, true),
-    posts: state.posts,
+    posts: hasCurrentResults ? state.posts : undefined,
+    discoveryTracking,
   }
+}
+
+const useTrackDiscoveryExposure = (props: {
+  contracts: FullMarketSearchResult[] | undefined
+  posts: TopLevelPost[] | undefined
+  searchParams: SearchParams
+  tracking: DiscoveryResultTracking | undefined
+  visible: boolean
+}) => {
+  const { contracts, posts, searchParams, tracking, visible } = props
+  const trackedPresentationId = useRef<string>()
+
+  useEffect(() => {
+    if (
+      !visible ||
+      !tracking ||
+      !isABTestAssignmentCurrent(tracking.assignmentKey) ||
+      (contracts === undefined && posts === undefined) ||
+      trackedPresentationId.current === tracking.presentationId
+    ) {
+      return
+    }
+    trackedPresentationId.current = tracking.presentationId
+
+    const sort =
+      searchParams[TOPIC_FILTER_KEY] === 'recent'
+        ? undefined
+        : searchParams[SORT_KEY]
+    const items = orderCombinedSearchResults(contracts ?? [], posts ?? [], {
+      sort,
+      preserveUnmarkedContractOrder:
+        sort === 'score' && searchParams[QUERY_KEY].trim().length > 0,
+    })
+
+    void track(DISCOVERY_EXPOSURE_EVENT, {
+      schemaVersion: 1,
+      presentationId: tracking.presentationId,
+      resultSetId: tracking.resultSetId,
+      variant: tracking.variant,
+      assignmentSource: tracking.source,
+      sourceComponent: tracking.sourceComponent,
+      surface: tracking.surface,
+      semanticEligible: tracking.semanticEligible,
+      semanticMarketCount: tracking.semanticMarketCount,
+      initialLatencyMs: tracking.initialLatencyMs,
+      compatibilityFallback: tracking.compatibilityFallback,
+      resultCount: items.length,
+      marketCount: items.filter((item) => 'mechanism' in item).length,
+      postCount: items.filter((item) => !('mechanism' in item)).length,
+      items: items.slice(0, MAX_TRACKED_DISCOVERY_ITEMS).map((item, index) =>
+        'mechanism' in item
+          ? {
+              id: item.id,
+              itemType: 'market',
+              rank: index + 1,
+              matchType: item.searchMatchType ?? 'lexical',
+            }
+          : {
+              id: item.id,
+              itemType: 'post',
+              rank: index + 1,
+            }
+      ),
+    })
+  }, [visible, tracking, contracts, posts, searchParams])
 }
 
 export const useSearchQueryState = (props: {

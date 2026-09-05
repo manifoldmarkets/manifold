@@ -194,6 +194,7 @@ export function ContractRow(props: {
   hideAvatar?: boolean
   answers?: Answer[]
   showPosition?: boolean
+  onTrackClick?: () => void
 }) {
   const contract = useLiveContract(props.contract)
   const isPoll = contract.outcomeType === 'POLL'
@@ -206,6 +207,7 @@ export function ContractRow(props: {
     onClick,
     answers,
     showPosition,
+    onTrackClick,
   } = props
 
   const savedMetric = useSavedContractMetrics(contract)
@@ -228,6 +230,7 @@ export function ContractRow(props: {
       <Link
         href={contractPath(contract)}
         onClick={(e) => {
+          onTrackClick?.()
           if (!onClick) {
             track('click browse contract', {
               slug: contract.slug,

@@ -1,11 +1,13 @@
 import { Contract, isSportsContract } from 'common/contract'
+import { DiscoveryExperimentVariant } from 'common/discovery-experiment'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
-import { GROUP_SCORE_PRIOR } from 'common/feed'
+import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
 import { getPerpBackingPool } from 'common/perps/amm'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 import { PrivateUser } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
+import { MINUTE_MS } from 'common/util/time'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -29,9 +31,124 @@ import {
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 
 const DEFAULT_THRESHOLD = 1000
+const GROUP_SCORE_POWER = 4
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
+
+// --- Stale-seen suppression (For You only) ------------------------------
+// Nothing is hidden for longer than this. Past it a market is fair game
+// again even if it has been completely quiet, so the shelf can never
+// permanently empty out.
+const SEEN_MEMORY_WINDOW = '7 days'
+// Views younger than this don't count yet. This is what makes going back
+// safe: scroll browse, open the 4th market, hit back — every card you
+// scrolled past is still inside the grace period, so the page you return
+// to looks like the page you left. The web client anchors this cutoff when a
+// fresh query starts and reuses it so load-more offsets see one stable set.
+const SEEN_GRACE_PERIOD = '1 hour'
+// Matches PROB_CHANGE_THRESHOLD in feed-market-movement-display.ts: the same
+// binary move that earns a card its movement badge also earns it another look.
+const SEEN_PROB_MOVE_THRESHOLD = 0.05
+// How far ahead of server time a client anchor may sit before it is refused.
+// Wide enough for request latency and an unsynced clock, narrow enough that
+// the grace period it eats into stays almost whole.
+const SEEN_CUTOFF_MAX_CLOCK_AHEAD_MS = 5 * MINUTE_MS
+
+/**
+ * Drops markets the user has already looked at and that are currently quiet
+ * from For You results. Suppression requires a session anchor: applying it to
+ * only the first page shifts the raw offsets on later pages and duplicates a
+ * row, while applying an unanchored moving boundary can skip rows.
+ *
+ * Browse ranks on score alone, so the same top markets greet you every visit.
+ * But "seen" is a weak signal and over-trusting it is worse than repetition,
+ * so this only fires in the narrow band where repetition is plausibly stale:
+ * seen, long enough ago to be a separate visit, recently enough to remember,
+ * no comment/resolution/new answer after the view, and no significant current
+ * daily movement.
+ *
+ * A view here means the card was ≥90% in the viewport (useIsVisible in
+ * feed-contract-card.tsx) or the market page was opened — not merely that the
+ * card was somewhere on a page that loaded. Promoted impressions are excluded
+ * deliberately: an ad scrolling past is not the user choosing to look at
+ * something.
+ *
+ * Resurfacing is driven by resolution, comments or answers after the view and
+ * by significant recent price movement. The stored movement metric is a
+ * rolling daily value, not a probability snapshot at view time, so do not
+ * describe it as movement since the view. We deliberately avoid last_bet_time:
+ * continuously traded markets would otherwise make this filter a no-op.
+ *
+ * The client-supplied anchor exists only to keep the seen set identical
+ * across the pages of one session; it is not trusted as a clock. Both bounds
+ * of the window hang off it, so a client clock running ahead would push the
+ * upper bound past the grace period and hide markets viewed minutes ago —
+ * the exact case the grace period protects. Clamping it to now() would not
+ * help: the clamp resolves to a fresh now() on every page until server time
+ * catches up, which is the moving boundary described above. Instead
+ * shouldSuppressStaleSeenMarkets identifies an anchor too far ahead of server
+ * time. The API rejects that first request so the web client can retry without
+ * an anchor and keep suppression off for the whole result set; silently
+ * returning an unfiltered page would let the decision flip during pagination
+ * as server time catches up. A clock running behind only ages the window,
+ * which at worst means nothing is suppressed.
+ */
+export const staleSeenMarketsSql = (
+  userId: string,
+  seenMarketCutoffTime?: number
+) => {
+  const anchor =
+    seenMarketCutoffTime === undefined ? 'now()' : 'millis_to_ts($2)'
+  return where(
+    `not exists (
+      select 1 from user_contract_views ucv
+      where ucv.user_id = $1
+        and ucv.contract_id = contracts.id
+        and greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+            between ${anchor} - interval '${SEEN_MEMORY_WINDOW}'
+                and ${anchor} - interval '${SEEN_GRACE_PERIOD}'
+        and coalesce(contracts.last_comment_time, contracts.created_time)
+            <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+        and coalesce(contracts.resolution_time, contracts.created_time)
+            <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+        -- Only CPMM markets have a normalized daily probability-change
+        -- metric. Perps, polls, and bounties can be active while probChanges
+        -- is absent, so never classify them as quiet from missing data.
+        and contracts.mechanism in ('cpmm-1', 'cpmm-multi-1')
+        and abs(coalesce((contracts.data->'probChanges'->>'day')::numeric, 0))
+            <= ${SEEN_PROB_MOVE_THRESHOLD}
+        -- Multi-answer markets store movement on answers, not contracts. A
+        -- new or moving answer should resurface the market.
+        and not exists (
+          select 1 from answers a
+          where a.contract_id = contracts.id
+            and (
+              a.created_time > greatest(
+                ucv.last_card_view_ts,
+                ucv.last_page_view_ts
+              )
+              or a.resolution_time > greatest(
+                ucv.last_card_view_ts,
+                ucv.last_page_view_ts
+              )
+              or abs(coalesce(a.prob_change_day, 0))
+                  > ${SEEN_PROB_MOVE_THRESHOLD}
+            )
+        )
+    )`,
+    seenMarketCutoffTime === undefined
+      ? [userId]
+      : [userId, seenMarketCutoffTime]
+  )
+}
+
+export const shouldSuppressStaleSeenMarkets = (
+  seenMarketCutoffTime?: number,
+  now = Date.now()
+) =>
+  seenMarketCutoffTime !== undefined &&
+  seenMarketCutoffTime <= now + SEEN_CUTOFF_MAX_CLOCK_AHEAD_MS
 
 type SharedSearchArgs = {
   filter: string
@@ -46,7 +163,19 @@ type SharedSearchArgs = {
   liquidity?: number
   isPrizeMarket?: boolean
   beforeTime?: number
+  seenMarketCutoffTime?: number
+  discoveryVariant?: DiscoveryExperimentVariant
 }
+
+export const getForYouTopicRankSql = (
+  sortByScore: string,
+  discoveryVariant: DiscoveryExperimentVariant | undefined
+) =>
+  discoveryVariant === 'treatment'
+    ? `power(${nicheBlendTopicScoreSql(
+        `coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR})`
+      )}, ${GROUP_SCORE_POWER}) * avg(contracts.${sortByScore})`
+    : `avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})`
 
 export async function getForYouSQL(
   args: SharedSearchArgs & {
@@ -62,6 +191,8 @@ export async function getForYouSQL(
     privateUser,
     threshold = DEFAULT_THRESHOLD,
     hasBets,
+    seenMarketCutoffTime,
+    discoveryVariant,
   } = args
 
   const userId = args.uid
@@ -92,10 +223,12 @@ export async function getForYouSQL(
       ...args,
       uid: userId,
       privateUser,
+      // Keep the same diversity behavior when a new/low-activity user has no
+      // topic scores yet. Ordinary basic browse does not opt into this.
+      suppressStaleSeen: discoveryVariant === 'treatment',
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
-  const GROUP_SCORE_POWER = 4
   const forYou = renderSql(
     buildArray(
       select(
@@ -117,6 +250,12 @@ export async function getForYouSQL(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
       ),
+      // A client-provided session anchor keeps the seen set stable across
+      // every offset page. Unanchored callers retain the old unsuppressed
+      // behavior so page-one filtering cannot shift their later offsets.
+      discoveryVariant === 'treatment' &&
+        shouldSuppressStaleSeenMarkets(seenMarketCutoffTime) &&
+        staleSeenMarketsSql(userId, seenMarketCutoffTime),
       privateUserBlocksSql(privateUser),
       withClause(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
@@ -142,7 +281,7 @@ export async function getForYouSQL(
       orderBy(`case
       when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})
+      then ${getForYouTopicRankSql(sortByScore, discoveryVariant)}
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
@@ -157,9 +296,10 @@ export async function getForYouSQL(
 export const basicSearchSQL = (
   args: SharedSearchArgs & {
     privateUser?: PrivateUser
+    suppressStaleSeen?: boolean
   }
 ) => {
-  const { sort, privateUser, beforeTime, ...rest } = args
+  const { sort, privateUser, beforeTime, suppressStaleSeen, ...rest } = args
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   const userBetsJoin = args.hasBets === '1' && args.uid && userBetsJoinSql
   const sql = renderSql(
@@ -171,6 +311,10 @@ export const basicSearchSQL = (
       ...rest,
       hideStonks: true,
     }),
+    suppressStaleSeen &&
+      args.uid &&
+      shouldSuppressStaleSeenMarkets(args.seenMarketCutoffTime) &&
+      staleSeenMarketsSql(args.uid, args.seenMarketCutoffTime),
     privateUserBlocksSql(privateUser),
     beforeTime && where(`created_time < millis_to_ts($1)`, [beforeTime]),
     lim(args.limit, beforeTime ? 0 : args.offset)
@@ -184,6 +328,126 @@ export type SearchTypes =
   | 'description'
   | 'prefix'
   | 'answer'
+
+// Full-text search finds nothing unless the user guesses a word that is
+// literally in the question, so a near miss lands on "only nothingness"
+// while a well-matched market sits one synonym away. Every open market
+// already has an embedding (contract_embeddings, kept current on create and
+// used by the related-markets rail), so the miss can be answered instead of
+// rendered as a dead end.
+//
+// Deliberately lower than TOPIC_SIMILARITY_THRESHOLD (0.5), which compares
+// two full questions. A search term is much shorter than the questions it is
+// being compared against, which drags cosine similarity down for matches that
+// are perfectly good.
+//
+// Calibrated 2026-08-14 against real query embeddings on dev (13 short
+// user-style queries vs stored question embeddings, same-model pairs):
+// ordinary good matches score 0.42-0.65, deep synonym matches with zero
+// keyword overlap ("riemann hypothesis" -> the zeta-zeros question) ~0.30,
+// junk-query noise floor 0.31-0.42. There is no clean separating value;
+// 0.35 leans toward recall, which is the right bias for a tail that only
+// appears on otherwise-dead pages. Raising it above ~0.4 silently kills the
+// synonym cases this feature exists for.
+//
+// Caveat: similarity is only meaningful between same-model embeddings. The
+// embedding model changed 2024-06-27 (0329b37ae, ada-002 -> 3-small, same
+// 1536 dims); contracts whose stored embedding predates a re-embed are pure
+// noise against query vectors and can never surface here.
+export const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.35
+// Over-fetch from the index, then let the normal filters cut it down, the
+// same way close_contract_embeddings does with match_count + 500.
+const SEMANTIC_SEARCH_OVERFETCH = 200
+
+// Shared by the lexical and semantic paths so a topic-scoped search can't
+// come back with out-of-topic results from one of them.
+const groupsFilterSql = (args: {
+  groupId?: string
+  groupIds?: string[]
+  token: TokenInputType
+}) => {
+  const { groupId, groupIds, token } = args
+  return (
+    (groupIds?.length || groupId) &&
+    where(
+      `
+    exists (
+      select 1 from group_contracts gc
+      where ${
+        token === 'CASH'
+          ? "gc.contract_id = contracts.data->>'siblingContractId'"
+          : 'gc.contract_id = contracts.id'
+      }
+      and gc.group_id = any($1)
+    )`,
+      [filterDefined([groupId, ...(groupIds ?? [])])]
+    )
+  )
+}
+
+// News surfaces only markets that moved recently. Shared for the same reason
+// as groupsFilterSql: both search paths must apply it, or the semantic tail
+// would pad the movers page with dormant markets.
+const newsMovementFilterSql = () => [
+  withClause(
+    `recent_movements as (
+        select distinct contract_id
+        from contract_movement_notifications
+        where created_time > now() - interval '72 hours'
+      )`
+  ),
+  join(`recent_movements rm on rm.contract_id = contracts.id`),
+]
+
+/**
+ * Nearest markets to an already-computed query embedding, run through the
+ * same filters as a normal search so status/type/token/blocks still hold.
+ */
+export function getSemanticSearchContractSQL(
+  args: SharedSearchArgs & {
+    embedding: number[]
+    groupId?: string
+    groupIds?: string[]
+    privateUser?: PrivateUser
+    excludeContractIds?: string[]
+  }
+) {
+  const {
+    embedding,
+    limit,
+    filter,
+    uid,
+    hasBets,
+    privateUser,
+    excludeContractIds,
+  } = args
+  return renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
+    from(`search_contract_embeddings($1::vector, $2, $3) as se`, [
+      // pgvector parses its literal from a JSON-shaped array string.
+      JSON.stringify(embedding),
+      SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
+      SEMANTIC_SEARCH_OVERFETCH,
+    ]),
+    join('contracts on contracts.id = se.contract_id'),
+    groupsFilterSql(args),
+    filter === 'news' && newsMovementFilterSql(),
+    hasBets === '1' && uid && userBetsJoinSql,
+    // Both hide* flags mirror what the lexical path computes when a term is
+    // present (always the case here): an explicit search never hides stonks
+    // or resolved sports markets, and the two halves of one response must
+    // obey the same visibility rules.
+    getSearchContractWhereSQL({ ...args, hideStonks: false, hideLove: false }),
+    privateUserBlocksSql(privateUser),
+    // Already-returned lexical hits, so the tail can't repeat the head.
+    (excludeContractIds?.length ?? 0) > 0 &&
+      where(`contracts.id <> all($1)`, [excludeContractIds]),
+    orderBy('se.similarity desc'),
+    // sql-builder silently drops a limit of 0 (rendering NO limit clause), so
+    // clamp: callers must never pass 0, but if one does, 1 row beats 200.
+    lim(Math.max(limit, 1))
+  )
+}
 
 export function getSearchContractSQL(
   args: SharedSearchArgs & {
@@ -230,36 +494,10 @@ export function getSearchContractSQL(
     where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
-  const groupsFilter =
-    (groupIds?.length || groupId) &&
-    where(
-      `
-    exists (
-      select 1 from group_contracts gc
-      where ${
-        token === 'CASH'
-          ? "gc.contract_id = contracts.data->>'siblingContractId'"
-          : 'gc.contract_id = contracts.id'
-      }
-      and gc.group_id = any($1)
-    )`,
-      [filterDefined([groupId, ...(groupIds ?? [])])]
-    )
+  const groupsFilter = groupsFilterSql({ groupId, groupIds, token })
 
   // Recent movements filter
-  const newsFilter =
-    filter === 'news' &&
-    withClause(
-      `recent_movements as (
-        select distinct contract_id
-        from contract_movement_notifications
-        where created_time > now() - interval '72 hours'
-      )`
-    )
-
-  const newsJoin =
-    filter === 'news' &&
-    join(`recent_movements rm on rm.contract_id = contracts.id`)
+  const newsMovement = filter === 'news' && newsMovementFilterSql()
 
   const newsWhere =
     filter === 'news' &&
@@ -272,8 +510,7 @@ export function getSearchContractSQL(
     select(contractColumnsToSelectWithPrefix('contracts')),
     from('contracts'),
     groupsFilter,
-    newsFilter,
-    newsJoin,
+    newsMovement,
     newsWhere,
     userBetsJoin,
     searchType === 'answer' &&

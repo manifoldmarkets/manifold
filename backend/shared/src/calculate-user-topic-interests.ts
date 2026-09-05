@@ -200,7 +200,19 @@ const getPreviousStats = async (
   userIds: string[],
   createdTimesOnly?: string[]
 ) => {
-  if (createdTimesOnly && createdTimesOnly.length === 0) return
+  // Module-level, so it survives between calls in a long-lived process. It
+  // sums into whatever is already there, so a second call in the same process
+  // would double-count every prior hit/miss. backfillUserTopicInterests calls
+  // this repeatedly in one process, so reset before the early return as well;
+  // a skipped load must not leave the last call's numbers behind.
+  for (const userId of Object.keys(userIdToGroupStats)) {
+    delete userIdToGroupStats[userId]
+  }
+  if (
+    userIds.length === 0 ||
+    (createdTimesOnly && createdTimesOnly.length === 0)
+  )
+    return
   const previousStats = await pg.map(
     `
     select user_id, group_ids_to_activity, created_time from user_topic_interests

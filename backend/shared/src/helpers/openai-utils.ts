@@ -1,4 +1,5 @@
 import { APIError } from 'common/api/utils'
+import { removeUndefinedProps } from 'common/util/object'
 // import { buildArray } from 'common/util/array'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
@@ -10,25 +11,39 @@ export const models = {
   gpt5: 'gpt-5.4',
   gpt5mini: 'gpt-5.4-mini',
 } as const
+export const EMBEDDING_MODEL = 'text-embedding-3-small'
 
-export const generateEmbeddings = async (question: string) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+export const generateEmbeddings = async (
+  question: string,
+  opts?: { timeoutMs?: number; maxRetries?: number }
+) => {
   let response
   try {
-    response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: question,
-    })
-  } catch (e: any) {
+    // Inside the try: the constructor itself throws when no key is configured.
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    response = await openai.embeddings.create(
+      {
+        model: EMBEDDING_MODEL,
+        input: question,
+      },
+      // Absent keys fall through to the SDK defaults (~10 min, 2 retries);
+      // the SDK rejects explicitly-undefined values, hence the strip.
+      removeUndefinedProps({
+        timeout: opts?.timeoutMs,
+        maxRetries: opts?.maxRetries,
+      })
+    )
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
     log.error(
       'Error generating embeddings ' +
         (!process.env.OPENAI_API_KEY ? ' (no OpenAI API key found) ' : ' ') +
-        e.message
+        message
     )
     return undefined
   }
-  log('Made embeddings for question', question)
-  return response.data[0].embedding
+  log('Made embeddings')
+  return response.data[0]?.embedding
 }
 
 const imagePrompt = (q: string) =>
