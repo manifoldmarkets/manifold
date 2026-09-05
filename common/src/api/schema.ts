@@ -48,6 +48,7 @@ import {
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
+import { SportsScheduleResponse } from 'common/sports-schedule'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -4982,6 +4983,43 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       markets: SportsMarket[]
     },
+  },
+
+  // Upcoming, live and just-finished games across every sport, each with the
+  // ids of its related markets (props, totals, community side-bets). Powers the
+  // /sports schedule. Probabilities move over websockets after the first load,
+  // so a short shared cache keeps the fan-out cheap.
+  'sports-schedule': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=30, stale-while-revalidate=60',
+    props: z
+      .object({
+        sport: z
+          .enum([
+            'all',
+            'nfl',
+            'nba',
+            'mlb',
+            'nhl',
+            'soccer',
+            'ncaaf',
+            'ncaab',
+            'tennis',
+            'f1',
+            'mma',
+            'golf',
+            'cricket',
+            'other',
+          ])
+          .optional(),
+        daysAhead: z.coerce.number().int().min(1).max(60).optional(),
+        limit: z.coerce.number().int().min(1).max(400).optional(),
+        includeRelated: coerceBoolean.optional(),
+      })
+      .strict(),
+    returns: {} as SportsScheduleResponse,
   },
 
   'admin-sports-resolve': {

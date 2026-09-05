@@ -231,6 +231,7 @@ import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
 import { sportsMarkets } from './sports-markets'
+import { sportsSchedule } from './sports-schedule'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -612,6 +613,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
   'sports-markets': sportsMarkets,
+  'sports-schedule': sportsSchedule,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,
