@@ -100,8 +100,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // Attach related markets (props, totals, community side-bets) to each game.
   if (props.includeRelated !== false && filtered.length > 0) {
     const candidates = await getRelatedCandidates(pg, sport)
-    for (const g of filtered) {
-      const matches = findRelatedMarkets(
+    const candidateClose = new Map(candidates.map((c) => [c.id, c.closeTime]))
+    const matchesByGame = filtered.map((g) =>
+      findRelatedMarkets(
         {
           id: g.id,
           sport: g.sport,
@@ -111,11 +112,34 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           away: { name: g.away.name, shortText: g.away.shortName },
         },
         candidates,
-        MAX_RELATED_PER_GAME
+        MAX_RELATED_PER_GAME * 2
       )
+    )
+    // A name-matched market (a series bet, a weekly rematch) can match several
+    // games of the same fixture; keep it on the game whose kickoff is nearest
+    // its close. Official (same event id) matches are already exact.
+    const bestGameFor = new Map<string, { gameId: string; distance: number }>()
+    filtered.forEach((g, i) => {
+      for (const m of matchesByGame[i]) {
+        if (m.kind === 'official') continue
+        const close = candidateClose.get(m.id)
+        const distance =
+          close == null ? Infinity : Math.abs(close - g.startTime)
+        const best = bestGameFor.get(m.id)
+        if (!best || distance < best.distance) {
+          bestGameFor.set(m.id, { gameId: g.id, distance })
+        }
+      }
+    })
+    filtered.forEach((g, i) => {
+      const matches = matchesByGame[i]
+        .filter(
+          (m) => m.kind === 'official' || bestGameFor.get(m.id)?.gameId === g.id
+        )
+        .slice(0, MAX_RELATED_PER_GAME)
       g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
       g.relatedCount = matches.length
-    }
+    })
   }
 
   const response: SportsScheduleResponse = {

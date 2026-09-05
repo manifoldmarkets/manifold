@@ -51,17 +51,11 @@ describe('splitFlag', () => {
 describe('teamAliases / mentionsTeam', () => {
   it('derives nickname, city and abbreviation aliases', () => {
     const aliases = teamAliases('Kansas City Chiefs', 'KC').map((a) => a.alias)
-    expect(aliases).toEqual([
-      'Kansas City Chiefs',
-      'Chiefs',
-      'Kansas City',
-      'KC',
-    ])
+    expect(aliases).toEqual(['Kansas City Chiefs', 'Chiefs', 'KC'])
   })
   it('does not use generic trailing words as aliases', () => {
     const aliases = teamAliases('Manchester United').map((a) => a.alias)
-    expect(aliases).toContain('Manchester')
-    expect(aliases).not.toContain('United')
+    expect(aliases).toEqual(['Manchester United'])
   })
   it('matches whole words only', () => {
     const jets = teamAliases('New York Jets', 'NYJ')
@@ -297,8 +291,8 @@ describe('parseVersusQuestion / versusAnswers', () => {
       away: 'ARG',
     })
     expect(parseVersusQuestion('Lakers @ Celtics: who wins?')).toEqual({
-      home: 'Lakers',
-      away: 'Celtics',
+      home: 'Celtics',
+      away: 'Lakers',
     })
   })
   it('rejects non-matchup questions', () => {
@@ -392,5 +386,86 @@ describe('relatedGroupFor', () => {
         kind: 'one-team',
       })
     ).toBe('community')
+  })
+})
+
+describe('review follow-ups', () => {
+  it('does not treat a shared city as a team mention', () => {
+    const lakers = teamAliases('Los Angeles Lakers', 'LAL')
+    expect(
+      mentionsTeam('Will the Los Angeles Clippers win 50 games?', lakers)
+    ).toBe(false)
+    expect(mentionsTeam('Will the Lakers win 50 games?', lakers)).toBe(true)
+  })
+  it('knows two-word nicknames', () => {
+    const sox = teamAliases('Boston Red Sox', 'BOS').map((a) => a.alias)
+    expect(sox).toContain('Red Sox')
+    expect(sox).not.toContain('Sox')
+    const leafs = teamAliases('Toronto Maple Leafs').map((a) => a.alias)
+    expect(leafs).toContain('Maple Leafs')
+  })
+  it('reads "A @ B" as A away at B', () => {
+    expect(parseVersusQuestion('Lakers @ Celtics')).toEqual({
+      home: 'Celtics',
+      away: 'Lakers',
+    })
+  })
+  it('keeps hyphenated names intact', () => {
+    expect(parseVersusQuestion('Arsenal vs Saint-Etienne')).toEqual({
+      home: 'Arsenal',
+      away: 'Saint-Etienne',
+    })
+    expect(parseVersusQuestion('Arsenal vs Chelsea - who wins?')).toEqual({
+      home: 'Arsenal',
+      away: 'Chelsea',
+    })
+  })
+  it('refuses ambiguous answer pairings', () => {
+    expect(
+      versusAnswers({ home: 'Los Angeles', away: 'Los Angeles' }, [
+        { text: 'Los Angeles Lakers' },
+        { text: 'Los Angeles Clippers' },
+      ])
+    ).toBeNull()
+    const r = versusAnswers({ home: 'Lakers', away: 'Clippers' }, [
+      { text: 'Los Angeles Clippers' },
+      { text: 'Los Angeles Lakers' },
+    ])
+    expect(r?.home.text).toBe('Los Angeles Lakers')
+  })
+  it('files player stat lines as props, handicaps as game lines', () => {
+    expect(
+      relatedGroupFor({
+        question: 'Will Mahomes throw for 300.5+ yards?',
+        kind: 'one-team',
+      })
+    ).toBe('props')
+    expect(
+      relatedGroupFor({ question: 'Chiefs -3.5 vs Bills?', kind: 'both-teams' })
+    ).toBe('game-lines')
+    expect(
+      relatedGroupFor({
+        question: 'Will the total be over 210 points?',
+        kind: 'both-teams',
+      })
+    ).toBe('game-lines')
+  })
+  it('treats a poller FINISHED status as finished even before resolution', () => {
+    expect(
+      gameStatus({
+        startTime: 0,
+        closeTime: 10 * HOUR_MS,
+        isResolved: false,
+        liveStatus: 'FINISHED',
+        liveUpdatedTime: HOUR_MS,
+        now: 2 * HOUR_MS,
+      })
+    ).toBe('finished')
+  })
+  it('keeps national team names with connectives whole on phones', () => {
+    expect(teamDisplayName('Bosnia and Herzegovina')).toBe(
+      'Bosnia and Herzegovina'
+    )
+    expect(teamDisplayName('Trinidad and Tobago')).toBe('Trinidad and Tobago')
   })
 })

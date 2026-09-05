@@ -1,8 +1,7 @@
 import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useMemo, useState } from 'react'
 import {
   Contract,
   contractPath,
@@ -18,9 +17,9 @@ import { Button } from 'web/components/buttons/button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { gamePath } from './game-row'
@@ -33,28 +32,22 @@ import { gamePath } from './game-row'
 export function GameRelatedMarkets(props: { game: ScheduleGame }) {
   const { game } = props
   const ids = game.related.map((r) => r.id)
-  const [contracts, setContracts] = usePersistentInMemoryState<
-    Contract[] | undefined
-  >(undefined, `sports-related-${game.id}-${ids.join(',')}`)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    if (contracts !== undefined || ids.length === 0) return
-    let cancelled = false
-    api('markets-by-ids', { ids })
-      .then((cs) => {
-        if (cancelled) return
-        // Keep the server's order (best matches first).
-        const byId = new Map(cs.map((c) => [c.id, c]))
-        setContracts(
-          ids.map((id) => byId.get(id)).filter((c): c is Contract => !!c)
-        )
-      })
-      .catch(() => !cancelled && setError(true))
-    return () => {
-      cancelled = true
-    }
-  }, [ids.join(',')])
+  // Fetched on first expand and cached per game; refetches if the id list
+  // changes (a new prop appeared), keeping the previous list on screen.
+  const { data, error } = useAPIGetter(
+    'markets-by-ids',
+    { ids },
+    undefined,
+    `sports-related-${game.id}`,
+    ids.length > 0
+  )
+  const contracts = useMemo(() => {
+    if (ids.length === 0) return []
+    if (!data) return undefined
+    // Keep the server's order (best matches first).
+    const byId = new Map(data.map((c) => [c.id, c]))
+    return ids.map((id) => byId.get(id)).filter((c): c is Contract => !!c)
+  }, [data, ids.join(',')])
 
   const groupById = new Map(game.related.map((r) => [r.id, r.group]))
   const inGroup = (group: RelatedGroup) =>

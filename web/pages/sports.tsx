@@ -32,7 +32,10 @@ const LEGACY_TAB_TO_SPORT: Record<string, SportSelection> = {
 }
 
 const isSportSelection = (s: unknown): s is SportSelection =>
-  s === 'all' || s === 'live' || (typeof s === 'string' && !!SPORT_BY_KEY[s])
+  s === 'all' ||
+  s === 'live' ||
+  (typeof s === 'string' &&
+    Object.prototype.hasOwnProperty.call(SPORT_BY_KEY, s))
 
 export default function SportsPage() {
   const user = useUser()
@@ -54,7 +57,9 @@ export default function SportsPage() {
     return LEGACY_TAB_TO_SPORT[value]
   }, [router.isReady, router.query.sport, router.query.tab])
 
-  const selected: SportSelection = querySport ?? savedSport
+  // Stored values are user data: validate before trusting them.
+  const selected: SportSelection =
+    querySport ?? (isSportSelection(savedSport) ? savedSport : 'all')
   useEffect(() => {
     if (querySport && querySport !== savedSport) setSavedSport(querySport)
   }, [querySport])
@@ -118,7 +123,7 @@ export default function SportsPage() {
           <Col className="min-w-0 gap-4">
             <ScheduleList
               games={games}
-              loading={loading}
+              loading={loading || !schedule}
               showLeague={selected === 'all' || selected === 'live'}
               liveOnly={selected === 'live'}
               emptyState={

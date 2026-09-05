@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import {
   LIVE_STATUSES,
@@ -86,6 +86,10 @@ export function useSportsSchedule(sport: SportKey | 'all') {
   })
 
   // Safety refetch while a game is live or within a few hours of kickoff.
+  // `refresh` is re-created per render and bound to the current sport, so
+  // the interval reads it through a ref.
+  const refreshRef = useRef(refresh)
+  refreshRef.current = refresh
   const hasActive = games.some(
     (g) =>
       g.status === 'live' ||
@@ -93,14 +97,9 @@ export function useSportsSchedule(sport: SportKey | 'all') {
   )
   useEffect(() => {
     if (!hasActive || !isPageVisible) return
-    const id = setInterval(() => refresh(), 120_000)
+    const id = setInterval(() => refreshRef.current(), 120_000)
     return () => clearInterval(id)
-  }, [hasActive, isPageVisible])
-
-  // A fresh fetch supersedes the overlay.
-  useEffect(() => {
-    setLive({})
-  }, [data])
+  }, [hasActive, isPageVisible, sport])
 
   const merged: SportsScheduleResponse | undefined = useMemo(() => {
     if (!data) return undefined

@@ -286,6 +286,13 @@ const GENERIC_TEAM_WORDS = new Set([
   'the',
   'team',
   'hotspur',
+  'madrid',
+  'milan',
+  'korea',
+  'ireland',
+  'guinea',
+  'congo',
+  'sudan',
   'villa',
   'palace',
   'forest',
@@ -310,6 +317,8 @@ const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 export function teamDisplayName(name: string, maxLength = 14): string {
   const plain = splitFlag(name).name.trim()
   if (plain.length <= maxLength) return plain
+  // "Bosnia and Herzegovina", "Republic of Ireland": the last word misleads.
+  if (/\s(and|of|&)\s/i.test(plain)) return plain
   const words = plain.split(/\s+/)
   if (words.length >= 2) {
     const last = words[words.length - 1]
@@ -327,7 +336,7 @@ export function teamDisplayName(name: string, maxLength = 14): string {
 // matchup and the answers are the two sides (plus an optional Draw).
 
 const VERSUS_RE =
-  /^(.{2,60}?)\s+(?:vs\.?|v\.?|versus|@)\s+(.{2,60}?)(?:\s*[[(:|·–—-].*)?$/i
+  /^(.{2,60}?)\s+(vs\.?|v\.?|versus|@)\s+(.{2,60}?)(?:\s*[[(:].*|\s+[|·–—-]\s.*)?$/i
 
 const stripEmoji = (s: string) =>
   s.replace(/\p{Extended_Pictographic}|\p{Regional_Indicator}|️/gu, '').trim()
@@ -338,10 +347,14 @@ export function parseVersusQuestion(
   const q = stripEmoji(question).replace(/\s+/g, ' ').trim()
   const m = q.match(VERSUS_RE)
   if (!m) return null
-  const home = m[1].trim().replace(/^(who wins|winner):?\s*/i, '')
-  const away = m[2].trim().replace(/\?$/, '')
-  if (!home || !away || home.toLowerCase() === away.toLowerCase()) return null
-  return { home, away }
+  const first = m[1].trim().replace(/^(who wins|winner):?\s*/i, '')
+  const second = m[3].trim().replace(/\?$/, '')
+  if (!first || !second || first.toLowerCase() === second.toLowerCase())
+    return null
+  // US convention: "Lakers @ Celtics" is the Lakers away at the Celtics.
+  return m[2] === '@'
+    ? { home: second, away: first }
+    : { home: first, away: second }
 }
 
 const DRAW_ANSWERS = new Set(['draw', 'tie', 'draw/tie', 'tie/draw'])
@@ -360,23 +373,29 @@ export function versusAnswers<A extends { text: string }>(
     null
   const teams = answers.filter((a) => a !== draw)
   if (teams.length !== 2) return null
-  const matches = (side: string, a: A) => {
+  // Strength of the side ↔ answer correspondence: exact beats containment
+  // beats an alias hit, so "Los Angeles Lakers" pairs with "Lakers" rather
+  // than with a "Los Angeles Clippers" answer that merely shares the city.
+  const strength = (side: string, a: A) => {
     const s = stripEmoji(side).toLowerCase()
     const t = stripEmoji(a.text).toLowerCase()
-    return (
-      s === t ||
-      t.includes(s) ||
-      s.includes(t) ||
+    if (s === t) return 3
+    if (t.includes(s) || s.includes(t)) return 2
+    if (
       mentionsTeam(s, teamAliases(a.text)) ||
       mentionsTeam(t, teamAliases(side))
     )
+      return 1
+    return 0
   }
   const [a0, a1] = teams
-  if (matches(sides.home, a0) && matches(sides.away, a1))
-    return { home: a0, away: a1, draw }
-  if (matches(sides.home, a1) && matches(sides.away, a0))
-    return { home: a1, away: a0, draw }
-  return null
+  const straight = Math.min(strength(sides.home, a0), strength(sides.away, a1))
+  const swapped = Math.min(strength(sides.home, a1), strength(sides.away, a0))
+  if (straight === 0 && swapped === 0) return null
+  if (straight === swapped) return null // ambiguous: both answers fit both sides
+  return straight > swapped
+    ? { home: a0, away: a1, draw }
+    : { home: a1, away: a0, draw }
 }
 
 /** Whether a market question is about the same fixture as a game. */
@@ -415,14 +434,24 @@ export function teamAliases(
   const words = plain.split(' ')
   if (words.length >= 2) {
     const last = words[words.length - 1]
-    if (!GENERIC_TEAM_WORDS.has(last.toLowerCase()) && last.length >= 4) {
-      push(last)
+    const lastOk =
+      !GENERIC_TEAM_WORDS.has(last.toLowerCase()) && last.length >= 4
+    if (lastOk) push(last)
+    // Two-word nicknames: "Boston Red Sox" → "Red Sox", "Toronto Maple Leafs"
+    // → "Maple Leafs", "Portland Trail Blazers" → "Trail Blazers".
+    if (words.length >= 3) {
+      const lastTwo = words.slice(-2).join(' ')
+      const penult = words[words.length - 2]
+      if (
+        !GENERIC_TEAM_WORDS.has(penult.toLowerCase()) &&
+        (!lastOk || /^[A-Z]/.test(penult)) &&
+        lastTwo.length >= 6
+      ) {
+        push(lastTwo)
+      }
     }
-    // "Kansas City Chiefs" → "Kansas City"; "Manchester United" → "Manchester".
-    const head = words.slice(0, -1).join(' ')
-    if (head.length >= 5 && !GENERIC_TEAM_WORDS.has(head.toLowerCase())) {
-      push(head)
-    }
+    // No bare city alias: "Los Angeles" or "New York" alone would tie a
+    // market to every team in town.
   }
   if (shortText) {
     const short = splitFlag(shortText).name.trim()
@@ -519,7 +548,9 @@ export interface RelatedMatch {
 }
 
 const GAME_LINE_RE =
-  /\b(spread|handicap|cover|total|over\/under|o\/u|over \d|under \d|\d+\.5|first half|1st half|second half|2nd half|half[- ]time|halftime|both teams to score|btts|margin|exact score|correct score|overtime|extra time|go to ot)\b/i
+  /\b(spread|handicap|cover|total|over\/under|o\/u|first half|1st half|second half|2nd half|half[- ]time|halftime|both teams to score|btts|margin|exact score|correct score|overtime|extra time|go to ot)\b|[+-]\d+(\.5)?\b/i
+const PLAYER_STAT_RE =
+  /\b(yards|yds|rebounds|assists|strikeouts|receptions|completions|passing|rushing|receiving|three-pointers|threes|3-pointers|saves|tackles|sacks|double-double|triple-double)\b/i
 const PROP_RE =
   /\b(yards|yds|points|pts|rebounds|assists|touchdown|touchdowns|td|tds|goal|goals|score first|first (basket|goal|touchdown|to score)|anytime|hits|strikeouts|home run|hr|shots|saves|corners|cards|clean sheet|hat[- ]trick|mvp|player of the match|man of the match|interception|sack|three-pointers|threes|3-pointers|double-double|triple-double)\b/i
 
@@ -528,6 +559,9 @@ export function relatedGroupFor(props: {
   kind: RelatedMatchKind
 }): RelatedGroup {
   const { question, kind } = props
+  // A player stat with a number ("300+ yards", "27.5 points") is a prop even
+  // though it carries a line; team/game numbers are lines.
+  if (PLAYER_STAT_RE.test(question)) return 'props'
   if (GAME_LINE_RE.test(question)) return 'game-lines'
   if (PROP_RE.test(question)) return 'props'
   // An official market we can't classify is still a prop from the pipeline.
@@ -689,6 +723,7 @@ export interface SportsScheduleResponse {
 // football-data live statuses that mean a match is in play (there is no
 // HALF_TIME status; the break is PAUSED).
 export const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
+export const TERMINAL_STATUSES = new Set(['FINISHED', 'AWARDED'])
 export const LIVE_STALE_MS = 10 * 60 * 1000
 
 export function gameStatus(props: {
@@ -703,6 +738,7 @@ export function gameStatus(props: {
     props
   const now = props.now ?? Date.now()
   if (isResolved) return 'finished'
+  if (liveStatus && TERMINAL_STATUSES.has(liveStatus)) return 'finished'
   const freshLive =
     !!liveStatus &&
     LIVE_STATUSES.has(liveStatus) &&

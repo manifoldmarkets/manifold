@@ -139,6 +139,9 @@ export function GameRow(props: {
         tabIndex={0}
         onClick={toggle}
         onKeyDown={(e) => {
+          // Only when the row itself is focused: the price chips inside are
+          // real buttons and handle their own Enter / Space.
+          if (e.target !== e.currentTarget) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             toggle()
@@ -255,9 +258,7 @@ export function GameRow(props: {
           <Row
             className={clsx(
               'items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors',
-              expanded
-                ? 'text-primary-700 bg-primary-50'
-                : 'text-ink-500 group-hover:text-ink-700'
+              expanded ? 'text-primary-700 bg-primary-50' : 'text-ink-500'
             )}
           >
             <span className="hidden sm:inline">
@@ -405,7 +406,8 @@ export function PriceChip(props: {
         muted
           ? 'bg-canvas-50 text-ink-600 hover:bg-primary-100 hover:text-primary-800 border-ink-200 border text-xs'
           : 'bg-primary-50 text-primary-800 hover:bg-primary-600 hover:text-ink-0',
-        disabled && 'hover:bg-primary-50 cursor-default opacity-60'
+        disabled &&
+          'hover:bg-primary-50 hover:text-primary-800 cursor-default opacity-60'
       )}
     >
       {pct}%
