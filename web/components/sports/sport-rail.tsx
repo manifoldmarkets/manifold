@@ -34,6 +34,7 @@ export function SportRail(props: {
     <Carousel
       className={clsx('w-full', className)}
       labelsParentClassName="gap-1.5 py-2"
+      fadeEdges
       showArrowsOnHover
     >
       <SportChip

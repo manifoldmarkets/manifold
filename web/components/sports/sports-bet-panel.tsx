@@ -34,9 +34,12 @@ const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
 export function SportsVersusBetDialog({
   contractId,
   onClose,
+  initialSide,
 }: {
   contractId: string | undefined
   onClose: () => void
+  /** Which team the dialog opens on: 'home' is the first answer. */
+  initialSide?: 'home' | 'away'
 }) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
 
@@ -68,6 +71,7 @@ export function SportsVersusBetDialog({
       setOpen={(open) => {
         if (!open) onClose()
       }}
+      initialOutcome={initialSide === 'away' ? 'NO' : 'YES'}
     />
   )
 }

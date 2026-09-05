@@ -58,14 +58,30 @@ export default function SportsPage() {
   }, [router.isReady, router.query.sport, router.query.tab])
 
   // Stored values are user data: validate before trusting them.
-  const selected: SportSelection =
-    querySport ?? (isSportSelection(savedSport) ? savedSport : 'all')
+  const restored: SportSelection = isSportSelection(savedSport)
+    ? savedSport
+    : 'all'
+  const requested: SportSelection = querySport ?? restored
   useEffect(() => {
     if (querySport && querySport !== savedSport) setSavedSport(querySport)
   }, [querySport])
+  // A sport restored from storage shows up in the address bar too, so the
+  // page and the URL never disagree.
+  useEffect(() => {
+    if (!router.isReady || querySport || restored === 'all') return
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, sport: restored },
+      },
+      undefined,
+      { shallow: true }
+    )
+  }, [router.isReady])
 
   const setSelected = (sport: SportSelection) => {
-    setSavedSport(sport)
+    // "Live" is a moment, not a preference: remember the sport underneath it.
+    setSavedSport(sport === 'live' ? 'all' : sport)
     const query = { ...router.query }
     delete query.tab
     if (sport === 'all') delete query.sport
@@ -76,8 +92,15 @@ export default function SportsPage() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
   }
 
-  const scheduleSport: SportKey | 'all' = selected === 'live' ? 'all' : selected
-  const { schedule, loading } = useSportsSchedule(scheduleSport)
+  const scheduleSport: SportKey | 'all' =
+    requested === 'live' ? 'all' : requested
+  // Don't fetch until the router has told us which sport the URL asks for.
+  const { schedule, loading } = useSportsSchedule(scheduleSport, router.isReady)
+  // If nothing is live any more, the Live chip is gone: fall back to All.
+  const selected: SportSelection =
+    requested === 'live' && schedule && schedule.liveCount === 0
+      ? 'all'
+      : requested
   const games = schedule?.games ?? []
   const sport =
     selected === 'all' || selected === 'live'
@@ -110,7 +133,7 @@ export default function SportsPage() {
           </Link>
         </Row>
 
-        <div className="bg-canvas-50 sticky top-0 z-20 -mx-2 px-2 sm:-mx-4 sm:px-4">
+        <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
           <SportRail
             selected={selected}
             onSelect={setSelected}

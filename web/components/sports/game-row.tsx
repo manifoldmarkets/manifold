@@ -96,9 +96,13 @@ export function GameRow(props: {
   const user = useUser()
 
   const live = game.status === 'live'
+  // A live feed (score / clock) is only available for some leagues; without it
+  // the row says "In progress" rather than pretending to have a clock.
+  const hasFeed = live && !!game.liveScore
   const finished = game.status === 'finished'
   const canBet = !finished
   const sport = SPORT_BY_KEY[game.sport]
+  const panelId = `game-related-${game.id}`
 
   const score =
     game.finalScore ??
@@ -148,11 +152,15 @@ export function GameRow(props: {
           }
         }}
         aria-expanded={expanded}
-        className="grid cursor-pointer grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:gap-x-3 sm:px-3"
+        aria-controls={panelId}
+        aria-label={`${game.home.name} vs ${game.away.name}: ${
+          expanded ? 'hide' : 'show'
+        } related markets`}
+        className="grid cursor-pointer grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:gap-x-3 sm:px-3"
       >
         {/* Kickoff / live clock / final */}
         <Col className="items-start gap-0.5 self-start pt-1">
-          {live ? (
+          {hasFeed ? (
             <>
               <Row className="items-center gap-1 text-[11px] font-semibold text-red-600">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
@@ -160,16 +168,23 @@ export function GameRow(props: {
               </Row>
               {game.liveScore?.minute && (
                 <span className="text-ink-600 text-xs tabular-nums">
-                  {game.liveScore.minute === 'HT'
-                    ? 'HT'
-                    : `${game.liveScore.minute}'`}
+                  {formatMinute(game.liveScore.minute)}
                 </span>
               )}
+            </>
+          ) : live ? (
+            <>
+              <span className="text-[11px] font-semibold text-red-600">
+                In progress
+              </span>
+              <span className="text-ink-500 text-[11px]">
+                Started {formatJustTime(game.startTime).replace(':00', '')}
+              </span>
             </>
           ) : finished ? (
             <>
               <span className="text-ink-600 text-xs font-semibold">
-                {game.isResolved ? 'Final' : 'Ended'}
+                {game.isResolved ? 'Final' : 'Awaiting result'}
               </span>
               <span className="text-ink-500 text-[11px]">
                 {dayjs(game.startTime).format('ddd')}
@@ -198,7 +213,7 @@ export function GameRow(props: {
           )}
           {game.source === 'community' && (
             <span
-              className="bg-ink-100 text-ink-500 mt-0.5 rounded px-1 text-[9px] font-semibold uppercase tracking-wide"
+              className="bg-ink-100 text-ink-500 mt-0.5 rounded px-1 text-[8px] font-semibold uppercase sm:text-[9px] sm:tracking-wide"
               title={`Created by @${game.creatorUsername}`}
             >
               Community
@@ -207,7 +222,7 @@ export function GameRow(props: {
         </Col>
 
         {/* Teams + prices */}
-        <Col className="min-w-0 gap-1">
+        <Col className="min-w-0 gap-1.5 sm:gap-1">
           <TeamLine
             team={game.home}
             score={score?.home ?? null}
@@ -280,7 +295,7 @@ export function GameRow(props: {
         </Col>
       </div>
 
-      {expanded && <GameRelatedMarkets game={game} />}
+      <div id={panelId}>{expanded && <GameRelatedMarkets game={game} />}</div>
 
       {betOutcome &&
         (game.draw ? (
@@ -292,6 +307,7 @@ export function GameRow(props: {
         ) : (
           <SportsVersusBetDialog
             contractId={game.id}
+            initialSide={betOutcome === 'teamB' ? 'away' : 'home'}
             onClose={() => setBetOutcome(null)}
           />
         ))}
@@ -322,8 +338,12 @@ function TeamLine(props: {
       >
         <span className="sm:hidden">{teamDisplayName(team.name)}</span>
         <span className="hidden sm:inline">{team.name}</span>
-        {won && <span className="text-ink-600 ml-1 text-xs">✓</span>}
       </span>
+      {won && (
+        <span className="text-ink-600 shrink-0 text-xs" aria-label="winner">
+          ✓
+        </span>
+      )}
       {score != null && (
         <span
           className={clsx(
@@ -399,7 +419,7 @@ export function PriceChip(props: {
       disabled={disabled}
       onClick={onClick}
       className={clsx(
-        'w-14 shrink-0 rounded-md py-1 text-center text-sm font-semibold tabular-nums transition-colors sm:w-16',
+        'w-14 shrink-0 rounded-md py-1.5 text-center text-sm font-semibold tabular-nums transition-colors sm:w-16 sm:py-1',
         className,
         flash === 'up' && '!bg-teal-500/30 !text-teal-700',
         flash === 'down' && '!bg-scarlet-500/30 !text-scarlet-700',
@@ -413,6 +433,11 @@ export function PriceChip(props: {
       {pct}%
     </button>
   )
+}
+
+/** "67" → "67'", "HT" → "HT", "Q3 4:21" → as is. */
+function formatMinute(minute: string) {
+  return /^\d+(\+\d+)?$/.test(minute.trim()) ? `${minute.trim()}'` : minute
 }
 
 /** Tint a chip briefly when its price moves (green up, red down), like an odds board. */

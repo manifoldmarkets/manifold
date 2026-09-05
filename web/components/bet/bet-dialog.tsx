@@ -90,8 +90,10 @@ export function MultiBetDialog(props: {
   contract: CPMMMultiContract | CPMMNumericContract
   open: boolean
   setOpen: (open: boolean) => void
+  /** For two-answer "versus" markets: open on this side. */
+  initialOutcome?: 'YES' | 'NO'
 }) {
-  const { contract, open, setOpen } = props
+  const { contract, open, setOpen, initialOutcome } = props
   const { question } = contract
   const [query, setQuery] = usePersistentInMemoryState(
     '',
@@ -131,6 +133,7 @@ export function MultiBetDialog(props: {
               <BinaryMultiAnswersPanel
                 contract={contract as CPMMMultiContract}
                 preselect
+                preselectOutcome={initialOutcome}
                 onClose={() => setOpen(false)}
               />
             ) : (

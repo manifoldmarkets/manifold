@@ -26,14 +26,15 @@ type LiveGameState = {
  * Rows stay pure: this hook owns the single set of subscriptions for the
  * whole list, so a 100-game page costs ~100 topics, not 300+.
  */
-export function useSportsSchedule(sport: SportKey | 'all') {
+export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
   const { data, refresh, loading } = useAPIGetter(
     'sports-schedule',
     { sport },
     undefined,
     // One cache slot per sport, so switching back is instant and a sport's
     // list never flashes another sport's games.
-    `sports-schedule-${sport}`
+    `sports-schedule-${sport}`,
+    enabled
   )
   // Plain state (not the persistent store): ticks arrive every few seconds
   // during live games and the overlay is cheap to rebuild from a refetch.

@@ -1,4 +1,4 @@
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, uniq } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect } from 'shared/utils'
@@ -9,9 +9,11 @@ import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   ALL_SPORTS_GROUP_IDS,
+  compileGameMatchers,
+  isDrawAnswer,
   findRelatedMarkets,
   gameStatus,
-  isSameFixture,
+  isSameFixtureCompiled,
   parseSportsStart,
   parseVersusQuestion,
   RelatedCandidate,
@@ -22,6 +24,7 @@ import {
   sportForMarket,
   sportGroupIds,
   SportsScheduleResponse,
+  SPORTS_DEFAULT_GROUP_ID,
   splitFlag,
   versusAnswers,
 } from 'common/sports-schedule'
@@ -53,23 +56,28 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 
   // A community market on a fixture that already has an official game is
   // surfaced as one of that game's related markets, not as a second row.
+  // Matchers are compiled once per official game, not per pair.
+  const officialMatchers = official.map((o) =>
+    compileGameMatchers({
+      id: o.id,
+      sport: o.sport,
+      sportsEventId: o.sportsEventId,
+      startTime: o.startTime,
+      home: { name: o.home.name, shortText: o.home.shortName },
+      away: { name: o.away.name, shortText: o.away.shortName },
+    })
+  )
   const games = [
     ...official,
-    ...community.filter(
-      (c) =>
-        !official.some(
-          (o) =>
-            (c.sport === 'other' || o.sport === c.sport) &&
-            Math.abs(o.startTime - c.closeTime) < 2 * DAY_MS &&
-            isSameFixture(
-              {
-                home: { name: o.home.name, shortText: o.home.shortName },
-                away: { name: o.away.name, shortText: o.away.shortName },
-              },
-              c.question
-            )
-        )
-    ),
+    ...community.filter((c) => {
+      const questionLower = c.question.toLowerCase()
+      return !official.some(
+        (o, i) =>
+          (c.sport === 'other' || o.sport === c.sport) &&
+          Math.abs(o.startTime - c.closeTime) < 2 * DAY_MS &&
+          isSameFixtureCompiled(officialMatchers[i], c.question, questionLower)
+      )
+    }),
   ].filter((g) => g.startTime < horizon)
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
@@ -206,13 +214,15 @@ function toOfficialGame(
   if (!sportsEventId) return null
 
   const ordered = sortBy(answers, 'index')
-  const drawAnswer = ordered.find((a) => a.text.trim() === 'Draw')
+  const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
   const teams = ordered.filter((a) => a !== drawAnswer)
   if (teams.length !== 2) return null
 
   const kickoff = parseSportsStart(d.sportsStartTimestamp)
-  const startTime = kickoff ?? (c.closeTime ?? now) - 3 * HOUR_MS
-  const closeTime = c.closeTime ?? startTime + 3 * HOUR_MS
+  // Without a parseable kickoff the close time is the only deadline we have
+  // (the row then says "Closes"), the same as for community games.
+  const closeTime = c.closeTime ?? (kickoff ?? now) + 3 * HOUR_MS
+  const startTime = kickoff ?? closeTime
   const isResolved = !!c.resolution
   const liveStatus: string | null = d.sportsLiveStatus ?? null
   const liveUpdatedTime: number | null = d.sportsLiveUpdatedTime ?? null
@@ -424,7 +434,12 @@ async function getRelatedCandidates(
   pg: Pg,
   sport: SportKey | 'all'
 ): Promise<RelatedCandidate[]> {
-  const groupIds = sport === 'all' ? ALL_SPORTS_GROUP_IDS : sportGroupIds(sport)
+  // A single-sport view still draws from the generic Sports topic, so a prop
+  // tagged only "Sports" attaches to its game no matter which view is open.
+  const groupIds =
+    sport === 'all'
+      ? ALL_SPORTS_GROUP_IDS
+      : uniq([...sportGroupIds(sport), SPORTS_DEFAULT_GROUP_ID])
   const rows = await pg.manyOrNone<{
     id: string
     question: string
@@ -454,6 +469,7 @@ async function getRelatedCandidates(
   return rows.map((r) => ({
     id: r.id,
     question: r.question,
+    questionLower: r.question.toLowerCase(),
     closeTime: r.close_time ? tsToMillis(r.close_time) : null,
     sportsEventId: r.sports_event_id,
     sport: sportForMarket({ groupIds: r.group_ids }),

@@ -359,6 +359,10 @@ export function parseVersusQuestion(
 
 const DRAW_ANSWERS = new Set(['draw', 'tie', 'draw/tie', 'tie/draw'])
 
+export function isDrawAnswer(text: string): boolean {
+  return DRAW_ANSWERS.has(stripEmoji(text).toLowerCase())
+}
+
 /**
  * Do a market's answers correspond to the two sides of a matchup? Returns the
  * home/away/draw answers in that order, or null.
@@ -396,6 +400,18 @@ export function versusAnswers<A extends { text: string }>(
   return straight > swapped
     ? { home: a0, away: a1, draw }
     : { home: a1, away: a0, draw }
+}
+
+/** Same as isSameFixture, with the game's matchers compiled ahead of time. */
+export function isSameFixtureCompiled(
+  matchers: GameMatchers,
+  question: string,
+  questionLower = question.toLowerCase()
+): boolean {
+  return (
+    matcherMentions(question, matchers.home, questionLower) &&
+    matcherMentions(question, matchers.away, questionLower)
+  )
 }
 
 /** Whether a market question is about the same fixture as a game. */
@@ -523,6 +539,8 @@ export interface GameForMatching {
 export interface RelatedCandidate {
   id: string
   question: string
+  /** Lower-cased question, precomputed by the caller when matching many games. */
+  questionLower?: string
   closeTime: number | null
   sportsEventId?: string | null
   /** Sport inferred from the candidate's topics; 'other' when unknown. */
@@ -615,7 +633,8 @@ export function matchRelatedMarket(
 
   const closeTime = candidate.closeTime ?? Infinity
   const delta = closeTime - game.startTime
-  const questionLower = candidate.question.toLowerCase()
+  const questionLower =
+    candidate.questionLower ?? candidate.question.toLowerCase()
   const homeHit = matcherMentions(
     candidate.question,
     matchers.home,

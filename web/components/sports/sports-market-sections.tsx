@@ -25,8 +25,9 @@ export function SportsMarketSections(props: {
   const gids = sportGroupIds(sport).join(',')
   const label = sport === 'all' ? 'sports' : SPORT_BY_KEY[sport]?.label ?? ''
   const slug = sport === 'all' ? 'sports-default' : SPORT_BY_KEY[sport]?.slug
+  // /browse reads the topic filter from `tf` and the open/resolved filter from `f`.
   const seeAllHref = slug
-    ? `/browse?topic=${slug}`
+    ? `/browse?tf=${slug}`
     : `/browse?q=${encodeURIComponent(label)}`
 
   // Distinct cache slots: useAPIGetter keys its data by path, so two calls to

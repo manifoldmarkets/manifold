@@ -146,17 +146,31 @@ export function GameRelatedMarkets(props: { game: ScheduleGame }) {
   )
 }
 
+const INITIAL_ROWS = 5
+
 function RelatedSection(props: { title: string; contracts: Contract[] }) {
   const { title, contracts } = props
+  const [showAll, setShowAll] = useState(false)
+  const visible = showAll ? contracts : contracts.slice(0, INITIAL_ROWS)
+  const hidden = contracts.length - visible.length
   return (
     <Col className="gap-1">
       <span className="text-ink-400 text-[10px] font-semibold uppercase tracking-wide">
         {title}
       </span>
       <Col className="divide-ink-100 border-ink-200 bg-canvas-0 divide-y rounded-md border">
-        {contracts.map((c) => (
+        {visible.map((c) => (
           <RelatedMarketRow key={c.id} contract={c} />
         ))}
+        {hidden > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
+          >
+            Show {hidden} more
+          </button>
+        )}
       </Col>
     </Col>
   )

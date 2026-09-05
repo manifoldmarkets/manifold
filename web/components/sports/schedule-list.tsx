@@ -125,22 +125,24 @@ function FinishedSection(props: {
   const { games, showLeague, open, onToggle } = props
   return (
     <Col className="gap-2">
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={!onToggle}
-        className="flex items-center gap-2 text-left"
-      >
-        <SectionHeader label="Just finished" count={games.length} />
-        {onToggle && (
+      {onToggle ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="flex items-center gap-2 text-left"
+        >
+          <SectionHeader label="Just finished" count={games.length} />
           <ChevronDownIcon
             className={clsx(
               'text-ink-400 h-4 w-4 transition-transform',
               open && 'rotate-180'
             )}
           />
-        )}
-      </button>
+        </button>
+      ) : (
+        <SectionHeader label="Just finished" count={games.length} />
+      )}
       {open &&
         games.map((g) => (
           <GameRow

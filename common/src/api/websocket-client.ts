@@ -220,7 +220,7 @@ export class APIRealtimeClient {
     // ones in a single message. (Returning from inside the loop used to drop
     // every topic after the first new one when several were passed at once.)
     const newTopics: string[] = []
-    for (const topic of topics) {
+    for (const topic of new Set(topics)) {
       const existingHandlers = this.subscriptions.get(topic)
       if (existingHandlers == null) {
         this.subscriptions.set(topic, [handler])
@@ -236,7 +236,7 @@ export class APIRealtimeClient {
 
   async unsubscribe(topics: string[], handler: BroadcastHandler) {
     const droppedTopics: string[] = []
-    for (const topic of topics) {
+    for (const topic of new Set(topics)) {
       const existingHandlers = this.subscriptions.get(topic)
       if (existingHandlers == null) {
         console.error(`Subscription mapping busted -- ${topic} handlers null.`)
