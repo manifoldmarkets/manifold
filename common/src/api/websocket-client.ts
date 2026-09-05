@@ -216,18 +216,26 @@ export class APIRealtimeClient {
   }
 
   async subscribe(topics: string[], handler: BroadcastHandler) {
+    // Register every topic locally first, then tell the server about the new
+    // ones in a single message. (Returning from inside the loop used to drop
+    // every topic after the first new one when several were passed at once.)
+    const newTopics: string[] = []
     for (const topic of topics) {
-      let existingHandlers = this.subscriptions.get(topic)
+      const existingHandlers = this.subscriptions.get(topic)
       if (existingHandlers == null) {
-        this.subscriptions.set(topic, (existingHandlers = [handler]))
-        return await this.sendMessage('subscribe', { topics: [topic] })
+        this.subscriptions.set(topic, [handler])
+        newTopics.push(topic)
       } else {
         existingHandlers.push(handler)
       }
     }
+    if (newTopics.length > 0) {
+      return await this.sendMessage('subscribe', { topics: newTopics })
+    }
   }
 
   async unsubscribe(topics: string[], handler: BroadcastHandler) {
+    const droppedTopics: string[] = []
     for (const topic of topics) {
       const existingHandlers = this.subscriptions.get(topic)
       if (existingHandlers == null) {
@@ -238,9 +246,12 @@ export class APIRealtimeClient {
           this.subscriptions.set(topic, remainingHandlers)
         } else {
           this.subscriptions.delete(topic)
-          return await this.sendMessage('unsubscribe', { topics: [topic] })
+          droppedTopics.push(topic)
         }
       }
+    }
+    if (droppedTopics.length > 0) {
+      return await this.sendMessage('unsubscribe', { topics: droppedTopics })
     }
   }
 }
