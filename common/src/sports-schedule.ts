@@ -435,17 +435,42 @@ export function teamAliases(
   return out
 }
 
+/** Whole-word matchers for one team's aliases, compiled once and reused. */
+export interface TeamMatcher {
+  /** Lower-cased aliases for a cheap substring pre-check. */
+  needles: string[]
+  regexes: RegExp[]
+}
+
+export function compileTeamMatcher(
+  aliases: { alias: string; caseSensitive: boolean }[]
+): TeamMatcher {
+  return {
+    needles: aliases.map((a) => a.alias.toLowerCase()),
+    regexes: aliases.map(
+      ({ alias, caseSensitive }) =>
+        new RegExp(
+          `(^|[^\\p{L}\\p{N}])${escapeRegex(alias)}(?=$|[^\\p{L}\\p{N}])`,
+          caseSensitive ? 'u' : 'iu'
+        )
+    ),
+  }
+}
+
+export function matcherMentions(
+  question: string,
+  matcher: TeamMatcher,
+  questionLower = question.toLowerCase()
+): boolean {
+  if (!matcher.needles.some((n) => questionLower.includes(n))) return false
+  return matcher.regexes.some((re) => re.test(question))
+}
+
 export function mentionsTeam(
   question: string,
   aliases: { alias: string; caseSensitive: boolean }[]
 ): boolean {
-  return aliases.some(({ alias, caseSensitive }) => {
-    const re = new RegExp(
-      `(^|[^\\p{L}\\p{N}])${escapeRegex(alias)}(?=$|[^\\p{L}\\p{N}])`,
-      caseSensitive ? 'u' : 'iu'
-    )
-    return re.test(question)
-  })
+  return matcherMentions(question, compileTeamMatcher(aliases))
 }
 
 // ─── Related-market grouping ──────────────────────────────────────────────────
@@ -521,9 +546,22 @@ const BOTH_TEAMS_AFTER_MS = 3 * DAY_MS
 const ONE_TEAM_BEFORE_MS = 12 * HOUR_MS
 const ONE_TEAM_AFTER_MS = 36 * HOUR_MS
 
+export interface GameMatchers {
+  home: TeamMatcher
+  away: TeamMatcher
+}
+
+export function compileGameMatchers(game: GameForMatching): GameMatchers {
+  return {
+    home: compileTeamMatcher(teamAliases(game.home.name, game.home.shortText)),
+    away: compileTeamMatcher(teamAliases(game.away.name, game.away.shortText)),
+  }
+}
+
 export function matchRelatedMarket(
   game: GameForMatching,
-  candidate: RelatedCandidate
+  candidate: RelatedCandidate,
+  matchers: GameMatchers = compileGameMatchers(game)
 ): RelatedMatch | null {
   if (candidate.id === game.id) return null
   const withGroup = (kind: RelatedMatchKind, score: number): RelatedMatch => ({
@@ -543,13 +581,16 @@ export function matchRelatedMarket(
 
   const closeTime = candidate.closeTime ?? Infinity
   const delta = closeTime - game.startTime
-  const homeHit = mentionsTeam(
+  const questionLower = candidate.question.toLowerCase()
+  const homeHit = matcherMentions(
     candidate.question,
-    teamAliases(game.home.name, game.home.shortText)
+    matchers.home,
+    questionLower
   )
-  const awayHit = mentionsTeam(
+  const awayHit = matcherMentions(
     candidate.question,
-    teamAliases(game.away.name, game.away.shortText)
+    matchers.away,
+    questionLower
   )
   if (homeHit && awayHit) {
     if (delta >= -BOTH_TEAMS_BEFORE_MS && delta <= BOTH_TEAMS_AFTER_MS) {
@@ -571,9 +612,10 @@ export function findRelatedMarkets(
   candidates: readonly RelatedCandidate[],
   limit = 25
 ): RelatedMatch[] {
+  const matchers = compileGameMatchers(game)
   const matches: (RelatedMatch & { importance: number })[] = []
   for (const c of candidates) {
-    const m = matchRelatedMarket(game, c)
+    const m = matchRelatedMarket(game, c, matchers)
     if (m) matches.push({ ...m, importance: c.importanceScore })
   }
   matches.sort((a, b) => b.score - a.score || b.importance - a.importance)

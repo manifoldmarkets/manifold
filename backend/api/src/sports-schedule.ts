@@ -33,7 +33,7 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 const FINISHED_GRACE_HOURS = 18
 const MAX_OFFICIAL_GAMES = 400
 const MAX_COMMUNITY_GAMES = 300
-const MAX_CANDIDATES = 1500
+const MAX_CANDIDATES = 1000
 const MAX_RELATED_PER_GAME = 25
 
 type Pg = ReturnType<typeof createSupabaseDirectClient>
@@ -44,6 +44,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const limit = props.limit ?? 120
   const pg = createSupabaseDirectClient()
   const now = Date.now()
+  const horizon = now + daysAhead * DAY_MS
 
   const [official, community] = await Promise.all([
     getOfficialGames(pg, daysAhead, now),
@@ -58,7 +59,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
       (c) =>
         !official.some(
           (o) =>
-            o.sport === c.sport &&
+            (c.sport === 'other' || o.sport === c.sport) &&
             Math.abs(o.startTime - c.closeTime) < 2 * DAY_MS &&
             isSameFixture(
               {
@@ -69,7 +70,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
             )
         )
     ),
-  ]
+  ].filter((g) => g.startTime < horizon)
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
   // just-finished (most recent first).
@@ -127,46 +128,36 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 
 // ─── Official (pipeline-created) games ────────────────────────────────────────
 
+// Filtering and ordering use close_time (indexed, always a real timestamp)
+// rather than casting the free-form sportsStartTimestamp in SQL, where one
+// malformed value would fail the whole query. Kickoff is parsed in TS and
+// games beyond the horizon are dropped there. Close is at most a few hours
+// after kickoff, so one extra day of slack covers the difference.
 async function getOfficialGames(
   pg: Pg,
   daysAhead: number,
   now: number
 ): Promise<ScheduleGame[]> {
-  const [gameRows, answerRows] = await pg.multi(
-    `with games as (
-       select ${contractColumnsToSelect}
-       from contracts
-       where data->>'sportsEventId' is not null
-         and token = 'MANA'
-         and visibility = 'public'
-         and coalesce(deleted, false) = false
-         and resolution is distinct from 'CANCEL'
-         and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
-         and coalesce(
-               (data->>'sportsStartTimestamp')::timestamp with time zone,
-               close_time
-             ) < now() + ($1 || ' days')::interval
-       order by coalesce(
-                  (data->>'sportsStartTimestamp')::timestamp with time zone,
-                  close_time
-                ) asc
-       limit ${MAX_OFFICIAL_GAMES}
-     )
-     select * from games;
-     select a.* from answers a
-     where a.contract_id in (select id from games)
-     order by a.index asc;`,
+  const rows = await pg.manyOrNone(
+    `select ${contractColumnsToSelect}
+     from contracts
+     where data->>'sportsEventId' is not null
+       and token = 'MANA'
+       and visibility = 'public'
+       and coalesce(deleted, false) = false
+       and resolution is distinct from 'CANCEL'
+       and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
+       and close_time < now() + ($1 || ' days')::interval + interval '1 day'
+     order by close_time asc
+     limit ${MAX_OFFICIAL_GAMES}`,
     [String(daysAhead)]
   )
-  const contracts = (gameRows as any[]).map((r) => convertContract(r))
-  const answersByContract = groupBy(
-    (answerRows as any[]).map((r) => convertAnswer(r)),
-    'contractId'
-  )
-  const groupIdsByContract = await getGroupIds(
-    pg,
-    contracts.map((c) => c.id)
-  )
+  const contracts = rows.map((r) => convertContract(r))
+  const ids = contracts.map((c) => c.id)
+  const [answersByContract, groupIdsByContract] = await Promise.all([
+    getAnswers(pg, ids),
+    getGroupIds(pg, ids),
+  ])
   return contracts
     .map((c) =>
       toOfficialGame(
@@ -251,44 +242,34 @@ async function getCommunityGames(
   daysAhead: number,
   now: number
 ): Promise<ScheduleGame[]> {
-  const [gameRows, answerRows, groupRows] = await pg.multi(
-    `with games as (
-       select ${contractColumnsToSelect}
-       from contracts
-       where data->>'sportsEventId' is null
-         and mechanism = 'cpmm-multi-1'
-         and outcome_type = 'MULTIPLE_CHOICE'
-         and token = 'MANA'
-         and visibility = 'public'
-         and coalesce(deleted, false) = false
-         and resolution is null
-         and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
-         and close_time < now() + ($1 || ' days')::interval
-         and question ~* '\\m(vs\\.?|v\\.?|versus|@)\\M'
-         and exists (
-           select 1 from group_contracts gc
-           where gc.contract_id = contracts.id and gc.group_id = any($2)
-         )
-       order by importance_score desc
-       limit ${MAX_COMMUNITY_GAMES}
-     )
-     select * from games;
-     select a.* from answers a
-     where a.contract_id in (select id from games)
-     order by a.index asc;
-     select gc.contract_id, gc.group_id from group_contracts gc
-     where gc.contract_id in (select id from games);`,
+  // The regex is only a cheap pre-filter; parseVersusQuestion decides.
+  const rows = await pg.manyOrNone(
+    `select ${contractColumnsToSelect}
+     from contracts
+     where data->>'sportsEventId' is null
+       and mechanism = 'cpmm-multi-1'
+       and outcome_type = 'MULTIPLE_CHOICE'
+       and token = 'MANA'
+       and visibility = 'public'
+       and coalesce(deleted, false) = false
+       and resolution is null
+       and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
+       and close_time < now() + ($1 || ' days')::interval
+       and question ~* '\\s(vs\\.?|v\\.?|versus|@)\\s'
+       and exists (
+         select 1 from group_contracts gc
+         where gc.contract_id = contracts.id and gc.group_id = any($2)
+       )
+     order by importance_score desc
+     limit ${MAX_COMMUNITY_GAMES}`,
     [String(daysAhead), ALL_SPORTS_GROUP_IDS]
   )
-  const contracts = (gameRows as any[]).map((r) => convertContract(r))
-  const answersByContract = groupBy(
-    (answerRows as any[]).map((r) => convertAnswer(r)),
-    'contractId'
-  )
-  const groupIdsByContract: Record<string, string[]> = {}
-  for (const r of groupRows as { contract_id: string; group_id: string }[]) {
-    ;(groupIdsByContract[r.contract_id] ??= []).push(r.group_id)
-  }
+  const contracts = rows.map((r) => convertContract(r))
+  const ids = contracts.map((c) => c.id)
+  const [answersByContract, groupIdsByContract] = await Promise.all([
+    getAnswers(pg, ids),
+    getGroupIds(pg, ids),
+  ])
   return contracts
     .map((c) =>
       toCommunityGame(
@@ -381,6 +362,18 @@ function toTeam(answer: Answer): ScheduleTeam {
     imageUrl: answer.imageUrl ?? null,
     prob: answer.prob,
   }
+}
+
+async function getAnswers(
+  pg: Pg,
+  contractIds: string[]
+): Promise<Record<string, Answer[]>> {
+  if (contractIds.length === 0) return {}
+  const rows = await pg.manyOrNone(
+    `select * from answers where contract_id in ($1:list) order by index asc`,
+    [contractIds]
+  )
+  return groupBy(rows.map(convertAnswer), 'contractId')
 }
 
 async function getGroupIds(
