@@ -18,6 +18,7 @@ import {
 } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import type { PerpTradeActivity } from 'common/perps/activity'
+import { formatPerpClosePercent } from 'common/perps/format'
 import { PrivateUser, User } from 'common/user'
 import { shortFormatNumber } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
@@ -482,6 +483,18 @@ const PerpTradeLog = memo(function PerpTradeLog(props: {
     trade.leverage > 0
       ? trade.leverage
       : null
+  // A partial close leaves the position open. `margin` is already the amount
+  // this close actually took, so the sentence above stays true — what it
+  // cannot say is that the rest is still running, which goes in the detail
+  // row alongside where leverage sits for opens.
+  const partialPercent =
+    trade.eventType === 'close' &&
+    trade.fraction !== null &&
+    Number.isFinite(trade.fraction) &&
+    trade.fraction > 0 &&
+    trade.fraction < 1
+      ? formatPerpClosePercent(trade.fraction)
+      : null
 
   return (
     <Row className="items-start gap-2 py-1">
@@ -518,6 +531,11 @@ const PerpTradeLog = memo(function PerpTradeLog(props: {
           {leverage !== null && (
             <span className="text-ink-600">
               {shortFormatNumber(leverage)}× leverage
+            </span>
+          )}
+          {partialPercent !== null && (
+            <span className="text-ink-600">
+              {partialPercent} of the position — the rest stays open
             </span>
           )}
           <RelativeTimestamp

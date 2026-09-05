@@ -90,6 +90,8 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
         ? 'Flipped out of'
         : d.reason === 'resolve'
         ? 'Settled'
+        : d.reason === 'partial-close'
+        ? 'Partly closed'
         : 'Closed'
     return `${verb} ${d.direction} at ${px(d.closePrice)} — profit ${pnlText}`
   }

@@ -1081,7 +1081,15 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { payout: number; pnl: number },
+    returns: {} as {
+      payout: number
+      pnl: number
+      /** Fraction actually closed, which can exceed the requested one when
+       * the remainder would have been dust. */
+      fraction: number
+      /** Notional left open; 0 when the whole position was closed. */
+      remainingSize: number
+    },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1555,6 +1563,9 @@ export const API = (_apiTypeCheck = {
       payout: number | null
       pnl: number | null
       adlFactor: number | null
+      /** Closes only: the fraction of the position this event took. Null on
+       * closes written before partial closes existed, which were whole. */
+      fraction: number | null
       isApi: boolean
       userName: string | null
       username: string | null

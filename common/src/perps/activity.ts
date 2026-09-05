@@ -22,4 +22,8 @@ export type PerpTradeActivity = {
   margin: number
   /** Position leverage after an open/add. Close events normally report zero. */
   leverage: number | null
+  /** Closes only: the fraction of the position this event took, when it was a
+   * partial one. Null on a full close and on closes written before partial
+   * closes existed, which were all whole. */
+  fraction: number | null
 }

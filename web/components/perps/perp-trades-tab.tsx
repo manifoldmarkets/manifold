@@ -2,7 +2,11 @@ import clsx from 'clsx'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import {
+  formatPerpClosePercent,
+  formatPrice,
+  inferPriceDecimals,
+} from 'common/perps/format'
 import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -31,6 +35,7 @@ type Event = {
   payout: number | null
   pnl: number | null
   adlFactor: number | null
+  fraction: number | null
   isApi: boolean
   userName: string | null
   username: string | null
@@ -220,6 +225,13 @@ const EventRow = (props: {
     isLiquidation && Number.isFinite(event.originalCostBasisDelta)
       ? Math.abs(event.originalCostBasisDelta)
       : null
+  // A partial close keeps the row open, so the tape must not read as an exit.
+  // Its `leverage` is the SURVIVOR's — unchanged by the split — which is the
+  // right number to show beside "partly closed".
+  const partialClose =
+    event.eventType === 'close' && event.fraction != null && event.fraction < 1
+      ? event.fraction
+      : null
   const partialAdlReduction =
     event.eventType === 'adl' &&
     event.payout == null &&
@@ -246,7 +258,9 @@ const EventRow = (props: {
           {/* Aggregate rows (per-tick ADL) carry no direction; drop the
               trailing "on" so the label doesn't dangle before the price. */}
           <span className="text-ink-600">
-            {event.direction
+            {partialClose != null
+              ? `closed ${formatPerpClosePercent(partialClose)} of`
+              : event.direction
               ? EVENT_LABELS[event.eventType]
               : EVENT_LABELS[event.eventType].replace(/ on$/, '')}
           </span>
