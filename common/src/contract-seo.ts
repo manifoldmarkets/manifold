@@ -87,6 +87,10 @@ export type OgCardProps = {
   points?: string // base64ified points
 }
 
+// Included in every market's meta/og description so link previews (Reddit,
+// Discord, X, etc.) make clear this is a play-money game, not gambling.
+export const PLAY_MONEY_BLURB = 'Free to play with play money.'
+
 export function getSeoDescription(contract: Contract) {
   const { description: desc, resolution } = contract
 
@@ -111,7 +115,7 @@ export function getSeoDescription(contract: Contract) {
         )} expected. `
       : ''
 
-  return prefix + stringDesc
+  return (prefix + PLAY_MONEY_BLURB + ' ' + stringDesc).trim()
 }
 
 function getFormattedPerpPrice(contract: Contract) {

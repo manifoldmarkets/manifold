@@ -14,7 +14,7 @@ describe('perpetual market external metadata', () => {
       })
     )
     expect(getSeoDescription(contract)).toBe(
-      'Perpetual market. Oracle price: 42.125. Tracks the underlying asset.'
+      'Perpetual market. Oracle price: 42.125. Free to play with play money. Tracks the underlying asset.'
     )
   })
 
@@ -29,7 +29,7 @@ describe('perpetual market external metadata', () => {
       expect.objectContaining({ perpPrice: '41.500' })
     )
     expect(getSeoDescription(contract)).toBe(
-      'Perpetual market settled at 41.500. Tracks the underlying asset.'
+      'Perpetual market settled at 41.500. Free to play with play money. Tracks the underlying asset.'
     )
   })
 
@@ -49,7 +49,7 @@ describe('perpetual market external metadata', () => {
       )
       expect(ogProps).not.toHaveProperty('perpPrice')
       expect(seoDescription).toBe(
-        'Perpetual market. Tracks the underlying asset.'
+        'Perpetual market. Free to play with play money. Tracks the underlying asset.'
       )
       expect(seoDescription).not.toMatch(/NaN|Infinity|chance|%/)
     }
@@ -71,7 +71,7 @@ describe('perpetual market external metadata', () => {
       bountyLeft: undefined,
     })
     expect(getSeoDescription(contract)).toBe(
-      '50% chance. A binary market description.'
+      '50% chance. Free to play with play money. A binary market description.'
     )
   })
 })
