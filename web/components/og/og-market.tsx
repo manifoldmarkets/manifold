@@ -7,7 +7,7 @@ import { ProbGraph } from './graph'
 
 // Shown at the bottom of every market card in social link previews
 export const OG_TAGLINE =
-  'Free to play · Play money, real forecasts · Create your own market'
+  'Ask any question, get every answer · Free to play with play money'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
