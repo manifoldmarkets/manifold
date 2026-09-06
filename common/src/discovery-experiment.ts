@@ -23,6 +23,7 @@ export type DiscoveryResultTracking = DiscoveryExperimentAssignment & {
   semanticMarketCount: number
   initialLatencyMs: number
   compatibilityFallback: boolean
+  anchorFallback: boolean
 }
 
 export const DISCOVERY_SEARCH_REQUEST_EVENT = 'discovery_v1 search request'

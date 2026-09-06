@@ -3,16 +3,26 @@ import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { Contract } from 'common/contract'
 import {
   DISCOVERY_RESULT_CLICK_EVENT,
+  DiscoveryExperimentVariant,
   DiscoveryResultTracking,
 } from 'common/discovery-experiment'
-import { orderCombinedSearchResults } from 'common/search-result-order'
+import {
+  orderCombinedSearchResults,
+  shouldPreserveBackendMarketOrder,
+} from 'common/search-result-order'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
 import { Key } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { isABTestAssignmentCurrent } from 'web/hooks/use-ab-test'
 import { PostRow } from '../posts/post-row'
-import { QUERY_KEY, SearchParams, SORT_KEY, TOPIC_FILTER_KEY } from '../search'
+import {
+  FOR_YOU_KEY,
+  QUERY_KEY,
+  SearchParams,
+  SORT_KEY,
+  TOPIC_FILTER_KEY,
+} from '../search'
 import {
   actionColumn,
   boostedColumn,
@@ -32,6 +42,7 @@ type CombinedResultsProps = {
   hideAvatars?: boolean
   hideActions?: boolean
   hasBets?: boolean
+  discoveryVariant?: DiscoveryExperimentVariant
   discoveryTracking?: DiscoveryResultTracking
 }
 
@@ -58,6 +69,7 @@ export function CombinedResults(props: CombinedResultsProps) {
     hideAvatars,
     hideActions,
     hasBets,
+    discoveryVariant,
     discoveryTracking,
   } = props
 
@@ -67,8 +79,11 @@ export function CombinedResults(props: CombinedResultsProps) {
       : searchParams[SORT_KEY]
   const combinedItems = orderCombinedSearchResults(contracts, posts, {
     sort,
-    preserveUnmarkedContractOrder:
-      sort === 'score' && searchParams[QUERY_KEY].trim().length > 0,
+    preserveBackendMarketOrder: shouldPreserveBackendMarketOrder(
+      discoveryVariant,
+      searchParams[QUERY_KEY],
+      searchParams[FOR_YOU_KEY] === '1'
+    ),
   })
   if (!combinedItems.length) return null
 

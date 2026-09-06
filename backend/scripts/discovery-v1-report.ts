@@ -28,7 +28,6 @@ const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 const [start, end] = process.argv.slice(2)
 const MAX_REPORT_DAYS = 31
 const DAY_MS = 24 * 60 * 60 * 1000
-const OUTCOME_WINDOW_MS = 30 * 60 * 1000
 
 if (!start || !DATE_REGEX.test(start) || (end && !DATE_REGEX.test(end))) {
   console.error(
@@ -51,12 +50,9 @@ if (
   !parsedStart ||
   !parsedEnd ||
   parsedEnd <= parsedStart ||
-  parsedEnd.getTime() - parsedStart.getTime() > MAX_REPORT_DAYS * DAY_MS ||
-  (end !== undefined && parsedEnd.getTime() > now.getTime() - OUTCOME_WINDOW_MS)
+  parsedEnd.getTime() - parsedStart.getTime() > MAX_REPORT_DAYS * DAY_MS
 ) {
-  console.error(
-    `Report window must be valid, increasing, at most 31 days, and have a complete 30-minute outcome window.`
-  )
+  console.error(`Report window must be valid, increasing, and at most 31 days.`)
   process.exit(1)
 }
 // Use one captured time across every query so a live report has one boundary.
@@ -77,6 +73,7 @@ type ScorecardRow = {
   prior_seen_top_ten_rate: number | null
   p95_initial_latency_ms: number | null
   compatibility_fallback_rate: number | null
+  anchor_fallback_rate: number | null
 }
 
 type LiftRow = {
@@ -105,6 +102,7 @@ type ResultHealthRow = {
   avg_distinct_markets_loaded: number | null
   duplicate_rate: number | null
   compatibility_fallback_rate: number | null
+  anchor_fallback_rate: number | null
 }
 
 type ReliabilityRow = {
@@ -148,6 +146,8 @@ with raw_presentations as (
       as semantic_count,
     coalesce((ue.data ->> 'compatibilityFallback')::boolean, false)
       as compatibility_fallback,
+    coalesce((ue.data ->> 'anchorFallback')::boolean, false)
+      as anchor_fallback,
     (ue.data ->> 'initialLatencyMs')::numeric as initial_latency_ms,
     ue.data
   from user_events ue
@@ -172,7 +172,7 @@ with raw_presentations as (
 selected_result_sets as (
   select distinct result_set_id from raw_presentations
 ),
-result_set_compatibility as (
+result_set_fallbacks as (
   select
     ue.data ->> 'resultSetId' as result_set_id,
     bool_or(
@@ -180,7 +180,13 @@ result_set_compatibility as (
         (ue.data ->> 'compatibilityFallback')::boolean,
         false
       )
-    ) as used_compatibility_fallback
+    ) as used_compatibility_fallback,
+    bool_or(
+      coalesce(
+        (ue.data ->> 'anchorFallback')::boolean,
+        false
+      )
+    ) as used_anchor_fallback
   from user_events ue
   join selected_result_sets selected
     on selected.result_set_id = ue.data ->> 'resultSetId'
@@ -386,6 +392,7 @@ per_presentation as (
     presentation.semantic_count,
     presentation.initial_latency_ms,
     presentation.compatibility_fallback,
+    presentation.anchor_fallback,
     (coalesce(click.market_clicks, 0) > 0)::int as market_clicked,
     (coalesce(click.post_clicks, 0) > 0)::int as post_clicked,
     (coalesce(click.semantic_clicks, 0) > 0)::int as semantic_clicked,
@@ -428,7 +435,8 @@ select
     0
   ) as p95_initial_latency_ms,
   round(avg(compatibility_fallback::int), 4)
-    as compatibility_fallback_rate
+    as compatibility_fallback_rate,
+  round(avg(anchor_fallback::int), 4) as anchor_fallback_rate
 from per_presentation
 group by segment, variant
 order by segment, variant
@@ -686,13 +694,15 @@ first_presentation_per_result_set as (
     presentation.result_set_id,
     presentation.segment,
     presentation.variant,
-    coalesce(compatibility.used_compatibility_fallback, false)
-      as compatibility_fallback
+    coalesce(fallbacks.used_compatibility_fallback, false)
+      as compatibility_fallback,
+    coalesce(fallbacks.used_anchor_fallback, false)
+      as anchor_fallback
   from presentations presentation
   -- This diagnostic intentionally includes only result sets whose response
   -- event is inside the bounded lookup window. Causal fields live directly
   -- on the exposure event and do not depend on this join.
-  join result_set_compatibility compatibility using (result_set_id)
+  join result_set_fallbacks fallbacks using (result_set_id)
   order by presentation.result_set_id, presentation.ts
 ),
 result_set_items as (
@@ -710,6 +720,7 @@ result_set_health as (
     first.variant,
     first.result_set_id,
     first.compatibility_fallback,
+    first.anchor_fallback,
     coalesce(items.markets_loaded, 0) as markets_loaded,
     coalesce(items.distinct_markets_loaded, 0) as distinct_markets_loaded
   from first_presentation_per_result_set first
@@ -731,7 +742,8 @@ select
     4
   ) as duplicate_rate,
   round(avg(compatibility_fallback::int), 4)
-    as compatibility_fallback_rate
+    as compatibility_fallback_rate,
+  round(avg(anchor_fallback::int), 4) as anchor_fallback_rate
 from result_set_health
 group by segment, variant
 order by segment, variant
@@ -745,6 +757,24 @@ runScript(async ({ pg: database }) => {
     // Every statement must fail closed instead of putting sustained load on
     // the primary database if the event volume or query plan surprises us.
     await pg.none("set local statement_timeout = '60s'")
+
+    if (end !== undefined) {
+      // Validate against the exact Pacific boundary used by every report query.
+      const { report_end_is_mature: reportEndIsMature } = await pg.one<{
+        report_end_is_mature: boolean
+      }>(
+        `select date_to_midnight_pt($1::date)
+           <= $2::timestamptz - interval '30 minutes'
+           as report_end_is_mature`,
+        [end, reportEndTime]
+      )
+
+      if (!reportEndIsMature) {
+        throw new Error(
+          `Report end ${end} must be at least 30 minutes past its Pacific midnight boundary.`
+        )
+      }
+    }
 
     const params = [
       start,
@@ -775,6 +805,7 @@ runScript(async ({ pg: database }) => {
         compatibility_fallback_rate: numberOrNull(
           row.compatibility_fallback_rate
         ),
+        anchor_fallback_rate: numberOrNull(row.anchor_fallback_rate),
       })
     )
 
@@ -843,6 +874,7 @@ runScript(async ({ pg: database }) => {
         compatibility_fallback_rate: numberOrNull(
           row.compatibility_fallback_rate
         ),
+        anchor_fallback_rate: numberOrNull(row.anchor_fallback_rate),
       })
     )
 

@@ -225,7 +225,7 @@ export async function getForYouSQL(
       privateUser,
       // Keep the same diversity behavior when a new/low-activity user has no
       // topic scores yet. Ordinary basic browse does not opt into this.
-      suppressStaleSeen: discoveryVariant === 'treatment',
+      suppressStaleSeen: discoveryVariant === 'treatment' && hasBets !== '1',
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
@@ -254,6 +254,7 @@ export async function getForYouSQL(
       // every offset page. Unanchored callers retain the old unsuppressed
       // behavior so page-one filtering cannot shift their later offsets.
       discoveryVariant === 'treatment' &&
+        hasBets !== '1' &&
         shouldSuppressStaleSeenMarkets(seenMarketCutoffTime) &&
         staleSeenMarketsSql(userId, seenMarketCutoffTime),
       privateUserBlocksSql(privateUser),
@@ -312,6 +313,7 @@ export const basicSearchSQL = (
       hideStonks: true,
     }),
     suppressStaleSeen &&
+      args.hasBets !== '1' &&
       args.uid &&
       shouldSuppressStaleSeenMarkets(args.seenMarketCutoffTime) &&
       staleSeenMarketsSql(args.uid, args.seenMarketCutoffTime),

@@ -1,6 +1,7 @@
 import {
   getPostSearchThreshold,
   orderCombinedSearchResults,
+  shouldPreserveBackendMarketOrder,
 } from './search-result-order'
 
 type Result = {
@@ -27,7 +28,7 @@ describe('orderCombinedSearchResults', () => {
   it('keeps the lexical/post block ahead of the semantic tail', () => {
     const ordered = orderCombinedSearchResults([lexical, semantic], [post], {
       sort: 'score',
-      preserveUnmarkedContractOrder: true,
+      preserveBackendMarketOrder: true,
     })
 
     expect(ids(ordered)).toEqual(['post', 'lexical', 'semantic'])
@@ -45,7 +46,7 @@ describe('orderCombinedSearchResults', () => {
     const ordered = orderCombinedSearchResults(
       [firstBySimilarity, secondBySimilarity],
       [post],
-      { sort: 'score', preserveUnmarkedContractOrder: true }
+      { sort: 'score', preserveBackendMarketOrder: true }
     )
 
     expect(ids(ordered)).toEqual([
@@ -58,24 +59,39 @@ describe('orderCombinedSearchResults', () => {
   it('retains semantic classification after client filtering removes lexical rows', () => {
     const ordered = orderCombinedSearchResults([semantic], [post], {
       sort: 'score',
-      preserveUnmarkedContractOrder: true,
+      preserveBackendMarketOrder: true,
     })
 
     expect(ids(ordered)).toEqual(['post', 'semantic'])
   })
 
-  it('does not override personalized contract order when there are no posts', () => {
+  it('keeps treatment backend order when there are no posts', () => {
     const ordered = orderCombinedSearchResults([lexical, semantic], [], {
       sort: 'score',
+      preserveBackendMarketOrder: true,
     })
 
     expect(ids(ordered)).toEqual(['lexical', 'semantic'])
+  })
+
+  it('keeps the pre-experiment importance sort for control with no posts', () => {
+    const highMarket = result('high-market', 100, 20, 'lexical')
+    const ordered = orderCombinedSearchResults([lexical, highMarket], [], {
+      sort: 'score',
+    })
+
+    expect(ids(ordered)).toEqual(['high-market', 'lexical'])
   })
 
   it('still mixes empty-query score results by importance', () => {
     const highMarket = result('high-market', 100, 20)
     const ordered = orderCombinedSearchResults([lexical, highMarket], [post], {
       sort: 'score',
+      preserveBackendMarketOrder: shouldPreserveBackendMarketOrder(
+        'treatment',
+        '',
+        false
+      ),
     })
 
     expect(ids(ordered)).toEqual(['high-market', 'post', 'lexical'])
@@ -86,7 +102,7 @@ describe('orderCombinedSearchResults', () => {
     const ordered = orderCombinedSearchResults(
       [lexical, higherLexical],
       [post],
-      { sort: 'score', preserveUnmarkedContractOrder: true }
+      { sort: 'score', preserveBackendMarketOrder: true }
     )
 
     expect(ids(ordered)).toEqual(['higher-lexical', 'post', 'lexical'])
@@ -98,7 +114,7 @@ describe('orderCombinedSearchResults', () => {
     )
     const ordered = orderCombinedSearchResults(accumulatedMarkets, [post], {
       sort: 'score',
-      preserveUnmarkedContractOrder: true,
+      preserveBackendMarketOrder: true,
     })
 
     expect(ids(ordered).indexOf('post')).toBe(26)
@@ -111,10 +127,22 @@ describe('orderCombinedSearchResults', () => {
     const ordered = orderCombinedSearchResults(
       [oldLexical, unknownTail],
       [post],
-      { sort: 'score', preserveUnmarkedContractOrder: true }
+      { sort: 'score', preserveBackendMarketOrder: true }
     )
 
     expect(ids(ordered)).toEqual(['old-lexical', 'unknown-tail', 'post'])
+  })
+
+  it('keeps legacy importance sorting for an unmarked control response', () => {
+    const oldLexical = result('old-lexical', 1, 10)
+    const oldHigherMarket = result('old-higher-market', 100, 20)
+    const ordered = orderCombinedSearchResults(
+      [oldLexical, oldHigherMarket],
+      [post],
+      { sort: 'score' }
+    )
+
+    expect(ids(ordered)).toEqual(['old-higher-market', 'post', 'old-lexical'])
   })
 
   it('still mixes newest results by creation time', () => {
@@ -129,6 +157,22 @@ describe('orderCombinedSearchResults', () => {
     const ordered = orderCombinedSearchResults([semantic, lexical], [post], {})
 
     expect(ids(ordered)).toEqual(['semantic', 'lexical', 'post'])
+  })
+})
+
+describe('shouldPreserveBackendMarketOrder', () => {
+  it('preserves treatment order only for For You or text search', () => {
+    expect(shouldPreserveBackendMarketOrder('treatment', '', true)).toBe(true)
+    expect(
+      shouldPreserveBackendMarketOrder('treatment', 'climate', false)
+    ).toBe(true)
+    expect(shouldPreserveBackendMarketOrder('treatment', '', false)).toBe(false)
+  })
+
+  it('keeps every control surface on the legacy client ordering path', () => {
+    expect(shouldPreserveBackendMarketOrder('control', 'climate', true)).toBe(
+      false
+    )
   })
 })
 

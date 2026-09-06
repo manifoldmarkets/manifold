@@ -9,6 +9,12 @@ type RankableMarketSearchResult = RankableSearchResult & {
   searchMatchType?: FullMarketSearchResult['searchMatchType']
 }
 
+export const shouldPreserveBackendMarketOrder = (
+  discoveryVariant: 'control' | 'treatment' | undefined,
+  query: string,
+  isForYou: boolean
+) => discoveryVariant === 'treatment' && (isForYou || query.trim().length > 0)
+
 export const getPostSearchThreshold = <C extends RankableMarketSearchResult>(
   contracts: readonly C[],
   sort: 'score' | 'newest'
@@ -42,12 +48,20 @@ export const orderCombinedSearchResults = <
   posts: readonly P[],
   options: {
     sort?: string
-    preserveUnmarkedContractOrder?: boolean
+    preserveBackendMarketOrder?: boolean
   }
 ): (C | P)[] => {
-  const { sort, preserveUnmarkedContractOrder } = options
-  if (posts.length === 0 || (sort !== 'score' && sort !== 'newest')) {
+  const { sort, preserveBackendMarketOrder } = options
+  if (sort !== 'score' && sort !== 'newest') {
     return [...contracts, ...posts]
+  }
+
+  // The treatment API can return an order the client cannot reconstruct
+  // (For You personalization or lexical relevance). With no posts to mix in,
+  // keep that order intact. Control intentionally falls through to the legacy
+  // client-side sort so its behavior remains the pre-experiment baseline.
+  if (posts.length === 0 && preserveBackendMarketOrder) {
+    return [...contracts]
   }
 
   if (sort === 'newest') {
@@ -61,7 +75,7 @@ export const orderCombinedSearchResults = <
   // order rather than risk promoting its unknown semantic tail. New workers
   // mark every text-search market, including lexical-only responses.
   if (
-    preserveUnmarkedContractOrder &&
+    preserveBackendMarketOrder &&
     contracts.some(({ searchMatchType }) => searchMatchType === undefined)
   ) {
     return [...contracts, ...posts]

@@ -9,6 +9,7 @@ import {
   DiscoveryExperimentVariant,
   getEffectiveDiscoveryExperimentVariant,
 } from 'common/discovery-experiment'
+import { SEARCH_ANCHOR_CLOCK_SKEW_ERROR } from 'common/search-request-coordination'
 import { convertContract } from 'common/supabase/contracts'
 import { orderBy, uniqBy } from 'lodash'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
@@ -209,10 +210,7 @@ const search = async (
     props.seenMarketCutoffTime !== undefined &&
     !shouldSuppressStaleSeenMarkets(props.seenMarketCutoffTime)
   ) {
-    throw new APIError(
-      400,
-      'seenMarketCutoffTime is too far ahead of server time'
-    )
+    throw new APIError(400, SEARCH_ANCHOR_CLOCK_SKEW_ERROR)
   }
   if (searchRoute === 'basic' || searchRoute === 'for-you') {
     // Enforce blocked users/contracts/topics in the query itself — the

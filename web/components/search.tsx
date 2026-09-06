@@ -26,12 +26,14 @@ import { LiteGroup } from 'common/group'
 import {
   getPostSearchThreshold,
   orderCombinedSearchResults,
+  shouldPreserveBackendMarketOrder,
 } from 'common/search-result-order'
 import {
+  getSearchDiscoveryRetryOptions,
+  getSearchDiscoveryRetryMode,
   getLoadMoreRequestAction,
   getSearchRequestDebounceMs,
   shouldSendDiscoveryOptions,
-  shouldRetrySearchWithoutDiscoveryOptions,
   shouldRetryStaleSearchRequest,
 } from 'common/search-request-coordination'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
@@ -235,6 +237,7 @@ export type SearchState = {
   discoveryResultSetId: string | undefined
   discoveryLoadedPageCount: number
   discoveryCompatibilityFallback: boolean
+  discoveryAnchorFallback: boolean
   discoverySemanticEligible: boolean | undefined
   discoverySemanticMarketCount: number | undefined
   discoveryInitialLatencyMs: number | undefined
@@ -950,6 +953,7 @@ export function Search(props: SearchProps) {
                 hideAvatars={hideAvatars}
                 hideActions={hideActions}
                 hasBets={hasBets}
+                discoveryVariant={discoveryVariant}
                 discoveryTracking={discoveryTracking}
               />
             ) : null}
@@ -1044,6 +1048,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   discoveryResultSetId: undefined,
   discoveryLoadedPageCount: 0,
   discoveryCompatibilityFallback: false,
+  discoveryAnchorFallback: false,
   discoverySemanticEligible: undefined,
   discoverySemanticMarketCount: undefined,
   discoveryInitialLatencyMs: undefined,
@@ -1188,6 +1193,9 @@ export const useSearchResults = (props: {
         let usedCompatibilityFallback = freshQuery
           ? false
           : state.discoveryCompatibilityFallback ?? false
+        let usedAnchorFallback = freshQuery
+          ? false
+          : state.discoveryAnchorFallback ?? false
         const sendDiscoveryOptions = shouldSendDiscoveryOptions(
           !!freshQuery,
           usedCompatibilityFallback
@@ -1264,6 +1272,7 @@ export const useSearchResults = (props: {
               discoveryResultSetId: undefined,
               discoveryLoadedPageCount: 0,
               discoveryCompatibilityFallback: false,
+              discoveryAnchorFallback: false,
               discoverySemanticEligible: undefined,
               discoverySemanticMarketCount: undefined,
               discoveryInitialLatencyMs: undefined,
@@ -1353,37 +1362,42 @@ export const useSearchResults = (props: {
                 signal: abortController.signal,
               })
             } catch (error) {
-              if (
-                !shouldRetrySearchWithoutDiscoveryOptions(
-                  !!freshQuery,
-                  marketApiParams.seenMarketCutoffTime,
-                  marketApiParams.enableSemanticSearch,
-                  marketApiParams.discoveryVariant,
-                  error instanceof APIError ? error.code : undefined,
-                  usesForYouRoute
-                )
-              ) {
-                throw error
-              }
+              const retryMode = getSearchDiscoveryRetryMode({
+                freshQuery: !!freshQuery,
+                seenMarketCutoffTime: marketApiParams.seenMarketCutoffTime,
+                enableSemanticSearch: marketApiParams.enableSemanticSearch,
+                discoveryVariant: marketApiParams.discoveryVariant,
+                errorCode: error instanceof APIError ? error.code : undefined,
+                errorMessage:
+                  error instanceof APIError ? error.message : undefined,
+                errorDetails:
+                  error instanceof APIError ? error.details : undefined,
+                isForYouRoute: usesForYouRoute,
+              })
+              if (!retryMode) throw error
 
-              // A new API rejects a badly skewed page-one anchor; an old
-              // strict worker rejects the new fields. Retrying without the
-              // semantic opt-in is safe on any page because its fallback only
-              // runs on page one. Anchor removal is guarded to page one above.
-              if (freshQuery) seenMarketCutoffTime = undefined
-              usedCompatibilityFallback = true
+              const anchorFallback = retryMode === 'anchor-clock-skew'
+              if (anchorFallback) {
+                seenMarketCutoffTime = undefined
+                usedAnchorFallback = true
+              } else {
+                usedCompatibilityFallback = true
+              }
               const contracts = await api(
                 endpoint,
                 {
                   ...marketApiParams,
-                  seenMarketCutoffTime: freshQuery
-                    ? undefined
-                    : marketApiParams.seenMarketCutoffTime,
-                  enableSemanticSearch: undefined,
-                  discoveryVariant: undefined,
+                  ...getSearchDiscoveryRetryOptions(retryMode, {
+                    enableSemanticSearch: marketApiParams.enableSemanticSearch,
+                    discoveryVariant: marketApiParams.discoveryVariant,
+                  }),
                 },
                 { signal: abortController.signal }
               )
+              // The anchor-only retry still came from a current treatment
+              // worker, including its explicit match markers and ranking.
+              if (anchorFallback) return contracts
+
               // Semantic fallback never runs after page one, so any unmarked
               // rows from an old worker are known to be lexical there. Keep a
               // fresh unmarked response conservative: an intermediate worker
@@ -1526,6 +1540,7 @@ export const useSearchResults = (props: {
               discoveryResultSetId,
               discoveryLoadedPageCount: discoveryPage + 1,
               discoveryCompatibilityFallback: usedCompatibilityFallback,
+              discoveryAnchorFallback: usedAnchorFallback,
               discoverySemanticEligible: resultSetSemanticEligible,
               discoverySemanticMarketCount: resultSetSemanticMarketCount,
               discoveryInitialLatencyMs: resultSetInitialLatencyMs,
@@ -1558,6 +1573,7 @@ export const useSearchResults = (props: {
                 sort,
                 filter,
                 compatibilityFallback: usedCompatibilityFallback,
+                anchorFallback: usedAnchorFallback,
                 latencyMs: requestLatencyMs,
                 // Store page deltas so telemetry stays linear as people load
                 // more. The exposure event records exact rendered ordering.
@@ -1633,6 +1649,7 @@ export const useSearchResults = (props: {
               page: discoveryPage,
               isFresh: !!freshQuery,
               compatibilityFallback: usedCompatibilityFallback,
+              anchorFallback: usedAnchorFallback,
               errorCode: error instanceof APIError ? error.code : undefined,
               errorType: error instanceof Error ? error.name : typeof error,
               latencyMs: Date.now() - requestStartedAt,
@@ -1760,6 +1777,7 @@ export const useSearchResults = (props: {
           semanticMarketCount: state.discoverySemanticMarketCount,
           initialLatencyMs: state.discoveryInitialLatencyMs,
           compatibilityFallback: state.discoveryCompatibilityFallback ?? false,
+          anchorFallback: state.discoveryAnchorFallback ?? false,
         }
       : undefined
 
@@ -1804,8 +1822,11 @@ const useTrackDiscoveryExposure = (props: {
         : searchParams[SORT_KEY]
     const items = orderCombinedSearchResults(contracts ?? [], posts ?? [], {
       sort,
-      preserveUnmarkedContractOrder:
-        sort === 'score' && searchParams[QUERY_KEY].trim().length > 0,
+      preserveBackendMarketOrder: shouldPreserveBackendMarketOrder(
+        tracking.variant,
+        searchParams[QUERY_KEY],
+        searchParams[FOR_YOU_KEY] === '1'
+      ),
     })
 
     void track(DISCOVERY_EXPOSURE_EVENT, {
@@ -1820,6 +1841,7 @@ const useTrackDiscoveryExposure = (props: {
       semanticMarketCount: tracking.semanticMarketCount,
       initialLatencyMs: tracking.initialLatencyMs,
       compatibilityFallback: tracking.compatibilityFallback,
+      anchorFallback: tracking.anchorFallback,
       resultCount: items.length,
       marketCount: items.filter((item) => 'mechanism' in item).length,
       postCount: items.filter((item) => !('mechanism' in item)).length,

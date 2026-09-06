@@ -1,14 +1,31 @@
 import {
+  getSearchDiscoveryRetryOptions,
+  getSearchDiscoveryRetryMode,
   getLoadMoreRequestAction,
   getSearchRequestDebounceMs,
+  SEARCH_ANCHOR_CLOCK_SKEW_ERROR,
   shouldSendDiscoveryOptions,
-  shouldRetrySearchWithoutDiscoveryOptions,
   shouldRetryStaleSearchRequest,
 } from './search-request-coordination'
+
+const legacySchemaError = (field: string) => ({
+  errorCode: 400,
+  errorMessage: 'Error validating request.',
+  errorDetails: [
+    {
+      field: null,
+      error: `Unrecognized key(s) in object: '${field}'`,
+    },
+  ],
+})
 
 describe('discovery compatibility mode', () => {
   it('pins later pages to legacy/control after a first-page fallback', () => {
     expect(shouldSendDiscoveryOptions(false, true)).toBe(false)
+  })
+
+  it('keeps treatment options on later pages after an anchor-only fallback', () => {
+    expect(shouldSendDiscoveryOptions(false, false)).toBe(true)
   })
 
   it('allows a new result set to try the current discovery options again', () => {
@@ -58,118 +75,163 @@ describe('getSearchRequestDebounceMs', () => {
   })
 })
 
-describe('shouldRetrySearchWithoutDiscoveryOptions', () => {
-  it('retries a rejected anchored first page without suppression', () => {
+describe('getSearchDiscoveryRetryMode', () => {
+  it('drops only a rejected clock-skewed first-page anchor', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        true,
-        1_700_000_000_000,
-        undefined,
-        undefined,
-        400
-      )
-    ).toBe(true)
+      getSearchDiscoveryRetryMode({
+        freshQuery: true,
+        seenMarketCutoffTime: 1_700_000_000_000,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'treatment',
+        errorCode: 400,
+        errorMessage: SEARCH_ANCHOR_CLOCK_SKEW_ERROR,
+        errorDetails: undefined,
+        isForYouRoute: true,
+      })
+    ).toBe('anchor-clock-skew')
   })
 
-  it('retries an unsupported semantic-search opt-in on any page', () => {
+  it('does not treat an unrelated 400 as a clock-skew refusal', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        true,
-        undefined,
-        true,
-        undefined,
-        400
-      )
-    ).toBe(true)
-    expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        false,
-        undefined,
-        true,
-        undefined,
-        400
-      )
-    ).toBe(true)
+      getSearchDiscoveryRetryMode({
+        freshQuery: true,
+        seenMarketCutoffTime: 1_700_000_000_000,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'treatment',
+        errorCode: 400,
+        errorMessage: 'Some other bad request',
+        errorDetails: undefined,
+        isForYouRoute: true,
+      })
+    ).toBeUndefined()
   })
 
-  it('retries an unsupported experiment arm on any page', () => {
+  it('does not use the anchor path outside treatment For You', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        true,
-        undefined,
-        undefined,
-        'control',
-        400
-      )
-    ).toBe(true)
+      getSearchDiscoveryRetryMode({
+        freshQuery: true,
+        seenMarketCutoffTime: 1_700_000_000_000,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'control',
+        errorCode: 400,
+        errorMessage: SEARCH_ANCHOR_CLOCK_SKEW_ERROR,
+        errorDetails: undefined,
+        isForYouRoute: true,
+      })
+    ).toBeUndefined()
+  })
+
+  it('recognizes a strict old worker rejecting discovery fields', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        false,
-        undefined,
-        undefined,
-        'treatment',
-        400
-      )
-    ).toBe(true)
+      getSearchDiscoveryRetryMode({
+        freshQuery: true,
+        seenMarketCutoffTime: 1_700_000_000_000,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'treatment',
+        ...legacySchemaError('seenMarketCutoffTime'),
+        isForYouRoute: true,
+      })
+    ).toBe('legacy-schema')
+  })
+
+  it('can strip an unsupported semantic opt-in on a safe later page', () => {
+    expect(
+      getSearchDiscoveryRetryMode({
+        freshQuery: false,
+        seenMarketCutoffTime: undefined,
+        enableSemanticSearch: true,
+        discoveryVariant: 'treatment',
+        ...legacySchemaError('enableSemanticSearch'),
+      })
+    ).toBe('legacy-schema')
   })
 
   it('does not mix filtered and unfiltered pagination spaces', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        false,
-        1_700_000_000_000,
-        undefined,
-        undefined,
-        400
-      )
-    ).toBe(false)
+      getSearchDiscoveryRetryMode({
+        freshQuery: false,
+        seenMarketCutoffTime: 1_700_000_000_000,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'treatment',
+        ...legacySchemaError('seenMarketCutoffTime'),
+      })
+    ).toBeUndefined()
   })
 
   it('lets control retry an old worker without changing ranking spaces', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        false,
-        undefined,
-        undefined,
-        'control',
-        400,
-        true
-      )
-    ).toBe(true)
+      getSearchDiscoveryRetryMode({
+        freshQuery: false,
+        seenMarketCutoffTime: undefined,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'control',
+        ...legacySchemaError('discoveryVariant'),
+        isForYouRoute: true,
+      })
+    ).toBe('legacy-schema')
   })
 
   it('does not switch treatment For You ranking spaces after page one', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        false,
-        undefined,
-        undefined,
-        'treatment',
-        400,
-        true
-      )
-    ).toBe(false)
+      getSearchDiscoveryRetryMode({
+        freshQuery: false,
+        seenMarketCutoffTime: undefined,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'treatment',
+        ...legacySchemaError('discoveryVariant'),
+        isForYouRoute: true,
+      })
+    ).toBeUndefined()
   })
 
-  it('does not retry unrelated failures or requests without new options', () => {
+  it('does not retry unrelated failures or unrelated schema errors', () => {
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        true,
-        1_700_000_000_000,
-        undefined,
-        undefined,
-        500
-      )
-    ).toBe(false)
+      getSearchDiscoveryRetryMode({
+        freshQuery: true,
+        seenMarketCutoffTime: 1_700_000_000_000,
+        enableSemanticSearch: undefined,
+        discoveryVariant: 'treatment',
+        errorCode: 500,
+        errorMessage: SEARCH_ANCHOR_CLOCK_SKEW_ERROR,
+        errorDetails: undefined,
+      })
+    ).toBeUndefined()
     expect(
-      shouldRetrySearchWithoutDiscoveryOptions(
-        true,
-        undefined,
-        undefined,
-        undefined,
-        400
-      )
-    ).toBe(false)
+      getSearchDiscoveryRetryMode({
+        freshQuery: true,
+        seenMarketCutoffTime: undefined,
+        enableSemanticSearch: true,
+        discoveryVariant: 'treatment',
+        ...legacySchemaError('someOtherField'),
+      })
+    ).toBeUndefined()
+  })
+})
+
+describe('getSearchDiscoveryRetryOptions', () => {
+  const treatmentOptions = {
+    enableSemanticSearch: true,
+    discoveryVariant: 'treatment' as const,
+  }
+
+  it('preserves treatment while removing a rejected anchor', () => {
+    expect(
+      getSearchDiscoveryRetryOptions('anchor-clock-skew', treatmentOptions)
+    ).toEqual({
+      seenMarketCutoffTime: undefined,
+      enableSemanticSearch: true,
+      discoveryVariant: 'treatment',
+    })
+  })
+
+  it('removes every discovery field only for an old schema', () => {
+    expect(
+      getSearchDiscoveryRetryOptions('legacy-schema', treatmentOptions)
+    ).toEqual({
+      seenMarketCutoffTime: undefined,
+      enableSemanticSearch: undefined,
+      discoveryVariant: undefined,
+    })
   })
 })
 

@@ -188,6 +188,19 @@ describe('basicSearchSQL', () => {
     expect(sql).toContain('millis_to_ts(1700000000000)')
   })
 
+  it('does not suppress stale-seen markets on the Your bets lookup surface', () => {
+    const sql = basicSearchSQL({
+      ...basicSearchArgs,
+      uid: 'user-id',
+      hasBets: '1',
+      seenMarketCutoffTime: 1_700_000_000_000,
+      suppressStaleSeen: true,
+    })
+
+    expect(sql).toContain('user_contract_metrics')
+    expect(sql).not.toContain('user_contract_views')
+  })
+
   it('refuses an anchor far ahead of server time', () => {
     const sql = basicSearchSQL({
       ...basicSearchArgs,
