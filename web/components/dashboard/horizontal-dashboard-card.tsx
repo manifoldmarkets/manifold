@@ -125,7 +125,10 @@ export function HorizontalDashboardCard(props: {
         >
           <VisibilityIcon contract={contract} />{' '}
           {contract.outcomeType === 'PERP' && (
-            <PerpMarketBadge contract={contract} className="mr-1 align-middle" />
+            <PerpMarketBadge
+              contract={contract}
+              className="mr-1 align-middle"
+            />
           )}
           {contract.question}
         </Link>

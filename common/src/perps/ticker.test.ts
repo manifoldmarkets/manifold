@@ -37,9 +37,7 @@ describe('PERP_FEED_TICKERS', () => {
   })
 
   it('never gives two feeds the same ticker, even ignoring case', () => {
-    const tickers = Object.values(PERP_FEED_TICKERS).map((t) =>
-      t.toLowerCase()
-    )
+    const tickers = Object.values(PERP_FEED_TICKERS).map((t) => t.toLowerCase())
     expect(new Set(tickers).size).toBe(tickers.length)
   })
 
@@ -62,7 +60,8 @@ describe('derivePerpTicker', () => {
   it('always yields something a badge can show', () => {
     expect(derivePerpTicker('')).toBe('PERP')
     expect(derivePerpTicker('2026-midterms')).toBe('MIDTER')
-    expect(derivePerpTicker('$$$-usd')).toBe('PERP')
+    expect(derivePerpTicker('$$$-usd')).toBe('USD')
+    expect(derivePerpTicker('$$$')).toBe('PERP')
     expect(isValidPerpTicker(derivePerpTicker('s&p500-usd'))).toBe(true)
   })
 })
@@ -76,9 +75,7 @@ describe('getPerpTicker', () => {
 
   it('falls back to the canonical map for rows stored before the field', () => {
     expect(getPerpTicker({ oracleFeedId: 'crypto-fear-greed' })).toBe('FEAR')
-    expect(getPerpTicker({ ticker: '', oracleFeedId: 'gldx-usd' })).toBe(
-      'GLDx'
-    )
+    expect(getPerpTicker({ ticker: '', oracleFeedId: 'gldx-usd' })).toBe('GLDx')
   })
 
   it('derives a label for a feed nobody has named', () => {

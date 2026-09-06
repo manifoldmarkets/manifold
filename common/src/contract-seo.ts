@@ -68,7 +68,10 @@ export const getContractOGProps = (
     topAnswer: topAnswer?.text,
     bountyLeft: bountyLeft,
     ...(contract.outcomeType === 'PERP'
-      ? { outcomeType: contract.outcomeType, perpTicker: getPerpTicker(contract) }
+      ? {
+          outcomeType: contract.outcomeType,
+          perpTicker: getPerpTicker(contract),
+        }
       : {}),
     ...(perpPrice === undefined ? {} : { perpPrice }),
   }

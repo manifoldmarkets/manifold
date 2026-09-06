@@ -51,9 +51,13 @@ export const getPerpFeedTicker = (feedId: string | undefined) =>
 // segment, so a new perp is merely unglamorous until someone adds a line to
 // PERP_FEED_TICKERS, never broken.
 export const derivePerpTicker = (feedIdOrSlug: string) => {
-  const head = feedIdOrSlug.split('-')[0].replace(/[^A-Za-z0-9]/g, '')
-  const letters = head.replace(/^[0-9]+/, '')
-  return letters.toUpperCase().slice(0, 6) || 'PERP'
+  for (const segment of feedIdOrSlug.split('-')) {
+    // Drop anything that can't be in a ticker, and a leading run of digits
+    // so "2026-midterms" reads MIDTER rather than a bare year.
+    const head = segment.replace(/[^A-Za-z0-9]/g, '').replace(/^[0-9]+/, '')
+    if (head) return head.toUpperCase().slice(0, 6)
+  }
+  return 'PERP'
 }
 
 // The label to render. Prefers what is stored on the contract (which is what
