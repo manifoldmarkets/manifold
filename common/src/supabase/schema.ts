@@ -682,51 +682,33 @@ export type Database = {
         }
         Relationships: []
       }
-      contract_perp_pool_events: {
+      contract_perp_hourly_stats: {
         Row: {
-          applied_ts: string
-          cash_in: number
-          cash_out: number
           contract_id: string
-          data: Json | null
-          event_type: string
-          id: number
-          oracle_price: number | null
-          oracle_ts: string | null
-          pool_long_after: number
-          pool_long_before: number
-          pool_short_after: number
-          pool_short_before: number
+          hour: string
+          captured_at: string
+          total_pool: number
+          marked_position_value: number | null
+          oracle_price: number
+          source: string
         }
         Insert: {
-          applied_ts?: string
-          cash_in?: number
-          cash_out?: number
           contract_id: string
-          data?: Json | null
-          event_type: string
-          id?: number
-          oracle_price?: number | null
-          oracle_ts?: string | null
-          pool_long_after: number
-          pool_long_before: number
-          pool_short_after: number
-          pool_short_before: number
+          hour: string
+          captured_at: string
+          total_pool: number
+          marked_position_value?: number | null
+          oracle_price: number
+          source: string
         }
         Update: {
-          applied_ts?: string
-          cash_in?: number
-          cash_out?: number
           contract_id?: string
-          data?: Json | null
-          event_type?: string
-          id?: number
-          oracle_price?: number | null
-          oracle_ts?: string | null
-          pool_long_after?: number
-          pool_long_before?: number
-          pool_short_after?: number
-          pool_short_before?: number
+          hour?: string
+          captured_at?: string
+          total_pool?: number
+          marked_position_value?: number | null
+          oracle_price?: number
+          source?: string
         }
         Relationships: []
       }

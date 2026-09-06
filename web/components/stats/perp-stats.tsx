@@ -20,9 +20,8 @@ import { Select } from 'web/components/widgets/select'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 
-const LONG_COLOR = '#3b82f6'
-const SHORT_COLOR = '#f59e0b'
-const TOTAL_COLOR = '#10b981'
+const HOUSE_COLOR = '#10b981'
+const TOTAL_COLOR = '#94a3b8'
 
 export function PerpStatsTab(props: { stats: PerpPoolStats }) {
   const { stats } = props
@@ -56,23 +55,42 @@ export function PerpStatsTab(props: { stats: PerpPoolStats }) {
       <div>
         <Title>Perpetual market economics</Title>
         <p className="text-ink-500 max-w-3xl text-sm">
-          Stats cover currently listed perpetual markets. Backing history is
-          recorded by the database and begins
-          {stats.trackingStartTime == null
-            ? ' when tracking starts'
-            : ` ${new Date(stats.trackingStartTime).toLocaleDateString(
-                'en-US',
-                {
-                  timeZone: 'America/Los_Angeles',
-                }
-              )}`}
-          . Earlier long/short pool history cannot be reconstructed; cumulative
-          deposits, fees, and payouts include all past transactions.
+          Currently listed perpetual markets. House liquidity is total backing
+          minus open trader positions valued at the oracle mark, before any
+          future ADL. Hourly observations are shown as daily closing samples.
+          Earlier house values are estimates reconstructed from funding and
+          position records; missing observations are left as gaps.
+        </p>
+        <p
+          className={clsx(
+            'mt-2 text-xs',
+            stats.lastCaptureTime == null ||
+              Date.now() - stats.lastCaptureTime > 2 * 60 * 60 * 1000
+              ? 'text-amber-600'
+              : 'text-ink-500'
+          )}
+        >
+          {stats.lastCaptureTime == null
+            ? 'Hourly capture has not started.'
+            : `Last complete capture: ${new Date(
+                stats.lastCaptureTime
+              ).toLocaleString('en-US', {
+                timeZone: 'America/Los_Angeles',
+              })} PT.`}
+          {stats.lastCaptureTime != null &&
+          Date.now() - stats.lastCaptureTime > 2 * 60 * 60 * 1000
+            ? ' Recording is overdue.'
+            : ''}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Stat label="Current backing" value={totalPool} />
+        <Stat
+          label="House liquidity at mark"
+          value={totalPool - markedPositionValue}
+          signed
+        />
+        <Stat label="Total backing" value={totalPool} />
         <Stat label="Marked trader value" value={markedPositionValue} />
         <Stat label="Reserved margin" value={reservedMargin} />
         <Stat label="Fees added" value={stats.flows.feesIn} />
@@ -94,14 +112,14 @@ export function PerpStatsTab(props: { stats: PerpPoolStats }) {
       </p>
 
       <section>
-        <Title>Sitewide perp backing</Title>
+        <Title>Sitewide house liquidity</Title>
         <PoolHistoryChart points={stats.points} />
       </section>
 
       {selected && (
         <section>
           <Row className="mb-4 flex-wrap items-center justify-between gap-3">
-            <Title className="mb-0">Backing by market</Title>
+            <Title className="mb-0">House liquidity by market</Title>
             <Select
               value={selected.id}
               onChange={(event) => setSelectedId(event.target.value)}
@@ -128,21 +146,20 @@ export function PerpStatsTab(props: { stats: PerpPoolStats }) {
       <section>
         <Title>Perp markets</Title>
         <p className="text-ink-500 mb-3 max-w-3xl text-sm">
-          “Backing minus marked value” estimates what would remain after paying
-          positions at the current oracle mark before any ADL. A negative value
-          is a risk signal, not a guaranteed house loss, because ADL can reduce
-          profitable claims.
+          House liquidity estimates what would remain after paying positions at
+          the current oracle mark before any ADL. A negative value is a risk
+          signal, not a guaranteed house loss, because ADL can reduce profitable
+          claims.
         </p>
         <div className="border-ink-200 overflow-x-auto rounded-lg border">
           <table className="w-full min-w-[1000px]">
             <thead>
               <tr className="border-ink-200 border-b">
                 <Header>Market</Header>
-                <Header right>Long pool</Header>
-                <Header right>Short pool</Header>
+                <Header right>House liquidity</Header>
+                <Header right>Total backing</Header>
                 <Header right>Open interest</Header>
                 <Header right>Marked value</Header>
-                <Header right>Backing − value</Header>
                 <Header right>Subsidy P&amp;L</Header>
                 <Header right>Fees</Header>
               </tr>
@@ -171,7 +188,12 @@ function ContractFlowStats(props: { contract: PerpContractPoolStats }) {
 
   return (
     <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-      <Stat label="Current backing" value={totalPool} />
+      <Stat
+        label="House liquidity at mark"
+        value={totalPool - contract.markedPositionValue}
+        signed
+      />
+      <Stat label="Total backing" value={totalPool} />
       <Stat label="Subsidy in" value={subsidy} />
       <Stat label="Trader margin in" value={contract.flows.marginIn} />
       <Stat label="Fees added" value={contract.flows.feesIn} />
@@ -185,10 +207,14 @@ function ContractFlowStats(props: { contract: PerpContractPoolStats }) {
   )
 }
 
-function Stat(props: { label: string; value: number; signed?: boolean }) {
+function Stat(props: {
+  label: string
+  value: number | null
+  signed?: boolean
+}) {
   const { label, value, signed } = props
   const color =
-    signed && value !== 0
+    signed && value != null && value !== 0
       ? value > 0
         ? 'text-teal-600'
         : 'text-scarlet-600'
@@ -197,8 +223,8 @@ function Stat(props: { label: string; value: number; signed?: boolean }) {
     <div className="bg-canvas-50 rounded-lg p-3">
       <div className="text-ink-500 text-xs">{label}</div>
       <div className={`mt-1 text-lg font-semibold ${color}`}>
-        {signed && value > 0 ? '+' : ''}
-        {formatMoney(value)}
+        {signed && value != null && value > 0 ? '+' : ''}
+        {value == null ? '—' : formatMoney(value)}
       </div>
     </div>
   )
@@ -240,11 +266,10 @@ function ContractRow(props: { contract: PerpContractPoolStats }) {
             : 'Active'}
         </div>
       </td>
-      <Cell>{contract.poolLong}</Cell>
-      <Cell>{contract.poolShort}</Cell>
+      <Cell signed>{buffer}</Cell>
+      <Cell>{pool}</Cell>
       <Cell>{openInterest}</Cell>
       <Cell>{contract.markedPositionValue}</Cell>
-      <Cell signed>{buffer}</Cell>
       <Cell signed>{subsidyPnl}</Cell>
       <Cell>{contract.flows.feesIn}</Cell>
     </tr>
@@ -269,23 +294,31 @@ function Cell(props: { children: number; signed?: boolean }) {
 
 function PoolHistoryChart(props: { points: PerpPoolStatsPoint[] }) {
   const { points } = props
+  type ChartPoint = HistoryPoint & { isEstimate: boolean }
   const data = useMemo(() => {
-    const asPoints = (value: (point: PerpPoolStatsPoint) => number) =>
-      points.map((point) => ({
-        x: new Date(`${point.date}T12:00:00Z`).getTime(),
-        y: value(point),
-      }))
-    return {
-      Total: {
-        points: asPoints((point) => point.poolLong + point.poolShort),
-        color: TOTAL_COLOR,
-      },
-      Long: { points: asPoints((point) => point.poolLong), color: LONG_COLOR },
-      Short: {
-        points: asPoints((point) => point.poolShort),
-        color: SHORT_COLOR,
-      },
+    const series: Record<string, { points: ChartPoint[]; color: string }> = {}
+    for (const [label, key, color] of [
+      ['House liquidity', 'houseLiquidity', HOUSE_COLOR],
+      ['Total backing', 'totalPool', TOTAL_COLOR],
+    ] as const) {
+      let segment = 0
+      let previous: number | undefined
+      for (const point of points) {
+        const x = new Date(`${point.date}T12:00:00Z`).getTime()
+        const y = point[key]
+        if (y == null) {
+          previous = undefined
+          segment++
+          continue
+        }
+        if (previous != null && x - previous > DAY_MS) segment++
+        const id = `${label}|${segment}`
+        series[id] ??= { points: [], color }
+        series[id].points.push({ x, y, isEstimate: point.isEstimate })
+        previous = x
+      }
     }
+    return series
   }, [points])
 
   const allPoints = Object.values(data).flatMap((series) => series.points)
@@ -297,29 +330,30 @@ function PoolHistoryChart(props: { points: PerpPoolStatsPoint[] }) {
     return (
       <Col className="gap-3">
         <p className="text-ink-500 text-sm">
-          First day recorded: {point.date}. Daily history will build from here.
+          First available day: {point.date}. Daily history will build from here.
         </p>
         <div className="grid grid-cols-3 gap-3">
+          <Stat label="Total backing" value={point.totalPool} />
           <Stat
-            label="Total backing"
-            value={point.poolLong + point.poolShort}
+            label="House liquidity at mark"
+            value={point.houseLiquidity}
+            signed
           />
-          <Stat label="Long pool" value={point.poolLong} />
-          <Stat label="Short pool" value={point.poolShort} />
         </div>
       </Col>
     )
   }
 
-  const first = allPoints[0].x
-  const last = allPoints[allPoints.length - 1].x
+  const first = Math.min(...allPoints.map((point) => point.x))
+  const last = Math.max(...allPoints.map((point) => point.x))
   const maxValue = max(allPoints.map((point) => point.y)) ?? 1
+  const minValue = Math.min(0, ...allPoints.map((point) => point.y))
 
   return (
     <>
       <SizedContainer className="h-[260px] w-full pr-12 sm:h-[360px] sm:pr-0">
         {(width, height) => (
-          <MultiValueHistoryChart<HistoryPoint>
+          <MultiValueHistoryChart<ChartPoint>
             data={data}
             w={width}
             h={height}
@@ -327,7 +361,10 @@ function PoolHistoryChart(props: { points: PerpPoolStatsPoint[] }) {
               [first, last === first ? first + DAY_MS : last],
               [0, width]
             )}
-            yScale={scaleLinear([0, Math.max(maxValue * 1.05, 1)], [height, 0])}
+            yScale={scaleLinear(
+              [minValue * 1.05, Math.max(maxValue * 1.05, 1)],
+              [height, 0]
+            )}
             yKind="amount"
             curve={curveStepAfter}
             Tooltip={({ prev, ans }) =>
@@ -335,8 +372,9 @@ function PoolHistoryChart(props: { points: PerpPoolStatsPoint[] }) {
                 <Col className="gap-1">
                   <div>{new Date(prev.x).toLocaleDateString()}</div>
                   <div>
-                    {ans}: {formatMoney(prev.y)}
+                    {ans.split('|')[0]}: {formatMoney(prev.y)}
                   </div>
+                  {prev.isEstimate && <div>Historical estimate</div>}
                 </Col>
               ) : null
             }
@@ -344,9 +382,8 @@ function PoolHistoryChart(props: { points: PerpPoolStatsPoint[] }) {
         )}
       </SizedContainer>
       <Row className="mt-3 flex-wrap gap-5 text-xs">
-        <Legend color={TOTAL_COLOR}>Total</Legend>
-        <Legend color={LONG_COLOR}>Long</Legend>
-        <Legend color={SHORT_COLOR}>Short</Legend>
+        <Legend color={HOUSE_COLOR}>House liquidity at mark</Legend>
+        <Legend color={TOTAL_COLOR}>Total backing</Legend>
       </Row>
     </>
   )

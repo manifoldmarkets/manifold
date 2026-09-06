@@ -21,6 +21,7 @@ type ContractRow = {
   id: string
   slug: string
   question: string
+  created_time: string
   resolution_time: string | null
   data: PerpContract
 }
@@ -39,9 +40,16 @@ type FlowRow = {
 
 type SnapshotRow = {
   contractId: string
-  date?: string
-  poolLong: number | string
-  poolShort: number | string
+  date: string
+  totalPool: number | string
+  markedPositionValue: number | string | null
+  source: 'snapshot' | 'backfill'
+}
+
+const finite = (value: number | string) => {
+  const result = Number(value)
+  if (!Number.isFinite(result)) throw new Error('Non-finite PERP stats value')
+  return result
 }
 
 const emptyFlows = (): PerpCashFlowTotals => ({
@@ -58,14 +66,14 @@ const emptyFlows = (): PerpCashFlowTotals => ({
 const asFlows = (row: FlowRow | undefined): PerpCashFlowTotals => {
   if (!row) return emptyFlows()
   return {
-    initialSubsidy: Number(row.initialSubsidy),
-    addedSubsidy: Number(row.addedSubsidy),
-    marginIn: Number(row.marginIn),
-    feesIn: Number(row.feesIn),
-    traderPayouts: Number(row.traderPayouts),
-    residualReturned: Number(row.residualReturned),
-    cashIn: Number(row.cashIn),
-    cashOut: Number(row.cashOut),
+    initialSubsidy: finite(row.initialSubsidy),
+    addedSubsidy: finite(row.addedSubsidy),
+    marginIn: finite(row.marginIn),
+    feesIn: finite(row.feesIn),
+    traderPayouts: finite(row.traderPayouts),
+    residualReturned: finite(row.residualReturned),
+    cashIn: finite(row.cashIn),
+    cashOut: finite(row.cashOut),
   }
 }
 
@@ -94,31 +102,25 @@ export const getPerpPoolStats = async (
   const end = dayjs().tz('America/Los_Angeles').startOf('day')
   const startIso = start.toISOString()
 
-  const [
-    contractRows,
-    positionRows,
-    flowRows,
-    openingRows,
-    dailyRows,
-    trackingRow,
-  ] = await pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, (tx) =>
-    Promise.all([
-      tx.manyOrNone<ContractRow>(
-        `select id, slug, question, resolution_time, data
+  const [contractRows, positionRows, flowRows, dailyRows, trackingRow] =
+    await pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, (tx) =>
+      Promise.all([
+        tx.manyOrNone<ContractRow>(
+          `select id, slug, question, created_time, resolution_time, data
        from contracts
        where outcome_type = 'PERP'
          and visibility = 'public' and deleted = false
        order by created_time`
-      ),
-      tx.manyOrNone<Row<'contract_perp_positions'>>(
-        `select p.*
+        ),
+        tx.manyOrNone<Row<'contract_perp_positions'>>(
+          `select p.*
        from contract_perp_positions p
        join contracts c on c.id = p.contract_id
        where c.outcome_type = 'PERP'
          and c.visibility = 'public' and c.deleted = false`
-      ),
-      tx.manyOrNone<FlowRow>(
-        `with perp_contracts as (
+        ),
+        tx.manyOrNone<FlowRow>(
+          `with perp_contracts as (
          select id from contracts where outcome_type = 'PERP'
            and visibility = 'public' and deleted = false
        ), cash as (
@@ -156,47 +158,33 @@ export const getPerpPoolStats = async (
          coalesce(sum(amount) filter (where direction = 'out'), 0) as "cashOut"
        from cash
        group by contract_id`
-      ),
-      tx.manyOrNone<SnapshotRow>(
-        `select c.id as "contractId",
-         snapshot.pool_long_after as "poolLong",
-         snapshot.pool_short_after as "poolShort"
-       from contracts c
-       cross join lateral (
-         select pool_long_after, pool_short_after
-         from contract_perp_pool_events
-         where contract_id = c.id and event_type = 'snapshot'
-           and applied_ts < $1
-         order by applied_ts desc, id desc
-         limit 1
-       ) snapshot
-       where c.outcome_type = 'PERP'
-         and c.visibility = 'public' and c.deleted = false`,
-        [startIso]
-      ),
-      tx.manyOrNone<SnapshotRow>(
-        `select distinct on (event.contract_id, date)
-         event.contract_id as "contractId",
-         (event.applied_ts at time zone 'America/Los_Angeles')::date::text as date,
-         event.pool_long_after as "poolLong",
-         event.pool_short_after as "poolShort"
-       from contract_perp_pool_events event
-       join contracts c on c.id = event.contract_id
-       where event.event_type = 'snapshot' and event.applied_ts >= $1
-         and c.outcome_type = 'PERP'
+        ),
+        tx.manyOrNone<SnapshotRow>(
+          `select distinct on (s.contract_id, date)
+         s.contract_id as "contractId",
+         (s.captured_at at time zone 'America/Los_Angeles')::date::text as date,
+         s.total_pool as "totalPool",
+         s.marked_position_value as "markedPositionValue", s.source
+       from contract_perp_hourly_stats s
+       join contracts c on c.id = s.contract_id
+       where s.hour >= $1 and c.outcome_type = 'PERP'
          and c.visibility = 'public' and c.deleted = false
-       order by event.contract_id, date, event.applied_ts desc, event.id desc`,
-        [startIso]
-      ),
-      tx.one<{ tracking_start: string | null }>(
-        `select min(event.applied_ts) as tracking_start
-       from contract_perp_pool_events event
-       join contracts c on c.id = event.contract_id
-       where event.event_type = 'snapshot' and c.outcome_type = 'PERP'
-         and c.visibility = 'public' and c.deleted = false`
-      ),
-    ])
-  )
+       order by s.contract_id, date, s.captured_at desc`,
+          [startIso]
+        ),
+        tx.one<{ tracking_start: string | null; last_capture: string | null }>(
+          `select min(first_capture) as tracking_start,
+          case when count(*) = count(last_capture) then min(last_capture) end as last_capture
+        from (
+          select c.id, min(s.captured_at) as first_capture,
+            max(s.captured_at) filter (where s.source = 'snapshot') as last_capture
+          from contracts c left join contract_perp_hourly_stats s on s.contract_id = c.id
+          where c.outcome_type = 'PERP' and c.visibility = 'public' and c.deleted = false
+          group by c.id
+        ) captures`
+        ),
+      ])
+    )
 
   const positionsByContract = groupBy(
     positionRows.map(rowToPosition),
@@ -205,45 +193,58 @@ export const getPerpPoolStats = async (
   const flowsByContract = new Map(
     flowRows.map((row) => [row.contractId, asFlows(row)])
   )
-  const stateByContract = new Map(
-    openingRows.map((row) => [
-      row.contractId,
-      {
-        poolLong: Number(row.poolLong),
-        poolShort: Number(row.poolShort),
-      },
-    ])
-  )
   const snapshotsByDate = groupBy(dailyRows, 'date')
   const pointsByContract = new Map<string, PerpPoolStatsPoint[]>()
   const sitewidePoints: PerpPoolStatsPoint[] = []
 
   for (let date = start; !date.isAfter(end, 'day'); date = date.add(1, 'day')) {
     const dateKey = date.format('YYYY-MM-DD')
-    for (const snapshot of snapshotsByDate[dateKey] ?? []) {
-      stateByContract.set(snapshot.contractId, {
-        poolLong: Number(snapshot.poolLong),
-        poolShort: Number(snapshot.poolShort),
-      })
+    const dailyByContract = new Map(
+      (snapshotsByDate[dateKey] ?? []).map((snapshot) => [
+        snapshot.contractId,
+        snapshot,
+      ])
+    )
+    const total: PerpPoolStatsPoint = {
+      date: dateKey,
+      totalPool: 0,
+      houseLiquidity: 0,
+      isEstimate: false,
     }
-
-    let sitewideLong = 0
-    let sitewideShort = 0
+    let complete = true
+    let existing = 0
     for (const contract of contractRows) {
-      const state = stateByContract.get(contract.id)
-      if (!state) continue
-      const point = { date: dateKey, ...state }
+      if (dayjs(contract.created_time).isAfter(date.endOf('day'))) continue
+      existing++
+      const snapshot = dailyByContract.get(contract.id)
+      // Resolution returns all residual backing. Zero thereafter is known;
+      // an absent observation for a live market is unknown, never carried forward.
+      const resolved =
+        contract.resolution_time != null &&
+        !dayjs(contract.resolution_time).isAfter(date.endOf('day'))
+      if (!snapshot && !resolved) {
+        complete = false
+        continue
+      }
+      const pool = resolved ? 0 : finite(snapshot!.totalPool)
+      const marked = resolved ? 0 : snapshot!.markedPositionValue
+      const point: PerpPoolStatsPoint = {
+        date: dateKey,
+        totalPool: pool,
+        houseLiquidity: marked == null ? null : finite(pool - finite(marked)),
+        isEstimate: snapshot?.source === 'backfill',
+      }
       const points = pointsByContract.get(contract.id) ?? []
       points.push(point)
       pointsByContract.set(contract.id, points)
-      sitewideLong += state.poolLong
-      sitewideShort += state.poolShort
+      total.totalPool = finite(total.totalPool + point.totalPool)
+      total.houseLiquidity =
+        total.houseLiquidity == null || point.houseLiquidity == null
+          ? null
+          : finite(total.houseLiquidity + point.houseLiquidity)
+      total.isEstimate ||= point.isEstimate
     }
-    sitewidePoints.push({
-      date: dateKey,
-      poolLong: sitewideLong,
-      poolShort: sitewideShort,
-    })
+    if (complete && existing > 0) sitewidePoints.push(total)
   }
 
   const contracts = contractRows
@@ -296,6 +297,10 @@ export const getPerpPoolStats = async (
 
   return {
     trackingStartTime,
+    lastCaptureTime:
+      trackingRow.last_capture == null
+        ? null
+        : new Date(trackingRow.last_capture).getTime(),
     points:
       trackingStartDate == null
         ? []

@@ -342,6 +342,44 @@ const valuePositions = (
     : undefined
 }
 
+/** One-off stats backfill. Reuse the same fail-closed replay as period P&L. */
+export const calculatePerpHistoricalValues = (args: {
+  currentPositions: PerpPosition[]
+  events: PerpEvent[]
+  cutoffs: PerpMetricPeriodCutoff[]
+}): (number | undefined)[] => {
+  const first = args.currentPositions[0] ?? args.events[0]
+  if (
+    args.currentPositions.some(
+      (p) => p.userId !== first?.userId || p.contractId !== first?.contractId ||
+        !Number.isFinite(p.openedTime)
+    ) ||
+    args.events.some(
+      (e) => e.userId !== first?.userId || e.contractId !== first?.contractId
+    )
+  )
+    return args.cutoffs.map(() => undefined)
+  const events = orderedEvents(args.events)
+  if (!events) return args.cutoffs.map(() => undefined)
+  const firstKnownTime = events.reduce(
+    (firstTime, e) => Math.min(firstTime, e.appliedTime),
+    args.currentPositions.reduce((firstTime, p) => Math.min(firstTime, p.openedTime), Infinity)
+  )
+  return args.cutoffs.map(({ cutoff, price }) => {
+    const previous = reverseToCutoff(args.currentPositions, events, cutoff)
+    // A position cannot predate both its opening and every supplied event.
+    // An inconsistency far back in the log must not discard newer cutoffs
+    // that can still be replayed from the authoritative current position.
+    if (
+      previous &&
+      cutoff <= firstKnownTime &&
+      Object.keys(previous.positions).length > 0
+    )
+      return undefined
+    return previous ? valuePositions(previous.positions, price) : undefined
+  })
+}
+
 /**
  * Reconstructs each boundary by reversing at most 30 days of append-only
  * events from the authoritative current position. The cash-flow identity is:

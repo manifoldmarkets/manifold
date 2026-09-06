@@ -2719,7 +2719,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
+    cache: 'public, max-age=300, stale-while-revalidate=300',
     returns: {} as PerpPoolStats,
     props: z
       .object({

@@ -86,7 +86,6 @@ import {
   deletePositionsQuery,
   insertFundingEventQuery,
   insertPerpEventsQuery,
-  insertPerpPoolEventQuery,
   mergeContractDataQuery,
   rowToPosition,
   selectContractForUpdateQuery,
@@ -1139,24 +1138,6 @@ export const openOrAddPosition = async (
         deletePositionsQuery(contractId, deletes),
         upsertPositionsQuery(upserts),
         insertPerpEventsQuery(newEvents),
-        insertPerpPoolEventQuery({
-          contractId,
-          eventType: existingOpposite ? 'flip' : existingSame ? 'add' : 'open',
-          appliedTime: now,
-          oracleTime: contract.oraclePriceTime,
-          oraclePrice: price,
-          poolBefore: state.pool,
-          poolAfter: open.state.pool,
-          cashIn: mana + openFee,
-          cashOut: closePayout,
-          data: {
-            direction,
-            marginIn: mana,
-            feeIn: openFee,
-            payoutOut: closePayout,
-            notionalAdded: open.deltaSize,
-          },
-        }),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
@@ -1430,23 +1411,6 @@ export const closePosition = async (
       [
         deletePositionsQuery(contractId, [{ userId, direction }]),
         insertPerpEventsQuery([event]),
-        insertPerpPoolEventQuery({
-          contractId,
-          eventType: 'close',
-          appliedTime: now,
-          oracleTime: contract.oraclePriceTime,
-          oraclePrice: price,
-          poolBefore: state.pool,
-          poolAfter: result.state.pool,
-          cashIn: 0,
-          cashOut: payout,
-          data: {
-            direction,
-            payoutOut: payout,
-            pricePnl: result.pnl,
-            notionalClosed: position.size,
-          },
-        }),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
@@ -1519,27 +1483,14 @@ export const addPerpPoolSubsidy = async (
     }
     await assertPerpEscrowBalance(pgTrans, contractId, pool)
 
-    const now = Date.now()
-    await pgTrans.multi(
-      [
-        mergeContractDataQuery(contractId, {
-          poolLong: pool.L,
-          poolShort: pool.S,
-          lastUpdatedTime: now,
-        }),
-        insertPerpPoolEventQuery({
-          contractId,
-          eventType: 'subsidy',
-          appliedTime: now,
-          oracleTime: contract.oraclePriceTime,
-          oraclePrice: contract.oraclePrice,
-          poolBefore: state.pool,
-          poolAfter: pool,
-          cashIn: amount,
-          cashOut: 0,
-          data: { side, subsidyIn: amount },
-        }),
-      ].join(';\n')
+    // mergeContractDataQuery ends in `returning *` — .one(), not .none()
+    // (see the fast path in runOracleUpdate for the failure mode).
+    await pgTrans.one(
+      mergeContractDataQuery(contractId, {
+        poolLong: pool.L,
+        poolShort: pool.S,
+        lastUpdatedTime: Date.now(),
+      })
     )
 
     return { contract, poolLong: pool.L, poolShort: pool.S }
@@ -1573,8 +1524,6 @@ export type OracleUpdateResult = {
   poolLongAfter: number
   poolShortBefore: number
   poolShortAfter: number
-  /** Positive moves S -> L; negative moves L -> S. */
-  crossSideTransfer: number
   /**
    * Present only when the tick committed its price but NOT its state, because
    * the post-transition book could not be made solvent. Callers log this with
@@ -1818,7 +1767,6 @@ export const applyOracleUpdate = (
     adlSettled: adlRes.settled,
     adlFactorLong: adlRes.adlFactorLong,
     adlFactorShort: adlRes.adlFactorShort,
-    crossSideTransfer: adlRes.crossSideTransfer,
   }
 }
 
@@ -1926,7 +1874,6 @@ export const runOracleUpdate = async (
           poolLongAfter: poolLongBefore,
           poolShortBefore,
           poolShortAfter: poolShortBefore,
-          crossSideTransfer: 0,
           solvencyHalt: { reason },
         }
       }
@@ -1935,47 +1882,6 @@ export const runOracleUpdate = async (
         state.positions,
         applied.finalState.positions
       )
-      const adlPayoutOut = applied.adlSettled.reduce(
-        (sum, settlement) => sum + settlement.payout,
-        0
-      )
-      const poolChanged =
-        poolLongBefore !== applied.finalState.pool.L ||
-        poolShortBefore !== applied.finalState.pool.S
-      const poolEvent = () =>
-        insertPerpPoolEventQuery({
-          contractId,
-          eventType: 'oracle',
-          appliedTime,
-          oracleTime: ts,
-          oraclePrice: newPrice,
-          poolBefore: state.pool,
-          poolAfter: applied.finalState.pool,
-          cashIn: 0,
-          cashOut: adlPayoutOut,
-          data: {
-            liquidatedCount: applied.liquidated.length,
-            liquidatedNotional: applied.liquidated.reduce(
-              (sum, position) => sum + position.size,
-              0
-            ),
-            adlAdjustedCount: applied.adlAdjusted.length,
-            adlNotionalRemoved:
-              applied.adlAdjusted.reduce(
-                (sum, adjustment) =>
-                  sum +
-                  adjustment.previousPosition.size -
-                  adjustment.position.size,
-                0
-              ) +
-              applied.adlSettled.reduce(
-                (sum, settlement) => sum + settlement.position.size,
-                0
-              ),
-            adlPayoutOut,
-            crossSideTransfer: applied.crossSideTransfer,
-          },
-        })
 
       const contractPatch = removeUndefinedProps({
         poolLong: applied.finalState.pool.L,
@@ -2013,7 +1919,6 @@ export const runOracleUpdate = async (
         // back — .none() would throw QueryResultError(notEmpty) and roll back
         // the whole tick (froze every fast-feed perp at its creation price).
         await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
-        if (poolChanged) await pgTrans.none(poolEvent())
         return {
           liquidated: [],
           adlAdjusted: [],
@@ -2024,7 +1929,6 @@ export const runOracleUpdate = async (
           poolLongAfter: applied.finalState.pool.L,
           poolShortBefore,
           poolShortAfter: applied.finalState.pool.S,
-          crossSideTransfer: applied.crossSideTransfer,
         }
       }
 
@@ -2059,7 +1963,6 @@ export const runOracleUpdate = async (
           upsertPositionsQuery(upserts),
           deletePositionsQuery(contractId, deletes),
           insertPerpEventsQuery(applied.events),
-          poolEvent(),
           mergeContractDataQuery(contractId, contractPatch),
           metricsQuery,
         ].join(';\n')
@@ -2075,7 +1978,6 @@ export const runOracleUpdate = async (
         poolLongAfter: applied.finalState.pool.L,
         poolShortBefore,
         poolShortAfter: applied.finalState.pool.S,
-        crossSideTransfer: applied.crossSideTransfer,
       }
     },
     bounds?.maxAttempts,
@@ -2278,12 +2180,6 @@ export const runFunding = async (
       })
       .filter(Boolean) as PerpEvent[]
     const perUserEvents = [...perUserFundingEvents, ...adlEvents]
-    const adlPayoutOut = fundingResult.settled.reduce(
-      (sum, settlement) => sum + settlement.payout,
-      0
-    )
-    const poolChanged =
-      poolLongBefore !== next.pool.L || poolShortBefore !== next.pool.S
 
     await payAdlSettlements(
       pgTrans,
@@ -2306,28 +2202,6 @@ export const runFunding = async (
         deletePositionsQuery(contractId, deletes),
         insertPerpEventsQuery(perUserEvents),
         insertFundingEventQuery(fundingEvent),
-        ...(poolChanged || perUserEvents.length > 0
-          ? [
-              insertPerpPoolEventQuery({
-                contractId,
-                eventType: 'funding',
-                appliedTime,
-                oracleTime: contract.oraclePriceTime,
-                oraclePrice: contract.oraclePrice,
-                poolBefore: state.pool,
-                poolAfter: next.pool,
-                cashIn: 0,
-                cashOut: adlPayoutOut,
-                data: {
-                  fundingRate,
-                  adlAdjustedCount: adlAdjusted.length,
-                  adlSettledCount: fundingResult.settled.length,
-                  adlPayoutOut,
-                  crossSideTransfer: fundingResult.crossSideTransfer,
-                },
-              }),
-            ]
-          : []),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
@@ -2570,10 +2444,6 @@ export const resolvePerp = async (
         ...applied.finalState.positions.map((p) => p.userId),
       ])
     )
-    const traderPayouts = closedPositions.reduce(
-      (sum, position) => sum + position.payout,
-      0
-    )
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -2587,25 +2457,6 @@ export const resolvePerp = async (
       [
         deleteContractPositionsQuery(contractId),
         insertPerpEventsQuery(events),
-        insertPerpPoolEventQuery({
-          contractId,
-          eventType: 'resolve',
-          appliedTime: now,
-          oracleTime: oracleTs,
-          oraclePrice: finalPrice,
-          poolBefore: loaded.pool,
-          poolAfter: { L: 0, S: 0 },
-          cashIn: 0,
-          cashOut: traderPayouts + residualPayout,
-          data: {
-            traderPayouts,
-            residualOut: residualPayout,
-            liquidatedCount: applied.liquidated.length,
-            adlAdjustedCount: applied.adlAdjusted.length,
-            adlSettledCount: applied.adlSettled.length,
-            crossSideTransfer: applied.crossSideTransfer,
-          },
-        }),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')

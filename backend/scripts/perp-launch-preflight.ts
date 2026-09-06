@@ -205,11 +205,6 @@ if (require.main === module)
         'index PERP lifetime accounting',
         'public.contract_perp_events_user_contract_lifetime',
       ],
-      ['table PERP pool accounting ledger', 'public.contract_perp_pool_events'],
-      [
-        'index PERP pool snapshots',
-        'public.contract_perp_pool_snapshots_contract_applied',
-      ],
     ] as const
     await inspect('database schema', async () => {
       for (const [label, relation] of schemaChecks) {
@@ -238,21 +233,6 @@ if (require.main === module)
             : relation
         )
       }
-      const poolCapture = await pg.one<{ enabled: boolean }>(
-        `select exists (
-           select 1 from pg_trigger
-           where tgrelid = 'public.contracts'::regclass
-             and tgname = 'contract_perp_pool_snapshot'
-             and tgenabled in ('O', 'A')
-         ) as enabled`
-      )
-      report(
-        poolCapture.enabled ? 'PASS' : 'FAIL',
-        'PERP pool snapshot capture',
-        poolCapture.enabled
-          ? 'Database capture is enabled'
-          : 'Apply 2026090601_capture_perp_pool_snapshots.sql before deploying stats'
-      )
       const sourceTimestampColumn = await pg.one<{ present: boolean }>(
         `select exists (
            select 1
