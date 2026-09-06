@@ -1,4 +1,4 @@
-import { Contract, PerpContract } from './contract'
+import { Contract, MultiContract, PerpContract } from './contract'
 import { getContractOGProps, getSeoDescription } from './contract-seo'
 
 describe('perpetual market external metadata', () => {
@@ -59,6 +59,7 @@ describe('perpetual market external metadata', () => {
     const contract = getBinaryContract()
 
     expect(getContractOGProps(contract)).toEqual({
+      v: '2',
       question: 'Will this happen?',
       numTraders: '7',
       volume: '1234',
@@ -68,6 +69,7 @@ describe('perpetual market external metadata', () => {
       numericValue: undefined,
       resolution: undefined,
       topAnswer: undefined,
+      answers: undefined,
       bountyLeft: undefined,
     })
     expect(getSeoDescription(contract)).toBe(
@@ -75,6 +77,73 @@ describe('perpetual market external metadata', () => {
     )
   })
 })
+
+describe('multiple choice OG metadata', () => {
+  it('lists the most likely answers first, capped at three', () => {
+    const longText =
+      'Charlie, whose answer text goes on for far longer than fits on a card'
+    const contract = getMultiContract([
+      ['Alpha', 0.2],
+      ['Bravo', 0.5],
+      [longText, 0.25],
+      ['Delta', 0.05],
+    ])
+
+    const ogProps = getContractOGProps(contract)
+    expect(ogProps.topAnswer).toBe('Bravo')
+    expect(ogProps.probability).toBe('50%')
+    expect(JSON.parse(ogProps.answers ?? '[]')).toEqual([
+      { t: 'Bravo', p: '50%' },
+      {
+        t: 'Charlie, whose answer text goes on for far longer than fits…',
+        p: '25%',
+      },
+      { t: 'Alpha', p: '20%' },
+    ])
+  })
+
+  it('puts the winning answer first once resolved', () => {
+    const contract = getMultiContract([
+      ['Alpha', 0.2],
+      ['Bravo', 0.5],
+      ['Charlie', 0.3],
+    ])
+    contract.answers[0].resolution = 'YES'
+    contract.answers[1].resolution = 'NO'
+    contract.answers[2].resolution = 'NO'
+
+    const ogProps = getContractOGProps(contract)
+    expect(ogProps.topAnswer).toBe('Alpha')
+    expect(ogProps.probability).toBe('100%')
+    expect(JSON.parse(ogProps.answers ?? '[]')).toEqual([
+      { t: 'Alpha', p: '100%', w: true },
+      { t: 'Bravo', p: '0%' },
+      { t: 'Charlie', p: '0%' },
+    ])
+  })
+})
+
+function getMultiContract(answers: [text: string, prob: number][]) {
+  return {
+    question: 'Which one?',
+    description: 'A multiple choice market.',
+    creatorName: 'Test Creator',
+    outcomeType: 'MULTIPLE_CHOICE',
+    mechanism: 'cpmm-multi-1',
+    shouldAnswersSumToOne: true,
+    uniqueBettorCount: 3,
+    volume: 100,
+    answers: answers.map(([text, prob], index) => ({
+      id: `answer-${index}`,
+      index,
+      text,
+      prob,
+      // cpmm probability with p = 0.5 is poolNo / (poolYes + poolNo)
+      poolYes: 100 * (1 - prob),
+      poolNo: 100 * prob,
+    })),
+  } as unknown as MultiContract
+}
 
 function getPerpContract(
   oraclePrice: number,

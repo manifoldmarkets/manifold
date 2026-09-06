@@ -4,10 +4,24 @@ import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
 import { formatMoneyNumberUSLocale, formatPercent } from './util/format'
 import { getFormattedNumberExpectedValue } from 'common/number'
-import { sortAnswers } from './answer'
+import { Answer } from './answer'
+import { sortBy } from 'lodash'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
 import { formatPrice, inferPriceDecimals } from './perps/format'
+
+// Bump when the card layout or the encoding of its params changes. The image
+// URL is cached for a year, and the edge route decodes `points` by version.
+export const OG_CARD_VERSION = '2'
+// How many answers a multiple choice card shows, and how long each can be
+export const OG_CARD_MAX_ANSWERS = 3
+export const OG_CARD_MAX_ANSWER_LENGTH = 60
+
+export type OgAnswer = {
+  t: string // answer text
+  p: string // formatted percent
+  w?: true // winner of a resolved market
+}
 
 export const getContractOGProps = (
   contract: Contract
@@ -22,21 +36,16 @@ export const getContractOGProps = (
     creatorAvatarUrl,
   } = contract
 
-  const topAnswer =
+  const rankedAnswers =
     outcomeType === 'MULTIPLE_CHOICE'
-      ? resolution
-        ? (contract as MultiContract).answers.find((a) => a.id === resolution)
-        : sortAnswers(contract, contract.answers)[0]
-      : undefined
+      ? getRankedOgAnswers(contract as MultiContract)
+      : []
+  const topAnswer = rankedAnswers[0]
 
   const probPercent =
     outcomeType === 'BINARY'
       ? formatPercent(getDisplayProbability(contract))
-      : topAnswer
-      ? formatPercent(
-          getAnswerProbability(contract as MultiContract, topAnswer.id)
-        )
-      : undefined
+      : topAnswer?.p
 
   const numericValue =
     outcomeType === 'NUMBER'
@@ -56,6 +65,7 @@ export const getContractOGProps = (
   const perpPrice = getFormattedPerpPrice(contract)
 
   return {
+    v: OG_CARD_VERSION,
     question,
     numTraders: (uniqueBettorCount ?? 0).toString(),
     volume: Math.floor(volume).toString(),
@@ -64,14 +74,49 @@ export const getContractOGProps = (
     creatorAvatarUrl,
     numericValue,
     resolution,
-    topAnswer: topAnswer?.text,
+    topAnswer: topAnswer?.t,
+    answers: rankedAnswers.length ? JSON.stringify(rankedAnswers) : undefined,
     bountyLeft: bountyLeft,
     ...(outcomeType === 'PERP' ? { outcomeType } : {}),
     ...(perpPrice === undefined ? {} : { perpPrice }),
   }
 }
 
+// Winners first, then by probability, capped at what fits on the card
+function getRankedOgAnswers(contract: MultiContract): OgAnswer[] {
+  const isWinner = (a: Answer) =>
+    a.resolution === 'YES' ||
+    (a.resolution === 'MKT' && (a.resolutionProbability ?? 0) > 0) ||
+    contract.resolution === a.id
+  const prob = (a: Answer) => getAnswerProbability(contract, a.id)
+
+  return sortBy(
+    contract.answers,
+    (a) => (isWinner(a) ? 0 : 1),
+    (a) => -prob(a)
+  )
+    .slice(0, OG_CARD_MAX_ANSWERS)
+    .map((a) => ({
+      t: truncateOgText(a.text, OG_CARD_MAX_ANSWER_LENGTH),
+      p: formatOgPercent(prob(a)),
+      ...(isWinner(a) ? { w: true as const } : {}),
+    }))
+}
+
+function truncateOgText(text: string, maxLength: number) {
+  return text.length > maxLength
+    ? text.slice(0, maxLength - 1).trimEnd() + '…'
+    : text
+}
+
+// formatPercent shows tails to one decimal ("100.0%"); resolved answers
+// should read as whole numbers on the card
+function formatOgPercent(prob: number) {
+  return prob === 0 || prob === 1 ? `${prob * 100}%` : formatPercent(prob)
+}
+
 export type OgCardProps = {
+  v?: string // OG_CARD_VERSION; absent on URLs built before versioning
   question: string
   numTraders: string // number
   volume: string // number
@@ -81,6 +126,7 @@ export type OgCardProps = {
   numericValue?: string
   resolution?: string
   topAnswer?: string
+  answers?: string // JSON-encoded OgAnswer[]
   bountyLeft?: string // number
   outcomeType?: 'PERP'
   perpPrice?: string
