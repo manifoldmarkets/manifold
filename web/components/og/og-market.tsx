@@ -115,6 +115,7 @@ export function OgMarket(props: OgCardProps) {
               data={data}
               height={70}
               aspectRatio={7.5}
+              bottomInset={28}
             />
           </div>
         ) : bountyLeft ? (
