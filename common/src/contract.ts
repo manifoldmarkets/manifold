@@ -548,6 +548,8 @@ export type ContractParams = {
   contract: Contract
   lastBetTime?: number
   pointsString?: string
+  /** Same points as pointsString, float32-encoded for the OG image URL */
+  ogPointsString?: string
   multiPointsString?: MultiBase64Points
   comments: ContractComment[]
   totalComments: number

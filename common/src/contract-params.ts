@@ -22,7 +22,7 @@ import {
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64 } from 'common/util/og'
+import { pointsToBase64, pointsToBase64Float32 } from 'common/util/og'
 import { groupBy, mapValues, omit, orderBy, sortBy } from 'lodash'
 import { getNumContractComments } from 'web/lib/supabase/comments'
 import {
@@ -157,8 +157,10 @@ export async function getContractParams(
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = isMulti ? [] : binAvg(allBetPoints)
-  // Non-numeric markets don't need as much precision
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+  const serializedPoints = ogPoints.map((p) => [p.x, p.y] as const)
+  const pointsString = pointsToBase64(serializedPoints)
+  // The social image doesn't need full precision, and its URL should stay short
+  const ogPointsString = pointsToBase64Float32(serializedPoints)
 
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -176,6 +178,7 @@ export async function getContractParams(
     contract,
     lastBetTime,
     pointsString,
+    ogPointsString,
     multiPointsString,
     comments,
     totalComments,

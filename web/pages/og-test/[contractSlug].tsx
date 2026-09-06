@@ -26,10 +26,10 @@ export async function getStaticPaths() {
 }
 
 function OriginalGangstaTestPage(props: ContractParams) {
-  const { contract, pointsString } = props
+  const { contract, ogPointsString } = props
   const ogCardProps = removeUndefinedProps({
     ...getContractOGProps(contract),
-    points: pointsString,
+    points: ogPointsString,
   })
 
   return (
