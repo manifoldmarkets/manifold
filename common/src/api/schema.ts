@@ -1,4 +1,5 @@
 import { PerpSuggestion } from '../perps/suggestion'
+import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
@@ -54,7 +55,7 @@ import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
 import { PrivateUser, User, UserBan } from '../user'
-import { searchProps } from './market-search-types'
+import { type FullMarketSearchResult, searchProps } from './market-search-types'
 import {
   FullMarket,
   closePerpPositionSchema,
@@ -1082,7 +1083,15 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { payout: number; pnl: number },
+    returns: {} as {
+      payout: number
+      pnl: number
+      /** Fraction actually closed, which can exceed the requested one when
+       * the remainder would have been dust. */
+      fraction: number
+      /** Notional left open; 0 when the whole position was closed. */
+      remainingSize: number
+    },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1556,6 +1565,9 @@ export const API = (_apiTypeCheck = {
       payout: number | null
       pnl: number | null
       adlFactor: number | null
+      /** Closes only: the fraction of the position this event took. Null on
+       * closes written before partial closes existed, which were whole. */
+      fraction: number | null
       isApi: boolean
       userName: string | null
       username: string | null
@@ -1644,7 +1656,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // Both search handlers accept optional auth and use it for visibility,
+    // blocks, and personalized ranking. The edge cache does not vary on the
+    // Authorization header, so public caching can serve one user's result to
+    // another user (or to an anonymous caller).
+    cache: 'private, no-store',
     returns: [] as LiteMarket[],
     props: searchProps,
   },
@@ -1653,8 +1669,8 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     preferAuth: true,
-    cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as Contract[],
+    cache: 'private, no-store',
+    returns: [] as FullMarketSearchResult[],
     props: searchProps,
   },
   'recent-markets': {
@@ -2665,6 +2681,9 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(100).default(25),
         offset: z.coerce.number().gte(0).default(0),
         count: coerceBoolean.optional(),
+        order: z.enum(['asc', 'desc']).default('desc'),
+        cursorTime: z.string().datetime({ offset: true }).optional(),
+        cursorId: z.coerce.number().int().optional(),
       })
       .strict(),
     returns: {} as {
@@ -3249,6 +3268,14 @@ export const API = (_apiTypeCheck = {
         userId: z.string().optional(),
       })
       .strict(),
+  },
+  'get-browse-personalization': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z.object({}).strict(),
+    returns: {} as BrowsePersonalization,
   },
   'get-unified-feed': {
     method: 'GET',

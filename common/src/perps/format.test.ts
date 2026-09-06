@@ -1,6 +1,7 @@
 import {
   formatFeePct,
   formatFeePctApprox,
+  formatPerpClosePercent,
   perpFeeScheduleSummary,
   PERP_FEE_EXAMPLE_POOL_SHARES,
 } from './format'
@@ -64,6 +65,27 @@ describe('formatFeePctApprox', () => {
     expect(formatFeePctApprox(1 / 3)).toBe('<0.01%')
     expect(formatFeePctApprox(0.4)).toBe('<0.01%')
     expect(formatFeePctApprox(1 / 3)).not.toContain('~')
+  })
+})
+
+describe('formatPerpClosePercent', () => {
+  it('keeps the ordinary close choices at whole-percent precision', () => {
+    expect(formatPerpClosePercent(0.25)).toBe('25%')
+    expect(formatPerpClosePercent(0.5)).toBe('50%')
+    expect(formatPerpClosePercent(0.75)).toBe('75%')
+  })
+
+  it('keeps the precision of arbitrary close amounts', () => {
+    expect(formatPerpClosePercent(0.333)).toBe('33.3%')
+    expect(formatPerpClosePercent(1 / 3)).toBe('33.33%')
+    expect(formatPerpClosePercent(0.2501)).toBe('25.01%')
+  })
+
+  it('never renders a surviving position as fully closed', () => {
+    expect(formatPerpClosePercent(0.995)).toBe('99.5%')
+    expect(formatPerpClosePercent(0.999)).toBe('99.9%')
+    expect(formatPerpClosePercent(0.99999)).toBe('99.99%')
+    expect(formatPerpClosePercent(1)).toBe('100%')
   })
 })
 

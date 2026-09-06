@@ -176,7 +176,21 @@ const reverseEvent = (
       }
       break
     case 'close':
+      if (
+        sizeDelta >= 0 ||
+        costBasisDelta >= 0 ||
+        originalCostBasisDelta >= 0
+      ) {
+        return undefined
+      }
+      // A full close removes the row; a partial one leaves it open with the
+      // same entry price and leverage, smaller — so the surviving row is what
+      // this event's deltas get added back onto. Rejecting anything else
+      // still catches a close replayed against no exposure at all.
+      if (!isFullExit && afterSize <= 0) return undefined
+      break
     case 'liquidation':
+      // Never partial: liquidation forfeits the whole position's margin.
       if (
         sizeDelta >= 0 ||
         costBasisDelta >= 0 ||

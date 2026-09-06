@@ -20,9 +20,14 @@ import {
   mergedEntryPrice,
   MIN_PERP_LEVERAGE,
   openPosition,
+  PERP_EXPECTED_SIZE_TOLERANCE,
+  PERP_MIN_CLOSE_FRACTION,
+  PERP_MIN_REMAINDER_COST_BASIS,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
+  perpSizeMatchesExpectation,
   processLiquidations,
+  resolvePerpCloseFraction,
   solvencyFactor,
   unmergeEntryPrice,
 } from './amm'
@@ -1427,6 +1432,324 @@ describe('assertPerpStateNumbers ordering vs the risk transitions', () => {
     expect(() => assertPerpStateSolvent(insolvent, 150)).toThrow()
     const repaired = applyADL(insolvent, 150)
     expect(() => assertPerpStateSolvent(repaired.state, 150)).not.toThrow()
+  })
+})
+
+describe('partial close', () => {
+  // A long in profit, funded by a short pool with room to pay it.
+  const profitableLong = () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+      takerFeeCostBasis: 4,
+    })
+    const state: PerpState = {
+      pool: { L: 100, S: 500 },
+      positions: [position],
+    }
+    return { position, state }
+  }
+
+  describe('perpSizeMatchesExpectation', () => {
+    it('forgives representation dust at any scale', () => {
+      expect(perpSizeMatchesExpectation(400, 400)).toBe(true)
+      expect(
+        perpSizeMatchesExpectation(
+          400,
+          400 * (1 + PERP_EXPECTED_SIZE_TOLERANCE / 2)
+        )
+      ).toBe(true)
+      expect(
+        perpSizeMatchesExpectation(
+          12_345_678,
+          12_345_678 * (1 + PERP_EXPECTED_SIZE_TOLERANCE / 2)
+        )
+      ).toBe(true)
+    })
+
+    it('refuses a row that actually moved', () => {
+      // The smallest close that can change a row is 1%, so anything an
+      // intervening close could have done is far outside the tolerance.
+      expect(perpSizeMatchesExpectation(400 * 0.99, 400)).toBe(false)
+      expect(perpSizeMatchesExpectation(100, 400)).toBe(false)
+      // Funding and ADL scale size too, and invalidate the preview the same way.
+      expect(perpSizeMatchesExpectation(400 * 0.999, 400)).toBe(false)
+    })
+
+    it('refuses values it cannot compare', () => {
+      expect(perpSizeMatchesExpectation(NaN, 400)).toBe(false)
+      expect(perpSizeMatchesExpectation(400, Infinity)).toBe(false)
+    })
+  })
+
+  describe('resolvePerpCloseFraction', () => {
+    const row = { size: 400, costBasis: 100 }
+
+    it('refuses a fraction outside (0, 1]', () => {
+      expect(() => resolvePerpCloseFraction(row, 0)).toThrow(/in \(0, 1\]/)
+      expect(() => resolvePerpCloseFraction(row, -0.5)).toThrow(/in \(0, 1\]/)
+      expect(() => resolvePerpCloseFraction(row, 1.5)).toThrow(/in \(0, 1\]/)
+      expect(() => resolvePerpCloseFraction(row, NaN)).toThrow(/in \(0, 1\]/)
+    })
+
+    it('refuses a close too small to be worth its own event', () => {
+      expect(() =>
+        resolvePerpCloseFraction(row, PERP_MIN_CLOSE_FRACTION / 2)
+      ).toThrow(/at least/)
+    })
+
+    it('passes a valid partial through and reads 1 as a full close', () => {
+      expect(resolvePerpCloseFraction(row, 0.25)).toBe(0.25)
+      expect(resolvePerpCloseFraction(row, 0.333)).toBe(0.333)
+      expect(resolvePerpCloseFraction(row, PERP_MIN_CLOSE_FRACTION)).toBe(
+        PERP_MIN_CLOSE_FRACTION
+      )
+      expect(resolvePerpCloseFraction(row, 1)).toBe(1)
+    })
+
+    it('promotes a close whose remainder would be dust', () => {
+      // Half a mana-cent of margin left open — a row that would still accrue
+      // funding every period and still need closing by hand.
+      expect(resolvePerpCloseFraction(row, 0.99995)).toBe(1)
+      // The bound is on the REMAINING margin, not on 1 - fraction, so the
+      // same fraction survives on a position large enough for the remainder
+      // to be real money.
+      expect(
+        resolvePerpCloseFraction({ size: 40_000, costBasis: 10_000 }, 0.99995)
+      ).toBe(0.99995)
+      // At the bound the remainder is kept: PERP_MIN_REMAINDER_COST_BASIS is
+      // the smallest margin still worth a row.
+      expect(
+        resolvePerpCloseFraction(
+          { size: 4, costBasis: 1 },
+          1 - PERP_MIN_REMAINDER_COST_BASIS
+        )
+      ).toBe(1 - PERP_MIN_REMAINDER_COST_BASIS)
+    })
+  })
+
+  it('leaves the full close bit-for-bit what it was', () => {
+    const { position, state } = profitableLong()
+    const full = closePosition(state, position, 150)
+
+    // π = (150-100)/100 · 400 = 200, paid out of the short pool; the M$100
+    // margin comes back out of the long pool.
+    expect(full.payout).toBe(300)
+    expect(full.pnl).toBe(200)
+    expect(full.state.pool).toEqual({ L: 0, S: 300 })
+    expect(full.state.positions).toEqual([])
+    expect(full.fraction).toBe(1)
+    expect(full.remainingPosition).toBeNull()
+    expect(full.closedSize).toBe(position.size)
+    expect(full.closedCostBasis).toBe(position.costBasis)
+    expect(full.closedOriginalCostBasis).toBe(position.originalCostBasis)
+    expect(full.closedTakerFeeCostBasis).toBe(4)
+  })
+
+  it('pays exactly its fraction of the full close, out of the same pools', () => {
+    const { position, state } = profitableLong()
+    const full = closePosition(state, position, 150)
+    const quarter = closePosition(state, position, 150, 0.25)
+
+    expect(quarter.payout).toBeCloseTo(0.25 * full.payout, 9)
+    expect(quarter.pnl).toBeCloseTo(0.25 * full.pnl, 9)
+    expect(quarter.poolLongDelta).toBeCloseTo(0.25 * full.poolLongDelta, 9)
+    expect(quarter.poolShortDelta).toBeCloseTo(0.25 * full.poolShortDelta, 9)
+    expect(quarter.fraction).toBe(0.25)
+  })
+
+  it('leaves a survivor at the same entry, leverage and liquidation price', () => {
+    const { position, state } = profitableLong()
+    const { remainingPosition } = closePosition(state, position, 150, 0.25)
+    if (!remainingPosition) throw new Error('expected a surviving position')
+
+    // The whole point: reducing exposure must not move the price at which
+    // what is left gets liquidated.
+    expect(remainingPosition.entryPrice).toBe(position.entryPrice)
+    expect(remainingPosition.leverage).toBeCloseTo(position.leverage, 12)
+    expect(remainingPosition.liquidationPrice).toBeCloseTo(
+      position.liquidationPrice,
+      12
+    )
+    expect(remainingPosition.size).toBeCloseTo(300, 9)
+    expect(remainingPosition.costBasis).toBeCloseTo(75, 9)
+    expect(remainingPosition.originalCostBasis).toBeCloseTo(75, 9)
+    expect(remainingPosition.takerFeeCostBasis).toBeCloseTo(3, 9)
+    // openedTime is what `expectedOpenedTime` matches on, so a partial close
+    // must not look like a new position to the next one.
+    expect(remainingPosition.openedTime).toBe(position.openedTime)
+  })
+
+  it('splits the row without losing or minting any of it', () => {
+    const { position, state } = profitableLong()
+    // Exact, not close-to: metric-periods rebuilds the pre-close row by
+    // adding this event's deltas back onto the survivor, and any drift here
+    // is drift in every historical P&L that replays through it.
+    for (const fraction of [0.01, 0.25, 1 / 3, 0.5, 0.9]) {
+      const res = closePosition(state, position, 150, fraction)
+      const survivor = res.remainingPosition
+      if (!survivor) throw new Error('expected a surviving position')
+      expect(res.closedSize + survivor.size).toBe(position.size)
+      expect(res.closedCostBasis + survivor.costBasis).toBe(position.costBasis)
+      expect(res.closedOriginalCostBasis + survivor.originalCostBasis).toBe(
+        position.originalCostBasis
+      )
+      expect(
+        res.closedTakerFeeCostBasis + (survivor.takerFeeCostBasis ?? 0)
+      ).toBe(position.takerFeeCostBasis)
+    }
+  })
+
+  it('pays the same in two steps as in one', () => {
+    const { position, state } = profitableLong()
+    const full = closePosition(state, position, 150)
+
+    const first = closePosition(state, position, 150, 0.4)
+    const survivor = first.remainingPosition
+    if (!survivor) throw new Error('expected a surviving position')
+    const second = closePosition(first.state, survivor, 150)
+
+    expect(first.payout + second.payout).toBeCloseTo(full.payout, 9)
+    expect(second.state.pool.L).toBeCloseTo(full.state.pool.L, 9)
+    expect(second.state.pool.S).toBeCloseTo(full.state.pool.S, 9)
+    expect(second.state.positions).toEqual([])
+  })
+
+  it('is the state a smaller position would have been in all along', () => {
+    const { position, state } = profitableLong()
+    const partial = closePosition(state, position, 150, 0.25)
+
+    // Same book, but the trader only ever opened 75% of the position.
+    const smaller = makePosition({
+      direction: 'long',
+      size: 300,
+      costBasis: 75,
+      entryPrice: 100,
+      originalCostBasis: 75,
+      takerFeeCostBasis: 3,
+    })
+    const reference = closePosition(
+      { pool: { L: 100, S: 500 }, positions: [smaller] },
+      smaller,
+      150
+    )
+    // Closing the survivor next must land exactly where closing the
+    // never-larger position would.
+    const survivor = partial.remainingPosition
+    if (!survivor) throw new Error('expected a surviving position')
+    const closeOut = closePosition(partial.state, survivor, 150)
+    expect(closeOut.payout).toBeCloseTo(reference.payout, 9)
+  })
+
+  it('draws a losing close from the closer own pool only', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    // π = (90-100)/100 · 100 = -10 on a quarter of the notional.
+    const res = closePosition(state, position, 90, 0.25)
+    expect(res.pnl).toBeCloseTo(-10, 9)
+    expect(res.payout).toBeCloseTo(15, 9)
+    expect(res.poolLongDelta).toBeCloseTo(-15, 9)
+    expect(res.poolShortDelta).toBe(0)
+    expect(res.state.pool.S).toBe(500)
+  })
+
+  it('pays nothing when the closed leg is past its own margin', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    // A 50% move against a 4x long wipes the margin out entirely.
+    const res = closePosition(state, position, 50, 0.5)
+    expect(res.payout).toBe(0)
+    // toBeCloseTo, not toBe: a zero payout debits the pool by -0, exactly as
+    // a full close of the same position always has. Both read as no debit.
+    expect(res.poolLongDelta).toBeCloseTo(0, 12)
+    expect(res.remainingPosition?.costBasis).toBeCloseTo(50, 9)
+  })
+
+  it('leaves a survivor the state validators accept, and a solvent book', () => {
+    const { position, state } = profitableLong()
+    const res = closePosition(state, position, 150, 0.25)
+    expect(() =>
+      assertPerpPositionNumbers(res.remainingPosition as PerpPosition)
+    ).not.toThrow()
+    expect(() => assertPerpStateSolvent(res.state, 150)).not.toThrow()
+  })
+
+  it('replaces the row in place rather than reordering the book', () => {
+    const other = makePosition({
+      userId: 'u2',
+      direction: 'short',
+      size: 100,
+      costBasis: 50,
+      entryPrice: 100,
+    })
+    const { position } = profitableLong()
+    const state: PerpState = {
+      pool: { L: 100, S: 500 },
+      positions: [position, other],
+    }
+    const res = closePosition(state, position, 150, 0.5)
+    expect(res.state.positions).toHaveLength(2)
+    expect(res.state.positions[0].userId).toBe('u1')
+    expect(res.state.positions[1]).toBe(other)
+  })
+
+  it('closes the whole position when the remainder would be dust', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    const res = closePosition(state, position, 150, 1 - 1e-5)
+    expect(res.fraction).toBe(1)
+    expect(res.remainingPosition).toBeNull()
+    expect(res.payout).toBe(300)
+    expect(res.state.positions).toEqual([])
+  })
+
+  it('keeps a remainder that is still real money', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    // 1% of M$100 is M$1 left open — well above the dust bound.
+    const res = closePosition(state, position, 150, 0.99)
+    expect(res.fraction).toBe(0.99)
+    expect(res.remainingPosition?.costBasis).toBeGreaterThan(
+      PERP_MIN_REMAINDER_COST_BASIS
+    )
+  })
+
+  it('prices a short partial close off the long pool', () => {
+    const position = makePosition({
+      direction: 'short',
+      size: 200,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 500, S: 100 }, positions: [position] }
+    // π = (100-80)/100 · 200 = 40 in profit; half of that is 20.
+    const res = closePosition(state, position, 80, 0.5)
+    expect(res.pnl).toBeCloseTo(20, 9)
+    expect(res.payout).toBeCloseTo(70, 9)
+    expect(res.poolShortDelta).toBeCloseTo(-50, 9)
+    expect(res.poolLongDelta).toBeCloseTo(-20, 9)
   })
 })
 

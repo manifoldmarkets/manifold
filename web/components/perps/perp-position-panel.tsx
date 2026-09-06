@@ -2,6 +2,13 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
+import {
+  canEnterPerpCloseMana,
+  getPerpCloseAmountError,
+  perpCloseAmountFromFraction,
+  perpCloseAmountFromInput,
+  PerpCloseAmount,
+} from 'common/perps/close-amount'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   fundingPeriodUnit,
@@ -10,13 +17,19 @@ import {
 } from 'common/perps/funding'
 import {
   fundingPerPeriod,
+  getPositionValue,
   getUserFacingPnl,
   getUserFacingPnlPercent,
 } from 'common/perps/pnl'
+import {
+  PERP_MIN_CLOSE_FRACTION,
+  resolvePerpCloseFraction,
+} from 'common/perps/amm'
 import { PerpPosition } from 'common/perps/position'
 import { DAY_MS } from 'common/util/time'
 import {
   formatCountdown,
+  formatPerpClosePercent,
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
@@ -28,7 +41,12 @@ import {
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
+import { Input } from 'web/components/widgets/input'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { Slider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -129,18 +147,27 @@ export const PerpPositionPanel = (props: {
   if (!user) return null
   if (!positions.length && !pastEvents.length) return null
 
-  const close = async (direction: 'long' | 'short') => {
+  const close = async (direction: 'long' | 'short', fraction = 1) => {
     if (oracleTradingPaused) {
       toast.error('Closing is paused until the oracle publishes a fresh price')
-      return
+      return false
     }
     setClosing(direction)
     try {
       const position = positions.find((p) => p.direction === direction)
       if (!position) throw new Error('Position is no longer open')
-      const fingerprint = [contract.id, direction, position.openedTime].join(
-        ':'
-      )
+      // A partial close leaves openedTime alone, so the fingerprint has to
+      // carry what the close itself is: two 25% closes in a row are separate
+      // trades, and sharing an idempotency key would silently replay the
+      // first instead of running the second. `size` moves after every close,
+      // so a retry of the SAME click still dedupes.
+      const fingerprint = [
+        contract.id,
+        direction,
+        position.openedTime,
+        position.size,
+        fraction,
+      ].join(':')
       const request =
         pendingCloses.current[direction]?.fingerprint === fingerprint
           ? pendingCloses.current[direction]
@@ -151,9 +178,20 @@ export const PerpPositionPanel = (props: {
         direction,
         idempotencyKey: request.idempotencyKey,
         expectedOpenedTime: position.openedTime,
+        // Bind a partial close to the row it was sized against. openedTime
+        // survives a partial close, so it alone cannot tell the engine that
+        // this 75% was 75% OF 400 rather than of whatever is there now.
+        ...(fraction < 1 ? { fraction, expectedSize: position.size } : {}),
       })
+      // The engine promotes a close whose remainder would be dust, so what
+      // came back — not what was asked for — decides the wording.
+      const closedAll = res.remainingSize <= 0
       toast.success(
-        `Closed ${direction} — payout ${formatMoneyPrecise(
+        `${
+          closedAll
+            ? `Closed ${direction}`
+            : `Closed ${formatPerpClosePercent(res.fraction)} of ${direction}`
+        } — payout ${formatMoneyPrecise(
           res.payout
         )} (profit ${formatMoneyPrecise(res.pnl)})`
       )
@@ -161,20 +199,32 @@ export const PerpPositionPanel = (props: {
         outcomeType: contract.outcomeType,
         slug: contract.slug,
         contractId: contract.id,
-        shares: position?.size,
+        shares: position.size * res.fraction,
         outcome: direction,
         token: contract.token,
-        perpAction: 'close',
+        perpAction: closedAll ? 'close' : 'partial-close',
+        fraction: res.fraction,
         payout: res.payout,
         pnl: res.pnl,
       })
-      setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
+      // Only a full close may hide the row optimistically. A partial one
+      // keeps the same openedTime, so marking it closed here would hide the
+      // position that is still open — permanently.
+      if (closedAll)
+        setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
       setRefresh((r) => r + 1)
       delete pendingCloses.current[direction]
       // Pools changed; let the page re-poll the contract immediately.
       onAction?.()
+      return true
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Close failed')
+      // A 409 here means the row moved under the request and tells the user
+      // to refresh — so refresh, rather than leaving them to do it by hand
+      // against the same stale numbers that just failed.
+      setRefresh((r) => r + 1)
+      onAction?.()
+      return false
     } finally {
       setClosing(null)
     }
@@ -183,11 +233,11 @@ export const PerpPositionPanel = (props: {
   return (
     <Col className="gap-3">
       {positions.map((p) => (
-        <PositionCard
+        <PositionSummary
           key={p.direction}
           position={p}
           contract={contract}
-          onClose={() => close(p.direction)}
+          onClose={(fraction) => close(p.direction, fraction)}
           closing={closing === p.direction}
           anyClosing={closing !== null}
           oracleTradingPaused={oracleTradingPaused}
@@ -208,6 +258,7 @@ type PerpHistoryEvent = {
   oraclePrice: number
   payout: number | null
   pnl: number | null
+  fraction: number | null
 }
 
 // Tombstones for closed/liquidated positions, so the outcome of a position
@@ -299,15 +350,20 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           )
         }
 
-        // close
+        // close, whole or partial
         const pnl = e.pnl ?? 0
+        // Closes written before partial closes existed carry no fraction and
+        // were whole ones.
+        const partial = e.fraction != null && e.fraction < 1 ? e.fraction : null
         return (
           <Row
             key={e.id}
             className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
           >
             <span className="text-ink-700 font-medium">
-              Closed {e.direction}
+              {partial != null
+                ? `Closed ${formatPerpClosePercent(partial)} of ${e.direction}`
+                : `Closed ${e.direction}`}
             </span>
             <span className="text-ink-700 tabular-nums">
               payout {formatMoneyPrecise(e.payout ?? 0)}
@@ -346,10 +402,10 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
   )
 }
 
-const PositionCard = (props: {
+const PositionSummary = (props: {
   position: Position
   contract: PerpContract
-  onClose: () => void
+  onClose: (fraction: number) => Promise<boolean>
   closing: boolean
   anyClosing: boolean
   oracleTradingPaused: boolean
@@ -379,7 +435,6 @@ const PositionCard = (props: {
   const pnlPct = getUserFacingPnlPercent(position, markPrice) * 100
 
   const isLong = p.direction === 'long'
-  const accentBar = isLong ? 'bg-teal-500' : 'bg-scarlet-500'
   const accentText = isLong ? 'text-teal-600' : 'text-scarlet-600'
   const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
 
@@ -417,6 +472,81 @@ const PositionCard = (props: {
         100
       : 0
 
+  // Payout is linear in the selected fraction at a given price. Keep that
+  // fraction stable when switching units or receiving a new oracle quote;
+  // typing a new mana amount sizes it against the latest payout instead.
+  // The final payout can differ if the price moves before execution.
+  const fullPayout = getPositionValue(position, markPrice)
+  const [closeModalOpen, setCloseModalOpen] = useState(false)
+  const [closeAmount, setCloseAmount] = useState<PerpCloseAmount>(() =>
+    perpCloseAmountFromFraction(1, 'percent', fullPayout)
+  )
+  const isMana = closeAmount.unit === 'mana'
+  const manaAvailable = canEnterPerpCloseMana(fullPayout)
+  const amountUnavailable = isMana && !manaAvailable
+  const amountDisabled = anyClosing || oracleTradingPaused || amountUnavailable
+  const amountError = getPerpCloseAmountError(closeAmount, fullPayout)
+  const closeAmountError =
+    amountError === 'unavailable'
+      ? 'No positive payout is available. Switch to % to close this position.'
+      : amountError === 'missing'
+      ? `Enter ${isMana ? 'a mana amount' : 'a percentage'} to close.`
+      : amountError === 'below-minimum'
+      ? `Minimum close is ${MIN_CLOSE_PERCENT}%${
+          isMana
+            ? ` (about ${formatMoneyPrecise(
+                fullPayout * PERP_MIN_CLOSE_FRACTION
+              )} returned)`
+            : ''
+        }.`
+      : amountError === 'above-maximum'
+      ? isMana
+        ? `Amount exceeds the available payout. Use Max to close everything.`
+        : 'Maximum close is 100%.'
+      : null
+  const closeFraction = amountError == null ? closeAmount.fraction : null
+  // What the engine will actually take: a remainder that would be dust is
+  // closed too, so the button must not promise a position that will not exist.
+  const effectiveFraction =
+    closeFraction == null ? null : resolvePerpCloseFraction(p, closeFraction)
+  const isPartial = effectiveFraction != null && effectiveFraction < 1
+  const isDustPromoted =
+    closeFraction != null && closeFraction < 1 && effectiveFraction === 1
+  const closePayout = (effectiveFraction ?? 0) * fullPayout
+  const closePnl = (effectiveFraction ?? 0) * pnl
+  const remainingMargin = (1 - (effectiveFraction ?? 1)) * p.originalCostBasis
+  const sliderClosePercent =
+    closeAmount.fraction != null && Number.isFinite(closeAmount.fraction)
+      ? Math.min(100, Math.max(MIN_CLOSE_PERCENT, closeAmount.fraction * 100))
+      : 100
+  const closeAmountErrorId = `close-amount-error-${p.direction}`
+  const closeAmountHintId = `close-amount-hint-${p.direction}`
+  const setCloseFraction = (fraction: number) =>
+    setCloseAmount(
+      perpCloseAmountFromFraction(fraction, closeAmount.unit, fullPayout)
+    )
+  const adjustCloseAmount = (increment: number) => {
+    const max = isMana ? fullPayout : 100
+    const min = max * PERP_MIN_CLOSE_FRACTION
+    const current = Number(closeAmount.input)
+    const amount = Math.min(
+      max,
+      Math.max(min, (Number.isFinite(current) ? current : min) + increment)
+    )
+    const selection = perpCloseAmountFromInput(
+      String(amount),
+      closeAmount.unit,
+      fullPayout
+    )
+    setCloseAmount(
+      perpCloseAmountFromFraction(
+        selection.fraction,
+        closeAmount.unit,
+        fullPayout
+      )
+    )
+  }
+
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
     ? (markPrice - p.liquidationPrice) / markPrice
@@ -429,147 +559,370 @@ const PositionCard = (props: {
       : 'text-ink-900'
 
   return (
-    // The card renders at very different widths — full column on the
-    // market page, a phone with large text, the hub's terminal — so its type
-    // steps on the card's own width (@container), in rem so a user's larger
-    // text setting counts as less room. Below that, the header wraps and the
-    // number column can shrink: a flex item's default min-width is its
-    // content, so two wide numbers used to push the P&L block clean out of
-    // the card (overflow-hidden then clipped it).
-    <Col
-      className={clsx(
-        'border-ink-200 bg-canvas-0 @container relative overflow-hidden rounded-lg border'
-      )}
-    >
-      <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
-      <Col className="gap-3 p-4 pl-5">
-        {/* Header: side + leverage badge, then PnL */}
-        <Row className="items-start justify-between gap-3">
-          <Col className="min-w-0 gap-0.5">
-            <Row className="items-center gap-2">
-              <span
-                className={clsx(
-                  'whitespace-nowrap text-[clamp(13px,4.8cqw,1rem)] font-semibold capitalize',
-                  accentText
-                )}
-              >
-                {p.direction} {formatLeverage(p.leverage)}×
-              </span>
-            </Row>
-            {/* The two headline numbers must share one line at any card
-                width, so their size follows the card (cqw) between fixed
-                px floors and the desktop sizes. Floors are px, not rem, so
-                a large OS text setting can't re-widen them past the card. */}
-            <div className="text-ink-900 whitespace-nowrap text-[clamp(15px,6.5cqw,1.5rem)] font-bold tabular-nums leading-tight">
-              {formatMoney(p.size)}
-            </div>
-            <div className={clsx('text-ink-500', CARD_LABEL)}>
-              notional · {formatMoney(p.originalCostBasis)} margin
-            </div>
-          </Col>
-          <Col className="shrink-0 items-end">
-            <div className={clsx('text-ink-400 whitespace-nowrap', CARD_LABEL)}>
-              Unrealized profit
-            </div>
-            <div
-              className={clsx(
-                'whitespace-nowrap text-[clamp(13px,5.5cqw,1.25rem)] font-bold tabular-nums leading-tight',
-                pnlColor
-              )}
-            >
-              {pnl >= 0 ? '+' : ''}
-              {formatMoneyPrecise(pnl)}
-            </div>
-            <div className={clsx('tabular-nums', CARD_LABEL, pnlColor)}>
-              {pnl >= 0 ? '+' : ''}
-              {pnlPct.toFixed(2)}%
-            </div>
-          </Col>
-        </Row>
-
-        {/* Price stats grid */}
-        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3">
-          <PriceStat
-            label="Entry"
-            value={formatPrice(p.entryPrice, priceDecimals)}
-          />
-          <PriceStat
-            label="Mark"
-            value={formatPrice(markPrice, priceDecimals)}
-          />
-          <PriceStat
-            label="Liquidation"
-            value={formatPrice(p.liquidationPrice, priceDecimals)}
-            valueClass={liqDangerClass}
-            sublabel={
-              distToLiq > 0
-                ? `${(distToLiq * 100).toFixed(1)}% away`
-                : 'at risk'
-            }
-          />
-        </div>
-
-        {/* One left-aligned sentence — a lone "Funding" label with a
-            paragraph-length value right-aligned across the card read as two
-            disconnected columns. */}
-        {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
-          <div className="-mt-1 text-sm">
-            <span
-              className={clsx(
-                'tabular-nums',
-                fundingMana > 0 ? 'text-teal-600' : 'text-scarlet-600'
-              )}
-            >
-              {fundingMana > 0 ? 'Earning ' : 'Paying '}
-              {formatMoneyPrecise(Math.abs(fundingMana))}/
-              {fundingPeriodUnit(fundingPeriodMs)}{' '}
-              {fundingMana > 0 ? 'from funding' : 'in funding'}
-            </span>
-            <span className="text-ink-400">
-              {fundingDailyPct >= 0.05 &&
-                ` (${
-                  fundingDailyPct >= 10
-                    ? fundingDailyPct.toFixed(0)
-                    : fundingDailyPct.toFixed(1)
-                }%/day of margin)`}
-              {fundingCountdown != null && ` · next in ${fundingCountdown}`}
+    // Use the same unboxed, wrapping holdings row as UserBetSummary. Keep
+    // perp-specific labels: notional exposure is not a binary market's payout.
+    <Col className="gap-2 py-1">
+      <Row className="flex-wrap items-center gap-4">
+        <Col>
+          <div className="text-ink-500 whitespace-nowrap text-sm">
+            Position{' '}
+            <InfoTooltip text="Notional exposure of your remaining open position, including leverage. This is not the amount returned when you close." />
+          </div>
+          <div className="whitespace-nowrap tabular-nums">
+            {formatMoney(p.size)}{' '}
+            <span className={clsx('capitalize', accentText)}>
+              {p.direction} {formatLeverage(p.leverage)}×
             </span>
           </div>
-        )}
-
-        {distToLiq < 0.05 && (
-          <div className="bg-scarlet-50 text-scarlet-600 rounded-md px-2.5 py-1.5 text-xs font-medium">
-            {distToLiq > 0
-              ? `A ${(distToLiq * 100).toFixed(
-                  1
-                )}% move against you liquidates this position — the remaining margin is forfeited to the pool.`
-              : 'This position is at its liquidation price — the next adverse tick liquidates it and forfeits the remaining margin.'}
+        </Col>
+        <Col>
+          <div className="text-ink-500 whitespace-nowrap text-sm">
+            Margin{' '}
+            <InfoTooltip text="Original margin allocated to the portion of your position still open, excluding opening fees. Closing part of a position reduces this proportionally." />
           </div>
-        )}
-
+          <div className="whitespace-nowrap tabular-nums">
+            {formatMoney(p.originalCostBasis)}
+          </div>
+        </Col>
+        <Col>
+          <div className="text-ink-500 whitespace-nowrap text-sm">
+            Unrealized P&amp;L{' '}
+            <InfoTooltip text="Profit or loss on your remaining open position, including funding and opening fees. Does not include portions you have already closed." />
+          </div>
+          <div className={clsx('whitespace-nowrap tabular-nums', pnlColor)}>
+            {pnl >= 0 ? '+' : ''}
+            {formatMoneyPrecise(pnl)}{' '}
+            <span className="text-xs">
+              ({pnl >= 0 ? '+' : ''}
+              {pnlPct.toFixed(2)}%)
+            </span>
+          </div>
+        </Col>
+        <Col>
+          <div className="text-ink-500 whitespace-nowrap text-sm">
+            Value{' '}
+            <InfoTooltip text="Amount returned if you close the entire remaining position at the current oracle price. Closing is free; the price can change before execution." />
+          </div>
+          <div className="whitespace-nowrap tabular-nums">
+            {formatMoneyPrecise(fullPayout)}
+          </div>
+        </Col>
         <Button
           color="gray-outline"
-          onClick={onClose}
+          onClick={() => {
+            setCloseAmount(
+              perpCloseAmountFromFraction(1, 'percent', fullPayout)
+            )
+            setCloseModalOpen(true)
+          }}
           loading={closing}
           disabled={anyClosing || oracleTradingPaused}
-          size="md"
-          className="w-full"
+          size="xs"
+          className="shrink-0 !py-1"
         >
-          {oracleTradingPaused
-            ? 'Close paused — waiting for oracle'
-            : `Close position @ ${formatPrice(markPrice, priceDecimals)}`}
+          Close
         </Button>
-      </Col>
+      </Row>
+
+      <Row className="text-ink-500 flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums">
+        <span>
+          Entry{' '}
+          <span className="text-ink-700">
+            {formatPrice(p.entryPrice, priceDecimals)}
+          </span>
+        </span>
+        <span>
+          Mark{' '}
+          <span className="text-ink-700">
+            {formatPrice(markPrice, priceDecimals)}
+          </span>
+        </span>
+        <span>
+          Liquidation{' '}
+          <span className={liqDangerClass}>
+            {formatPrice(p.liquidationPrice, priceDecimals)}
+            {' ('}
+            {distToLiq > 0
+              ? `${(distToLiq * 100).toFixed(1)}% away`
+              : 'at risk'}
+            {')'}
+          </span>
+        </span>
+      </Row>
+
+      {/* One left-aligned sentence — a lone "Funding" label with a
+            paragraph-length value right-aligned across the summary read as two
+            disconnected columns. */}
+      {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
+        <div className="text-xs">
+          <span
+            className={clsx(
+              'tabular-nums',
+              fundingMana > 0 ? 'text-teal-600' : 'text-scarlet-600'
+            )}
+          >
+            {fundingMana > 0 ? 'Earning ' : 'Paying '}
+            {formatMoneyPrecise(Math.abs(fundingMana))}/
+            {fundingPeriodUnit(fundingPeriodMs)}{' '}
+            {fundingMana > 0 ? 'from funding' : 'in funding'}
+          </span>
+          <span className="text-ink-400">
+            {fundingDailyPct >= 0.05 &&
+              ` (${
+                fundingDailyPct >= 10
+                  ? fundingDailyPct.toFixed(0)
+                  : fundingDailyPct.toFixed(1)
+              }%/day of margin)`}
+            {fundingCountdown != null && ` · next in ${fundingCountdown}`}
+          </span>
+        </div>
+      )}
+
+      {distToLiq < 0.05 && (
+        <div className="bg-scarlet-50 text-scarlet-600 rounded-md px-2.5 py-1.5 text-xs font-medium">
+          {distToLiq > 0
+            ? `A ${(distToLiq * 100).toFixed(
+                1
+              )}% move against you liquidates this position — the remaining margin is forfeited to the pool.`
+            : 'This position is at its liquidation price — the next adverse tick liquidates it and forfeits the remaining margin.'}
+        </div>
+      )}
+
+      {oracleTradingPaused && (
+        <div className="text-ink-500 text-xs">
+          Closing is paused until the oracle updates.
+        </div>
+      )}
+
+      {closeModalOpen && (
+        <Modal
+          open={closeModalOpen}
+          setOpen={setCloseModalOpen}
+          size="sm"
+          ariaLabel={`Close ${p.direction} position`}
+        >
+          <Col className="bg-canvas-0 gap-5 rounded-t-xl px-5 py-6 sm:rounded-xl sm:px-8">
+            <div>
+              <h2 className="text-ink-900 text-xl font-semibold">
+                Close {p.direction} position
+              </h2>
+              <p className="text-ink-500 mt-1 text-sm">
+                {formatMoney(p.size)} notional at the latest oracle price of{' '}
+                {formatPrice(markPrice, priceDecimals)}. Closing is free.
+              </p>
+            </div>
+
+            <Col className="gap-2">
+              <Col className="gap-1">
+                <Row className="flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <span className="text-ink-600 text-sm">Close amount</span>
+                  <ChoicesToggleGroup
+                    choicesMap={{ '%': 'percent', Mana: 'mana' }}
+                    currentChoice={closeAmount.unit}
+                    setChoice={(unit) => {
+                      if (unit === 'percent' || unit === 'mana')
+                        setCloseAmount(
+                          perpCloseAmountFromFraction(
+                            closeAmount.fraction,
+                            unit,
+                            fullPayout
+                          )
+                        )
+                    }}
+                    disabled={anyClosing || oracleTradingPaused}
+                    disabledOptions={manaAvailable ? [] : ['mana']}
+                    color="gray"
+                    className="!p-0.5"
+                    toggleClassName="!my-0 !px-3 !py-1 text-xs"
+                  />
+                </Row>
+                <div className="relative w-full">
+                  {isMana && (
+                    <span
+                      aria-hidden
+                      className="text-ink-500 pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-xl"
+                    >
+                      Ṁ
+                    </span>
+                  )}
+                  <Input
+                    aria-label={
+                      isMana
+                        ? 'Estimated mana to receive'
+                        : 'Percentage of position to close'
+                    }
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    value={closeAmount.input}
+                    error={closeAmountError != null}
+                    aria-invalid={closeAmountError != null}
+                    aria-describedby={`${closeAmountHintId}${
+                      closeAmountError != null ? ` ${closeAmountErrorId}` : ''
+                    }`}
+                    disabled={amountDisabled}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) =>
+                      setCloseAmount(
+                        perpCloseAmountFromInput(
+                          e.target.value,
+                          closeAmount.unit,
+                          fullPayout
+                        )
+                      )
+                    }
+                    className={clsx(
+                      'h-[60px] w-full min-w-0 !pr-16 !text-xl tabular-nums',
+                      isMana && '!pl-10'
+                    )}
+                  />
+                  <button
+                    type="button"
+                    className="text-primary-600 hover:text-primary-700 absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium disabled:opacity-50"
+                    disabled={amountDisabled}
+                    onClick={() => setCloseFraction(1)}
+                  >
+                    Max
+                  </button>
+                </div>
+              </Col>
+
+              <Row className="items-center gap-4">
+                <Slider
+                  min={MIN_CLOSE_PERCENT}
+                  max={100}
+                  step={0.1}
+                  amount={sliderClosePercent}
+                  onChange={(percent) => setCloseFraction(percent / 100)}
+                  disabled={amountDisabled}
+                  color="gray"
+                  className="min-w-0 flex-1"
+                  ariaLabel="Close amount slider"
+                  ariaValueText={
+                    isMana
+                      ? `About ${formatMoneyPrecise(
+                          (sliderClosePercent / 100) * fullPayout
+                        )} returned (${formatPerpClosePercent(
+                          sliderClosePercent / 100
+                        )} of position)`
+                      : `${sliderClosePercent}% of position`
+                  }
+                />
+                <Row className="shrink-0 gap-1.5">
+                  {[-5, -1, 1, 5].map((increment) => (
+                    <button
+                      key={increment}
+                      type="button"
+                      aria-label={`${
+                        increment < 0 ? 'Decrease' : 'Increase'
+                      } close ${isMana ? 'mana' : 'percentage'} by ${Math.abs(
+                        increment
+                      )}`}
+                      className="bg-canvas-100 hover:bg-ink-200 rounded-md px-2 py-1.5 text-sm disabled:opacity-50"
+                      disabled={amountDisabled}
+                      onClick={() => adjustCloseAmount(increment)}
+                    >
+                      {increment > 0 ? `+${increment}` : increment}
+                    </button>
+                  ))}
+                </Row>
+              </Row>
+
+              <p id={closeAmountHintId} className="text-ink-500 text-xs">
+                {isMana
+                  ? 'Mana is the estimated amount returned, not position size. '
+                  : ''}
+                Final payout can change with the price.
+              </p>
+
+              {closeAmountError != null && (
+                <div id={closeAmountErrorId} className="text-error text-xs">
+                  {closeAmountError}
+                </div>
+              )}
+
+              {isDustPromoted && (
+                <div className="text-ink-500 text-xs">
+                  That would leave less than the minimum margin, so the full
+                  position will close.
+                </div>
+              )}
+            </Col>
+
+            {closeFraction != null && (
+              <Col className="gap-2.5 text-sm">
+                <Row className="items-center justify-between gap-3">
+                  <span className="text-ink-500">Realized P&amp;L</span>
+                  <span
+                    className={clsx(
+                      'font-medium tabular-nums',
+                      closePnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                    )}
+                  >
+                    {closePnl >= 0 ? '+' : ''}
+                    {formatMoneyPrecise(closePnl)}
+                  </span>
+                </Row>
+
+                {isPartial && (
+                  <>
+                    <Row className="items-center justify-between gap-3">
+                      <span className="text-ink-500">Margin remaining</span>
+                      <span className="text-ink-900 tabular-nums">
+                        {formatMoneyPrecise(remainingMargin)}
+                      </span>
+                    </Row>
+                    <p className="text-ink-400 text-xs">
+                      The remainder keeps its entry price, leverage and
+                      liquidation price.
+                    </p>
+                  </>
+                )}
+
+                <div className="border-ink-200 my-1 border-t" />
+
+                <Row className="items-center justify-between gap-3">
+                  <span className="text-ink-900 font-medium">
+                    Estimated payout
+                  </span>
+                  <span className="text-ink-900 text-lg font-semibold tabular-nums">
+                    {formatMoneyPrecise(closePayout)}
+                  </span>
+                </Row>
+              </Col>
+            )}
+
+            <Button
+              color="indigo"
+              onClick={async () => {
+                if (closeFraction != null && (await onClose(closeFraction)))
+                  setCloseModalOpen(false)
+              }}
+              loading={closing}
+              disabled={
+                anyClosing || oracleTradingPaused || closeFraction == null
+              }
+              size="xl"
+              className="w-full"
+            >
+              {oracleTradingPaused
+                ? 'Close paused — waiting for oracle'
+                : closeFraction == null || effectiveFraction == null
+                ? 'Enter a valid close amount'
+                : isPartial
+                ? `Close ${formatPerpClosePercent(
+                    effectiveFraction
+                  )} of position`
+                : 'Close entire position'}
+            </Button>
+          </Col>
+        </Modal>
+      )}
     </Col>
   )
 }
 
-// Small type inside the card follows the card's width (cqw) between a px
-// floor and the usual text-xs / text-sm, so three mono prices and the
-// labels above them keep fitting when a phone runs a large text setting.
-// Card widths of ~336px and up get exactly text-xs / text-sm.
-const CARD_LABEL = 'text-[clamp(10px,3.6cqw,0.75rem)]'
-const CARD_VALUE = 'text-[clamp(11px,4.2cqw,0.875rem)]'
+const MIN_CLOSE_PERCENT = PERP_MIN_CLOSE_FRACTION * 100
 
 // Drop trailing zeros so whole leverages render as "100×" not "100.00×",
 // but fractional ones keep one decimal of precision (e.g. "1.5×").
@@ -577,26 +930,3 @@ const formatLeverage = (leverage: number) => {
   const rounded = Math.round(leverage * 10) / 10
   return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)
 }
-
-const PriceStat = (props: {
-  label: string
-  value: string
-  valueClass?: string
-  sublabel?: string
-}) => (
-  <Col className="min-w-0 gap-0.5">
-    <div className={clsx('text-ink-500', CARD_LABEL)}>{props.label}</div>
-    <div
-      className={clsx(
-        'text-ink-900 whitespace-nowrap font-mono font-semibold tabular-nums',
-        CARD_VALUE,
-        props.valueClass
-      )}
-    >
-      {props.value}
-    </div>
-    {props.sublabel && (
-      <div className={clsx('text-ink-400', CARD_LABEL)}>{props.sublabel}</div>
-    )}
-  </Col>
-)

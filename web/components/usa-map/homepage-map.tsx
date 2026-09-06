@@ -126,6 +126,7 @@ export function HomepageMap(props: {
               targetState={targetState}
               setTargetState={setTargetState}
               customTitleFunction={extractBeforeGovernorsRace}
+              trackingPostfix="election map governor"
             />
           ) : (
             <EmptyStateContract />
@@ -193,6 +194,7 @@ export function HomepageMap(props: {
               targetState={targetState}
               hoveredState={hoveredState}
               setTargetState={setTargetState}
+              trackingPostfix="election map senate"
             />
           ) : (
             <EmptyStateContract />

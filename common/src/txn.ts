@@ -628,7 +628,7 @@ type PerpClosePayout = {
     pnl: number
     entryPrice: number
     closePrice: number
-    reason: 'close' | 'flip' | 'resolve' | 'adl'
+    reason: 'close' | 'partial-close' | 'flip' | 'resolve' | 'adl'
   }
 }
 

@@ -30,10 +30,13 @@ import {
   liquidationPrice as computeLiquidationPrice,
   MIN_PERP_LEVERAGE,
   openPosition as openPositionMath,
+  PERP_MIN_CLOSE_FRACTION,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
+  perpSizeMatchesExpectation,
   PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   processLiquidations,
+  resolvePerpCloseFraction,
   solvencyFactor,
 } from 'common/perps/amm'
 import {
@@ -1166,7 +1169,14 @@ export const closePosition = async (
   idempotencyKey?: string,
   expectedOpenedTime?: number,
   /** See `openOrAddPosition`. */
-  isApi = false
+  isApi = false,
+  /** Fraction of the position to close; 1 (the default) closes all of it.
+   * The engine may still close the whole position when the remainder would
+   * be dust — the returned `fraction` is what actually happened. */
+  requestedFraction = 1,
+  /** Optimistic-concurrency token for a PARTIAL close: the notional the
+   * caller believed it was taking a fraction OF. See the check below. */
+  expectedSize?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (
@@ -1177,6 +1187,33 @@ export const closePosition = async (
   ) {
     throw new APIError(400, 'Invalid expected PERP position opening time')
   }
+  // Mirrors resolvePerpCloseFraction's own bounds, but as a 400 and before
+  // any I/O: the pure helper throws plain Errors because it is also reached
+  // from paths where a bad fraction is an invariant violation, not a request.
+  if (
+    !Number.isFinite(requestedFraction) ||
+    requestedFraction <= 0 ||
+    requestedFraction > 1
+  )
+    throw new APIError(400, 'Close fraction must be a number in (0, 1]')
+  if (requestedFraction < 1 && requestedFraction < PERP_MIN_CLOSE_FRACTION)
+    throw new APIError(
+      400,
+      `Close fraction must be at least ${PERP_MIN_CLOSE_FRACTION} (or exactly 1 to close the whole position)`
+    )
+  if (
+    expectedSize !== undefined &&
+    (!Number.isFinite(expectedSize) || expectedSize <= 0)
+  )
+    throw new APIError(400, 'Expected position size must be a positive number')
+  const fractionRequestsPartialClose = requestedFraction < 1
+  // The schema already requires it; this is the same rule stated where the
+  // trade is actually executed, so a non-HTTP caller cannot skip the guard.
+  if (fractionRequestsPartialClose && expectedSize === undefined)
+    throw new APIError(
+      400,
+      'Closing part of a position requires the expected position size'
+    )
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -1198,9 +1235,21 @@ export const closePosition = async (
                 request.expectedOpenedTime,
                 'expected position opening time'
               )
+        // Closes stored before partial closes existed carry no fraction and
+        // were necessarily whole-position ones.
+        const storedRequestedFraction =
+          request?.fraction === undefined
+            ? 1
+            : finiteNumber(request.fraction, 'close fraction')
+        const storedExpectedSize =
+          request?.expectedSize === undefined
+            ? undefined
+            : finiteNumber(request.expectedSize, 'expected position size')
         if (
           request?.direction !== direction ||
-          storedExpectedOpenedTime !== expectedOpenedTime
+          storedExpectedOpenedTime !== expectedOpenedTime ||
+          storedRequestedFraction !== requestedFraction ||
+          storedExpectedSize !== expectedSize
         ) {
           throw new APIError(
             409,
@@ -1208,6 +1257,16 @@ export const closePosition = async (
           )
         }
         const payout = finiteNumber(response?.payout, 'close payout')
+        // The fraction actually closed, which the dust-promotion rule can
+        // lift above the requested one.
+        const closedFraction =
+          response?.fraction === undefined
+            ? 1
+            : finiteNumber(response.fraction, 'closed fraction')
+        const remainingSize =
+          response?.remainingSize === undefined
+            ? 0
+            : finiteNumber(response.remainingSize, 'remaining position size')
         const originalCostBasis =
           typeof data?.originalCostBasis === 'number' &&
           Number.isFinite(data.originalCostBasis) &&
@@ -1233,6 +1292,8 @@ export const closePosition = async (
                   originalCostBasis,
                   takerFeeCostBasis
                 ),
+          fraction: closedFraction,
+          remainingSize,
           // Callers must not re-run trade side effects (streaks) for a
           // replay — no trade happened on this request.
           replayed: true,
@@ -1310,6 +1371,28 @@ export const closePosition = async (
         'This position changed after the page loaded. Refresh before closing it.'
       )
     }
+    // A partial close is a fraction OF something, and `expectedOpenedTime`
+    // cannot police what that something was: the survivor of a partial close
+    // keeps its openedTime, so a second request sized against the pre-close
+    // row passes that check and then applies its fraction to the smaller row —
+    // closing far less than was previewed, silently. (Two tabs both showing
+    // 400 and both sending 75%: the first leaves 100, the second takes 75 of
+    // that instead of the 300 it displayed.) Funding and ADL move `size` the
+    // same way, and invalidate the preview for the same reason.
+    //
+    // Full closes deliberately skip this. "Close everything" is unambiguous at
+    // any size, and a spurious 409 on the one operation a trader may urgently
+    // need is a worse failure than any it would prevent.
+    if (
+      fractionRequestsPartialClose &&
+      expectedSize !== undefined &&
+      !perpSizeMatchesExpectation(position.size, expectedSize)
+    ) {
+      throw new APIError(
+        409,
+        'This position changed after the page loaded. Refresh before closing part of it.'
+      )
+    }
 
     // A stale feed would let a user cherry-pick a favorable cached price after
     // watching the real market move. Opens and closes share one predicate.
@@ -1320,41 +1403,72 @@ export const closePosition = async (
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
     const price = contract.oraclePrice
+    // The requested fraction is resolved against the row the transaction
+    // actually loaded, so a close sized off a stale page still promotes to a
+    // full one rather than stranding dust.
+    const fraction = resolvePerpCloseFraction(position, requestedFraction)
     // No fee on close: the taker fee is charged in full at open (see
     // openOrAddPosition), so exits pay out untouched. The opening fees the
     // position accumulated still land in this close's user-facing pnl via
-    // takerFeeCostBasis.
-    const result = closePositionMath(state, position, price)
+    // takerFeeCostBasis — a partial close realizes its own share of them.
+    const result = closePositionMath(state, position, price, fraction, now)
     const payout = result.payout
+    // Defence in depth: PERP_MIN_CLOSE_FRACTION and the row soundness check
+    // above already make this unreachable. A close that moves nothing must
+    // not write an event or earn a streak.
+    if (!(result.closedSize > 0) || !(result.closedCostBasis > 0))
+      throw new APIError(
+        400,
+        'That fraction is too small to change this position'
+      )
     assertPerpStateSolvent(result.state, price)
     const userPnl = getUserFacingPnlFromPayout(
       payout,
-      position.originalCostBasis,
-      position.takerFeeCostBasis
+      result.closedOriginalCostBasis,
+      result.closedTakerFeeCostBasis
     )
+    const remainingSize = result.remainingPosition?.size ?? 0
 
     const event: PerpEvent = asEvent(contract, {
       userId,
       eventType: 'close',
       direction,
-      leverage: 0,
-      sizeDelta: -position.size,
-      costBasisDelta: -position.costBasis,
-      originalCostBasisDelta: -position.originalCostBasis,
+      // The survivor's leverage, which the split leaves unchanged; 0 when the
+      // whole position went.
+      leverage: result.remainingPosition?.leverage ?? 0,
+      sizeDelta: -result.closedSize,
+      costBasisDelta: -result.closedCostBasis,
+      originalCostBasisDelta: -result.closedOriginalCostBasis,
       data: {
         payout,
         pnl: userPnl,
         pricePnl: result.pnl,
         entryPrice: position.entryPrice,
         closePrice: price,
-        originalCostBasis: position.originalCostBasis,
-        takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
+        originalCostBasis: result.closedOriginalCostBasis,
+        takerFeeCostBasis: result.closedTakerFeeCostBasis,
+        // Stamped on every close, so a reader never has to infer "whole
+        // position" from the absence of a field.
+        fraction: result.fraction,
+        remainingSize,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,
-              request: { direction, expectedOpenedTime },
-              response: { payout, pnl: userPnl },
+              // The REQUESTED fraction: it is what a replay is compared
+              // against, and it can differ from the one actually closed.
+              request: {
+                direction,
+                expectedOpenedTime,
+                fraction: requestedFraction,
+                ...(expectedSize === undefined ? {} : { expectedSize }),
+              },
+              response: {
+                payout,
+                pnl: userPnl,
+                fraction: result.fraction,
+                remainingSize,
+              },
             }
           : {}),
       },
@@ -1369,8 +1483,10 @@ export const closePosition = async (
       ...openInterestPatch(result.state.positions),
       lastBetTime: now,
       lastUpdatedTime: now,
-      volume: (contract.volume ?? 0) + position.originalCostBasis,
-      volume24Hours: (contract.volume24Hours ?? 0) + position.originalCostBasis,
+      // Only the margin this close actually realized counts as volume.
+      volume: (contract.volume ?? 0) + result.closedOriginalCostBasis,
+      volume24Hours:
+        (contract.volume24Hours ?? 0) + result.closedOriginalCostBasis,
     })
 
     // Credit user balance.
@@ -1391,7 +1507,7 @@ export const closePosition = async (
             pricePnl: result.pnl,
             entryPrice: position.entryPrice,
             closePrice: price,
-            reason: 'close',
+            reason: result.remainingPosition ? 'partial-close' : 'close',
           },
         },
         true
@@ -1409,14 +1525,25 @@ export const closePosition = async (
 
     await pgTrans.multi(
       [
-        deletePositionsQuery(contractId, [{ userId, direction }]),
+        // A partial close leaves the row open — same entry price, same
+        // leverage, same liquidation price, smaller — so it is an upsert, not
+        // a delete.
+        result.remainingPosition
+          ? upsertPositionsQuery([result.remainingPosition])
+          : deletePositionsQuery(contractId, [{ userId, direction }]),
         insertPerpEventsQuery([event]),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
     )
 
-    return { payout, pnl: userPnl, replayed: false }
+    return {
+      payout,
+      pnl: userPnl,
+      fraction: result.fraction,
+      remainingSize,
+      replayed: false,
+    }
   })
 }
 

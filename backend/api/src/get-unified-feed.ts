@@ -417,7 +417,8 @@ async function fetchSiteActivity(
       pe.applied_ts,
       pe.original_cost_basis_delta,
       pe.direction,
-      pe.leverage
+      pe.leverage,
+      pe.data->>'fraction' as fraction
     from contract_perp_events pe
     join contracts c on c.id = pe.contract_id
     where pe.user_id is not null
@@ -560,6 +561,7 @@ type PerpActivityRow = {
   original_cost_basis_delta: number | string
   direction: string | null
   leverage: number | string | null
+  fraction: number | string | null
 }
 
 const convertPerpActivityRow = (
@@ -597,6 +599,18 @@ const convertPerpActivityRow = (
   const leverage =
     parsedLeverage !== null && parsedLeverage >= 0 ? parsedLeverage : null
 
+  // Only a close carries one, and only a value strictly inside (0, 1) says
+  // anything the wording does not already: 1 is a whole close, and a close
+  // written before partial closes existed has none.
+  const parsedFraction = toFiniteNumber(row.fraction)
+  const fraction =
+    row.event_type === 'close' &&
+    parsedFraction !== null &&
+    parsedFraction > 0 &&
+    parsedFraction < 1
+      ? parsedFraction
+      : null
+
   return {
     id: String(row.id),
     contractId: row.contract_id,
@@ -606,6 +620,7 @@ const convertPerpActivityRow = (
     direction: row.direction,
     margin: Math.abs(originalMargin),
     leverage,
+    fraction,
   }
 }
 

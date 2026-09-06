@@ -517,6 +517,7 @@ export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
+  { label: 'Mid %', value: 'prob-mid' },
   { label: 'Low %', value: 'prob-asc' },
   { label: 'Oldest', value: 'old' },
   { label: 'Newest', value: 'new' },

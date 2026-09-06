@@ -56,6 +56,8 @@ export type BaseApiCallOptions = {
   // mutation: cached GET endpoints (max-age + stale-while-revalidate) can
   // otherwise legally serve the pre-mutation state for several seconds.
   cache?: RequestCache
+  // Lets typeahead and other superseding reads stop obsolete client work.
+  signal?: AbortSignal
 }
 
 export async function baseApiCall(
@@ -79,6 +81,7 @@ export async function baseApiCall(
     headers,
     method: method,
     cache: options?.cache,
+    signal: options?.signal,
     body:
       params == null || method === 'GET' ? undefined : JSON.stringify(params),
   })

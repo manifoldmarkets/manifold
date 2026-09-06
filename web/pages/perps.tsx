@@ -19,6 +19,7 @@ import { fromNow } from 'client-common/lib/time'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   formatCountdown,
+  formatPerpClosePercent,
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
@@ -1001,6 +1002,13 @@ const RecentActivity = (props: {
             const liquidated = e.eventType === 'liquidation'
             const closing =
               e.eventType === 'close' || liquidated || e.eventType === 'adl'
+            // A partial close leaves the position open, so the tape must not
+            // report it as an exit. Closes written before partial closes
+            // existed carry no fraction and were whole ones.
+            const partialClose =
+              e.eventType === 'close' && e.fraction != null && e.fraction < 1
+                ? e.fraction
+                : null
             return (
               <button
                 key={e.id}
@@ -1024,7 +1032,9 @@ const RecentActivity = (props: {
                         : undefined
                     }
                   >
-                    {ACTIVITY_VERB[e.eventType]}
+                    {partialClose != null
+                      ? `closed ${formatPerpClosePercent(partialClose)} of`
+                      : ACTIVITY_VERB[e.eventType]}
                   </span>{' '}
                   {e.leverage != null && !closing && (
                     <span className="font-mono">
@@ -1549,7 +1559,6 @@ const Terminal = (props: {
     contract.id,
     refreshKey
   )
-  const [tradeOpen, setTradeOpen] = useState(false)
   const oracleTradingPaused = useOracleTradingPaused(contract)
 
   const price = Number(contract.oraclePrice)
@@ -1749,41 +1758,13 @@ const Terminal = (props: {
         asOfTime={contract.oracleSourceTime}
       />
 
-      {tradeOpen ? (
-        <Col className="gap-3">
-          <Row className="items-center justify-between">
-            <SectionHeader title={`Trade ${tickerOf(contract)}`} />
-            <button
-              className="text-ink-500 hover:text-ink-700 text-xs"
-              onClick={() => setTradeOpen(false)}
-            >
-              Hide
-            </button>
-          </Row>
-          <PerpBetPanel
-            contract={contract}
-            onTrade={refresh}
-            positions={positions}
-            unsoundPositions={unsoundPositions}
-            oracleTradingPaused={oracleTradingPaused}
-          />
-        </Col>
-      ) : (
-        <Row className="gap-2">
-          <button
-            onClick={() => setTradeOpen(true)}
-            className="flex-1 rounded-md bg-teal-600 py-2 font-semibold text-white hover:bg-teal-500"
-          >
-            Long ↑
-          </button>
-          <button
-            onClick={() => setTradeOpen(true)}
-            className="bg-scarlet-600 hover:bg-scarlet-500 flex-1 rounded-md py-2 font-semibold text-white"
-          >
-            Short ↓
-          </button>
-        </Row>
-      )}
+      <PerpBetPanel
+        contract={contract}
+        onTrade={refresh}
+        positions={positions}
+        unsoundPositions={unsoundPositions}
+        oracleTradingPaused={oracleTradingPaused}
+      />
       <PerpPositionPanel
         contract={contract}
         onAction={refresh}
