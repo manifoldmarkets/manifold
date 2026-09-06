@@ -60,12 +60,43 @@ or
 update on public.contracts for each row
 execute function contract_populate_cols ();
 
+create trigger contract_perp_pool_snapshot
+after insert
+or
+update on public.contracts for each row when (new.outcome_type = 'PERP')
+execute function capture_perp_pool_snapshot ();
+
 create trigger sync_sibling_contract_trigger
 after
 update on public.contracts for each row
 execute function sync_sibling_contract ();
 
 -- Functions
+create
+or replace function public.capture_perp_pool_snapshot () returns trigger language plpgsql as $function$
+declare
+  pool_long numeric := (new.data ->> 'poolLong')::numeric;
+  pool_short numeric := (new.data ->> 'poolShort')::numeric;
+begin
+  if tg_op = 'UPDATE' then
+    if old.outcome_type = 'PERP'
+      and pool_long is not distinct from (old.data ->> 'poolLong')::numeric
+      and pool_short is not distinct from (old.data ->> 'poolShort')::numeric then
+      return new;
+    end if;
+  end if;
+
+  insert into contract_perp_pool_events (
+    contract_id, event_type, applied_ts,
+    pool_long_before, pool_long_after, pool_short_before, pool_short_after
+  ) values (
+    new.id, 'snapshot', clock_timestamp(),
+    pool_long, pool_long, pool_short, pool_short
+  );
+  return new;
+end;
+$function$;
+
 create
 or replace function public.contract_populate_cols () returns trigger language plpgsql as $function$
 begin

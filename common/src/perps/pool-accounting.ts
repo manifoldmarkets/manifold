@@ -3,6 +3,7 @@ import { isPerpEscrowBalanced } from './escrow'
 
 export const PERP_POOL_EVENT_TYPES = [
   'baseline',
+  'snapshot',
   'create',
   'open',
   'add',
@@ -22,7 +23,9 @@ export type PerpPoolEventType = (typeof PERP_POOL_EVENT_TYPES)[number]
  * `cashIn` and `cashOut` are real contract-escrow movements. Internal
  * accounting moves such as funding and cross-side repair change L/S while
  * keeping both at zero. A `baseline` seeds pre-ledger history by recording
- * the same current balance in both `poolBefore` and `poolAfter`.
+ * the same current balance in both `poolBefore` and `poolAfter`. Database
+ * `snapshot` rows also record identical before/after balances and zero cash:
+ * they are observations used for continuous history, not extra cash flows.
  */
 export type PerpPoolEvent = {
   contractId: string

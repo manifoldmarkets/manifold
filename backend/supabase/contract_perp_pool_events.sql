@@ -19,6 +19,7 @@ create table if not exists
     constraint contract_perp_pool_events_event_type_check check (
       event_type in (
         'baseline',
+        'snapshot',
         'create',
         'open',
         'add',
@@ -92,3 +93,9 @@ create index contract_perp_pool_events_applied on public.contract_perp_pool_even
 drop index if exists contract_perp_pool_events_contract_applied;
 
 create index contract_perp_pool_events_contract_applied on public.contract_perp_pool_events using btree (contract_id, applied_ts desc, id desc);
+
+drop index if exists contract_perp_pool_snapshots_contract_applied;
+
+create index contract_perp_pool_snapshots_contract_applied on public.contract_perp_pool_events using btree (contract_id, applied_ts desc, id desc)
+where
+  event_type = 'snapshot';

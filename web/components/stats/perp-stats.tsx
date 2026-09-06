@@ -56,10 +56,18 @@ export function PerpStatsTab(props: { stats: PerpPoolStats }) {
       <div>
         <Title>Perpetual market economics</Title>
         <p className="text-ink-500 max-w-3xl text-sm">
-          Backing pools and cash flows are recorded with each perp transaction,
-          independently of the stats scheduler. Pool history begins when this
-          accounting ledger is deployed; cumulative cash flows include the
-          complete transaction history.
+          Stats cover currently listed perpetual markets. Backing history is
+          recorded by the database and begins
+          {stats.trackingStartTime == null
+            ? ' when tracking starts'
+            : ` ${new Date(stats.trackingStartTime).toLocaleDateString(
+                'en-US',
+                {
+                  timeZone: 'America/Los_Angeles',
+                }
+              )}`}
+          . Earlier long/short pool history cannot be reconstructed; cumulative
+          deposits, fees, and payouts include all past transactions.
         </p>
       </div>
 
@@ -283,6 +291,25 @@ function PoolHistoryChart(props: { points: PerpPoolStatsPoint[] }) {
   const allPoints = Object.values(data).flatMap((series) => series.points)
   if (allPoints.length === 0)
     return <div className="text-ink-400 py-8">No pool history yet.</div>
+
+  if (points.length === 1) {
+    const point = points[0]
+    return (
+      <Col className="gap-3">
+        <p className="text-ink-500 text-sm">
+          First day recorded: {point.date}. Daily history will build from here.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          <Stat
+            label="Total backing"
+            value={point.poolLong + point.poolShort}
+          />
+          <Stat label="Long pool" value={point.poolLong} />
+          <Stat label="Short pool" value={point.poolShort} />
+        </div>
+      </Col>
+    )
+  }
 
   const first = allPoints[0].x
   const last = allPoints[allPoints.length - 1].x
