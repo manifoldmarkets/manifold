@@ -9,13 +9,10 @@ import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   ALL_SPORTS_GROUP_IDS,
-  compileGameMatchers,
-  isDrawAnswer,
   findRelatedMarkets,
   gameStatus,
-  isSameFixtureCompiled,
+  isDrawAnswer,
   parseSportsStart,
-  parseVersusQuestion,
   RelatedCandidate,
   RelatedRef,
   ScheduleGame,
@@ -26,18 +23,26 @@ import {
   SportsScheduleResponse,
   SPORTS_DEFAULT_GROUP_ID,
   splitFlag,
-  versusAnswers,
+  UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
-// Game markets come from two places: the automated pipelines (they carry a
-// sportsEventId and a kickoff time) and users' own "X vs Y" markets. Recently
-// finished games stick around for a while so the page can show final scores.
+// Game rows come from the automated pipelines only: markets created by the
+// @ManifoldSports account that carry a sportsEventId. Recently finished games
+// stick around for a while so the page can show final scores. Everything
+// else people make in the sports topics either hangs under a game as a
+// related market or shows up in the "this week" feed by close time.
 const FINISHED_GRACE_HOURS = 18
 const MAX_OFFICIAL_GAMES = 400
-const MAX_COMMUNITY_GAMES = 300
 const MAX_CANDIDATES = 1000
 const MAX_RELATED_PER_GAME = 25
+const UPCOMING_DAYS = 7
+const MAX_UPCOMING = 300
+// The page loads these through markets-by-ids, which takes 100 ids at most.
+const MAX_UPCOMING_RETURNED = 100
+
+const MARKET_OUTCOME_TYPES =
+  "'BINARY', 'MULTIPLE_CHOICE', 'NUMBER', 'MULTI_NUMERIC', 'PSEUDO_NUMERIC'"
 
 type Pg = ReturnType<typeof createSupabaseDirectClient>
 
@@ -49,36 +54,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const now = Date.now()
   const horizon = now + daysAhead * DAY_MS
 
-  const [official, community] = await Promise.all([
+  const [official, weekAll] = await Promise.all([
     getOfficialGames(pg, daysAhead, now),
-    getCommunityGames(pg, daysAhead, now),
+    getUpcomingMarkets(pg),
   ])
-
-  // A community market on a fixture that already has an official game is
-  // surfaced as one of that game's related markets, not as a second row.
-  // Matchers are compiled once per official game, not per pair.
-  const officialMatchers = official.map((o) =>
-    compileGameMatchers({
-      id: o.id,
-      sport: o.sport,
-      sportsEventId: o.sportsEventId,
-      startTime: o.startTime,
-      home: { name: o.home.name, shortText: o.home.shortName },
-      away: { name: o.away.name, shortText: o.away.shortName },
-    })
-  )
-  const games = [
-    ...official,
-    ...community.filter((c) => {
-      const questionLower = c.question.toLowerCase()
-      return !official.some(
-        (o, i) =>
-          (c.sport === 'other' || o.sport === c.sport) &&
-          Math.abs(o.startTime - c.closeTime) < 2 * DAY_MS &&
-          isSameFixtureCompiled(officialMatchers[i], c.question, questionLower)
-      )
-    }),
-  ].filter((g) => g.startTime < horizon)
+  const games = official.filter((g) => g.startTime < horizon)
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
   // just-finished (most recent first).
@@ -93,19 +73,12 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         : g.startTime
   )
 
-  const counts: Partial<Record<SportKey, number>> = {}
-  let liveCount = 0
-  for (const g of ordered) {
-    if (g.status === 'finished') continue
-    counts[g.sport] = (counts[g.sport] ?? 0) + 1
-    if (g.status === 'live') liveCount++
-  }
-
   const filtered = (
     sport === 'all' ? ordered : ordered.filter((g) => g.sport === sport)
   ).slice(0, limit)
 
-  // Attach related markets (props, totals, community side-bets) to each game.
+  // Attach related markets (props, totals, side-bets) to each game.
+  const attached = new Set<string>()
   if (props.includeRelated !== false && filtered.length > 0) {
     const candidates = await getRelatedCandidates(pg, sport)
     const candidateClose = new Map(candidates.map((c) => [c.id, c.closeTime]))
@@ -147,11 +120,35 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         .slice(0, MAX_RELATED_PER_GAME)
       g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
       g.relatedCount = matches.length
+      for (const m of matches) attached.add(m.id)
     })
   }
 
+  // "This week": everything in the sports topics closing within a week that
+  // is not a game row and not already hanging under one. For a sports market
+  // the close time is the game time, so this is the schedule of what people
+  // made, with no matching involved.
+  const gameIds = new Set(official.map((g) => g.id))
+  const upcoming = weekAll.filter(
+    (m) => !gameIds.has(m.id) && !attached.has(m.id)
+  )
+
+  // Rail badges: live and upcoming games plus this week's markets, per sport.
+  const counts: Partial<Record<SportKey, number>> = {}
+  let liveCount = 0
+  for (const g of ordered) {
+    if (g.status === 'finished') continue
+    counts[g.sport] = (counts[g.sport] ?? 0) + 1
+    if (g.status === 'live') liveCount++
+  }
+  for (const m of upcoming) counts[m.sport] = (counts[m.sport] ?? 0) + 1
+
   const response: SportsScheduleResponse = {
     games: filtered,
+    upcoming: (sport === 'all'
+      ? upcoming
+      : upcoming.filter((m) => m.sport === sport)
+    ).slice(0, MAX_UPCOMING_RETURNED),
     counts,
     liveCount,
   }
@@ -165,6 +162,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 // malformed value would fail the whole query. Kickoff is parsed in TS and
 // games beyond the horizon are dropped there. Close is at most a few hours
 // after kickoff, so one extra day of slack covers the difference.
+//
+// Anyone can stamp a sportsEventId through the API; only markets from the
+// @ManifoldSports account are game rows.
 async function getOfficialGames(
   pg: Pg,
   daysAhead: number,
@@ -174,6 +174,7 @@ async function getOfficialGames(
     `select ${contractColumnsToSelect}
      from contracts
      where data->>'sportsEventId' is not null
+       and creator_id = any($2)
        and token = 'MANA'
        and visibility = 'public'
        and coalesce(deleted, false) = false
@@ -182,7 +183,7 @@ async function getOfficialGames(
        and close_time < now() + ($1 || ' days')::interval + interval '1 day'
      order by close_time asc
      limit ${MAX_OFFICIAL_GAMES}`,
-    [String(daysAhead)]
+    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
   )
   const contracts = rows.map((r) => convertContract(r))
   const ids = contracts.map((c) => c.id)
@@ -220,7 +221,7 @@ function toOfficialGame(
 
   const kickoff = parseSportsStart(d.sportsStartTimestamp)
   // Without a parseable kickoff the close time is the only deadline we have
-  // (the row then says "Closes"), the same as for community games.
+  // (the row then says "Closes").
   const closeTime = c.closeTime ?? (kickoff ?? now) + 3 * HOUR_MS
   const startTime = kickoff ?? closeTime
   const isResolved = !!c.resolution
@@ -251,135 +252,36 @@ function toOfficialGame(
       ? { home: homeScore, away: awayScore }
       : null
 
-  // Anyone can stamp a sportsEventId through the API; only markets from the
-  // @ManifoldSports account count as official.
-  const official = MANIFOLD_SPORTS_USER_IDS.includes(c.creatorId)
-  return {
-    ...baseGame(c, ordered, teams[0], teams[1], drawAnswer ?? null),
-    sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }),
-    league: d.sportsLeague ?? '',
-    source: official ? 'official' : 'community',
-    sportsEventId,
-    startTime,
-    kickoffKnown: kickoff != null,
-    closeTime,
-    status,
-    liveScore,
-    finalScore,
-  }
-}
-
-// ─── Community ("X vs Y") games ───────────────────────────────────────────────
-
-async function getCommunityGames(
-  pg: Pg,
-  daysAhead: number,
-  now: number
-): Promise<ScheduleGame[]> {
-  // The regex is only a cheap pre-filter; parseVersusQuestion decides.
-  const rows = await pg.manyOrNone(
-    `select ${contractColumnsToSelect}
-     from contracts
-     where data->>'sportsEventId' is null
-       and mechanism = 'cpmm-multi-1'
-       and outcome_type = 'MULTIPLE_CHOICE'
-       and token = 'MANA'
-       and visibility = 'public'
-       and coalesce(deleted, false) = false
-       and resolution is distinct from 'CANCEL'
-       and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
-       and close_time < now() + ($1 || ' days')::interval
-       and question ~* '\\s(vs\\.?|v\\.?|versus|@)\\s'
-       and exists (
-         select 1 from group_contracts gc
-         where gc.contract_id = contracts.id and gc.group_id = any($2)
-       )
-     order by importance_score desc
-     limit ${MAX_COMMUNITY_GAMES}`,
-    [String(daysAhead), ALL_SPORTS_GROUP_IDS]
-  )
-  const contracts = rows.map((r) => convertContract(r))
-  const ids = contracts.map((c) => c.id)
-  const [answersByContract, groupIdsByContract] = await Promise.all([
-    getAnswers(pg, ids),
-    getGroupIds(pg, ids),
-  ])
-  return contracts
-    .map((c) =>
-      toCommunityGame(
-        c,
-        answersByContract[c.id] ?? [],
-        groupIdsByContract[c.id] ?? [],
-        now
-      )
-    )
-    .filter((g): g is ScheduleGame => g !== null)
-}
-
-function toCommunityGame(
-  c: Contract,
-  answers: Answer[],
-  groupIds: string[],
-  now: number
-): ScheduleGame | null {
-  if (c.mechanism !== 'cpmm-multi-1') return null
-  if (!c.shouldAnswersSumToOne) return null
-  const sides = parseVersusQuestion(c.question)
-  if (!sides) return null
-  const ordered = sortBy(answers, 'index')
-  const matched = versusAnswers(sides, ordered)
-  if (!matched) return null
-  const closeTime = c.closeTime ?? now
-  // No kickoff time on a hand-made market: treat the close as the deadline.
-  const status = gameStatus({
-    startTime: closeTime,
-    closeTime,
-    isResolved: !!c.resolution,
-    now,
-  })
-  return {
-    ...baseGame(c, ordered, matched.home, matched.away, matched.draw),
-    sport: sportForMarket({ groupIds }),
-    league: '',
-    source: 'community',
-    sportsEventId: '',
-    startTime: closeTime,
-    kickoffKnown: false,
-    closeTime,
-    status,
-    liveScore: null,
-    finalScore: null,
-  }
-}
-
-// ─── Shared ───────────────────────────────────────────────────────────────────
-
-function baseGame(
-  c: Contract,
-  answers: Answer[],
-  home: Answer,
-  away: Answer,
-  draw: Answer | null
-) {
-  const isResolved = !!c.resolution
   const winnerAnswerId = isResolved
-    ? answers.find((a) => a.id === c.resolution)?.id ??
-      answers.find((a) => a.resolution === 'YES')?.id ??
+    ? ordered.find((a) => a.id === c.resolution)?.id ??
+      ordered.find((a) => a.resolution === 'YES')?.id ??
       null
     : null
+
   return {
     id: c.id,
     slug: c.slug,
     creatorUsername: c.creatorUsername,
     question: c.question,
+    sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }),
+    league: d.sportsLeague ?? '',
+    sportsEventId,
+    startTime,
+    kickoffKnown: kickoff != null,
+    closeTime,
+    status,
     isResolved,
     winnerAnswerId,
     resolutionTime: c.resolutionTime ?? null,
-    home: toTeam(home),
-    away: toTeam(away),
-    draw: draw ? { answerId: draw.id, prob: draw.prob } : null,
+    home: toTeam(teams[0]),
+    away: toTeam(teams[1]),
+    draw: drawAnswer
+      ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
+      : null,
     volume: c.volume ?? 0,
     uniqueBettorCount: c.uniqueBettorCount ?? 0,
+    liveScore,
+    finalScore,
     related: [] as RelatedRef[],
     relatedCount: 0,
   }
@@ -427,6 +329,8 @@ async function getGroupIds(
   return out
 }
 
+// ─── Markets in the sports topics ─────────────────────────────────────────────
+
 // Open markets in the sports topics that could be props or side-bets on a game.
 // Markets that closed at kickoff are kept for a while so live and just-finished
 // games still show their "first to score"-style props.
@@ -440,16 +344,58 @@ async function getRelatedCandidates(
     sport === 'all'
       ? ALL_SPORTS_GROUP_IDS
       : uniq([...sportGroupIds(sport), SPORTS_DEFAULT_GROUP_ID])
+  return querySportsMarkets(pg, {
+    groupIds,
+    closeFrom: `-${FINISHED_GRACE_HOURS} hours`,
+    closeTo: '45 days',
+    orderBy: 'importance',
+    limit: MAX_CANDIDATES,
+  })
+}
+
+// Everything in any sports topic closing within the week, soonest first.
+// Always fetched across all sports so the rail badges are complete whichever
+// sport is open; the response is filtered down afterwards.
+async function getUpcomingMarkets(pg: Pg): Promise<UpcomingMarketRef[]> {
+  const rows = await querySportsMarkets(pg, {
+    groupIds: ALL_SPORTS_GROUP_IDS,
+    closeFrom: '0 seconds',
+    closeTo: `${UPCOMING_DAYS} days`,
+    orderBy: 'close',
+    limit: MAX_UPCOMING,
+  })
+  return rows
+    .filter(
+      (r): r is RelatedCandidate & { closeTime: number } => r.closeTime != null
+    )
+    .map((r) => ({ id: r.id, closeTime: r.closeTime, sport: r.sport }))
+}
+
+async function querySportsMarkets(
+  pg: Pg,
+  opts: {
+    groupIds: string[]
+    /** Postgres interval strings relative to now(). */
+    closeFrom: string
+    closeTo: string
+    orderBy: 'importance' | 'close'
+    limit: number
+  }
+): Promise<RelatedCandidate[]> {
+  const order =
+    opts.orderBy === 'close' ? 'c.close_time asc' : 'c.importance_score desc'
   const rows = await pg.manyOrNone<{
     id: string
     question: string
     close_time: string | null
     importance_score: number
     sports_event_id: string | null
+    sports_market_type: string | null
     group_ids: string[]
   }>(
     `select c.id, c.question, c.close_time, c.importance_score,
             c.data->>'sportsEventId' as sports_event_id,
+            c.data->>'sportsMarketType' as sports_market_type,
             (select coalesce(array_agg(g.group_id), '{}')
                from group_contracts g
               where g.contract_id = c.id) as group_ids
@@ -462,12 +408,12 @@ async function getRelatedCandidates(
        and c.visibility = 'public'
        and coalesce(c.deleted, false) = false
        and c.resolution is null
-       and c.outcome_type in ('BINARY', 'MULTIPLE_CHOICE', 'NUMBER', 'MULTI_NUMERIC', 'PSEUDO_NUMERIC')
-       and c.close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
-       and c.close_time < now() + interval '45 days'
-     order by c.importance_score desc
-     limit ${MAX_CANDIDATES}`,
-    [groupIds]
+       and c.outcome_type in (${MARKET_OUTCOME_TYPES})
+       and c.close_time > now() + $2::interval
+       and c.close_time < now() + $3::interval
+     order by ${order}
+     limit ${opts.limit}`,
+    [opts.groupIds, opts.closeFrom, opts.closeTo]
   )
   return rows.map((r) => ({
     id: r.id,
@@ -475,6 +421,7 @@ async function getRelatedCandidates(
     questionLower: r.question.toLowerCase(),
     closeTime: r.close_time ? tsToMillis(r.close_time) : null,
     sportsEventId: r.sports_event_id,
+    marketType: r.sports_market_type,
     sport: sportForMarket({ groupIds: r.group_ids }),
     importanceScore: Number(r.importance_score ?? 0),
   }))

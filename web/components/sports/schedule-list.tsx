@@ -7,7 +7,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
 
-type DaySection = { key: string; label: string; games: ScheduleGame[] }
+type DaySection<T> = { key: string; label: string; items: T[] }
 
 export function dayLabel(ms: number, now = Date.now()): string {
   const d = dayjs(ms)
@@ -18,47 +18,45 @@ export function dayLabel(ms: number, now = Date.now()): string {
   return d.format('ddd, MMM D')
 }
 
-export function groupByDay(
-  games: ScheduleGame[],
+/** Group items by the local calendar day of `time(item)`, keeping their order. */
+export function groupByDay<T>(
+  items: readonly T[],
+  time: (item: T) => number,
   now = Date.now()
-): DaySection[] {
-  const map = new Map<string, DaySection>()
-  for (const g of games) {
-    const key = dayjs(g.startTime).format('YYYY-MM-DD')
+): DaySection<T>[] {
+  const map = new Map<string, DaySection<T>>()
+  for (const item of items) {
+    const ms = time(item)
+    const key = dayjs(ms).format('YYYY-MM-DD')
     const section = map.get(key)
-    if (section) section.games.push(g)
-    else
-      map.set(key, {
-        key,
-        label: dayLabel(g.startTime, now),
-        games: [g],
-      })
+    if (section) section.items.push(item)
+    else map.set(key, { key, label: dayLabel(ms, now), items: [item] })
   }
   return [...map.values()]
 }
 
 /**
  * The "up next" flow: live games first, then upcoming games grouped by day,
- * then a collapsed list of games that just finished.
+ * then a collapsed list of games that just finished. Renders nothing when
+ * there are no games, so the page can put the week's markets in its place.
  */
 export function ScheduleList(props: {
   games: ScheduleGame[]
   loading: boolean
   showLeague: boolean
-  emptyState: React.ReactNode
   liveOnly?: boolean
 }) {
-  const { games, loading, showLeague, emptyState, liveOnly } = props
+  const { games, loading, showLeague, liveOnly } = props
   const live = games.filter((g) => g.status === 'live')
   const upcoming = liveOnly ? [] : games.filter((g) => g.status === 'upcoming')
   const finished = liveOnly ? [] : games.filter((g) => g.status === 'finished')
-  const days = groupByDay(upcoming)
+  const days = groupByDay(upcoming, (g) => g.startTime)
   const [showFinished, setShowFinished] = useState(false)
 
   if (loading && games.length === 0) {
     return (
       <Col className="gap-2">
-        <SectionHeader label="Today" />
+        <SectionHeader label="This week" />
         <GameRowSkeleton />
         <GameRowSkeleton />
         <GameRowSkeleton />
@@ -67,14 +65,15 @@ export function ScheduleList(props: {
   }
 
   if (live.length === 0 && upcoming.length === 0) {
-    return (
-      <Col className="gap-4">
-        <div>{emptyState}</div>
-        {finished.length > 0 && (
-          <FinishedSection games={finished} showLeague={showLeague} open />
-        )}
-      </Col>
-    )
+    if (liveOnly) {
+      return (
+        <p className="text-ink-500 px-1 text-sm">
+          Nothing is live right now. Games move here at kickoff.
+        </p>
+      )
+    }
+    if (finished.length === 0) return null
+    return <FinishedSection games={finished} showLeague={showLeague} open />
   }
 
   return (
@@ -93,12 +92,12 @@ export function ScheduleList(props: {
             label={day.label}
             sublabel={
               day.label === 'Today' || day.label === 'Tomorrow'
-                ? dayjs(day.games[0].startTime).format('ddd, MMM D')
+                ? dayjs(day.items[0].startTime).format('ddd, MMM D')
                 : undefined
             }
-            count={day.games.length}
+            count={day.items.length}
           />
-          {day.games.map((g) => (
+          {day.items.map((g) => (
             <GameRow key={g.id} game={g} showLeague={showLeague} />
           ))}
         </Col>
@@ -159,9 +158,11 @@ export function SectionHeader(props: {
   label: string
   sublabel?: string
   count?: number
+  /** Noun for the count: "game" (default) or "market". */
+  unit?: string
   accent?: boolean
 }) {
-  const { label, sublabel, count, accent } = props
+  const { label, sublabel, count, accent, unit = 'game' } = props
   return (
     <Row className="items-baseline gap-2 px-1">
       {accent && (
@@ -178,7 +179,7 @@ export function SectionHeader(props: {
       {sublabel && <span className="text-ink-500 text-xs">{sublabel}</span>}
       {count !== undefined && (
         <span className="text-ink-400 text-xs">
-          {count} {count === 1 ? 'game' : 'games'}
+          {count} {count === 1 ? unit : `${unit}s`}
         </span>
       )}
     </Row>

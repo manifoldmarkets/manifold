@@ -200,6 +200,23 @@ export const ALL_SPORTS_GROUP_IDS = [
   ...SPORT_CATEGORIES.flatMap((s) => s.groupIds),
 ]
 
+// The Odds API names leagues `<sport>_<league>` (americanfootball_nfl,
+// soccer_epl, basketball_ncaab). A pipeline can store that key as
+// `sportsLeague` as is; the first matching prefix wins.
+const ODDS_API_KEY_PREFIXES: [string, SportKey][] = [
+  ['americanfootball_nfl', 'nfl'],
+  ['americanfootball_ncaaf', 'ncaaf'],
+  ['basketball_ncaab', 'ncaab'],
+  ['basketball_', 'nba'],
+  ['baseball_', 'mlb'],
+  ['icehockey_', 'nhl'],
+  ['soccer_', 'soccer'],
+  ['tennis_', 'tennis'],
+  ['mma_', 'mma'],
+  ['golf_', 'golf'],
+  ['cricket_', 'cricket'],
+]
+
 /** Map a market's `sportsLeague` / topic ids to a sport. */
 export function sportForMarket(props: {
   sportsLeague?: string | null
@@ -207,8 +224,11 @@ export function sportForMarket(props: {
 }): SportKey {
   const { sportsLeague, groupIds } = props
   if (sportsLeague) {
-    const direct = LEAGUE_TO_SPORT[sportsLeague.toLowerCase()]
+    const league = sportsLeague.toLowerCase()
+    const direct = LEAGUE_TO_SPORT[league]
     if (direct) return direct
+    const prefixed = ODDS_API_KEY_PREFIXES.find(([p]) => league.startsWith(p))
+    if (prefixed) return prefixed[1]
   }
   const ids = new Set(groupIds ?? [])
   if (ids.size > 0) {
@@ -356,121 +376,15 @@ const PLAYER_STAT_RE =
 const PROP_RE =
   /\b(yards|yds|points|pts|rebounds|assists|touchdown|touchdowns|td|tds|goal|goals|score first|first (basket|goal|touchdown|to score)|anytime|hits|strikeouts|home run|hr|shots|saves|corners|cards|clean sheet|hat[- ]trick|mvp|player of the match|man of the match|interception|sack|three-pointers|threes|3-pointers|double-double|triple-double)\b/i
 
-/** Does this wording describe a line or prop rather than the game itself? */
-const isPropQualifier = (text: string) => {
-  const t = stripDates(text)
-  return PLAYER_STAT_RE.test(t) || GAME_LINE_RE.test(t) || PROP_RE.test(t)
-}
-
-// ─── Community game markets ───────────────────────────────────────────────────
-//
-// Plenty of games only exist as user-created "X vs Y" multiple-choice markets
-// with no sportsEventId. They join the schedule when the question reads as a
-// matchup and the answers are the two sides (plus an optional Draw).
-
-const VERSUS_RE =
-  /^(.{2,60}?)\s+(vs\.?|v\.?|versus|@)\s+(.{2,60}?)(\s*[[(:].*|\s+[|·–—-]\s.*)?$/i
+// ─── Draw answers ─────────────────────────────────────────────────────────────
 
 const stripEmoji = (s: string) =>
   s.replace(/\p{Extended_Pictographic}|\p{Regional_Indicator}|️/gu, '').trim()
-
-export function parseVersusQuestion(
-  question: string
-): { home: string; away: string } | null {
-  const q = stripEmoji(question).replace(/\s+/g, ' ').trim()
-  const m = q.match(VERSUS_RE)
-  if (!m) return null
-  let first = m[1].trim()
-  // Everything that is not a team name: the suffix after the second side and
-  // any "Premier League:" / "Most yellow cards:" lead-in before the first.
-  let qualifier = m[4] ?? ''
-  const colon = first.lastIndexOf(':')
-  if (colon >= 0) {
-    qualifier += ` ${first.slice(0, colon)}`
-    first = first.slice(colon + 1).trim()
-  }
-  first = first.replace(/^(who wins|winner):?\s*/i, '')
-  const second = m[3].trim().replace(/\?$/, '')
-  if (!first || !second || first.toLowerCase() === second.toLowerCase())
-    return null
-  // "Arsenal vs Chelsea: most yellow cards?" has the teams as answers too,
-  // but it is a prop about the game, not the game.
-  if (isPropQualifier(qualifier)) return null
-  // US convention: "Lakers @ Celtics" is the Lakers away at the Celtics.
-  return m[2] === '@'
-    ? { home: second, away: first }
-    : { home: first, away: second }
-}
 
 const DRAW_ANSWERS = new Set(['draw', 'tie', 'draw/tie', 'tie/draw'])
 
 export function isDrawAnswer(text: string): boolean {
   return DRAW_ANSWERS.has(stripEmoji(text).toLowerCase())
-}
-
-/**
- * Do a market's answers correspond to the two sides of a matchup? Returns the
- * home/away/draw answers in that order, or null.
- */
-export function versusAnswers<A extends { text: string }>(
-  sides: { home: string; away: string },
-  answers: readonly A[]
-): { home: A; away: A; draw: A | null } | null {
-  if (answers.length < 2 || answers.length > 3) return null
-  const draw =
-    answers.find((a) => DRAW_ANSWERS.has(stripEmoji(a.text).toLowerCase())) ??
-    null
-  const teams = answers.filter((a) => a !== draw)
-  if (teams.length !== 2) return null
-  // Strength of the side ↔ answer correspondence: exact beats containment
-  // beats an alias hit, so "Los Angeles Lakers" pairs with "Lakers" rather
-  // than with a "Los Angeles Clippers" answer that merely shares the city.
-  const strength = (side: string, a: A) => {
-    const s = stripEmoji(side).toLowerCase()
-    const t = stripEmoji(a.text).toLowerCase()
-    if (s === t) return 3
-    if (t.includes(s) || s.includes(t)) return 2
-    if (
-      mentionsTeam(s, teamAliases(a.text)) ||
-      mentionsTeam(t, teamAliases(side))
-    )
-      return 1
-    return 0
-  }
-  const [a0, a1] = teams
-  const straight = Math.min(strength(sides.home, a0), strength(sides.away, a1))
-  const swapped = Math.min(strength(sides.home, a1), strength(sides.away, a0))
-  if (straight === 0 && swapped === 0) return null
-  if (straight === swapped) return null // ambiguous: both answers fit both sides
-  return straight > swapped
-    ? { home: a0, away: a1, draw }
-    : { home: a1, away: a0, draw }
-}
-
-/** Same as isSameFixture, with the game's matchers compiled ahead of time. */
-export function isSameFixtureCompiled(
-  matchers: GameMatchers,
-  question: string,
-  questionLower = question.toLowerCase()
-): boolean {
-  return (
-    matcherMentions(question, matchers.home, questionLower) &&
-    matcherMentions(question, matchers.away, questionLower)
-  )
-}
-
-/** Whether a market question is about the same fixture as a game. */
-export function isSameFixture(
-  game: {
-    home: { name: string; shortText?: string | null }
-    away: { name: string; shortText?: string | null }
-  },
-  question: string
-): boolean {
-  return (
-    mentionsTeam(question, teamAliases(game.home.name, game.home.shortText)) &&
-    mentionsTeam(question, teamAliases(game.away.name, game.away.shortText))
-  )
 }
 
 /**
@@ -594,6 +508,8 @@ export interface RelatedCandidate {
   questionLower?: string
   closeTime: number | null
   sportsEventId?: string | null
+  /** `sportsMarketType` stamped by a pipeline: moneyline, spread, total, prop. */
+  marketType?: string | null
   /** Sport inferred from the candidate's topics; 'other' when unknown. */
   sport: SportKey
   importanceScore: number
@@ -616,11 +532,22 @@ export interface RelatedMatch {
   score: number
 }
 
+const GROUP_BY_MARKET_TYPE: Record<string, RelatedGroup> = {
+  moneyline: 'game-lines',
+  spread: 'game-lines',
+  total: 'game-lines',
+  prop: 'props',
+}
+
 export function relatedGroupFor(props: {
   question: string
   kind: RelatedMatchKind
+  marketType?: string | null
 }): RelatedGroup {
-  const { question, kind } = props
+  const { question, kind, marketType } = props
+  // A pipeline that stamps the type is exact; the regexes below are the guess.
+  const stamped = marketType && GROUP_BY_MARKET_TYPE[marketType.toLowerCase()]
+  if (stamped) return stamped
   // A player stat with a number ("300+ yards", "27.5 points") is a prop even
   // though it carries a line; team/game numbers are lines.
   const q = stripDates(question)
@@ -664,7 +591,11 @@ export function matchRelatedMarket(
   const withGroup = (kind: RelatedMatchKind, score: number): RelatedMatch => ({
     id: candidate.id,
     kind,
-    group: relatedGroupFor({ question: candidate.question, kind }),
+    group: relatedGroupFor({
+      question: candidate.question,
+      kind,
+      marketType: candidate.marketType,
+    }),
     score,
   })
   if (candidate.sportsEventId) {
@@ -729,9 +660,6 @@ export function findRelatedMarkets(
 
 export type GameStatus = 'live' | 'upcoming' | 'finished'
 
-/** official: created by the Manifold Sports pipeline; community: a user's "X vs Y" market. */
-export type GameSource = 'official' | 'community'
-
 export interface ScheduleTeam {
   answerId: string
   name: string
@@ -748,8 +676,6 @@ export interface ScheduleGame {
   question: string
   sport: SportKey
   league: string
-  source: GameSource
-  /** Empty for community games, which have no external event id. */
   sportsEventId: string
   /** Kickoff when known; otherwise the market's close time. */
   startTime: number
@@ -777,9 +703,21 @@ export interface ScheduleGame {
   relatedCount: number
 }
 
+/**
+ * A market in the sports topics closing within the week that is not a game
+ * row and not attached to one. The page loads the contract by id.
+ */
+export interface UpcomingMarketRef {
+  id: string
+  closeTime: number
+  sport: SportKey
+}
+
 export interface SportsScheduleResponse {
   games: ScheduleGame[]
-  /** Upcoming + live games per sport, for the sport rail badges. */
+  /** This week's unattached markets for the requested sport, soonest first. */
+  upcoming: UpcomingMarketRef[]
+  /** Live and upcoming games plus this week's markets per sport, for the rail badges. */
   counts: Partial<Record<SportKey, number>>
   liveCount: number
 }

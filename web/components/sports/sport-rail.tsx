@@ -7,8 +7,9 @@ export type SportSelection = SportKey | 'all' | 'live'
 
 /**
  * Horizontal chip rail for picking a sport, in the style of the league bars on
- * Polymarket / DraftKings. Sports with games on the schedule come first and
- * carry a count; a "Live" chip appears whenever something is in play.
+ * Polymarket / DraftKings. Sports with something on this week (games or
+ * markets closing) come first and carry a count; a "Live" chip appears
+ * whenever something is in play.
  */
 export function SportRail(props: {
   selected: SportSelection

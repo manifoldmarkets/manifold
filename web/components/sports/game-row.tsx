@@ -199,14 +199,6 @@ export function GameRow(props: {
               {sport.label}
             </span>
           )}
-          {game.source === 'community' && (
-            <span
-              className="bg-ink-100 text-ink-500 mt-0.5 rounded px-1 text-[8px] font-semibold uppercase sm:text-[9px] sm:tracking-wide"
-              title={`Created by @${game.creatorUsername}`}
-            >
-              Community
-            </span>
-          )}
         </Col>
 
         {/* Teams + prices */}

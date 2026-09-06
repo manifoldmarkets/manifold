@@ -66,9 +66,7 @@ export function GameRelatedMarkets(props: { game: ScheduleGame }) {
         <Row className="items-center justify-between gap-2">
           <Col className="min-w-0 gap-0.5">
             <span className="text-ink-400 text-[10px] font-semibold uppercase tracking-wide">
-              {game.source === 'community'
-                ? 'Community game market'
-                : 'Official game market'}
+              Game market
             </span>
             <Link
               href={gamePath(game)}
@@ -177,7 +175,12 @@ function RelatedSection(props: { title: string; contracts: Contract[] }) {
 }
 
 /** A compact one-line market: question, current price, and a way to bet. */
-export function RelatedMarketRow(props: { contract: Contract }) {
+export function RelatedMarketRow(props: {
+  contract: Contract
+  /** Rendered before the question: a time, a sport tag. */
+  prefix?: React.ReactNode
+}) {
+  const { prefix } = props
   const contract = useLiveContract(props.contract)
   const user = useUser()
   const [betOpen, setBetOpen] = useState(false)
@@ -197,14 +200,18 @@ export function RelatedMarketRow(props: { contract: Contract }) {
 
   return (
     <div className="hover:bg-canvas-50 px-2.5 py-2">
-      <Row className="items-start justify-between gap-3">
-        <Link
-          href={contractPath(contract)}
-          className="text-ink-800 hover:text-primary-700 min-w-0 flex-1 text-sm leading-snug"
-        >
-          {removeEmojis(contract.question)}
-        </Link>
-        <Row className="shrink-0 items-center gap-2">
+      {/* Phones: question on top, price and buttons underneath it. */}
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <Row className="min-w-0 flex-1 items-start gap-2">
+          {prefix}
+          <Link
+            href={contractPath(contract)}
+            className="text-ink-800 hover:text-primary-700 min-w-0 flex-1 text-sm leading-snug"
+          >
+            {removeEmojis(contract.question)}
+          </Link>
+        </Row>
+        <Row className="shrink-0 items-center gap-2 self-end sm:self-auto">
           {(isBinary || (isMulti && isBinaryMulti(contract)) || !isMulti) && (
             <ContractStatusLabel
               contract={contract}
@@ -236,9 +243,14 @@ export function RelatedMarketRow(props: { contract: Contract }) {
             </Button>
           )}
         </Row>
-      </Row>
+      </div>
       {answers.length > 0 && (
-        <Row className="mt-1 flex-wrap gap-x-3 gap-y-0.5">
+        <Row
+          className={clsx(
+            'mt-1 flex-wrap gap-x-3 gap-y-0.5',
+            prefix && 'pl-[4.25rem]'
+          )}
+        >
           {answers.map((a) => (
             <span key={a.id} className="text-ink-500 text-xs">
               <span className={clsx('text-ink-700')}>{a.text}</span>{' '}

@@ -14,6 +14,7 @@ import { SEO } from 'web/components/SEO'
 import { ScheduleList } from 'web/components/sports/schedule-list'
 import { SportRail, SportSelection } from 'web/components/sports/sport-rail'
 import { SportsMarketSections } from 'web/components/sports/sports-market-sections'
+import { UpcomingMarkets } from 'web/components/sports/upcoming-markets'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
@@ -105,6 +106,8 @@ export default function SportsPage() {
       ? 'all'
       : requested
   const games = schedule?.games ?? []
+  const upcoming = schedule?.upcoming ?? []
+  const hasGames = games.some((g) => g.status !== 'finished')
   const sport =
     selected === 'all' || selected === 'live'
       ? undefined
@@ -124,8 +127,8 @@ export default function SportsPage() {
               Sports
             </h1>
             <p className="text-ink-500 text-sm">
-              Pick a sport, find the game, bet the line — then expand any game
-              for props and side-bets.
+              Pick a sport and see what's on this week: games, lines, props and
+              side-bets, in game order.
             </p>
           </Col>
           <Link
@@ -146,19 +149,29 @@ export default function SportsPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <Col className="min-w-0 gap-4">
+          <Col className="min-w-0 gap-5">
             <ScheduleList
               games={games}
               loading={loading || !schedule}
               showLeague={selected === 'all' || selected === 'live'}
               liveOnly={selected === 'live'}
-              emptyState={
-                <EmptySchedule
+            />
+            {selected !== 'live' && (
+              <UpcomingMarkets
+                refs={upcoming}
+                sport={scheduleSport}
+                showSport={selected === 'all'}
+              />
+            )}
+            {schedule &&
+              selected !== 'live' &&
+              !hasGames &&
+              upcoming.length === 0 && (
+                <EmptyWeek
                   selected={selected}
                   label={sport?.longLabel ?? 'sports'}
                 />
-              }
-            />
+              )}
           </Col>
           {/* Right rail on desktop; stacks under the schedule on phones. */}
           <SportsMarketSections sport={scheduleSport} enabled={ready} />
@@ -166,40 +179,30 @@ export default function SportsPage() {
 
         <p className="text-ink-400 px-1 pb-2 text-[11px]">
           Times are shown in your local time zone. Game markets are created and
-          resolved automatically by @ManifoldSports; anyone can add props and
-          side-bets.
+          resolved automatically by @ManifoldSports for connected leagues;
+          anyone can add props and side-bets.
         </p>
       </Col>
     </Page>
   )
 }
 
-function EmptySchedule(props: { selected: SportSelection; label: string }) {
+function EmptyWeek(props: { selected: SportSelection; label: string }) {
   const { selected, label } = props
   const others = SPORT_CATEGORIES.filter((s) => s.key !== selected).slice(0, 4)
   return (
-    <Col className="border-ink-200 bg-canvas-0 items-center gap-2 rounded-lg border px-4 py-10 text-center">
-      <span className="text-3xl">
-        {selected === 'live'
-          ? '⏱️'
-          : selected === 'all'
-          ? '🏟️'
-          : SPORT_BY_KEY[selected]?.emoji}
-      </span>
+    <Col className="border-ink-200 bg-canvas-0 gap-1.5 rounded-lg border px-4 py-4">
       <span className="text-ink-900 text-sm font-semibold">
-        {selected === 'live'
-          ? 'Nothing is live right now'
-          : selected === 'all'
-          ? 'No scheduled games in the next two weeks'
-          : `No scheduled ${label} games in the next two weeks`}
+        {selected === 'all'
+          ? 'Nothing scheduled this week'
+          : `Nothing scheduled in ${label} this week`}
       </span>
-      <span className="text-ink-500 max-w-sm text-xs">
-        {selected === 'live'
-          ? 'Games move here at kickoff. Until then, check what’s up next.'
-          : 'Game markets appear here automatically a few days before kickoff. In the meantime, trade the trending and season-long markets on this page.'}
+      <span className="text-ink-500 text-xs">
+        Game markets appear here automatically once a league is connected.
+        Trending and season-long markets are below.
       </span>
       {selected !== 'all' && (
-        <Row className="mt-2 flex-wrap justify-center gap-1.5 text-xs">
+        <Row className="mt-1 flex-wrap gap-1.5 text-xs">
           {others.map((s) => (
             <Link
               key={s.key}

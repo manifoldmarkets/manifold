@@ -1,23 +1,58 @@
 # Sports on Manifold: automation proposal
 
-Companion to the `/sports` redesign (`web/pages/sports.tsx`, `backend/api/src/sports-schedule.ts`, `common/src/sports-schedule.ts`). The page now shows one row per game with its related markets underneath. This document proposes how those games and markets should get created, kept live, and resolved without anyone clicking buttons, and what the finished version could look like.
+Companion to the `/sports` redesign (`web/pages/sports.tsx`, `backend/api/src/sports-schedule.ts`, `common/src/sports-schedule.ts`). The page shows one row per game with its related markets underneath, and a "this week" feed of everything else closing soon. This document starts with the contract a market pipeline has to meet for the page to pick its markets up, then proposes how those games and markets should get created, kept live, and resolved without anyone clicking buttons, and what the finished version could look like.
+
+## 0. Handoff: what the page reads
+
+The page has no provider code of its own. It renders whatever markets carry the fields below, so a new pipeline (The Odds API or anything else) plugs in by creating markets that look like this. Nothing on the page needs to change for the first league.
+
+### Game markets (one schedule row each)
+
+| Field                                                                                                 | Value                                                                                                                                                                                  | What reads it                                                                                       |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| creator                                                                                               | the @ManifoldSports account (`MANIFOLD_SPORTS_USER_IDS` in `common/src/sports.ts`, one id for prod and one for dev)                                                                    | the schedule query. Markets from any other account are never game rows, whatever fields they carry. |
+| mechanism and answers                                                                                 | `cpmm-multi-1`, `shouldAnswersSumToOne: true`, `addAnswersMode: 'DISABLED'`. Answers in this order: home, away, then `Draw` only for sports that can draw.                             | `toOfficialGame`; the row's team order and the bet dialog                                           |
+| answer text                                                                                           | the team's full name, optionally prefixed with a flag emoji (`🇧🇷 Brazil`); `shortText` the abbreviation (`KC`)                                                                         | row names, phone layout, prop matching by team name                                                 |
+| `sportsEventId`                                                                                       | a string that is stable for the event and identical on every market about it, for example `odds:<event id>`                                                                            | joins props and lines to their game                                                                 |
+| `sportsStartTimestamp`                                                                                | kickoff as ISO 8601 UTC with a `Z` suffix                                                                                                                                              | kickoff time, day grouping, the live window                                                         |
+| `sportsLeague`                                                                                        | The Odds API `sport_key` as is (`americanfootball_nfl`, `soccer_epl`, `basketball_ncaab`) or one of the league names in `SPORT_CATEGORIES`                                             | which sport chip the game sits under (`sportForMarket`)                                             |
+| `closeTime`                                                                                           | kickoff plus a buffer of three to four hours                                                                                                                                           | the schedule window, and the deadline when the kickoff is missing                                   |
+| topics                                                                                                | the sport's topic ids from `SPORT_CATEGORIES` plus the Sports topic                                                                                                                    | the single-sport views and the week feed                                                            |
+| `sportsLiveStatus`, `sportsHomeScore`, `sportsAwayScore`, `sportsLiveMinute`, `sportsLiveUpdatedTime` | written by the live poller. `IN_PLAY` and `PAUSED` mean live; `FINISHED` and `AWARDED` mean over. The updated time lets the page drop a stale "live" after ten minutes without a tick. | LIVE badge, score, clock, status                                                                    |
+| resolution                                                                                            | resolve the winning answer (or Draw). `CANCEL` removes the game from the page.                                                                                                         | Final and winner marks, "Just finished"                                                             |
+
+### Markets attached to a game
+
+| Field              | Value                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `sportsEventId`    | the same value as the game's. Any market carrying it attaches as an official related market, whoever created it.           |
+| `sportsMarketType` | `moneyline`, `spread` or `total` file under Game lines; `prop` under Props. Without it the page guesses from the question. |
+| creator            | anyone. User-made props with no event id still attach by team name and time window.                                        |
+
+### Live updates
+
+Broadcast `contract/{id}/sports-live` with `{ sportsLiveStatus, sportsHomeScore, sportsAwayScore, sportsLiveMinute }` whenever the poller writes those fields; the page is already subscribed for every game inside its window. Probabilities move over the existing `contract/{id}/updated-answers` topic with no extra work.
+
+### What the page does with everything else
+
+Markets in the sports topics that are not game rows and not attached to a game appear in the "this week" feed by close time (for a sports market the close time is the game time), and in the trending and season-long sections. So a pipeline can start with moneylines only and the page stays coherent; lines and props slot under their game as they arrive.
 
 ## 1. Where we are
 
 Two separate pipelines exist today, and neither covers the US leagues end to end.
 
-| | football-data.org pipeline | TheSportsDB pipeline |
-|---|---|---|
-| Leagues | Soccer only. Only `WC` is registered in `TOURNAMENT_CONFIGS`; PL and CL configs exist but are unused (`common/src/sports.ts`). | NFL, NBA, NHL, EPL (`backend/api/src/get-sports-games.ts`) |
-| Create | Scheduler job daily at 07:00, 14 days ahead, as @ManifoldSports (`backend/scheduler/src/jobs/sports-create-markets.ts`) | Admin clicks "Create Sports Markets" on `/admin` (`web/lib/admin/create-sports-markets.ts`). Creator is whoever clicked. |
-| Live scores | Every 10 s during a match window, broadcast on `contract/{id}/sports-live` | `backend/shared/src/get-sports-live-scores.ts` exists but nothing calls it |
-| Resolve | Every 15 min from the final result, posts the score as a comment | `backend/shared/src/resolve-sports-markets.ts` exists but is not scheduled; markets are resolved by hand |
-| Market types | Winner only (3-way with Draw in group stages) | Winner only (Draw for EPL) |
-| Props | None | None |
+|              | football-data.org pipeline                                                                                                     | TheSportsDB pipeline                                                                                                     |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Leagues      | Soccer only. Only `WC` is registered in `TOURNAMENT_CONFIGS`; PL and CL configs exist but are unused (`common/src/sports.ts`). | NFL, NBA, NHL, EPL (`backend/api/src/get-sports-games.ts`)                                                               |
+| Create       | Scheduler job daily at 07:00, 14 days ahead, as @ManifoldSports (`backend/scheduler/src/jobs/sports-create-markets.ts`)        | Admin clicks "Create Sports Markets" on `/admin` (`web/lib/admin/create-sports-markets.ts`). Creator is whoever clicked. |
+| Live scores  | Every 10 s during a match window, broadcast on `contract/{id}/sports-live`                                                     | `backend/shared/src/get-sports-live-scores.ts` exists but nothing calls it                                               |
+| Resolve      | Every 15 min from the final result, posts the score as a comment                                                               | `backend/shared/src/resolve-sports-markets.ts` exists but is not scheduled; markets are resolved by hand                 |
+| Market types | Winner only (3-way with Draw in group stages)                                                                                  | Winner only (Draw for EPL)                                                                                               |
+| Props        | None                                                                                                                           | None                                                                                                                     |
 
 Consequences:
 
-- Outside a soccer tournament the schedule is whatever an admin remembered to create, and a user-made "Chiefs vs Bills" market is the only game market most weeks. The redesigned page compensates by treating community "X vs Y" markets as games and by attaching props heuristically, but the source of truth is thin.
+- Outside a soccer tournament the schedule is whatever an admin remembered to create. On prod in September 2026 there were no official games at all, one user-made "X vs Y" game market, and about a hundred sports markets closing within two weeks, nearly all props and lines with no game to hang under. The redesigned page therefore shows those by close time and attaches props heuristically, but the source of truth is thin until a pipeline runs.
 - Nothing carries a spread or a total, which are the two markets every sportsbook and both Polymarket and Kalshi list next to the moneyline.
 - `sportsEventId` values come from two providers with different formats (`fd-<id>` vs a bare TheSportsDB id), so nothing can join a game to another provider's data.
 
@@ -48,19 +83,19 @@ sports_events
 ```ts
 interface SportsProvider {
   fixtures(league: LeagueConfig, from: Date, to: Date): Promise<ProviderEvent[]>
-  live(league: LeagueConfig): Promise<ProviderEvent[]>          // in-play + just finished
-  boxScore?(event: ProviderEvent): Promise<PlayerStats[]>       // for props (stage 3)
+  live(league: LeagueConfig): Promise<ProviderEvent[]> // in-play + just finished
+  boxScore?(event: ProviderEvent): Promise<PlayerStats[]> // for props (stage 3)
 }
 ```
 
 Adapters, in the order they pay off:
 
-| Adapter | Covers | Why |
-|---|---|---|
-| `football-data` (exists) | Soccer: EPL, UCL, WC, La Liga, Bundesliga, Serie A, Ligue 1 | Already throttled and proven; free tier is enough for schedules and finals |
-| `api-sports` (new) | NFL, NBA, MLB, NHL, NCAAF, NCAAB, UFC, F1 | One schema for eight sports, live scores, box scores for props, roughly $19-39 per sport per month, 100 requests a day free for prototyping |
-| `thesportsdb` (exists) | Badges, backup schedule/livescore | Keep for team images; $9 a month tier gives live scores as a fallback |
-| `the-odds-api` (new, stage 2) | Consensus moneyline / spread / total lines | Seeds the opening price and picks the spread and total numbers |
+| Adapter                       | Covers                                                      | Why                                                                                                                                         |
+| ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `football-data` (exists)      | Soccer: EPL, UCL, WC, La Liga, Bundesliga, Serie A, Ligue 1 | Already throttled and proven; free tier is enough for schedules and finals                                                                  |
+| `api-sports` (new)            | NFL, NBA, MLB, NHL, NCAAF, NCAAB, UFC, F1                   | One schema for eight sports, live scores, box scores for props, roughly $19-39 per sport per month, 100 requests a day free for prototyping |
+| `thesportsdb` (exists)        | Badges, backup schedule/livescore                           | Keep for team images; $9 a month tier gives live scores as a fallback                                                                       |
+| `the-odds-api` (new, stage 2) | Consensus moneyline / spread / total lines                  | Seeds the opening price and picks the spread and total numbers                                                                              |
 
 Existing `sportsEventId` values stay valid: the migration maps `fd-<id>` and TheSportsDB ids onto `sports_events.id`.
 
@@ -80,11 +115,11 @@ A `LeagueConfig` replaces today's `TournamentConfig` and the hard-coded group id
 
 The daily create job (already exists for soccer) walks every league, upserts events, and for each event inside `leadDays` creates the missing markets from templates. Every market gets `sportsEventId`, `sportsLeague`, `sportsStartTimestamp`, and a new `sportsMarketType` (`'moneyline' | 'spread' | 'total' | 'prop'`) so the page can bucket them exactly instead of by regex.
 
-| Template | Question | Type | Resolves from |
-|---|---|---|---|
-| Moneyline | `Chiefs vs Bills (NFL)` | Multiple choice: home, away, Draw where the sport allows | Final result |
-| Spread | `Chiefs -3.5 vs Bills?` | Binary; the number is the consensus line from The Odds API | `(home - away) > line` |
-| Total | `Chiefs vs Bills: over 47.5 points?` | Binary; consensus total | `home + away > line` |
+| Template  | Question                             | Type                                                       | Resolves from          |
+| --------- | ------------------------------------ | ---------------------------------------------------------- | ---------------------- |
+| Moneyline | `Chiefs vs Bills (NFL)`              | Multiple choice: home, away, Draw where the sport allows   | Final result           |
+| Spread    | `Chiefs -3.5 vs Bills?`              | Binary; the number is the consensus line from The Odds API | `(home - away) > line` |
+| Total     | `Chiefs vs Bills: over 47.5 points?` | Binary; consensus total                                    | `home + away > line`   |
 
 Opening price: when The Odds API returns a consensus, the create job seeds the pool so the market opens near the implied probability rather than at 50%. Without odds, fall back to 50% (today's behaviour).
 
@@ -103,13 +138,13 @@ Generalise the two soccer jobs:
 
 Only after stages 1-3 are stable. Per-league prop templates driven by `provider.boxScore()`:
 
-| League | Props | Source stat |
-|---|---|---|
-| NFL | QB 300+ passing yards, RB 100+ rushing yards, anytime TD for the top 3 skill players | `passing.yards`, `rushing.yards`, `touchdowns` |
-| NBA | Star 30+ points, 10+ rebounds, 10+ assists, team to hit 15+ threes | box score |
-| MLB | Starting pitcher 7+ strikeouts, home run by the lineup's top 2 | box score |
-| NHL | Goal by top 2 scorers, goalie 30+ saves | box score |
-| Soccer | Both teams to score, clean sheet, first goalscorer (multiple choice from the lineup) | match events |
+| League | Props                                                                                | Source stat                                    |
+| ------ | ------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| NFL    | QB 300+ passing yards, RB 100+ rushing yards, anytime TD for the top 3 skill players | `passing.yards`, `rushing.yards`, `touchdowns` |
+| NBA    | Star 30+ points, 10+ rebounds, 10+ assists, team to hit 15+ threes                   | box score                                      |
+| MLB    | Starting pitcher 7+ strikeouts, home run by the lineup's top 2                       | box score                                      |
+| NHL    | Goal by top 2 scorers, goalie 30+ saves                                              | box score                                      |
+| Soccer | Both teams to score, clean sheet, first goalscorer (multiple choice from the lineup) | match events                                   |
 
 Create props only for marquee games (liquidity concentrates there on Kalshi and Polymarket too), as binary markets with `sportsMarketType: 'prop'`, 24-48 hours before kickoff once lineups are known.
 
@@ -124,14 +159,14 @@ Extend `/admin/sports` from tournament-only to every `LeagueConfig`: fixtures pr
 
 ### Rollout order and cost
 
-| Step | Work | Monthly cost |
-|---|---|---|
+| Step                                                                           | Work                                                                             | Monthly cost                        |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ----------------------------------- |
 | Schedule the existing TheSportsDB resolver and live poller for NFL/NBA/NHL/EPL | Small; wires code that already exists into `backend/scheduler/src/jobs/index.ts` | $9 (TheSportsDB v2 for live scores) |
-| Register PL and CL in `TOURNAMENT_CONFIGS` | Trivial; configs exist | $0 |
-| Stage 1 + `api-sports` adapter for NFL and NBA | About a week | $40-80 |
-| Stage 2 spread/total with The Odds API seeding | About a week | $30-60 |
-| Stage 3 for all `api-sports` leagues | A few days per league after the first | included above |
-| Stage 4 props for marquee games | Two weeks | included above |
+| Register PL and CL in `TOURNAMENT_CONFIGS`                                     | Trivial; configs exist                                                           | $0                                  |
+| Stage 1 + `api-sports` adapter for NFL and NBA                                 | About a week                                                                     | $40-80                              |
+| Stage 2 spread/total with The Odds API seeding                                 | About a week                                                                     | $30-60                              |
+| Stage 3 for all `api-sports` leagues                                           | A few days per league after the first                                            | included above                      |
+| Stage 4 props for marquee games                                                | Two weeks                                                                        | included above                      |
 
 Sportradar (what Polymarket and Kalshi use) is the gold standard but runs to five figures a month; revisit only if a data partnership appears.
 

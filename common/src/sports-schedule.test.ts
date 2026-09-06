@@ -2,18 +2,15 @@ import {
   findRelatedMarkets,
   gameStatus,
   GameForMatching,
-  isSameFixture,
   matchRelatedMarket,
   mentionsTeam,
   parseSportsStart,
-  parseVersusQuestion,
   RelatedCandidate,
   relatedGroupFor,
   splitFlag,
   sportForMarket,
   teamAliases,
   teamDisplayName,
-  versusAnswers,
 } from './sports-schedule'
 import { DAY_MS, HOUR_MS } from './util/time'
 
@@ -285,77 +282,6 @@ describe('teamDisplayName', () => {
   })
 })
 
-describe('parseVersusQuestion / versusAnswers', () => {
-  it('parses common matchup formats', () => {
-    expect(parseVersusQuestion('Chiefs vs Bills')).toEqual({
-      home: 'Chiefs',
-      away: 'Bills',
-    })
-    expect(parseVersusQuestion('Arsenal v Chelsea (Premier League)')).toEqual({
-      home: 'Arsenal',
-      away: 'Chelsea',
-    })
-    expect(parseVersusQuestion('🇧🇷BRA vs 🇦🇷ARG [World Cup ’26]')).toEqual({
-      home: 'BRA',
-      away: 'ARG',
-    })
-    expect(parseVersusQuestion('Lakers @ Celtics: who wins?')).toEqual({
-      home: 'Celtics',
-      away: 'Lakers',
-    })
-  })
-  it('rejects non-matchup questions', () => {
-    expect(
-      parseVersusQuestion('Will the Chiefs win the Super Bowl?')
-    ).toBeNull()
-    expect(parseVersusQuestion('Best team of 2026?')).toBeNull()
-  })
-  it('maps answers to sides, in either order, with an optional draw', () => {
-    const sides = { home: 'Chiefs', away: 'Bills' }
-    const r = versusAnswers(sides, [
-      { text: 'Buffalo Bills' },
-      { text: 'Kansas City Chiefs' },
-    ])
-    expect(r?.home.text).toBe('Kansas City Chiefs')
-    expect(r?.away.text).toBe('Buffalo Bills')
-    expect(r?.draw).toBeNull()
-    const withDraw = versusAnswers({ home: 'Arsenal', away: 'Chelsea' }, [
-      { text: 'Arsenal' },
-      { text: 'Chelsea' },
-      { text: 'Draw' },
-    ])
-    expect(withDraw?.draw?.text).toBe('Draw')
-  })
-  it('rejects answers that are not the two sides', () => {
-    expect(
-      versusAnswers({ home: 'Chiefs', away: 'Bills' }, [
-        { text: 'Under 47.5' },
-        { text: 'Over 47.5' },
-      ])
-    ).toBeNull()
-    expect(
-      versusAnswers({ home: 'Chiefs', away: 'Bills' }, [
-        { text: 'Chiefs' },
-        { text: 'Bills' },
-        { text: 'Other' },
-      ])
-    ).toBeNull()
-  })
-})
-
-describe('isSameFixture', () => {
-  const game = {
-    home: { name: 'Kansas City Chiefs', shortText: 'KC' },
-    away: { name: 'Buffalo Bills', shortText: 'BUF' },
-  }
-  it('is true when both teams are mentioned', () => {
-    expect(isSameFixture(game, 'Chiefs vs Bills: who wins?')).toBe(true)
-  })
-  it('is false with only one team', () => {
-    expect(isSameFixture(game, 'Chiefs vs Eagles')).toBe(false)
-  })
-})
-
 describe('relatedGroupFor', () => {
   it('spots main lines', () => {
     expect(
@@ -416,35 +342,6 @@ describe('review follow-ups', () => {
       'White Sox'
     )
   })
-  it('reads "A @ B" as A away at B', () => {
-    expect(parseVersusQuestion('Lakers @ Celtics')).toEqual({
-      home: 'Celtics',
-      away: 'Lakers',
-    })
-  })
-  it('keeps hyphenated names intact', () => {
-    expect(parseVersusQuestion('Arsenal vs Saint-Etienne')).toEqual({
-      home: 'Arsenal',
-      away: 'Saint-Etienne',
-    })
-    expect(parseVersusQuestion('Arsenal vs Chelsea - who wins?')).toEqual({
-      home: 'Arsenal',
-      away: 'Chelsea',
-    })
-  })
-  it('refuses ambiguous answer pairings', () => {
-    expect(
-      versusAnswers({ home: 'Los Angeles', away: 'Los Angeles' }, [
-        { text: 'Los Angeles Lakers' },
-        { text: 'Los Angeles Clippers' },
-      ])
-    ).toBeNull()
-    const r = versusAnswers({ home: 'Lakers', away: 'Clippers' }, [
-      { text: 'Los Angeles Clippers' },
-      { text: 'Los Angeles Lakers' },
-    ])
-    expect(r?.home.text).toBe('Los Angeles Lakers')
-  })
   it('files player stat lines as props, handicaps as game lines', () => {
     expect(
       relatedGroupFor({
@@ -490,27 +387,6 @@ describe('second review round', () => {
     expect(sportForMarket({ groupIds: [college, basketball] })).toBe('ncaab')
     expect(sportForMarket({ groupIds: [basketball] })).toBe('nba')
   })
-  it('does not promote a prop with the teams as answers to a game', () => {
-    expect(
-      parseVersusQuestion(
-        'Arsenal vs Chelsea: who will receive more yellow cards?'
-      )
-    ).toBeNull()
-    expect(
-      parseVersusQuestion('Most yellow cards: Arsenal vs Chelsea')
-    ).toBeNull()
-    expect(parseVersusQuestion('Chiefs vs Bills: first to score?')).toBeNull()
-    expect(parseVersusQuestion('Chiefs vs Bills: over 47.5 points?')).toBeNull()
-    // Context that is not a line or prop still parses, and a lead-in is not a name.
-    expect(parseVersusQuestion('Premier League: Arsenal vs Chelsea')).toEqual({
-      home: 'Arsenal',
-      away: 'Chelsea',
-    })
-    expect(parseVersusQuestion('Arsenal vs Chelsea [2026-09-13]')).toEqual({
-      home: 'Arsenal',
-      away: 'Chelsea',
-    })
-  })
   it('does not read a date as a handicap', () => {
     expect(
       relatedGroupFor({
@@ -526,6 +402,51 @@ describe('second review round', () => {
     ).toBe('community')
     expect(
       relatedGroupFor({ question: 'Bills +3.5 at Chiefs?', kind: 'both-teams' })
+    ).toBe('game-lines')
+  })
+})
+
+describe('pipeline handoff fields', () => {
+  it('maps The Odds API sport keys to a sport', () => {
+    expect(sportForMarket({ sportsLeague: 'americanfootball_nfl' })).toBe('nfl')
+    expect(sportForMarket({ sportsLeague: 'americanfootball_ncaaf' })).toBe(
+      'ncaaf'
+    )
+    expect(sportForMarket({ sportsLeague: 'basketball_nba' })).toBe('nba')
+    expect(sportForMarket({ sportsLeague: 'basketball_wnba' })).toBe('nba')
+    expect(sportForMarket({ sportsLeague: 'basketball_ncaab' })).toBe('ncaab')
+    expect(sportForMarket({ sportsLeague: 'baseball_mlb' })).toBe('mlb')
+    expect(sportForMarket({ sportsLeague: 'icehockey_nhl' })).toBe('nhl')
+    expect(sportForMarket({ sportsLeague: 'soccer_epl' })).toBe('soccer')
+    expect(sportForMarket({ sportsLeague: 'soccer_uefa_champs_league' })).toBe(
+      'soccer'
+    )
+    expect(sportForMarket({ sportsLeague: 'mma_mixed_martial_arts' })).toBe(
+      'mma'
+    )
+    expect(sportForMarket({ sportsLeague: 'boxing_boxing' })).toBe('other')
+  })
+  it('files a market by its stamped sportsMarketType before guessing', () => {
+    expect(
+      relatedGroupFor({
+        question: 'Chiefs vs Bills: something unusual',
+        kind: 'official',
+        marketType: 'spread',
+      })
+    ).toBe('game-lines')
+    expect(
+      relatedGroupFor({
+        question: 'Will the total be over 47.5?',
+        kind: 'official',
+        marketType: 'prop',
+      })
+    ).toBe('props')
+    expect(
+      relatedGroupFor({
+        question: 'Will the total be over 47.5?',
+        kind: 'official',
+        marketType: null,
+      })
     ).toBe('game-lines')
   })
 })
