@@ -4,8 +4,7 @@ import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
 import { formatMoneyNumberUSLocale, formatPercent } from './util/format'
 import { getFormattedNumberExpectedValue } from 'common/number'
-import { Answer } from './answer'
-import { sortBy } from 'lodash'
+import { Answer, sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
 import { formatPrice, inferPriceDecimals } from './perps/format'
@@ -36,8 +35,9 @@ export const getContractOGProps = (
     creatorAvatarUrl,
   } = contract
 
+  // Canceled markets show the "Canceled" state instead of answers
   const rankedAnswers =
-    outcomeType === 'MULTIPLE_CHOICE'
+    outcomeType === 'MULTIPLE_CHOICE' && resolution !== 'CANCEL'
       ? getRankedOgAnswers(contract as MultiContract)
       : []
   const topAnswer = rankedAnswers[0]
@@ -82,30 +82,36 @@ export const getContractOGProps = (
   }
 }
 
-// Winners first, then by probability, capped at what fits on the card
+// Winners first, then by probability (the app's own ordering), capped at what
+// fits on the card
 function getRankedOgAnswers(contract: MultiContract): OgAnswer[] {
-  const isWinner = (a: Answer) =>
-    a.resolution === 'YES' ||
-    (a.resolution === 'MKT' && (a.resolutionProbability ?? 0) > 0) ||
-    contract.resolution === a.id
-  const prob = (a: Answer) => getAnswerProbability(contract, a.id)
+  const { resolutions } = contract
+  // Mirrors the answer components: a resolved market's percentages come from
+  // contract.resolutions (whole-market resolution) or the answer's own
+  // resolution (independent answers), never from its pools
+  const resolvedShare = (a: Answer) =>
+    a.resolution && a.resolution !== 'CANCEL'
+      ? getAnswerProbability(contract, a.id)
+      : resolutions
+      ? (resolutions[a.id] ?? 0) / 100
+      : undefined
 
-  return sortBy(
-    contract.answers,
-    (a) => (isWinner(a) ? 0 : 1),
-    (a) => -prob(a)
-  )
+  return sortAnswers(contract, contract.answers, 'prob-desc')
     .slice(0, OG_CARD_MAX_ANSWERS)
-    .map((a) => ({
-      t: truncateOgText(a.text, OG_CARD_MAX_ANSWER_LENGTH),
-      p: formatOgPercent(prob(a)),
-      ...(isWinner(a) ? { w: true as const } : {}),
-    }))
+    .map((a) => {
+      const share = resolvedShare(a)
+      return {
+        t: truncateAnswerText(a.text),
+        p: formatOgPercent(share ?? getAnswerProbability(contract, a.id)),
+        ...(share ? { w: true as const } : {}),
+      }
+    })
 }
 
-function truncateOgText(text: string, maxLength: number) {
-  return text.length > maxLength
-    ? text.slice(0, maxLength - 1).trimEnd() + '…'
+// Answer text that fits on one row of the card
+function truncateAnswerText(text: string) {
+  return text.length > OG_CARD_MAX_ANSWER_LENGTH
+    ? text.slice(0, OG_CARD_MAX_ANSWER_LENGTH - 1).trimEnd() + '…'
     : text
 }
 

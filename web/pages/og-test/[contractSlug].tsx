@@ -26,11 +26,9 @@ export async function getStaticPaths() {
 }
 
 function OriginalGangstaTestPage(props: ContractParams) {
-  const { contract, ogPointsString } = props
-  const ogCardProps = removeUndefinedProps({
-    ...getContractOGProps(contract),
-    points: ogPointsString,
-  })
+  const { contract } = props
+  const ogCardProps =
+    props.ogCardProps ?? removeUndefinedProps(getContractOGProps(contract))
 
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center">

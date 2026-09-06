@@ -38,9 +38,12 @@ export function OgMarket(props: OgCardProps) {
   const numTraders = Number(props.numTraders ?? 0)
   // Float32 timestamps can collapse to one value for markets only minutes old
   const showGraph = data.length > 5 && data[0].x !== data[data.length - 1].x
+  // A canceled market shows the "Canceled" state instead of answer bars
   const answers =
-    parseAnswers(props.answers) ??
-    (topAnswer ? [{ t: topAnswer, p: probability ?? '' }] : [])
+    resolution === 'CANCEL'
+      ? []
+      : parseAnswers(props.answers) ??
+        (topAnswer ? [{ t: topAnswer, p: probability ?? '' }] : [])
 
   return (
     <div

@@ -1,5 +1,9 @@
 import { Contract, contractPath } from 'common/contract'
-import { getSeoDescription, getContractOGProps } from 'common/contract-seo'
+import {
+  getSeoDescription,
+  getContractOGProps,
+  OgCardProps,
+} from 'common/contract-seo'
 import { OG_MARKET_IMAGE } from 'common/edge/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { parseJsonContentToText } from 'common/util/parse'
@@ -12,15 +16,19 @@ export function ContractSEO(props: {
   contract: Contract
   /** Base64 encoded points */
   points?: string
+  /** Prebuilt card props, e.g. from getContractParams before answers are truncated */
+  ogCardProps?: OgCardProps
 }) {
   const { contract, points } = props
   const { question } = contract
 
   const seoDesc = getSeoDescription(contract)
-  const ogCardProps = removeUndefinedProps({
-    ...getContractOGProps(contract),
-    points,
-  })
+  const ogCardProps =
+    props.ogCardProps ??
+    removeUndefinedProps({
+      ...getContractOGProps(contract),
+      points,
+    })
 
   const seo = (
     <SEO
