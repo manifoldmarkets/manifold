@@ -383,6 +383,8 @@ export type Sports = {
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string
+  sportsHomeTeam: string
+  sportsAwayTeam: string
 }
 
 export type MultiContract =

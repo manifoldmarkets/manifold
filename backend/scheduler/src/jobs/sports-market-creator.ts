@@ -20,7 +20,6 @@
 
 import { getFirestore } from 'firebase-admin/firestore'
 import { log, getPrivateUser, isProd } from 'shared/utils'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { anythingToRichText } from 'shared/tiptap'
 import { createMarketHelper } from 'api/create-market'
 import { PrivateUser } from 'common/user'
@@ -85,8 +84,8 @@ function buildDescription(event: OddsApiEvent, initialProb: number): string {
   const lines = [
     `**${event.away_team}** at **${event.home_team}**`,
     ``,
-    `Resolves YES if ${event.home_team} wins. Resolves NO if ${event.away_team} wins.`,
-    `Resolves N/A if the game is cancelled or postponed.`,
+    `Resolves YES if ${event.home_team} wins outright. Resolves NO if ${event.away_team} wins outright.`,
+    `Resolves N/A if the game ends in a tie, or is cancelled or postponed.`,
     ``,
     `Opening probability: ${initialProb}% (seeded from Vegas moneyline odds).`,
   ]
@@ -104,7 +103,6 @@ export async function createSportsMarkets() {
     ? 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports prod
     : 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports dev
 
-  const pg = createSupabaseDirectClient()
   const firestore = getFirestore()
 
   const privateUser = await getPrivateUser(creatorId)
@@ -176,7 +174,7 @@ export async function createSportsMarkets() {
 
       try {
         const sportsLeague = SPORT_LEAGUE_LABEL[entry.sport]
-        const contract = await createMarketHelper(
+        const { contract } = await createMarketHelper(
           {
             question,
             outcomeType: 'BINARY',
@@ -184,12 +182,13 @@ export async function createSportsMarkets() {
             closeTime,
             description,
             visibility: 'public',
+            liquidityTier: 1000,
             sportsLeague,
+            sportsHomeTeam: event.home_team,
+            sportsAwayTeam: event.away_team,
             // TODO: add groupIds once ManifoldSports groups are set up per sport
           },
-          auth,
-          pg,
-          firestore
+          auth
         )
 
         // Record in Firestore so we don't create a duplicate on the next run
@@ -203,6 +202,7 @@ export async function createSportsMarkets() {
           commenceTime: event.commence_time,
           initialProb,
           createdAt: Date.now(),
+          resolved: false,
         })
 
         log(`[sports-market-creator] Created: ${question}`)

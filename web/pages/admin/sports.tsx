@@ -42,7 +42,8 @@ const TOURNAMENTS = Object.values(TOURNAMENT_CONFIGS)
 
 type ActiveCompetition = { type: 'active'; label: string; config: TournamentConfig }
 type PendingCompetition = { type: 'pending'; label: string }
-type CompetitionOption = ActiveCompetition | PendingCompetition
+type OddsApiCompetition = { type: 'odds-api'; label: string; competitionId: string; sportsLeague: string }
+type CompetitionOption = ActiveCompetition | PendingCompetition | OddsApiCompetition
 
 type SportCategory = {
   id: string
@@ -68,8 +69,8 @@ const SPORT_CATEGORIES: SportCategory[] = [
     id: 'nfl',
     label: 'NFL',
     competitions: [
-      { type: 'pending', label: 'NFL Regular Season 2026–27' },
-      { type: 'pending', label: 'NFL Playoffs 2027' },
+      { type: 'odds-api', label: 'NFL Regular Season 2026–27', competitionId: 'nfl-regular-2026', sportsLeague: 'NFL' },
+      { type: 'odds-api', label: 'NFL Playoffs 2027', competitionId: 'nfl-playoffs-2027', sportsLeague: 'NFL' },
     ],
   },
   {
@@ -185,6 +186,7 @@ export default function SportsAdminPage() {
   const selectedSport = SPORT_CATEGORIES.find((s) => s.id === selectedSportId)!
   // Active competitions have a wired TournamentConfig; pending ones don't yet.
   const isApiConnected = selectedCompetition.type === 'active'
+  const isOddsApi = selectedCompetition.type === 'odds-api'
   // Keep a non-null tournament reference for existing logic — falls back to WC
   // when a pending competition is selected so the rest of the page doesn't crash.
   const [tournament, setTournament] = useState<TournamentConfig>(TOURNAMENTS[0])
@@ -395,6 +397,16 @@ export default function SportsAdminPage() {
   const [resolving, setResolving] = useState(false)
   const [lastResolved, setLastResolved] = useState<string | null>(null)
 
+  // Odds API creation state (NFL, CFB, MLB, NBA, WNBA)
+  const [oddsApiDryRun, setOddsApiDryRun] = useState(true)
+  const [oddsApiCreating, setOddsApiCreating] = useState(false)
+  const [oddsApiResults, setOddsApiResults] = useState<Array<{
+    eventId: string
+    question: string
+    status: string
+    reason: string | null
+  }>>([])
+
   // Alerts: markets needing attention
   const alertMarkets = markets.filter((m) => m.needsAttention)
   const [handledAlerts, setHandledAlerts] = useState<Set<string>>(new Set())
@@ -435,8 +447,12 @@ export default function SportsAdminPage() {
   async function fetchMarkets() {
     setMarketsLoading(true)
     try {
+      const leagueLabel =
+        selectedCompetition.type === 'odds-api'
+          ? selectedCompetition.sportsLeague
+          : tournament.sportsLeague
       const data = await api('sports-markets', {
-        sportsLeague: tournament.sportsLeague,
+        sportsLeague: leagueLabel,
       })
       setMarkets(data.markets)
     } catch {}
@@ -491,6 +507,23 @@ export default function SportsAdminPage() {
       )
     } finally {
       setResolving(false)
+    }
+  }
+
+  async function runOddsApiCreate() {
+    if (selectedCompetition.type !== 'odds-api') return
+    setOddsApiCreating(true)
+    setOddsApiResults([])
+    try {
+      const data = await api('admin-sports-create-odds-markets', {
+        competitionId: selectedCompetition.competitionId,
+        dryRun: oddsApiDryRun,
+      })
+      setOddsApiResults(data.results)
+    } catch (e: unknown) {
+      alert(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`)
+    } finally {
+      setOddsApiCreating(false)
     }
   }
 
@@ -731,6 +764,11 @@ export default function SportsAdminPage() {
                 </span>
                 <span className="font-mono">{tournament.footballDataCode}</span>
               </Col>
+            ) : isOddsApi ? (
+              <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                <span className="font-semibold">The Odds API</span> — market
+                creation available below
+              </div>
             ) : (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 <span className="font-semibold">API not yet connected</span> —
@@ -945,6 +983,102 @@ export default function SportsAdminPage() {
             </Row>
           </Col>
         </Section>
+
+        {/* ── 3b. Odds API Market Creation (NFL, CFB, MLB, NBA, WNBA) ── */}
+        {isOddsApi && (
+          <Section title="3. Create Markets via The Odds API" defaultOpen>
+            <Col className="gap-4">
+              <p className="text-ink-500 text-sm">
+                Fetches upcoming <strong>{selectedCompetition.label}</strong>{' '}
+                games from The Odds API (14-day window) and creates binary
+                YES/NO markets, seeded from Vegas moneyline odds. Games that
+                already have a market are skipped automatically.
+              </p>
+              <Row className="items-center gap-3">
+                <span className="text-ink-600 text-xs">Dry run</span>
+                <ShortToggle on={oddsApiDryRun} setOn={setOddsApiDryRun} />
+                {oddsApiDryRun && (
+                  <span className="text-xs font-medium text-blue-600">ON</span>
+                )}
+              </Row>
+              <Row className="items-center gap-3">
+                <Button
+                  color={oddsApiDryRun ? 'blue' : 'green'}
+                  onClick={runOddsApiCreate}
+                  disabled={oddsApiCreating}
+                >
+                  {oddsApiCreating ? (
+                    <Row className="gap-2">
+                      <LoadingIndicator size="sm" /> Creating…
+                    </Row>
+                  ) : oddsApiDryRun ? (
+                    'Preview upcoming games (dry run)'
+                  ) : (
+                    'Create markets'
+                  )}
+                </Button>
+                {!oddsApiDryRun && (
+                  <span className="text-xs font-medium text-amber-600">
+                    Live mode — this will create real markets.
+                  </span>
+                )}
+              </Row>
+              {oddsApiResults.length > 0 && (
+                <Col className="gap-1">
+                  <p className="text-ink-600 text-sm font-medium">
+                    {oddsApiDryRun ? 'Dry run preview' : 'Creation log'} (
+                    {oddsApiResults.filter(
+                      (r) => r.status === 'created' || r.status === 'dry-run'
+                    ).length}{' '}
+                    games,{' '}
+                    {oddsApiResults.filter((r) => r.status === 'skipped').length}{' '}
+                    skipped,{' '}
+                    {oddsApiResults.filter((r) => r.status === 'error').length}{' '}
+                    errors)
+                  </p>
+                  <div className="bg-ink-50 border-ink-200 max-h-64 overflow-y-auto rounded border p-3">
+                    {oddsApiResults.map((r, i) => (
+                      <Row key={i} className="gap-2 py-0.5 text-xs">
+                        <span
+                          className={clsx(
+                            'w-16 shrink-0 font-medium',
+                            STATUS_COLORS[r.status] ?? 'text-ink-500'
+                          )}
+                        >
+                          {r.status}
+                        </span>
+                        <span className="text-ink-700 flex-1 truncate">
+                          {r.question}
+                        </span>
+                        {r.reason && (
+                          <span className="text-ink-400 shrink-0">
+                            — {r.reason}
+                          </span>
+                        )}
+                      </Row>
+                    ))}
+                  </div>
+                  {oddsApiDryRun &&
+                    oddsApiResults.some((r) => r.status === 'dry-run') && (
+                      <Row className="mt-2 items-center gap-2">
+                        <Button
+                          size="sm"
+                          color="green"
+                          onClick={() => setOddsApiDryRun(false)}
+                        >
+                          Looks good — switch to live mode
+                        </Button>
+                        <span className="text-ink-400 text-xs">
+                          Toggle dry run off and click Create markets to
+                          proceed.
+                        </span>
+                      </Row>
+                    )}
+                </Col>
+              )}
+            </Col>
+          </Section>
+        )}
 
         {/* ── 3. Match Preview Panel ── */}
         <Section title={`3. Match Preview & Creation${!isApiConnected ? ' — unavailable' : ''}`} defaultOpen>

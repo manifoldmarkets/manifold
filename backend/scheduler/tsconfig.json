@@ -13,10 +13,11 @@
     "isolatedModules": true,
     "paths": {
       "common/*": ["../../common/src/*", "../../../common/lib/*"],
-      "shared/*": ["../shared/src/*", "../../shared/lib/*"]
+      "shared/*": ["../shared/src/*", "../../shared/lib/*"],
+      "api/*": ["../api/src/*", "../../api/lib/*"]
     }
   },
-  "references": [{ "path": "../../common" }, { "path": "../shared" }],
+  "references": [{ "path": "../../common" }, { "path": "../shared" }, { "path": "../api" }],
   "compileOnSave": true,
   "include": ["src/**/*.ts"],
   "ts-node": {

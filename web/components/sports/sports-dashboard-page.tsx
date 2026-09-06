@@ -14,6 +14,7 @@ import {
   MatchOutcome,
   SportsDashboardTabButton,
 } from 'web/components/sports/sports-match-card'
+import { teamBadge } from 'common/sports'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
 import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
@@ -164,11 +165,30 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
   const a1 = parseAnswerText(m.answers[1].text)
   const drawAnswer = m.answers.find((a) => a.text === 'Draw')
 
+  // For binary sports markets (NFL, CFB, etc.) the answers are synthesized
+  // from sportsHomeTeam/sportsAwayTeam with id='YES'/'NO'. Use teamBadge for
+  // the badge slot instead of a flag emoji.
+  const isBinaryMarket = m.answers[0].id === 'YES' && m.answers[1].id === 'NO'
+  const badgeA = isBinaryMarket
+    ? teamBadge(a0.name, m.sportsLeague)
+    : a0.flag
+  const badgeB = isBinaryMarket
+    ? teamBadge(a1.name, m.sportsLeague)
+    : a1.flag
+
   const resolved = !!m.resolution
   let winner: MatchOutcome | undefined
   if (resolved && m.resolvedAnswer) {
-    if (m.resolvedAnswer === m.answers[0].text) winner = 'teamA'
-    else if (m.resolvedAnswer === m.answers[1].text) winner = 'teamB'
+    if (
+      m.resolvedAnswer === m.answers[0].text ||
+      m.resolvedAnswer === m.sportsHomeTeam
+    )
+      winner = 'teamA'
+    else if (
+      m.resolvedAnswer === m.answers[1].text ||
+      m.resolvedAnswer === m.sportsAwayTeam
+    )
+      winner = 'teamB'
     else if (m.resolvedAnswer === 'Draw') winner = 'draw'
   }
 
@@ -181,12 +201,12 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
     question: m.question,
     teamA: {
       name: a0.name,
-      flag: a0.flag,
+      flag: badgeA,
       prob: Math.round(m.answers[0].prob * 100),
     },
     teamB: {
       name: a1.name,
-      flag: a1.flag,
+      flag: badgeB,
       prob: Math.round(m.answers[1].prob * 100),
     },
     draw: { prob: drawAnswer ? Math.round(drawAnswer.prob * 100) : 0 },

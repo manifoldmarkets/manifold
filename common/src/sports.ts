@@ -126,6 +126,60 @@ export function pickSportsWinningAnswer(
 // ─── API response types ──────────────────────────────────────────────────────
 
 /**
+ * Three-letter abbreviations for NFL teams, keyed by the full team name as
+ * returned by The Odds API. Used by the sports match card to show the badge
+ * (e.g. "KC" beside "Kansas City Chiefs") instead of a flag.
+ */
+export const NFL_TEAM_TLA: Record<string, string> = {
+  'Arizona Cardinals': 'ARI',
+  'Atlanta Falcons': 'ATL',
+  'Baltimore Ravens': 'BAL',
+  'Buffalo Bills': 'BUF',
+  'Carolina Panthers': 'CAR',
+  'Chicago Bears': 'CHI',
+  'Cincinnati Bengals': 'CIN',
+  'Cleveland Browns': 'CLE',
+  'Dallas Cowboys': 'DAL',
+  'Denver Broncos': 'DEN',
+  'Detroit Lions': 'DET',
+  'Green Bay Packers': 'GB',
+  'Houston Texans': 'HOU',
+  'Indianapolis Colts': 'IND',
+  'Jacksonville Jaguars': 'JAX',
+  'Kansas City Chiefs': 'KC',
+  'Las Vegas Raiders': 'LV',
+  'Los Angeles Chargers': 'LAC',
+  'Los Angeles Rams': 'LAR',
+  'Miami Dolphins': 'MIA',
+  'Minnesota Vikings': 'MIN',
+  'New England Patriots': 'NE',
+  'New Orleans Saints': 'NO',
+  'New York Giants': 'NYG',
+  'New York Jets': 'NYJ',
+  'Philadelphia Eagles': 'PHI',
+  'Pittsburgh Steelers': 'PIT',
+  'San Francisco 49ers': 'SF',
+  'Seattle Seahawks': 'SEA',
+  'Tampa Bay Buccaneers': 'TB',
+  'Tennessee Titans': 'TEN',
+  'Washington Commanders': 'WAS',
+}
+
+/**
+ * Return a sport-appropriate badge label for a team name.
+ * For NFL we use the 3-letter code; for others fall back to the name itself.
+ */
+export function teamBadge(
+  teamName: string,
+  sportsLeague?: string | null
+): string {
+  if (sportsLeague === 'NFL' || sportsLeague === 'College Football') {
+    return NFL_TEAM_TLA[teamName] ?? teamName.slice(0, 3).toUpperCase()
+  }
+  return ''
+}
+
+/**
  * Shape returned by the `sports-markets` API endpoint and consumed by the
  * sports dashboard page. Kept in sync between backend (`sports-markets.ts`
  * handler) and frontend (`sports-dashboard-page.tsx`).
@@ -137,6 +191,11 @@ export interface SportsMarket {
   sportsStartTimestamp: string | null
   resolution: string | null
   resolvedAnswer: string | null
+  // For binary sports markets (NFL, CFB, MLB, NBA, WNBA): team names stored at
+  // creation time so the dashboard card can display them without parsing the question.
+  sportsHomeTeam: string | null
+  sportsAwayTeam: string | null
+  sportsLeague: string | null
   resolutionTime: number | null
   sportsHomeScore: number | null
   sportsAwayScore: number | null
