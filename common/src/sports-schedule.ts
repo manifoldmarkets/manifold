@@ -183,9 +183,16 @@ const LEAGUE_TO_SPORT: Record<string, SportKey> = Object.fromEntries(
   )
 )
 
-const GROUP_TO_SPORT: Record<string, SportKey> = Object.fromEntries(
-  SPORT_CATEGORIES.flatMap((s) => s.groupIds.map((g) => [g, s.key] as const))
-)
+// The college topics sit next to the generic "basketball" / "football" topics
+// that also belong to the pro leagues, so a market tagged with both has to
+// resolve to the college sport whatever order its topic ids come back in.
+const SPORT_LOOKUP_ORDER: SportKey[] = [
+  'ncaaf',
+  'ncaab',
+  ...SPORT_CATEGORIES.map((s) => s.key).filter(
+    (k) => k !== 'ncaaf' && k !== 'ncaab'
+  ),
+]
 
 /** Every topic id that puts a market on the sports page. */
 export const ALL_SPORTS_GROUP_IDS = [
@@ -203,9 +210,11 @@ export function sportForMarket(props: {
     const direct = LEAGUE_TO_SPORT[sportsLeague.toLowerCase()]
     if (direct) return direct
   }
-  for (const id of groupIds ?? []) {
-    const s = GROUP_TO_SPORT[id]
-    if (s) return s
+  const ids = new Set(groupIds ?? [])
+  if (ids.size > 0) {
+    for (const key of SPORT_LOOKUP_ORDER) {
+      if (SPORT_BY_KEY[key]?.groupIds.some((g) => ids.has(g))) return key
+    }
   }
   return 'other'
 }
@@ -336,6 +345,23 @@ export function teamDisplayName(name: string, maxLength = 14): string {
   return plain
 }
 
+// Dates carry the signs and slashes of a handicap: "[2026-09-13]" is not "-9".
+const DATE_RE = /\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g
+const stripDates = (s: string) => s.replace(DATE_RE, ' ')
+
+const GAME_LINE_RE =
+  /\b(spread|handicap|cover|total|over\/under|o\/u|first half|1st half|second half|2nd half|half[- ]time|halftime|both teams to score|btts|margin|exact score|correct score|overtime|extra time|go to ot)\b|(?:^|[\s(])[+-]\d+(\.5)?\b/i
+const PLAYER_STAT_RE =
+  /\b(yards|yds|rebounds|assists|strikeouts|receptions|completions|passing|rushing|receiving|three-pointers|threes|3-pointers|saves|tackles|sacks|double-double|triple-double)\b/i
+const PROP_RE =
+  /\b(yards|yds|points|pts|rebounds|assists|touchdown|touchdowns|td|tds|goal|goals|score first|first (basket|goal|touchdown|to score)|anytime|hits|strikeouts|home run|hr|shots|saves|corners|cards|clean sheet|hat[- ]trick|mvp|player of the match|man of the match|interception|sack|three-pointers|threes|3-pointers|double-double|triple-double)\b/i
+
+/** Does this wording describe a line or prop rather than the game itself? */
+const isPropQualifier = (text: string) => {
+  const t = stripDates(text)
+  return PLAYER_STAT_RE.test(t) || GAME_LINE_RE.test(t) || PROP_RE.test(t)
+}
+
 // ─── Community game markets ───────────────────────────────────────────────────
 //
 // Plenty of games only exist as user-created "X vs Y" multiple-choice markets
@@ -343,7 +369,7 @@ export function teamDisplayName(name: string, maxLength = 14): string {
 // matchup and the answers are the two sides (plus an optional Draw).
 
 const VERSUS_RE =
-  /^(.{2,60}?)\s+(vs\.?|v\.?|versus|@)\s+(.{2,60}?)(?:\s*[[(:].*|\s+[|·–—-]\s.*)?$/i
+  /^(.{2,60}?)\s+(vs\.?|v\.?|versus|@)\s+(.{2,60}?)(\s*[[(:].*|\s+[|·–—-]\s.*)?$/i
 
 const stripEmoji = (s: string) =>
   s.replace(/\p{Extended_Pictographic}|\p{Regional_Indicator}|️/gu, '').trim()
@@ -354,10 +380,22 @@ export function parseVersusQuestion(
   const q = stripEmoji(question).replace(/\s+/g, ' ').trim()
   const m = q.match(VERSUS_RE)
   if (!m) return null
-  const first = m[1].trim().replace(/^(who wins|winner):?\s*/i, '')
+  let first = m[1].trim()
+  // Everything that is not a team name: the suffix after the second side and
+  // any "Premier League:" / "Most yellow cards:" lead-in before the first.
+  let qualifier = m[4] ?? ''
+  const colon = first.lastIndexOf(':')
+  if (colon >= 0) {
+    qualifier += ` ${first.slice(0, colon)}`
+    first = first.slice(colon + 1).trim()
+  }
+  first = first.replace(/^(who wins|winner):?\s*/i, '')
   const second = m[3].trim().replace(/\?$/, '')
   if (!first || !second || first.toLowerCase() === second.toLowerCase())
     return null
+  // "Arsenal vs Chelsea: most yellow cards?" has the teams as answers too,
+  // but it is a prop about the game, not the game.
+  if (isPropQualifier(qualifier)) return null
   // US convention: "Lakers @ Celtics" is the Lakers away at the Celtics.
   return m[2] === '@'
     ? { home: second, away: first }
@@ -578,13 +616,6 @@ export interface RelatedMatch {
   score: number
 }
 
-const GAME_LINE_RE =
-  /\b(spread|handicap|cover|total|over\/under|o\/u|first half|1st half|second half|2nd half|half[- ]time|halftime|both teams to score|btts|margin|exact score|correct score|overtime|extra time|go to ot)\b|[+-]\d+(\.5)?\b/i
-const PLAYER_STAT_RE =
-  /\b(yards|yds|rebounds|assists|strikeouts|receptions|completions|passing|rushing|receiving|three-pointers|threes|3-pointers|saves|tackles|sacks|double-double|triple-double)\b/i
-const PROP_RE =
-  /\b(yards|yds|points|pts|rebounds|assists|touchdown|touchdowns|td|tds|goal|goals|score first|first (basket|goal|touchdown|to score)|anytime|hits|strikeouts|home run|hr|shots|saves|corners|cards|clean sheet|hat[- ]trick|mvp|player of the match|man of the match|interception|sack|three-pointers|threes|3-pointers|double-double|triple-double)\b/i
-
 export function relatedGroupFor(props: {
   question: string
   kind: RelatedMatchKind
@@ -592,9 +623,10 @@ export function relatedGroupFor(props: {
   const { question, kind } = props
   // A player stat with a number ("300+ yards", "27.5 points") is a prop even
   // though it carries a line; team/game numbers are lines.
-  if (PLAYER_STAT_RE.test(question)) return 'props'
-  if (GAME_LINE_RE.test(question)) return 'game-lines'
-  if (PROP_RE.test(question)) return 'props'
+  const q = stripDates(question)
+  if (PLAYER_STAT_RE.test(q)) return 'props'
+  if (GAME_LINE_RE.test(q)) return 'game-lines'
+  if (PROP_RE.test(q)) return 'props'
   // An official market we can't classify is still a prop from the pipeline.
   return kind === 'official' ? 'props' : 'community'
 }

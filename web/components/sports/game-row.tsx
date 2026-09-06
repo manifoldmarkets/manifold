@@ -307,7 +307,9 @@ export function GameRow(props: {
         ) : (
           <SportsVersusBetDialog
             contractId={game.id}
-            initialSide={betOutcome === 'teamB' ? 'away' : 'home'}
+            initialAnswerId={
+              betOutcome === 'teamB' ? game.away.answerId : game.home.answerId
+            }
             onClose={() => setBetOutcome(null)}
           />
         ))}

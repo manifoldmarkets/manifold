@@ -286,7 +286,7 @@ async function getCommunityGames(
        and token = 'MANA'
        and visibility = 'public'
        and coalesce(deleted, false) = false
-       and resolution is null
+       and resolution is distinct from 'CANCEL'
        and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
        and close_time < now() + ($1 || ' days')::interval
        and question ~* '\\s(vs\\.?|v\\.?|versus|@)\\s'
@@ -450,10 +450,14 @@ async function getRelatedCandidates(
   }>(
     `select c.id, c.question, c.close_time, c.importance_score,
             c.data->>'sportsEventId' as sports_event_id,
-            array_agg(gc.group_id) as group_ids
+            (select coalesce(array_agg(g.group_id), '{}')
+               from group_contracts g
+              where g.contract_id = c.id) as group_ids
      from contracts c
-     join group_contracts gc on gc.contract_id = c.id
-     where gc.group_id = any($1)
+     where exists (
+         select 1 from group_contracts gc
+         where gc.contract_id = c.id and gc.group_id = any($1)
+       )
        and c.token = 'MANA'
        and c.visibility = 'public'
        and coalesce(c.deleted, false) = false
@@ -461,7 +465,6 @@ async function getRelatedCandidates(
        and c.outcome_type in ('BINARY', 'MULTIPLE_CHOICE', 'NUMBER', 'MULTI_NUMERIC', 'PSEUDO_NUMERIC')
        and c.close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
        and c.close_time < now() + interval '45 days'
-     group by c.id
      order by c.importance_score desc
      limit ${MAX_CANDIDATES}`,
     [groupIds]

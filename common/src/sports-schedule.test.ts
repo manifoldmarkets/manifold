@@ -481,3 +481,51 @@ describe('review follow-ups', () => {
     expect(teamDisplayName('Trinidad and Tobago')).toBe('Trinidad and Tobago')
   })
 })
+
+describe('second review round', () => {
+  it('picks the college sport whatever order the topics arrive in', () => {
+    const basketball = 'NjkFkdkvRvBHoeMDQ5NB'
+    const college = 'beeb69e0-b36f-451a-80e1-e059df456bb1'
+    expect(sportForMarket({ groupIds: [basketball, college] })).toBe('ncaab')
+    expect(sportForMarket({ groupIds: [college, basketball] })).toBe('ncaab')
+    expect(sportForMarket({ groupIds: [basketball] })).toBe('nba')
+  })
+  it('does not promote a prop with the teams as answers to a game', () => {
+    expect(
+      parseVersusQuestion(
+        'Arsenal vs Chelsea: who will receive more yellow cards?'
+      )
+    ).toBeNull()
+    expect(
+      parseVersusQuestion('Most yellow cards: Arsenal vs Chelsea')
+    ).toBeNull()
+    expect(parseVersusQuestion('Chiefs vs Bills: first to score?')).toBeNull()
+    expect(parseVersusQuestion('Chiefs vs Bills: over 47.5 points?')).toBeNull()
+    // Context that is not a line or prop still parses, and a lead-in is not a name.
+    expect(parseVersusQuestion('Premier League: Arsenal vs Chelsea')).toEqual({
+      home: 'Arsenal',
+      away: 'Chelsea',
+    })
+    expect(parseVersusQuestion('Arsenal vs Chelsea [2026-09-13]')).toEqual({
+      home: 'Arsenal',
+      away: 'Chelsea',
+    })
+  })
+  it('does not read a date as a handicap', () => {
+    expect(
+      relatedGroupFor({
+        question: 'Arsenal vs Chelsea: first goal scorer? [2026-09-13]',
+        kind: 'both-teams',
+      })
+    ).toBe('props')
+    expect(
+      relatedGroupFor({
+        question: 'Arsenal vs Chelsea on 9/13: attendance above 60,000?',
+        kind: 'both-teams',
+      })
+    ).toBe('community')
+    expect(
+      relatedGroupFor({ question: 'Bills +3.5 at Chiefs?', kind: 'both-teams' })
+    ).toBe('game-lines')
+  })
+})

@@ -34,12 +34,12 @@ const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
 export function SportsVersusBetDialog({
   contractId,
   onClose,
-  initialSide,
+  initialAnswerId,
 }: {
   contractId: string | undefined
   onClose: () => void
-  /** Which team the dialog opens on: 'home' is the first answer. */
-  initialSide?: 'home' | 'away'
+  /** The answer (team) the dialog opens on; defaults to the first answer. */
+  initialAnswerId?: string
 }) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
 
@@ -64,6 +64,13 @@ export function SportsVersusBetDialog({
   }, [contractId])
 
   if (!contract) return null
+  // The versus panel treats the first answer as YES and the second as NO, so
+  // the side is decided by where the answer sits in the fetched market, not
+  // by which team is home ("Lakers @ Celtics" lists the away team first).
+  const initialOutcome =
+    initialAnswerId && contract.answers[1]?.id === initialAnswerId
+      ? 'NO'
+      : 'YES'
   return (
     <MultiBetDialog
       contract={contract}
@@ -71,7 +78,7 @@ export function SportsVersusBetDialog({
       setOpen={(open) => {
         if (!open) onClose()
       }}
-      initialOutcome={initialSide === 'away' ? 'NO' : 'YES'}
+      initialOutcome={initialOutcome}
     />
   )
 }
