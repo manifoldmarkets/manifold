@@ -111,6 +111,11 @@ function HouseStateDistricts(props: {
   const districts = sortBy(districtsForState(contract, state), (a) =>
     Math.abs(a.prob - 0.5)
   )
+  // Only once the answers actually carry candidate names; on a bare
+  // "Texas 15" the note would state the obvious.
+  const namesCandidates = districts.some(
+    (a) => !!parseDistrict(a.text)?.matchup
+  )
 
   if (!districts.length) {
     return (
@@ -138,6 +143,11 @@ function HouseStateDistricts(props: {
         </div>
         <ChooseStateButton setTargetState={setTargetState} />
       </Row>
+      {namesCandidates && (
+        <div className="text-ink-500 text-xs">
+          Resolves by party, not by candidate.
+        </div>
+      )}
       <Col className="gap-0.5 overflow-y-auto pr-1">
         {districts.map((a) => (
           <HouseDistrictRow

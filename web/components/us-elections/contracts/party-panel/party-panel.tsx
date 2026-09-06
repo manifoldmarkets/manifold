@@ -31,6 +31,7 @@ import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import {
+  isCandidateLabelledAnswer,
   isDemocraticAnswer,
   isRepublicanAnswer,
 } from 'web/components/usa-map/state-election-map'
@@ -83,6 +84,10 @@ export function PartyPanel(props: {
   // and guard against a missing side rather than asserting non-null.
   const republicanAnswer = answers.find((a) => isRepublicanAnswer(a.text))
   const democraticAnswer = answers.find((a) => isDemocraticAnswer(a.text))
+
+  // Only when the answers name candidates — on a market still labelled
+  // "Democratic party" the note would state the obvious.
+  const namesCandidates = answers.some((a) => isCandidateLabelledAnswer(a.text))
 
   let democratToRepublicanRatio = 0.5
   if (republicanAnswer && democraticAnswer) {
@@ -177,6 +182,7 @@ export function PartyPanel(props: {
               ))}
             </>
           )}
+          {namesCandidates && <ResolvesByPartyNote />}
         </Col>
       </Col>
     )
@@ -201,7 +207,22 @@ export function PartyPanel(props: {
           ))}
         </>
       )}
+      {namesCandidates && <ResolvesByPartyNote />}
     </Col>
+  )
+}
+
+/**
+ * Named answers read as a bet on the person, but these markets settle on which
+ * party wins the seat. Maine 2026 is the cautionary case: the Democratic
+ * nominee changed twice before September and the market was unaffected.
+ */
+function ResolvesByPartyNote() {
+  return (
+    <div className="text-ink-500 text-xs">
+      Resolves by party, not by candidate — if a nominee changes, this still
+      settles on which party wins the seat.
+    </div>
   )
 }
 

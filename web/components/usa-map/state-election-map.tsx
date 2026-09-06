@@ -40,6 +40,17 @@ export const ALSO_DEMOCRATIC = [
 const DEM_TAG = /\(\s*D\s*\)/i
 const REP_TAG = /\(\s*R\s*\)/i
 
+/**
+ * True when an answer names a candidate carrying a party tag ("Josh Turek (D)")
+ * rather than naming the party outright ("Democratic party").
+ *
+ * These markets resolve on PARTY regardless of who the nominee turns out to be,
+ * so wherever this is true the UI owes the reader that caveat — a named answer
+ * otherwise reads as a bet on the person.
+ */
+export const isCandidateLabelledAnswer = (text: string) =>
+  DEM_TAG.test(text) || REP_TAG.test(text)
+
 export const isDemocraticAnswer = (text: string) =>
   /democrat/i.test(text) || DEM_TAG.test(text) || ALSO_DEMOCRATIC.includes(text)
 export const isRepublicanAnswer = (text: string) =>
