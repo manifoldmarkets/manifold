@@ -32,9 +32,18 @@ export const ALSO_DEMOCRATIC = [
 // Party", "Democratic party", "Democratic", "Democrats", "Ashley Hinson
 // (Republican)", etc. Match defensively on the party stem rather than an exact
 // string so any of these render correctly on the map.
+// A trailing party tag, as used when a state market's answers are renamed from
+// "Democratic party" to the actual nominee — "Josh Turek (D)". Anchored on the
+// parentheses so "(D)" matches but "(Dem-leaning)" or a stray D does not, and
+// so "(R)" cannot match inside "(Rep)". No /g flag: these are reused across
+// calls and a sticky lastIndex would make .test() alternate true/false.
+const DEM_TAG = /\(\s*D\s*\)/i
+const REP_TAG = /\(\s*R\s*\)/i
+
 export const isDemocraticAnswer = (text: string) =>
-  /democrat/i.test(text) || ALSO_DEMOCRATIC.includes(text)
-export const isRepublicanAnswer = (text: string) => /republican/i.test(text)
+  /democrat/i.test(text) || DEM_TAG.test(text) || ALSO_DEMOCRATIC.includes(text)
+export const isRepublicanAnswer = (text: string) =>
+  /republican/i.test(text) || REP_TAG.test(text)
 
 // Returns the aggregate {dem, rep, other} probabilities for a state market,
 // or undefined if the contract can't be interpreted. Summing (rather than

@@ -344,7 +344,9 @@ function PartyAnswerSnippet(props: {
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
 
-  const isDemocraticParty = answer.text == 'Democratic Party'
+  // Which side of the head-to-head this is, so the layout still mirrors
+  // correctly once the answer is renamed to a candidate ("Josh Turek (D)").
+  const isDemocraticParty = isDemocraticAnswer(answer.text)
 
   return (
     <Col
