@@ -2,6 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { getPerpFeedTicker } from 'common/perps/ticker'
 import { DAY_MS } from 'common/util/time'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
@@ -38,6 +39,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       homePageScoreAdjustment,
       homePageScoreAdjustmentDays,
       creatorBannedFromBetting,
+      ticker,
 
       description: raw,
       descriptionHtml: html,
@@ -64,8 +66,25 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
     )
       throw new APIError(
         400,
-        `The launch title for ${launchDefinition.feedId} must be "${launchDefinition.question}". The Perpetual type label is shown separately.`
+        `The launch title for ${launchDefinition.feedId} must be "${launchDefinition.question}". The ticker and market type are shown separately.`
       )
+
+    if (ticker !== undefined) {
+      if (contract.outcomeType !== 'PERP')
+        throw new APIError(400, 'Only perpetual markets have a ticker')
+      // Perps are admin-created, and the ticker is how search and the /perps
+      // hub identify the market — not a creator-editable title.
+      if (!isAdminId(auth.uid))
+        throw new APIError(403, 'Only admins can change a perp market ticker')
+      // Same rule as create-perp: a feed named in PERP_FEED_TICKERS has one
+      // ticker for every market on it.
+      const canonicalTicker = getPerpFeedTicker(contract.oracleFeedId)
+      if (canonicalTicker && ticker !== canonicalTicker)
+        throw new APIError(
+          400,
+          `The ticker for ${contract.oracleFeedId} must be "${canonicalTicker}" (PERP_FEED_TICKERS in common/perps/ticker.ts). Change it there if the feed should be renamed.`
+        )
+    }
 
     const isUpdatingHomePageScoreAdjustment =
       homePageScoreAdjustment !== undefined ||
@@ -157,6 +176,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       description,
       display,
       creatorBannedFromBetting,
+      ticker,
       lastUpdatedTime: Date.now(),
     })
     await updateContract(pg, contractId, {

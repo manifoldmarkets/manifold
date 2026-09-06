@@ -250,7 +250,7 @@ export function FeedContractCard(props: {
             style={{ fontWeight: 500 }}
           >
             <VisibilityIcon contract={contract} />{' '}
-            {isPerp && <PerpMarketBadge className="mr-1 align-middle" />}
+            {isPerp && <PerpMarketBadge contract={contract} className="mr-1 align-middle" />}
             {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (

@@ -304,7 +304,7 @@ export function DashboardMarketCard({
       {/* Question title */}
       <div className="px-5 pt-3">
         <p className="text-ink-900 line-clamp-2 text-lg font-semibold leading-snug">
-          {perpContract && <PerpMarketBadge className="mr-1 align-middle" />}
+          {perpContract && <PerpMarketBadge contract={perpContract} className="mr-1 align-middle" />}
           {contract.question}
         </p>
       </div>

@@ -565,7 +565,7 @@ function PerpContractSmolView(props: {
         rel="noreferrer"
         className="hover:text-primary-700 mt-1 flex min-w-0 items-start gap-2 text-lg font-semibold leading-tight transition-colors"
       >
-        <PerpMarketBadge className="mt-0.5" />
+        <PerpMarketBadge contract={contract} className="mt-0.5" />
         <span className="line-clamp-2">{contract.question}</span>
       </a>
 

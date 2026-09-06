@@ -568,7 +568,7 @@ function ContractQuestion(props: {
         )}
         <VisibilityIcon className="mr-1" contract={contract} />
         {contract.outcomeType === 'PERP' && (
-          <PerpMarketBadge className="mr-1 align-middle" />
+          <PerpMarketBadge contract={contract} className="mr-1 align-middle" />
         )}
         {removeEmojis(contract.question)}
       </span>

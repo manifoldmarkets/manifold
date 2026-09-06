@@ -25,6 +25,7 @@ import {
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
+import { getPerpTicker } from 'common/perps/ticker'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -119,30 +120,6 @@ export async function getStaticProps() {
 
 // ---------------------------------------------------------------------------
 // Display helpers
-
-// Tickers, keyed by the stable oracle feed id (same reasoning as
-// ORACLE_TICK_DECORATIONS: never infer a label from a renameable question).
-// Unknown feeds fall back to the feed id's leading segment, so a new perp is
-// merely unglamorous until someone adds a line here, never broken.
-const FEED_TICKERS: Record<string, string> = {
-  'btc-usd': 'BTC',
-  'trump-approval-rating': 'TRUMP',
-  'votehub-generic-ballot-2026': 'BALLOT',
-  'vance-favorability': 'VANCE',
-  'crypto-fear-greed': 'FEAR',
-  'openrouter-open-weight-share': 'OPENW',
-  'openrouter-anthropic-share': 'ANTH',
-  'openrouter-chinese-lab-share': 'CNLAB',
-  'spyx-usd': 'SPYx',
-  'qqqx-usd': 'QQQx',
-  'nvdax-usd': 'NVDAx',
-  'gldx-usd': 'GLDx',
-  'uk-grid-carbon': 'UKCO2',
-}
-
-const tickerOf = (c: PerpContract) =>
-  FEED_TICKERS[c.oracleFeedId ?? ''] ??
-  (c.oracleFeedId ?? c.slug).split('-')[0].toUpperCase().slice(0, 6)
 
 const PERCENT_FEEDS = new Set([
   'trump-approval-rating',
@@ -906,7 +883,7 @@ const YourPositions = (props: {
               className="hover:bg-canvas-50 grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2 text-left"
             >
               <span className="text-ink-900 truncate font-mono text-sm font-bold">
-                {tickerOf(contract)}
+                {getPerpTicker(contract)}
               </span>
               <Col className="min-w-0 gap-0.5">
                 <Row className="items-center gap-1.5 text-xs">
@@ -1054,7 +1031,7 @@ const RecentActivity = (props: {
                     </span>
                   )}{' '}
                   <span className="text-ink-900 font-mono font-semibold">
-                    {tickerOf(contract)}
+                    {getPerpTicker(contract)}
                   </span>
                   {closing && e.pnl != null && Math.abs(e.pnl) >= 0.5 && (
                     <>
@@ -1128,7 +1105,7 @@ const TopMover = (props: {
         onFocus={() => warmChart(best!.contract)}
         className="hover:bg-canvas-50 -mx-1 flex items-baseline gap-1.5 rounded px-1 text-left font-mono text-lg font-semibold tabular-nums"
       >
-        <span className="text-ink-900">{tickerOf(best.contract)}</span>
+        <span className="text-ink-900">{getPerpTicker(best.contract)}</span>
         <ChangeLabel change={best.change} className="text-lg font-semibold" />
       </button>
     </Col>
@@ -1289,7 +1266,7 @@ const TickerItem = (props: {
       className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
     >
       <span className="text-ink-900 font-mono font-semibold">
-        {tickerOf(contract)}
+        {getPerpTicker(contract)}
       </span>
       <span
         className={clsx(
@@ -1613,7 +1590,7 @@ const Terminal = (props: {
                   : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
               )}
             >
-              {tickerOf(c)}
+              {getPerpTicker(c)}
             </button>
           )
         })}
@@ -1623,7 +1600,7 @@ const Terminal = (props: {
         <Col className="min-w-0 gap-1">
           <Row className="items-baseline gap-3">
             <span className="text-primary-600 dark:text-primary-400 font-mono text-xl font-bold">
-              {tickerOf(contract)}
+              {getPerpTicker(contract)}
             </span>
             <span className="text-ink-900 truncate text-lg font-medium">
               {contract.question}
@@ -1955,7 +1932,7 @@ const WatchRow = (props: {
           selected ? 'text-primary-600 dark:text-primary-400' : 'text-ink-900'
         )}
       >
-        {tickerOf(contract)}
+        {getPerpTicker(contract)}
       </span>
       <span
         className={clsx(
@@ -2013,7 +1990,7 @@ const RelatedMarkets = (props: {
           Related
         </span>
         <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
-          {tickerOf(perp)}
+          {getPerpTicker(perp)}
         </span>
         <span className="text-ink-500 truncate text-xs">
           {topics.slice(0, 3).map(topicLabel).join(' · ')}
@@ -2520,7 +2497,7 @@ const MarketParameters = (props: { contract: PerpContract }) => {
           This market
         </span>
         <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
-          {tickerOf(contract)}
+          {getPerpTicker(contract)}
         </span>
       </Row>
       <Col className="divide-ink-200 dark:divide-ink-300 divide-y">

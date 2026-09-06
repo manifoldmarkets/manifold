@@ -1,6 +1,7 @@
 import { formatTimeWithTimezone } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
+import { getPerpTicker } from 'common/perps/ticker'
 import { Contract, PerpContract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
@@ -105,8 +106,8 @@ export const Stats = (props: {
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
-      : outcomeType === 'PERP'
-      ? 'Perpetual'
+      : contract.outcomeType === 'PERP'
+      ? `Perpetual · ${getPerpTicker(contract)}`
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : outcomeType === 'BOUNTIED_QUESTION'

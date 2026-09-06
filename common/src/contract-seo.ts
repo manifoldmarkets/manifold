@@ -8,6 +8,7 @@ import { sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
 import { formatPrice, inferPriceDecimals } from './perps/format'
+import { getPerpTicker } from './perps/ticker'
 
 export const getContractOGProps = (
   contract: Contract
@@ -66,7 +67,9 @@ export const getContractOGProps = (
     resolution,
     topAnswer: topAnswer?.text,
     bountyLeft: bountyLeft,
-    ...(outcomeType === 'PERP' ? { outcomeType } : {}),
+    ...(contract.outcomeType === 'PERP'
+      ? { outcomeType: contract.outcomeType, perpTicker: getPerpTicker(contract) }
+      : {}),
     ...(perpPrice === undefined ? {} : { perpPrice }),
   }
 }
@@ -84,6 +87,7 @@ export type OgCardProps = {
   bountyLeft?: string // number
   outcomeType?: 'PERP'
   perpPrice?: string
+  perpTicker?: string
   points?: string // base64ified points
 }
 

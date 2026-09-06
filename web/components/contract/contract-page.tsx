@@ -320,7 +320,7 @@ export function ContractPageContent(props: ContractParams) {
                     )}
                     <VisibilityIcon contract={props.contract} />{' '}
                     {isPerp && (
-                      <PerpMarketBadge className="mr-1 align-middle" />
+                      <PerpMarketBadge contract={liveContract} className="mr-1 align-middle" />
                     )}
                     {props.contract.question}
                   </span>

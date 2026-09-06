@@ -10,6 +10,7 @@ import {
   getEffectiveDiscoveryExperimentVariant,
 } from 'common/discovery-experiment'
 import { SEARCH_ANCHOR_CLOCK_SKEW_ERROR } from 'common/search-request-coordination'
+import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { convertContract } from 'common/supabase/contracts'
 import { orderBy, uniqBy } from 'lodash'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
@@ -248,7 +249,10 @@ const search = async (
     )
   } else {
     const cleanTerm = term.replace(/[''"]/g, '')
+    // A single token might be a perp ticker ("BTC"), which no tsvector
+    // covers; a multi-word query never is, so that lookup is skipped.
     const searchTypes: SearchTypes[] = [
+      ...(isPerpTickerSearchTerm(cleanTerm) ? (['ticker'] as const) : []),
       'prefix',
       'without-stopwords',
       'answer',
@@ -276,19 +280,23 @@ const search = async (
       return Array(searchTypes.length).fill([])
     })
 
-    const [
-      contractPrefixMatches,
-      contractsWithoutStopwords,
-      contractsWithMatchingAnswers,
-      contractsWithStopwords,
-      contractDescriptionMatches,
-    ] = results.map(
-      (result, i) =>
-        result.map((r: any) => ({
-          data: convertContract(r),
-          searchType: searchTypes[i],
-        })) as { data: Contract; searchType: SearchTypes }[]
-    )
+    type Match = { data: Contract; searchType: SearchTypes }
+    // Keyed by type rather than destructured by position: the ticker query
+    // is only sometimes in the list.
+    const matchesByType = Object.fromEntries(
+      searchTypes.map((searchType, i) => [
+        searchType,
+        results[i].map(
+          (r: any): Match => ({ data: convertContract(r), searchType })
+        ),
+      ])
+    ) as Partial<Record<SearchTypes, Match[]>>
+    const tickerMatches = matchesByType.ticker ?? []
+    const contractPrefixMatches = matchesByType.prefix ?? []
+    const contractsWithoutStopwords = matchesByType['without-stopwords'] ?? []
+    const contractsWithMatchingAnswers = matchesByType.answer ?? []
+    const contractsWithStopwords = matchesByType['with-stopwords'] ?? []
+    const contractDescriptionMatches = matchesByType.description ?? []
 
     const contractsOfSimilarRelevance = orderBy(
       [
@@ -305,6 +313,7 @@ const search = async (
     const lexicalResults = orderBy(
       uniqBy(
         [
+          ...tickerMatches, // the market's own handle
           ...contractsWithStopwords, // most obviously relevant
           ...contractsOfSimilarRelevance, // next most relevant
           ...contractDescriptionMatches, // least obviously relevant

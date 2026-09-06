@@ -1380,6 +1380,9 @@ export const API = (_apiTypeCheck = {
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
+      // Canonical ticker (PERP_FEED_TICKERS); null for a feed nobody has
+      // named, where the form may choose one.
+      ticker: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string

@@ -3,6 +3,7 @@ import { DiscoveryExperimentVariant } from 'common/discovery-experiment'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
 import { getPerpBackingPool } from 'common/perps/amm'
+import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 import { PrivateUser } from 'common/user'
@@ -330,6 +331,8 @@ export type SearchTypes =
   | 'description'
   | 'prefix'
   | 'answer'
+  // Perp tickers, matched on data->>'ticker' (no tsvector covers them).
+  | 'ticker'
 
 // Full-text search finds nothing unless the user guesses a word that is
 // literally in the question, so a near miss lands on "only nothingness"
@@ -522,6 +525,20 @@ export function getSearchContractSQL(
 
     whereSql,
     term.length && [
+      // A perp's ticker ("BTC", "SPYx") is stored in data->>'ticker', which
+      // no tsvector column sees, so it gets its own lookup: perps are a
+      // handful of rows behind the non-binary outcome_type index, and a
+      // prefix match on that set is what makes "BT" find BTC as you type.
+      // The API asks for this type only when the term could be a ticker;
+      // the guard here keeps the shared builder from ever interpolating a
+      // wildcard from a term it did not vet.
+      searchType === 'ticker' &&
+        (isPerpTickerSearchTerm(term)
+          ? where(
+              `outcome_type = 'PERP' and contracts.data->>'ticker' ilike $1`,
+              [`${term.trim()}%`]
+            )
+          : where('false')),
       searchType === 'prefix' &&
         where(
           `question_fts @@ to_tsquery('english_extended', $1)`,

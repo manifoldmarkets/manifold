@@ -6,6 +6,7 @@ import {
   formatFeePctApprox,
   perpFeeScheduleSummary,
 } from 'common/perps/format'
+import { getPerpTicker } from 'common/perps/ticker'
 import { formatNumber } from 'common/util/format'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
@@ -26,6 +27,10 @@ export function PerpMarketExplainer(props: {
 }) {
   const { contract, className } = props
   const [open, setOpen] = useState(false)
+  // The button reads "[TICKER] (i)": the ticker is the market's handle on
+  // /perps and in search, and the (i) is the invitation to learn what a
+  // perpetual market is. The word itself moved into the label and the modal.
+  const ticker = getPerpTicker(contract)
 
   return (
     <>
@@ -38,10 +43,10 @@ export function PerpMarketExplainer(props: {
         )}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label="What are perpetual markets?"
+        aria-label={`${ticker}: how this perpetual market works`}
         onClick={() => setOpen(true)}
       >
-        Perpetual
+        {ticker}
         <InformationCircleIcon aria-hidden className="h-4 w-4" />
       </button>
       <Modal

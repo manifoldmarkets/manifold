@@ -19,6 +19,7 @@ export function OgMarket(props: OgCardProps) {
     bountyLeft,
     outcomeType,
     perpPrice,
+    perpTicker,
   } = props
   const isPerp = outcomeType === 'PERP'
   const probabilityAsFloat = probability
@@ -105,7 +106,7 @@ export function OgMarket(props: OgCardProps) {
           (isPerp || probability || numericValue || resolution) && (
             <div className="absolute bottom-0 mb-4 mt-8 flex w-full flex-row justify-center self-center text-2xl text-white">
               {isPerp ? (
-                <PerpValue price={perpPrice} />
+                <PerpValue price={perpPrice} ticker={perpTicker} />
               ) : probabilityAsFloat && !resolution ? (
                 <>
                   <div
@@ -140,13 +141,15 @@ export function OgMarket(props: OgCardProps) {
   )
 }
 
-function PerpValue(props: { price?: string }) {
-  const { price } = props
+function PerpValue(props: { price?: string; ticker?: string }) {
+  const { price, ticker } = props
 
   return (
     <div className="flex flex-col items-center justify-center text-black">
       {price && <span className="text-3xl">{price}</span>}
-      <span className={price ? 'text-xl' : 'text-3xl'}>Perpetual market</span>
+      <span className={price ? 'text-xl' : 'text-3xl'}>
+        {ticker ? `${ticker} perpetual market` : 'Perpetual market'}
+      </span>
     </div>
   )
 }

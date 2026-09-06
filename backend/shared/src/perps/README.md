@@ -531,6 +531,18 @@ design notes, and oracle-latency risks live in
 `backend/scripts/perp-launch-preflight.ts` at each rollout phase; the operational
 sequence and rollback are in `perps-launch-runbook.md`.
 
+**Tickers.** Every perp carries a `ticker` (`BTC`, `TRUMP`, `SPYx`): the
+badge in front of its title shows it in place of the word "Perpetual", the
+`/perps` hub labels rows with it, and search matches it (`data->>'ticker'`,
+which is why it is stored on the contract rather than only mapped in client
+code). The canonical assignment is `PERP_FEED_TICKERS` in
+`common/src/perps/ticker.ts`, keyed by feed id; `create-perp` stamps it and
+refuses another name for a feed listed there, the launch manifest requires an
+entry for every launch feed, and the preflight fails a launch market whose
+stored ticker disagrees. `backend/scripts/backfill-perp-tickers.ts` (dry-run
+by default, `--apply` to write) stamps markets created before the field
+existed.
+
 ## Scheduler
 
 - `update-oracle-feeds.ts` fires **every 5 seconds** (croner handles
