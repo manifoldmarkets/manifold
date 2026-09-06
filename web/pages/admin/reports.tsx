@@ -16,10 +16,10 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { usePagination } from 'web/hooks/use-pagination'
-import { api } from 'web/lib/api/api'
-import { getComment } from 'web/lib/supabase/comments'
+import { APIError, api } from 'web/lib/api/api'
+import { convertContractComment } from 'common/supabase/comments'
 import { db } from 'web/lib/supabase/db'
-import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import { DisplayUser, getDisplayUsers } from 'web/lib/supabase/users'
 import { convertPost } from 'common/top-level-post'
 
 const PAGE_SIZE = 20
@@ -137,11 +137,16 @@ export default function Reports(props: { reports: LiteReport[] }) {
   )
 }
 
-export const getReports = async (p: {
+export type ReportCursor = {
+  createdTime?: number
+  createdTimeIso?: string
+  id?: string
+}
+
+export const getReportBatch = async (p: {
   limit: number
   offset?: number
-  after?: { createdTime?: number | undefined }
-  /** Oldest first, instead of the default newest first. */
+  after?: ReportCursor
   ascending?: boolean
 }) => {
   const ascending = p.ascending ?? false
@@ -150,24 +155,42 @@ export const getReports = async (p: {
     .select()
     .is('dismissed_by_user_id', null)
     .order('created_time', { ascending })
+    .order('id', { ascending })
 
-  if (p.offset) {
-    q.range(p.offset, p.limit + p.offset)
-  } else {
+  const cursorTime =
+    p.after?.createdTimeIso ??
+    (p.after?.createdTime != null ? millisToTs(p.after.createdTime) : undefined)
+  if (cursorTime) {
+    const op = ascending ? 'gt' : 'lt'
+    if (p.after?.id) {
+      q.or(
+        `created_time.${op}.${cursorTime},and(created_time.eq.${cursorTime},id.${op}.${JSON.stringify(
+          p.after.id
+        )})`
+      )
+    } else if (ascending) q.gt('created_time', cursorTime)
+    else q.lt('created_time', cursorTime)
     q.limit(p.limit)
-  }
-
-  if (p.after?.createdTime) {
-    const cursor = millisToTs(p.after.createdTime)
-    if (ascending) q.gt('created_time', cursor)
-    else q.lt('created_time', cursor)
+  } else {
+    const offset = p.offset ?? 0
+    q.range(offset, offset + p.limit - 1)
   }
 
   const { data } = await run(q)
-  return await convertReports(data)
+  const last = data.at(-1)
+  return {
+    reports: await convertReports(data),
+    // Advance using raw rows, including reports whose content has been deleted.
+    // Preserve timestamp precision and use the ID to break timestamp ties.
+    nextCursor:
+      data.length === p.limit && last?.created_time
+        ? { createdTimeIso: last.created_time, id: last.id }
+        : undefined,
+  }
 }
 
-// adapted from api/v0/reports
+export const getReports = async (p: Parameters<typeof getReportBatch>[0]) =>
+  (await getReportBatch(p)).reports
 
 export type LiteReport = {
   slug: string
@@ -179,98 +202,124 @@ export type LiteReport = {
   contentId: string
   contentType: string
   createdTime?: number
+  createdTimeIso?: string
 }
 
 const convertReports = async (
   rows: Row<'reports'>[]
 ): Promise<LiteReport[]> => {
-  return filterDefined(
-    await Promise.all(
-      rows.map(async (report) => {
-        const {
-          content_id: contentId,
-          content_type: contentType,
-          content_owner_id: contentOwnerId,
-          parent_type: parentType,
-          parent_id: parentId,
-          user_id: userId,
-          created_time: createdTime,
-          id,
-          description,
-        } = report
-
-        let partialReport: { slug: string; text: JSONContent | string } | null =
-          null
-        // Reported contract
-        if (contentType === 'contract') {
-          const contract = await api('market/:id', {
-            id: contentId,
-            lite: true,
-          })
-          partialReport = contract
-            ? {
-                slug: contractPath(contract),
-                text: contract.question,
-              }
+  if (rows.length === 0) return []
+  const userIds = [
+    ...new Set(
+      rows.flatMap((r) => [
+        r.content_owner_id,
+        r.user_id,
+        ...(r.content_type === 'user' ? [r.content_id] : []),
+      ])
+    ),
+  ]
+  const marketIds = [
+    ...new Set(
+      filterDefined(
+        rows.map((r) =>
+          r.content_type === 'contract'
+            ? r.content_id
+            : r.content_type === 'comment' && r.parent_type === 'contract'
+            ? r.parent_id
             : null
-          // Reported comment on a contract
-        } else if (
-          contentType === 'comment' &&
-          parentType === 'contract' &&
-          parentId
-        ) {
-          const contract = await api('market/:id', { id: parentId, lite: true })
-          if (contract) {
-            const comment = await getComment(contentId)
-            partialReport = comment && {
-              slug: contractPath(contract) + '#' + comment.id,
-              text: comment.content,
-            }
-          }
-        } else if (contentType === 'user') {
-          const reportedUser = await getUserById(contentId)
-          partialReport = {
-            slug: `/${reportedUser?.username}`,
-            text: reportedUser?.name ?? '',
-          }
-        } else if (contentType === 'post') {
-          const { data: postRow, error: postError } = await db
-            .from('old_posts')
-            .select('*')
-            .eq('id', contentId)
-            .single()
+        )
+      )
+    ),
+  ]
+  const commentIds = rows
+    .filter((r) => r.content_type === 'comment' && r.parent_type === 'contract')
+    .map((r) => r.content_id)
+  const postIds = rows
+    .filter((r) => r.content_type === 'post')
+    .map((r) => r.content_id)
 
-          if (postError || !postRow) {
-            console.error(
-              `Error fetching post ${contentId} for report:`,
-              postError
-            )
-            partialReport = null
-          } else {
-            const post = convertPost(postRow)
-            partialReport = {
-              slug: `/post/${post.slug}`,
-              text: post.content,
-            }
-          }
+  // Fetch each entity once per batch, with independent lookups in parallel.
+  const [users, marketEntries, comments, posts] = await Promise.all([
+    getDisplayUsers(userIds),
+    Promise.all(
+      marketIds.map(async (id) => {
+        try {
+          return [id, await api('market/:id', { id, lite: true })] as const
+        } catch (error) {
+          if (error instanceof APIError && error.code === 404)
+            return [id, null] as const
+          throw error
         }
-
-        const owner = await getUserById(contentOwnerId)
-        const reporter = await getUserById(userId)
-
-        return partialReport && owner
-          ? {
-              ...partialReport,
-              reasonsDescription: description,
-              owner,
-              reporter,
-              contentType,
-              contentId,
-              id,
-              createdTime: tsToMillis(createdTime as any),
-            }
-          : null
       })
-    )
+    ),
+    commentIds.length
+      ? run(db.from('contract_comments').select().in('comment_id', commentIds))
+      : Promise.resolve({ data: [] }),
+    postIds.length
+      ? run(db.from('old_posts').select().in('id', postIds))
+      : Promise.resolve({ data: [] }),
+  ])
+  const usersById = new Map(users.map((user) => [user.id, user]))
+  const marketsById = new Map(marketEntries)
+  const commentsById = new Map(
+    comments.data.map((r) => [r.comment_id, convertContractComment(r)])
+  )
+  const postsById = new Map(posts.data.map((r) => [r.id, convertPost(r)]))
+
+  return filterDefined(
+    rows.map((report) => {
+      const {
+        content_id: contentId,
+        content_type: contentType,
+        content_owner_id: contentOwnerId,
+        parent_type: parentType,
+        parent_id: parentId,
+        user_id: userId,
+        created_time: createdTime,
+        id,
+        description,
+      } = report
+      const owner = usersById.get(contentOwnerId)
+      const reporter = usersById.get(userId)
+      if (!owner || !reporter) return null
+
+      let content: { slug: string; text: JSONContent | string } | undefined
+      if (contentType === 'contract') {
+        const contract = marketsById.get(contentId)
+        if (contract)
+          content = { slug: contractPath(contract), text: contract.question }
+      } else if (
+        contentType === 'comment' &&
+        parentType === 'contract' &&
+        parentId
+      ) {
+        const contract = marketsById.get(parentId)
+        const comment = commentsById.get(contentId)
+        if (contract && comment)
+          content = {
+            slug: contractPath(contract) + '#' + comment.id,
+            text: comment.content,
+          }
+      } else if (contentType === 'user') {
+        const user = usersById.get(contentId)
+        if (user) content = { slug: `/${user.username}`, text: user.name }
+      } else if (contentType === 'post') {
+        const post = postsById.get(contentId)
+        if (post) content = { slug: `/post/${post.slug}`, text: post.content }
+      }
+      return content
+        ? {
+            ...content,
+            reasonsDescription: description,
+            owner,
+            reporter,
+            contentType,
+            contentId,
+            id,
+            createdTime: tsToMillis(createdTime),
+            createdTimeIso: createdTime ?? undefined,
+          }
+        : null
+    })
   )
 }

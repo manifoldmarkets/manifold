@@ -3,16 +3,19 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { ModReport, ReportStatus } from 'common/src/mod-report'
-import Link from 'next/link'
-import { useModReports } from 'web/hooks/use-mod-reports'
+import { ModReport, ReportStatus } from 'common/mod-report'
+import { useModReports, useReportPages } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
 import UserReportItem from 'web/components/user-report-item'
 import { Title } from 'web/components/widgets/title'
 import { api } from 'web/lib/api/api'
 import { useEffect, useMemo, useState } from 'react'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
-import { getReports, LiteReport } from 'web/pages/admin/reports'
+import {
+  getReportBatch,
+  LiteReport,
+  ReportCursor,
+} from 'web/pages/admin/reports'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -99,6 +102,7 @@ const updateModReport = async (
 export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
   const [activeTab, setActiveTab] = useState('mod-reports')
+  const [userTabOpened, setUserTabOpened] = useState(false)
 
   // Mod report sorting & filtering.
   const [modSort, setModSort] = useState<SortOrder>('desc')
@@ -114,11 +118,15 @@ export default function ReportsPage() {
   const {
     reports: modReports,
     initialLoading,
+    isLoading: modReportsLoading,
+    error: modReportsError,
+    hasMore: hasMoreModReports,
+    loadMore: loadMoreModReports,
     reportStatuses,
     modNotes,
     setReportStatuses,
     setModNotes,
-  } = useModReports(selectedStatuses, modSort)
+  } = useModReports(selectedStatuses, modSort, !!isAdminOrMod)
 
   const visibleModReports = useMemo(
     () =>
@@ -153,20 +161,19 @@ export default function ReportsPage() {
   const [userBannedFilter, setUserBannedFilter] =
     useState<FilterState>('exclude')
   const [userReasonFilter, setUserReasonFilter] = useState<FilterState>('off')
-  const [allUserReports, setAllUserReports] = useState<LiteReport[]>()
-  const [userReportsError, setUserReportsError] = useState(false)
   const [bannedIds, setBannedIds] = useState<string[]>([])
-
-  useEffect(() => {
-    setAllUserReports(undefined)
-    setUserReportsError(false)
-    getReports({ limit: 50, ascending: userSort === 'asc' })
-      .then(setAllUserReports)
-      .catch((e) => {
-        console.error('Error fetching user reports:', e)
-        setUserReportsError(true)
-      })
-  }, [userSort])
+  const {
+    reports: allUserReports,
+    error: userReportsError,
+    isLoading: userReportsLoading,
+    hasMore: hasMoreUserReports,
+    loadMore: loadMoreUserReports,
+  } = useReportPages<LiteReport, ReportCursor>(
+    userSort,
+    (after) =>
+      getReportBatch({ limit: 50, ascending: userSort === 'asc', after }),
+    !!isAdminOrMod && userTabOpened
+  )
 
   const isBanned = (report: LiteReport) =>
     !!report.owner.isBannedFromPosting || bannedIds.includes(report.owner.id)
@@ -185,7 +192,7 @@ export default function ReportsPage() {
           (!USER_REPORT_TYPES.includes(report.contentType) ||
             visibleTypes.includes(report.contentType)) &&
           passesFilter(userBannedFilter, isBanned(report)) &&
-          passesFilter(userReasonFilter, !!report.reasonsDescription)
+          passesFilter(userReasonFilter, !!report.reasonsDescription?.trim())
       ),
     [
       allUserReports,
@@ -252,7 +259,7 @@ export default function ReportsPage() {
         ))
       ) : (
         <div className="mt-8 text-center">
-          No reports found with the selected filters.
+          No matching reports among the reports loaded so far.
         </div>
       )}
     </Col>
@@ -286,7 +293,7 @@ export default function ReportsPage() {
 
       {initialLoading ? (
         <div className="mt-8 text-center">Loading reports...</div>
-      ) : (
+      ) : modReports ? (
         <>
           <div className="text-ink-500 mb-2 text-sm">
             Showing {visibleModReports.length} of {modReports?.length ?? 0}{' '}
@@ -294,16 +301,13 @@ export default function ReportsPage() {
           </div>
           {renderReportList(visibleModReports)}
         </>
-      )}
-
-      <div className="mt-4 text-center">
-        <Link
-          href="/admin/reports"
-          className="text-primary-700 hover:text-primary-500 hover:underline"
-        >
-          View additional reports...
-        </Link>
-      </div>
+      ) : null}
+      <ReportLoadMore
+        hasMore={hasMoreModReports}
+        isLoading={modReportsLoading && !initialLoading}
+        error={modReportsError}
+        onLoadMore={loadMoreModReports}
+      />
     </Col>
   )
 
@@ -332,6 +336,12 @@ export default function ReportsPage() {
           Has reason
         </FilterPill>
       </FilterRow>
+      {allUserReports && (
+        <div className="text-ink-500 mb-2 text-sm">
+          Showing {visibleUserReports?.length ?? 0} of {allUserReports.length}{' '}
+          loaded reports
+        </div>
+      )}
       <UserReportsListInner
         reports={visibleUserReports}
         allReportsError={userReportsError}
@@ -343,6 +353,12 @@ export default function ReportsPage() {
           userBannedFilter,
           userReasonFilter,
         ])}
+      />
+      <ReportLoadMore
+        hasMore={hasMoreUserReports}
+        isLoading={userReportsLoading && !!allUserReports}
+        error={userReportsError}
+        onLoadMore={loadMoreUserReports}
       />
     </Col>
   )
@@ -381,11 +397,44 @@ export default function ReportsPage() {
           trackingName="mod-reports-tabs"
           onClick={(title, index) => {
             if (index === 0) setActiveTab('mod-reports')
-            else setActiveTab('user-reports')
+            else {
+              setActiveTab('user-reports')
+              setUserTabOpened(true)
+            }
           }}
         />
       </Col>
     </Page>
+  )
+}
+
+function ReportLoadMore(props: {
+  hasMore: boolean
+  isLoading: boolean
+  error: boolean
+  onLoadMore: () => void
+}) {
+  const { hasMore, isLoading, error, onLoadMore } = props
+  return (
+    <Col className="mt-4 items-center gap-2">
+      {error && (
+        <div role="alert">Failed to load reports. Please try again.</div>
+      )}
+      {hasMore && (
+        <div className="text-ink-500 text-center text-sm">
+          Filters apply to loaded reports. More reports are available.
+        </div>
+      )}
+      {(hasMore || error || isLoading) && (
+        <Button color="gray-outline" disabled={isLoading} onClick={onLoadMore}>
+          {isLoading
+            ? 'Loading reports...'
+            : error
+            ? 'Retry'
+            : 'Load 50 more reports'}
+        </Button>
+      )}
+    </Col>
   )
 }
 
@@ -434,19 +483,21 @@ function UserReportsListInner(props: {
 
   useEffect(() => setPage(0), [filterKey])
 
-  const pageStart = page * USER_REPORTS_PAGE_SIZE
+  const currentPage = Math.min(
+    page,
+    Math.max(0, Math.ceil((reports?.length ?? 0) / USER_REPORTS_PAGE_SIZE) - 1)
+  )
+  const pageStart = currentPage * USER_REPORTS_PAGE_SIZE
   const pageItems = reports?.slice(
     pageStart,
     pageStart + USER_REPORTS_PAGE_SIZE
   )
-  const isStart = page === 0
+  const isStart = currentPage === 0
   const isEnd = reports
     ? pageStart + USER_REPORTS_PAGE_SIZE >= reports.length
     : true
 
-  if (allReportsError) {
-    return <div className="my-8 text-center">Failed to load user reports.</div>
-  }
+  if (allReportsError && !reports) return null
 
   return (
     <>
@@ -456,8 +507,8 @@ function UserReportsListInner(props: {
         isEnd={isEnd}
         isLoading={!reports}
         isComplete={!!reports}
-        getPrev={() => setPage((p) => Math.max(0, p - 1))}
-        getNext={() => setPage((p) => p + 1)}
+        getPrev={() => setPage(Math.max(0, currentPage - 1))}
+        getNext={() => setPage(currentPage + 1)}
       />
 
       {!reports ? (
@@ -472,7 +523,9 @@ function UserReportsListInner(props: {
           />
         ))
       ) : (
-        <div className="my-8 text-center">No user reports found.</div>
+        <div className="my-8 text-center">
+          No matching reports among the reports loaded so far.
+        </div>
       )}
 
       <PaginationNextPrev
@@ -481,8 +534,8 @@ function UserReportsListInner(props: {
         isEnd={isEnd}
         isLoading={!reports}
         isComplete={!!reports}
-        getPrev={() => setPage((p) => Math.max(0, p - 1))}
-        getNext={() => setPage((p) => p + 1)}
+        getPrev={() => setPage(Math.max(0, currentPage - 1))}
+        getNext={() => setPage(currentPage + 1)}
       />
     </>
   )

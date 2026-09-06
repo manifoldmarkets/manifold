@@ -2676,6 +2676,8 @@ export const API = (_apiTypeCheck = {
         offset: z.coerce.number().gte(0).default(0),
         count: coerceBoolean.optional(),
         order: z.enum(['asc', 'desc']).default('desc'),
+        cursorTime: z.string().datetime({ offset: true }).optional(),
+        cursorId: z.coerce.number().int().optional(),
       })
       .strict(),
     returns: {} as {
