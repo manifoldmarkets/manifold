@@ -9,6 +9,10 @@ import { APIError } from 'common/api/utils'
 import { getForcedABTestVariant } from 'common/ab-test'
 import { Contract } from 'common/contract'
 import {
+  BrowseMode,
+  normalizeBrowseChange,
+} from 'common/browse-personalization'
+import {
   DISCOVERY_EXPERIMENT_NAME,
   DISCOVERY_EXPERIMENT_VARIANTS,
   DISCOVERY_EXPOSURE_EVENT,
@@ -250,6 +254,7 @@ type SearchProps = {
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
   defaultForYou?: '1' | '0'
+  onBrowseModeChange?: (mode: BrowseMode) => void
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -312,6 +317,7 @@ export function Search(props: SearchProps) {
     defaultContractType,
     defaultSearchType,
     defaultForYou,
+    onBrowseModeChange,
     additionalFilter,
     onContractClick,
     hideActions,
@@ -454,7 +460,16 @@ export function Search(props: SearchProps) {
       : `${totalResults} results for ${query}`
 
   const onChange = (changes: Partial<SearchParams>) => {
-    const updatedParams = { ...changes }
+    const updatedParams = showTopicsFilterPills
+      ? normalizeBrowseChange(searchParams, changes)
+      : { ...changes }
+
+    if (changes.fy === '0' || changes.fy === '1') {
+      onBrowseModeChange?.(changes.fy === '1' ? 'for-you' : 'all')
+    }
+    if (updatedParams.sw === '0' && sweepiesState === '1') {
+      setPrefersPlay(true)
+    }
 
     setSearchParams(updatedParams)
     if (isWholePage) window.scrollTo(0, 0)
@@ -544,8 +559,16 @@ export function Search(props: SearchProps) {
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
+  const selectedForYou =
+    !!user &&
+    searchParams[FOR_YOU_KEY] === '1' &&
+    !groupIds &&
+    !searchParams[TOPIC_FILTER_KEY]
   const selectedAll =
-    !selectedTopic && !selectedFollowed && !searchParams[TOPIC_FILTER_KEY]
+    !selectedForYou &&
+    !selectedTopic &&
+    !selectedFollowed &&
+    !searchParams[TOPIC_FILTER_KEY]
   const {
     data: followedGroupsData,
     loading: isLoadingFollowedGroups,
@@ -612,14 +635,18 @@ export function Search(props: SearchProps) {
           {showTopicsFilterPills && (
             <Row className="border-ink-100 dark:border-ink-200 items-baseline gap-4 border-b pb-2">
               <button
+                type="button"
+                aria-pressed={selectedAll}
                 className={clsx(
                   'shrink-0 font-medium',
                   selectedAll ? 'text-primary-600' : 'text-ink-500'
                 )}
                 onClick={() => {
+                  if (selectedAll) onBrowseModeChange?.('all')
                   if (!selectedAll) {
                     track('select search topic', { topic: 'all' })
                     const changes: Partial<SearchParams> = {
+                      [FOR_YOU_KEY]: '0',
                       [GROUP_IDS_KEY]: '',
                       [TOPIC_FILTER_KEY]: '',
                     }
@@ -629,6 +656,22 @@ export function Search(props: SearchProps) {
               >
                 All
               </button>
+              {!!user?.id && (
+                <button
+                  type="button"
+                  aria-pressed={selectedForYou}
+                  className={clsx(
+                    'shrink-0 whitespace-nowrap font-medium',
+                    selectedForYou ? 'text-primary-600' : 'text-ink-500'
+                  )}
+                  onClick={() => {
+                    track('select search topic', { topic: 'for-you' })
+                    onChange({ [FOR_YOU_KEY]: '1', [QUERY_KEY]: '' })
+                  }}
+                >
+                  For You
+                </button>
+              )}
               <Carousel
                 fadeEdges
                 showArrowsOnHover
