@@ -365,7 +365,9 @@ export const calculatePerpHistoricalValues = (args: {
   const first = args.currentPositions[0] ?? args.events[0]
   if (
     args.currentPositions.some(
-      (p) => p.userId !== first?.userId || p.contractId !== first?.contractId ||
+      (p) =>
+        p.userId !== first?.userId ||
+        p.contractId !== first?.contractId ||
         !Number.isFinite(p.openedTime)
     ) ||
     args.events.some(
@@ -377,7 +379,10 @@ export const calculatePerpHistoricalValues = (args: {
   if (!events) return args.cutoffs.map(() => undefined)
   const firstKnownTime = events.reduce(
     (firstTime, e) => Math.min(firstTime, e.appliedTime),
-    args.currentPositions.reduce((firstTime, p) => Math.min(firstTime, p.openedTime), Infinity)
+    args.currentPositions.reduce(
+      (firstTime, p) => Math.min(firstTime, p.openedTime),
+      Infinity
+    )
   )
   return args.cutoffs.map(({ cutoff, price }) => {
     const previous = reverseToCutoff(args.currentPositions, events, cutoff)

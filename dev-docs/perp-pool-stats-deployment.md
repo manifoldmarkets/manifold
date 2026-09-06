@@ -51,6 +51,12 @@ The first migration imported 2,697 older hourly funding observations, starting
 August 6, 2026 for Bitcoin. Coverage varies by market and funding cadence.
 These are observed total balances, not a reconstruction of every intraday move.
 
+The production house-value backfill saved 2,665 of those 2,697 observations.
+The remaining 32 are Bitcoin's earliest observations (August 6 through
+August 7 at 10:00 UTC); their position history could not be replayed reliably.
+All other imported observations have reconstructed house values. Backfill
+uses main's partial-close support as well as funding, liquidation and ADL replay.
+
 Run the following script using the intended environment's usual script setup:
 
 ```sh
