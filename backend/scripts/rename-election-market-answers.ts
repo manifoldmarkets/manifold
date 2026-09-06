@@ -220,6 +220,28 @@ const SENATE_PARTY_MARKETS: Group[] = [
   },
 ]
 
+/**
+ * Montana is a candidate market, not a party market, so it is listed
+ * separately: the point of tagging its answers is purely so getPartyProbs can
+ * colour the state, NOT to relabel a party line. Seth Bodnar is an
+ * INDEPENDENT — Jon Tester-backed, and the actual competitive alternative to
+ * Alme — so he is tagged (I) and lands in getPartyProbs's "other" bucket
+ * rather than being miscounted as a Democrat.
+ */
+const MONTANA_THREE_WAY: Group = {
+  contractId: 'tydQt5d26u',
+  label: 'MT Senate (three-way)',
+  renames: [
+    { id: 'lPtldCU006', from: 'Kurt Alme', to: 'Kurt Alme (R)' },
+    {
+      id: 'RSCc0lpsNt',
+      from: 'Alani Bankhead',
+      to: 'Alani Bankhead (D)',
+    },
+    { id: 'L5dSc92I5L', from: 'Seth Bodnar', to: 'Seth Bodnar (I)' },
+  ],
+}
+
 const GROUPS: Group[] = [
   {
     contractId: 'sqUzOZN8Cs',
@@ -227,6 +249,7 @@ const GROUPS: Group[] = [
     renames: HOUSE_DISTRICTS,
   },
   ...SENATE_PARTY_MARKETS,
+  MONTANA_THREE_WAY,
 ]
 
 runScript(async ({ pg }) => {
