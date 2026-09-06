@@ -33,6 +33,20 @@ import {
   OddsApiEvent,
 } from 'shared/the-odds-api-client'
 
+// Maps our SportId to the sportsLeague string stored on the contract.
+// This is what the /sports/<slug> dashboard pages query by.
+const SPORT_LEAGUE_LABEL: Partial<Record<SportsCalendarEntry['sport'], string>> =
+  {
+    nfl: 'NFL',
+    cfb: 'College Football',
+    mlb: 'MLB',
+    nba: 'NBA',
+    wnba: 'WNBA',
+    soccer: 'Soccer',
+    f1: 'Formula 1',
+    tdf: 'Tour de France',
+  }
+
 const ROLLING_WINDOW_DAYS = 14
 
 // Hours added to game start time before the market closes.
@@ -161,6 +175,7 @@ export async function createSportsMarkets() {
       })
 
       try {
+        const sportsLeague = SPORT_LEAGUE_LABEL[entry.sport]
         const contract = await createMarketHelper(
           {
             question,
@@ -169,6 +184,7 @@ export async function createSportsMarkets() {
             closeTime,
             description,
             visibility: 'public',
+            sportsLeague,
             // TODO: add groupIds once ManifoldSports groups are set up per sport
           },
           auth,
