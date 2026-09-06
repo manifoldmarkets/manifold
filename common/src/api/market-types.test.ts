@@ -224,6 +224,9 @@ describe('toLiteMarket', () => {
         resolvedOraclePrice: 42,
       })
     )
+    expect(
+      toLiteMarket({ ...contract, searchMatchType: 'semantic' } as PerpContract)
+    ).not.toHaveProperty('searchMatchType')
     expect(toFullMarket(contract).takerFeeBps).toBe(12)
     expect(toFullMarket(contract).takerFeeImpact).toBe(90)
   })

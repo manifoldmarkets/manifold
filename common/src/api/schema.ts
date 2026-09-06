@@ -1,4 +1,5 @@
 import { PerpSuggestion } from '../perps/suggestion'
+import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
@@ -54,7 +55,7 @@ import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
 import { PrivateUser, User, UserBan } from '../user'
-import { searchProps } from './market-search-types'
+import { type FullMarketSearchResult, searchProps } from './market-search-types'
 import {
   FullMarket,
   closePerpPositionSchema,
@@ -1655,7 +1656,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // Both search handlers accept optional auth and use it for visibility,
+    // blocks, and personalized ranking. The edge cache does not vary on the
+    // Authorization header, so public caching can serve one user's result to
+    // another user (or to an anonymous caller).
+    cache: 'private, no-store',
     returns: [] as LiteMarket[],
     props: searchProps,
   },
@@ -1664,8 +1669,8 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     preferAuth: true,
-    cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as Contract[],
+    cache: 'private, no-store',
+    returns: [] as FullMarketSearchResult[],
     props: searchProps,
   },
   'recent-markets': {
@@ -3248,6 +3253,14 @@ export const API = (_apiTypeCheck = {
         userId: z.string().optional(),
       })
       .strict(),
+  },
+  'get-browse-personalization': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z.object({}).strict(),
+    returns: {} as BrowsePersonalization,
   },
   'get-unified-feed': {
     method: 'GET',
