@@ -5,6 +5,9 @@ import { base64toPoints, Point } from 'common/edge/og'
 import Logo from 'web/public/logo.svg'
 import { ProbGraph } from './graph'
 
+// Shown at the bottom of every market card in social link previews
+export const OG_TAGLINE = 'Free to play · User-created play-money markets'
+
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
   const {
@@ -135,6 +138,10 @@ export function OgMarket(props: OgCardProps) {
               ) : null}
             </div>
           )}
+      </div>
+      {/* Tagline: heads off "isn't this gambling?" reactions to link previews */}
+      <div className="mt-auto flex h-7 shrink-0 items-center justify-center text-sm text-white">
+        {OG_TAGLINE}
       </div>
     </div>
   )
