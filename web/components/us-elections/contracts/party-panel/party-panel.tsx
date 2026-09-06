@@ -85,9 +85,18 @@ export function PartyPanel(props: {
   const republicanAnswer = answers.find((a) => isRepublicanAnswer(a.text))
   const democraticAnswer = answers.find((a) => isDemocraticAnswer(a.text))
 
-  // Only when the answers name candidates — on a market still labelled
-  // "Democratic party" the note would state the obvious.
-  const namesCandidates = answers.some((a) => isCandidateLabelledAnswer(a.text))
+  // Two conditions, both required.
+  //
+  // The answers must name candidates — on a market still labelled "Democratic
+  // party" the note would state the obvious. AND the market must actually be a
+  // party market: this panel also renders genuine candidate markets (Montana's
+  // three-way, where Seth Bodnar runs as an independent), and telling a reader
+  // those resolve by party would be flatly wrong. Keying off the question is
+  // crude but fails safe — an unrecognised wording hides a true note rather
+  // than showing a false one.
+  const namesCandidates =
+    answers.some((a) => isCandidateLabelledAnswer(a.text)) &&
+    /which\s+party/i.test(contract.question)
 
   let democratToRepublicanRatio = 0.5
   if (republicanAnswer && democraticAnswer) {
