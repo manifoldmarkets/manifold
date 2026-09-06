@@ -9,10 +9,11 @@ import {
   MIDTERMS_2026,
   PRESIDENT_2028_SLUG,
   PRESIDENT_2028_PARTY_SLUG,
-  PRIMARIES_2026,
+  POLLING_PERPS,
   REDISTRICTING_2026,
   StateElectionMarket,
 } from 'web/public/data/elections-data'
+import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import {
   governors2026,
   governorCandidates2026,
@@ -84,7 +85,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     houseDistrictsContract,
     presidency2028Contract,
     presidency2028PartyContract,
-    primaryContractsRaw,
+    pollingPerpsRaw,
     redistrictingContractsRaw,
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
@@ -98,15 +99,20 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     getContractFromSlugFunction(MIDTERMS_2026.houseDistricts),
     getContractFromSlugFunction(PRESIDENT_2028_SLUG),
     getContractFromSlugFunction(PRESIDENT_2028_PARTY_SLUG),
-    Promise.all(PRIMARIES_2026.map(getContractFromSlugFunction)),
+    Promise.all(POLLING_PERPS.map(getContractFromSlugFunction)),
     Promise.all(REDISTRICTING_2026.map(getContractFromSlugFunction)),
   ])
 
-  // Keep only primaries that still exist and are open (so the watch-list shrinks
-  // gracefully as races resolve, rather than showing stale/settled markets).
-  const primaryContracts = primaryContractsRaw.filter(
+  // Polling perps, open only — so a retired feed drops off the row by itself.
+  const pollingPerpContracts = pollingPerpsRaw.filter(
     (c): c is Contract => !!c && !c.isResolved && !c.resolution
   )
+
+  // The closest open races across both maps, derived rather than curated.
+  const tossUpContracts = getTossUpRaces([
+    senateStateContracts,
+    governorStateContracts,
+  ])
 
   // Same for redistricting markets — open only, so settled questions drop off.
   const redistrictingContracts = redistrictingContractsRaw.filter(
@@ -124,10 +130,53 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
-    primaryContracts,
+    tossUpContracts,
+    pollingPerpContracts,
     redistrictingContracts,
     trendingContracts,
   }
+}
+
+// The general-election counterpart to the retired primaries watch-list: the
+// closest open races across the Senate and Governor maps.
+//
+// "Close" is measured on the two-party split from getPartyProbs (the same
+// helper the map colours states with), so it tolerates the inconsistent party
+// labelling in community markets. Anything outside 30-70% is a safe seat and
+// not worth a slot; the rest are sorted by distance from an even split.
+//
+// Derived from contracts already fetched for the maps, so this costs no extra
+// queries, and it re-derives on every ISR revalidation — it cannot go stale the
+// way a curated slug list does.
+const TOSS_UP_BAND = 0.3
+const MAX_TOSS_UPS = 6
+
+export function getTossUpRaces(
+  dictionaries: MapContractsDictionary[]
+): Contract[] {
+  const scored = dictionaries
+    .flatMap((d) => Object.values(d))
+    .filter((c): c is Contract => !!c && !c.isResolved && !c.resolution)
+    .map((contract) => {
+      const probs = getPartyProbs(contract)
+      if (!probs) return undefined
+      // Renormalise across the two major parties: a market with a large
+      // "other" answer (dem .35 / rep .35 / other .30) is an even race, and
+      // should read as one rather than as two long-shots. Known limitation:
+      // where the independent is the actual front-runner (NE, Dan Osborn)
+      // this reads as a safe seat and drops out.
+      const twoParty = probs.dem + probs.rep
+      if (twoParty <= 0) return undefined
+      const dem = probs.dem / twoParty
+      return { contract, margin: Math.abs(dem - 0.5) }
+    })
+    .filter((x): x is { contract: Contract; margin: number } => !!x)
+    .filter((x) => x.margin <= 0.5 - TOSS_UP_BAND)
+
+  return uniqBy(
+    scored.sort((a, b) => a.margin - b.margin).map((x) => x.contract),
+    (c) => c.id
+  ).slice(0, MAX_TOSS_UPS)
 }
 
 export async function getStateContracts(
