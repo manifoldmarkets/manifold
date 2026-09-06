@@ -459,10 +459,10 @@ export function createJobs(jobSet: SchedulerJobSet) {
       '0 0 6 * * *', // daily at 6:00 AM LA
       createSportsMarkets
     ),
-    // Odds API sports: resolve completed markets every 15 minutes
+    // Odds API sports: resolve completed markets every 5 minutes
     createJob(
       'sports-odds-resolve',
-      '0 */15 * * * *', // every 15 minutes (offset from sports-resolve by 0s — OK, different collections)
+      '0 */5 * * * *', // every 5 minutes
       resolveSportsOddsMarkets
     ),
     // Poll in-play scores every 10s and broadcast them over websockets. No-op

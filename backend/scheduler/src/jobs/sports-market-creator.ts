@@ -30,67 +30,16 @@ import {
   fairWinProb,
   oddsKeyForEntry,
   OddsApiEvent,
+  MANIFOLD_SPORTS_CREATOR_ID,
+  SPORT_LEAGUE_LABEL,
+  marketCloseTime,
+  buildOddsMarketQuestion,
+  buildOddsMarketDescription,
 } from 'shared/the-odds-api-client'
-
-// Maps our SportId to the sportsLeague string stored on the contract.
-// This is what the /sports/<slug> dashboard pages query by.
-const SPORT_LEAGUE_LABEL: Partial<Record<SportsCalendarEntry['sport'], string>> =
-  {
-    nfl: 'NFL',
-    cfb: 'College Football',
-    mlb: 'MLB',
-    nba: 'NBA',
-    wnba: 'WNBA',
-    soccer: 'Soccer',
-    f1: 'Formula 1',
-    tdf: 'Tour de France',
-  }
+import { ensureOfficialGroup } from 'shared/sports-markets'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const ROLLING_WINDOW_DAYS = 14
-
-// Hours added to game start time before the market closes.
-// Sized to cover the longest realistic game + overtime for each sport.
-const CLOSE_BUFFER_HOURS: Partial<Record<SportsCalendarEntry['sport'], number>> =
-  {
-    nfl: 4,
-    cfb: 4,
-    mlb: 4,
-    nba: 3,
-    wnba: 3,
-    soccer: 2.5,
-    f1: 2,
-    tdf: 1,
-  }
-
-function marketCloseTime(sport: SportsCalendarEntry['sport'], commenceTime: string): number {
-  const hours = CLOSE_BUFFER_HOURS[sport] ?? 3
-  return new Date(commenceTime).getTime() + hours * 60 * 60 * 1000
-}
-
-function formatEventDate(commenceTime: string): string {
-  return new Date(commenceTime).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'America/New_York',
-  })
-}
-
-function buildQuestion(event: OddsApiEvent, entry: SportsCalendarEntry): string {
-  const date = formatEventDate(event.commence_time)
-  return `Will the ${event.home_team} beat the ${event.away_team}? (${entry.competition}, ${date})`
-}
-
-function buildDescription(event: OddsApiEvent, initialProb: number): string {
-  const lines = [
-    `**${event.away_team}** at **${event.home_team}**`,
-    ``,
-    `Resolves YES if ${event.home_team} wins outright. Resolves NO if ${event.away_team} wins outright.`,
-    `Resolves N/A if the game ends in a tie, or is cancelled or postponed.`,
-    ``,
-    `Opening probability: ${initialProb}% (seeded from Vegas moneyline odds).`,
-  ]
-  return lines.join('\n')
-}
 
 export async function createSportsMarkets() {
   const oddsApiKey = process.env.THE_ODDS_API_KEY ?? ''
@@ -100,8 +49,8 @@ export async function createSportsMarkets() {
   }
 
   const creatorId = isProd()
-    ? 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports prod
-    : 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports dev
+    ? MANIFOLD_SPORTS_CREATOR_ID.prod
+    : MANIFOLD_SPORTS_CREATOR_ID.dev
 
   const firestore = getFirestore()
 
@@ -116,6 +65,9 @@ export async function createSportsMarkets() {
     creds: { kind: 'key', data: '', privateUser: privateUser as PrivateUser },
   }
 
+  const pg = createSupabaseDirectClient()
+  const groupIdCache = new Map<string, string>() // competitionId → group id
+
   // Load active autoCreate calendar entries from Firestore
   const calendarSnap = await firestore
     .collection('sportsCalendar')
@@ -123,9 +75,7 @@ export async function createSportsMarkets() {
     .where('status', '==', 'active')
     .get()
 
-  const entries = calendarSnap.docs.map(
-    (d) => d.data() as SportsCalendarEntry
-  )
+  const entries = calendarSnap.docs.map((d) => d.data() as SportsCalendarEntry)
   log(`[sports-market-creator] ${entries.length} active autoCreate entries`)
 
   const eventsCol = firestore.collection('sportsMarketEvents')
@@ -145,15 +95,29 @@ export async function createSportsMarkets() {
     try {
       events = await getUpcomingOdds(oddsKey, ROLLING_WINDOW_DAYS)
     } catch (e) {
-      log(
-        `[sports-market-creator] Failed to fetch odds for ${oddsKey}: ${e}`
-      )
+      log(`[sports-market-creator] Failed to fetch odds for ${oddsKey}: ${e}`)
       continue
     }
 
     log(
       `[sports-market-creator] ${entry.competitionId}: ${events.length} events in ${ROLLING_WINDOW_DAYS}-day window`
     )
+
+    // Ensure the official group exists (idempotent). Cache per competitionId
+    // so we don't hit Postgres for every single game in the same competition.
+    let groupId = groupIdCache.get(entry.competitionId)
+    if (!groupId) {
+      const groupResult = await ensureOfficialGroup(
+        {
+          officialGroupSlug: `ms-official-${entry.competitionId}`,
+          officialGroupName: `MS Official: ${entry.competition}`,
+        } as any,
+        creatorId,
+        pg
+      )
+      groupId = groupResult.id
+      groupIdCache.set(entry.competitionId, groupId)
+    }
 
     for (const event of events) {
       // Dedup: check sportsMarketEvents before creating
@@ -165,28 +129,26 @@ export async function createSportsMarkets() {
 
       const prob = fairWinProb(event, event.home_team)
       const initialProb = prob !== null ? Math.round(prob * 100) : 50
-
-      const question = buildQuestion(event, entry)
+      const question = buildOddsMarketQuestion(event, entry)
       const closeTime = marketCloseTime(entry.sport, event.commence_time)
-      const description = anythingToRichText({
-        raw: buildDescription(event, initialProb),
-      })
+      const sportsLeague = SPORT_LEAGUE_LABEL[entry.sport]
 
       try {
-        const sportsLeague = SPORT_LEAGUE_LABEL[entry.sport]
         const { contract } = await createMarketHelper(
           {
             question,
             outcomeType: 'BINARY',
             initialProb,
             closeTime,
-            description,
+            description: anythingToRichText({
+              raw: buildOddsMarketDescription(event, initialProb),
+            }),
             visibility: 'public',
             liquidityTier: 1000,
             sportsLeague,
             sportsHomeTeam: event.home_team,
             sportsAwayTeam: event.away_team,
-            // TODO: add groupIds once ManifoldSports groups are set up per sport
+            groupIds: [groupId],
           },
           auth
         )

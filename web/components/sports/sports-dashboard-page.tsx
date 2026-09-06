@@ -169,12 +169,8 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
   // from sportsHomeTeam/sportsAwayTeam with id='YES'/'NO'. Use teamBadge for
   // the badge slot instead of a flag emoji.
   const isBinaryMarket = m.answers[0].id === 'YES' && m.answers[1].id === 'NO'
-  const badgeA = isBinaryMarket
-    ? teamBadge(a0.name, m.sportsLeague)
-    : a0.flag
-  const badgeB = isBinaryMarket
-    ? teamBadge(a1.name, m.sportsLeague)
-    : a1.flag
+  const badgeA = isBinaryMarket ? teamBadge(a0.name, m.sportsLeague) : a0.flag
+  const badgeB = isBinaryMarket ? teamBadge(a1.name, m.sportsLeague) : a1.flag
 
   const resolved = !!m.resolution
   let winner: MatchOutcome | undefined
@@ -235,6 +231,7 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
     // absolute URL) so SPA navigation + preview deployments work.
     marketUrl: `/${m.creatorUsername}/${m.slug}`,
     contractId: m.id,
+    isBinary: isBinaryMarket,
     teamAAnswerId: m.answers[0].id,
     teamBAnswerId: m.answers[1].id,
     drawAnswerId: drawAnswer?.id,

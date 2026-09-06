@@ -1,11 +1,13 @@
 /**
  * Auto-resolution job for Odds API sports markets (NFL, CFB, MLB, NBA, WNBA).
  *
- * Runs every 15 minutes. For each sportsMarketEvent that started within the
+ * Runs every 5 minutes. For each sportsMarketEvent that started within the
  * last 3 days and isn't resolved yet:
  *   1. Fetches completed scores from The Odds API.
- *   2. Resolves the Manifold market YES (home wins), NO (away wins), or
- *      NA (tie — e.g. overtime tie in NFL, which is extremely rare but valid).
+ *   2. Resolves the Manifold market:
+ *      - YES if home team wins
+ *      - NO if away team wins
+ *      - MKT at 50% if the game ends in a tie
  *   3. Stamps the sportsMarketEvents doc with resolved=true and final scores.
  *
  * Required env var: THE_ODDS_API_KEY
@@ -20,12 +22,13 @@ import {
   getScores,
   resolveWinner,
   COMPETITION_TO_ODDS_KEY,
+  MANIFOLD_SPORTS_CREATOR_ID,
   OddsApiScore,
 } from 'shared/the-odds-api-client'
 
 const CREATOR_ID = isProd()
-  ? 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports prod
-  : 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports dev
+  ? MANIFOLD_SPORTS_CREATOR_ID.prod
+  : MANIFOLD_SPORTS_CREATOR_ID.dev
 
 const LOOKBACK_DAYS = 3
 
@@ -49,7 +52,9 @@ export async function resolveSportsOddsMarkets() {
   // We query by commenceTime range to bound the result set; resolved=false
   // is set on all events created by our market-creator jobs.
   const now = Date.now()
-  const cutoff = new Date(now - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const cutoff = new Date(
+    now - LOOKBACK_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString()
   const nowIso = new Date(now).toISOString()
 
   const snap = await firestore
@@ -103,21 +108,7 @@ export async function resolveSportsOddsMarkets() {
         continue
       }
 
-      const winnerName = resolveWinner(score)
-      let outcome: 'YES' | 'NO' | 'NA'
-      if (winnerName === null) {
-        outcome = 'NA' // tie
-      } else if (winnerName === ev.homeTeam) {
-        outcome = 'YES'
-      } else if (winnerName === ev.awayTeam) {
-        outcome = 'NO'
-      } else {
-        log(
-          `[sports-odds-resolve] Unrecognised winner '${winnerName}' for event ${doc.id} (home=${ev.homeTeam} away=${ev.awayTeam})`
-        )
-        errors++
-        continue
-      }
+      const winnerName = resolveWinner(score) // null = tied
 
       try {
         const contractRow = await pg.oneOrNone<{
@@ -134,7 +125,6 @@ export async function resolveSportsOddsMarkets() {
 
         const contract = convertContract(contractRow)
         if (contract.isResolved) {
-          // Already resolved externally — just stamp the event doc.
           await firestore
             .collection('sportsMarketEvents')
             .doc(doc.id)
@@ -143,31 +133,53 @@ export async function resolveSportsOddsMarkets() {
           continue
         }
 
+        // BINARY markets: YES = home wins, NO = away wins, MKT@50% = tie
+        let resolveArgs: { outcome: string; probabilityInt?: number }
+        if (winnerName === null) {
+          resolveArgs = { outcome: 'MKT', probabilityInt: 50 }
+        } else if (winnerName === ev.homeTeam) {
+          resolveArgs = { outcome: 'YES' }
+        } else if (winnerName === ev.awayTeam) {
+          resolveArgs = { outcome: 'NO' }
+        } else {
+          log(
+            `[sports-odds-resolve] Unrecognised winner '${winnerName}' for event ${doc.id} (home=${ev.homeTeam} away=${ev.awayTeam})`
+          )
+          errors++
+          continue
+        }
+
         await resolveMarketHelper(
           contract as any,
           creatorUser,
           creatorUser,
-          { outcome }
+          resolveArgs
         )
 
         const homeScoreStr =
-          score.scores?.find((s: { name: string; score: string }) => s.name === score.home_team)?.score ?? null
+          score.scores?.find(
+            (s: { name: string; score: string }) => s.name === score.home_team
+          )?.score ?? null
         const awayScoreStr =
-          score.scores?.find((s: { name: string; score: string }) => s.name === score.away_team)?.score ?? null
+          score.scores?.find(
+            (s: { name: string; score: string }) => s.name === score.away_team
+          )?.score ?? null
 
         await firestore
           .collection('sportsMarketEvents')
           .doc(doc.id)
           .update({
             resolved: true,
-            resolvedOutcome: outcome,
+            resolvedOutcome: resolveArgs.outcome,
             resolvedAt: now,
             ...(homeScoreStr !== null && { homeScore: homeScoreStr }),
             ...(awayScoreStr !== null && { awayScore: awayScoreStr }),
           })
 
         log(
-          `[sports-odds-resolve] Resolved "${ev.question}" → ${outcome} (${homeScoreStr ?? '?'}-${awayScoreStr ?? '?'})`
+          `[sports-odds-resolve] Resolved "${ev.question}" → ${
+            resolveArgs.outcome
+          } (${homeScoreStr ?? '?'}-${awayScoreStr ?? '?'})`
         )
         resolved++
       } catch (e) {

@@ -102,8 +102,9 @@ export function fairWinProb(
   event: OddsApiEvent,
   teamName: string
 ): number | null {
-  const h2hMarkets = event.bookmakers
-    .flatMap((b) => b.markets.filter((m) => m.key === 'h2h'))
+  const h2hMarkets = event.bookmakers.flatMap((b) =>
+    b.markets.filter((m) => m.key === 'h2h')
+  )
 
   if (h2hMarkets.length === 0) return null
 
@@ -125,7 +126,9 @@ export function fairWinProb(
   const avgTotal = perBook.reduce((s, b) => s + b.totalRaw, 0) / perBook.length
 
   // Devig: normalize by the average overround
-  return avgTotal > 0 ? Math.min(0.99, Math.max(0.01, avgTeam / avgTotal)) : null
+  return avgTotal > 0
+    ? Math.min(0.99, Math.max(0.01, avgTeam / avgTotal))
+    : null
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
@@ -218,4 +221,74 @@ export function oddsKeyForEntry(
   entry: Pick<SportsCalendarEntry, 'competitionId'>
 ): string | null {
   return COMPETITION_TO_ODDS_KEY[entry.competitionId] ?? null
+}
+
+// ─── Shared market-creation helpers ──────────────────────────────────────────
+
+export const MANIFOLD_SPORTS_CREATOR_ID = {
+  prod: 'NnVY8olowYMYQGr346dfmHXBSpx2',
+  dev: 't3R3HV2QFTRGnJxtxhzdesA4stw1',
+} as const
+
+export const SPORT_LEAGUE_LABEL: Partial<
+  Record<SportsCalendarEntry['sport'], string>
+> = {
+  nfl: 'NFL',
+  cfb: 'College Football',
+  mlb: 'MLB',
+  nba: 'NBA',
+  wnba: 'WNBA',
+  soccer: 'Soccer',
+  f1: 'Formula 1',
+  tdf: 'Tour de France',
+}
+
+// Hours after game start before the market closes — sized to cover the longest
+// realistic game + overtime for each sport.
+export const CLOSE_BUFFER_HOURS: Partial<
+  Record<SportsCalendarEntry['sport'], number>
+> = {
+  nfl: 4,
+  cfb: 4,
+  mlb: 4,
+  nba: 3,
+  wnba: 3,
+  soccer: 2.5,
+  f1: 2,
+  tdf: 1,
+}
+
+export function marketCloseTime(
+  sport: SportsCalendarEntry['sport'],
+  commenceTime: string
+): number {
+  const hours = CLOSE_BUFFER_HOURS[sport] ?? 3
+  return new Date(commenceTime).getTime() + hours * 60 * 60 * 1000
+}
+
+export function buildOddsMarketQuestion(
+  event: OddsApiEvent,
+  entry: Pick<SportsCalendarEntry, 'competition'>
+): string {
+  const date = new Date(event.commence_time).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'America/New_York',
+  })
+  return `${event.away_team} at ${event.home_team} [${entry.competition}, ${date}]`
+}
+
+export function buildOddsMarketDescription(
+  event: OddsApiEvent,
+  initialProb: number
+): string {
+  return [
+    `**${event.away_team}** at **${event.home_team}**`,
+    ``,
+    `Resolves YES if ${event.home_team} wins. Resolves NO if ${event.away_team} wins.`,
+    `If the game ends in a tie, resolves at 50% (both sides get half their winnings).`,
+    `Resolves N/A only if the game is cancelled or postponed.`,
+    ``,
+    `Opening probability: ${initialProb}% (seeded from Vegas moneyline odds).`,
+  ].join('\n')
 }

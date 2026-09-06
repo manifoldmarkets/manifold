@@ -13,14 +13,21 @@
  */
 
 import { runScript } from './run-script'
-import { SportsCalendarEntry, SportId, SportsCalendarStatus } from 'common/sports'
+import {
+  SportsCalendarEntry,
+  SportId,
+  SportsCalendarStatus,
+} from 'common/sports'
 
 const DRY_RUN = process.env.DRY_RUN === 'true'
 const COLLECTION = 'sportsCalendar'
 
 // Compute status from dates relative to today.
 // The scheduler will keep this field current as time passes.
-function computeStatus(startDate: string, endDate: string): SportsCalendarStatus {
+function computeStatus(
+  startDate: string,
+  endDate: string
+): SportsCalendarStatus {
   const now = Date.now()
   const start = new Date(startDate + 'T00:00:00Z').getTime()
   const end = new Date(endDate + 'T23:59:59Z').getTime()
@@ -38,7 +45,10 @@ function phaseSlug(phase: string): string {
     .replace(/^-|-$/g, '')
 }
 
-type EntryInput = Omit<SportsCalendarEntry, 'status' | 'updatedAt' | 'updatedBy'>
+type EntryInput = Omit<
+  SportsCalendarEntry,
+  'status' | 'updatedAt' | 'updatedBy'
+>
 
 const ENTRIES: EntryInput[] = [
   // ── NFL ─────────────────────────────────────────────────────────────────────
@@ -62,7 +72,8 @@ const ENTRIES: EntryInput[] = [
     endDate: '2027-01-04',
     autoCreate: true,
     autoResolve: true,
-    notes: 'Rolling 14-day creation window; ~272 games total',
+    notes:
+      'Rolling 14-day creation window; ~272 games total. Ties resolve at 50%.',
   },
   {
     sport: 'nfl',
@@ -320,7 +331,8 @@ const ENTRIES: EntryInput[] = [
     endDate: '2027-09-28',
     autoCreate: false,
     autoResolve: false,
-    notes: '~162 games per team (~2430 total); rolling window essential. Enable once API confirmed.',
+    notes:
+      '~162 games per team (~2430 total); rolling window essential. Enable once API confirmed.',
   },
   {
     sport: 'mlb',
