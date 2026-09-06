@@ -1,5 +1,6 @@
 import { Contract, contractPath } from 'common/contract'
 import { getSeoDescription, getContractOGProps } from 'common/contract-seo'
+import { OG_MARKET_IMAGE } from 'common/edge/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { parseJsonContentToText } from 'common/util/parse'
 
@@ -27,6 +28,8 @@ export function ContractSEO(props: {
       description={seoDesc}
       url={contractPath(contract)}
       ogProps={{ props: ogCardProps, endpoint: 'market' }}
+      imageSize={OG_MARKET_IMAGE}
+      imageAlt={question}
       shouldIgnore={contract.visibility !== 'public'}
     />
   )
