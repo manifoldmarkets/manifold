@@ -5,7 +5,38 @@ import {
   normalizeSemanticSearchTerm,
   queryEmbeddingCacheKey,
   shouldAttemptSemanticFallback,
+  withSemanticQueryTimeout,
 } from './semantic-search-fallback'
+import type { SupabaseTransaction } from 'shared/supabase/init'
+
+describe('withSemanticQueryTimeout', () => {
+  const run = async (query: (tx: SupabaseTransaction) => Promise<string[]>) => {
+    const none = jest.fn(async () => {})
+    const tx = { none } as unknown as SupabaseTransaction
+    const pg = {
+      tx: async (callback: (tx: SupabaseTransaction) => Promise<string[]>) =>
+        callback(tx),
+    } as unknown as Parameters<typeof withSemanticQueryTimeout>[0]
+    return { result: await withSemanticQueryTimeout(pg, query), none }
+  }
+
+  it('sets a transaction-local server timeout before querying', async () => {
+    const { result, none } = await run(async (tx) => {
+      expect(tx.none).toHaveBeenCalledWith('set local statement_timeout = 1000')
+      return ['semantic-market']
+    })
+    expect(result).toEqual(['semantic-market'])
+    expect(none).toHaveBeenCalledTimes(1)
+  })
+
+  it('propagates cancellation to the lexical fallback instead of retrying', async () => {
+    const query = jest.fn(async () => {
+      throw Object.assign(new Error('statement timeout'), { code: '57014' })
+    })
+    await expect(run(query)).rejects.toMatchObject({ code: '57014' })
+    expect(query).toHaveBeenCalledTimes(1)
+  })
+})
 
 const makeCache = (now: () => number) =>
   new BoundedSingleFlightCache<string>({

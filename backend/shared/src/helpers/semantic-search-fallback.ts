@@ -1,4 +1,19 @@
 import { createHash } from 'crypto'
+import type {
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
+
+// Cancel optional database work on the server, rather than merely abandoning
+// a client promise while the query keeps occupying a connection/fallback slot.
+export const withSemanticQueryTimeout = <T>(
+  pg: Pick<SupabaseDirectClient, 'tx'>,
+  query: (tx: SupabaseTransaction) => Promise<T>
+): Promise<T> =>
+  pg.tx(async (tx) => {
+    await tx.none('set local statement_timeout = 1000')
+    return query(tx)
+  })
 
 export const QUERY_EMBEDDING_DIMENSIONS = 1536
 

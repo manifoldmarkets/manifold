@@ -38,6 +38,7 @@ import {
   QUERY_EMBEDDING_DIMENSIONS,
   queryEmbeddingCacheKey,
   shouldAttemptSemanticFallback,
+  withSemanticQueryTimeout,
 } from 'shared/helpers/semantic-search-fallback'
 import { getIp } from 'shared/analytics'
 import { cacheGetJson, cacheSetJson } from 'shared/redis/cache'
@@ -499,16 +500,18 @@ const semanticFallback = async (
       return []
     inflightSemanticQueries++
     try {
-      const results = await pg.map(
-        getSemanticSearchContractSQL({
-          ...props,
-          embedding,
-          privateUser,
-          limit: limit - lexicalResults.length,
-          excludeContractIds: lexicalResults.map((c) => c.id),
-        }),
-        null,
-        convertContract
+      const results = await withSemanticQueryTimeout(pg, (tx) =>
+        tx.map(
+          getSemanticSearchContractSQL({
+            ...props,
+            embedding,
+            privateUser,
+            limit: limit - lexicalResults.length,
+            excludeContractIds: lexicalResults.map((c) => c.id),
+          }),
+          null,
+          convertContract
+        )
       )
       log('Semantic search fallback completed', {
         lexicalHits: lexicalResults.length,

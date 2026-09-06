@@ -305,7 +305,9 @@ click_rollup as (
     ) as post_clicks,
     count(*) filter (
       where click.data ->> 'matchType' = 'semantic'
-    ) as semantic_clicks
+    ) as semantic_clicks,
+    min(click.ts) filter (where click.data ->> 'itemType' = 'market')
+      as first_market_click_ts
   from presentations presentation
   left join user_events click
     on click.name = $5
@@ -323,6 +325,7 @@ click_rollup as (
 action_candidates as (
   select
     interaction.id as action_id,
+    interaction.created_time as action_ts,
     presentation.presentation_id,
     row_number() over (
       partition by interaction.id
@@ -347,7 +350,8 @@ action_candidates as (
   )
 ),
 action_rollup as (
-  select presentation_id, count(*) as actions
+  select presentation_id, count(*) as actions,
+    min(action_ts) as first_action_ts
   from action_candidates
   where attribution_order = 1
   group by presentation_id
@@ -393,6 +397,8 @@ per_presentation as (
     presentation.initial_latency_ms,
     presentation.compatibility_fallback,
     presentation.anchor_fallback,
+    click.first_market_click_ts,
+    action.first_action_ts,
     (coalesce(click.market_clicks, 0) > 0)::int as market_clicked,
     (coalesce(click.post_clicks, 0) > 0)::int as post_clicked,
     (coalesce(click.semantic_clicks, 0) > 0)::int as semantic_clicked,
@@ -567,16 +573,17 @@ fresh_requests as (
     and coalesce(u.is_bot, false) = false
   order by ue.data ->> 'requestAttemptId', ue.ts
 ),
-request_presentations as (
+request_first_presentations as (
   select distinct on (request.request_attempt_id)
     request.subject_id,
     request.variant,
     request.surface,
     request.request_attempt_id,
+    request.result_set_id,
+    request.user_id,
     presentation.presentation_id,
-    presentation.market_count,
-    presentation.market_clicked,
-    presentation.meaningfully_acted
+    presentation.ts as presentation_ts,
+    presentation.market_count
   from fresh_requests request
   left join per_presentation presentation
     on presentation.result_set_id = request.result_set_id
@@ -584,6 +591,38 @@ request_presentations as (
    and presentation.ts >= request.ts - interval '5 seconds'
    and presentation.ts < request.ts + interval '1 minute'
   order by request.request_attempt_id, presentation.ts
+),
+request_presentations as (
+  select
+    request.subject_id,
+    request.variant,
+    request.surface,
+    request.request_attempt_id,
+    request.presentation_id,
+    request.market_count,
+    -- Returning to cached Browse creates a new presentation, not a request.
+    -- Keep its outcomes with the originating request, without extending that
+    -- request's original 30-minute window or adding an ITT denominator.
+    coalesce(bool_or(
+      revisit.first_market_click_ts
+        >= request.presentation_ts - interval '5 seconds'
+      and revisit.first_market_click_ts
+        < request.presentation_ts + interval '30 minutes'
+    ), false)::int as market_clicked,
+    coalesce(bool_or(
+      revisit.first_action_ts
+        >= request.presentation_ts - interval '5 seconds'
+      and revisit.first_action_ts
+        < request.presentation_ts + interval '30 minutes'
+    ), false)::int as meaningfully_acted
+  from request_first_presentations request
+  left join per_presentation revisit
+    on revisit.result_set_id = request.result_set_id
+   and revisit.user_id = request.user_id
+   and revisit.variant = request.variant
+   and revisit.ts >= request.presentation_ts
+  group by request.subject_id, request.variant, request.surface,
+    request.request_attempt_id, request.presentation_id, request.market_count
 ),
 request_subject_metrics as (
   select
