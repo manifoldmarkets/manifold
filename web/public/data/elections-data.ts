@@ -37,17 +37,20 @@ export const PRESIDENT_2028_SLUG = 'who-will-be-elected-president-in-20'
 export const PRESIDENT_2028_PARTY_SLUG =
   'which-political-party-wins-the-us-p-nUsCQcZ6Lc'
 
-// Notable 2026 primary races (community markets) — a compact watch-list. Each is
-// the best-trafficked multi-choice market for that primary. Resolved/closed ones
-// are filtered out at fetch time, so this can degrade gracefully as races land.
-export const PRIMARIES_2026 = [
-  'michigan-democratic-senate-primary', // MI — Democratic Senate primary
-  'who-will-win-the-2026-massachusetts', // MA — Democratic Senate primary
-  'who-will-win-the-2026-minnesota-dem', // MN — Democratic Senate primary
-  'who-will-the-democratic-primary-for', // MN — Democratic Governor primary
-  'who-will-win-the-2026-republican-pr', // FL — Republican Governor primary
-  'who-wins-missouris-1st-congressiona', // MO-01 — Democratic House primary
-  'survivor-2026-whose-gop-primary-tor', // National — GOP incumbents vs. Trump
+// The hand-curated PRIMARIES_2026 watch-list was removed in Sept 2026: six of
+// its seven markets had resolved, the fetcher filtered them out, and the
+// section had quietly decayed to a single card. Primary season is over — the
+// live question 8 weeks from the election is which *general* races are close.
+// That is now derived automatically from the map markets (see getTossUpRaces in
+// web/lib/politics/home.ts), so it needs no curation and cannot go stale.
+
+// The three VoteHub polling-average perpetuals, shown as a "Polling averages"
+// row. Perps rather than binary markets: they track a continuously updating
+// number, so they stay meaningful all the way to (and past) election day.
+export const POLLING_PERPS = [
+  'trump-approval-rating', // Trump job approval
+  'democratic-share-of-2026-generic-ba', // Dem share of the generic ballot
+  'jd-vance-favorability-votehub-avg', // JD Vance favorability
 ]
 
 // Mid-decade redistricting markets (community) — their own watch-list so they
@@ -55,7 +58,6 @@ export const PRIMARIES_2026 = [
 // resolved/closed ones are filtered out at fetch time.
 export const REDISTRICTING_2026 = [
   'large-states-redistrict-before-2026', // Multi — which large states redistrict
-  'virginia-redistricting-will-the-cha', // VA — Charlottesville district blue?
   'if-the-texas-gop-succeeds-in-redist', // TX — GOP gains seats if it redistricts
   'will-texass-2025-redistricting-map', // TX — 2025 map used in the 2026 midterms
   'virginia-redistricting-before-midte', // VA — redistricting before midterms
@@ -295,8 +297,11 @@ export type ElectionsPageProps = {
   senateControlContract: Contract | null
   // Per-district House market (independent multi-choice).
   houseDistrictsContract: Contract | null
-  // Notable 2026 primary markets (open only), for the watch-list section.
-  primaryContracts: Contract[]
+  // Closest open races from the Senate/Governor maps, auto-derived — replaces
+  // the retired hand-curated primaries list.
+  tossUpContracts: Contract[]
+  // VoteHub polling-average perps (open only), for the "Polling averages" row.
+  pollingPerpContracts: Contract[]
   // Mid-decade redistricting markets (open only), for the watch-list section.
   redistrictingContracts: Contract[]
   // Hottest open midterm markets right now, auto-selected by daily score in
