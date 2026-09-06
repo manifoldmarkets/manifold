@@ -12,16 +12,15 @@
  *   (runs daily at 6 AM PT)
  *
  * Required env vars:
- *   THE_ODDS_API_KEY           — The Odds API key
- *   MANIFOLD_SPORTS_USER_ID    — Manifold user ID of the ManifoldSports account
- *                                (find at manifold.markets/ManifoldSports or via /v0/me)
+ *   THE_ODDS_API_KEY  — The Odds API key
+ *
+ * Creator account: @ManifoldSports (prod: NnVY8olowYMYQGr346dfmHXBSpx2,
+ *                                    dev:  t3R3HV2QFTRGnJxtxhzdesA4stw1)
  */
 
 import { getFirestore } from 'firebase-admin/firestore'
-import { log } from 'shared/utils'
+import { log, getPrivateUser, isProd } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getPrivateUser } from 'shared/utils'
-import { isProd } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { createMarketHelper } from 'api/create-market'
 import { PrivateUser } from 'common/user'
@@ -87,11 +86,9 @@ export async function createSportsMarkets() {
     return
   }
 
-  const creatorId = process.env.MANIFOLD_SPORTS_USER_ID ?? ''
-  if (!creatorId) {
-    log('[sports-market-creator] MANIFOLD_SPORTS_USER_ID not set — skipping')
-    return
-  }
+  const creatorId = isProd()
+    ? 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports prod
+    : 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports dev
 
   const pg = createSupabaseDirectClient()
   const firestore = getFirestore()
