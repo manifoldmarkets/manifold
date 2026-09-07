@@ -40,6 +40,62 @@ export interface TournamentConfig {
   stageLiquidityTiers: StageLiquidityTiers
 }
 
+// ─── Sports calendar ─────────────────────────────────────────────────────────
+
+export type SportId =
+  | 'nfl'
+  | 'cfb'
+  | 'f1'
+  | 'tdf'
+  | 'soccer'
+  | 'mlb'
+  | 'nba'
+  | 'wnba'
+
+export type SportsCalendarStatus =
+  | 'upcoming'
+  | 'active'
+  | 'completed'
+  | 'cancelled'
+
+/**
+ * One entry in the `sportsCalendar` Firestore collection.
+ * Represents a phase/window for a competition (e.g. "NFL Regular Season 2026–27",
+ * "NFL Wild Card Weekend"). The scheduler reads this collection to decide when to
+ * create and resolve markets. Document IDs are deterministic slugs:
+ * `${competitionId}-${phaseSlug}` so re-seeding is idempotent.
+ */
+export interface SportsCalendarEntry {
+  sport: SportId
+  /** Human-readable competition name, e.g. "NFL Regular Season 2026–27" */
+  competition: string
+  /** Stable slug, e.g. "nfl-regular-2026" — ties entries for one competition together */
+  competitionId: string
+  /** Phase within the competition, e.g. "Regular Season", "Wild Card", "Week 1" */
+  phase: string
+  /** ISO date YYYY-MM-DD */
+  startDate: string
+  /** ISO date YYYY-MM-DD */
+  endDate: string
+  /** Scheduler should auto-create markets for games in this window */
+  autoCreate: boolean
+  /** Scheduler should auto-resolve markets when games finish */
+  autoResolve: boolean
+  /**
+   * When true, games in this competition can end in a tie (e.g. NFL regular season).
+   * Markets are created as MULTIPLE_CHOICE with [homeTeam, awayTeam, 'Tie'] answers.
+   * When false, markets are BINARY (home win = YES, away win = NO).
+   * Ties in non-tie competitions (cancelled/postponed) still resolve N/A.
+   */
+  tiesAllowed?: boolean
+  status: SportsCalendarStatus
+  notes?: string
+  /** Reason a human overrode the defaults, e.g. a postponement */
+  overrideReason?: string
+  updatedAt: number
+  updatedBy?: string
+}
+
 // ─── Resolution helpers ──────────────────────────────────────────────────────
 
 /**
@@ -81,6 +137,60 @@ export function pickSportsWinningAnswer(
 // ─── API response types ──────────────────────────────────────────────────────
 
 /**
+ * Three-letter abbreviations for NFL teams, keyed by the full team name as
+ * returned by The Odds API. Used by the sports match card to show the badge
+ * (e.g. "KC" beside "Kansas City Chiefs") instead of a flag.
+ */
+export const NFL_TEAM_TLA: Record<string, string> = {
+  'Arizona Cardinals': 'ARI',
+  'Atlanta Falcons': 'ATL',
+  'Baltimore Ravens': 'BAL',
+  'Buffalo Bills': 'BUF',
+  'Carolina Panthers': 'CAR',
+  'Chicago Bears': 'CHI',
+  'Cincinnati Bengals': 'CIN',
+  'Cleveland Browns': 'CLE',
+  'Dallas Cowboys': 'DAL',
+  'Denver Broncos': 'DEN',
+  'Detroit Lions': 'DET',
+  'Green Bay Packers': 'GB',
+  'Houston Texans': 'HOU',
+  'Indianapolis Colts': 'IND',
+  'Jacksonville Jaguars': 'JAX',
+  'Kansas City Chiefs': 'KC',
+  'Las Vegas Raiders': 'LV',
+  'Los Angeles Chargers': 'LAC',
+  'Los Angeles Rams': 'LAR',
+  'Miami Dolphins': 'MIA',
+  'Minnesota Vikings': 'MIN',
+  'New England Patriots': 'NE',
+  'New Orleans Saints': 'NO',
+  'New York Giants': 'NYG',
+  'New York Jets': 'NYJ',
+  'Philadelphia Eagles': 'PHI',
+  'Pittsburgh Steelers': 'PIT',
+  'San Francisco 49ers': 'SF',
+  'Seattle Seahawks': 'SEA',
+  'Tampa Bay Buccaneers': 'TB',
+  'Tennessee Titans': 'TEN',
+  'Washington Commanders': 'WAS',
+}
+
+/**
+ * Return a sport-appropriate badge label for a team name.
+ * For NFL we use the 3-letter code; for others fall back to the name itself.
+ */
+export function teamBadge(
+  teamName: string,
+  sportsLeague?: string | null
+): string {
+  if (sportsLeague === 'NFL' || sportsLeague === 'College Football') {
+    return NFL_TEAM_TLA[teamName] ?? teamName.slice(0, 3).toUpperCase()
+  }
+  return ''
+}
+
+/**
  * Shape returned by the `sports-markets` API endpoint and consumed by the
  * sports dashboard page. Kept in sync between backend (`sports-markets.ts`
  * handler) and frontend (`sports-dashboard-page.tsx`).
@@ -92,6 +202,11 @@ export interface SportsMarket {
   sportsStartTimestamp: string | null
   resolution: string | null
   resolvedAnswer: string | null
+  // For binary sports markets (NFL, CFB, MLB, NBA, WNBA): team names stored at
+  // creation time so the dashboard card can display them without parsing the question.
+  sportsHomeTeam: string | null
+  sportsAwayTeam: string | null
+  sportsLeague: string | null
   resolutionTime: number | null
   sportsHomeScore: number | null
   sportsAwayScore: number | null
@@ -282,30 +397,120 @@ export interface FDMatch {
 // Maps football-data.org area codes / TLAs that differ from ISO 3166-1 alpha-2
 const FD_CODE_TO_ISO2: Record<string, string> = {
   // UK nations
-  ENG: 'GB', SCO: 'GB', WAL: 'GB', NIR: 'GB',
+  ENG: 'GB',
+  SCO: 'GB',
+  WAL: 'GB',
+  NIR: 'GB',
   // TLA → ISO2 for all 48 WC 2026 teams + common extras
-  MEX: 'MX', USA: 'US', CAN: 'CA', BRA: 'BR', ARG: 'AR', FRA: 'FR',
-  ESP: 'ES', GER: 'DE', POR: 'PT', NED: 'NL', BEL: 'BE', ITA: 'IT',
-  URU: 'UY', COL: 'CO', CHI: 'CL', ECU: 'EC', PER: 'PE', VEN: 'VE',
-  PAR: 'PY', BOL: 'BO', JAM: 'JM', PAN: 'PA', CRC: 'CR', HON: 'HN',
-  SLV: 'SV', GTM: 'GT', CUB: 'CU', TRI: 'TT', HAI: 'HT',
-  MAR: 'MA', SEN: 'SN', NGA: 'NG', CMR: 'CM', CIV: 'CI', GHA: 'GH',
-  EGY: 'EG', TUN: 'TN', ALG: 'DZ', MLI: 'ML', RSA: 'ZA', COD: 'CD',
-  JPN: 'JP', KOR: 'KR', AUS: 'AU', IRN: 'IR', SAU: 'SA', QAT: 'QA',
-  UAE: 'AE', IDN: 'ID', UZB: 'UZ', CHN: 'CN', IND: 'IN', THA: 'TH',
-  KSA: 'SA', KUW: 'KW', IRQ: 'IQ', JOR: 'JO', LBN: 'LB', SYR: 'SY',
-  CRO: 'HR', SRB: 'RS', SVK: 'SK', SVN: 'SI', HUN: 'HU', ROU: 'RO',
-  GRE: 'GR', TUR: 'TR', UKR: 'UA', POL: 'PL', CZE: 'CZ', AUT: 'AT',
-  SWE: 'SE', NOR: 'NO', DEN: 'DK', SUI: 'CH', SCT: 'GB', FIN: 'FI',
-  BIH: 'BA', MKD: 'MK', ALB: 'AL', ISL: 'IS', IRL: 'IE',
-  CPV: 'CV', CUR: 'CW',
+  MEX: 'MX',
+  USA: 'US',
+  CAN: 'CA',
+  BRA: 'BR',
+  ARG: 'AR',
+  FRA: 'FR',
+  ESP: 'ES',
+  GER: 'DE',
+  POR: 'PT',
+  NED: 'NL',
+  BEL: 'BE',
+  ITA: 'IT',
+  URU: 'UY',
+  COL: 'CO',
+  CHI: 'CL',
+  ECU: 'EC',
+  PER: 'PE',
+  VEN: 'VE',
+  PAR: 'PY',
+  BOL: 'BO',
+  JAM: 'JM',
+  PAN: 'PA',
+  CRC: 'CR',
+  HON: 'HN',
+  SLV: 'SV',
+  GTM: 'GT',
+  CUB: 'CU',
+  TRI: 'TT',
+  HAI: 'HT',
+  MAR: 'MA',
+  SEN: 'SN',
+  NGA: 'NG',
+  CMR: 'CM',
+  CIV: 'CI',
+  GHA: 'GH',
+  EGY: 'EG',
+  TUN: 'TN',
+  ALG: 'DZ',
+  MLI: 'ML',
+  RSA: 'ZA',
+  COD: 'CD',
+  JPN: 'JP',
+  KOR: 'KR',
+  AUS: 'AU',
+  IRN: 'IR',
+  SAU: 'SA',
+  QAT: 'QA',
+  UAE: 'AE',
+  IDN: 'ID',
+  UZB: 'UZ',
+  CHN: 'CN',
+  IND: 'IN',
+  THA: 'TH',
+  KSA: 'SA',
+  KUW: 'KW',
+  IRQ: 'IQ',
+  JOR: 'JO',
+  LBN: 'LB',
+  SYR: 'SY',
+  CRO: 'HR',
+  SRB: 'RS',
+  SVK: 'SK',
+  SVN: 'SI',
+  HUN: 'HU',
+  ROU: 'RO',
+  GRE: 'GR',
+  TUR: 'TR',
+  UKR: 'UA',
+  POL: 'PL',
+  CZE: 'CZ',
+  AUT: 'AT',
+  SWE: 'SE',
+  NOR: 'NO',
+  DEN: 'DK',
+  SUI: 'CH',
+  SCT: 'GB',
+  FIN: 'FI',
+  BIH: 'BA',
+  MKD: 'MK',
+  ALB: 'AL',
+  ISL: 'IS',
+  IRL: 'IE',
+  CPV: 'CV',
+  CUR: 'CW',
   // ISO 3166-1 alpha-3 / FIFA variants — football-data returns the SAME team
   // under different code schemes across matches (e.g. Uruguay as URU or URY,
   // Curaçao as CUR or CUW), so map both forms to the right flag.
-  URY: 'UY', CUW: 'CW', DEU: 'DE', NLD: 'NL', PRT: 'PT', CHE: 'CH',
-  HRV: 'HR', DNK: 'DK', DZA: 'DZ', GRC: 'GR', PRY: 'PY', HND: 'HN',
-  CHL: 'CL', CRI: 'CR', BGR: 'BG', ZAF: 'ZA', ARE: 'AE', KWT: 'KW',
-  TTO: 'TT', HTI: 'HT', NZL: 'NZ', PHL: 'PH',
+  URY: 'UY',
+  CUW: 'CW',
+  DEU: 'DE',
+  NLD: 'NL',
+  PRT: 'PT',
+  CHE: 'CH',
+  HRV: 'HR',
+  DNK: 'DK',
+  DZA: 'DZ',
+  GRC: 'GR',
+  PRY: 'PY',
+  HND: 'HN',
+  CHL: 'CL',
+  CRI: 'CR',
+  BGR: 'BG',
+  ZAF: 'ZA',
+  ARE: 'AE',
+  KWT: 'KW',
+  TTO: 'TT',
+  HTI: 'HT',
+  NZL: 'NZ',
+  PHL: 'PH',
 }
 
 export function flagEmoji(iso2: string): string {
@@ -400,7 +605,9 @@ export function stageLiquidityForMatch(
 ): LiquidityTierValue {
   const tiers = { ...config.stageLiquidityTiers, ...overrides }
   return (
-    (tiers as Record<string, LiquidityTierValue | undefined>)[normalizeStage(match.stage)] ??
+    (tiers as Record<string, LiquidityTierValue | undefined>)[
+      normalizeStage(match.stage)
+    ] ??
     tiers.LEAGUE_PHASE ??
     tiers.GROUP_STAGE ??
     1_000
@@ -411,7 +618,10 @@ export function stageLiquidityForMatch(
 // ~30' penalties). Use 3.5 h so betting stays open through the final whistle.
 const KNOCKOUT_CLOSE_OFFSET_MS = 3.5 * 60 * 60 * 1000
 
-export function computeCloseTime(match: FDMatch, config: TournamentConfig): number {
+export function computeCloseTime(
+  match: FDMatch,
+  config: TournamentConfig
+): number {
   const offsetMs = isKnockoutStage(match.stage)
     ? Math.max(config.closeTimeOffsetMs, KNOCKOUT_CLOSE_OFFSET_MS)
     : config.closeTimeOffsetMs
@@ -458,7 +668,8 @@ export function buildDescription(
 
   const parts = [matchLine, resolveLine]
   if (opts.customNote?.trim()) {
-    const substituted = opts.customNote.trim()
+    const substituted = opts.customNote
+      .trim()
       .replace(/{team1}/g, homeTeam.name)
       .replace(/{team2}/g, awayTeam.name)
       .replace(/{kickoff}/g, dateStr)
@@ -472,7 +683,9 @@ export function buildDescription(
     try {
       // Extract just the path so the link works on both localhost and prod
       const u = new URL(
-        href.startsWith('/') || href.startsWith('http') ? href : `https://${href}`
+        href.startsWith('/') || href.startsWith('http')
+          ? href
+          : `https://${href}`
       )
       href = u.pathname + u.search + u.hash
     } catch {
@@ -511,7 +724,12 @@ export function finalScoreCommentLines(match: FDMatch): string[] | null {
         : winner === 'AWAY_TEAM'
         ? match.awayTeam.name
         : null
-    if (winnerName && penalties && penalties.home != null && penalties.away != null) {
+    if (
+      winnerName &&
+      penalties &&
+      penalties.home != null &&
+      penalties.away != null
+    ) {
       const [w, l] =
         winner === 'HOME_TEAM'
           ? [penalties.home, penalties.away]
@@ -568,9 +786,7 @@ export function buildMarketParams(
     const homeName = home.shortName || home.name
     const awayName = away.shortName || away.name
     question = `${homeName} vs ${awayName} [${config.shortLabel}]`
-    answers = knockout
-      ? [home.name, away.name]
-      : [home.name, away.name, 'Draw']
+    answers = knockout ? [home.name, away.name] : [home.name, away.name, 'Draw']
     answerShortTexts = knockout
       ? [homeName, awayName]
       : [homeName, awayName, 'Draw']
@@ -592,7 +808,9 @@ export function buildMarketParams(
     knockout && crests.every((u) => u && u.length > 0) ? crests : []
 
   const additionalIds =
-    ENV === 'DEV' ? config.additionalGroupIds.dev : config.additionalGroupIds.prod
+    ENV === 'DEV'
+      ? config.additionalGroupIds.dev
+      : config.additionalGroupIds.prod
 
   return {
     question,
@@ -612,6 +830,10 @@ export function buildMarketParams(
       ...additionalIds,
       ...(opts.extraGroupIds ?? []),
     ]).slice(0, MAX_GROUPS_PER_MARKET),
-    liquidityTier: stageLiquidityForMatch(match, config, opts.liquidityTierOverrides),
+    liquidityTier: stageLiquidityForMatch(
+      match,
+      config,
+      opts.liquidityTierOverrides
+    ),
   }
 }

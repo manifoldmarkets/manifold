@@ -5000,6 +5000,29 @@ export const API = (_apiTypeCheck = {
     },
   },
 
+  'admin-sports-create-odds-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        eventId: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+
   'admin-sports-resolve': {
     method: 'POST',
     visibility: 'undocumented',

@@ -65,6 +65,8 @@ export function getNewContract(
     sportsStartTimestamp?: string
     sportsEventId?: string
     sportsLeague?: string
+    sportsHomeTeam?: string
+    sportsAwayTeam?: string
 
     // Multi-numeric
     unit: string | undefined
@@ -101,6 +103,8 @@ export function getNewContract(
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    sportsHomeTeam,
+    sportsAwayTeam,
     answerShortTexts,
     answerImageUrls,
     takerAPIOrdersDisabled,
@@ -212,6 +216,8 @@ export function getNewContract(
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    sportsHomeTeam,
+    sportsAwayTeam,
 
     takerAPIOrdersDisabled,
     siblingContractId,
