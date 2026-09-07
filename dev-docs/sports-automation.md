@@ -4,6 +4,8 @@ Companion to the `/sports` redesign (`web/pages/sports.tsx`, `backend/api/src/sp
 
 ## 0. The pipeline and the page
 
+Mockups rendered against fixture data are in `dev-docs/sports-mockups/`: `today-no-pipeline-*.jpg` is what prod shows with no game markets (the week feed carries the page), `with-pipeline-*.jpg` is the same page once the Odds API jobs have created games.
+
 The Odds API pipeline (`backend/shared/src/odds-markets.ts`, jobs `sports-odds-create` and `sports-odds-resolve`) and the redesigned page speak through fields on the contract. There is no registry beside the contracts: the event id is on the market, so dedupe is a lookup and the resolver knows what to poll from the field alone.
 
 ### What runs
