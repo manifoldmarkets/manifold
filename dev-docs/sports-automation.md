@@ -15,6 +15,8 @@ The Odds API pipeline (`backend/shared/src/odds-markets.ts`, jobs `sports-odds-c
 | `sports-odds-resolve` | every 5 min                          | For every unresolved game that has started: one `/scores` call per sport, write the live score onto the market while it is on, resolve from the final. No call while nothing is in play.                                   |
 | `/sports`             | `backend/api/src/sports-schedule.ts` | Reads the markets below into game rows, attaches props, lists the rest of the week by close time.                                                                                                                          |
 
+The key: both jobs and the admin endpoint read `THE_ODDS_API_KEY` from the environment, which `loadSecretsToEnv` fills from Google Secret Manager using the list in `common/src/secrets.ts`. Create a secret with that name in the prod project (and the dev project to test there); nothing else needs configuring, and without it both jobs log a line and exit.
+
 Quota: `/scores` with `daysFrom` costs 2 credits, so a sport in play costs about 24 credits an hour at the 5-minute cadence. MLB and the NBA in season are the expensive ones; the 20k-credit plan covers a couple of sports at once, and the cadence in `backend/scheduler/src/jobs/index.ts` is the dial.
 
 ### The market a game becomes
