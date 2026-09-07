@@ -77,7 +77,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
-  const { contract, pointsString } = props.contractParams
+  const { contract, pointsString, ogCardProps } = props.contractParams
 
   const points = pointsString ? base64toPoints(pointsString) : []
 
@@ -91,7 +91,7 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
 
   return (
     <Page trackPageView={false} className="xl:col-span-10">
-      <ContractSEO contract={contract} points={pointsString} />
+      <ContractSEO contract={contract} ogCardProps={ogCardProps} />
       <ContractPageContent key={contract.id} {...props.contractParams} />
     </Page>
   )

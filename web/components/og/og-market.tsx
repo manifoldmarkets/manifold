@@ -1,13 +1,18 @@
 /* eslint-disable jsx-a11y/alt-text */
 import clsx from 'clsx'
-import { OgCardProps } from 'common/contract-seo'
-import { base64toPoints, Point } from 'common/edge/og'
+import { OgAnswer, OgCardProps } from 'common/contract-seo'
+import { base64toFloat32Points, base64toPoints, Point } from 'common/edge/og'
 import Logo from 'web/public/logo.svg'
 import { ProbGraph } from './graph'
+
+// Shown at the bottom of every market card in social link previews
+export const OG_TAGLINE =
+  'The play-money prediction game · Free to play · Ask any question'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
   const {
+    v,
     question,
     creatorName,
     creatorAvatarUrl,
@@ -25,9 +30,21 @@ export function OgMarket(props: OgCardProps) {
   const probabilityAsFloat = probability
     ? parseFloat(probability.replace('%', ''))
     : undefined
-  const data = points ? (base64toPoints(points) as Point[]) : []
+  // Unversioned URLs (still cached by platforms) encoded points as float64
+  const data: Point[] = points
+    ? v
+      ? base64toFloat32Points(points)
+      : base64toPoints(points)
+    : []
   const numTraders = Number(props.numTraders ?? 0)
-  const showGraph = data && data.length > 5
+  // Float32 timestamps can collapse to one value for markets only minutes old
+  const showGraph = data.length > 5 && data[0].x !== data[data.length - 1].x
+  // A canceled market shows the "Canceled" state instead of answer bars
+  const answers =
+    resolution === 'CANCEL'
+      ? []
+      : parseAnswers(props.answers) ??
+        (topAnswer ? [{ t: topAnswer, p: probability ?? '' }] : [])
 
   return (
     <div
@@ -47,7 +64,13 @@ export function OgMarket(props: OgCardProps) {
           Manifold
         </span>
       </div>
-      <div className="m-4 mt-1 flex flex-col rounded-lg bg-white px-6 py-4 pb-10 text-black shadow-lg">
+      <div
+        className={clsx(
+          'm-4 mt-1 flex flex-col rounded-lg bg-white px-6 py-4 text-black shadow-lg',
+          // Leave room for the absolutely positioned outcome row
+          answers.length ? 'pb-4' : 'pb-10'
+        )}
+      >
         {/* Details */}
         <div className="mb-1 flex w-full flex-row justify-between text-sm text-gray-600">
           <div className="flex items-center">
@@ -81,13 +104,14 @@ export function OgMarket(props: OgCardProps) {
         </div>
         <div
           className={clsx(
-            'flex max-h-[90px] overflow-hidden text-2xl leading-tight text-black'
+            'flex max-h-[90px] overflow-hidden leading-tight text-black',
+            questionSizeClass(question)
           )}
         >
           {question}
         </div>
-        {topAnswer ? (
-          <Answer {...props} /> // TODO: more answers
+        {answers.length ? (
+          <Answers answers={answers} />
         ) : showGraph ? (
           <div className="flex w-full shrink justify-center">
             <ProbGraph
@@ -95,6 +119,7 @@ export function OgMarket(props: OgCardProps) {
               data={data}
               height={70}
               aspectRatio={7.5}
+              bottomInset={28}
             />
           </div>
         ) : bountyLeft ? (
@@ -102,7 +127,7 @@ export function OgMarket(props: OgCardProps) {
         ) : (
           <div className="flex h-8" />
         )}
-        {!topAnswer &&
+        {!answers.length &&
           (isPerp || probability || numericValue || resolution) && (
             <div className="absolute bottom-0 mb-4 mt-8 flex w-full flex-row justify-center self-center text-2xl text-white">
               {isPerp ? (
@@ -137,8 +162,29 @@ export function OgMarket(props: OgCardProps) {
             </div>
           )}
       </div>
+      {/* Tagline: heads off "isn't this gambling?" reactions to link previews */}
+      <div className="mt-auto flex h-7 shrink-0 items-center justify-center text-sm text-white">
+        {OG_TAGLINE}
+      </div>
     </div>
   )
+}
+
+// Step the font down for long questions instead of clipping them.
+// Questions are capped at 120 chars; the last step only covers legacy markets.
+function questionSizeClass(question: string) {
+  const { length } = question
+  return length <= 88 ? 'text-2xl' : length <= 150 ? 'text-xl' : 'text-lg'
+}
+
+function parseAnswers(json: string | undefined): OgAnswer[] | undefined {
+  if (!json) return undefined
+  try {
+    const parsed = JSON.parse(json)
+    return Array.isArray(parsed) && parsed.length ? parsed : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function PerpValue(props: { price?: string; ticker?: string }) {
@@ -154,33 +200,40 @@ function PerpValue(props: { price?: string; ticker?: string }) {
   )
 }
 
-function Answer(props: OgCardProps) {
-  const { probability, topAnswer, resolution } = props
-  const probabilityAsFloat = probability
-    ? parseFloat(probability.replace('%', ''))
-    : 0
+function Answers(props: { answers: OgAnswer[] }) {
+  return (
+    <div className="mt-2 flex w-full flex-col">
+      {props.answers.map((answer, i) => (
+        <AnswerRow key={i} answer={answer} first={i === 0} />
+      ))}
+    </div>
+  )
+}
+
+function AnswerRow(props: { answer: OgAnswer; first: boolean }) {
+  const { t: text, p: percent, w: isWinner } = props.answer
+  const percentAsFloat = parseFloat(percent) || 0
+  const fill = isWinner ? '#ccfbf1' : '#e0e7ff'
 
   return (
     <div
-      className="my-auto mt-8 flex w-full flex-row items-center justify-between rounded px-4 py-2 text-xl text-black"
+      className={clsx(
+        'flex w-full flex-row items-center justify-between rounded px-3 py-0.5 text-base text-black',
+        !props.first && 'mt-1'
+      )}
       style={{
-        backgroundImage: `linear-gradient(to right, #e0e7ff ${probabilityAsFloat}%, #f3f4f6 ${probabilityAsFloat}%)`,
+        backgroundImage: `linear-gradient(to right, ${fill} ${percentAsFloat}%, #f3f4f6 ${percentAsFloat}%)`,
       }}
     >
-      {/*  overflow-hidden */}
-      <span className="max-h-7 overflow-hidden">{topAnswer}</span>
-      {probability && (
-        <div className="my-auto flex font-semibold">
-          <span
-            className={clsx(
-              !!resolution && 'mr-1 font-normal text-gray-500 line-through'
-            )}
-          >
-            {probability}
-          </span>
-          {!!resolution && <span>100%</span>}
-        </div>
-      )}
+      <div className="mr-3 flex max-h-6 overflow-hidden">{text}</div>
+      <div
+        className={clsx(
+          'flex shrink-0 font-semibold',
+          isWinner && 'text-teal-700'
+        )}
+      >
+        {percent}
+      </div>
     </div>
   )
 }

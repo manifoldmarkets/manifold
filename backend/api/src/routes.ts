@@ -5,6 +5,7 @@ import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getBoostHistory } from 'api/get-boost-history'
+import { getBrowsePersonalization } from 'api/get-browse-personalization'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
@@ -487,6 +488,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-otp': requestOTP,
   'multi-sell': multiSell,
   'get-feed': getFeed,
+  'get-browse-personalization': getBrowsePersonalization,
   'get-unified-feed': getUnifiedFeed,
   'get-mana-supply': getManaSupply,
   'update-mod-report': updateModReport,

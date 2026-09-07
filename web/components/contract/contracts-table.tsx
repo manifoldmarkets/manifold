@@ -58,6 +58,10 @@ export function ContractsTable(props: {
   hideAvatar?: boolean
   contractAnswers?: { [contractId: string]: Answer[] }
   showPosition?: boolean
+  /** Names the surface these rows sit on, so `click browse contract` events
+   * can be attributed to a section instead of being indistinguishable from
+   * every other ContractsTable on the site. */
+  trackingPostfix?: string
 }) {
   const {
     contracts,
@@ -73,6 +77,7 @@ export function ContractsTable(props: {
     hideAvatar,
     contractAnswers,
     showPosition,
+    trackingPostfix,
   } = props
 
   const user = useUser()
@@ -130,6 +135,7 @@ export function ContractsTable(props: {
           }
           answers={contractAnswers?.[contract.id]}
           showPosition={showPosition}
+          trackingPostfix={trackingPostfix}
         />
       ))}
     </Col>
@@ -195,6 +201,7 @@ export function ContractRow(props: {
   answers?: Answer[]
   showPosition?: boolean
   onTrackClick?: () => void
+  trackingPostfix?: string
 }) {
   const contract = useLiveContract(props.contract)
   const isPoll = contract.outcomeType === 'POLL'
@@ -208,6 +215,7 @@ export function ContractRow(props: {
     answers,
     showPosition,
     onTrackClick,
+    trackingPostfix,
   } = props
 
   const savedMetric = useSavedContractMetrics(contract)
@@ -236,6 +244,7 @@ export function ContractRow(props: {
               slug: contract.slug,
               contractId: contract.id,
               boosted: contract.boosted,
+              section: trackingPostfix,
             })
             return
           }

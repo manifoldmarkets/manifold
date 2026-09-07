@@ -10,11 +10,12 @@ import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
-import { Search } from 'web/components/search'
+import { LoadingContractResults, Search } from 'web/components/search'
+import { useBrowseDefault } from 'web/hooks/use-browse-default'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { DEFAULT_FOR_YOU, Welcome } from 'web/components/onboarding/welcome'
+import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 export default function BrowsePage() {
@@ -35,6 +36,7 @@ export default function BrowsePage() {
 
 export function BrowsePageContent() {
   const user = useUser()
+  const browseDefault = useBrowseDefault(user)
   const isMobile = useIsMobile()
   const router = useRouter()
   const { q } = router.query
@@ -57,12 +59,16 @@ export function BrowsePageContent() {
 
   const initialTopics = topicsByImportance
 
+  if (!browseDefault.ready) return <LoadingContractResults />
+
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
       <Search
+        key={browseDefault.persistPrefix}
         showTopicsFilterPills
         showHotTopics
-        persistPrefix="search"
+        persistPrefix={browseDefault.persistPrefix}
+        onBrowseModeChange={browseDefault.rememberMode}
         autoFocus={autoFocus}
         additionalFilter={{
           excludeContractIds: privateUser?.blockedContractIds,
@@ -79,7 +85,7 @@ export function BrowsePageContent() {
         headerClassName={'pt-0 px-2'}
         defaultFilter="all"
         defaultSort="score"
-        defaultForYou={DEFAULT_FOR_YOU ? '1' : '0'}
+        defaultForYou={browseDefault.defaultForYou}
         initialTopics={initialTopics}
       />
     </Col>

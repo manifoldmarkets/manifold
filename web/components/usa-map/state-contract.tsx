@@ -23,6 +23,9 @@ export function StateContract(props: {
   setTargetState: (state?: string) => void
   customTitleFunction?: (title: string) => string | undefined
   includeHead?: boolean
+  /** Disambiguates the click event; without it these logged as
+   * "click state card undefined". */
+  trackingPostfix?: string
 }) {
   const {
     targetContract,
@@ -30,6 +33,7 @@ export function StateContract(props: {
     setTargetState,
     customTitleFunction,
     includeHead,
+    trackingPostfix,
   } = props
   if (!targetContract) {
     return <EmptyStateContract />
@@ -46,6 +50,7 @@ export function StateContract(props: {
             : targetContract.question
         }
         titleSize="lg"
+        trackingPostfix={trackingPostfix}
         targetState={targetState}
         setTargetState={setTargetState}
         className="my-auto"
