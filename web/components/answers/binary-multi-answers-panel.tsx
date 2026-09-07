@@ -189,8 +189,9 @@ function BinaryMultiChoiceBetPanel(props: {
       contract={contract}
       multiProps={{
         answers: contract.answers,
-        answerToBuy: contract.answers[0],
-        answerText: answer.text,
+        // Versus bets are always placed on the main answer: outcome YES backs
+        // it, NO backs the other answer (see `versusSide` in common/versus).
+        answerToBuy: mainAnswer,
       }}
       pseudonym={{
         YES: {

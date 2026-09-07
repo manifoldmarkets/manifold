@@ -485,11 +485,20 @@ export const isSportsContract = (
   contract: Contract
 ): contract is SportsContract => 'sportsEventId' in contract
 
+/**
+ * The main (first) answer of a versus market, which the UI treats as the YES
+ * side. Bets can be stored against either answer; use `versusSide` in
+ * common/versus to work out which side a bet, order or position backs.
+ */
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
     ? contract.answers[0]
     : undefined
 
+/**
+ * Probability of the side a bet backs, given a price quoted for the answer
+ * the bet was placed on. Same as `versusSideProb` in common/versus.
+ */
 export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
   outcome === 'YES' ? prob : 1 - prob
 

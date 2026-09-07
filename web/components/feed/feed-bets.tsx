@@ -1,12 +1,8 @@
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
 import { Bet, fill } from 'common/bet'
-import {
-  Contract,
-  getBinaryMCProb,
-  isBinaryMulti,
-  MarketContract,
-} from 'common/contract'
+import { Contract, isBinaryMulti, MarketContract } from 'common/contract'
+import { versusSide, versusSideOutcome, versusSideProb } from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
@@ -267,6 +263,9 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer
+  // On a versus market label the bet by the side it backs, whichever answer
+  // it was stored on.
+  const displayOutcome = versusSideOutcome(contract, bet) ?? outcome
 
   return (
     <span className="text-ink-700 text-sm">
@@ -293,7 +292,7 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
       )}
       <OutcomeLabel
         pseudonym={getPseudonym(contract)}
-        outcome={outcome}
+        outcome={displayOutcome}
         answer={answer}
         contract={contract}
         truncate="short"
@@ -310,15 +309,16 @@ function BetDetailsText(props: { bet: Bet; contract: Contract }) {
   const limitOrderStatus = getLimitOrderFillStatus(bet)
   const statusText = isLimitOrder ? getLimitOrderStatusText(bet) : ''
 
+  // Versus prices are shown for the side the bet backs.
   const getProb = (prob: number) =>
-    !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
+    !isBinaryMulti(contract) ? prob : versusSideProb(outcome, prob)
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
   const limitProb =
     bet.limitProb === undefined || !isBinaryMulti(contract)
       ? bet.limitProb
-      : getBinaryMCProb(bet.limitProb, outcome)
+      : versusSideProb(outcome, bet.limitProb)
   const hadPoolMatch = bet.fills?.length ?? false
 
   const fromProb = hadPoolMatch
@@ -652,6 +652,7 @@ export function BetStatusesText(props: {
     <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
   )
   const uniqueUsers = uniq(bets.map((b) => b.userId))
+  const displayOutcome = versusSideOutcome(contract, bets[0]) ?? outcome
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
@@ -670,7 +671,8 @@ export function BetStatusesText(props: {
       <>
         {bought} {money}{' '}
         <OutcomeLabel
-          outcome={outcome}
+          pseudonym={getPseudonym(contract)}
+          outcome={displayOutcome}
           answer={answer}
           contract={contract}
           truncate="short"
@@ -694,8 +696,11 @@ export function BetStatusText(props: {
   const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
   const { amount, outcome, createdTime, answerId, isApi } = bet
+  // Versus prices and labels are for the side the bet backs, whichever
+  // answer it was stored on.
   const getProb = (prob: number) =>
-    !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
+    !isBinaryMulti(contract) ? prob : versusSideProb(outcome, prob)
+  const displayOutcome = versusSideOutcome(contract, bet) ?? outcome
   const limitOrderStatus = getLimitOrderFillStatus(bet)
   const statusText = isNormalLimitOrder(bet) ? getLimitOrderStatusText(bet) : ''
 
@@ -704,7 +709,7 @@ export function BetStatusText(props: {
   const limitProb =
     bet.limitProb === undefined || !isBinaryMulti(contract)
       ? bet.limitProb
-      : getBinaryMCProb(bet.limitProb, outcome)
+      : versusSideProb(outcome, bet.limitProb)
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
   const money = (
@@ -768,7 +773,7 @@ export function BetStatusText(props: {
           )}{' '}
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
-            outcome={outcome}
+            outcome={displayOutcome}
             answer={answer}
             contract={contract}
             truncate="short"
@@ -785,7 +790,7 @@ export function BetStatusText(props: {
           {orderAmount}{' '}
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
-            outcome={outcome}
+            outcome={displayOutcome}
             answer={answer}
             contract={contract}
             truncate="short"
@@ -851,11 +856,16 @@ function BetActions(props: {
           open={isSharing}
           setOpen={setIsSharing}
           questionText={contract.question}
-          outcome={formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')}
+          outcome={
+            versusSide(contract, bet)
+              ? 'YES'
+              : formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')
+          }
           answer={
-            contract.mechanism === 'cpmm-multi-1'
+            versusSide(contract, bet)?.answer.text ??
+            (contract.mechanism === 'cpmm-multi-1'
               ? contract.answers?.find((a) => a.id === bet.answerId)?.text
-              : undefined
+              : undefined)
           }
           avgPrice={
             bet.limitProb !== undefined
@@ -962,11 +972,16 @@ function BetActionsWithGraph(props: {
           open={isSharing}
           setOpen={setIsSharing}
           questionText={contract.question}
-          outcome={formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')}
+          outcome={
+            versusSide(contract, bet)
+              ? 'YES'
+              : formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')
+          }
           answer={
-            contract.mechanism === 'cpmm-multi-1'
+            versusSide(contract, bet)?.answer.text ??
+            (contract.mechanism === 'cpmm-multi-1'
               ? contract.answers?.find((a) => a.id === bet.answerId)?.text
-              : undefined
+              : undefined)
           }
           avgPrice={
             bet.limitProb !== undefined

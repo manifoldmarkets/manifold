@@ -68,7 +68,13 @@ export function BetDialog(props: {
             {questionPseudonym ?? question}
           </Link>
           <div className="text-2xl">
-            {formatPercent(initialProb)} <span className="text-sm">chance</span>
+            {formatPercent(initialProb)}{' '}
+            <span className="text-sm">
+              {/* The probability is for the YES side; name it when the sides
+                  have names (e.g. Republican/Democratic) so it can't be read
+                  as the other side's chance. */}
+              {props.binaryPseudonym?.YES.pseudonymName ?? 'chance'}
+            </span>
           </div>
         </Row>
         <BuyPanel

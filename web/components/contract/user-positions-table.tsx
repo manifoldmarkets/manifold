@@ -16,6 +16,7 @@ import {
   getOrderedContractMetricRowsForContractId,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
+import { getVersusAnswers, mergeVersusMetricsByUser } from 'common/versus'
 import { first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, ReactNode, useEffect, useState } from 'react'
 import { FaArrowTrendUp } from 'react-icons/fa6'
@@ -70,6 +71,10 @@ export const UserPositionsTable = memo(
     } = props
     const answer = answerDetails?.answer
     const contractId = contract.id
+    // Versus positions can be stored on either answer (e.g. YES on the second
+    // answer placed through the API); they are listed relative to the main
+    // answer, so the second answer's metrics are fetched and mirrored too.
+    const versusAnswers = getVersusAnswers(contract)
 
     const [contractMetricsOrderedByProfit, setContractMetricsOrderedByProfit] =
       useState<ContractMetric[] | undefined>()
@@ -158,7 +163,22 @@ export const UserPositionsTable = memo(
         offsetToUse
       )
 
-      const newMetrics = convertContractMetricRows(rows)
+      let newMetrics = convertContractMetricRows(rows)
+      if (
+        newSortBy === 'shares' &&
+        versusAnswers &&
+        answerIdForShares === versusAnswers.main.id
+      ) {
+        const otherRows = await getOrderedContractMetricRowsForContractId(
+          contractId,
+          db,
+          versusAnswers.other.id,
+          newSortBy,
+          ROWS_PER_CALL,
+          offsetToUse
+        )
+        newMetrics = newMetrics.concat(convertContractMetricRows(otherRows))
+      }
 
       if (newSortBy === 'profit') {
         setContractMetricsOrderedByProfit((prev) =>
@@ -197,12 +217,26 @@ export const UserPositionsTable = memo(
 
     // Fetch total counts for YES/NO labels (independent of paged positions)
     useEffect(() => {
-      getContractMetricsCount(contractId, db, 'yes', currentAnswerId).then(
-        setTotalYesPositions
-      )
-      getContractMetricsCount(contractId, db, 'no', currentAnswerId).then(
-        setTotalNoPositions
-      )
+      const count = async (outcome: 'yes' | 'no') => {
+        const main = await getContractMetricsCount(
+          contractId,
+          db,
+          outcome,
+          currentAnswerId
+        )
+        if (!versusAnswers || currentAnswerId !== versusAnswers.main.id)
+          return main
+        // Positions on the second answer back the opposite side.
+        const other = await getContractMetricsCount(
+          contractId,
+          db,
+          outcome === 'yes' ? 'no' : 'yes',
+          versusAnswers.other.id
+        )
+        return main + other
+      }
+      count('yes').then(setTotalYesPositions)
+      count('no').then(setTotalNoPositions)
     }, [currentAnswerId, contractId])
 
     // Fetch total positions for all answers (for multi-choice carousel/select)
@@ -230,9 +264,13 @@ export const UserPositionsTable = memo(
       getAllAnswerPositionCounts()
     }, [contract.id, contract.mechanism, answers, setTotalPositions]) // Added dependencies
 
-    const positionsToDisplay = contractMetricsOrderedByShares?.filter((cm) =>
-      currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId
-    )
+    const positionsToDisplay = !contractMetricsOrderedByShares
+      ? undefined
+      : versusAnswers
+      ? mergeVersusMetricsByUser(contract, contractMetricsOrderedByShares)
+      : contractMetricsOrderedByShares.filter((cm) =>
+          currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId
+        )
     const profitPositionsToDisplay = contractMetricsOrderedByProfit // Already filtered by backend for !cm.answerId effectively when sortBy is profit
 
     // Effect to load more data when user scrolls near the end of the list

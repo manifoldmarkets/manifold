@@ -59,6 +59,7 @@ import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
+import { versusSide, versusSideProb } from 'common/versus'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
@@ -292,10 +293,18 @@ export const BuyPanelBody = (
     ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
-  const binaryMCOutcomeLabel =
-    isBinaryMC && multiProps
-      ? multiProps.answerText ?? multiProps.answerToBuy.text
+  // On a versus market `outcome` is relative to `answerToBuy`; this is the
+  // answer the user is actually backing.
+  const versusBetSide =
+    isBinaryMC && multiProps && outcome
+      ? versusSide(contract, { answerId: multiProps.answerToBuy.id, outcome })
       : undefined
+  const binaryMCOutcomeLabel = versusBetSide?.answer.text
+  // When the two sides have names (versus markets, or binary markets shown
+  // with pseudonyms such as Republican/Democratic) show probabilities for the
+  // side being bought, so buying the NO side reads as that side's probability
+  // going up rather than the YES side's going down.
+  const showsSideProb = isBinaryMC || !!props.pseudonym
   const isCashContract = contract.token === 'CASH'
 
   const quickAddButtonSize =
@@ -428,7 +437,12 @@ export const BuyPanelBody = (
   // Handle order book click to prefill limit order
   const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
     const fillParams = calculateOrderFillParams(clickedOrder)
-    setPrefillLimitOrder({ ...fillParams, timestamp: Date.now() })
+    // The limit order panel's probability input is the price of the side
+    // being bought when the sides are named, so mirror the NO side's price.
+    const limitProb = showsSideProb
+      ? versusSideProb(fillParams.outcome, fillParams.limitProb)
+      : fillParams.limitProb
+    setPrefillLimitOrder({ ...fillParams, limitProb, timestamp: Date.now() })
     setOutcome(fillParams.outcome)
     setBetTypeSetting('Limit')
     toast('Expiration set to immediate', { icon: '⏱️' })
@@ -470,16 +484,14 @@ export const BuyPanelBody = (
     undefined,
     slippageProtection
   )
-  let probBefore = prob
-  let probAfter = newProbAfter
-  if (
-    multiProps &&
-    multiProps.answerToBuy.text !== multiProps.answerText &&
-    isBinaryMC
-  ) {
-    probBefore = 1 - prob
-    probAfter = 1 - newProbAfter
-  }
+  // `prob` and `newProbAfter` are prices of `answerToBuy` (or of YES on a
+  // binary market); show the price of the side being bought instead.
+  const probBefore = showsSideProb
+    ? versusSideProb(outcome ?? 'YES', prob)
+    : prob
+  const probAfter = showsSideProb
+    ? versusSideProb(outcome ?? 'YES', newProbAfter)
+    : newProbAfter
 
   useEffect(() => {
     if (calculationError) {
@@ -842,7 +854,7 @@ export const BuyPanelBody = (
                     {!probStayedSame && !isPseudoNumeric && (
                       <>
                         <span className={clsx('ml-1', 'text-ink-600')}>
-                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                          {outcome !== 'NO' || showsSideProb ? '↑' : '↓'}
                           {getFormattedMappedValue(
                             contract,
                             Math.abs(probAfter - probBefore)
@@ -1086,11 +1098,18 @@ export const BuyPanelBody = (
             open={isSharing}
             setOpen={setIsSharing}
             questionText={contract.question}
-            outcome={formatOutcomeLabel(
-              contract,
-              lastBetDetails.outcome as 'YES' | 'NO'
-            )}
-            answer={multiProps?.answerToBuy.text}
+            outcome={
+              isBinaryMC
+                ? 'YES'
+                : formatOutcomeLabel(
+                    contract,
+                    lastBetDetails.outcome as 'YES' | 'NO'
+                  )
+            }
+            answer={
+              versusSide(contract, lastBetDetails)?.answer.text ??
+              multiProps?.answerToBuy.text
+            }
             avgPrice={formatPercent(
               lastBetDetails.outcome === 'YES'
                 ? lastBetDetails.amount / lastBetDetails.shares
@@ -1130,14 +1149,19 @@ export const BuyPanelBody = (
         <YourOrders
           className="mt-2 py-4"
           contract={contract}
-          bets={unfilledBetsMatchingAnswer}
+          // Versus orders may be stored on either answer.
+          bets={isBinaryMC ? allUnfilledBets : unfilledBetsMatchingAnswer}
         />
       )}
       <OrderBookPanel
         contract={contract}
-        limitBets={unfilledBets.filter(
-          (b) => b.answerId === multiProps?.answerToBuy?.id
-        )}
+        limitBets={
+          isBinaryMC
+            ? unfilledBets
+            : unfilledBets.filter(
+                (b) => b.answerId === multiProps?.answerToBuy?.id
+              )
+        }
         answer={multiProps?.answerToBuy}
         pseudonym={props.pseudonym}
         onOrderClick={handleOrderClick}
