@@ -7,7 +7,11 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import { SportsBetPanel, SportsVersusBetDialog } from './sports-bet-panel'
+import {
+  SportsBetPanel,
+  SportsBinaryBetDialog,
+  SportsVersusBetDialog,
+} from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
@@ -90,6 +94,7 @@ export type SportsMatch = {
     minute: string | null
   }
   contractId?: string
+  isBinary?: boolean
   teamAAnswerId?: string
   teamBAnswerId?: string
   drawAnswerId?: string
@@ -605,13 +610,22 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       </div>
 
       {betOutcome &&
-        (match.hasDraw === false ? (
-          // Knockout (2-way) markets use the standard versus bet modal.
+        (match.isBinary ? (
+          // Binary sports markets (NFL, CFB, NBA, etc.) — team names replace YES/NO.
+          <SportsBinaryBetDialog
+            contractId={match.contractId}
+            match={match}
+            initialOutcome={betOutcome}
+            onClose={() => setBetOutcome(null)}
+          />
+        ) : match.hasDraw === false ? (
+          // Knockout soccer/WC markets — 2-answer CPMM-multi, no draw.
           <SportsVersusBetDialog
             contractId={match.contractId}
             onClose={() => setBetOutcome(null)}
           />
         ) : (
+          // Standard 3-way soccer markets (home / draw / away).
           <SportsBetPanel
             match={{
               ...match,

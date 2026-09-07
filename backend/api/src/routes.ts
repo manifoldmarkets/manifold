@@ -231,6 +231,7 @@ import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
 import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
 import { adminSportsResolve } from './admin-sports-resolve'
@@ -614,6 +615,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-get-new-users': adminGetNewUsers,
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
+  'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
   'sports-markets': sportsMarkets,
   'sports-schedule': sportsSchedule,
   'admin-sports-resolve': adminSportsResolve,
