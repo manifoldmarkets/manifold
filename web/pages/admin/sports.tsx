@@ -40,10 +40,22 @@ const TOURNAMENTS = Object.values(TOURNAMENT_CONFIGS)
 
 // ─── Sport / competition registry ────────────────────────────────────────────
 
-type ActiveCompetition = { type: 'active'; label: string; config: TournamentConfig }
+type ActiveCompetition = {
+  type: 'active'
+  label: string
+  config: TournamentConfig
+}
 type PendingCompetition = { type: 'pending'; label: string }
-type OddsApiCompetition = { type: 'odds-api'; label: string; competitionId: string; sportsLeague: string }
-type CompetitionOption = ActiveCompetition | PendingCompetition | OddsApiCompetition
+type OddsApiCompetition = {
+  type: 'odds-api'
+  label: string
+  competitionId: string
+  sportsLeague: string
+}
+type CompetitionOption =
+  | ActiveCompetition
+  | PendingCompetition
+  | OddsApiCompetition
 
 type SportCategory = {
   id: string
@@ -57,8 +69,16 @@ const SPORT_CATEGORIES: SportCategory[] = [
     label: 'Soccer',
     competitions: [
       { type: 'active', label: 'World Cup 2026', config: WORLD_CUP_2026 },
-      { type: 'active', label: 'Champions League 2026', config: CHAMPIONS_LEAGUE_2026 },
-      { type: 'active', label: "Premier League 2025/26", config: PREMIER_LEAGUE_2526 },
+      {
+        type: 'active',
+        label: 'Champions League 2026',
+        config: CHAMPIONS_LEAGUE_2026,
+      },
+      {
+        type: 'active',
+        label: 'Premier League 2025/26',
+        config: PREMIER_LEAGUE_2526,
+      },
       { type: 'pending', label: 'EPL 2026/27' },
       { type: 'pending', label: 'UCL 2026/27' },
       { type: 'pending', label: 'MLS 2026' },
@@ -69,8 +89,18 @@ const SPORT_CATEGORIES: SportCategory[] = [
     id: 'nfl',
     label: 'NFL',
     competitions: [
-      { type: 'odds-api', label: 'NFL Regular Season 2026–27', competitionId: 'nfl-regular-2026', sportsLeague: 'NFL' },
-      { type: 'odds-api', label: 'NFL Playoffs 2027', competitionId: 'nfl-playoffs-2027', sportsLeague: 'NFL' },
+      {
+        type: 'odds-api',
+        label: 'NFL Regular Season 2026–27',
+        competitionId: 'nfl-regular-2026',
+        sportsLeague: 'NFL',
+      },
+      {
+        type: 'odds-api',
+        label: 'NFL Playoffs 2027',
+        competitionId: 'nfl-playoffs-2027',
+        sportsLeague: 'NFL',
+      },
     ],
   },
   {
@@ -92,9 +122,7 @@ const SPORT_CATEGORIES: SportCategory[] = [
   {
     id: 'tdf',
     label: 'Tour de France',
-    competitions: [
-      { type: 'pending', label: 'Tour de France 2027' },
-    ],
+    competitions: [{ type: 'pending', label: 'Tour de France 2027' }],
   },
   {
     id: 'mlb',
@@ -107,9 +135,7 @@ const SPORT_CATEGORIES: SportCategory[] = [
   {
     id: 'nba',
     label: 'NBA',
-    competitions: [
-      { type: 'pending', label: 'NBA 2026–27' },
-    ],
+    competitions: [{ type: 'pending', label: 'NBA 2026–27' }],
   },
   {
     id: 'wnba',
@@ -179,9 +205,8 @@ export default function SportsAdminPage() {
   const isAdmin = useAdmin() || useDev()
 
   const [selectedSportId, setSelectedSportId] = useState<string>('soccer')
-  const [selectedCompetition, setSelectedCompetition] = useState<CompetitionOption>(
-    SPORT_CATEGORIES[0].competitions[0]
-  )
+  const [selectedCompetition, setSelectedCompetition] =
+    useState<CompetitionOption>(SPORT_CATEGORIES[0].competitions[0])
 
   const selectedSport = SPORT_CATEGORIES.find((s) => s.id === selectedSportId)!
   // Active competitions have a wired TournamentConfig; pending ones don't yet.
@@ -400,12 +425,14 @@ export default function SportsAdminPage() {
   // Odds API creation state (NFL, CFB, MLB, NBA, WNBA)
   const [oddsApiDryRun, setOddsApiDryRun] = useState(true)
   const [oddsApiCreating, setOddsApiCreating] = useState(false)
-  const [oddsApiResults, setOddsApiResults] = useState<Array<{
-    eventId: string
-    question: string
-    status: string
-    reason: string | null
-  }>>([])
+  const [oddsApiResults, setOddsApiResults] = useState<
+    Array<{
+      eventId: string
+      question: string
+      status: string
+      reason: string | null
+    }>
+  >([])
 
   // Alerts: markets needing attention
   const alertMarkets = markets.filter((m) => m.needsAttention)
@@ -693,7 +720,10 @@ export default function SportsAdminPage() {
                         `${ENV_CONFIG.domain}${first.config.dashboardPath}`
                       )
                       setStageTiers(
-                        first.config.stageLiquidityTiers as Record<string, number>
+                        first.config.stageLiquidityTiers as Record<
+                          string,
+                          number
+                        >
                       )
                       setCustomNote('')
                       setExtraTags([])
@@ -734,7 +764,10 @@ export default function SportsAdminPage() {
                         `${ENV_CONFIG.domain}${comp.config.dashboardPath}`
                       )
                       setStageTiers(
-                        comp.config.stageLiquidityTiers as Record<string, number>
+                        comp.config.stageLiquidityTiers as Record<
+                          string,
+                          number
+                        >
                       )
                       setCustomNote('')
                       setExtraTags([])
@@ -780,13 +813,22 @@ export default function SportsAdminPage() {
         </Section>
 
         {/* ── 2. Tournament Settings ── */}
-        <Section title={`2. Competition Settings${!isApiConnected ? ' — unavailable' : ''}`}>
+        <Section
+          title={`2. Competition Settings${
+            !isApiConnected ? ' — unavailable' : ''
+          }`}
+        >
           {!isApiConnected ? (
             <p className="text-ink-400 text-sm">
               Select an active competition above to configure settings.
             </p>
           ) : null}
-          <Col className="gap-5" style={!isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}}>
+          <Col
+            className="gap-5"
+            style={
+              !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+            }
+          >
             {/* Tag + group status */}
             <Col className="gap-1.5">
               <label className="text-ink-700 text-sm font-medium">
@@ -1027,11 +1069,16 @@ export default function SportsAdminPage() {
                 <Col className="gap-1">
                   <p className="text-ink-600 text-sm font-medium">
                     {oddsApiDryRun ? 'Dry run preview' : 'Creation log'} (
-                    {oddsApiResults.filter(
-                      (r) => r.status === 'created' || r.status === 'dry-run'
-                    ).length}{' '}
+                    {
+                      oddsApiResults.filter(
+                        (r) => r.status === 'created' || r.status === 'dry-run'
+                      ).length
+                    }{' '}
                     games,{' '}
-                    {oddsApiResults.filter((r) => r.status === 'skipped').length}{' '}
+                    {
+                      oddsApiResults.filter((r) => r.status === 'skipped')
+                        .length
+                    }{' '}
                     skipped,{' '}
                     {oddsApiResults.filter((r) => r.status === 'error').length}{' '}
                     errors)
@@ -1081,13 +1128,24 @@ export default function SportsAdminPage() {
         )}
 
         {/* ── 3. Match Preview Panel ── */}
-        <Section title={`3. Match Preview & Creation${!isApiConnected ? ' — unavailable' : ''}`} defaultOpen>
+        <Section
+          title={`3. Match Preview & Creation${
+            !isApiConnected ? ' — unavailable' : ''
+          }`}
+          defaultOpen
+        >
           {!isApiConnected && (
             <p className="text-ink-400 text-sm">
-              Market creation requires an active competition with a connected data provider.
+              Market creation requires an active competition with a connected
+              data provider.
             </p>
           )}
-          <Col className="gap-4" style={!isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}}>
+          <Col
+            className="gap-4"
+            style={
+              !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+            }
+          >
             {/* Controls */}
             <Row className="flex-wrap items-end gap-4">
               <Col className="gap-1">
@@ -1451,8 +1509,17 @@ export default function SportsAdminPage() {
         </Section>
 
         {/* ── 5. Resolution Monitor ── */}
-        <Section title={`5. Resolution Monitor${!isApiConnected ? ' — unavailable' : ''}`}>
-          <Col className="gap-4" style={!isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}}>
+        <Section
+          title={`5. Resolution Monitor${
+            !isApiConnected ? ' — unavailable' : ''
+          }`}
+        >
+          <Col
+            className="gap-4"
+            style={
+              !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+            }
+          >
             <Row className="flex-wrap items-center gap-4 text-sm">
               <Col className="gap-0.5">
                 <span className="text-ink-500 text-xs">
