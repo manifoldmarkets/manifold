@@ -36,7 +36,7 @@ import {
   resolveWinner,
   teamScores,
 } from 'common/odds-markets'
-import { sportGroupIds } from 'common/sports-schedule'
+import { sportTagIds } from 'common/sports-schedule'
 import { CPMMMultiContract, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 
@@ -125,7 +125,7 @@ export async function createOddsMarketsForCompetition(
   // page all see the market.
   const groupIds = uniq([
     group.id,
-    ...sportGroupIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
+    ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
   ])
 
   for (const event of events) {

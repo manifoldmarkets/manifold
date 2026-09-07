@@ -3,10 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SportsMarket } from 'common/sports'
 import { ENV_CONFIG } from 'common/envs/constants'
 
-export const sportsMarkets: APIHandler<'sports-markets'> = async (
-  props
-) => {
-
+export const sportsMarkets: APIHandler<'sports-markets'> = async (props) => {
   const { sportsLeague } = props
   const pg = createSupabaseDirectClient()
 
@@ -32,7 +29,7 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
 
     const homeTeam: string | null = (d.sportsHomeTeam as string) ?? null
     const awayTeam: string | null = (d.sportsAwayTeam as string) ?? null
-    const isBinary = !d.answers?.length && (homeTeam || awayTeam)
+    const isBinary = !d.answers?.length && !!homeTeam && !!awayTeam
 
     let resolvedAnswer: string | null = null
     if (resolution) {
@@ -54,19 +51,18 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
 
     // For binary sports markets, synthesize two answer objects so the dashboard
     // card can render team names and probabilities without special-casing.
-    const answers: Array<{ id: string; text: string; prob: number }> =
-      isBinary
-        ? [
-            { id: 'YES', text: homeTeam!, prob: d.prob ?? 0.5 },
-            { id: 'NO', text: awayTeam!, prob: 1 - (d.prob ?? 0.5) },
-          ]
-        : (d.answers ?? []).map(
-            (a: { id: string; text: string; prob?: number }) => ({
-              id: a.id,
-              text: a.text,
-              prob: a.prob ?? 0,
-            })
-          )
+    const answers: Array<{ id: string; text: string; prob: number }> = isBinary
+      ? [
+          { id: 'YES', text: homeTeam!, prob: d.prob ?? 0.5 },
+          { id: 'NO', text: awayTeam!, prob: 1 - (d.prob ?? 0.5) },
+        ]
+      : (d.answers ?? []).map(
+          (a: { id: string; text: string; prob?: number }) => ({
+            id: a.id,
+            text: a.text,
+            prob: a.prob ?? 0,
+          })
+        )
 
     return {
       id: d.id as string,
@@ -82,11 +78,15 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
         d.resolutionTime != null && Number.isFinite(Number(d.resolutionTime))
           ? Number(d.resolutionTime)
           : null,
-      sportsHomeScore: d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
-      sportsAwayScore: d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
+      sportsHomeScore:
+        d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
+      sportsAwayScore:
+        d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
       sportsScoreDuration: (d.sportsScoreDuration as string) ?? null,
-      sportsPenHome: d.sportsPenHome != null ? (d.sportsPenHome as number) : null,
-      sportsPenAway: d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
+      sportsPenHome:
+        d.sportsPenHome != null ? (d.sportsPenHome as number) : null,
+      sportsPenAway:
+        d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
       sportsLiveStatus: (d.sportsLiveStatus as string) ?? null,
       sportsLiveMinute: (d.sportsLiveMinute as string) ?? null,
       sportsLiveUpdatedTime:

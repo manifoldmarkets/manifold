@@ -440,10 +440,25 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
 
   useApiSubscription({
     topics: match.contractId
-      ? [`contract/${match.contractId}/updated-answers`]
+      ? [
+          // Binary markets carry their price on the contract itself.
+          match.isBinary
+            ? `contract/${match.contractId}`
+            : `contract/${match.contractId}/updated-answers`,
+        ]
       : [],
     enabled: !resolved && !!match.contractId,
-    onBroadcast: ({ data }) => {
+    onBroadcast: ({ topic, data }) => {
+      if (topic === `contract/${match.contractId}`) {
+        const prob = (data.contract as { prob?: number } | undefined)?.prob
+        if (prob == null) return
+        setProbs((prev) => ({
+          ...prev,
+          teamA: Math.round(prob * 100),
+          teamB: Math.round((1 - prob) * 100),
+        }))
+        return
+      }
       const updates = (data.answers ?? []) as Array<{
         id: string
         prob?: number

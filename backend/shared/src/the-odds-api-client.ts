@@ -37,15 +37,20 @@ export async function getUpcomingOdds(
   sportKey: string,
   daysAhead = 14
 ): Promise<OddsApiEvent[]> {
-  const commenceTimeTo = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .replace(/\.\d{3}Z$/, 'Z')
+  const iso = (ms: number) =>
+    new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z')
+  const now = Date.now()
   const url = new URL(`${BASE_URL}/sports/${sportKey}/odds`)
   url.searchParams.set('apiKey', apiKey())
   url.searchParams.set('regions', 'us')
   url.searchParams.set('markets', 'h2h')
   url.searchParams.set('oddsFormat', 'american')
-  url.searchParams.set('commenceTimeTo', commenceTimeTo)
+  // Games that have not started; the endpoint would otherwise include live ones.
+  url.searchParams.set('commenceTimeFrom', iso(now))
+  url.searchParams.set(
+    'commenceTimeTo',
+    iso(now + daysAhead * 24 * 60 * 60 * 1000)
+  )
 
   const res = await fetch(url.toString())
   if (!res.ok) {

@@ -68,7 +68,9 @@ export default function SportsPage() {
     : 'all'
   const requested: SportSelection = querySport ?? restored
   useEffect(() => {
-    if (querySport && querySport !== savedSport) setSavedSport(querySport)
+    if (querySport && querySport !== 'live' && querySport !== savedSport) {
+      setSavedSport(querySport)
+    }
   }, [querySport])
   // A sport restored from storage shows up in the address bar too, so the
   // page and the URL never disagree.

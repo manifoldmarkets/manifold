@@ -28,8 +28,10 @@ export interface SportCategory {
   /** Longer label used in headings ("NFL football"). */
   longLabel: string
   emoji: string
-  /** Prod topic ids that put a market under this sport. */
+  /** Prod topic ids that put a market under this sport, and that new markets get tagged with. */
   groupIds: string[]
+  /** Old season topics: still read, so their markets show up, but never tagged onto new ones. */
+  archivedGroupIds?: string[]
   /** Slug of the main topic, for "see all" links into /browse. */
   slug?: string
   /** `sportsLeague` values (from the automated pipelines) that map here. */
@@ -63,8 +65,8 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     groupIds: [
       'i0v3cXwuxmO9fpcInVYb', // nba
       'NjkFkdkvRvBHoeMDQ5NB', // basketball
-      '0ac78428-c1bc-4549-aa30-416fa1df36e2', // nba-20242025-season
     ],
+    archivedGroupIds: ['0ac78428-c1bc-4549-aa30-416fa1df36e2'], // nba-20242025-season
     slug: 'nba',
     leagues: ['NBA', 'WNBA'],
   },
@@ -99,8 +101,8 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     groupIds: [
       'ypd6vR44ZzJyN9xykx6e', // soccer
       '5gsW3dPR3ySBRZCodrgm', // premier league
-      '307ecfd7-be33-485c-884b-75c61d1f51d4', // premier-league-20242025
     ],
+    archivedGroupIds: ['307ecfd7-be33-485c-884b-75c61d1f51d4'], // premier-league-20242025
     slug: 'soccer',
     leagues: [
       'Soccer',
@@ -196,9 +198,14 @@ const SPORT_LOOKUP_ORDER: SportKey[] = [
 ]
 
 /** Every topic id that puts a market on the sports page. */
+const readGroupIds = (s: SportCategory) => [
+  ...s.groupIds,
+  ...(s.archivedGroupIds ?? []),
+]
+
 export const ALL_SPORTS_GROUP_IDS = [
   SPORTS_DEFAULT_GROUP_ID,
-  ...SPORT_CATEGORIES.flatMap((s) => s.groupIds),
+  ...SPORT_CATEGORIES.flatMap(readGroupIds),
 ]
 
 // The Odds API names leagues `<sport>_<league>` (americanfootball_nfl,
@@ -234,7 +241,8 @@ export function sportForMarket(props: {
   const ids = new Set(groupIds ?? [])
   if (ids.size > 0) {
     for (const key of SPORT_LOOKUP_ORDER) {
-      if (SPORT_BY_KEY[key]?.groupIds.some((g) => ids.has(g))) return key
+      const cat = SPORT_BY_KEY[key]
+      if (cat && readGroupIds(cat).some((g) => ids.has(g))) return key
     }
   }
   return 'other'
@@ -244,8 +252,16 @@ export function sportForMarket(props: {
 export function sportGroupIds(sport: SportKey | 'all'): string[] {
   if (ENV !== 'PROD') return [SPORTS_DEFAULT_GROUP_ID]
   if (sport === 'all') return ALL_SPORTS_GROUP_IDS
-  const ids = SPORT_BY_KEY[sport]?.groupIds ?? []
+  const cat = SPORT_BY_KEY[sport]
+  const ids = cat ? readGroupIds(cat) : []
   return ids.length > 0 ? ids : [SPORTS_DEFAULT_GROUP_ID]
+}
+
+/** Topic ids to put on a market a pipeline creates for a sport: the current topics only, plus Sports. */
+export function sportTagIds(sport: SportKey): string[] {
+  if (ENV !== 'PROD') return [SPORTS_DEFAULT_GROUP_ID]
+  const ids = SPORT_BY_KEY[sport]?.groupIds ?? []
+  return [SPORTS_DEFAULT_GROUP_ID, ...ids]
 }
 
 // ─── Kickoff time ─────────────────────────────────────────────────────────────

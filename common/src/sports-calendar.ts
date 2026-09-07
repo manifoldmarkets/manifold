@@ -143,10 +143,10 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Regular Season',
     startDate: '2026-08-29',
     endDate: '2026-11-28',
-    autoCreate: true,
+    autoCreate: false,
     autoResolve: true,
     notes:
-      'Scope: Top 25 matchups and rivalry games only — not all games. Rolling 14-day window.',
+      'Scope should be Top 25 matchups and rivalry games only, but the pipeline has no such filter yet, so auto-create stays off; the provider returns every FBS game.',
   },
   {
     sport: 'cfb',
@@ -155,7 +155,7 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Conference Championships',
     startDate: '2026-12-05',
     endDate: '2026-12-06',
-    autoCreate: true,
+    autoCreate: false,
     autoResolve: true,
   },
   {
@@ -165,7 +165,7 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Bowl Season',
     startDate: '2026-12-20',
     endDate: '2027-01-01',
-    autoCreate: true,
+    autoCreate: false,
     autoResolve: true,
   },
   {
@@ -433,6 +433,33 @@ export function calendarStatus(
 /** Entries whose window contains `now`. */
 export function activeCalendarEntries(now = Date.now()): SportsCalendarEntry[] {
   return SPORTS_CALENDAR.filter((e) => calendarStatus(e, now) === 'active')
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * A phase's window in ms. Dates are calendar days for a competition played
+ * mostly in the US, so the end gets a day of slack: a Monday-night game at
+ * 8pm ET is already the next day in UTC.
+ */
+export function phaseWindow(
+  entry: Pick<SportsCalendarEntry, 'startDate' | 'endDate'>
+): { from: number; to: number } {
+  return {
+    from: new Date(`${entry.startDate}T00:00:00Z`).getTime(),
+    to: new Date(`${entry.endDate}T23:59:59Z`).getTime() + DAY_MS,
+  }
+}
+
+/** Entries whose window overlaps [from, to]. */
+export function calendarEntriesOverlapping(
+  from: number,
+  to: number
+): SportsCalendarEntry[] {
+  return SPORTS_CALENDAR.filter((e) => {
+    const w = phaseWindow(e)
+    return w.from <= to && w.to >= from
+  })
 }
 
 /** All phases of one competition. */

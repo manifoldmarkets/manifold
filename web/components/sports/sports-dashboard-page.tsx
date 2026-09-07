@@ -15,6 +15,7 @@ import {
   SportsDashboardTabButton,
 } from 'web/components/sports/sports-match-card'
 import { teamBadge } from 'common/sports'
+import { splitFlag as parseAnswerText } from 'common/sports-schedule'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
 import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
@@ -116,19 +117,6 @@ function MarketCardSkeletonGrid() {
       ))}
     </div>
   )
-}
-
-function parseAnswerText(text: string): { flag: string; name: string } {
-  const chars = [...text.trim()]
-  const isRegionalIndicator = (c?: string) => {
-    const cp = c?.codePointAt(0)
-    return cp !== undefined && cp >= 0x1f1e6 && cp <= 0x1f1ff
-  }
-  if (isRegionalIndicator(chars[0]) && isRegionalIndicator(chars[1])) {
-    const flag = chars[0] + chars[1]
-    return { flag, name: text.trim().slice(flag.length).trim() }
-  }
-  return { flag: '', name: text.trim() }
 }
 
 // football-data live statuses (no HALF_TIME exists — the break is PAUSED).

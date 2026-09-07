@@ -38,6 +38,7 @@ A user-made prop with no event id still attaches to its game by team name and ti
 ### Still by hand
 
 - **Opening prices for three-way markets.** Binary markets open at the devigged moneyline; three-way ones open level because answers cannot be seeded at creation. A first bet from @ManifoldSports would fix that.
+- **College football.** The provider returns every FBS game, sixty to eighty a week, and the pipeline has no way to keep only ranked matchups yet, so the regular-season phases have auto-create off. The playoff phase is on.
 - **Competitions the provider does not cover.** F1, the Tour de France, the Champions League (not in the catalogue as of August 2026) and the NWSL have calendar entries but no sport key; they show as pending on `/admin/sports`.
 - **Postponements and cancellations.** Nothing resolves N/A automatically. The needs-attention list on `/admin/sports` is where they surface.
 

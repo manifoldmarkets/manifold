@@ -405,6 +405,7 @@ export default function SportsAdminPage() {
   // Odds API creation state (NFL, CFB, MLB, NBA, WNBA)
   const [oddsApiDryRun, setOddsApiDryRun] = useState(true)
   const [oddsApiCreating, setOddsApiCreating] = useState(false)
+  const [oddsApiRan, setOddsApiRan] = useState(false)
   const [oddsApiResults, setOddsApiResults] = useState<
     Array<{
       eventId: string
@@ -527,6 +528,7 @@ export default function SportsAdminPage() {
         dryRun: oddsApiDryRun,
       })
       setOddsApiResults(data.results)
+      setOddsApiRan(true)
     } catch (e: unknown) {
       alert(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`)
     } finally {
@@ -1045,6 +1047,13 @@ export default function SportsAdminPage() {
                   </span>
                 )}
               </Row>
+              {oddsApiRan && oddsApiResults.length === 0 && (
+                <p className="text-ink-500 text-sm">
+                  No games to create: nothing in an auto-create phase of this
+                  competition starts in the next 14 days. Phases are set in
+                  common/sports-calendar.ts.
+                </p>
+              )}
               {oddsApiResults.length > 0 && (
                 <Col className="gap-1">
                   <p className="text-ink-600 text-sm font-medium">
@@ -1491,13 +1500,15 @@ export default function SportsAdminPage() {
         {/* ── 5. Resolution Monitor ── */}
         <Section
           title={`5. Resolution Monitor${
-            !isApiConnected ? ' — unavailable' : ''
+            !isApiConnected && !isOddsApi ? ' — unavailable' : ''
           }`}
         >
           <Col
             className="gap-4"
             style={
-              !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+              !isApiConnected && !isOddsApi
+                ? { opacity: 0.4, pointerEvents: 'none' }
+                : {}
             }
           >
             <Row className="flex-wrap items-center gap-4 text-sm">
