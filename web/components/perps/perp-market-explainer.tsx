@@ -14,7 +14,7 @@ import { useUser } from 'web/hooks/use-user'
 
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { PERP_MARKET_BADGE_CLASS } from './perp-market-badge'
+import { PERP_TICKER_CLASS } from './perp-market-badge'
 
 export function PerpMarketExplainer(props: {
   // The explainer quotes THIS market's live settings (fees, leverage cap)
@@ -37,8 +37,9 @@ export function PerpMarketExplainer(props: {
       <button
         type="button"
         className={clsx(
-          PERP_MARKET_BADGE_CLASS,
-          'hover:bg-primary-200 focus-visible:ring-primary-500 dark:hover:bg-primary-900/70 h-7 cursor-pointer gap-1 px-2.5 text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+          PERP_TICKER_CLASS,
+          // Title-sized like the label everywhere else; the (i) scales with it.
+          'hover:text-primary-500 focus-visible:ring-primary-500 inline-flex cursor-pointer items-center gap-1 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
           className
         )}
         aria-haspopup="dialog"
@@ -47,7 +48,7 @@ export function PerpMarketExplainer(props: {
         onClick={() => setOpen(true)}
       >
         {ticker}
-        <InformationCircleIcon aria-hidden className="h-4 w-4" />
+        <InformationCircleIcon aria-hidden className="h-[0.8em] w-[0.8em]" />
       </button>
       <Modal
         open={open}

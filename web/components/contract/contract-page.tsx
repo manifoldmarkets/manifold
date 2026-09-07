@@ -322,7 +322,7 @@ export function ContractPageContent(props: ContractParams) {
                     {isPerp && (
                       <PerpMarketBadge
                         contract={liveContract}
-                        className="mr-1 align-middle"
+                        className="mr-1"
                       />
                     )}
                     {props.contract.question}

@@ -64,7 +64,7 @@ export const EditableQuestionTitle = (props: {
   ) : (
     <div className="group text-xl font-medium sm:text-2xl">
       {prefix && (
-        <span className="mr-2 inline-flex align-middle">{prefix}</span>
+        <span className="mr-2 inline-flex align-baseline">{prefix}</span>
       )}
       {contract.question}
       {canEdit && (

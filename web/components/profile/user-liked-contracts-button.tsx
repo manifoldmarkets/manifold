@@ -85,7 +85,7 @@ export const UserLikedContractsButton = memo(
                             oracleFeedId: contract.oracle_feed_id ?? undefined,
                             slug: contract.slug ?? undefined,
                           })}
-                          className="mr-1 align-middle"
+                          className="mr-1"
                         />
                       )}
                       {contract.question}

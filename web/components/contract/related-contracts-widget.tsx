@@ -151,7 +151,7 @@ const SidebarRelatedContractCard = memo(function (props: {
         )}
       >
         {contract.outcomeType === 'PERP' && (
-          <PerpMarketBadge contract={contract} className="mr-1 align-middle" />
+          <PerpMarketBadge contract={contract} className="mr-1" />
         )}
         {question}
       </div>
@@ -230,7 +230,7 @@ const RelatedContractCard = memo(function (props: {
         )}
       >
         {contract.outcomeType === 'PERP' && (
-          <PerpMarketBadge contract={contract} className="mr-1 align-middle" />
+          <PerpMarketBadge contract={contract} className="mr-1" />
         )}
         {question}
       </div>
