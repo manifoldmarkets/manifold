@@ -12,7 +12,11 @@ import {
 import { SEARCH_ANCHOR_CLOCK_SKEW_ERROR } from 'common/search-request-coordination'
 import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { convertContract } from 'common/supabase/contracts'
-import { orderBy, uniqBy } from 'lodash'
+import { orderBy } from 'lodash'
+import {
+  getSearchQueryPagination,
+  getSearchResultPage,
+} from 'shared/helpers/search-pagination'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import {
   createSupabaseDirectClient,
@@ -264,6 +268,7 @@ const search = async (
       .map((searchType) =>
         getSearchContractSQL({
           ...props,
+          ...getSearchQueryPagination(props),
           term: cleanTerm,
           uid: userId,
           searchType,
@@ -287,7 +292,10 @@ const search = async (
       searchTypes.map((searchType, i) => [
         searchType,
         results[i].map(
-          (r: any): Match => ({ data: convertContract(r), searchType })
+          (r: Parameters<typeof convertContract>[0]): Match => ({
+            data: convertContract(r),
+            searchType,
+          })
         ),
       ])
     ) as Partial<Record<SearchTypes, Match[]>>
@@ -310,18 +318,18 @@ const search = async (
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
 
-    const lexicalResults = orderBy(
-      uniqBy(
-        [
-          ...tickerMatches, // the market's own handle
-          ...contractsWithStopwords, // most obviously relevant
-          ...contractsOfSimilarRelevance, // next most relevant
-          ...contractDescriptionMatches, // least obviously relevant
-        ].map((c) => c.data),
-        'id'
-      ).slice(0, limit),
-      (c) => sortFields[sort].sortCallback(c),
-      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+    const lexicalResults = getSearchResultPage(
+      [
+        ...tickerMatches, // the market's own handle
+        ...contractsWithStopwords, // most obviously relevant
+        ...contractsOfSimilarRelevance, // next most relevant
+        ...contractDescriptionMatches, // least obviously relevant
+      ].map((c) => c.data),
+      {
+        ...props,
+        sortCallback: sortFields[sort].sortCallback,
+        order: sortFields[sort].order.includes('DESC') ? 'desc' : 'asc',
+      }
     )
     if (!options.markSearchMatches) return lexicalResults
 
