@@ -154,7 +154,20 @@ export const senate2026: StateElectionMarket[] = [
   // Binary market — YES = Republican wins, which getPartyProbs handles.
   { state: 'FL', slug: 'will-a-republican-win-the-us-senate' },
   { state: 'GA', slug: 'which-party-will-win-the-2026-us-se' },
-  { state: 'ID', slug: 'which-party-will-win-the-2026-idaho' },
+  // ID: another race with no Democrat on the ballot. David Roth won the
+  // Democratic nomination, then withdrew in July once independent former state
+  // rep Todd Achilles entered with Democratic leaders' backing — so it is
+  // Jim Risch (R) v. Achilles (I). The superseded market still lists
+  // "Republicans | Democrats"; this one lists "Republicans | Independent".
+  //
+  // otherParty folds Achilles into the Democratic side for colouring only.
+  // Without it getPartyProbs sees no Democratic answer, hits its
+  // `!hasDem || !hasRep` guard, and greys Idaho out entirely.
+  {
+    state: 'ID',
+    slug: 'which-party-will-win-the-2026-idaho-2PNUOhCEyR',
+    otherParty: 'Democratic Party',
+  },
   { state: 'IL', slug: 'which-party-will-win-the-2026-illin' },
   { state: 'IA', slug: 'which-party-will-win-the-2026-iowa' },
   { state: 'KS', slug: 'which-party-will-win-the-2026-kansa' },
@@ -165,7 +178,14 @@ export const senate2026: StateElectionMarket[] = [
   { state: 'MI', slug: 'which-party-will-win-the-2026-michi' },
   { state: 'MN', slug: 'which-party-will-win-the-2026-senat-RLNdnAsdEg' },
   { state: 'MS', slug: 'which-party-will-win-the-2026-missi' },
-  { state: 'MT', slug: 'which-party-will-win-the-2026-monta' },
+  // MT: a three-way race the party markets cannot express. Steve Daines (R)
+  // withdrew minutes before the filing deadline and endorsed Kurt Alme (R);
+  // the Democratic nominee is Alani Bankhead; and the competitive alternative
+  // is Seth Bodnar, running as an INDEPENDENT with Jon Tester's backing. The
+  // party market here is "Republicans 97% / Democrats 3%" with no Other line,
+  // so a Bodnar win would N/A it — and it hides the only interesting contest.
+  // This candidate market carries all three plus Other.
+  { state: 'MT', slug: 'who-will-win-the-2026-montana-senat' },
   // NE: front-runner is independent Dan Osborn, who reads as "other" on the
   // map rather than a party color — known imperfection of reusing this market.
   { state: 'NE', slug: 'which-party-will-win-the-2026-nebra' },
@@ -196,7 +216,6 @@ export const senateCandidates2026: StateElectionMarket[] = [
   { state: 'MN', slug: 'who-will-win-minnesotas-2026-senate' },
   { state: 'OH', slug: 'who-will-win-the-2026-united-states' },
   { state: 'IA', slug: 'who-will-win-the-2026-united-states-u09U0PqQSn' },
-  { state: 'MT', slug: 'who-will-the-2026-montana-senate-el' },
 ]
 
 export interface CurrentSenateState {

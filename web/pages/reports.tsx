@@ -3,20 +3,88 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { ModReport, ReportStatus } from 'common/src/mod-report'
-import Link from 'next/link'
-import { useModReports } from 'web/hooks/use-mod-reports'
+import { ModReport, ReportStatus } from 'common/mod-report'
+import { useModReports, useReportPages } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
 import UserReportItem from 'web/components/user-report-item'
 import { Title } from 'web/components/widgets/title'
 import { api } from 'web/lib/api/api'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
-import { getReports, LiteReport } from 'web/pages/admin/reports'
-import { Select } from 'web/components/widgets/select'
+import {
+  getReportBatch,
+  LiteReport,
+  ReportCursor,
+} from 'web/pages/admin/reports'
 import { Row } from 'web/components/layout/row'
+import { Button } from 'web/components/buttons/button'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import {
+  FilterPill,
+  FilterState,
+  passesFilter,
+} from 'web/components/widgets/filter-pill'
 
 const USER_REPORTS_PAGE_SIZE = 10
+
+type SortOrder = 'desc' | 'asc'
+
+const SORT_CHOICES: { [label: string]: SortOrder } = {
+  Newest: 'desc',
+  Oldest: 'asc',
+}
+
+const MOD_REPORT_STATUSES: ReportStatus[] = [
+  'new',
+  'under review',
+  'needs admin',
+  'resolved',
+]
+
+const STATUS_LABELS: { [status in ReportStatus]: string } = {
+  new: 'New',
+  'under review': 'Under review',
+  'needs admin': 'Needs admin',
+  resolved: 'Resolved',
+}
+
+const USER_REPORT_TYPES = ['contract', 'comment', 'user', 'post']
+
+type Filters<T extends string> = { [key in T]: FilterState }
+
+function makeFilters<T extends string>(
+  keys: readonly T[],
+  overrides: Partial<Filters<T>> = {}
+) {
+  const filters = Object.fromEntries(
+    keys.map((key) => [key, 'off'])
+  ) as Filters<T>
+  return { ...filters, ...overrides }
+}
+
+/** The keys left visible by a set of include/exclude pills: the explicitly
+ * included ones, or everything that wasn't explicitly excluded. */
+function includedKeys<T extends string>(
+  keys: readonly T[],
+  filters: Filters<T>
+) {
+  const included = keys.filter((key) => filters[key] === 'include')
+  return included.length
+    ? included
+    : keys.filter((key) => filters[key] !== 'exclude')
+}
+
+const isDefault = <T extends string>(
+  filters: Filters<T>,
+  defaults: Filters<T>
+) =>
+  Object.keys(defaults).every((key) => filters[key as T] === defaults[key as T])
+
+const DEFAULT_MOD_STATUS_FILTERS = makeFilters(MOD_REPORT_STATUSES, {
+  resolved: 'exclude',
+})
+
+const DEFAULT_USER_TYPE_FILTERS = makeFilters(USER_REPORT_TYPES)
 
 const updateModReport = async (
   reportId: number,
@@ -34,36 +102,117 @@ const updateModReport = async (
 export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
   const [activeTab, setActiveTab] = useState('mod-reports')
-  const [selectedStatuses, setSelectedStatuses] = useState<ReportStatus[]>([
-    'new',
-    'under review',
-    'needs admin',
-  ])
+  const [userTabOpened, setUserTabOpened] = useState(false)
+
+  // Mod report sorting & filtering.
+  const [modSort, setModSort] = useState<SortOrder>('desc')
+  const [statusFilters, setStatusFilters] = useState(DEFAULT_MOD_STATUS_FILTERS)
+  const [modNoteFilter, setModNoteFilter] = useState<FilterState>('off')
+  const [modBannedFilter, setModBannedFilter] = useState<FilterState>('off')
+
+  const selectedStatuses = useMemo(
+    () => includedKeys(MOD_REPORT_STATUSES, statusFilters),
+    [statusFilters]
+  )
+
   const {
     reports: modReports,
     initialLoading,
+    isLoading: modReportsLoading,
+    error: modReportsError,
+    hasMore: hasMoreModReports,
+    loadMore: loadMoreModReports,
     reportStatuses,
     modNotes,
     setReportStatuses,
     setModNotes,
-  } = useModReports(selectedStatuses)
-  const [showBannedUsers, setShowBannedUsers] = useState(false)
-  const [allUserReports, setAllUserReports] = useState<LiteReport[]>()
-  const [userReportsError, setUserReportsError] = useState(false)
-  const [bannedIds, setBannedIds] = useState<string[]>([])
+  } = useModReports(selectedStatuses, modSort, !!isAdminOrMod)
 
-  useEffect(() => {
-    getReports({ limit: 50 })
-      .then(setAllUserReports)
-      .catch((e) => {
-        console.error('Error fetching user reports:', e)
-        setUserReportsError(true)
-      })
-  }, [])
-
-  const filteredUserReports = allUserReports?.filter(
-    (r) => !r.owner.isBannedFromPosting && !bannedIds.includes(r.owner.id)
+  const visibleModReports = useMemo(
+    () =>
+      (modReports ?? []).filter((report) => {
+        const note = (
+          modNotes[report.report_id] ??
+          report.mod_note ??
+          ''
+        ).trim()
+        return (
+          passesFilter(modNoteFilter, !!note) &&
+          passesFilter(modBannedFilter, !!report.owner_is_banned_from_posting)
+        )
+      }),
+    [modReports, modNotes, modNoteFilter, modBannedFilter]
   )
+
+  const modFiltersAreDefault =
+    isDefault(statusFilters, DEFAULT_MOD_STATUS_FILTERS) &&
+    modNoteFilter === 'off' &&
+    modBannedFilter === 'off'
+
+  const resetModFilters = () => {
+    setStatusFilters(DEFAULT_MOD_STATUS_FILTERS)
+    setModNoteFilter('off')
+    setModBannedFilter('off')
+  }
+
+  // User report sorting & filtering.
+  const [userSort, setUserSort] = useState<SortOrder>('desc')
+  const [typeFilters, setTypeFilters] = useState(DEFAULT_USER_TYPE_FILTERS)
+  const [userBannedFilter, setUserBannedFilter] =
+    useState<FilterState>('exclude')
+  const [userReasonFilter, setUserReasonFilter] = useState<FilterState>('off')
+  const [bannedIds, setBannedIds] = useState<string[]>([])
+  const {
+    reports: allUserReports,
+    error: userReportsError,
+    isLoading: userReportsLoading,
+    hasMore: hasMoreUserReports,
+    loadMore: loadMoreUserReports,
+  } = useReportPages<LiteReport, ReportCursor>(
+    userSort,
+    (after) =>
+      getReportBatch({ limit: 50, ascending: userSort === 'asc', after }),
+    !!isAdminOrMod && userTabOpened
+  )
+
+  const isBanned = (report: LiteReport) =>
+    !!report.owner.isBannedFromPosting || bannedIds.includes(report.owner.id)
+
+  const unbannedUserReports = allUserReports?.filter((r) => !isBanned(r))
+
+  const visibleTypes = useMemo(
+    () => includedKeys(USER_REPORT_TYPES, typeFilters),
+    [typeFilters]
+  )
+
+  const visibleUserReports = useMemo(
+    () =>
+      allUserReports?.filter(
+        (report) =>
+          (!USER_REPORT_TYPES.includes(report.contentType) ||
+            visibleTypes.includes(report.contentType)) &&
+          passesFilter(userBannedFilter, isBanned(report)) &&
+          passesFilter(userReasonFilter, !!report.reasonsDescription?.trim())
+      ),
+    [
+      allUserReports,
+      visibleTypes,
+      userBannedFilter,
+      userReasonFilter,
+      bannedIds,
+    ]
+  )
+
+  const userFiltersAreDefault =
+    isDefault(typeFilters, DEFAULT_USER_TYPE_FILTERS) &&
+    userBannedFilter === 'exclude' &&
+    userReasonFilter === 'off'
+
+  const resetUserFilters = () => {
+    setTypeFilters(DEFAULT_USER_TYPE_FILTERS)
+    setUserBannedFilter('exclude')
+    setUserReasonFilter('off')
+  }
 
   const handleStatusChange = async (
     reportId: number,
@@ -86,33 +235,12 @@ export default function ReportsPage() {
     await updateModReport(reportId, { mod_note: newNote })
   }
 
-  const handleStatusFilterChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const value = e.target.value
-
-    if (value === 'all') {
-      setSelectedStatuses(['new', 'under review', 'needs admin', 'resolved'])
-    } else if (value === 'unresolved') {
-      setSelectedStatuses(['new', 'under review', 'needs admin'])
-    } else {
-      setSelectedStatuses([value as ReportStatus])
-    }
-  }
-
   if (!isAdminOrMod)
     return (
       <Page trackPageView={'mod reports'}>
         <div className="mt-24 self-center">
           You must be a Mod or Admin to view this page.
         </div>
-      </Page>
-    )
-
-  if (initialLoading)
-    return (
-      <Page trackPageView={'mod reports'}>
-        <div className="mt-24 self-center">Loading reports...</div>
       </Page>
     )
 
@@ -131,71 +259,107 @@ export default function ReportsPage() {
         ))
       ) : (
         <div className="mt-8 text-center">
-          No reports found with the selected filter.
+          No matching reports among the reports loaded so far.
         </div>
       )}
     </Col>
   )
 
-  const renderUserReportsList = () => (
+  const renderModReportsContent = () => (
     <Col className="w-full">
-      <Row className="mb-4 mt-2 justify-end">
-        <Select
-          className="max-w-xs"
-          onChange={(e) => setShowBannedUsers(e.target.value === 'all')}
-          value={showBannedUsers ? 'all' : 'hide-banned'}
-        >
-          <option value="all">Show All Users</option>
-          <option value="hide-banned">Hide Banned Users</option>
-        </Select>
-      </Row>
-      <UserReportsListInner
-        allReports={allUserReports}
-        allReportsError={userReportsError}
-        hideBanned={!showBannedUsers}
-        bannedIds={bannedIds}
-        onBan={(userId) => setBannedIds((ids) => [...ids, userId])}
+      <FilterRow
+        sort={modSort}
+        setSort={setModSort}
+        onReset={modFiltersAreDefault ? undefined : resetModFilters}
+      >
+        {MOD_REPORT_STATUSES.map((status) => (
+          <FilterPill
+            key={status}
+            state={statusFilters[status]}
+            onChange={(state) =>
+              setStatusFilters((prev) => ({ ...prev, [status]: state }))
+            }
+          >
+            {STATUS_LABELS[status]}
+          </FilterPill>
+        ))}
+        <FilterPill state={modNoteFilter} onChange={setModNoteFilter}>
+          Has mod note
+        </FilterPill>
+        <FilterPill state={modBannedFilter} onChange={setModBannedFilter}>
+          Banned author
+        </FilterPill>
+      </FilterRow>
+
+      {initialLoading ? (
+        <div className="mt-8 text-center">Loading reports...</div>
+      ) : modReports ? (
+        <>
+          <div className="text-ink-500 mb-2 text-sm">
+            Showing {visibleModReports.length} of {modReports?.length ?? 0}{' '}
+            loaded reports
+          </div>
+          {renderReportList(visibleModReports)}
+        </>
+      ) : null}
+      <ReportLoadMore
+        hasMore={hasMoreModReports}
+        isLoading={modReportsLoading && !initialLoading}
+        error={modReportsError}
+        onLoadMore={loadMoreModReports}
       />
     </Col>
   )
 
-  const renderModReportsContent = () => (
+  const renderUserReportsList = () => (
     <Col className="w-full">
-      <Row className="mb-4 mt-2 justify-end">
-        <Select
-          className="max-w-xs"
-          onChange={handleStatusFilterChange}
-          value={
-            selectedStatuses.length === 4
-              ? 'all'
-              : selectedStatuses.length === 3 &&
-                selectedStatuses.includes('new') &&
-                selectedStatuses.includes('under review') &&
-                selectedStatuses.includes('needs admin')
-              ? 'unresolved'
-              : selectedStatuses.length === 1
-              ? selectedStatuses[0]
-              : 'custom'
-          }
-        >
-          <option value="all">All Statuses</option>
-          <option value="unresolved">Unresolved</option>
-          <option value="new">New</option>
-          <option value="under review">Under Review</option>
-          <option value="needs admin">Needs Admin</option>
-          <option value="resolved">Resolved</option>
-        </Select>
-      </Row>
-      {renderReportList(modReports ?? [])}
-
-      <div className="mt-4 text-center">
-        <Link
-          href="/admin/reports"
-          className="text-primary-700 hover:text-primary-500 hover:underline"
-        >
-          View additional reports...
-        </Link>
-      </div>
+      <FilterRow
+        sort={userSort}
+        setSort={setUserSort}
+        onReset={userFiltersAreDefault ? undefined : resetUserFilters}
+      >
+        {USER_REPORT_TYPES.map((type) => (
+          <FilterPill
+            key={type}
+            state={typeFilters[type]}
+            onChange={(state) =>
+              setTypeFilters((prev) => ({ ...prev, [type]: state }))
+            }
+          >
+            {type[0].toUpperCase() + type.slice(1)}
+          </FilterPill>
+        ))}
+        <FilterPill state={userBannedFilter} onChange={setUserBannedFilter}>
+          Banned user
+        </FilterPill>
+        <FilterPill state={userReasonFilter} onChange={setUserReasonFilter}>
+          Has reason
+        </FilterPill>
+      </FilterRow>
+      {allUserReports && (
+        <div className="text-ink-500 mb-2 text-sm">
+          Showing {visibleUserReports?.length ?? 0} of {allUserReports.length}{' '}
+          loaded reports
+        </div>
+      )}
+      <UserReportsListInner
+        reports={visibleUserReports}
+        allReportsError={userReportsError}
+        bannedIds={bannedIds}
+        onBan={(userId) => setBannedIds((ids) => [...ids, userId])}
+        filterKey={JSON.stringify([
+          userSort,
+          typeFilters,
+          userBannedFilter,
+          userReasonFilter,
+        ])}
+      />
+      <ReportLoadMore
+        hasMore={hasMoreUserReports}
+        isLoading={userReportsLoading && !!allUserReports}
+        error={userReportsError}
+        onLoadMore={loadMoreUserReports}
+      />
     </Col>
   )
 
@@ -210,9 +374,9 @@ export default function ReportsPage() {
       content: renderUserReportsList(),
       queryString: 'user-reports',
       inlineTabIcon:
-        filteredUserReports && filteredUserReports.length > 0 ? (
+        unbannedUserReports && unbannedUserReports.length > 0 ? (
           <div className="text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3">
-            {filteredUserReports.length}
+            {unbannedUserReports.length}
           </div>
         ) : null,
     },
@@ -233,7 +397,10 @@ export default function ReportsPage() {
           trackingName="mod-reports-tabs"
           onClick={(title, index) => {
             if (index === 0) setActiveTab('mod-reports')
-            else setActiveTab('user-reports')
+            else {
+              setActiveTab('user-reports')
+              setUserTabOpened(true)
+            }
           }}
         />
       </Col>
@@ -241,34 +408,96 @@ export default function ReportsPage() {
   )
 }
 
+function ReportLoadMore(props: {
+  hasMore: boolean
+  isLoading: boolean
+  error: boolean
+  onLoadMore: () => void
+}) {
+  const { hasMore, isLoading, error, onLoadMore } = props
+  return (
+    <Col className="mt-4 items-center gap-2">
+      {error && (
+        <div role="alert">Failed to load reports. Please try again.</div>
+      )}
+      {hasMore && (
+        <div className="text-ink-500 text-center text-sm">
+          Filters apply to loaded reports. More reports are available.
+        </div>
+      )}
+      {(hasMore || error || isLoading) && (
+        <Button color="gray-outline" disabled={isLoading} onClick={onLoadMore}>
+          {isLoading
+            ? 'Loading reports...'
+            : error
+            ? 'Retry'
+            : 'Load 50 more reports'}
+        </Button>
+      )}
+    </Col>
+  )
+}
+
+/** Sort toggle plus a wrapping row of include/exclude filter pills. */
+function FilterRow(props: {
+  sort: SortOrder
+  setSort: (sort: SortOrder) => void
+  onReset?: () => void
+  children: React.ReactNode
+}) {
+  const { sort, setSort, onReset, children } = props
+
+  return (
+    <Col className="mb-4 mt-2 gap-2">
+      <Row className="items-center gap-2">
+        <span className="text-ink-500 text-sm">Sort</span>
+        <ChoicesToggleGroup
+          currentChoice={sort}
+          choicesMap={SORT_CHOICES}
+          setChoice={(choice) => setSort(choice as SortOrder)}
+          toggleClassName="!py-1"
+        />
+      </Row>
+      <Row className="flex-wrap items-center gap-2">
+        <span className="text-ink-500 text-sm">Filter</span>
+        {children}
+        {onReset && (
+          <Button size="2xs" color="gray-white" onClick={onReset}>
+            Reset
+          </Button>
+        )}
+      </Row>
+    </Col>
+  )
+}
+
 function UserReportsListInner(props: {
-  allReports: LiteReport[] | undefined
+  reports: LiteReport[] | undefined
   allReportsError: boolean
-  hideBanned: boolean
   bannedIds: string[]
   onBan: (userId: string) => void
+  filterKey: string
 }) {
-  const { allReports, allReportsError, hideBanned, bannedIds, onBan } = props
+  const { reports, allReportsError, bannedIds, onBan, filterKey } = props
   const [page, setPage] = useState(0)
 
-  const filtered = allReports?.filter((r) => {
-    if (!hideBanned) return true
-    return !r.owner.isBannedFromPosting && !bannedIds.includes(r.owner.id)
-  })
+  useEffect(() => setPage(0), [filterKey])
 
-  const pageStart = page * USER_REPORTS_PAGE_SIZE
-  const pageItems = filtered?.slice(
+  const currentPage = Math.min(
+    page,
+    Math.max(0, Math.ceil((reports?.length ?? 0) / USER_REPORTS_PAGE_SIZE) - 1)
+  )
+  const pageStart = currentPage * USER_REPORTS_PAGE_SIZE
+  const pageItems = reports?.slice(
     pageStart,
     pageStart + USER_REPORTS_PAGE_SIZE
   )
-  const isStart = page === 0
-  const isEnd = filtered
-    ? pageStart + USER_REPORTS_PAGE_SIZE >= filtered.length
+  const isStart = currentPage === 0
+  const isEnd = reports
+    ? pageStart + USER_REPORTS_PAGE_SIZE >= reports.length
     : true
 
-  if (allReportsError) {
-    return <div className="my-8 text-center">Failed to load user reports.</div>
-  }
+  if (allReportsError && !reports) return null
 
   return (
     <>
@@ -276,13 +505,13 @@ function UserReportsListInner(props: {
         className="mb-4"
         isStart={isStart}
         isEnd={isEnd}
-        isLoading={!allReports}
-        isComplete={!!allReports}
-        getPrev={() => setPage((p) => Math.max(0, p - 1))}
-        getNext={() => setPage((p) => p + 1)}
+        isLoading={!reports}
+        isComplete={!!reports}
+        getPrev={() => setPage(Math.max(0, currentPage - 1))}
+        getNext={() => setPage(currentPage + 1)}
       />
 
-      {!allReports ? (
+      {!reports ? (
         <div className="my-8 text-center">Loading user reports...</div>
       ) : pageItems && pageItems.length > 0 ? (
         pageItems.map((report) => (
@@ -294,17 +523,19 @@ function UserReportsListInner(props: {
           />
         ))
       ) : (
-        <div className="my-8 text-center">No user reports found.</div>
+        <div className="my-8 text-center">
+          No matching reports among the reports loaded so far.
+        </div>
       )}
 
       <PaginationNextPrev
         className="mt-4"
         isStart={isStart}
         isEnd={isEnd}
-        isLoading={!allReports}
-        isComplete={!!allReports}
-        getPrev={() => setPage((p) => Math.max(0, p - 1))}
-        getNext={() => setPage((p) => p + 1)}
+        isLoading={!reports}
+        isComplete={!!reports}
+        getPrev={() => setPage(Math.max(0, currentPage - 1))}
+        getNext={() => setPage(currentPage + 1)}
       />
     </>
   )
