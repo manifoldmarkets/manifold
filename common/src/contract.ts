@@ -1,4 +1,5 @@
 import { JSONContent } from '@tiptap/core'
+import type { OgCardProps } from './contract-seo'
 import { getDisplayProbability } from 'common/calculate'
 import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -549,6 +550,8 @@ export type ContractParams = {
   contract: Contract
   lastBetTime?: number
   pointsString?: string
+  /** Social preview card props, built before answers are truncated for the page */
+  ogCardProps?: OgCardProps
   multiPointsString?: MultiBase64Points
   comments: ContractComment[]
   totalComments: number

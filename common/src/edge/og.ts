@@ -2,6 +2,17 @@
 
 export type Point = { x: number; y: number }
 
+// Base size the OG card components are laid out at (Twitter/Discord standard)
+export const OG_CARD_WIDTH = 600
+export const OG_CARD_HEIGHT = 315
+// Market cards are rasterized at this multiple of the base size so text stays
+// crisp where platforms show them larger than 600px (Reddit, retina screens)
+export const OG_MARKET_SCALE = 2
+export const OG_MARKET_IMAGE = {
+  width: OG_CARD_WIDTH * OG_MARKET_SCALE,
+  height: OG_CARD_HEIGHT * OG_MARKET_SCALE,
+}
+
 function base64toPointsInternal(
   base64urlString: string,
   type: 'float64' | 'float32'
