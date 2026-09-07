@@ -178,6 +178,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsLeague,
     sportsHomeTeam,
     sportsAwayTeam,
+    sportsMarketType,
     answerShortTexts,
     answerImageUrls,
     takerAPIOrdersDisabled,
@@ -305,6 +306,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           sportsLeague,
           sportsHomeTeam,
           sportsAwayTeam,
+          sportsMarketType,
           takerAPIOrdersDisabled,
           unit: unit ?? '',
           midpoints: midpoints,
@@ -427,6 +429,7 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     sportsHomeTeam,
     sportsAwayTeam,
+    sportsMarketType,
     takerAPIOrdersDisabled,
   } = body
 
@@ -616,6 +619,7 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     sportsHomeTeam,
     sportsAwayTeam,
+    sportsMarketType,
     answerShortTexts,
     answerImageUrls,
     takerAPIOrdersDisabled,

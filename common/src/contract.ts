@@ -386,12 +386,17 @@ export type Poll = {
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
+export type SportsMarketType = 'moneyline' | 'spread' | 'total' | 'prop'
+
 export type Sports = {
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string
-  sportsHomeTeam: string
-  sportsAwayTeam: string
+  /** Binary game markets: YES is the home team, NO the away team. */
+  sportsHomeTeam?: string
+  sportsAwayTeam?: string
+  /** What the market is about the game; the sports page files it by this. */
+  sportsMarketType?: SportsMarketType
 }
 
 export type MultiContract =

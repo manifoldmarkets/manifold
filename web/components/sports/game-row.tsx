@@ -20,6 +20,7 @@ import {
 } from 'web/components/sports/sports-match-card'
 import {
   SportsBetPanel,
+  SportsBinaryBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
 import { useUser } from 'web/hooks/use-user'
@@ -65,6 +66,7 @@ export function toSportsMatch(g: ScheduleGame): SportsMatch {
     status: g.isResolved ? 'resolved' : 'upcoming',
     marketUrl: gamePath(g),
     contractId: g.id,
+    isBinary: g.binary,
     teamAAnswerId: g.home.answerId,
     teamBAnswerId: g.away.answerId,
     drawAnswerId: g.draw?.answerId,
@@ -290,7 +292,14 @@ export function GameRow(props: {
       <div id={panelId}>{expanded && <GameRelatedMarkets game={game} />}</div>
 
       {betOutcome &&
-        (game.draw ? (
+        (game.binary ? (
+          <SportsBinaryBetDialog
+            contractId={game.id}
+            match={toSportsMatch(game)}
+            initialOutcome={betOutcome}
+            onClose={() => setBetOutcome(null)}
+          />
+        ) : game.draw ? (
           <SportsBetPanel
             match={toSportsMatch(game)}
             initialOutcome={betOutcome}

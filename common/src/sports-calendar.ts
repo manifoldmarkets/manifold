@@ -1,56 +1,75 @@
-/**
- * Seed the `sportsCalendar` Firestore collection with competition/phase entries
- * for all sports in scope. Document IDs are deterministic so this script is
- * safe to re-run — it overwrites existing entries rather than creating duplicates.
- *
- * Usage:
- *   yarn ts-node --project tsconfig.json seed-sports-calendar.ts
- *
- * Flags:
- *   DRY_RUN=true   — log what would be written without touching Firestore
- *   FORCE=true     — overwrite entries even if they exist (default behaviour;
- *                    flag is a no-op but documents intent)
- */
+import type { SportKey } from './sports-schedule'
 
-import { runScript } from './run-script'
-import {
-  SportsCalendarEntry,
-  SportId,
-  SportsCalendarStatus,
-} from 'common/sports'
+// ─── The sports calendar ─────────────────────────────────────────────────────
+//
+// Which competitions the Odds API pipeline creates and resolves markets for,
+// and when. Plain data checked into the repo: a change is a one-line PR, and
+// every process (scheduler, API, admin page) reads the same list with nothing
+// to seed or sync. Status is computed from the dates at run time.
 
-const DRY_RUN = process.env.DRY_RUN === 'true'
-const COLLECTION = 'sportsCalendar'
+export type SportId =
+  | 'nfl'
+  | 'cfb'
+  | 'f1'
+  | 'tdf'
+  | 'soccer'
+  | 'mlb'
+  | 'nba'
+  | 'wnba'
 
-// Compute status from dates relative to today.
-// The scheduler will keep this field current as time passes.
-function computeStatus(
-  startDate: string,
+export type SportsCalendarStatus = 'upcoming' | 'active' | 'completed'
+
+export interface SportsCalendarEntry {
+  sport: SportId
+  /** Human-readable competition name, e.g. "NFL Regular Season 2026–27" */
+  competition: string
+  /** Stable slug, e.g. "nfl-regular-2026"; ties the phases of one competition together */
+  competitionId: string
+  /** Phase within the competition, e.g. "Regular Season", "Wild Card", "Week 1" */
+  phase: string
+  /** ISO date YYYY-MM-DD */
+  startDate: string
+  /** ISO date YYYY-MM-DD */
   endDate: string
-): SportsCalendarStatus {
-  const now = Date.now()
-  const start = new Date(startDate + 'T00:00:00Z').getTime()
-  const end = new Date(endDate + 'T23:59:59Z').getTime()
-  if (end < now) return 'completed'
-  if (start <= now) return 'active'
-  return 'upcoming'
+  /** Create markets for games in this window */
+  autoCreate: boolean
+  /** Resolve markets when games finish */
+  autoResolve: boolean
+  /**
+   * Games can end level, so the market is three-way (home, away, Draw).
+   * Defaults to true for soccer and false for everything else; a false
+   * default means a tie resolves the binary market at 50%.
+   */
+  tiesAllowed?: boolean
+  notes?: string
+  /** The Odds API sport key. Competitions without one are created by hand. */
+  oddsKey?: string
 }
 
-function phaseSlug(phase: string): string {
-  return phase
-    .toLowerCase()
-    .replace(/[\s/–—]+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+type CalendarInput = Omit<SportsCalendarEntry, 'oddsKey'>
+
+// The Odds API sport key per competition. F1 and the Tour de France are
+// deliberately absent: the provider's coverage is not enough to resolve from
+// scores, so those stay manual. UCL was not in the catalogue as of Aug 2026
+// (re-check when the 2026-27 season opens); NWSL is not covered at all.
+const ODDS_KEY_BY_COMPETITION: Record<string, string> = {
+  'nfl-preseason-2026': 'americanfootball_nfl_preseason',
+  'nfl-regular-2026': 'americanfootball_nfl',
+  'nfl-playoffs-2027': 'americanfootball_nfl',
+  'cfb-regular-2026': 'americanfootball_ncaaf',
+  'cfb-cfp-2027': 'americanfootball_ncaaf',
+  'mlb-2026': 'baseball_mlb',
+  'mlb-2027': 'baseball_mlb',
+  'nba-regular-2026-27': 'basketball_nba',
+  'nba-playoffs-2027': 'basketball_nba',
+  'wnba-2026': 'basketball_wnba',
+  'wnba-2027': 'basketball_wnba',
+  'epl-2026-27': 'soccer_epl',
+  'mls-2026': 'soccer_usa_mls',
+  'mls-2027': 'soccer_usa_mls',
 }
 
-type EntryInput = Omit<
-  SportsCalendarEntry,
-  'status' | 'updatedAt' | 'updatedBy'
->
-
-const ENTRIES: EntryInput[] = [
+const ENTRIES: CalendarInput[] = [
   // ── NFL ─────────────────────────────────────────────────────────────────────
   {
     sport: 'nfl',
@@ -395,33 +414,67 @@ const ENTRIES: EntryInput[] = [
   },
 ]
 
-if (require.main === module) {
-  runScript(async ({ firestore }) => {
-    const col = firestore.collection(COLLECTION)
-    let written = 0
+export const SPORTS_CALENDAR: SportsCalendarEntry[] = ENTRIES.map((e) => ({
+  ...e,
+  oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
+}))
 
-    for (const entry of ENTRIES) {
-      const docId = `${entry.competitionId}-${phaseSlug(entry.phase)}`
-      const data: SportsCalendarEntry = {
-        ...entry,
-        status: computeStatus(entry.startDate, entry.endDate),
-        updatedAt: Date.now(),
-      }
+export function calendarStatus(
+  entry: Pick<SportsCalendarEntry, 'startDate' | 'endDate'>,
+  now = Date.now()
+): SportsCalendarStatus {
+  const start = new Date(`${entry.startDate}T00:00:00Z`).getTime()
+  const end = new Date(`${entry.endDate}T23:59:59Z`).getTime()
+  if (end < now) return 'completed'
+  if (start <= now) return 'active'
+  return 'upcoming'
+}
 
-      if (DRY_RUN) {
-        console.log(`[DRY] ${docId}`, JSON.stringify(data, null, 2))
-        continue
-      }
+/** Entries whose window contains `now`. */
+export function activeCalendarEntries(now = Date.now()): SportsCalendarEntry[] {
+  return SPORTS_CALENDAR.filter((e) => calendarStatus(e, now) === 'active')
+}
 
-      await col.doc(docId).set(data)
-      console.log(`  wrote ${docId}`)
-      written++
-    }
+/** All phases of one competition. */
+export function calendarEntriesFor(
+  competitionId: string
+): SportsCalendarEntry[] {
+  return SPORTS_CALENDAR.filter((e) => e.competitionId === competitionId)
+}
 
-    console.log(
-      DRY_RUN
-        ? `\nDry run complete — ${ENTRIES.length} entries would be written to ${COLLECTION}`
-        : `\nDone — ${written} entries written to ${COLLECTION}`
-    )
-  })
+/** What goes in `sportsLeague`: the label the dashboards and the sport rail read. */
+export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
+  nfl: 'NFL',
+  cfb: 'College Football',
+  mlb: 'MLB',
+  nba: 'NBA',
+  wnba: 'WNBA',
+  soccer: 'Soccer',
+  f1: 'Formula 1',
+  tdf: 'Tour de France',
+}
+
+/** Which chip on /sports a calendar sport belongs to. */
+export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
+  nfl: 'nfl',
+  cfb: 'ncaaf',
+  mlb: 'mlb',
+  nba: 'nba',
+  wnba: 'nba',
+  soccer: 'soccer',
+  f1: 'f1',
+  tdf: 'other',
+}
+
+// Hours after the start before the market closes: the longest realistic game
+// plus overtime for each sport.
+export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
+  nfl: 4,
+  cfb: 4,
+  mlb: 4,
+  nba: 3,
+  wnba: 3,
+  soccer: 2.5,
+  f1: 2,
+  tdf: 1,
 }

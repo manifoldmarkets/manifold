@@ -70,14 +70,19 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
     const out: string[] = []
     for (const g of games) {
       if (g.status === 'finished') continue
-      out.push(`contract/${g.id}/updated-answers`)
+      // Binary games carry their price on the contract itself.
+      out.push(
+        g.binary ? `contract/${g.id}` : `contract/${g.id}/updated-answers`
+      )
       // The poller only broadcasts around kickoff, so the topic is idle until
       // then; subscribing early means the first in-play tick flips the row to
       // live without waiting for a refetch. Community games have no feed.
       if (g.kickoffKnown) out.push(`contract/${g.id}/sports-live`)
     }
     return out
-  }, [games.map((g) => `${g.id}:${g.status}`).join(',')])
+  }, [
+    games.map((g) => `${g.id}:${g.status}:${g.binary ? 'b' : 'm'}`).join(','),
+  ])
 
   useApiSubscription({
     topics,
@@ -86,7 +91,22 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
       const id = topic.split('/')[1]
       if (!id) return
       const at = Date.now()
-      if (topic.endsWith('/updated-answers')) {
+      if (topic === `contract/${id}`) {
+        // A binary game: YES is the home team, NO the away team.
+        const prob = (data.contract as { prob?: number } | undefined)?.prob
+        if (prob == null) return
+        setLive((prev) => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            probs: {
+              ...(prev[id]?.probs ?? {}),
+              YES: { value: prob, at },
+              NO: { value: 1 - prob, at },
+            },
+          },
+        }))
+      } else if (topic.endsWith('/updated-answers')) {
         const updates = (data.answers ?? []) as { id: string; prob?: number }[]
         setLive((prev) => {
           const probs = { ...(prev[id]?.probs ?? {}) }

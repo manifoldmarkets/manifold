@@ -103,6 +103,7 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     ],
     slug: 'soccer',
     leagues: [
+      'Soccer',
       'English Premier League',
       'Premier League',
       'FIFA World Cup',
@@ -121,7 +122,7 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'College football',
     emoji: '🎓',
     groupIds: ['ky1VPTuxrLXMnHyajZFp'], // college football
-    leagues: ['NCAAF', 'NCAA Football'],
+    leagues: ['NCAAF', 'NCAA Football', 'College Football'],
   },
   {
     key: 'ncaab',
@@ -676,6 +677,12 @@ export interface ScheduleGame {
   question: string
   sport: SportKey
   league: string
+  /**
+   * A binary market (YES is the home team, NO the away team) rather than a
+   * multiple-choice one with an answer per side. The team `answerId`s are
+   * then 'YES' and 'NO', and bets go through the binary dialog.
+   */
+  binary: boolean
   sportsEventId: string
   /** Kickoff when known; otherwise the market's close time. */
   startTime: number

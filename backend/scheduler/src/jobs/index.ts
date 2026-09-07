@@ -75,8 +75,8 @@ import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
-import { createSportsMarkets } from './sports-market-creator'
-import { resolveSportsOddsMarkets } from './sports-odds-resolve'
+import { createOddsSportsMarkets } from './sports-odds-create'
+import { resolveOddsSportsMarkets } from './sports-odds-resolve'
 
 // Which subset of jobs this process runs. The 15s oracle tick (and the other
 // PERP jobs that apply funding and liquidations) must not share an event loop
@@ -494,17 +494,20 @@ export function createJobs(jobSet: SchedulerJobSet) {
       '0 0 7 * * *', // daily at 7:00 AM LA
       createUpcomingSportsMarkets
     ),
-    // Odds API sports (NFL, CFB, MLB, NBA, WNBA): create markets daily
+    // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
+    // create the coming two weeks' game markets daily
     createJob(
       'sports-odds-create',
       '0 0 6 * * *', // daily at 6:00 AM LA
-      createSportsMarkets
+      createOddsSportsMarkets
     ),
-    // Odds API sports: resolve completed markets every 5 minutes
+    // ...and while a game is on, write its score to the market and resolve
+    // from the final. One scores call per sport in play per tick (2 credits),
+    // none when nothing is in play.
     createJob(
       'sports-odds-resolve',
       '0 */5 * * * *', // every 5 minutes
-      resolveSportsOddsMarkets
+      resolveOddsSportsMarkets
     ),
     // Poll in-play scores every 10s and broadcast them over websockets. No-op
     // (no football-data call, just a cheap DB count) outside a tournament's
