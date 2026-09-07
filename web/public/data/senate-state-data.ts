@@ -154,7 +154,20 @@ export const senate2026: StateElectionMarket[] = [
   // Binary market — YES = Republican wins, which getPartyProbs handles.
   { state: 'FL', slug: 'will-a-republican-win-the-us-senate' },
   { state: 'GA', slug: 'which-party-will-win-the-2026-us-se' },
-  { state: 'ID', slug: 'which-party-will-win-the-2026-idaho' },
+  // ID: another race with no Democrat on the ballot. David Roth won the
+  // Democratic nomination, then withdrew in July once independent former state
+  // rep Todd Achilles entered with Democratic leaders' backing — so it is
+  // Jim Risch (R) v. Achilles (I). The superseded market still lists
+  // "Republicans | Democrats"; this one lists "Republicans | Independent".
+  //
+  // otherParty folds Achilles into the Democratic side for colouring only.
+  // Without it getPartyProbs sees no Democratic answer, hits its
+  // `!hasDem || !hasRep` guard, and greys Idaho out entirely.
+  {
+    state: 'ID',
+    slug: 'which-party-will-win-the-2026-idaho-2PNUOhCEyR',
+    otherParty: 'Democratic Party',
+  },
   { state: 'IL', slug: 'which-party-will-win-the-2026-illin' },
   { state: 'IA', slug: 'which-party-will-win-the-2026-iowa' },
   { state: 'KS', slug: 'which-party-will-win-the-2026-kansa' },
