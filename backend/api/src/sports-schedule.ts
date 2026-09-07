@@ -73,16 +73,13 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         : g.startTime
   )
 
-  const filtered = (
-    sport === 'all' ? ordered : ordered.filter((g) => g.sport === sport)
-  ).slice(0, limit)
-
-  // Attach related markets (props, totals, side-bets) to each game.
+  // Match across all games before applying the selected sport or row limit,
+  // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
-  if (props.includeRelated !== false && filtered.length > 0) {
-    const candidates = await getRelatedCandidates(pg, sport)
+  if (ordered.length > 0) {
+    const candidates = await getRelatedCandidates(pg, 'all')
     const candidateClose = new Map(candidates.map((c) => [c.id, c.closeTime]))
-    const matchesByGame = filtered.map((g) =>
+    const matchesByGame = ordered.map((g) =>
       findRelatedMarkets(
         {
           id: g.id,
@@ -100,7 +97,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     // games of the same fixture; keep it on the game whose kickoff is nearest
     // its close. Official (same event id) matches are already exact.
     const bestGameFor = new Map<string, { gameId: string; distance: number }>()
-    filtered.forEach((g, i) => {
+    ordered.forEach((g, i) => {
       for (const m of matchesByGame[i]) {
         if (m.kind === 'official') continue
         const close = candidateClose.get(m.id)
@@ -112,13 +109,15 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         }
       }
     })
-    filtered.forEach((g, i) => {
+    ordered.forEach((g, i) => {
       const matches = matchesByGame[i]
         .filter(
           (m) => m.kind === 'official' || bestGameFor.get(m.id)?.gameId === g.id
         )
         .slice(0, MAX_RELATED_PER_GAME)
-      g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
+      if (props.includeRelated !== false) {
+        g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
+      }
       g.relatedCount = matches.length
       for (const m of matches) attached.add(m.id)
     })
@@ -144,7 +143,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   for (const m of upcoming) counts[m.sport] = (counts[m.sport] ?? 0) + 1
 
   const response: SportsScheduleResponse = {
-    games: filtered,
+    snapshotTime: now,
+    games: (sport === 'all'
+      ? ordered
+      : ordered.filter((g) => g.sport === sport)
+    ).slice(0, limit),
     upcoming: (sport === 'all'
       ? upcoming
       : upcoming.filter((m) => m.sport === sport)
@@ -305,6 +308,7 @@ function toOfficialGame(
     volume: c.volume ?? 0,
     uniqueBettorCount: c.uniqueBettorCount ?? 0,
     liveScore,
+    liveUpdatedTime,
     finalScore,
     related: [] as RelatedRef[],
     relatedCount: 0,

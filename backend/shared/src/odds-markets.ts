@@ -15,16 +15,19 @@ import { contractColumnsToSelect, getUser, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { broadcastSportsLiveScore } from 'shared/websockets/helpers'
+import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import {
   createSportsContract,
   ensureOfficialGroup,
+  findSportsMoneyline,
+  SportsMarketAlreadyExistsError,
 } from 'shared/sports-markets'
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   activeCalendarEntries,
   calendarEntriesFor,
+  phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
   SportsCalendarEntry,
 } from 'common/sports-calendar'
@@ -89,12 +92,7 @@ export async function createOddsMarketsForCompetition(
       `${competitionId} has no Odds API sport key; create by hand`
     )
   }
-  const windows = phases
-    .filter((p) => p.autoCreate)
-    .map((p) => ({
-      from: new Date(`${p.startDate}T00:00:00Z`).getTime(),
-      to: new Date(`${p.endDate}T23:59:59Z`).getTime(),
-    }))
+  const windows = phases.filter((p) => p.autoCreate).map(phaseWindow)
   const result: OddsCreateResult = {
     created: 0,
     skipped: 0,
@@ -111,70 +109,78 @@ export async function createOddsMarketsForCompetition(
   })
   if (events.length === 0) return result
 
-  const creator = opts.creator ?? (await sportsCreator())
-  const group = await ensureOfficialGroup(
-    {
-      officialGroupSlug: `ms-official-${competitionId}`,
-      officialGroupName: `MS Official: ${entry.competition}`,
-      name: entry.competition,
-    },
-    creator.id,
-    pg
-  )
-  // The sport's own topics too, so /browse, the topic pages and the sports
-  // page all see the market.
-  const groupIds = uniq([
-    group.id,
-    ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
-  ])
+  // A preview only reads provider events and existing markets. Delay group
+  // creation/privacy changes and the creator lookup until a real insertion.
+  let creator = opts.creator
+  let groupIds: string[] | undefined
 
   for (const event of events) {
-    const params = buildOddsMarketParams(event, entry)
-    const existing = await pg.oneOrNone<{ id: string }>(
-      `select id from contracts where data->>'sportsEventId' = $1 limit 1`,
-      [params.sportsEventId]
-    )
-    if (existing) {
-      result.skipped++
-      result.log.push({
-        eventId: event.id,
-        question: params.question,
-        status: 'skipped',
-        reason: `market ${existing.id} already exists`,
-      })
-      continue
-    }
-    if (opts.dryRun) {
-      result.log.push({
-        eventId: event.id,
-        question: params.question,
-        status: 'dry-run',
-        reason:
-          params.outcomeType === 'BINARY'
-            ? `would open at ${params.initialProb}% for ${params.sportsHomeTeam}`
-            : 'would open three-way (home, away, Draw)',
-      })
-      continue
-    }
+    let question = `${event.home_team} vs ${event.away_team}`
     try {
-      const contract = await createSportsContract(pg, creator, {
-        question: params.question,
-        outcomeType: params.outcomeType,
-        description:
-          anythingToRichText({ markdown: params.description }) ??
-          anythingToRichText({ raw: '' })!,
-        initialProb: params.initialProb,
-        closeTime: params.closeTime,
-        liquidityTier: LIQUIDITY_TIER,
-        answers: params.answers,
-        sportsStartTimestamp: params.sportsStartTimestamp,
-        sportsEventId: params.sportsEventId,
-        sportsLeague: params.sportsLeague,
-        sportsHomeTeam: params.sportsHomeTeam,
-        sportsAwayTeam: params.sportsAwayTeam,
-        sportsMarketType: params.sportsMarketType,
-        groupIds,
-      })
+      const params = buildOddsMarketParams(event, entry)
+      question = params.question
+      const existing = await findSportsMoneyline(pg, params.sportsEventId)
+      if (existing) {
+        result.skipped++
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'skipped',
+          reason: `market ${existing.id} already exists`,
+        })
+        continue
+      }
+      if (opts.dryRun) {
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'dry-run',
+          reason:
+            params.outcomeType === 'BINARY'
+              ? `would open at ${params.initialProb}% for ${params.sportsHomeTeam}`
+              : 'would open three-way (home, away, Draw)',
+        })
+        continue
+      }
+      creator ??= await sportsCreator()
+      if (!groupIds) {
+        const group = await ensureOfficialGroup(
+          {
+            officialGroupSlug: `ms-official-${competitionId}`,
+            officialGroupName: `MS Official: ${entry.competition}`,
+            name: entry.competition,
+          },
+          creator.id,
+          pg
+        )
+        groupIds = uniq([
+          group.id,
+          ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
+        ])
+      }
+      const contract = await createSportsContract(
+        pg,
+        creator,
+        {
+          question: params.question,
+          outcomeType: params.outcomeType,
+          description:
+            anythingToRichText({ markdown: params.description }) ??
+            anythingToRichText({ raw: '' })!,
+          initialProb: params.initialProb,
+          closeTime: params.closeTime,
+          liquidityTier: LIQUIDITY_TIER,
+          answers: params.answers,
+          sportsStartTimestamp: params.sportsStartTimestamp,
+          sportsEventId: params.sportsEventId,
+          sportsLeague: params.sportsLeague,
+          sportsHomeTeam: params.sportsHomeTeam,
+          sportsAwayTeam: params.sportsAwayTeam,
+          sportsMarketType: params.sportsMarketType,
+          groupIds,
+        },
+        { deduplicateMoneyline: true }
+      )
       result.created++
       result.log.push({
         eventId: event.id,
@@ -183,11 +189,13 @@ export async function createOddsMarketsForCompetition(
         reason: contract.id,
       })
     } catch (e) {
-      result.errors++
+      const duplicate = e instanceof SportsMarketAlreadyExistsError
+      if (duplicate) result.skipped++
+      else result.errors++
       result.log.push({
         eventId: event.id,
-        question: params.question,
-        status: 'error',
+        question,
+        status: duplicate ? 'skipped' : 'error',
         reason: e instanceof Error ? e.message : String(e),
       })
     }
@@ -325,7 +333,7 @@ async function writeLiveScore(
     JSON.stringify(patch),
     game.contract.id,
   ])
-  broadcastSportsLiveScore(game.contract.id, patch)
+  await publishSportsLiveScore(game.contract.id, patch)
 }
 
 async function finishGame(
@@ -357,7 +365,7 @@ async function finishGame(
     JSON.stringify(patch),
     contract.id,
   ])
-  broadcastSportsLiveScore(contract.id, patch)
+  await publishSportsLiveScore(contract.id, patch)
 
   if (contract.mechanism === 'cpmm-1') {
     // YES is the home team, NO the away team, a tie pays out at 50%.

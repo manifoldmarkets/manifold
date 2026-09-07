@@ -25,10 +25,8 @@ import { answerToRow } from 'shared/supabase/answers'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import {
-  broadcastNewComment,
-  broadcastSportsLiveScore,
-} from 'shared/websockets/helpers'
+import { broadcastNewComment } from 'shared/websockets/helpers'
+import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import { ContractComment } from 'common/comment'
 import { millisToTs } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
@@ -45,6 +43,7 @@ import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import {
   LiquidityTierValue,
+  MANIFOLD_SPORTS_USER_IDS,
   StageLiquidityTiers,
   TournamentConfig,
   TOURNAMENT_CONFIGS,
@@ -1038,8 +1037,10 @@ export async function pollAndStoreLiveScores(
         [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
       )
       updated += rows.length
-      // In-memory fan-out to every open dashboard — viewer-count-independent.
-      for (const row of rows) broadcastSportsLiveScore(row.id, patch)
+      // The API writer fans out to every open dashboard.
+      await Promise.all(
+        rows.map((row) => publishSportsLiveScore(row.id, patch))
+      )
       // Detect goals (score deltas) and back-date a marker onto the price spike.
       // Off the hot path unless a score actually changed.
       await annotateScoreChanges(
@@ -1065,7 +1066,9 @@ export async function pollAndStoreLiveScores(
            and resolution is null`,
         [sportsEventId(m), config.sportsLeague]
       )
-      for (const row of rows) broadcastSportsLiveScore(row.id, patch)
+      await Promise.all(
+        rows.map((row) => publishSportsLiveScore(row.id, patch))
+      )
     }
   }
 
@@ -1106,6 +1109,28 @@ export interface SportsContractParams {
   groupIds: string[]
 }
 
+/** Only an active official moneyline reserves an event for this pipeline. */
+export const findSportsMoneyline = (
+  pg: SupabaseDirectClient,
+  eventId: string
+) =>
+  pg.oneOrNone<{ id: string }>(
+    `select id from contracts
+     where data->>'sportsEventId' = $1
+       and creator_id = any($2)
+       and token = 'MANA'
+       and resolution is distinct from 'CANCEL'
+       and data->>'sportsMarketType' = 'moneyline'
+     limit 1`,
+    [eventId, MANIFOLD_SPORTS_USER_IDS]
+  )
+
+export class SportsMarketAlreadyExistsError extends Error {
+  constructor(readonly contractId: string) {
+    super(`market ${contractId} already exists`)
+  }
+}
+
 /**
  * Insert a market as @ManifoldSports the way a cron job can: no HTTP, no auth,
  * but the same rows, ante, group links, embeddings and post-create side
@@ -1116,7 +1141,7 @@ export async function createSportsContract(
   pg: SupabaseDirectClient,
   creatorUser: User,
   params: SportsContractParams,
-  opts: { notifyFollowers?: boolean } = {}
+  opts: { notifyFollowers?: boolean; deduplicateMoneyline?: boolean } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
   const ante = getAnte(params.outcomeType, answers.length, params.liquidityTier)
@@ -1190,6 +1215,15 @@ export async function createSportsContract(
     : null
 
   const result = await pg.tx(async (tx) => {
+    if (opts.deduplicateMoneyline) {
+      // Serialize the existence check with the insert and ante. A concurrent
+      // admin/scheduler run sees the committed market after acquiring the lock.
+      await tx.one('select pg_advisory_xact_lock(hashtext($1))', [
+        `sports-moneyline:${params.sportsEventId}`,
+      ])
+      const existing = await findSportsMoneyline(tx, params.sportsEventId)
+      if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
+    }
     if (insertAnswersQuery) {
       const rows = await tx.multi(`${contractQuery}; ${insertAnswersQuery};`)
       if (rows[1]?.length > 0) multi.answers = rows[1].map(convertAnswer)

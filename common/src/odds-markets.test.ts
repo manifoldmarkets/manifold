@@ -13,6 +13,7 @@ import {
   activeCalendarEntries,
   calendarEntriesFor,
   calendarStatus,
+  phaseWindow,
   SPORTS_CALENDAR,
 } from './sports-calendar'
 
@@ -83,6 +84,34 @@ const soccerEvent: OddsApiEvent = {
     },
   ],
 }
+
+describe('2026–27 calendar eligibility', () => {
+  it.each([
+    ['nfl-regular-2026', '2027-01-11T01:00:00Z'],
+    ['nfl-playoffs-2027', '2027-01-19T01:00:00Z'],
+    ['nfl-playoffs-2027', '2027-01-25T01:00:00Z'],
+    ['nfl-playoffs-2027', '2027-01-31T23:30:00Z'],
+    ['nfl-playoffs-2027', '2027-02-14T23:30:00Z'],
+  ])(
+    'includes %s games on their final US calendar day: %s',
+    (competition, kickoff) => {
+      expect(
+        calendarEntriesFor(competition)
+          .filter((p) => p.autoCreate)
+          .some((p) => {
+            const { from, to } = phaseWindow(p)
+            return Date.parse(kickoff) >= from && Date.parse(kickoff) <= to
+          })
+      ).toBe(true)
+    }
+  )
+
+  it('does not admit ordinary bowls through the CFP date window', () => {
+    expect(calendarEntriesFor('cfb-cfp-2027').some((p) => p.autoCreate)).toBe(
+      false
+    )
+  })
+})
 
 describe('odds maths', () => {
   it('converts American odds to implied probability', () => {

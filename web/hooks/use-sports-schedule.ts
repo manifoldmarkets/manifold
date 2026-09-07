@@ -2,22 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import {
   LIVE_STATUSES,
-  ScheduleGame,
   SportKey,
   SportsScheduleResponse,
 } from 'common/sports-schedule'
+import {
+  applySportsLive,
+  LiveGameState,
+  pruneSportsLive,
+} from 'common/sports-schedule-live'
 import { HOUR_MS } from 'common/util/time'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-
-/** A live value plus the time it arrived, so a later snapshot can supersede it. */
-type Stamped<T> = { value: T; at: number }
-
-/** Live overrides applied on top of the fetched schedule. */
-type LiveGameState = {
-  probs?: Record<string, Stamped<number>>
-  liveScore?: Stamped<ScheduleGame['liveScore']>
-}
 
 /** Refetch cadence while something is live or about to start… */
 const ACTIVE_REFRESH_MS = 2 * 60_000
@@ -48,18 +43,11 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
   // during live games and the overlay is cheap to rebuild from a refetch.
   const [live, setLive] = useState<Record<string, LiveGameState>>({})
 
-  // A fresh snapshot supersedes every tick that arrived before it was
-  // requested; ticks that came in while it was in flight may be newer, so
-  // they stay. Without this an old tick would sit on top of newer refetches
-  // until the next broadcast.
-  const requestedAt = useRef(0)
-  useEffect(() => {
-    if (loading) requestedAt.current = Date.now()
-  }, [loading])
+  // HTTP/client caches preserve the server's snapshot time. Request-start
+  // time in the browser says nothing about how fresh that response is.
   useEffect(() => {
     if (!data) return
-    const cutoff = requestedAt.current
-    setLive((prev) => pruneBefore(prev, cutoff))
+    setLive((prev) => pruneSportsLive(prev, data))
   }, [data])
 
   const games = data?.games ?? []
@@ -90,33 +78,51 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
     onBroadcast: ({ topic, data }) => {
       const id = topic.split('/')[1]
       if (!id) return
-      const at = Date.now()
+      const at = data.broadcastTime as number | undefined
       if (topic === `contract/${id}`) {
         // A binary game: YES is the home team, NO the away team.
         const prob = (data.contract as { prob?: number } | undefined)?.prob
-        if (prob == null) return
-        setLive((prev) => ({
-          ...prev,
-          [id]: {
-            ...prev[id],
-            probs: {
-              ...(prev[id]?.probs ?? {}),
-              YES: { value: prob, at },
-              NO: { value: 1 - prob, at },
-            },
-          },
-        }))
+        if (
+          prob == null ||
+          !Number.isFinite(prob) ||
+          at == null ||
+          !Number.isFinite(at)
+        )
+          return
+        setLive((prev) =>
+          (prev[id]?.probs?.YES?.at ?? 0) > at
+            ? prev
+            : {
+                ...prev,
+                [id]: {
+                  ...prev[id],
+                  probs: {
+                    ...(prev[id]?.probs ?? {}),
+                    YES: { value: prob, at },
+                    NO: { value: 1 - prob, at },
+                  },
+                },
+              }
+        )
       } else if (topic.endsWith('/updated-answers')) {
         const updates = (data.answers ?? []) as { id: string; prob?: number }[]
+        if (at == null || !Number.isFinite(at)) return
         setLive((prev) => {
           const probs = { ...(prev[id]?.probs ?? {}) }
           for (const a of updates) {
-            if (a.prob != null) probs[a.id] = { value: a.prob, at }
+            if (
+              a.prob != null &&
+              Number.isFinite(a.prob) &&
+              at >= (probs[a.id]?.at ?? 0)
+            )
+              probs[a.id] = { value: a.prob, at }
           }
           return { ...prev, [id]: { ...prev[id], probs } }
         })
       } else if (topic.endsWith('/sports-live')) {
         const status = data.sportsLiveStatus as string | undefined
+        const scoreTime = data.sportsLiveUpdatedTime as number | undefined
+        if (!status || scoreTime == null || !Number.isFinite(scoreTime)) return
         const liveScore =
           status && LIVE_STATUSES.has(status)
             ? {
@@ -126,10 +132,17 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
                 status,
               }
             : null
-        setLive((prev) => ({
-          ...prev,
-          [id]: { ...prev[id], liveScore: { value: liveScore, at } },
-        }))
+        setLive((prev) =>
+          (prev[id]?.liveScore?.at ?? 0) > scoreTime
+            ? prev
+            : {
+                ...prev,
+                [id]: {
+                  ...prev[id],
+                  liveScore: { value: liveScore, at: scoreTime, status },
+                },
+              }
+        )
       }
     },
   })
@@ -156,49 +169,11 @@ export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
     if (!data) return undefined
     return {
       ...data,
-      games: data.games.map((g) => applyLive(g, live[g.id])),
+      games: data.games.map((g) =>
+        applySportsLive(g, live[g.id], data.snapshotTime)
+      ),
     }
   }, [data, live])
 
   return { schedule: merged, loading, refresh }
-}
-
-/** Drop every live value that arrived before `cutoff`; keeps the same object when nothing changes. */
-function pruneBefore(
-  state: Record<string, LiveGameState>,
-  cutoff: number
-): Record<string, LiveGameState> {
-  const out: Record<string, LiveGameState> = {}
-  let dropped = false
-  for (const [id, s] of Object.entries(state)) {
-    const probs: Record<string, Stamped<number>> = {}
-    for (const [answerId, p] of Object.entries(s.probs ?? {})) {
-      if (p.at >= cutoff) probs[answerId] = p
-      else dropped = true
-    }
-    const keepScore = s.liveScore && s.liveScore.at >= cutoff
-    if (s.liveScore && !keepScore) dropped = true
-    const next: LiveGameState = {}
-    if (Object.keys(probs).length > 0) next.probs = probs
-    if (keepScore) next.liveScore = s.liveScore
-    if (next.probs || next.liveScore) out[id] = next
-  }
-  return dropped ? out : state
-}
-
-function applyLive(game: ScheduleGame, state?: LiveGameState): ScheduleGame {
-  if (!state) return game
-  const p = state.probs ?? {}
-  const withProb = <T extends { answerId: string; prob: number }>(t: T): T =>
-    p[t.answerId] != null ? { ...t, prob: p[t.answerId].value } : t
-  const liveScore =
-    state.liveScore !== undefined ? state.liveScore.value : game.liveScore
-  return {
-    ...game,
-    home: withProb(game.home),
-    away: withProb(game.away),
-    draw: game.draw ? withProb(game.draw) : null,
-    liveScore,
-    status: game.status === 'upcoming' && liveScore ? 'live' : game.status,
-  }
 }

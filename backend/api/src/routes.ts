@@ -90,6 +90,7 @@ import { internalWriteOraclePrice } from './internal-write-oracle-price'
 import { getPerpPositions } from './get-perp-positions'
 import { getPerpQuote } from './get-perp-quote'
 import { internalPerpBroadcast } from './internal-perp-broadcast'
+import { internalSportsBroadcast } from './internal-sports-broadcast'
 import { getPerpFundingEvents } from './get-perp-funding-events'
 import { getPerpEvents } from './get-perp-events'
 import {
@@ -473,6 +474,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-perp-positions': getPerpPositions,
   'get-perp-quote': getPerpQuote,
   'internal-perp-broadcast': internalPerpBroadcast,
+  'internal-sports-broadcast': internalSportsBroadcast,
   'get-perp-funding-events': getPerpFundingEvents,
   'get-perp-events': getPerpEvents,
   'get-perp-suggestions': getPerpSuggestions,

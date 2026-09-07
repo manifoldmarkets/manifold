@@ -1446,6 +1446,31 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // Scheduler -> API writer; must stay off the read-replica allowlist.
+  'internal-sports-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        contractId: z.string().min(1),
+        score: z.object({
+          sportsHomeScore: z.number().finite().nonnegative().nullable(),
+          sportsAwayScore: z.number().finite().nonnegative().nullable(),
+          sportsLiveStatus: z.enum([
+            'IN_PLAY',
+            'PAUSED',
+            'FINISHED',
+            'AWARDED',
+          ]),
+          sportsLiveMinute: z.string().nullable(),
+          sportsLiveUpdatedTime: z.number().finite(),
+        }),
+      })
+      .strict(),
+  },
   'get-perp-positions': {
     method: 'GET',
     visibility: 'public',

@@ -501,6 +501,7 @@ export default function SportsAdminPage() {
   }
 
   async function runResolve() {
+    if (!isApiConnected) return
     setResolving(true)
     try {
       const data = await api('admin-sports-resolve', {
@@ -1521,20 +1522,32 @@ export default function SportsAdminPage() {
               <Col className="gap-0.5">
                 <span className="text-ink-500 text-xs">Auto-resolution</span>
                 <span className="font-medium">
-                  ~10s after full time (live poller) · 15-min backstop cron
+                  {isOddsApi
+                    ? 'Every 5 minutes (Odds API scores job)'
+                    : '~10s after full time (live poller) · 15-min backstop cron'}
                 </span>
               </Col>
             </Row>
 
             <span className="text-ink-400 text-xs">
-              Markets resolve automatically: the live poller resolves a match
-              within ~10s of the final whistle, and the{' '}
-              <code>sports-resolve</code> cron sweeps every 15 min as a
-              backstop. Use the button below only to force a sweep now.
+              {isOddsApi ? (
+                'The Odds API scores job updates scores and resolves completed games every 5 minutes. Manual resolution is available on each market; this football-data.org sweep does not apply.'
+              ) : (
+                <>
+                  Markets resolve automatically: the live poller resolves a
+                  match within ~10s of the final whistle, and the{' '}
+                  <code>sports-resolve</code> cron sweeps every 15 min as a
+                  backstop. Use the button below only to force a sweep now.
+                </>
+              )}
             </span>
 
             <Row className="items-center gap-3">
-              <Button color="indigo" onClick={runResolve} disabled={resolving}>
+              <Button
+                color="indigo"
+                onClick={runResolve}
+                disabled={resolving || !isApiConnected}
+              >
                 {resolving ? (
                   <Row className="gap-2">
                     <LoadingIndicator size="sm" /> Resolving…

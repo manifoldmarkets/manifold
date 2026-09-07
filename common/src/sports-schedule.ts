@@ -677,6 +677,14 @@ export function findRelatedMarkets(
 
 export type GameStatus = 'live' | 'upcoming' | 'finished'
 
+export interface SportsLiveScore {
+  sportsHomeScore: number | null
+  sportsAwayScore: number | null
+  sportsLiveStatus: string
+  sportsLiveMinute: string | null
+  sportsLiveUpdatedTime: number
+}
+
 export interface ScheduleTeam {
   answerId: string
   name: string
@@ -721,6 +729,8 @@ export interface ScheduleGame {
     status: string
   } | null
   finalScore: { home: number; away: number } | null
+  /** Persisted provider update time, including terminal scores. */
+  liveUpdatedTime?: number | null
   /** Related markets, best matches first. */
   related: RelatedRef[]
   relatedCount: number
@@ -737,6 +747,8 @@ export interface UpcomingMarketRef {
 }
 
 export interface SportsScheduleResponse {
+  /** Server time before snapshot reads; survives HTTP and client caching. */
+  snapshotTime?: number
   games: ScheduleGame[]
   /** This week's unattached markets for the requested sport, soonest first. */
   upcoming: UpcomingMarketRef[]
