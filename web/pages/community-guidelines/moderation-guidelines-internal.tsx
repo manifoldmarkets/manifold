@@ -392,6 +392,27 @@ export default function ModerationGuidelinesInternalPage() {
             </li>
           </ul>
           <p className="text-ink-700 mt-3">
+            Creator reliability is a legitimate reason to duplicate, and worth
+            checking before you unrank anything. Where the original leaves real
+            room for interpretation — thin criteria, or a judgement call at
+            resolution — and the creator holds a position, has previously
+            resolved their own ambiguous markets in their favour, or has gone
+            unresponsive, a tighter version run by someone impartial is a
+            reasonable thing for a trader to build. Leave it ranked, and treat
+            the original as the market with the problem: it's usually a
+            candidate for a takeover or criteria clarification rather than the
+            new one being a candidate for unranking.
+          </p>
+          <p className="text-ink-700 mt-3">
+            Hold that reason to a real standard, though — "I don't trust the
+            creator" is the natural cover story for someone who just doesn't
+            like the price. Ask whether the original is genuinely ambiguous, and
+            whether they tried to fix it first by asking the creator or tagging
+            @mods. If the original resolves cleanly on its stated criteria and
+            the complaint is really about the direction it's moving, it's a
+            plain duplicate.
+          </p>
+          <p className="text-ink-700 mt-3">
             Don't act on duplicates where the newer market is clearly the better
             one — better criteria, better sourced, more traders — just because
             it came second. In that case leave both ranked and comment linking

@@ -79,12 +79,14 @@ export default function CommunityGuidelinesRunningAMarketPage() {
           </p>
           <p className="text-ink-700 mt-3">
             Only make a second market if there's an actual reason to: different
-            resolution criteria, timeframe, or source. Duplicating a question
-            that already exists just splits the liquidity across both markets,
-            which makes them worse priced for humans and better for arbitrage
-            bots. If you want the question to be bigger, bet on the existing
-            market or add liquidity to it — that's the version of this that
-            actually helps.
+            resolution criteria, timeframe, or source — or a well-founded
+            concern about who's resolving the original, where it's genuinely
+            ambiguous and the creator is biased or unresponsive. Duplicating a
+            question that already exists just splits the liquidity across both
+            markets, which makes them worse priced for humans and better for
+            arbitrage bots. If you want the question to be bigger, bet on the
+            existing market or add liquidity to it — that's the version of this
+            that actually helps.
           </p>
           <p className="text-ink-700 mt-3">
             Duplicates with no meaningful difference may be unranked and

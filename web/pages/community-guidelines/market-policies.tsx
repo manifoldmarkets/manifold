@@ -208,10 +208,11 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
           <p className="text-ink-700 mt-3">
             Only create a market that already exists if there's a real reason to
             — most often materially different resolution criteria, a different
-            timeframe, or a different resolution source. Otherwise you're
-            splitting the liquidity across two markets, which makes both of them
-            thinner, worse priced, and easier for bots to pick off. It's better
-            for arbitrage bots and worse for everyone else.
+            timeframe, a different resolution source, or a well-founded concern
+            about who's resolving the original. Otherwise you're splitting the
+            liquidity across two markets, which makes both of them thinner,
+            worse priced, and easier for bots to pick off. It's better for
+            arbitrage bots and worse for everyone else.
           </p>
           <p className="text-ink-700 mt-3">
             When you type a title on the create page, Manifold automatically
@@ -219,6 +220,26 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             near-identical markets are shown to you before you hit create, "I
             didn't know it existed" isn't much of a defense — check the existing
             one first, and bet on it or add liquidity to it instead.
+          </p>
+          <p className="text-ink-700 mt-3">
+            Who is resolving can itself be a legitimate reason. Where a market
+            leaves real room for interpretation — insufficient criteria, or an
+            outcome that comes down to a judgement call — a creator who holds a
+            position, has a track record of resolving their own markets in their
+            favour, or is unresponsive is a genuine risk to traders, and a
+            better-specified version run by someone impartial is worth having.
+            Try to fix the original first: ask the creator to tighten the
+            criteria, or tag @mods. If that goes nowhere, write your version
+            with criteria specific enough that the resolution isn't a judgement
+            call, and say plainly in the description that it exists to remove
+            the ambiguity.
+          </p>
+          <p className="text-ink-700 mt-3">
+            This isn't a licence to re-run any market you disagree with. A
+            creator resolving a clear-cut market against your position isn't
+            unreliable — they're right. Duplicating an unambiguous market
+            because you don't like where it's heading is treated as a plain
+            duplicate.
           </p>
           <p className="text-ink-700 mt-3">
             If you do have a good reason, say so in the description. A one-line

@@ -160,7 +160,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Market Policies',
     section: 'Duplicate markets',
-    text: 'duplicate duplicates same question already exists splitting liquidity pool thinner arbitrage bots unranked deboosted delisted resolved n/a no trading importance score fine market creation ban similar markets shown at creation title match differing resolution criteria timeframe source bulk farming league points bonuses',
+    text: 'duplicate duplicates same question already exists splitting liquidity pool thinner arbitrage bots unranked deboosted delisted resolved n/a no trading importance score fine market creation ban similar markets shown at creation title match differing resolution criteria timeframe source creator reliability biased unreliable unresponsive judgement call ambiguous impartial bulk farming league points bonuses',
     href: '/community-guidelines/market-policies#duplicate-markets',
   },
   {
@@ -178,13 +178,13 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Running a Market',
     section: 'Check for an existing market first',
-    text: 'duplicate existing market check before creating similar markets shown create page splits liquidity arbitrage bots bet on existing add liquidity unranked deboosted delisted resolved n/a no trading fine market creation ban',
+    text: 'duplicate existing market check before creating similar markets shown create page splits liquidity arbitrage bots bet on existing add liquidity unranked deboosted delisted resolved n/a no trading fine market creation ban creator reliability biased unresponsive ambiguous',
     href: '/community-guidelines/running-a-market#check-for-an-existing-market',
   },
   {
     page: 'Moderation Guidelines',
     section: 'Handling duplicate markets',
-    text: 'duplicate markets mod playbook what counts unrank rather than unlist traders already bet repeat offender mod alert fine bulk farming spam market control ban newer market better link both',
+    text: 'duplicate markets mod playbook what counts unrank rather than unlist traders already bet creator reliability biased unresponsive ambiguous judgement call sore loser price repeat offender mod alert fine bulk farming spam market control ban newer market better link both',
     href: '/community-guidelines/moderation-guidelines-internal#handling-duplicate-markets',
   },
   {
