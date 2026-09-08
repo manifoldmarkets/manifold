@@ -249,6 +249,8 @@ export type SearchState = {
 
 type SearchProps = {
   persistPrefix: string
+  // Analytics identity is stable even when browser storage is account-scoped.
+  discoverySourceComponent?: 'search'
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
@@ -325,6 +327,7 @@ export function Search(props: SearchProps) {
     highlightContractIds,
     headerClassName,
     persistPrefix,
+    discoverySourceComponent,
     isWholePage,
     useUrlParams,
     autoFocus,
@@ -416,6 +419,8 @@ export function Search(props: SearchProps) {
     users,
     topics,
     loading,
+    searchError,
+    retrySearch,
     shouldLoadMore,
     loadMoreContracts,
     refreshContracts,
@@ -423,6 +428,7 @@ export function Search(props: SearchProps) {
     discoveryTracking,
   } = useSearchResults({
     persistPrefix,
+    discoverySourceComponent,
     searchParams: searchParams,
     includeUsersAndTopics: showSearchTypes,
     isReady: isReady && discoveryVariant !== undefined,
@@ -979,8 +985,32 @@ export function Search(props: SearchProps) {
           </Col>
         )}
 
+        {searchError && (
+          <Col role="alert" className="text-ink-700 my-6 items-center gap-3">
+            <span>Questions couldn’t load. Please try again.</span>
+            <Row className="gap-2">
+              <Button
+                color="gray-outline"
+                onClick={retrySearch}
+                loading={loading}
+              >
+                Retry
+              </Button>
+              {selectedForYou && (
+                <Button
+                  color="gray-outline"
+                  onClick={() => onChange({ fy: '0' })}
+                >
+                  Browse All
+                </Button>
+              )}
+            </Row>
+          </Col>
+        )}
         {!contracts && !posts ? (
-          <LoadingContractResults />
+          searchError ? null : (
+            <LoadingContractResults />
+          )
         ) : contracts?.length === 0 && posts?.length === 0 ? (
           emptyContractsState
         ) : (
@@ -1000,9 +1030,11 @@ export function Search(props: SearchProps) {
                 discoveryTracking={discoveryTracking}
               />
             ) : null}
-            <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            {!searchError && (
+              <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            )}
             {shouldLoadMore && <LoadingContractResults />}
-            {!shouldLoadMore && (
+            {!shouldLoadMore && !searchError && (
               <NoMoreResults params={searchParams} onChange={onChange} />
             )}
           </>
@@ -1099,6 +1131,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 
 export const useSearchResults = (props: {
   persistPrefix: string
+  discoverySourceComponent?: 'search'
   searchParams: SearchParams
   includeUsersAndTopics: boolean
   isReady: boolean
@@ -1109,6 +1142,9 @@ export const useSearchResults = (props: {
 }) => {
   const {
     persistPrefix,
+    discoverySourceComponent = persistPrefix === 'search'
+      ? 'search'
+      : undefined,
     searchParams,
     isReady,
     discoveryVariant,
@@ -1119,13 +1155,17 @@ export const useSearchResults = (props: {
   // The treatment still applies to every Search instance, but the primary
   // experiment scorecard is Browse-only. Avoid multiplying user_events write
   // volume for embedded/topic search instances that the analysis excludes.
-  const trackDiscoveryExperiment = persistPrefix === 'search'
+  const trackDiscoveryExperiment = discoverySourceComponent !== undefined
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
   const [loading, setLoading] = useState(false)
+  const [failedSearch, setFailedSearch] = useState<{
+    key: string
+    fresh: boolean
+  }>()
   const [lastSearchParams, setLastSearchParams] =
     usePersistentInMemoryState<SearchParams | null>(
       null,
@@ -1225,6 +1265,10 @@ export const useSearchResults = (props: {
         !contractsOnly && props.includeUsersAndTopics
 
       if (freshQuery || state.shouldLoadMore) {
+        const requestSearchKey = serializedSearchParams
+        // Keep a failed load-more observer unmounted until its retry finishes,
+        // so remounting it cannot start a duplicate request at the same offset.
+        if (failedSearch?.key === requestSearchKey) setLoading(true)
         const discoveryResultSetId = freshQuery
           ? randomString(16)
           : state.discoveryResultSetId ?? randomString(16)
@@ -1329,6 +1373,7 @@ export const useSearchResults = (props: {
 
             clearTimeout(timeoutId)
             finishFreshRequest()
+            setFailedSearch(undefined)
             setLoading(false)
             return shouldLoadMore
           }
@@ -1347,7 +1392,7 @@ export const useSearchResults = (props: {
               resultSetId: discoveryResultSetId,
               variant: discoveryVariant,
               assignmentSource: discoveryAssignmentSource,
-              sourceComponent: persistPrefix,
+              sourceComponent: discoverySourceComponent,
               surface: discoverySurface,
               page: discoveryPage,
               isFresh: !!freshQuery,
@@ -1601,7 +1646,7 @@ export const useSearchResults = (props: {
                 resultSetId: discoveryResultSetId,
                 variant: discoveryVariant,
                 assignmentSource: discoveryAssignmentSource,
-                sourceComponent: persistPrefix,
+                sourceComponent: discoverySourceComponent,
                 surface: discoverySurface,
                 page: discoveryPage,
                 isFresh: !!freshQuery,
@@ -1642,6 +1687,7 @@ export const useSearchResults = (props: {
 
             clearTimeout(timeoutId)
             finishFreshRequest()
+            setFailedSearch(undefined)
             setLoading(false)
 
             return shouldLoadMore
@@ -1663,7 +1709,7 @@ export const useSearchResults = (props: {
                 requestAttemptId: discoveryRequestAttemptId,
                 variant: discoveryVariant,
                 assignmentSource: discoveryAssignmentSource,
-                sourceComponent: persistPrefix,
+                sourceComponent: discoverySourceComponent,
                 surface: discoverySurface,
                 page: discoveryPage,
                 isFresh: !!freshQuery,
@@ -1687,7 +1733,7 @@ export const useSearchResults = (props: {
               requestAttemptId: discoveryRequestAttemptId,
               variant: discoveryVariant,
               assignmentSource: discoveryAssignmentSource,
-              sourceComponent: persistPrefix,
+              sourceComponent: discoverySourceComponent,
               surface: discoverySurface,
               page: discoveryPage,
               isFresh: !!freshQuery,
@@ -1699,6 +1745,7 @@ export const useSearchResults = (props: {
             })
           }
           console.error('Error fetching search results:', error)
+          setFailedSearch({ key: requestSearchKey, fresh: !!freshQuery })
           setLoading(false)
         }
       }
@@ -1794,7 +1841,7 @@ export const useSearchResults = (props: {
 
   const stateAssignmentKey = state.discoveryAssignmentKey
   const discoveryTracking: DiscoveryResultTracking | undefined =
-    trackDiscoveryExperiment &&
+    discoverySourceComponent &&
     stateAssignmentKey &&
     state.discoveryResultSetId &&
     discoveryPresentationId &&
@@ -1814,7 +1861,7 @@ export const useSearchResults = (props: {
           presentationId: discoveryPresentationId,
           variant: state.discoveryVariant,
           source: state.discoveryAssignmentSource,
-          sourceComponent: persistPrefix,
+          sourceComponent: discoverySourceComponent,
           surface: state.discoverySurface,
           semanticEligible: state.discoverySemanticEligible,
           semanticMarketCount: state.discoverySemanticMarketCount,
@@ -1824,12 +1871,19 @@ export const useSearchResults = (props: {
         }
       : undefined
 
+  const searchError = failedSearch?.key === serializedSearchParams
   return {
     contracts,
     users: hasCurrentResults ? state.users : undefined,
     topics: hasCurrentResults ? state.topics : undefined,
     loading,
-    shouldLoadMore: hasCurrentResults ? state.shouldLoadMore : true,
+    searchError,
+    retrySearch: () => querySearchResults(failedSearch?.fresh ?? true),
+    shouldLoadMore: searchError
+      ? false
+      : hasCurrentResults
+      ? state.shouldLoadMore
+      : true,
     loadMoreContracts: () => querySearchResults(false, true),
     refreshContracts: () => querySearchResults(true, true),
     posts: hasCurrentResults ? state.posts : undefined,
