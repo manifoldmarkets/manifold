@@ -413,6 +413,13 @@ export default function ModerationGuidelinesInternalPage() {
             plain duplicate.
           </p>
           <p className="text-ink-700 mt-3">
+            A creator remaking their own market because the original no longer
+            reflects what they meant to ask is not a duplicate — that's the
+            behaviour we ask for over materially rewriting criteria traders have
+            already bet on. Check the old market gets closed out or N/A'd rather
+            than left running alongside the new one.
+          </p>
+          <p className="text-ink-700 mt-3">
             Don't act on duplicates where the newer market is clearly the better
             one — better criteria, better sourced, more traders — just because
             it came second. In that case leave both ranked and comment linking

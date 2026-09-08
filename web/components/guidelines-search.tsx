@@ -160,7 +160,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Market Policies',
     section: 'Duplicate markets',
-    text: 'duplicate duplicates same question already exists splitting liquidity pool thinner arbitrage bots unranked deboosted delisted resolved n/a no trading importance score fine market creation ban similar markets shown at creation title match differing resolution criteria timeframe source creator reliability biased unreliable unresponsive judgement call ambiguous impartial bulk farming league points bonuses',
+    text: 'duplicate duplicates same question already exists splitting liquidity pool thinner arbitrage bots unranked deboosted delisted resolved n/a no trading importance score fine market creation ban similar markets shown at creation title match differing resolution criteria timeframe source creator reliability biased unreliable unresponsive judgement call ambiguous impartial mass creation at scale one line explanation new market instead of updating criteria not a duplicate league points bonuses',
     href: '/community-guidelines/market-policies#duplicate-markets',
   },
   {

@@ -62,6 +62,19 @@ export default function CommunityGuidelinesRunningAMarketPage() {
             shifting criteria are the most common source of disputes on the
             platform.
           </p>
+          <p className="text-ink-700 mt-3">
+            That's for clarifying what you already meant. If the change is
+            material enough that traders bet on a different question than the
+            one you'd now be resolving, start a new market instead — that isn't
+            a duplicate, and it's the option we'd rather you took. See{' '}
+            <Link
+              href="/community-guidelines/market-policies#duplicate-markets"
+              className="text-primary-500 underline"
+            >
+              Duplicate markets
+            </Link>
+            .
+          </p>
         </div>
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">

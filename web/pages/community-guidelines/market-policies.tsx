@@ -155,7 +155,7 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             </li>
             <li>Low-quality non-predictive markets</li>
             <li>
-              Duplicate markets created repeatedly or in bulk — see{' '}
+              Duplicate markets, especially created repeatedly or at scale — see{' '}
               <a
                 href="#duplicate-markets"
                 className="text-primary-500 underline"
@@ -206,45 +206,36 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             Duplicate markets
           </h2>
           <p className="text-ink-700 mt-3">
-            Only create a market that already exists if there's a real reason to
-            — most often materially different resolution criteria, a different
-            timeframe, a different resolution source, or a well-founded concern
-            about who's resolving the original. Otherwise you're splitting the
-            liquidity across two markets, which makes both of them thinner,
-            worse priced, and easier for bots to pick off. It's better for
-            arbitrage bots and worse for everyone else.
+            Duplicate markets split the liquidity across two markets, making
+            both of them thinner, worse priced, and easier for bots to pick off.
+            It's better for arbitrage bots and worse for everyone else.
           </p>
           <p className="text-ink-700 mt-3">
-            When you type a title on the create page, Manifold automatically
-            searches for similar open markets and lists them right there. If
-            near-identical markets are shown to you before you hit create, "I
-            didn't know it existed" isn't much of a defense — check the existing
-            one first, and bet on it or add liquidity to it instead.
+            Only create a market that already exists if there's a real reason
+            to. Reasons include:
           </p>
-          <p className="text-ink-700 mt-3">
-            Who is resolving can itself be a legitimate reason. Where a market
-            leaves real room for interpretation — insufficient criteria, or an
-            outcome that comes down to a judgement call — a creator who holds a
-            position, has a track record of resolving their own markets in their
-            favour, or is unresponsive is a genuine risk to traders, and a
-            better-specified version run by someone impartial is worth having.
-            Try to fix the original first: ask the creator to tighten the
-            criteria, or tag @mods. If that goes nowhere, write your version
-            with criteria specific enough that the resolution isn't a judgement
-            call, and say plainly in the description that it exists to remove
-            the ambiguity.
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>Materially different resolution criteria</li>
+            <li>A different timeframe</li>
+            <li>A different resolution source</li>
+            <li>A well-founded concern about who's resolving the original</li>
+          </ul>
+          <p className="text-ink-700 mt-4">
+            Who is resolving can itself be a legitimate reason. If a market
+            leaves real room for interpretation:
           </p>
-          <p className="text-ink-700 mt-3">
-            This isn't a licence to re-run any market you disagree with. A
-            creator resolving a clear-cut market against your position isn't
-            unreliable — they're right. Duplicating an unambiguous market
-            because you don't like where it's heading is treated as a plain
-            duplicate.
-          </p>
-          <p className="text-ink-700 mt-3">
-            If you do have a good reason, say so in the description. A one-line
-            note explaining how yours differs from the existing market is
-            usually enough to make it clear this was deliberate.
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>Insufficient criteria</li>
+            <li>A judgement call</li>
+            <li>A creator holding a position</li>
+            <li>A creator has a track record of resolutions in their favour</li>
+            <li>A creator is unresponsive</li>
+          </ul>
+          <p className="text-ink-700 mt-4">
+            This policy is primarily to discourage the mass creation of
+            duplicate markets. A one line explanation in the description is
+            usually sufficient to show that the duplicate was deliberate and had
+            a reason behind it.
           </p>
           <p className="text-ink-700 mt-3">What happens to duplicates:</p>
           <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
@@ -257,25 +248,19 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
               >
                 Leagues
               </Link>
-              , and significantly deboosted so it stops surfacing in browse and
-              feeds. If no real trading has occurred on it yet, it may instead
-              be delisted outright or resolved N/A.
+              , significantly deboosted so that it stops surfacing in browse or
+              feeds, unlisted, or resolved N/A.
             </li>
             <li>
               Creating duplicates repeatedly, or after being warned, may result
-              in a fine.
-            </li>
-            <li>
-              Creating them in bulk, or to farm bonuses, league points, or
-              engagement, may result in the markets being unlisted or deleted
-              and a market creation ban.
+              in a fine or a market creation ban.
             </li>
           </ul>
-          <p className="text-ink-600 mt-3 text-sm">
-            Duplicating your own market to reset it or to escape an inconvenient
-            position is treated the same way. If your market needs new criteria,
-            update the description and comment on it rather than starting a
-            second one.
+          <p className="text-ink-700 mt-4">
+            If you feel that your own market no longer reflects the original
+            intention, we actually encourage you to create a new market instead
+            of materially updating the criteria on the original. This is not a
+            duplicate.
           </p>
         </div>
 
