@@ -58,6 +58,7 @@ import {
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
+import { getMnxInstrument } from 'common/perps/mnx'
 import {
   decideOracleTransition,
   getPerpOracleFreshness,
@@ -1899,7 +1900,7 @@ export const runOracleUpdate = async (
   newPrice: number,
   ts: number,
   sourceTs?: number,
-  /** Fast-tick only. Omit to wait as long as it takes; see OracleUpdateBounds. */
+  /** Frequent collectors only. Omit to wait; see OracleUpdateBounds. */
   bounds?: OracleUpdateBounds
 ): Promise<OracleUpdateResult | null> => {
   return runPerpTransaction(
@@ -2134,6 +2135,24 @@ export const runFunding = async (
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const appliedTime = Date.now()
+
+    // Read health from the locked contract, not the scheduler's earlier
+    // snapshot. H100's 24h source allowance must not extend a provider outage
+    // or a frozen flag into hours of funding while users cannot close.
+    if (
+      !PERPS_SKIP_ORACLE_FRESHNESS &&
+      getMnxInstrument(contract.oracleFeedId)
+    ) {
+      const freshness = getPerpOracleFreshness(contract, appliedTime)
+      if (freshness.status !== 'fresh') {
+        log(
+          `[perps] skipping funding for ${contract.slug}: ${
+            freshness.reason ?? 'MNX price is stale'
+          }`
+        )
+        return null
+      }
+    }
 
     // Halt gate, read from the PERSISTED contract under the lock rather than
     // from the caller's oracle result.

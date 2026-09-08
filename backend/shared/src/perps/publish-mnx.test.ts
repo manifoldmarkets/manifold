@@ -2,7 +2,14 @@ import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { MINUTE_MS } from 'common/util/time'
 import { MnxSnapshot, parseMnxSnapshot } from '../mnx'
 import { SupabaseDirectClient } from '../supabase/init'
-import { collectMnxSnapshot, requireMnxReady } from './publish-mnx'
+import {
+  applyMnxSnapshot,
+  collectMnxSnapshot,
+  requireMnxReady,
+} from './publish-mnx'
+import { applyOraclePointToLivePerps } from './apply-oracle-point'
+import { FAST_TICK_ORACLE_BOUNDS } from './oracle-tick-bounds'
+import { PerpContract } from 'common/contract'
 
 // Isolate logging/engine transport: these tests exercise collection and durable
 // publication, never open sockets or use credentials.
@@ -64,7 +71,10 @@ const database = (
   return { pg, none }
 }
 
-afterEach(() => jest.restoreAllMocks())
+afterEach(() => {
+  jest.restoreAllMocks()
+  jest.clearAllMocks()
+})
 
 it('fetches once for 16 instruments and publishes the snapshot in the same transaction', async () => {
   jest.spyOn(Date, 'now').mockReturnValue(now + 10_000)
@@ -131,4 +141,93 @@ it('requires live provenance, fresh checks and available data for creation', () 
   )
   snapshot.feeds[id].point!.sourceData!.kind = 'candle'
   expect(() => requireMnxReady(snapshot, id, now)).toThrow(/live/)
+})
+
+it('advances other feeds during contention and retries the unchanged snapshot after timeout', async () => {
+  const snapshot = parseMnxSnapshot(payload(), now)
+  const blockedId = MNX_INSTRUMENTS[0].feedId
+  const contracts = Object.fromEntries(
+    MNX_INSTRUMENTS.map((spec) => [
+      spec.feedId,
+      {
+        id: spec.feedId,
+        oracleFeedId: spec.feedId,
+        oraclePrice: 100,
+        oraclePriceTime: now - MINUTE_MS,
+        poolLong: 25000,
+        poolShort: 25000,
+      } as PerpContract,
+    ])
+  )
+  let rejectLock!: (error: unknown) => void
+  const lockWait = new Promise<never>((_, reject) => {
+    rejectLock = reject
+  })
+  let contended = true
+  let otherFeedsApplied!: () => void
+  const progress = new Promise<void>((resolve) => {
+    otherFeedsApplied = resolve
+  })
+  let applied = 0
+  jest.mocked(applyOraclePointToLivePerps).mockImplementation(async () => {
+    if (++applied === 15) otherFeedsApplied()
+  })
+  const settings: string[] = []
+  const pg = {
+    manyOrNone: async (_sql: string, [id]: string[]) => [{ id }],
+    tx: async (_options: unknown, run: (tx: unknown) => Promise<unknown>) => {
+      let id: string | undefined
+      let bounded = false
+      return run({
+        none: async (sql: string) => {
+          settings.push(sql)
+          bounded = true
+        },
+        one: async (sql: string, args?: string[]) => {
+          if (sql.includes('pg_advisory_xact_lock')) {
+            expect(bounded).toBe(true)
+            if (contended && sql.includes(blockedId)) return lockWait
+            return {}
+          }
+          if (args) {
+            id = args[0]
+            return { data: contracts[id] }
+          }
+          contracts[id!].oracleFeedHealth = snapshot.feeds[id!].health
+          return { data: contracts[id!] }
+        },
+      })
+    },
+  } as unknown as SupabaseDirectClient
+  const first = applyMnxSnapshot(pg, snapshot)
+  await progress
+  expect(contracts[blockedId].oracleFeedHealth).toBeUndefined()
+  expect(
+    jest.mocked(applyOraclePointToLivePerps).mock.calls.map((call) => call[1])
+  ).not.toContain(blockedId)
+  rejectLock({ code: '55P03' })
+  await first
+  expect(
+    settings.every(
+      (sql) =>
+        sql ===
+        'set local lock_timeout = 1000; set local statement_timeout = 4000'
+    )
+  ).toBe(true)
+  contended = false
+  await applyMnxSnapshot(pg, snapshot)
+  expect(contracts[blockedId].oracleFeedHealth).toEqual(
+    snapshot.feeds[blockedId].health
+  )
+  expect(applyOraclePointToLivePerps).toHaveBeenCalledWith(
+    pg,
+    blockedId,
+    snapshot.feeds[blockedId].point,
+    FAST_TICK_ORACLE_BOUNDS
+  )
+  expect(
+    jest
+      .mocked(applyOraclePointToLivePerps)
+      .mock.calls.every((call) => call[3]?.maxAttempts === 1)
+  ).toBe(true)
 })

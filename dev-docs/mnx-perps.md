@@ -50,12 +50,21 @@ new mark pauses. Health and prices are independently ordered in browser
 quotes. Failed price application can retry the durable observation without
 manufacturing a fresh timestamp.
 
+Application runs with at most four feeds in parallel. Health and price
+transactions use a one-second lock timeout and four-second statement timeout;
+price updates get one attempt per poll. A contended market retries on the next
+poll while other feeds advance. These are database statement bounds, not a
+deadline for the entire job.
+
 All MNX markets require a successful provider check within five minutes.
 Source timestamps also expire after five minutes, except H100's configured
 24-hour ceiling. `oracle_frozen`, disabled/missing instruments, invalid values,
 or identity/unit changes pause immediately upon application of that status.
 MNX's own H100 frozen flag currently takes effect earlier than our 24-hour
 ceiling. Neither an HTTP success nor a flat candle proves a fresh price.
+Funding also checks MNX health under the contract lock and skips unavailable
+periods. Recovery resumes the ordinary hourly cadence without charging skipped
+periods retroactively.
 
 Logs use the existing `[oracle-feeds]` error prefix. Monitor collector heartbeat,
 provider check age, per-market source age, unavailable reasons, and application

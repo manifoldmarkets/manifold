@@ -322,9 +322,8 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.
     //
-    // This is the ONLY caller that passes bounds. The fast tick is the one
-    // context where abandoning an apply beats completing it late: the next
-    // tick is seconds away and carries a better price. Every other caller
+    // Frequent collectors (this tick and MNX) pass bounds: the next poll
+    // retries with a newer price or the durable observation. Other callers
     // (hourly update-perps, the daily publishers, the admin write path) must
     // wait and apply — see OracleUpdateBounds.
     await applyOraclePointToLivePerps(

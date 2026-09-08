@@ -41,8 +41,8 @@ export const applyOraclePointToLivePerps = async (
   feedId: string,
   point: OraclePoint,
   /**
-   * Fast-tick only. Omitted by the daily publishers and the admin write path,
-   * which must wait for the apply rather than abandon it — see
+   * Frequent collectors only (fast tick and MNX). Daily publishers and the
+   * admin write path wait for the apply rather than abandon it — see
    * OracleUpdateBounds.
    */
   bounds?: OracleUpdateBounds

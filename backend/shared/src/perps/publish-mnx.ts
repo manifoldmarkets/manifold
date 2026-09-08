@@ -6,6 +6,7 @@ import {
   MNX_CHECK_MAX_AGE_MS,
 } from 'common/perps/mnx'
 import { getPerpQuote } from 'common/perps/quote'
+import { mapAsync } from 'common/util/promise'
 import {
   fetchMnxMarkets,
   MnxSnapshot,
@@ -18,6 +19,11 @@ import { log } from '../utils'
 import { applyOraclePointToLivePerps } from './apply-oracle-point'
 import { advisoryLockQuery, mergeContractDataQuery } from './queries'
 import { publishPerpQuote } from './publish-perp-quote'
+import {
+  FAST_TICK_ORACLE_BOUNDS,
+  FAST_TICK_TX_TAG,
+  oracleTickTimeoutsQuery,
+} from './oracle-tick-bounds'
 
 export const readMnxSnapshot = async (pg: SupabaseDirectClient) => {
   const row = await pg.oneOrNone<{ snapshot: MnxSnapshot | null }>(
@@ -140,47 +146,66 @@ export const applyMnxSnapshot = async (
   pg: SupabaseDirectClient,
   snapshot: MnxSnapshot
 ) => {
-  for (const spec of MNX_INSTRUMENTS) {
-    const feed = snapshot.feeds[spec.feedId]
-    try {
-      const contracts = await pg.manyOrNone<{ id: string }>(
-        `select id from contracts where mechanism = 'perp' and resolution_time is null
+  // Independent feeds can advance while another waits on a busy contract.
+  // Bound both health and price transactions; the next minute retries the
+  // durable snapshot, so contention must not keep the cron run alive forever.
+  await mapAsync(
+    MNX_INSTRUMENTS,
+    async (spec) => {
+      const feed = snapshot.feeds[spec.feedId]
+      try {
+        const contracts = await pg.manyOrNone<{ id: string }>(
+          `select id from contracts where mechanism = 'perp' and resolution_time is null
          and data->>'oracleFeedId' = $1`,
-        [spec.feedId]
-      )
-      for (const { id } of contracts) {
-        const quote = await pg.tx(async (tx) => {
-          await tx.one(advisoryLockQuery(id))
-          const row = await tx.one<{ data: PerpContract }>(
-            `select data from contracts where id = $1 for update`,
-            [id]
+          [spec.feedId]
+        )
+        for (const { id } of contracts) {
+          const quote = await pg.tx({ tag: FAST_TICK_TX_TAG }, async (tx) => {
+            await tx.none(
+              oracleTickTimeoutsQuery(
+                FAST_TICK_ORACLE_BOUNDS.lockTimeoutMs,
+                FAST_TICK_ORACLE_BOUNDS.statementTimeoutMs
+              )
+            )
+            await tx.one(advisoryLockQuery(id))
+            const row = await tx.one<{ data: PerpContract }>(
+              `select data from contracts where id = $1 for update`,
+              [id]
+            )
+            const contract = row.data
+            if (
+              contract.isResolved ||
+              (contract.oracleFeedHealth?.checkedAt ?? 0) >=
+                feed.health.checkedAt
+            )
+              return null
+            await tx.one(
+              mergeContractDataQuery(id, { oracleFeedHealth: feed.health })
+            )
+            // Publish health BEFORE applying the price. If apply fails, the
+            // shared gate sees priceTime/price mismatch and refuses trades.
+            return getPerpQuote({ ...contract, oracleFeedHealth: feed.health })
+          })
+          if (quote) publishPerpQuote(quote)
+        }
+        if (feed.health.status === 'available' && feed.point) {
+          await applyOraclePointToLivePerps(
+            pg,
+            spec.feedId,
+            feed.point,
+            FAST_TICK_ORACLE_BOUNDS
           )
-          const contract = row.data
-          if (
-            contract.isResolved ||
-            (contract.oracleFeedHealth?.checkedAt ?? 0) >= feed.health.checkedAt
-          )
-            return null
-          await tx.one(
-            mergeContractDataQuery(id, { oracleFeedHealth: feed.health })
-          )
-          // Publish health BEFORE applying the price. If apply fails, the
-          // shared gate sees priceTime/price mismatch and refuses trades.
-          return getPerpQuote({ ...contract, oracleFeedHealth: feed.health })
-        })
-        if (quote) publishPerpQuote(quote)
+        } else {
+          log.error(`[oracle-feeds] ${spec.feedId}: ${feed.health.reason}`)
+        }
+      } catch (error) {
+        log.error(
+          `[oracle-feeds] ${spec.feedId}: MNX application failed: ${error}`
+        )
       }
-      if (feed.health.status === 'available' && feed.point) {
-        await applyOraclePointToLivePerps(pg, spec.feedId, feed.point)
-      } else {
-        log.error(`[oracle-feeds] ${spec.feedId}: ${feed.health.reason}`)
-      }
-    } catch (error) {
-      log.error(
-        `[oracle-feeds] ${spec.feedId}: MNX application failed: ${error}`
-      )
-    }
-  }
+    },
+    4
+  )
 }
 
 export const publishMnx = async (pg: SupabaseDirectClient) => {
