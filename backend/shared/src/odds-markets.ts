@@ -25,11 +25,10 @@ import {
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
-  activeCalendarEntries,
   calendarEntriesFor,
+  calendarEntriesOverlapping,
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
-  SportsCalendarEntry,
 } from 'common/sports-calendar'
 import {
   buildOddsMarketParams,
@@ -47,7 +46,6 @@ const ROLLING_WINDOW_DAYS = 14
 /** The most the Odds API will look back for completed games. */
 const LOOKBACK_DAYS = 3
 const LIQUIDITY_TIER = 1000
-const HOUR_MS = 60 * 60 * 1000
 
 // ─── Creating markets ─────────────────────────────────────────────────────────
 
@@ -101,11 +99,14 @@ export async function createOddsMarketsForCompetition(
   }
   if (windows.length === 0) return result
 
+  // Only games that have not started: the odds endpoint also returns games
+  // in play, and a market opened from a live line is not a market.
+  const now = Date.now()
   const events = (
     await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS)
   ).filter((e) => {
     const t = new Date(e.commence_time).getTime()
-    return windows.some((w) => t >= w.from && t <= w.to)
+    return t > now && windows.some((w) => t >= w.from && t <= w.to)
   })
   if (events.length === 0) return result
 
@@ -203,12 +204,18 @@ export async function createOddsMarketsForCompetition(
   return result
 }
 
-/** The daily job: every competition in an active auto-create phase with a sport key. */
+/** The daily job. */
 export async function createOddsMarketsForActiveCalendar(
   pg: SupabaseDirectClient
 ): Promise<Record<string, OddsCreateResult>> {
+  // Any competition with an auto-create phase inside the rolling window, so
+  // opening night gets its markets two weeks out and not the morning of.
+  const now = Date.now()
   const competitionIds = uniq(
-    activeCalendarEntries()
+    calendarEntriesOverlapping(
+      now,
+      now + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000
+    )
       .filter((e) => e.autoCreate && e.oddsKey)
       .map((e) => e.competitionId)
   )
@@ -406,10 +413,3 @@ async function finishGame(
     })
   }
 }
-
-/** Kept for the admin page: which calendar entries the daily job would act on right now. */
-export function oddsCompetitionsDue(now = Date.now()): SportsCalendarEntry[] {
-  return activeCalendarEntries(now).filter((e) => e.autoCreate && !!e.oddsKey)
-}
-
-export { HOUR_MS as ODDS_HOUR_MS }
