@@ -14,6 +14,11 @@ import {
 import { log } from 'shared/utils'
 import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
+import {
+  createOracleFeedDispatcher,
+  OraclePollAbandonedError,
+  OraclePollProgress,
+} from 'shared/oracle-feed-dispatcher'
 
 // The fast oracle tick (fires every 2s, modeled on sports-live). For each
 // `fast` feed in the registry that is due to be polled:
@@ -32,10 +37,8 @@ import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 // xStocks on the same job that is a live regression of this file's purpose —
 // their adapter waits on an RPC node (1.5s timeout), so one hanging request
 // would push BTC's interval out exactly when the mark is moving. The
-// per-feed
-// in-flight guard below is a strictly finer-grained `protect`: it still
-// prevents a feed from stacking on ITSELF, without coupling feeds to each
-// other.
+// per-feed dispatcher gives each feed one active polling slot. A deadline
+// releases a hung slot; unfinished work stays counted until it settles.
 export async function updateOracleFeeds() {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
@@ -43,87 +46,20 @@ export async function updateOracleFeeds() {
   for (const feed of ORACLE_FEEDS) {
     if (feed.cadence === 'fast') {
       if (isPollDue(feed.id, feed.pollPeriodMs, now))
-        dispatch(feed.id, () => tickOneFeed(pg, feed))
+        dispatcher.dispatch(feed.id, (progress) =>
+          tickOneFeed(pg, feed, progress)
+        )
     } else if (isPollDue(feed.id, DAILY_PROBE_PERIOD_MS, now)) {
-      dispatch(feed.id, () => probeDailyFeedStaleness(pg, feed))
+      dispatcher.dispatch(feed.id, (progress) =>
+        probeDailyFeedStaleness(pg, feed, progress)
+      )
     }
   }
-
-  alertOnStuckFeeds(now)
 }
 
-// Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
-// (5s, for BTC); every other feed opts down via pollPeriodMs, so raising the
-// tick rate for one source does not raise it for all of them. State is
-// in-memory — a scheduler restart polls everything once immediately, which is
-// the correct bias: fresher marks, and staleness alerting re-arms at once.
-const lastPollAttempt: Record<string, number> = {}
-/** Start time of the run currently in flight, or absent when idle. */
-const inFlightSince: Record<string, number> = {}
-/** Last time a stuck feed was reported, to keep the alert to once a period. */
-const lastStuckAlert: Record<string, number> = {}
-
-// How overdue an in-flight run must be before it is treated as stuck. Every
-// fetch adapter is bounded (AbortSignal.timeout), but the DB work behind
-// runOracleUpdate is not, and an advisory-lock wait or a pool starvation can
-// last far longer than any poll period.
-const STUCK_GRACE_MS = 2 * MINUTE_MS
-const STUCK_ALERT_INTERVAL_MS = 5 * MINUTE_MS
-
-/**
- * Because dispatch skips a feed while its previous run is in flight, a promise
- * that never settles takes that feed permanently dark — silently, since the
- * staleness check lives INSIDE the work that is no longer running. The job
- * itself keeps reporting success either way: `updateOracleFeeds` returns after
- * dispatching, so `scheduler_info.last_end_time` is now a dispatcher heartbeat
- * and says nothing about whether feed work completes. (`perp-launch-preflight`
- * reads that column as a liveness signal; it still correctly means "the job is
- * firing", which is what it checks.) This is the compensating signal.
- *
- * `update-perps` would also catch it hourly for feeds with a live market; this
- * reports in minutes and covers feeds that have no market yet.
- */
-const alertOnStuckFeeds = (now: number) => {
-  for (const feedId of Object.keys(inFlightSince)) {
-    const startedAt = inFlightSince[feedId]
-    if (startedAt == null) continue
-    const age = now - startedAt
-    if (age < STUCK_GRACE_MS) continue
-    if (now - (lastStuckAlert[feedId] ?? 0) < STUCK_ALERT_INTERVAL_MS) continue
-    lastStuckAlert[feedId] = now
-    log.error(
-      `[oracle-feeds] ${feedId}: poll has been in flight for ${Math.round(
-        age / 1000
-      )}s and is blocking its own next run — the feed is effectively dark`
-    )
-  }
-}
-
-/**
- * Start a feed's work without blocking the cron run, at most once at a time.
- *
- * Skipping while in-flight is what replaces croner's `protect` at feed
- * granularity: a source slower than its own poll period falls back to running
- * as often as it can finish, rather than piling up overlapping fetches.
- *
- * The attempt is stamped here, before the work starts, so a source that hangs
- * to its fetch timeout does not earn an immediate retry on the next firing.
- * `tickOneFeed` and `probeDailyFeedStaleness` both catch internally and never
- * reject; the `.catch` is a backstop so a future edit that lets one throw
- * cannot become an unhandled rejection that takes the scheduler down.
- */
-const dispatch = (feedId: string, run: () => Promise<void>) => {
-  if (inFlightSince[feedId] != null) return
-  const startedAt = Date.now()
-  inFlightSince[feedId] = startedAt
-  lastPollAttempt[feedId] = startedAt
-  void run()
-    .catch((err) => log.error(`[oracle-feeds] ${feedId}: unhandled — ${err}`))
-    .finally(() => {
-      delete inFlightSince[feedId]
-      delete lastStuckAlert[feedId]
-    })
-}
+// Each feed recovers its polling slot after a deadline, while abandoned
+// work stays counted against the process-wide limit until it settles.
+const dispatcher = createOracleFeedDispatcher(log)
 
 // The daily feeds' staleness probe is a read-only indexed lookup, but it has
 // no reason to run 12x a minute; it can only alert once an hour anyway.
@@ -159,7 +95,7 @@ const isPollDue = (
   // behavior), so a registry addition can never accidentally go silent.
   if (periodMs == null || !Number.isFinite(periodMs) || periodMs <= 0)
     return true
-  const last = lastPollAttempt[feedId]
+  const last = dispatcher.lastAttemptAt(feedId)
   if (last == null) return true
   // Cap at half the period too, so a period shorter than one tick cannot be
   // swallowed by the tolerance and turn into "poll on every firing".
@@ -214,14 +150,17 @@ const lastStaleAlert: Record<string, number> = {}
 
 const probeDailyFeedStaleness = async (
   pg: SupabaseDirectClient,
-  feed: OracleFeedDef
+  feed: OracleFeedDef,
+  progress: OraclePollProgress
 ) => {
   try {
+    progress.checkpoint('daily:read-latest-point')
     const row = await pg.oneOrNone<{ ts: string }>(
       `select ts from oracle_prices
        where feed_id = $1 order by ts desc limit 1`,
       [feed.id]
     )
+    progress.checkpoint('daily:check-staleness')
     const latestTs = row ? new Date(row.ts).getTime() : null
     const stale = latestTs == null || Date.now() - latestTs > feed.staleAfterMs
     if (!stale) return
@@ -234,12 +173,18 @@ const probeDailyFeedStaleness = async (
       } exceeds staleAfterMs=${feed.staleAfterMs}`
     )
   } catch (err) {
+    if (err instanceof OraclePollAbandonedError) return
     log.error(`[oracle-feeds] ${feed.id}: staleness probe failed — ${err}`)
   }
 }
 
-const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
+const tickOneFeed = async (
+  pg: SupabaseDirectClient,
+  feed: OracleFeedDef,
+  progress: OraclePollProgress
+) => {
   try {
+    progress.checkpoint('read-latest-point')
     const prevRow = await pg.oneOrNone<{ ts: string; price: number | string }>(
       `select ts, price from oracle_prices
        where feed_id = $1 order by ts desc limit 1`,
@@ -257,7 +202,9 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       // block that finalized after its successor. Row growth is bounded by
       // the source's block cadence, not the tick rate, so shouldWrite's
       // dedupe isn't needed here.
+      progress.checkpoint('fetch-recent')
       const points = await feed.fetchRecent()
+      progress.checkpoint('validate-points')
       const valid: { ts: number; price: number }[] = []
       for (const point of points) {
         const rejection = validateOraclePoint(feed, null, point)
@@ -278,13 +225,16 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
             `[oracle-feeds] ${feed.id}: rejected ambiguous batch — ${normalized.reason}`
           )
         } else {
+          progress.checkpoint('insert-points')
           await insertOraclePrices(pg, feed.id, normalized.points)
           const newest = normalized.points[normalized.points.length - 1]
           if (newest && (!latest || newest.ts > latest.ts)) latest = newest
         }
       }
     } else if (feed.fetchLatest) {
+      progress.checkpoint('fetch-latest')
       const point = await feed.fetchLatest()
+      progress.checkpoint('validate-point')
       if (point) {
         const rejection = validateOraclePoint(feed, prev, point)
         if (rejection) {
@@ -294,12 +244,14 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
             ).toISOString()} — ${rejection}`
           )
         } else if (shouldWrite(feed, prev, point)) {
+          progress.checkpoint('insert-point')
           await insertOraclePrices(pg, feed.id, [point])
           latest = point
         }
       }
     }
 
+    progress.checkpoint('check-feed-health')
     // Feed health. Fast feeds are launch-critical, so silence is an incident
     // even with no live market attached (this is what would have caught the
     // dev feed that froze unnoticed for 19 days).
@@ -331,9 +283,11 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       pg,
       feed.id,
       latestPoint,
-      FAST_TICK_ORACLE_BOUNDS
+      FAST_TICK_ORACLE_BOUNDS,
+      progress
     )
   } catch (err) {
+    if (err instanceof OraclePollAbandonedError) return
     log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }
 }

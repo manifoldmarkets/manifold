@@ -13,6 +13,10 @@ import {
 import { publishPerpQuote } from 'shared/perps/publish-perp-quote'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import {
+  OraclePollAbandonedError,
+  OraclePollProgress,
+} from 'shared/oracle-feed-dispatcher'
 
 /**
  * How far a contract's executable mark may fall behind the feed before a
@@ -22,9 +26,8 @@ import { log } from 'shared/utils'
  * alert always lands BEFORE the market freezes at that threshold, whatever it
  * is set to. This is the signal nothing else provides: feed staleness reads
  * oracle_prices, which the publisher has already written by the time apply
- * runs, and the stuck-feed detector reads inFlightSince, which is clear
- * because the poll itself completed. Both stay green while a single contract
- * silently stops tracking the price it executes against.
+ * runs, and the poll deadline sees a completed run. Both stay green while a
+ * single contract silently stops tracking the price it executes against.
  */
 const APPLICATION_LAG_ALERT_FRACTION = 0.5
 
@@ -45,7 +48,9 @@ export const applyOraclePointToLivePerps = async (
    * which must wait for the apply rather than abandon it — see
    * OracleUpdateBounds.
    */
-  bounds?: OracleUpdateBounds
+  bounds?: OracleUpdateBounds,
+  /** Fast-poll checkpoints; other publishers finish their complete update. */
+  progress?: OraclePollProgress
 ) => {
   const pointRejection = validateBasicOraclePoint(point)
   if (pointRejection) {
@@ -57,6 +62,7 @@ export const applyOraclePointToLivePerps = async (
   // The database row is the published source of truth. INSERT ... DO NOTHING
   // can lose a same-timestamp race, so never execute against the caller's value
   // until it matches the immutable row that actually won.
+  progress?.checkpoint('apply:read-stored-point')
   const stored = await pg.oneOrNone<{
     ts: string
     price: number | string
@@ -96,6 +102,7 @@ export const applyOraclePointToLivePerps = async (
       }`
     )
 
+  progress?.checkpoint('apply:read-live-contracts')
   const rows = await pg.manyOrNone<{ data: PerpContract }>(
     `select data from contracts
      where mechanism = 'perp'
@@ -104,20 +111,11 @@ export const applyOraclePointToLivePerps = async (
     [feedId]
   )
 
-  // NOTE: the bounds here are per-statement and per-lock, not a deadline for
-  // the whole run. Contracts are applied sequentially, and pool checkout, the
-  // query above, and notifications all sit outside them, so one slow contract
-  // can still hold a feed in-flight past a tick — the in-flight guard then
-  // skips that firing, which is degraded but correct.
-  //
-  // A run-wide budget was tried and removed: it can only bind when a feed
-  // backs more than one market, which none currently do, and skipping
-  // contracts by wall-clock in an unordered result set starves whichever ones
-  // sort last. Doing it properly needs oldest-first ordering (or rotation),
-  // escalation for contracts that keep getting skipped, and a deadline
-  // propagated from dispatch. That belongs with the change that first puts two
-  // markets on one feed, not here.
+  // Statement/lock limits bound each engine transaction. Fast-poll
+  // checkpoints also stop abandoned runs before their next read or contract.
+  // Already-started transactions finish atomically and deliver their results.
   for (const { data: contract } of rows) {
+    progress?.checkpoint(`apply:check-contract(${contract.slug})`)
     const currentPoint =
       contract.oraclePriceTime == null
         ? null
@@ -142,6 +140,7 @@ export const applyOraclePointToLivePerps = async (
     }
 
     try {
+      progress?.checkpoint(`apply:runOracleUpdate(${contract.slug})`)
       const result = await runOracleUpdate(
         contract.id,
         persistedPoint.price,
@@ -150,6 +149,10 @@ export const applyOraclePointToLivePerps = async (
         bounds
       )
       if (!result) continue
+
+      // The update committed. Even if the poll's deadline passed while it
+      // ran, finish its quote/notifications; stop before the next contract.
+      progress?.setPhase(`apply:publishQuote(${contract.slug})`)
 
       if (result.solvencyHalt) {
         // The tick committed its PRICE but not its state, and halted trading.
@@ -191,6 +194,7 @@ export const applyOraclePointToLivePerps = async (
       })
 
       try {
+        progress?.setPhase(`apply:notify(${contract.slug})`)
         await notifyPerpOracleResult(pg, contract, persistedPoint.price, result)
       } catch (err) {
         // The price transition is already committed. Notification delivery
@@ -200,6 +204,7 @@ export const applyOraclePointToLivePerps = async (
         )
       }
     } catch (err) {
+      if (err instanceof OraclePollAbandonedError) throw err
       // One malformed/contended contract must not leave every other market on
       // the same feed trading against a stale cached price.
       const message = `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${persistedPoint.ts}: ${err}`
