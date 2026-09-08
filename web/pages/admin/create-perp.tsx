@@ -1,3 +1,4 @@
+import { getMnxInstrument, OracleFeedHealth } from 'common/perps/mnx'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { XIcon } from '@heroicons/react/solid'
@@ -44,6 +45,7 @@ export default function AdminCreatePerpPage() {
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
+      providerHealth?: OracleFeedHealth | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string
@@ -157,6 +159,9 @@ export default function AdminCreatePerpPage() {
     setForm((current) => ({
       ...current,
       question: launchRecommendation.question,
+      ...(getMnxInstrument(form.oracleFeedId)
+        ? { description: getMnxInstrument(form.oracleFeedId)!.description }
+        : {}),
       maxLeverage: launchRecommendation.maxLeverage,
       maxFundingRateAnnualPct: launchRecommendation.annualMaxFundingRate * 100,
       fundingSensitivity: launchRecommendation.fundingSensitivity,
@@ -313,6 +318,17 @@ export default function AdminCreatePerpPage() {
               <p className="text-scarlet-700 mt-1 text-xs">
                 This feed is retained for runtime/history but is disabled for
                 new perp markets.
+              </p>
+            )}
+            {getMnxInstrument(form.oracleFeedId) && (
+              <p className="text-ink-500 mt-2 text-xs">
+                MNX: {selectedFeed?.providerHealth?.status ?? 'not checked'}
+                {selectedFeed?.providerHealth?.reason &&
+                  ` — ${selectedFeed.providerHealth.reason}`}
+                {selectedFeed?.providerHealth?.checkedAt &&
+                  ` · checked ${new Date(
+                    selectedFeed.providerHealth.checkedAt
+                  ).toISOString()}`}
               </p>
             )}
             {selectedFeed?.launchLatencyRisk && (

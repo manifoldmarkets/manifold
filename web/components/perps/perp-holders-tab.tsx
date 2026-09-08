@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
@@ -6,7 +7,7 @@ import { useEffect } from 'react'
 import { PerpContract } from 'common/contract'
 import { getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import {
   fundingPeriodUnit,
   getFundingPeriodMs,
@@ -171,6 +172,7 @@ export const PerpHoldersTab = (props: {
           </Row>
           {sortHolders(longs).map((h) => (
             <HolderRow
+              feedId={contract.oracleFeedId}
               key={h.userId + h.direction}
               holder={h}
               oraclePrice={price}
@@ -189,6 +191,7 @@ export const PerpHoldersTab = (props: {
           </Row>
           {sortHolders(shorts).map((h) => (
             <HolderRow
+              feedId={contract.oracleFeedId}
               key={h.userId + h.direction}
               holder={h}
               oraclePrice={price}
@@ -324,6 +327,7 @@ const getUserFacingPnlForHolder = (
   )
 
 const HolderRow = (props: {
+  feedId: string
   holder: Holder
   oraclePrice: number
   contractId: string
@@ -362,7 +366,11 @@ const HolderRow = (props: {
           </span>
           <span className="text-ink-500 text-xs">
             {formatMoney(holder.originalCostBasis)} margin · liq{' '}
-            {formatPrice(holder.liquidationPrice, priceDecimals)}
+            {formatOraclePrice(
+              props.feedId,
+              holder.liquidationPrice,
+              priceDecimals
+            )}
           </span>
         </Col>
       </Row>

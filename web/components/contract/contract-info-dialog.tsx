@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { formatTimeWithTimezone } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
@@ -26,7 +27,6 @@ import {
 import {
   formatFeePct,
   formatFeePctApprox,
-  formatPrice,
   inferPriceDecimals,
   perpFeeScheduleSummary,
 } from 'common/perps/format'
@@ -660,7 +660,13 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         <td>
           {contract.resolution === 'MKT' ? 'Settlement price' : 'Oracle price'}
         </td>
-        <td>{formatPrice(price, inferPriceDecimals([price]))}</td>
+        <td>
+          {formatOraclePrice(
+            contract.oracleFeedId,
+            price,
+            inferPriceDecimals([price])
+          )}
+        </td>
       </tr>
       <tr>
         <td>
@@ -816,7 +822,11 @@ function ResolvePerpButton(props: { contract: PerpContract }) {
   // whenever the market has been stuck.
   const cachedLabel = !Number.isFinite(price)
     ? ''
-    : ` (cached: ${formatPrice(price, inferPriceDecimals([price]))}${
+    : ` (cached: ${formatOraclePrice(
+        contract.oracleFeedId,
+        price,
+        inferPriceDecimals([price])
+      )}${
         contract.oraclePriceTime
           ? `, ${formatTimeWithTimezone(contract.oraclePriceTime)}`
           : ''

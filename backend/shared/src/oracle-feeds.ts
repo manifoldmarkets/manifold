@@ -1,3 +1,4 @@
+import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
@@ -94,6 +95,18 @@ export type OracleFeedDef = {
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
+  ...MNX_INSTRUMENTS.map(
+    (i): OracleFeedDef => ({
+      id: i.feedId,
+      description: i.description,
+      marketCreationEnabled: true,
+      cadence: 'daily',
+      minPrice: i.minPrice,
+      maxPrice: i.maxPrice,
+      staleAfterMs: i.maxAgeMs,
+      updatePeriodMs: i.updatePeriodMs,
+    })
+  ),
   {
     id: BTC_USD_FEED_ID,
     description:

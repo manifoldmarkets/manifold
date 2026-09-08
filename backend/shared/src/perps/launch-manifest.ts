@@ -1,3 +1,4 @@
+import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
@@ -54,7 +55,38 @@ export type PerpLaunchMarketDefinition = {
  * instructions. The preflight warns when a market exceeds them so a reviewer
  * has to make that risk decision explicitly.
  */
+export const MNX_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] =
+  MNX_INSTRUMENTS.map((i) => ({
+    feedId: i.feedId,
+    question: i.question,
+    requiredTopics: [
+      {
+        name: i.category === 'equity' ? 'Stocks' : 'AI',
+        slugByEnvironment:
+          i.category === 'equity'
+            ? { DEV: 'economics-default', PROD: 'stocks' }
+            : { DEV: 'ai', PROD: 'ai' },
+      },
+    ],
+    oracleBehavior:
+      i.category === 'compute' ? 'scheduled-step' : 'continuous-public',
+    requiresSourceAsOf: true,
+    gameDesign: i.description,
+    latencyArbitrageRisk:
+      'MNX marks are public before the 60-second collector reaches Manifold. At 10× leverage the cached-price window can expose backing to latency arbitrage. This leverage intentionally exceeds MNX on several instruments.',
+    recommended: {
+      maxLeverage: 10,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: i.maxAgeMs,
+      subsidyLong: 25_000,
+      subsidyShort: 25_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+  }))
+
 export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
+  ...MNX_LAUNCH_MARKETS,
   {
     feedId: BTC_USD_FEED_ID,
     question: 'Bitcoin price (USD)',
@@ -454,6 +486,11 @@ export const getPerpLaunchTopicSlug = (
 ) => topic.slugByEnvironment[environment]
 
 export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
+  {
+    jobName: 'update-mnx',
+    maxEndAgeMs: 5 * MINUTE_MS,
+    maxRunMs: 2 * MINUTE_MS,
+  },
   {
     jobName: 'update-oracle-feeds',
     maxEndAgeMs: 2 * MINUTE_MS,

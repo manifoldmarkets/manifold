@@ -1,3 +1,4 @@
+import type { OracleFeedHealth } from '../perps/mnx'
 import { JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -84,6 +85,7 @@ export type LiteMarket = {
   oraclePrice?: number
   oraclePriceTime?: number
   oracleSourceTime?: number | null
+  oracleFeedHealth?: OracleFeedHealth
   poolLong?: number
   poolShort?: number
   // Drives the live funding rate (getPerpFundingRate) — must travel with the
@@ -241,6 +243,7 @@ export function toLiteMarket(
           oraclePrice: contract.oraclePrice,
           oraclePriceTime: contract.oraclePriceTime,
           oracleSourceTime: contract.oracleSourceTime,
+          oracleFeedHealth: contract.oracleFeedHealth,
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
           openInterestLong: contract.openInterestLong,

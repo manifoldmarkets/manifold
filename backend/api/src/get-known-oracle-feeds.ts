@@ -1,3 +1,5 @@
+import { getMnxInstrument } from 'common/perps/mnx'
+import { readMnxSnapshot } from 'shared/perps/publish-mnx'
 import { sortBy, uniq } from 'lodash'
 
 import { ENV } from 'common/envs/constants'
@@ -16,6 +18,7 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
 ) => {
   throwErrorIfNotAdmin(auth.uid)
   const pg = createSupabaseDirectClient()
+  const mnx = await readMnxSnapshot(pg)
   const rows = await pg.manyOrNone<{ feed_id: string }>(
     `select distinct feed_id from oracle_prices order by feed_id asc`
   )
@@ -34,6 +37,9 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
     const launch = PERP_LAUNCH_MARKETS.find((market) => market.feedId === id)
     return {
       id,
+      ...(getMnxInstrument(id)
+        ? { providerHealth: mnx?.feeds[id]?.health ?? null }
+        : {}),
       updatePeriodMs: feed?.updatePeriodMs ?? null,
       marketCreationEnabled: feed?.marketCreationEnabled ?? false,
       description: feed?.description ?? null,
@@ -41,7 +47,8 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
       launchRecommendation: launch
         ? {
             question: launch.question,
-            maxLeverage: launch.recommended.maxLeverage,
+            maxLeverage:
+              mnx?.feeds[id]?.maxLeverage ?? launch.recommended.maxLeverage,
             annualMaxFundingRate: launch.recommended.annualMaxFundingRate,
             fundingSensitivity: launch.recommended.fundingSensitivity,
             maxOraclePriceAgeMs: launch.recommended.maxOraclePriceAgeMs,

@@ -1,3 +1,6 @@
+import { getMnxInstrument, OracleFeedHealth } from 'common/perps/mnx'
+import { readMnxSnapshot, requireMnxReady } from 'shared/perps/publish-mnx'
+import { advisoryLockQuery } from 'shared/perps/queries'
 import { toLiteMarket } from 'common/api/market-types'
 import { ENV } from 'common/envs/constants'
 import {
@@ -211,6 +214,35 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const proposedSlug = slugify(question)
 
   const contract = await pg.tx(async (tx) => {
+    let oracleFeedHealth: OracleFeedHealth | undefined
+    if (getMnxInstrument(oracleFeedId)) {
+      await tx.one(advisoryLockQuery(`create-perp:${oracleFeedId}`))
+      const existing = await tx.oneOrNone<{ id: string }>(
+        `select id from contracts where mechanism = 'perp' and resolution_time is null
+         and data->>'oracleFeedId' = $1`,
+        [oracleFeedId]
+      )
+      if (existing)
+        throw new APIError(
+          409,
+          `A live market already exists for ${oracleFeedId}: ${existing.id}`
+        )
+      try {
+        const ready = requireMnxReady(await readMnxSnapshot(tx), oracleFeedId)
+        if (
+          ready.point?.ts !== oraclePoint.ts ||
+          ready.point.price !== oraclePoint.price
+        )
+          throw new Error(
+            'MNX price changed during creation; retry with its latest observation'
+          )
+        if (maxLeverage !== ready.maxLeverage)
+          throw new Error(`MNX launch leverage must be ${ready.maxLeverage}×`)
+        oracleFeedHealth = ready.health
+      } catch (error) {
+        throw new APIError(400, String(error))
+      }
+    }
     const collision = await tx.oneOrNone<{ id: string }>(
       `select 1 as id from contracts where slug = $1 limit 1`,
       [proposedSlug]
@@ -243,6 +275,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       initialPoolLong: subsidyLong,
       initialPoolShort: subsidyShort,
       oracleFeedId,
+      ...(oracleFeedHealth ? { oracleFeedHealth } : {}),
       oraclePrice: oraclePoint.price,
       oraclePriceTime: oraclePoint.ts,
       oracleSourceTime: oracleSourceTime ?? null,

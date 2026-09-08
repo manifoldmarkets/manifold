@@ -1,6 +1,9 @@
+import { getMnxTradingPauseReason, OracleFeedHealth } from './mnx'
 import { MINUTE_MS } from '../util/time'
 
 export type OraclePoint = {
+  /** Immutable provider provenance; omitted by existing feeds. */
+  sourceData?: Record<string, unknown>
   /**
    * Feed-defined effective timestamp used to order source observations. The
    * database separately records when Manifold first published the immutable
@@ -310,4 +313,25 @@ export const decideOracleTransition = (
     action: 'reject',
     reason: `timestamp ${incoming.ts} conflicts with current price ${current.price} (incoming ${incoming.price})`,
   }
+}
+
+export const getPerpOracleFreshness = (
+  contract: {
+    oracleFeedId: string
+    oraclePrice: number
+    oraclePriceTime?: number
+    maxOraclePriceAgeMs: number
+    oracleFeedHealth?: OracleFeedHealth
+  },
+  now = Date.now()
+): OracleFreshness & { reason?: string } => {
+  const freshness = getOracleFreshness(
+    contract.oraclePriceTime,
+    contract.maxOraclePriceAgeMs,
+    now
+  )
+  const reason = getMnxTradingPauseReason(contract, now)
+  return reason
+    ? { status: 'stale', ageMs: freshness.ageMs, reason }
+    : freshness
 }

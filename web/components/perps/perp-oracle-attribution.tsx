@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { getMnxInstrument } from 'common/perps/mnx'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 // Source credit for the oracle feed, rendered as a chart footnote.
@@ -21,6 +22,7 @@ export const PerpOracleAttribution = (props: {
   if (!attribution) return null
 
   const { source, url, licence, licenceUrl, showAsOf } = attribution
+  const isMnx = getMnxInstrument(feedId) != null
   const validAsOfTime =
     typeof asOfTime === 'number' && Number.isFinite(asOfTime) && asOfTime > 0
       ? asOfTime
@@ -28,7 +30,7 @@ export const PerpOracleAttribution = (props: {
 
   return (
     <div className={clsx('text-ink-400 text-xs', className)}>
-      Source:{' '}
+      {isMnx ? 'Source: MNX · ' : 'Source: '}
       {url ? (
         <a
           href={url}
@@ -36,7 +38,7 @@ export const PerpOracleAttribution = (props: {
           rel="noopener noreferrer"
           className="hover:text-ink-600 underline underline-offset-2"
         >
-          {source}
+          {isMnx ? 'Trade with real money on MNX' : source}
         </a>
       ) : (
         source

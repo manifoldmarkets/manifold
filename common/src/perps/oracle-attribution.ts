@@ -1,3 +1,5 @@
+import { MNX_INSTRUMENTS } from './mnx'
+
 // Who to credit for each oracle feed's data, and under what terms.
 //
 // This lives in `common` rather than next to the feed registry in
@@ -65,6 +67,12 @@ export type OracleAttribution = {
 }
 
 export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
+  ...Object.fromEntries(
+    MNX_INSTRUMENTS.map((i) => [
+      i.feedId,
+      { source: 'MNX', url: i.url, showAsOf: true },
+    ])
+  ),
   'openrouter-open-weight-share': {
     source: 'OpenRouter (openrouter.ai/rankings)',
     url: 'https://openrouter.ai/rankings',

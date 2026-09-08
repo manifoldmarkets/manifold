@@ -60,7 +60,7 @@ import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
 import {
   decideOracleTransition,
-  getOracleFreshness,
+  getPerpOracleFreshness,
   OraclePoint,
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
@@ -112,17 +112,14 @@ type LoadedState = {
 
 const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
   if (PERPS_SKIP_ORACLE_FRESHNESS) return
-  const freshness = getOracleFreshness(
-    contract.oraclePriceTime,
-    contract.maxOraclePriceAgeMs,
-    now
-  )
+  const freshness = getPerpOracleFreshness(contract, now)
   if (freshness.status === 'fresh') return
 
   const detail =
-    freshness.status === 'stale' && freshness.ageMs != null
+    freshness.reason ??
+    (freshness.status === 'stale' && freshness.ageMs != null
       ? `Oracle feed is stale (age ${freshness.ageMs}ms > ${contract.maxOraclePriceAgeMs}ms)`
-      : 'Oracle feed freshness is unavailable'
+      : 'Oracle feed freshness is unavailable')
   throw new APIError(
     400,
     `${detail} — trading is paused until the next valid update`

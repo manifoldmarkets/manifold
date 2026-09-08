@@ -1,3 +1,5 @@
+import { MNX_INSTRUMENTS, getMnxInstrument } from 'common/perps/mnx'
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
@@ -32,7 +34,7 @@ import {
   getPerpFundingRate,
 } from 'common/perps/funding'
 import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer'
-import { getOracleFreshness } from 'common/perps/oracle'
+import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -125,6 +127,7 @@ export async function getStaticProps() {
 // Unknown feeds fall back to the feed id's leading segment, so a new perp is
 // merely unglamorous until someone adds a line here, never broken.
 const FEED_TICKERS: Record<string, string> = {
+  ...Object.fromEntries(MNX_INSTRUMENTS.map((i) => [i.feedId, i.symbol])),
   'btc-usd': 'BTC',
   'trump-approval-rating': 'TRUMP',
   'votehub-generic-ballot-2026': 'BALLOT',
@@ -158,6 +161,8 @@ const displayPrice = (c: PerpContract) => {
     c.isResolved ? c.resolvedOraclePrice ?? c.oraclePrice : c.oraclePrice
   )
   if (!Number.isFinite(price)) return '—'
+  if (getMnxInstrument(c.oracleFeedId))
+    return formatOraclePrice(c.oracleFeedId, price, inferPriceDecimals([price]))
   const feedId = c.oracleFeedId ?? ''
   const prefix = feedId.endsWith('-usd') ? '$' : ''
   const suffix = PERCENT_FEEDS.has(feedId) ? '%' : ''
@@ -1504,13 +1509,7 @@ const useOracleTradingPaused = (contract: PerpContract) => {
     return () => clearInterval(id)
   }, [contract.oraclePriceTime])
   if (now == null || PERPS_SKIP_ORACLE_FRESHNESS) return false
-  return (
-    getOracleFreshness(
-      contract.oraclePriceTime,
-      contract.maxOraclePriceAgeMs,
-      now
-    ).status !== 'fresh'
-  )
+  return getPerpOracleFreshness(contract, now).status !== 'fresh'
 }
 
 // On phones the card's gutter + border + padding cost the chart ~40px of a

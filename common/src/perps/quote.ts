@@ -28,12 +28,23 @@ import { z } from 'zod'
 
 import { PerpContract } from 'common/contract'
 
+export const oracleFeedHealthSchema = z
+  .object({
+    checkedAt: z.number().finite().positive(),
+    status: z.enum(['available', 'unavailable']),
+    reason: z.string().optional(),
+    priceTime: z.number().finite().positive().optional(),
+    price: z.number().finite().positive().optional(),
+  })
+  .strict()
+
 export const perpQuoteSchema = z
   .object({
     contractId: z.string().min(1),
     oraclePrice: z.number().finite(),
     oraclePriceTime: z.number().finite().optional(),
     oracleSourceTime: z.number().finite().nullish(),
+    oracleFeedHealth: oracleFeedHealthSchema.optional(),
     poolLong: z.number().finite(),
     poolShort: z.number().finite(),
   })
@@ -44,6 +55,9 @@ export type PerpQuote = z.infer<typeof perpQuoteSchema>
 /** Snapshot the live fields of a contract as a quote. */
 export const getPerpQuote = (contract: PerpContract): PerpQuote => ({
   contractId: contract.id,
+  ...(contract.oracleFeedHealth
+    ? { oracleFeedHealth: contract.oracleFeedHealth }
+    : {}),
   oraclePrice: contract.oraclePrice,
   poolLong: contract.poolLong,
   poolShort: contract.poolShort,
@@ -72,4 +86,25 @@ export const isNewerPerpQuote = (
   if (nextTime == null) return currentTime == null
   if (currentTime == null) return true
   return nextTime > currentTime
+}
+
+/** Health-only updates must survive an unchanged price; old price packets must
+ * not erase a newer frozen flag. */
+export const mergePerpQuotes = (
+  previous: PerpQuote | null,
+  incoming: PerpQuote
+): PerpQuote => {
+  if (!previous) return incoming
+  const price = isNewerPerpQuote(
+    previous.oraclePriceTime,
+    incoming.oraclePriceTime
+  )
+    ? incoming
+    : previous
+  const health =
+    (incoming.oracleFeedHealth?.checkedAt ?? 0) >
+    (previous.oracleFeedHealth?.checkedAt ?? 0)
+      ? incoming.oracleFeedHealth
+      : previous.oracleFeedHealth
+  return { ...price, ...(health ? { oracleFeedHealth: health } : {}) }
 }
