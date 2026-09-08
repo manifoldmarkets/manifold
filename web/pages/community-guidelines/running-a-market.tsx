@@ -66,6 +66,43 @@ export default function CommunityGuidelinesRunningAMarketPage() {
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
           <h2
+            id="check-for-an-existing-market"
+            className="text-ink-1000 text-xl font-semibold"
+          >
+            Check for an existing market first
+          </h2>
+          <p className="text-ink-700 mt-3">
+            Before you create, look at whether someone has already asked the
+            same question. As you type a title, Manifold searches for similar
+            open markets and shows them to you on the create page — read that
+            list rather than clicking past it.
+          </p>
+          <p className="text-ink-700 mt-3">
+            Only make a second market if there's an actual reason to: different
+            resolution criteria, timeframe, or source. Duplicating a question
+            that already exists just splits the liquidity across both markets,
+            which makes them worse priced for humans and better for arbitrage
+            bots. If you want the question to be bigger, bet on the existing
+            market or add liquidity to it — that's the version of this that
+            actually helps.
+          </p>
+          <p className="text-ink-700 mt-3">
+            Duplicates with no meaningful difference may be unranked and
+            significantly deboosted — or outright delisted or resolved N/A if no
+            real trading has occurred — and creating them repeatedly or in bulk
+            can result in a fine or a market creation ban. See{' '}
+            <Link
+              href="/community-guidelines/market-policies#duplicate-markets"
+              className="text-primary-500 underline"
+            >
+              Duplicate markets
+            </Link>
+            .
+          </p>
+        </div>
+
+        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
+          <h2
             id="trade-in-good-faith"
             className="text-ink-1000 text-xl font-semibold"
           >

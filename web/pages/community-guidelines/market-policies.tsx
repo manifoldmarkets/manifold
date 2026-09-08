@@ -95,6 +95,17 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             </li>
             <li>It isn't predicting anything</li>
             <li>It can never be resolved or could only ever resolve one way</li>
+            <li>
+              It's a{' '}
+              <a
+                href="#duplicate-markets"
+                className="text-primary-500 underline"
+              >
+                duplicate
+              </a>{' '}
+              of an existing market with no meaningful difference in resolution
+              criteria
+            </li>
           </ul>
           <p className="text-ink-600 mt-3 text-sm">
             If you're not sure why your market is unranked, ask in{' '}
@@ -144,6 +155,15 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             </li>
             <li>Low-quality non-predictive markets</li>
             <li>
+              Duplicate markets created repeatedly or in bulk — see{' '}
+              <a
+                href="#duplicate-markets"
+                className="text-primary-500 underline"
+              >
+                Duplicate markets
+              </a>
+            </li>
+            <li>
               Markets designed to harvest or redistribute Manifold bonuses
             </li>
             <li>
@@ -176,6 +196,66 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
               service
             </li>
           </ul>
+        </div>
+
+        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
+          <h2
+            id="duplicate-markets"
+            className="text-ink-1000 text-xl font-semibold"
+          >
+            Duplicate markets
+          </h2>
+          <p className="text-ink-700 mt-3">
+            Only create a market that already exists if there's a real reason to
+            — most often materially different resolution criteria, a different
+            timeframe, or a different resolution source. Otherwise you're
+            splitting the liquidity across two markets, which makes both of them
+            thinner, worse priced, and easier for bots to pick off. It's better
+            for arbitrage bots and worse for everyone else.
+          </p>
+          <p className="text-ink-700 mt-3">
+            When you type a title on the create page, Manifold automatically
+            searches for similar open markets and lists them right there. If
+            near-identical markets are shown to you before you hit create, "I
+            didn't know it existed" isn't much of a defense — check the existing
+            one first, and bet on it or add liquidity to it instead.
+          </p>
+          <p className="text-ink-700 mt-3">
+            If you do have a good reason, say so in the description. A one-line
+            note explaining how yours differs from the existing market is
+            usually enough to make it clear this was deliberate.
+          </p>
+          <p className="text-ink-700 mt-3">What happens to duplicates:</p>
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>
+              A duplicate with no meaningful difference from an existing market
+              may be unranked, so it no longer counts toward{' '}
+              <Link
+                href="/community-guidelines/leagues"
+                className="text-primary-500 underline"
+              >
+                Leagues
+              </Link>
+              , and significantly deboosted so it stops surfacing in browse and
+              feeds. If no real trading has occurred on it yet, it may instead
+              be delisted outright or resolved N/A.
+            </li>
+            <li>
+              Creating duplicates repeatedly, or after being warned, may result
+              in a fine.
+            </li>
+            <li>
+              Creating them in bulk, or to farm bonuses, league points, or
+              engagement, may result in the markets being unlisted or deleted
+              and a market creation ban.
+            </li>
+          </ul>
+          <p className="text-ink-600 mt-3 text-sm">
+            Duplicating your own market to reset it or to escape an inconvenient
+            position is treated the same way. If your market needs new criteria,
+            update the description and comment on it rather than starting a
+            second one.
+          </p>
         </div>
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">

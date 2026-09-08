@@ -347,6 +347,66 @@ export default function ModerationGuidelinesInternalPage() {
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
           <h2
+            id="handling-duplicate-markets"
+            className="text-ink-1000 text-xl font-semibold"
+          >
+            Handling duplicate markets
+          </h2>
+          <p className="text-ink-700 mt-3">
+            Treat a market as a duplicate when an existing open market asks
+            substantially the same question and there's no meaningful difference
+            in resolution criteria, timeframe, or resolution source. A different
+            wording of the same question is still a duplicate. A genuinely
+            different bar — a different date, threshold, or source — is not.
+          </p>
+          <p className="text-ink-700 mt-3">
+            Duplicates aren't a moral failing, they're a liquidity problem: two
+            markets on one question are both thinner and easier for arbitrage
+            bots to farm. Default to fixing the market state rather than
+            punishing the creator.
+          </p>
+          <p className="text-ink-700 mt-3">Which lever to pull:</p>
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>
+              <span className="font-medium">First instance, good faith:</span>{' '}
+              comment linking the original, and unrank the duplicate. Point the
+              creator at the older market. If no real trading has occurred on it
+              yet, ask them to N/A it themselves — if they don't, delist it or
+              resolve it N/A directly, since nobody's position is affected.
+            </li>
+            <li>
+              <span className="font-medium">Duplicate with traders:</span>{' '}
+              unrank rather than unlist — unlisting strands people who've
+              already bet. Link the two markets in comments on both.
+            </li>
+            <li>
+              <span className="font-medium">Repeat offender:</span> mod alert
+              citing the previous instance, then a fine. Loop in the community
+              manager once you're issuing fines for a pattern.
+            </li>
+            <li>
+              <span className="font-medium">Bulk or farming:</span> duplicates
+              created in volume, or aimed at league points, bonuses, or
+              engagement, are spam — unlist or delete, and apply a market
+              control ban. Escalate as with any other market abuse.
+            </li>
+          </ul>
+          <p className="text-ink-700 mt-3">
+            Don't act on duplicates where the newer market is clearly the better
+            one — better criteria, better sourced, more traders — just because
+            it came second. In that case leave both ranked and comment linking
+            them, or ask the original creator whether they want to N/A theirs.
+          </p>
+          <p className="text-ink-600 mt-3 text-sm">
+            The create page already surfaces similar open markets as a creator
+            types their title, so a near-identical title is usually careless
+            rather than unlucky. Worth saying in the alert — it's the reason "I
+            didn't know" doesn't hold up.
+          </p>
+        </div>
+
+        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
+          <h2
             id="when-to-escalate"
             className="text-ink-1000 text-xl font-semibold"
           >
