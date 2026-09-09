@@ -77,9 +77,7 @@ if (require.main === module)
       )
     const apiUrl = new URL(getApiUrl('create-perp'))
     if (
-      !['localhost', '127.0.0.1', '[::1]', ENV_CONFIG.apiEndpoint].includes(
-        apiUrl.host
-      ) &&
+      apiUrl.host !== ENV_CONFIG.apiEndpoint &&
       !['localhost', '127.0.0.1', '[::1]'].includes(apiUrl.hostname)
     )
       throw new Error(

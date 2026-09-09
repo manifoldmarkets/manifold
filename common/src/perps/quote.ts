@@ -106,5 +106,7 @@ export const mergePerpQuotes = (
     (previous.oracleFeedHealth?.checkedAt ?? 0)
       ? incoming.oracleFeedHealth
       : previous.oracleFeedHealth
+  // Keep React's state bailout for duplicate or older quote packets.
+  if (health === price.oracleFeedHealth) return price
   return { ...price, ...(health ? { oracleFeedHealth: health } : {}) }
 }

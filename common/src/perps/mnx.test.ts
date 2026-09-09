@@ -128,6 +128,8 @@ it('does not let quote reordering erase a freeze or rewind price', () => {
     },
   }
   const merged = mergePerpQuotes(first, frozen)
+  expect(mergePerpQuotes(first, { ...first })).toBe(first)
+  expect(mergePerpQuotes(merged, first)).toBe(merged)
   expect(merged.oracleFeedHealth?.status).toBe('unavailable')
   expect(mergePerpQuotes(merged, first).oracleFeedHealth?.status).toBe(
     'unavailable'

@@ -101,6 +101,14 @@ it('rejects envelopes, detects duplicates, and isolates unavailable symbols', ()
 })
 
 it('pins identity and chronology across missing/disabled intervals', () => {
+  const frozen = parseMnxSnapshot([market({ oracle_frozen: true })], now)
+  expect(frozen.feeds[spec.feedId].marketId).toBe(11)
+  expect(frozen.feeds[spec.feedId].point).toBeUndefined()
+  expect(
+    parseMnxSnapshot([market({ market_id: 99 })], now, frozen).feeds[
+      spec.feedId
+    ].health.reason
+  ).toMatch(/identity/)
   const first = parseMnxSnapshot([market()], now)
   const missing = parseMnxSnapshot([], now + MINUTE_MS, first)
   expect(missing.feeds[spec.feedId].marketId).toBe(11)

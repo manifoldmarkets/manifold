@@ -74,6 +74,7 @@ export const parseMnxSnapshot = (
   for (const spec of MNX_INSTRUMENTS) {
     const prior = previous?.feeds[spec.feedId]
     const matches = payload.filter((m) => m && m.symbol === spec.symbol)
+    let identity: Pick<MnxFeedSnapshot, 'marketId'> = {}
     try {
       if (matches.length !== 1)
         throw new Error(
@@ -95,12 +96,8 @@ export const parseMnxSnapshot = (
         throw new Error('MNX instrument type, slug, or units changed')
       if (prior?.marketId != null && prior.marketId !== market.market_id)
         throw new Error('MNX market identity changed')
-      const identity = { marketId: market.market_id }
       // Bind identity even when an otherwise well-formed market is frozen.
-      feeds[spec.feedId] = {
-        ...identity,
-        health: { checkedAt: fetchedAt, status: 'unavailable' },
-      }
+      identity = { marketId: market.market_id }
       if (!market.trading_enabled || market.delisting != null)
         throw new Error('MNX trading disabled or market delisted')
       if (market.oracle_frozen) throw new Error('MNX reports its oracle frozen')
@@ -161,7 +158,7 @@ export const parseMnxSnapshot = (
     } catch (error) {
       feeds[spec.feedId] = {
         ...prior,
-        ...feeds[spec.feedId],
+        ...identity,
         // Retain the last valid point for chronology, never republish it as fresh.
         point: prior?.point,
         health: {
