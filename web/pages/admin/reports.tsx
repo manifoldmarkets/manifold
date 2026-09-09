@@ -29,8 +29,9 @@ export async function getStaticProps() {
     const reports = await getReports({ limit: PAGE_SIZE })
     // Direct database lookups can leave nested undefined fields (e.g. optional
     // entitlement expiry/metadata), which Next.js rejects in static props.
+    const serializedReports: LiteReport[] = JSON.parse(JSON.stringify(reports))
     return {
-      props: { reports: JSON.parse(JSON.stringify(reports)) },
+      props: { reports: serializedReports },
       revalidate: 60,
     }
   } catch (e) {
