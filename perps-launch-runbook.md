@@ -209,6 +209,17 @@ links and embeddings. Use `--apply` only for prototypes that will be retained;
 topic attachment updates market ranking time, so do not mutate a market that
 will immediately be recreated.
 
+Markets created before the stored ticker existed need it stamped, or search
+cannot find them by ticker and the preflight fails their launch-ticker check:
+
+```powershell
+npx.cmd ts-node backfill-perp-tickers.ts
+npx.cmd ts-node backfill-perp-tickers.ts --apply
+```
+
+It writes only `ticker` (no ranking-time bump), settled markets included, and
+leaves any market on a feed missing from `PERP_FEED_TICKERS` alone.
+
 ## Unlisted smoke pass
 
 Create only the manifest feeds as unlisted. Required topic tags are

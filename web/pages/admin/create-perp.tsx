@@ -3,6 +3,11 @@ import { toast } from 'react-hot-toast'
 import { XIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
 import { fundingPeriodNoun, fundingPeriodUnit } from 'common/perps/funding'
+import {
+  PERP_TICKER_MAX_LENGTH,
+  derivePerpTicker,
+  isValidPerpTicker,
+} from 'common/perps/ticker'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -24,6 +29,7 @@ export default function AdminCreatePerpPage() {
     question: '',
     description: '',
     oracleFeedId: '',
+    ticker: '',
     maxLeverage: 10,
     // Annualized max funding rate as a percentage (e.g. 50 means 50%/yr).
     maxFundingRateAnnualPct: 50,
@@ -44,6 +50,7 @@ export default function AdminCreatePerpPage() {
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
+      ticker: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string
@@ -110,6 +117,19 @@ export default function AdminCreatePerpPage() {
   const update = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
 
+  // The ticker follows the feed: a feed named in PERP_FEED_TICKERS has exactly
+  // one (the API rejects any other), an unnamed one gets a derived default the
+  // admin can edit. Recomputed whenever the feed changes so a label typed for
+  // a previous choice can't be submitted for the new one.
+  useEffect(() => {
+    const feedId = form.oracleFeedId.trim()
+    const canonical = knownFeeds.find((f) => f.id === feedId)?.ticker
+    setForm((f) => ({
+      ...f,
+      ticker: feedId ? canonical ?? derivePerpTicker(feedId) : '',
+    }))
+  }, [form.oracleFeedId, knownFeeds])
+
   const subsidyTotal = form.subsidyLong + form.subsidyShort
 
   // The engine stores maxFundingRate per FUNDING PERIOD, and the period is
@@ -135,6 +155,7 @@ export default function AdminCreatePerpPage() {
     hasCompleteLaunchRecommendation &&
     launchRecommendation?.creatorAuthorized === false
   const feedCreationDisabled = selectedFeed?.marketCreationEnabled === false
+  const canonicalTicker = selectedFeed?.ticker ?? null
   const unregisteredFeed =
     feedCreationDisabled && selectedFeed?.updatePeriodMs == null
   const fundingPeriodMs = selectedFeed?.updatePeriodMs
@@ -213,12 +234,19 @@ export default function AdminCreatePerpPage() {
       )
       return
     }
+    if (!isValidPerpTicker(form.ticker.trim())) {
+      toast.error(
+        `Ticker must be one alphanumeric token of at most ${PERP_TICKER_MAX_LENGTH} characters, starting with a letter.`
+      )
+      return
+    }
     setSubmitting(true)
     try {
       const res = await api('create-perp', {
         question: form.question,
         description: form.description || undefined,
         oracleFeedId: form.oracleFeedId.trim(),
+        ticker: form.ticker.trim(),
         maxLeverage: form.maxLeverage,
         maxFundingRate: maxFundingRatePerPeriod,
         fundingSensitivity: form.fundingSensitivity,
@@ -403,6 +431,27 @@ export default function AdminCreatePerpPage() {
                 )}
               </div>
             )}
+          </div>
+
+          <div>
+            <span className="text-ink-700 mb-2 block text-sm font-medium">
+              Ticker
+            </span>
+            <Input
+              type="text"
+              value={form.ticker}
+              onChange={(e) => update('ticker', e.target.value)}
+              required
+              disabled={canonicalTicker != null}
+              maxLength={PERP_TICKER_MAX_LENGTH}
+              className="w-full max-w-[12rem] font-mono"
+              placeholder="e.g. BTC"
+            />
+            <p className="text-ink-500 mt-1 text-xs">
+              {canonicalTicker != null
+                ? 'Canonical for this feed (PERP_FEED_TICKERS in common/perps/ticker.ts); every market on the feed shows it.'
+                : `Shown in front of the title in place of the market type, used as the label on /perps, and matched by search. One alphanumeric token of at most ${PERP_TICKER_MAX_LENGTH} characters, starting with a letter. To make it canonical for the feed, add it to PERP_FEED_TICKERS.`}
+            </p>
           </div>
 
           <div>

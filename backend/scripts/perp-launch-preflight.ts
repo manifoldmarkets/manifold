@@ -8,6 +8,7 @@ import { isPerpEscrowBalanced } from 'common/perps/escrow'
 import { shouldApplyFunding } from 'common/perps/funding'
 import { getOracleFreshness } from 'common/perps/oracle'
 import { PerpPosition } from 'common/perps/position'
+import { getPerpFeedTicker } from 'common/perps/ticker'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 import {
@@ -588,7 +589,25 @@ if (require.main === module)
             `market ${contract.slug} launch title`,
             contract.question === definition.question
               ? definition.question
-              : `stored="${contract.question}", expected="${definition.question}"; the Perpetual type is rendered separately`
+              : `stored="${contract.question}", expected="${definition.question}"; the ticker and market type are rendered separately`
+          )
+          // The ticker is what the badge shows in place of "Perpetual" and
+          // what search matches, so it must be STORED, not merely mapped: a
+          // launch market without it renders fine and is findable by title
+          // only.
+          const expectedTicker = getPerpFeedTicker(contract.oracleFeedId)
+          report(
+            expectedTicker && contract.ticker === expectedTicker
+              ? 'PASS'
+              : 'FAIL',
+            `market ${contract.slug} launch ticker`,
+            !expectedTicker
+              ? `${contract.oracleFeedId} has no canonical ticker in PERP_FEED_TICKERS (common/perps/ticker.ts)`
+              : contract.ticker === expectedTicker
+              ? expectedTicker
+              : `stored=${
+                  contract.ticker ? `"${contract.ticker}"` : 'none'
+                }, expected="${expectedTicker}"; run backfill-perp-tickers.ts --apply`
           )
           report(
             contract.creatorId === expectedCreatorId ? 'PASS' : 'FAIL',

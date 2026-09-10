@@ -325,6 +325,14 @@ export type Perp = {
   // economics of open positions. Missing on pre-period contracts = hourly.
   // Read via getFundingPeriodMs (common/perps/funding), never directly.
   fundingPeriodMs?: number
+  // Short on-site identifier ("BTC", "TRUMP") shown in front of the title in
+  // place of the market type, used as the row label on /perps, and matched
+  // by search — which is why it is stored here rather than only mapped in
+  // client code. Canonical per feed in PERP_FEED_TICKERS (common/perps/
+  // ticker); stamped by create-perp, and absent on markets created before it
+  // existed until backfill-perp-tickers.ts runs. Read via getPerpTicker
+  // (common/perps/ticker), never directly, so those rows still get a label.
+  ticker?: string
   resolution?: 'MKT' | 'CANCEL'
 }
 
