@@ -33,6 +33,8 @@ import { MNX_INSTRUMENTS } from './mnx'
 //     from the environment the feed was written in, so it carries a credit
 //     and a link and no licence label, and reading that page is an operator
 //     gate before a market is created on the feed.
+//   - MNX: public API/methodology reviewed; market links identify the target.
+//     No redistribution licence is claimed.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the

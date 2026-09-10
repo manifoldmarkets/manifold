@@ -239,7 +239,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     // Creation starts paused. Only the tick can atomically pair current health
     // with the executable mark, avoiding a race with a newer provider snapshot.
     oracleFeedHealth = {
-      checkedAt: snapshot.fetchedAt,
+      checkedAt: oraclePoint.ts,
       status: 'unavailable',
       reason: 'Waiting for the first live oracle tick',
     }

@@ -9,7 +9,7 @@ import { isEmpty } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { trackAuditEvent } from 'shared/audit-events'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
-import { PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
+import { ALL_PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import {
   updateContract,
@@ -53,7 +53,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
 
     const launchDefinition =
       contract.outcomeType === 'PERP'
-        ? PERP_LAUNCH_MARKETS.find(
+        ? ALL_PERP_LAUNCH_MARKETS.find(
             (market) => market.feedId === contract.oracleFeedId
           )
         : undefined

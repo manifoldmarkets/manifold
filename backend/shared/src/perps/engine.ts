@@ -58,7 +58,10 @@ import {
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
-import { OracleFeedHealth } from 'common/perps/oracle-health'
+import {
+  OracleFeedHealth,
+  shouldRefreshOracleHealth,
+} from 'common/perps/oracle-health'
 import {
   decideOracleTransition,
   getPerpOracleFreshness,
@@ -1937,6 +1940,18 @@ export const runOracleUpdate = async (
           }).status !== 'fresh')
       )
         return null
+      // The hourly fallback has no new provider observation. It must not apply
+      // a row that outlived its source health while waiting for the tick lock.
+      if (
+        !oracleFeedHealth &&
+        contract.oracleFeedHealth &&
+        getPerpOracleFreshness({
+          ...contract,
+          oraclePrice: newPrice,
+          oraclePriceTime: ts,
+        }).status !== 'fresh'
+      )
+        return null
       const healthPatch = oracleFeedHealth ? { oracleFeedHealth } : {}
       const resultHealth = oracleFeedHealth ?? contract.oracleFeedHealth
       const incomingPoint = { price: newPrice, ts, sourceTs }
@@ -1968,7 +1983,15 @@ export const runOracleUpdate = async (
       // lock is held, an older point or exact retry must not touch price, pools,
       // positions, metrics, or event history.
       if (decision.action === 'ignore' && !retryingHalt) {
-        if (decision.reason !== 'duplicate' || !oracleFeedHealth) return null
+        if (
+          decision.reason !== 'duplicate' ||
+          !oracleFeedHealth ||
+          !shouldRefreshOracleHealth(
+            contract.oracleFeedHealth,
+            oracleFeedHealth
+          )
+        )
+          return null
         // A flat mark still needs a provider heartbeat, including recovery from
         // a frozen flag. No liquidation or funding event is replayed here.
         await pgTrans.one(mergeContractDataQuery(contractId, healthPatch))

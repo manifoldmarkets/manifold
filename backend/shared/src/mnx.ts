@@ -5,7 +5,13 @@ import {
   MNX_POLL_MS,
   MnxInstrument,
 } from 'common/perps/mnx'
-import { OracleFeedHealth } from 'common/perps/oracle-health'
+import {
+  OracleFeedHealth,
+  ORACLE_HEALTH_MAX_AGE_MS,
+} from 'common/perps/oracle-health'
+import { OracleProviderError } from './oracle-provider'
+import { log } from './utils'
+import { metrics } from './monitoring/metrics'
 import {
   MAX_ORACLE_FUTURE_SKEW_MS,
   getPerpOracleFreshness,
@@ -72,7 +78,8 @@ export const parseMnxSnapshot = (
   fetchedAt = Date.now(),
   previous?: MnxSnapshot | null
 ): MnxSnapshot => {
-  if (!Array.isArray(payload)) throw new Error('Expected MNX market array')
+  if (!Array.isArray(payload))
+    throw new OracleProviderError('Expected MNX market array')
   if (!Number.isFinite(fetchedAt) || fetchedAt <= 0)
     throw new Error('Invalid fetch time')
   const feeds: MnxSnapshot['feeds'] = {}
@@ -122,7 +129,8 @@ export const parseMnxSnapshot = (
         price > spec.maxPrice
       )
         throw new Error('MNX mark price outside instrument bounds')
-      // The API's numeric convenience fields are rounded to eight decimals.
+      // Accept the observed eight-decimal numeric rounding; the raw value is
+      // authoritative. Revalidate this tolerance if MNX changes its encoding.
       if (Math.abs(price - market.mark_price) > Math.max(1e-8, price * 1e-12))
         throw new Error('MNX numeric and exact mark prices disagree')
       if (prior?.point && ts < prior.point.sourceTs!)
@@ -142,7 +150,9 @@ export const parseMnxSnapshot = (
         supportedLeverage = mnxSupportedLeverage(
           String(market.initial_margin_ratio_e18_raw)
         )
-        maxLeverage = Math.min(3, supportedLeverage)
+        maxLeverage = mnxLaunchLeverage(
+          String(market.initial_margin_ratio_e18_raw)
+        )
       } catch {
         /* creation refuses unsupported provider margin metadata */
       }
@@ -155,7 +165,10 @@ export const parseMnxSnapshot = (
         health: {
           checkedAt: fetchedAt,
           status: 'available',
-          expiresAt: Math.min(fetchedAt + 5 * MINUTE_MS, ts + spec.maxAgeMs),
+          expiresAt: Math.min(
+            fetchedAt + ORACLE_HEALTH_MAX_AGE_MS,
+            ts + spec.maxAgeMs
+          ),
         },
       }
     } catch (error) {
@@ -180,7 +193,7 @@ export const parseMnxSnapshot = (
   return { fetchedAt, markets: payload, feeds }
 }
 
-export class MnxHttpError extends Error {
+export class MnxHttpError extends OracleProviderError {
   constructor(readonly status: number, readonly retryAfter: string | null) {
     super(`MNX returned HTTP ${status}`)
   }
@@ -193,13 +206,19 @@ export const fetchMnxMarkets = async (): Promise<unknown> => {
       'User-Agent': 'Manifold-oracle/1.0 (+https://manifold.markets/perps)',
     },
     signal: AbortSignal.timeout(1_500),
+  }).catch((error) => {
+    throw new OracleProviderError(`MNX request failed: ${error}`)
   })
   if (!response.ok) {
     await response.arrayBuffer()
     throw new MnxHttpError(response.status, response.headers.get('retry-after'))
   }
-  return response.json()
+  return response.json().catch(() => {
+    throw new OracleProviderError('MNX returned invalid JSON')
+  })
 }
+
+export const MNX_MAX_RETRY_MS = 10 * MINUTE_MS
 
 export const mnxRetryDelay = (
   error: unknown,
@@ -222,7 +241,10 @@ export const mnxRetryDelay = (
       : Number.isFinite(seconds)
       ? now + seconds * 1000
       : Date.parse(header)
-  return Math.max(backoff, Number.isFinite(retryAt) ? retryAt - now : 0)
+  return Math.min(
+    MNX_MAX_RETRY_MS,
+    Math.max(backoff, Number.isFinite(retryAt) ? retryAt - now : 0)
+  )
 }
 
 export const parseMnxCandles = (
@@ -259,7 +281,7 @@ export const parseMnxCandles = (
 }
 
 /** Shared request per tick; keep failures shared too so 16 feeds do not each
- * retry an outage. Restarting polls immediately. Retry-After always wins. */
+ * retry an outage. Restarting polls immediately. Retry-After can extend backoff up to ten minutes. */
 export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
   let cached: Promise<MnxSnapshot> | undefined
   let previous: MnxSnapshot | undefined
@@ -267,8 +289,15 @@ export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
   let inFlight = false
   let retryAt = 0
   let failures = 0
+  let lastBackoffLogAt = -Infinity
   return () => {
     const now = Date.now()
+    metrics.set(
+      'perps/mnx_backoff_remaining_ms',
+      Math.max(0, Math.ceil(retryAt - now))
+    )
+    if (cached && now < retryAt)
+      metrics.inc('perps/mnx_backoff_suppressed_reads')
     if (
       cached &&
       (inFlight || now - startedAt < MNX_POLL_MS / 2 || now < retryAt)
@@ -284,7 +313,21 @@ export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
         return previous
       })
       .catch((error) => {
-        retryAt = Date.now() + mnxRetryDelay(error, ++failures, Date.now())
+        const failedAt = Date.now()
+        retryAt = failedAt + mnxRetryDelay(error, ++failures, failedAt)
+        // One message per request, not per feed/tick sharing its rejection.
+        // The cached error also exposes this deadline in throttled feed logs.
+        if (error instanceof OracleProviderError) {
+          error.message += `; next MNX attempt ${new Date(
+            retryAt
+          ).toISOString()} (delay ${
+            retryAt - failedAt
+          }ms, capped at ${MNX_MAX_RETRY_MS}ms)`
+          if (failedAt - lastBackoffLogAt >= MINUTE_MS) {
+            lastBackoffLogAt = failedAt
+            log.warn(`[oracle-feeds] MNX backoff: ${error.message}`)
+          }
+        }
         throw error
       })
       .finally(() => {
@@ -311,7 +354,7 @@ export const requireMnxReady = (
       oracleFeedId: feedId,
       oraclePrice: feed.point.price,
       oraclePriceTime: feed.point.ts,
-      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      maxOraclePriceAgeMs: ORACLE_HEALTH_MAX_AGE_MS,
       oracleFeedHealth: feed.health,
     },
     now

@@ -2,16 +2,16 @@ import { HOUR_MS, MINUTE_MS } from '../util/time'
 
 export const MNX_API_URL = 'https://api.app.mnx.fi/v0'
 export const MNX_POLL_MS = 2_000
-export const MNX_CHECK_MAX_AGE_MS = 5 * MINUTE_MS
 
 // Stable provider IDs and explicit feed IDs prevent silently rolling a delisted
 // instrument into a new market. Bounds are in the displayed units and reject
-// cents/dollars or billions/dollars scaling mistakes; reviewed September 2026.
+// gross scaling mistakes; currency identity is pinned separately (USD vs HKD
+// cannot be inferred from price bounds). Moonshot allows a sub-$10B valuation.
 const instruments = [
   ['ANTHROPIC', 'Anthropic', 'valuation', 11, 'mnx-anthropic-mark', 100, 20000],
   ['OPENAI', 'OpenAI', 'valuation', 12, 'mnx-openai-mark', 100, 20000],
   ['DEEPSEEK', 'DeepSeek', 'valuation', 15, 'mnx-deepseek-mark', 10, 5000],
-  ['MOONSHOT', 'Moonshot AI', 'valuation', 21, 'mnx-moonshot-mark', 10, 3000],
+  ['MOONSHOT', 'Moonshot AI', 'valuation', 21, 'mnx-moonshot-mark', 1, 3000],
   ['H100', 'H100 GPU rental', 'compute', 19, 'mnx-h100-mark', 0.1, 100],
   ['ASML', 'ASML', 'equity', 14, 'mnx-asml-mark', 100, 20000],
   ['CRWV', 'CoreWeave', 'equity', 9, 'mnx-crwv-mark', 5, 1000],

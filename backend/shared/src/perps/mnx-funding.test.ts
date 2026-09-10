@@ -1,9 +1,15 @@
 import { PerpContract } from 'common/contract'
+import { PerpPosition } from 'common/perps/position'
 import { OracleFeedHealth } from 'common/perps/oracle-health'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { SupabaseTransaction } from '../supabase/init'
 import { runTransactionWithRetries } from '../transact-with-retries'
-import { runFunding, runOracleUpdate, openOrAddPosition } from './engine'
+import {
+  runFunding,
+  runOracleUpdate,
+  openOrAddPosition,
+  applyOracleUpdate,
+} from './engine'
 import { getPerpOracleFreshness } from 'common/perps/oracle'
 
 jest.mock('../transact-with-retries', () => ({
@@ -20,7 +26,10 @@ const health: OracleFeedHealth = {
   expiresAt: now + 5 * MINUTE_MS,
 }
 
-const database = (overrides: Partial<PerpContract> = {}) => {
+const database = (
+  overrides: Partial<PerpContract> = {},
+  positions: PerpPosition[] = []
+) => {
   const contract = {
     id: 'h100',
     slug: 'h100',
@@ -54,7 +63,24 @@ const database = (overrides: Partial<PerpContract> = {}) => {
   const tx = {
     one,
     oneOrNone,
-    any: jest.fn(async () => []),
+    any: jest.fn(async (sql: string) =>
+      sql.includes('from contract_perp_events')
+        ? []
+        : positions.map((p) => ({
+            contract_id: p.contractId,
+            user_id: p.userId,
+            direction: p.direction,
+            size: p.size,
+            cost_basis: p.costBasis,
+            original_cost_basis: p.originalCostBasis,
+            taker_fee_cost_basis: p.takerFeeCostBasis ?? 0,
+            entry_price: p.entryPrice,
+            leverage: p.leverage,
+            liquidation_price: p.liquidationPrice,
+            opened_time: new Date(p.openedTime),
+            updated_time: new Date(p.updatedTime),
+          }))
+    ),
     manyOrNone: jest.fn(async () => []),
     multi: writes,
     none: writes,
@@ -146,17 +172,99 @@ it('commits healthy price and health in one engine write, leaving the previous m
   expect(result?.oracleFeedHealth).toEqual(health)
 })
 
-it('recovers at an unchanged price without replaying liquidation or funding', async () => {
-  const db = database({
-    oraclePriceTime: now,
-    oracleSourceTime: now,
-    oracleFeedHealth: { checkedAt: now - 2000, status: 'unavailable' },
-  })
+const liquidatable: PerpPosition = {
+  contractId: 'h100',
+  userId: 'user',
+  direction: 'long',
+  size: 10000,
+  costBasis: 1000,
+  originalCostBasis: 1000,
+  takerFeeCostBasis: 0,
+  entryPrice: 4,
+  leverage: 10,
+  liquidationPrice: 3.6,
+  openedTime: now - HOUR_MS,
+  updatedTime: now - HOUR_MS,
+}
+
+it('recovers at an unchanged price without replaying a liquidatable position', async () => {
+  const db = database(
+    {
+      oraclePriceTime: now,
+      oracleSourceTime: now,
+      oracleFeedHealth: { checkedAt: now - 2000, status: 'unavailable' },
+    },
+    [liquidatable]
+  )
+  // Prove the fixture would detect accidentally entering the liquidation path.
+  expect(
+    applyOracleUpdate(
+      db.contract as PerpContract,
+      {
+        pool: { L: 25000, S: 25000 },
+        positions: [liquidatable],
+      },
+      3,
+      now,
+      now
+    ).liquidated
+  ).toHaveLength(1)
   const result = await runOracleUpdate('h100', 3, now, now, undefined, health)
   expect(result?.liquidated).toEqual([])
   expect(result?.oracleFeedHealth).toEqual(health)
+  const updates = db.one.mock.calls
+    .map(([sql]) => sql)
+    .filter((sql) => sql.includes('update contracts'))
+  expect(updates).toHaveLength(1)
+  expect(updates[0]).toContain('oracleFeedHealth')
+  expect(updates[0]).not.toMatch(/oraclePrice|poolLong|poolShort/)
   expect(db.writes).not.toHaveBeenCalled()
-  expect(db.fundingRead).not.toHaveBeenCalled()
+})
+
+it('carries health through a liquidating multi-statement transaction', async () => {
+  const db = database(
+    {
+      oraclePrice: 4,
+      oraclePriceTime: now - 2000,
+      oracleFeedHealth: { ...health, checkedAt: now - 2000 },
+    },
+    [liquidatable]
+  )
+  const result = await runOracleUpdate('h100', 3, now, now, undefined, health)
+  expect(result?.liquidated).toHaveLength(1)
+  expect(result?.oracleFeedHealth).toEqual(health)
+  expect(db.writes).toHaveBeenCalledTimes(1)
+  expect(db.writes.mock.calls[0][0]).toContain('oracleFeedHealth')
+  expect(db.writes.mock.calls[0][0]).toContain('oraclePrice')
+})
+
+it('preserves health on a solvency halt without committing corrupt positions', async () => {
+  const db = database(
+    {
+      oraclePriceTime: now - 2000,
+      oracleFeedHealth: { ...health, checkedAt: now - 2000 },
+    },
+    [{ ...liquidatable, size: NaN }]
+  )
+  const result = await runOracleUpdate('h100', 3, now, now, undefined, health)
+  expect(result?.solvencyHalt).toBeDefined()
+  expect(result?.oracleFeedHealth).toEqual(health)
+  const updates = db.one.mock.calls
+    .map(([sql]) => sql)
+    .filter((sql) => sql.includes('update contracts'))
+  expect(updates).toHaveLength(1)
+  expect(updates[0]).toContain('oracleFeedHealth')
+  expect(updates[0]).toContain('solvencyHaltTime')
+  expect(db.writes).not.toHaveBeenCalled()
+})
+
+it('rejects an hourly price apply without fresh provider health under the lock', async () => {
+  const db = database({ oracleFeedHealth: { ...health, expiresAt: now - 1 } }, [
+    liquidatable,
+  ])
+  expect(await runOracleUpdate('h100', 3, now, now)).toBeNull()
+  expect(db.one).toHaveBeenCalledTimes(1)
+  expect(db.writes).not.toHaveBeenCalled()
 })
 
 it('does not let a delayed available observation clear a newer freeze', async () => {

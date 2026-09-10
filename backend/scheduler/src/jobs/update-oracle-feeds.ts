@@ -1,6 +1,6 @@
 import {
   publishOracleObservation,
-  reportOracleObservationFailure,
+  reportOracleTickFailure,
 } from 'shared/perps/publish-oracle-observation'
 import { normalizeOraclePointBatch } from 'common/perps/oracle'
 import { MINUTE_MS } from 'common/util/time'
@@ -347,7 +347,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
     )
   } catch (err) {
     if (feed.fetchObservation)
-      reportOracleObservationFailure(feed.id, String(err))
+      reportOracleTickFailure(feed.id, err, FAST_TICK_ORACLE_BOUNDS)
     else log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }
 }

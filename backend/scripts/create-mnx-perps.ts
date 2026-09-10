@@ -16,8 +16,13 @@ import { runScript } from './run-script'
 if (require.main === module)
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
-    if (ENV !== getLocalEnv())
-      throw new Error('Firebase and backend environments disagree')
+    if (
+      !['DEV', 'PROD'].includes(process.env.NEXT_PUBLIC_FIREBASE_ENV ?? '') ||
+      ENV !== getLocalEnv()
+    )
+      throw new Error(
+        'Set NEXT_PUBLIC_FIREBASE_ENV explicitly to DEV or PROD and select the matching Firebase project'
+      )
     const existing = await pg.manyOrNone<{ feed_id: string; id: string }>(
       `select data->>'oracleFeedId' as feed_id, id from contracts
      where mechanism = 'perp' and resolution_time is null
@@ -33,8 +38,20 @@ if (require.main === module)
       return matches.length === 0
     })
     const snapshot = await fetchMnxSnapshot()
-    const bodies = missing.map((spec) => {
-      const ready = requireMnxReady(snapshot, spec.feedId)
+    const unavailable: string[] = []
+    const bodies = missing.flatMap((spec) => {
+      let ready
+      try {
+        ready = requireMnxReady(snapshot, spec.feedId)
+      } catch (error) {
+        unavailable.push(spec.feedId)
+        log.warn(
+          `${spec.feedId}: not ready — ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        )
+        return []
+      }
       const recommended = MNX_LAUNCH_MARKETS.find(
         (m) => m.feedId === spec.feedId
       )!.recommended
@@ -72,11 +89,19 @@ if (require.main === module)
           backingRequired: total,
           available: creator.balance,
           markets: bodies,
+          unavailable,
         },
         null,
         2
       )
     )
+    if (unavailable.length) {
+      if (apply)
+        throw new Error(
+          'Creation aborted before any writes: some instruments are not ready'
+        )
+      process.exitCode = 1
+    }
     if (!apply || !bodies.length) return
     if (Number(creator.balance) < total)
       throw new Error(`Insufficient backing: need M${total}`)

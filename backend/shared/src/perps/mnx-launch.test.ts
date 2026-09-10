@@ -1,4 +1,4 @@
-import { getOracleFeed } from '../oracle-feeds'
+import { getOracleFeed, getMinTradingMarkAgeMs } from '../oracle-feeds'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import { ORACLE_TICK_DECORATIONS } from 'common/perps/oracle-display'
 import { ALL_PERP_LAUNCH_MARKETS, PERP_LAUNCH_MARKETS } from './launch-manifest'
@@ -31,9 +31,29 @@ it('registers all sixteen feeds on the shared 2s tick with attribution and launc
       pollPeriodMs: 2000,
       marketCreationEnabled: true,
       fetchObservation: expect.any(Function),
+      minPrice: spec.minPrice,
+      maxPrice: spec.maxPrice,
+      staleAfterMs: spec.maxAgeMs,
+      updatePeriodMs: spec.updatePeriodMs,
     })
     expect(getOracleAttribution(spec.feedId)?.url).toBe(spec.url)
-    expect(ORACLE_TICK_DECORATIONS[spec.feedId].prefix).toBe('$')
+    expect(ORACLE_TICK_DECORATIONS[spec.feedId]).toEqual({
+      prefix: '$',
+      suffix: spec.category === 'valuation' ? 'B' : '',
+    })
+    expect(
+      MNX_LAUNCH_MARKETS.find((m) => m.feedId === spec.feedId)
+    ).toMatchObject({
+      question: spec.question,
+      oracleBehavior:
+        spec.category === 'compute' ? 'scheduled-step' : 'continuous-public',
+      requiresSourceAsOf: true,
+      recommended: { maxOraclePriceAgeMs: spec.maxAgeMs, maxLeverage: 3 },
+      requiredTopics: [{ name: spec.category === 'equity' ? 'Stocks' : 'AI' }],
+    })
+    expect(
+      getMinTradingMarkAgeMs(getOracleFeed(spec.feedId)!)
+    ).toBeGreaterThanOrEqual(spec.maxAgeMs / 2 + 2000)
     expect(ALL_PERP_LAUNCH_MARKETS.some((m) => m.feedId === spec.feedId)).toBe(
       true
     )

@@ -105,7 +105,7 @@ export type OracleFeedDef = {
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
   // One shared /v0/markets request prices all sixteen instruments every 2s
-  // (30 requests/minute total). MNX publishes no numeric REST quota in its
+  // (30 requests/minute per scheduler process; briefly 60 during deploy overlap). MNX publishes no numeric REST quota in its
   // public docs; honor Retry-After and back off on errors. H100 source age is
   // independent of this tick. The defined target is MNX's mark, not its oracle
   // or the underlying share/valuation: see common/perps/mnx and the runbook.
@@ -423,7 +423,17 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
 export const MIN_MARK_AGE_UPDATE_PERIODS = 2
 
 export const getMinTradingMarkAgeMs = (feed: OracleFeedDef) =>
-  Math.min(feed.staleAfterMs, MIN_MARK_AGE_UPDATE_PERIODS * feed.updatePeriodMs)
+  Math.max(
+    Math.min(
+      feed.staleAfterMs,
+      MIN_MARK_AGE_UPDATE_PERIODS * feed.updatePeriodMs
+    ),
+    // Observation feeds dedupe unchanged prices until this heartbeat. A tighter
+    // trading budget would pause a healthy flat market before the next row.
+    feed.fetchObservation
+      ? feed.staleAfterMs / 2 + (feed.pollPeriodMs ?? 2_000)
+      : 0
+  )
 
 export const getOracleFeed = (id: string) =>
   ORACLE_FEEDS.find((f) => f.id === id)

@@ -1,3 +1,4 @@
+import { ORACLE_HEALTH_MAX_AGE_MS } from 'common/perps/oracle-health'
 import { getMnxInstrument } from 'common/perps/mnx'
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import { useEffect, useRef, useState } from 'react'
@@ -14,7 +15,7 @@ import {
 } from 'common/perps/funding'
 import { formatCountdown, inferPriceDecimals } from 'common/perps/format'
 import { getPerpOracleFreshness } from 'common/perps/oracle'
-import { YEAR_MS, MINUTE_MS } from 'common/util/time'
+import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -59,7 +60,7 @@ const useOracleFreshness = (contract: PerpContract) => {
     const staleAt = contract.oracleFeedHealth
       ? Math.min(
           sourceStaleAt,
-          contract.oracleFeedHealth.checkedAt + 5 * MINUTE_MS,
+          contract.oracleFeedHealth.checkedAt + ORACLE_HEALTH_MAX_AGE_MS,
           contract.oracleFeedHealth.expiresAt ?? 0
         )
       : sourceStaleAt

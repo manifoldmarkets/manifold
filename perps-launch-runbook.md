@@ -71,7 +71,10 @@ Record the owner, chosen leverage/backing limits, and observed pool transfers.
 The sixteen feeds in `MNX_LAUNCH_MARKETS` form an explicit `--cohort=mnx`
 rollout in either environment. Default gate commands continue to check the
 existing launch cohort; neither cohort requires the other to have created
-markets. Unknown feeds still fail public preflight. `ALL_PERP_LAUNCH_MARKETS`
+markets. All unresolved markets in either cohort still undergo token,
+escrow, solvency, discovery, oracle and funding checks. Other-cohort markets
+are counted and produce explicit warnings outside the feeds phase; only
+launch presence and visibility are scoped. Unknown feeds still fail public preflight. `ALL_PERP_LAUNCH_MARKETS`
 provides title, official-creator, topic, recommendation and manifest-validation
 policy for both cohorts. This is a production-capable integration; creation is
 enabled in both environments. Deploying it does not create or publicize markets.
@@ -89,7 +92,13 @@ Drain old API instances before enabling the updated scheduler. The scheduler
 uses the existing 2-second `update-oracle-feeds` job; no new job or database
 lease is registered. Rollback should stop the updated scheduler before rolling
 back the API. Do not roll back to code without provider-health enforcement while
-an MNX market has open positions; pause trading first.
+MNX markets exist: first set `PERP_TRADING_MODE=halted` in the API runtime,
+roll and drain all API instances, verify opens **and closes** are rejected,
+then stop/roll back the scheduler and API. Keep the halt through rollback.
+Unlisting is not a trading halt. An old API ignores provider health and could
+otherwise execute a frozen H100 mark for up to its 75-minute price budget.
+An old scheduler reports unregistered MNX feeds hourly. Restore health-aware
+API, scheduler and web versions and verify freshness before lifting the halt.
 
 ### Instruments and price policy
 
@@ -133,9 +142,11 @@ at a 2s tick, so retain the existing fee and exposure controls. Preflight warns
 above the recommendation. Creation rejects leverage above MNX's actual ceiling,
 without forcing operators to use the recommended maximum.
 
-One shared request per 2s means 30 requests/minute. No numeric REST quota was
+One shared request per 2s means approximately 30 requests/minute per scheduler
+process, briefly 60 during deployment overlap, plus API and script calls.
+Jitter can place two requests about one second apart. No numeric REST quota was
 found in MNX's public API reference on 2026-09-09; this is a requested poll
-budget, not a claimed provider guarantee. Respect 429/Retry-After and watch the
+budget, not a claimed provider guarantee. Respect 429/Retry-After up to a ten-minute probe ceiling and watch the
 source-age and request-error logs during the unlisted soak. If 30/minute is not
 supported, obtain a supported transport or quota before public rollout.
 
@@ -147,6 +158,19 @@ Twelve subsequent polls at 2-second intervals accepted all sixteen instruments;
 HTTP response times were 26–263ms with no request errors. These short samples
 do not establish worst-case source ages, overnight behavior or a guaranteed quota.
 The feed preflight independently requires at least 30 days and 720 stored points.
+
+Bounds were checked against a public snapshot on 2026-09-10 at 16:17 UTC:
+ANTHROPIC 2092, OPENAI 1648, DEEPSEEK 260, MOONSHOT 174 (USD billions);
+H100 3.26; ASML 1701.88071296, CRWV 90.25, DRAM 59.04406089, GOOGL 330.8,
+META 652.5, MINIMAX 36.35, MU 981, SNDK 1692.87844741, SPCX 152.11117623,
+TSM 430.5, ZAI 102.10029835 (USD). Every bound is more than threefold from
+that sample. Moonshot's floor is now 1B, allowing sub-10B prices. Bounds reject
+gross scaling errors; USD/HKD identity depends on the `price_display` pin,
+not on overlapping numerical ranges. This snapshot does not establish a future
+price range or weekend behavior. Before public launch, also verify candle
+`time` is the bucket start, numeric-field rounding agrees with raw e18 marks,
+and every mark change advances `mark_price_timestamp`. The OpenAPI types do
+not establish these semantics. Do not infer live timestamp cadence from candles.
 
 ### Execute the rollout
 
@@ -168,14 +192,24 @@ npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=unlisted --allow-w
 
 Backfill refuses any feed already backing an unresolved market, takes the
 same publication lock as the tick, and only inserts completed candles before
-the earliest existing price. It never calls the engine and has no force escape.
+the earliest existing price and the current validated live source timestamp
+(the H100 index can lag the latest completed bucket). Invalid candles fail the
+backfill visibly; a zero-row result warns that the available history window
+may no longer reach before existing data. It never calls the engine and has no force escape.
+The scheduler or `publish-mnx-now.ts --apply` must have published a fresh
+point before creation (candles alone are insufficient). `publish-mnx-now`
+accepts `--feed=<id>`; `--apply` can also pause existing markets when an
+instrument is unavailable. It exits nonzero on unavailable/rejected publication.
+Repair discovery prerequisites with
+`backfill-perp-launch-discovery.ts --cohort=mnx` (dry run), then `--apply`.
 Creation requires `MANIFOLD_API_KEY` belonging to the environment's official
 Manifold creator and sufficient backing (M800,000 for all sixteen). It prints
-exact request bodies and checks duplicates before applying; reruns skip existing
+per-instrument readiness and exact request bodies, refuses a partially ready
+apply before any creation, and checks duplicates before applying; reruns skip existing
 markets. Do not run these commands until ready to perform their indicated writes.
 
 During the unlisted soak, verify opens/closes and balances, price pushes at the
-2s poll cadence, liquidation/ADL, an actual hourly funding event, frozen-source
+2s cadence on price changes (unchanged health pushes are minute heartbeats), liquidation/ADL, an actual hourly funding event, frozen-source
 pause and same-mark recovery, restart recovery, and the alert drill. Confirm
 H100 and closed-session equities remain paused when their source validation
 fails. A market starts paused until its first successful atomic tick; history

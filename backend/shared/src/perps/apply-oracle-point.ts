@@ -1,4 +1,7 @@
-import { OracleFeedHealth } from 'common/perps/oracle-health'
+import {
+  OracleFeedHealth,
+  shouldRefreshOracleHealth,
+} from 'common/perps/oracle-health'
 import { PerpContract } from 'common/contract'
 import {
   decideOracleTransition,
@@ -133,7 +136,12 @@ export const applyOraclePointToLivePerps = async (
     const decision = decideOracleTransition(currentPoint, persistedPoint)
     if (
       decision.action === 'ignore' &&
-      !(decision.reason === 'duplicate' && health)
+      !(
+        decision.reason === 'duplicate' &&
+        health &&
+        (contract.solvencyHaltTime != null ||
+          shouldRefreshOracleHealth(contract.oracleFeedHealth, health))
+      )
     )
       continue
     if (decision.action === 'reject') {

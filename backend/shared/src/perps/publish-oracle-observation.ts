@@ -1,6 +1,10 @@
 import { PerpContract } from 'common/contract'
 import { OraclePoint } from 'common/perps/oracle'
-import { OracleFeedHealth } from 'common/perps/oracle-health'
+import {
+  OracleFeedHealth,
+  shouldRefreshOracleHealth,
+} from 'common/perps/oracle-health'
+import { OracleProviderError } from '../oracle-provider'
 import { getPerpQuote } from 'common/perps/quote'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { insertOraclePrices } from '../oracle'
@@ -21,29 +25,61 @@ class InvalidOracleObservation extends Error {}
 
 const failures = new Map<
   string,
-  { since: number; warnedAt: number; pagedAt?: number }
+  {
+    since?: number
+    lastFailureAt: number
+    warnedAt: number
+    pagedAt: number
+  }
 >()
-/** One warning per minute and one stale-provider page per hour per feed.
- * Error text changing on every request cannot defeat the throttle. */
+const RECOVERY_MS = 5 * MINUTE_MS
+/** Retain warning/page budgets across recoveries. A single good tick cannot
+ * reset an intermittent outage: five uninterrupted healthy minutes are needed. */
+export const reportOracleObservationSuccess = (
+  feedId: string,
+  now = Date.now()
+) => {
+  const state = failures.get(feedId)
+  if (state && now - state.lastFailureAt >= RECOVERY_MS) state.since = undefined
+}
 export const reportOracleObservationFailure = (
   feedId: string,
   reason: string,
   now = Date.now()
 ) => {
-  const state = failures.get(feedId) ?? { since: now, warnedAt: -Infinity }
+  const state = failures.get(feedId) ?? {
+    since: undefined as number | undefined,
+    lastFailureAt: now,
+    warnedAt: -Infinity,
+    pagedAt: -Infinity,
+  }
+  if (state.since == null || now - state.lastFailureAt >= RECOVERY_MS)
+    state.since = now
+  state.lastFailureAt = now
   failures.set(feedId, state)
-  if (
-    now - state.since >= 5 * MINUTE_MS &&
-    now - (state.pagedAt ?? -Infinity) >= HOUR_MS
-  ) {
+  if (now - state.since >= 5 * MINUTE_MS && now - state.pagedAt >= HOUR_MS) {
     state.pagedAt = now
+    state.warnedAt = now
     log.error(
-      `[oracle-feeds] ${feedId}: unavailable for over five minutes — ${reason}`
+      `[oracle-feeds] ${feedId}: sustained or intermittent unavailability for over five minutes — ${reason}`
     )
   } else if (now - state.warnedAt >= MINUTE_MS) {
     state.warnedAt = now
     log.warn(`[oracle-feeds] ${feedId}: ${reason}`)
   }
+}
+
+/** Only expected provider failures use the provider incident budget. */
+export const reportOracleTickFailure = (
+  feedId: string,
+  error: unknown,
+  bounds?: OracleUpdateBounds
+) => {
+  if (bounds && isOracleTickTimeout(error))
+    log.warn(`[oracle-feeds] ${feedId}: bounded tick skipped — ${error}`)
+  else if (error instanceof OracleProviderError)
+    reportOracleObservationFailure(feedId, error.message)
+  else log.error(`[oracle-feeds] ${feedId}: tick failed — ${error}`)
 }
 
 /** Withdraw availability without touching the last executable price. Each
@@ -56,11 +92,12 @@ export const applyOracleFeedUnavailability = async (
 ) => {
   if (health.status !== 'unavailable')
     throw new Error('Available health requires an atomic price update')
-  const rows = await pg.manyOrNone<{ id: string }>(
-    `select id from contracts where mechanism = 'perp' and resolution_time is null and data->>'oracleFeedId' = $1`,
+  const rows = await pg.manyOrNone<{ id: string; health?: OracleFeedHealth }>(
+    `select id, data->'oracleFeedHealth' as health from contracts where mechanism = 'perp' and resolution_time is null and data->>'oracleFeedId' = $1`,
     [feedId]
   )
-  for (const { id } of rows) {
+  for (const { id, health: currentHealth } of rows) {
+    if (!shouldRefreshOracleHealth(currentHealth, health)) continue
     try {
       const quote = await pg.tx(
         bounds ? { tag: FAST_TICK_TX_TAG } : {},
@@ -80,7 +117,7 @@ export const applyOracleFeedUnavailability = async (
           if (
             contract.isResolved ||
             contract.oracleFeedId !== feedId ||
-            (contract.oracleFeedHealth?.checkedAt ?? 0) >= health.checkedAt
+            !shouldRefreshOracleHealth(contract.oracleFeedHealth, health)
           )
             return null
           await tx.one(mergeContractDataQuery(id, { oracleFeedHealth: health }))
@@ -89,13 +126,7 @@ export const applyOracleFeedUnavailability = async (
       )
       if (quote) publishPerpQuote(quote)
     } catch (error) {
-      if (bounds && isOracleTickTimeout(error))
-        log.warn(`[oracle-feeds] ${id}: health tick skipped — ${error}`)
-      else
-        reportOracleObservationFailure(
-          feedId,
-          `health application failed: ${error}`
-        )
+      reportOracleTickFailure(feedId, error, bounds)
     }
   }
 }
@@ -118,7 +149,7 @@ export const publishOracleObservation = async (
       { ...health, status: 'unavailable' },
       bounds
     )
-    return
+    return false
   }
   // Fetch has already completed. Serialize decide-and-write with every other
   // publisher/backfill of this feed, using the established per-feed lock.
@@ -148,7 +179,16 @@ export const publishOracleObservation = async (
           }
         : null
       // Another process may have published a more recent observation already.
-      if (previous && point.ts < previous.ts) return null
+      if (previous && point.ts < previous.ts) {
+        if (previous.ts - point.ts > (feed.pollPeriodMs ?? 2_000))
+          reportOracleObservationFailure(
+            feed.id,
+            `Observation trails published history by ${
+              previous.ts - point.ts
+            }ms; check publisher clock skew`
+          )
+        return null
+      }
       if (previous && point.ts === previous.ts) {
         if (
           point.price !== previous.price ||
@@ -196,8 +236,9 @@ export const publishOracleObservation = async (
       )
       return null
     })
-  if (!latest) return
-  failures.delete(feed.id)
+  if (!latest) return false
+  reportOracleObservationSuccess(feed.id)
   // Both fields are committed by runOracleUpdate under the contract lock.
   await applyOraclePointToLivePerps(pg, feed.id, latest, bounds, health)
+  return true
 }

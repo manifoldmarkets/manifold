@@ -10,6 +10,11 @@ import {
   createMnxSnapshotFetcher,
 } from './mnx'
 
+jest.mock('./utils', () => ({
+  log: Object.assign(jest.fn(), { warn: jest.fn(), error: jest.fn() }),
+}))
+afterEach(() => jest.restoreAllMocks())
+
 const now = 1_800_000_000_000
 const spec = MNX_INSTRUMENTS[0]
 const market = (over: Record<string, unknown> = {}) => ({
@@ -176,7 +181,7 @@ it('honors Retry-After seconds and HTTP dates and backs off other HTTP failures'
       now,
       0
     )
-  ).toBe(HOUR_MS)
+  ).toBe(10 * MINUTE_MS)
   expect(mnxRetryDelay(new Error('timeout'), 2, now, 0)).toBe(4_000)
   expect(mnxRetryDelay(new MnxHttpError(403, null), 1, now, 0)).toBe(2_000)
 })
@@ -229,7 +234,7 @@ it('shares outages and honors Retry-After without relabeling old data as fresh',
     .mockResolvedValue([market()])
   const fetchSnapshot = createMnxSnapshotFetcher(fetcher)
   await expect(fetchSnapshot()).rejects.toThrow('429')
-  clock.mockReturnValue(now + 2_000)
+  clock.mockReturnValue(now + 10_000)
   await expect(fetchSnapshot()).rejects.toThrow('429')
   expect(fetcher).toHaveBeenCalledTimes(1)
   clock.mockReturnValue(now + MINUTE_MS)
@@ -237,4 +242,44 @@ it('shares outages and honors Retry-After without relabeling old data as fresh',
   expect(recovered.feeds[spec.feedId].health.checkedAt).toBe(now + MINUTE_MS)
   expect(fetcher).toHaveBeenCalledTimes(2)
   clock.mockRestore()
+})
+
+it('caps excessive retry headers, retries after the cap, and a new process starts immediately', async () => {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  const fetcher = jest
+    .fn()
+    .mockRejectedValueOnce(new MnxHttpError(503, '86400'))
+    .mockResolvedValue([market()])
+  const fetchSnapshot = createMnxSnapshotFetcher(fetcher)
+  await expect(fetchSnapshot()).rejects.toThrow('next MNX attempt')
+  clock.mockReturnValue(now + 9 * MINUTE_MS)
+  await expect(fetchSnapshot()).rejects.toThrow('503')
+  expect(fetcher).toHaveBeenCalledTimes(1)
+  await createMnxSnapshotFetcher(fetcher)()
+  expect(fetcher).toHaveBeenCalledTimes(2)
+  clock.mockReturnValue(now + 10 * MINUTE_MS)
+  await fetchSnapshot()
+  expect(fetcher).toHaveBeenCalledTimes(3)
+  expect(mnxRetryDelay(new MnxHttpError(429, 'nonsense'), 1, now, 0)).toBe(2000)
+})
+
+it('keeps H100 candle provenance behind a live mark older than the latest bucket', () => {
+  const h100 = MNX_INSTRUMENTS.find((i) => i.symbol === 'H100')!
+  const sourceTs = now - 70 * MINUTE_MS
+  const points = parseMnxCandles(
+    {
+      market_id: h100.marketId,
+      interval: '1h',
+      candlesticks: [
+        { time: (now - 3 * HOUR_MS) / 1000, close: 3.26 },
+        { time: (now - 2 * HOUR_MS) / 1000, close: 3.26 },
+      ],
+    },
+    h100,
+    h100.marketId,
+    sourceTs
+  )
+  expect(points).toHaveLength(1)
+  expect(points[0].ts).toBeLessThan(sourceTs)
+  expect(points[0].sourceTs).toBeLessThan(sourceTs)
 })

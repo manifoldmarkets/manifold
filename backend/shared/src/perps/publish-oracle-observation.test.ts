@@ -1,5 +1,6 @@
+import { OracleProviderError } from '../oracle-provider'
 import { OraclePoint } from 'common/perps/oracle'
-import { MINUTE_MS, HOUR_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
 import { insertOraclePrices } from '../oracle'
 import { getOracleFeed } from '../oracle-feeds'
 import { SupabaseDirectClient } from '../supabase/init'
@@ -11,6 +12,8 @@ import {
   publishOracleObservation,
   applyOracleFeedUnavailability,
   reportOracleObservationFailure,
+  reportOracleObservationSuccess,
+  reportOracleTickFailure,
 } from './publish-oracle-observation'
 
 jest.mock('../oracle', () => ({
@@ -179,13 +182,109 @@ it('isolates a contended contract and publishes a frozen flag for the next contr
   })
 })
 
-it('throttles changing failure messages and sustained outage pages', () => {
-  for (let elapsed = 0; elapsed < 2 * HOUR_MS; elapsed += 2000)
-    reportOracleObservationFailure(
-      'throttle-test',
-      `failure ${elapsed}`,
-      now + elapsed
-    )
+it('pages only at five minutes and preserves the hourly budget', () => {
+  const id = 'threshold-test'
+  for (let elapsed = 0; elapsed < 5 * MINUTE_MS; elapsed += 2000)
+    reportOracleObservationFailure(id, `error ${elapsed}`, now + elapsed)
+  expect(log.error).not.toHaveBeenCalled()
+  expect(log.warn).toHaveBeenCalledTimes(5)
+  reportOracleObservationFailure(id, 'error', now + 5 * MINUTE_MS)
+  expect(log.error).toHaveBeenCalledTimes(1)
+  for (
+    let elapsed = 5 * MINUTE_MS + 2000;
+    elapsed < 65 * MINUTE_MS;
+    elapsed += 2000
+  )
+    reportOracleObservationFailure(id, 'error', now + elapsed)
+  expect(log.error).toHaveBeenCalledTimes(1)
+  reportOracleObservationFailure(id, 'error', now + 65 * MINUTE_MS)
   expect(log.error).toHaveBeenCalledTimes(2)
-  expect(jest.mocked(log.warn).mock.calls.length).toBeLessThanOrEqual(120)
+})
+it('does not reset warning or paging budgets on flapping successes', () => {
+  for (let elapsed = 0; elapsed <= 10 * MINUTE_MS; elapsed += 4000) {
+    reportOracleObservationFailure('flapping-test', 'Frozen', now + elapsed)
+    reportOracleObservationSuccess('flapping-test', now + elapsed + 2000)
+  }
+  expect(log.error).toHaveBeenCalledTimes(1)
+  expect(log.warn).toHaveBeenCalledTimes(10)
+  reportOracleObservationSuccess('flapping-test', now + 16 * MINUTE_MS)
+  reportOracleObservationFailure(
+    'flapping-test',
+    'New outage',
+    now + 16 * MINUTE_MS
+  )
+  expect(log.error).toHaveBeenCalledTimes(1)
+})
+it.each(['55P03', '57014', '40001'])(
+  'classifies bounded %s without seeding a provider incident',
+  (code) => {
+    const id = `timeout-${code}`
+    for (let elapsed = 0; elapsed < 6 * MINUTE_MS; elapsed += MINUTE_MS) {
+      jest.spyOn(Date, 'now').mockReturnValue(now + elapsed)
+      reportOracleTickFailure(id, { code }, FAST_TICK_ORACLE_BOUNDS)
+    }
+    expect(log.error).not.toHaveBeenCalled()
+    reportOracleObservationFailure(
+      id,
+      'first provider failure',
+      now + 6 * MINUTE_MS
+    )
+    expect(log.error).not.toHaveBeenCalled()
+    reportOracleTickFailure(id, { code })
+    expect(log.error).toHaveBeenCalledTimes(1)
+  }
+)
+it('reports database/code faults immediately and throttles only provider errors', () => {
+  reportOracleTickFailure(
+    'faults-test',
+    new Error('database disconnected'),
+    FAST_TICK_ORACLE_BOUNDS
+  )
+  expect(log.error).toHaveBeenCalledTimes(1)
+  reportOracleTickFailure(
+    'faults-test',
+    new OracleProviderError('HTTP 503'),
+    FAST_TICK_ORACLE_BOUNDS
+  )
+  expect(log.error).toHaveBeenCalledTimes(1)
+  expect(log.warn).toHaveBeenCalledTimes(1)
+})
+it('accepts exact duplicate delivery and preserves the immutable row', async () => {
+  const { pg } = database(point)
+  await publishOracleObservation(pg, feed, { point, health })
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).toHaveBeenCalledWith(
+    pg,
+    feed.id,
+    point,
+    undefined,
+    health
+  )
+})
+it('rejects a same-observation source timestamp conflict independently', async () => {
+  const { pg } = database({ ...point, sourceTs: point.sourceTs - 1 })
+  expect(await publishOracleObservation(pg, feed, { point, health })).toBe(
+    false
+  )
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).not.toHaveBeenCalled()
+})
+it('does not lock, rewrite or push a repeated unavailable check within the heartbeat', async () => {
+  const frozen = {
+    checkedAt: now - 2000,
+    status: 'unavailable' as const,
+    reason: 'Frozen',
+  }
+  const pg = {
+    manyOrNone: jest.fn(async () => [{ id: 'frozen', health: frozen }]),
+    tx: jest.fn(),
+  }
+  await applyOracleFeedUnavailability(
+    pg as unknown as SupabaseDirectClient,
+    feed.id,
+    { ...frozen, checkedAt: now },
+    FAST_TICK_ORACLE_BOUNDS
+  )
+  expect(pg.tx).not.toHaveBeenCalled()
+  expect(publishPerpQuote).not.toHaveBeenCalled()
 })

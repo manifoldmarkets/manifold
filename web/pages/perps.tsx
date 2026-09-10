@@ -126,7 +126,19 @@ export async function getStaticProps() {
 // Unknown feeds fall back to the feed id's leading segment, so a new perp is
 // merely unglamorous until someone adds a line here, never broken.
 const FEED_TICKERS: Record<string, string> = {
-  ...Object.fromEntries(MNX_INSTRUMENTS.map((i) => [i.feedId, i.symbol])),
+  ...Object.fromEntries(
+    MNX_INSTRUMENTS.map((i) => [
+      i.feedId,
+      (
+        {
+          ANTHROPIC: 'ANTH',
+          MOONSHOT: 'MOON',
+          DEEPSEEK: 'DEEP',
+          MINIMAX: 'MINI',
+        } as Record<string, string>
+      )[i.symbol] ?? i.symbol,
+    ])
+  ),
   'btc-usd': 'BTC',
   'trump-approval-rating': 'TRUMP',
   'votehub-generic-ballot-2026': 'BALLOT',

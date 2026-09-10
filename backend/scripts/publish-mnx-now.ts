@@ -11,11 +11,24 @@ import { runScript } from './run-script'
 // and waits for normal engine application, in the selected DEV or PROD env.
 if (require.main === module)
   runScript(async ({ pg }) => {
-    if (ENV !== getLocalEnv())
-      throw new Error('Firebase and backend environments disagree')
+    if (
+      !['DEV', 'PROD'].includes(process.env.NEXT_PUBLIC_FIREBASE_ENV ?? '') ||
+      ENV !== getLocalEnv()
+    )
+      throw new Error(
+        'Set NEXT_PUBLIC_FIREBASE_ENV explicitly to DEV or PROD and select the matching Firebase project'
+      )
     const snapshot = await fetchMnxSnapshot()
     const apply = process.argv.includes('--apply')
-    for (const spec of MNX_INSTRUMENTS) {
+    const requested = process.argv
+      .find((arg) => arg.startsWith('--feed='))
+      ?.slice(7)
+    const specs = MNX_INSTRUMENTS.filter(
+      (spec) => !requested || spec.feedId === requested
+    )
+    if (!specs.length) throw new Error('Unknown MNX feed')
+    let unavailable = 0
+    for (const spec of specs) {
       const observation = snapshot.feeds[spec.feedId]
       log(
         JSON.stringify({
@@ -25,11 +38,15 @@ if (require.main === module)
           ...observation,
         })
       )
-      if (apply)
-        await publishOracleObservation(
+      if (observation.health.status !== 'available') unavailable++
+      if (apply) {
+        const published = await publishOracleObservation(
           pg,
           getOracleFeed(spec.feedId)!,
           observation
         )
+        if (!published) process.exitCode = 1
+      }
     }
+    if (unavailable) process.exitCode = 1
   })

@@ -1,3 +1,4 @@
+import { ORACLE_HEALTH_MAX_AGE_MS } from './oracle-health'
 import type { OracleFeedHealth } from './oracle-health'
 import { MINUTE_MS } from '../util/time'
 
@@ -331,8 +332,8 @@ export const getPerpOracleFreshness = (
   const health = contract.oracleFeedHealth
   const reason = !health
     ? null
-    : getOracleFreshness(health.checkedAt, 5 * MINUTE_MS, now).status !==
-      'fresh'
+    : getOracleFreshness(health.checkedAt, ORACLE_HEALTH_MAX_AGE_MS, now)
+        .status !== 'fresh'
     ? 'Oracle provider checks are unavailable or more than five minutes old'
     : health.status !== 'available'
     ? health.reason ?? 'Oracle provider unavailable'
