@@ -178,16 +178,16 @@ export function ProbGraph(props: {
   color?: string
   /** Space at the bottom of the strip that the outcome row overlays */
   bottomInset?: number
-  /** Draw 0%, 50% and 100% guides with labels, so the line's height and any
-   * move can be read without another reference. Probability series only. */
-  percentAxis?: boolean
+  /** Label the line's first and last values, so the size of a move can be
+   * read without another reference. Probability series only. */
+  endpointLabels?: boolean
 }) {
   const {
     height,
     color = '#14b866',
     aspectRatio = 1,
     bottomInset = 0,
-    percentAxis = false,
+    endpointLabels = false,
   } = props
   const data = smoothSeries(props.data)
   const w = height * aspectRatio
@@ -197,9 +197,9 @@ export function ProbGraph(props: {
   const curve = curveMonotoneX
   const endDotRadius = 4.5
   const domain = getProbGraphDomain(data)
-  const showAxis = percentAxis && domain[0] === 0 && domain[1] === 1
-  const axisWidth = showAxis ? 34 : 0
-  const plotWidth = w - axisWidth
+  const showLabels = endpointLabels && domain[0] === 0 && domain[1] === 1
+  const labelWidth = showLabels ? 36 : 0
+  const plotWidth = w - 2 * labelWidth
   const xScale = scaleTime(visibleRange, [0, plotWidth - endDotRadius - 1])
   // Keep the line clear of the top edge and of the overlaid outcome row, with
   // enough padding that a flat stretch never sits on either edge
@@ -209,47 +209,36 @@ export function ProbGraph(props: {
   ])
   const px = (p: Point) => xScale(p.x)
   const py1 = (p: Point) => yScale(p.y)
+  const first = data[0]
   const last = data[data.length - 1]
+  const percent = (p: Point) => `${Math.round(p.y * 100)}%`
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const da = area(px, showAxis ? yScale(0) : h, py1).curve(curve)(data)!
+  const da = area(px, showLabels ? yScale(0) : h, py1).curve(curve)(data)!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!
-  const guides = showAxis ? [1, 0.5, 0] : []
-  const guideLine = (v: number) => (
-    <line
-      x1={0}
-      x2={plotWidth}
-      y1={yScale(v)}
-      y2={yScale(v)}
-      stroke={v === 0.5 ? '#cbd5e1' : '#e5e7eb'}
-      strokeWidth={1}
-      strokeDasharray={v === 0.5 ? '3 4' : undefined}
-    />
-  )
 
   return (
     <div className="relative flex" style={{ width: w, height: h }}>
-      {guides.map((v) => (
+      {showLabels && (
         <div
-          key={v}
-          className="absolute flex justify-end text-gray-400"
+          className="absolute flex justify-end text-gray-500"
           style={{
             left: 0,
-            width: axisWidth - 6,
-            top: yScale(v) - 7,
-            fontSize: 10,
-            lineHeight: '14px',
+            width: labelWidth - 8,
+            top: py1(first) - 8,
+            fontSize: 12,
+            lineHeight: '16px',
           }}
         >
-          {v * 100}%
+          {percent(first)}
         </div>
-      ))}
+      )}
       <svg
         width={plotWidth}
         height={h}
         viewBox={`0 0 ${plotWidth} ${h}`}
-        style={{ marginLeft: axisWidth }}
+        style={{ marginLeft: labelWidth }}
       >
         <defs>
           <linearGradient
@@ -266,11 +255,6 @@ export function ProbGraph(props: {
         </defs>
 
         <g>
-          {/* Written out rather than mapped: satori can't take an array of
-              children inside an inline svg */}
-          {showAxis && guideLine(1)}
-          {showAxis && guideLine(0.5)}
-          {showAxis && guideLine(0)}
           <path d={da} fill={`url(#${gradientId})`} opacity={0.1} />
           <path
             d={dl}
@@ -291,6 +275,21 @@ export function ProbGraph(props: {
           />
         </g>
       </svg>
+      {showLabels && (
+        <div
+          className="absolute flex font-semibold"
+          style={{
+            left: labelWidth + plotWidth + 6,
+            width: labelWidth - 6,
+            top: py1(last) - 8,
+            fontSize: 12,
+            lineHeight: '16px',
+            color,
+          }}
+        >
+          {percent(last)}
+        </div>
+      )}
     </div>
   )
 }
