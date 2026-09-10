@@ -1,9 +1,10 @@
 import { PerpContract } from 'common/contract'
-import { OracleFeedHealth } from 'common/perps/mnx'
+import { OracleFeedHealth } from 'common/perps/oracle-health'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { SupabaseTransaction } from '../supabase/init'
 import { runTransactionWithRetries } from '../transact-with-retries'
-import { runFunding } from './engine'
+import { runFunding, runOracleUpdate, openOrAddPosition } from './engine'
+import { getPerpOracleFreshness } from 'common/perps/oracle'
 
 jest.mock('../transact-with-retries', () => ({
   runTransactionWithRetries: jest.fn(),
@@ -16,8 +17,7 @@ const now = 1_800_000_000_000
 const health: OracleFeedHealth = {
   checkedAt: now,
   status: 'available',
-  priceTime: now - HOUR_MS,
-  price: 3,
+  expiresAt: now + 5 * MINUTE_MS,
 }
 
 const database = (overrides: Partial<PerpContract> = {}) => {
@@ -33,14 +33,21 @@ const database = (overrides: Partial<PerpContract> = {}) => {
     maxOraclePriceAgeMs: DAY_MS,
     createdTime: now,
     fundingPeriodMs: HOUR_MS,
+    fundingSensitivity: 1,
+    maxFundingRate: 0.0001,
     poolLong: 25000,
     poolShort: 25000,
     ...overrides,
   }
-  const one = jest.fn(async (_sql: string) => ({}))
+  const one = jest.fn(async (sql: string) =>
+    sql.includes('from txns') ? { balance: 50000 } : {}
+  )
   const fundingRead = jest.fn(async () => null)
   const oneOrNone = jest.fn(async (sql: string) => {
     if (sql.includes('contract_perp_funding_events')) return fundingRead()
+    if (sql.includes('system_trading_status')) return { status: true }
+    if (sql.includes('from users'))
+      return { id: 'user', balance: 10000, data: {} }
     return { data: contract, token: 'MANA' }
   })
   const writes = jest.fn()
@@ -48,6 +55,7 @@ const database = (overrides: Partial<PerpContract> = {}) => {
     one,
     oneOrNone,
     any: jest.fn(async () => []),
+    manyOrNone: jest.fn(async () => []),
     multi: writes,
     none: writes,
   }
@@ -66,10 +74,9 @@ afterEach(() => {
 })
 
 it.each([
-  ['missing health', undefined],
   ['frozen', { ...health, status: 'unavailable' as const, reason: 'Frozen' }],
   ['stopped collector', { ...health, checkedAt: now - 6 * MINUTE_MS }],
-  ['pending price', { ...health, price: 4 }],
+  ['expired source', { ...health, expiresAt: now - 1 }],
 ])(
   'skips funding before any funding queries or writes: %s',
   async (_name, oracleFeedHealth) => {
@@ -108,4 +115,66 @@ it('resumes the funding cadence after health recovers at the same price timestam
   db.contract.oracleFeedHealth = health
   expect(await runFunding('h100', now)).toBeNull()
   expect(db.fundingRead).toHaveBeenCalledTimes(1)
+})
+
+it('executes one funding period after recovery, without back-charging missed periods', async () => {
+  const db = database({
+    createdTime: now - 10 * HOUR_MS,
+    oracleFeedHealth: { ...health, status: 'unavailable' },
+  })
+  expect(await runFunding('h100', now)).toBeNull()
+  db.contract.oracleFeedHealth = health
+  const result = await runFunding('h100', now)
+  expect(result?.fundingEvent.ts).toBe(now)
+  expect(db.writes).toHaveBeenCalledTimes(1)
+  expect(db.writes.mock.calls[0][0]).toContain('contract_perp_funding_events')
+})
+
+it('commits healthy price and health in one engine write, leaving the previous mark executable until commit', async () => {
+  const db = database({
+    oraclePriceTime: now - 2000,
+    oracleFeedHealth: { ...health, checkedAt: now - 2000 },
+  })
+  expect(getPerpOracleFreshness(db.contract, now).status).toBe('fresh')
+  const result = await runOracleUpdate('h100', 3.1, now, now, undefined, health)
+  const mutations = db.one.mock.calls
+    .map(([sql]) => sql)
+    .filter((sql) => sql.includes('update contracts'))
+  expect(mutations).toHaveLength(1)
+  expect(mutations[0]).toContain('oraclePrice')
+  expect(mutations[0]).toContain('oracleFeedHealth')
+  expect(result?.oracleFeedHealth).toEqual(health)
+})
+
+it('recovers at an unchanged price without replaying liquidation or funding', async () => {
+  const db = database({
+    oraclePriceTime: now,
+    oracleSourceTime: now,
+    oracleFeedHealth: { checkedAt: now - 2000, status: 'unavailable' },
+  })
+  const result = await runOracleUpdate('h100', 3, now, now, undefined, health)
+  expect(result?.liquidated).toEqual([])
+  expect(result?.oracleFeedHealth).toEqual(health)
+  expect(db.writes).not.toHaveBeenCalled()
+  expect(db.fundingRead).not.toHaveBeenCalled()
+})
+
+it('does not let a delayed available observation clear a newer freeze', async () => {
+  const db = database({
+    oracleFeedHealth: { checkedAt: now + 1, status: 'unavailable' },
+  })
+  expect(
+    await runOracleUpdate('h100', 3.1, now, now, undefined, health)
+  ).toBeNull()
+  expect(db.one).toHaveBeenCalledTimes(1) // lock only
+})
+
+it('the trading engine refuses a frozen provider before balance or position writes', async () => {
+  const db = database({
+    oracleFeedHealth: { ...health, status: 'unavailable', reason: 'Frozen' },
+  })
+  await expect(
+    openOrAddPosition('h100', 'user', 'long', 100, 2)
+  ).rejects.toThrow(/Frozen/)
+  expect(db.writes).not.toHaveBeenCalled()
 })

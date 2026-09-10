@@ -1,3 +1,7 @@
+import {
+  publishOracleObservation,
+  reportOracleObservationFailure,
+} from 'shared/perps/publish-oracle-observation'
 import { normalizeOraclePointBatch } from 'common/perps/oracle'
 import { MINUTE_MS } from 'common/util/time'
 
@@ -240,6 +244,15 @@ const probeDailyFeedStaleness = async (
 
 const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
   try {
+    if (feed.fetchObservation) {
+      await publishOracleObservation(
+        pg,
+        feed,
+        await feed.fetchObservation(),
+        FAST_TICK_ORACLE_BOUNDS
+      )
+      return
+    }
     const prevRow = await pg.oneOrNone<{ ts: string; price: number | string }>(
       `select ts, price from oracle_prices
        where feed_id = $1 order by ts desc limit 1`,
@@ -322,8 +335,8 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.
     //
-    // Frequent collectors (this tick and MNX) pass bounds: the next poll
-    // retries with a newer price or the durable observation. Other callers
+    // Only the fast tick passes bounds: the next poll retries with a newer
+    // price. Other callers
     // (hourly update-perps, the daily publishers, the admin write path) must
     // wait and apply — see OracleUpdateBounds.
     await applyOraclePointToLivePerps(
@@ -333,7 +346,9 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       FAST_TICK_ORACLE_BOUNDS
     )
   } catch (err) {
-    log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
+    if (feed.fetchObservation)
+      reportOracleObservationFailure(feed.id, String(err))
+    else log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }
 }
 

@@ -1,3 +1,4 @@
+import { OracleFeedHealth } from 'common/perps/oracle-health'
 import { PerpContract } from 'common/contract'
 import {
   decideOracleTransition,
@@ -41,11 +42,12 @@ export const applyOraclePointToLivePerps = async (
   feedId: string,
   point: OraclePoint,
   /**
-   * Frequent collectors only (fast tick and MNX). Daily publishers and the
+   * Fast tick only. Daily publishers and the
    * admin write path wait for the apply rather than abandon it — see
    * OracleUpdateBounds.
    */
-  bounds?: OracleUpdateBounds
+  bounds?: OracleUpdateBounds,
+  health?: OracleFeedHealth
 ) => {
   const pointRejection = validateBasicOraclePoint(point)
   if (pointRejection) {
@@ -129,7 +131,11 @@ export const applyOraclePointToLivePerps = async (
               : { sourceTs: contract.oracleSourceTime }),
           }
     const decision = decideOracleTransition(currentPoint, persistedPoint)
-    if (decision.action === 'ignore') continue
+    if (
+      decision.action === 'ignore' &&
+      !(decision.reason === 'duplicate' && health)
+    )
+      continue
     if (decision.action === 'reject') {
       log.error(
         `[oracle-feeds] ${
@@ -147,7 +153,8 @@ export const applyOraclePointToLivePerps = async (
         persistedPoint.price,
         persistedPoint.ts,
         persistedPoint.sourceTs,
-        bounds
+        bounds,
+        health
       )
       if (!result) continue
 
@@ -161,6 +168,9 @@ export const applyOraclePointToLivePerps = async (
         )
         publishPerpQuote({
           contractId: contract.id,
+          ...(result.oracleFeedHealth
+            ? { oracleFeedHealth: result.oracleFeedHealth }
+            : {}),
           oraclePrice: persistedPoint.price,
           oraclePriceTime: persistedPoint.ts,
           poolLong: result.poolLongAfter,
@@ -181,6 +191,9 @@ export const applyOraclePointToLivePerps = async (
       // than pushing a stale value over a fresh one.
       publishPerpQuote({
         contractId: contract.id,
+        ...(result.oracleFeedHealth
+          ? { oracleFeedHealth: result.oracleFeedHealth }
+          : {}),
         oraclePrice: persistedPoint.price,
         oraclePriceTime: persistedPoint.ts,
         poolLong: result.poolLongAfter,

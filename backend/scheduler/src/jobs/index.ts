@@ -1,4 +1,3 @@
-import { updateMnx } from './update-mnx'
 import { compact } from 'lodash'
 
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
@@ -92,7 +91,6 @@ const PERP_JOB_NAMES = new Set([
   'update-trump-approval',
   'update-votehub-averages',
   'update-fear-greed',
-  'update-mnx',
 ])
 
 export function getSchedulerJobSet(): SchedulerJobSet {
@@ -423,7 +421,6 @@ export function createJobs(jobSet: SchedulerJobSet) {
       '0 2-59/5 * * * *',
       updateVoteHubAverages
     ),
-    createJob('update-mnx', '0 * * * * *', updateMnx),
     createJob(
       'update-fear-greed',
       // Alternative.me's Crypto Fear & Greed index steps once a day around

@@ -3,20 +3,21 @@ import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
 import { getLocalEnv } from 'shared/init-admin'
-import { getPerpLaunchCreatorId } from 'shared/perps/launch-manifest'
-import { readMnxSnapshot, requireMnxReady } from 'shared/perps/publish-mnx'
+import {
+  getPerpLaunchCreatorId,
+  MNX_LAUNCH_MARKETS,
+} from 'shared/perps/launch-manifest'
+import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
 // Default: inspect and print, with no writes. --apply only creates UNLISTED
-// DEV markets via the normal authenticated API. No production creation path.
+// markets via the normal authenticated API in the explicitly selected environment.
 if (require.main === module)
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
     if (ENV !== getLocalEnv())
       throw new Error('Firebase and backend environments disagree')
-    if (apply && ENV !== 'DEV')
-      throw new Error('MNX market creation is DEV-only')
     const existing = await pg.manyOrNone<{ feed_id: string; id: string }>(
       `select data->>'oracleFeedId' as feed_id, id from contracts
      where mechanism = 'perp' and resolution_time is null
@@ -31,23 +32,32 @@ if (require.main === module)
         log(`Already exists: ${spec.feedId} (${matches[0].id})`)
       return matches.length === 0
     })
-    const snapshot = await readMnxSnapshot(pg)
+    const snapshot = await fetchMnxSnapshot()
     const bodies = missing.map((spec) => {
       const ready = requireMnxReady(snapshot, spec.feedId)
+      const recommended = MNX_LAUNCH_MARKETS.find(
+        (m) => m.feedId === spec.feedId
+      )!.recommended
       return {
         question: spec.question,
         description: `${spec.description}\n\nSource: ${spec.url}\nIf MNX ends this instrument, trading pauses pending administrative settlement; it will not automatically roll into a replacement.`,
         oracleFeedId: spec.feedId,
         visibility: 'unlisted' as const,
-        maxLeverage: ready.maxLeverage,
-        subsidyLong: 25_000,
-        subsidyShort: 25_000,
-        maxOraclePriceAgeMs: spec.maxAgeMs,
-        fundingSensitivity: 1,
-        maxFundingRate: HOUR_MS / YEAR_MS,
+        maxLeverage: Math.min(recommended.maxLeverage, ready.maxLeverage!),
+        subsidyLong: recommended.subsidyLong,
+        subsidyShort: recommended.subsidyShort,
+        maxOraclePriceAgeMs: recommended.maxOraclePriceAgeMs,
+        fundingSensitivity: recommended.fundingSensitivity,
+        maxFundingRate:
+          (recommended.annualMaxFundingRate *
+            Math.max(HOUR_MS, spec.updatePeriodMs)) /
+          YEAR_MS,
       }
     })
-    const total = bodies.length * 50_000
+    const total = bodies.reduce(
+      (sum, body) => sum + body.subsidyLong + body.subsidyShort,
+      0
+    )
     const creatorId = getPerpLaunchCreatorId(ENV)
     const creator = await pg.one<{ balance: number }>(
       `select balance from users where id = $1`,
@@ -72,16 +82,14 @@ if (require.main === module)
       throw new Error(`Insufficient backing: need M${total}`)
     const key = process.env.MANIFOLD_API_KEY
     if (!key)
-      throw new Error(
-        'MANIFOLD_API_KEY for the official DEV creator is required'
-      )
+      throw new Error('MANIFOLD_API_KEY for the official creator is required')
     const apiUrl = new URL(getApiUrl('create-perp'))
     if (
       apiUrl.host !== ENV_CONFIG.apiEndpoint &&
       !['localhost', '127.0.0.1', '[::1]'].includes(apiUrl.hostname)
     )
       throw new Error(
-        'Refusing creation on an API outside the selected DEV environment'
+        'Refusing creation on an API outside the selected environment'
       )
     const headers = {
       Authorization: `Key ${key}`,

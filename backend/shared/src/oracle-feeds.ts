@@ -1,4 +1,7 @@
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { OracleFeedHealth } from 'common/perps/oracle-health'
+import { OraclePoint } from 'common/perps/oracle'
+import { fetchMnxObservation } from './mnx'
+import { MNX_INSTRUMENTS, MNX_POLL_MS } from 'common/perps/mnx'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
@@ -86,7 +89,13 @@ export type OracleFeedDef = {
    * holders too). Trade it off against the source's rate limits: poll faster
    * than the source publishes and you spend quota for no new information. */
   pollPeriodMs?: number
-  fetchLatest?: () => Promise<{ ts: number; price: number } | null>
+  fetchLatest?: () => Promise<OraclePoint | null>
+  /** A provider can withdraw availability independently of its last price.
+   * The fast tick commits successful health and price in one engine update. */
+  fetchObservation?: () => Promise<{
+    point?: OraclePoint
+    health: OracleFeedHealth
+  }>
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
@@ -95,12 +104,19 @@ export type OracleFeedDef = {
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
+  // One shared /v0/markets request prices all sixteen instruments every 2s
+  // (30 requests/minute total). MNX publishes no numeric REST quota in its
+  // public docs; honor Retry-After and back off on errors. H100 source age is
+  // independent of this tick. The defined target is MNX's mark, not its oracle
+  // or the underlying share/valuation: see common/perps/mnx and the runbook.
   ...MNX_INSTRUMENTS.map(
     (i): OracleFeedDef => ({
       id: i.feedId,
       description: i.description,
       marketCreationEnabled: true,
-      cadence: 'daily',
+      cadence: 'fast',
+      pollPeriodMs: MNX_POLL_MS,
+      fetchObservation: () => fetchMnxObservation(i.feedId),
       minPrice: i.minPrice,
       maxPrice: i.maxPrice,
       staleAfterMs: i.maxAgeMs,

@@ -1,5 +1,5 @@
+import { getMnxInstrument } from 'common/perps/mnx'
 import { formatOraclePrice } from 'common/perps/oracle-display'
-import { getMnxInstrument, MNX_CHECK_MAX_AGE_MS } from 'common/perps/mnx'
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { fromNow } from 'client-common/lib/time'
@@ -14,7 +14,7 @@ import {
 } from 'common/perps/funding'
 import { formatCountdown, inferPriceDecimals } from 'common/perps/format'
 import { getPerpOracleFreshness } from 'common/perps/oracle'
-import { YEAR_MS } from 'common/util/time'
+import { YEAR_MS, MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -56,10 +56,11 @@ const useOracleFreshness = (contract: PerpContract) => {
     update()
     const sourceStaleAt =
       (contract.oraclePriceTime ?? Number.NaN) + contract.maxOraclePriceAgeMs
-    const staleAt = getMnxInstrument(contract.oracleFeedId)
+    const staleAt = contract.oracleFeedHealth
       ? Math.min(
           sourceStaleAt,
-          (contract.oracleFeedHealth?.checkedAt ?? 0) + MNX_CHECK_MAX_AGE_MS
+          contract.oracleFeedHealth.checkedAt + 5 * MINUTE_MS,
+          contract.oracleFeedHealth.expiresAt ?? 0
         )
       : sourceStaleAt
     const delay = staleAt - Date.now()
@@ -77,6 +78,7 @@ const useOracleFreshness = (contract: PerpContract) => {
     contract.maxOraclePriceAgeMs,
     contract.oracleFeedId,
     contract.oracleFeedHealth?.checkedAt,
+    contract.oracleFeedHealth?.expiresAt,
   ])
 
   return now == null ? null : getPerpOracleFreshness(contract, now)

@@ -44,7 +44,6 @@ export const insertOraclePrices = async (
         `Oracle feed ${feedId} requires a provider source timestamp for attribution`
       )
     return {
-      ...(point.sourceData == null ? {} : { source_data: point.sourceData }),
       feed_id: feedId,
       ts: new Date(point.ts).toISOString(),
       price: point.price,

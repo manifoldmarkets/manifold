@@ -28,15 +28,7 @@ import { z } from 'zod'
 
 import { PerpContract } from 'common/contract'
 
-export const oracleFeedHealthSchema = z
-  .object({
-    checkedAt: z.number().finite().positive(),
-    status: z.enum(['available', 'unavailable']),
-    reason: z.string().optional(),
-    priceTime: z.number().finite().positive().optional(),
-    price: z.number().finite().positive().optional(),
-  })
-  .strict()
+import { oracleFeedHealthSchema } from './oracle-health'
 
 export const perpQuoteSchema = z
   .object({

@@ -1,4 +1,4 @@
-import type { OracleFeedHealth } from '../perps/mnx'
+import type { OracleFeedHealth } from '../perps/oracle-health'
 import { JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -82,6 +82,7 @@ export type LiteMarket = {
 
   // Perp markets only (mechanism 'perp'). Exposed so clients (and the perp
   // market page's live poll) can track price/pools without bespoke endpoints.
+  oracleFeedId?: string
   oraclePrice?: number
   oraclePriceTime?: number
   oracleSourceTime?: number | null
@@ -240,6 +241,7 @@ export function toLiteMarket(
     // Perp props (only present on perp markets).
     ...(contract.mechanism === 'perp'
       ? {
+          oracleFeedId: contract.oracleFeedId,
           oraclePrice: contract.oraclePrice,
           oraclePriceTime: contract.oraclePriceTime,
           oracleSourceTime: contract.oracleSourceTime,
@@ -336,6 +338,7 @@ export type UltraLiteMarket = {
   probability?: number
   liquidityTier?: string
   // Perp markets only. Omitted when the source value is not finite.
+  oracleFeedId?: string
   oraclePrice?: number
   // Current perp backing capital (poolLong + poolShort).
   backingPool?: number
@@ -421,6 +424,9 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     probability,
     ...(isPerp
       ? {
+          ...(liteMarket.oracleFeedId
+            ? { oracleFeedId: liteMarket.oracleFeedId }
+            : {}),
           ...(oraclePrice === undefined ? {} : { oraclePrice }),
           ...(backingPool === undefined ? {} : { backingPool }),
         }

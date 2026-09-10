@@ -1,4 +1,4 @@
-import { MNX_INSTRUMENTS, getMnxInstrument } from './mnx'
+import { MNX_INSTRUMENTS } from './mnx'
 import { formatPrice } from './format'
 
 type OracleTickDecoration = {
@@ -24,6 +24,10 @@ export const ORACLE_TICK_DECORATIONS: Readonly<
     ])
   ),
   'btc-usd': { prefix: '$' },
+  'spyx-usd': { prefix: '$' },
+  'qqqx-usd': { prefix: '$' },
+  'gldx-usd': { prefix: '$' },
+  'nvdax-usd': { prefix: '$' },
   'trump-approval-rating': { suffix: '%' },
   'votehub-generic-ballot-2026': { suffix: '%' },
   'vance-favorability': { suffix: '%' },
@@ -61,7 +65,6 @@ export const formatOraclePrice = (
 ) => {
   if (!Number.isFinite(value)) return '—'
   const { prefix = '', suffix = '' } =
-    (getMnxInstrument(feedId) && feedId && ORACLE_TICK_DECORATIONS[feedId]) ||
-    {}
+    (feedId && ORACLE_TICK_DECORATIONS[feedId]) || {}
   return `${prefix}${formatPrice(value, decimals)}${suffix}`
 }

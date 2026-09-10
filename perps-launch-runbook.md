@@ -66,6 +66,134 @@ That flag is an acknowledgment, not a mitigation. The day-one product decision
 is to allow bot competition under the launch manifest's conservative caps.
 Record the owner, chosen leverage/backing limits, and observed pool transfers.
 
+## MNX rollout (DEV and PROD)
+
+The sixteen feeds in `MNX_LAUNCH_MARKETS` form an explicit `--cohort=mnx`
+rollout in either environment. Default gate commands continue to check the
+existing launch cohort; neither cohort requires the other to have created
+markets. Unknown feeds still fail public preflight. `ALL_PERP_LAUNCH_MARKETS`
+provides title, official-creator, topic, recommendation and manifest-validation
+policy for both cohorts. This is a production-capable integration; creation is
+enabled in both environments. Deploying it does not create or publicize markets.
+
+No MNX migration is required. The previous draft's `mnx_provider_state` table
+and `source_data` column were removed before merge. Price history uses existing
+`oracle_prices` columns and provider health uses existing contract JSON. Do not
+apply `2026090801_mnx_feeds.sql`. A development database that already applied the
+draft may retain its unused additive objects; removal is not a rollout dependency.
+All ordinary PERP schema prerequisites elsewhere in this runbook still apply.
+
+Deploy the API **before the scheduler**, then the web client: old API instances
+validate quotes with a strict schema and reject the new optional health field.
+Drain old API instances before enabling the updated scheduler. The scheduler
+uses the existing 2-second `update-oracle-feeds` job; no new job or database
+lease is registered. Rollback should stop the updated scheduler before rolling
+back the API. Do not roll back to code without provider-health enforcement while
+an MNX market has open positions; pause trading first.
+
+### Instruments and price policy
+
+| Feed suffix (`mnx-…-mark`) | MNX ID | Units            | Source maximum age |
+| -------------------------- | -----: | ---------------- | ------------------ |
+| anthropic                  |     11 | USD billions     | 5 minutes          |
+| openai                     |     12 | USD billions     | 5 minutes          |
+| deepseek                   |     15 | USD billions     | 5 minutes          |
+| moonshot                   |     21 | USD billions     | 5 minutes          |
+| h100                       |     19 | USD rental index | 75 minutes         |
+| asml                       |     14 | USD              | 5 minutes          |
+| crwv                       |      9 | USD              | 5 minutes          |
+| dram                       |     17 | USD              | 5 minutes          |
+| googl                      |     18 | USD              | 5 minutes          |
+| meta                       |     20 | USD              | 5 minutes          |
+| minimax                    |     27 | USD              | 5 minutes          |
+| mu                         |     22 | USD              | 5 minutes          |
+| sndk                       |     25 | USD              | 5 minutes          |
+| spcx                       |     10 | USD              | 5 minutes          |
+| tsm                        |     26 | USD              | 5 minutes          |
+| zai                        |     28 | USD              | 5 minutes          |
+
+The adapter's defined target is MNX's **mark**, not its oracle. MNX describes
+marks as a combination of internal-book components, with an oracle fallback
+for thin books. Valuation futures have no external valuation anchor and use an
+8-hour internal-book EMA for their venue oracle. A mark-versus-oracle clamp or
+divergence pause would redefine that target; this integration does neither.
+Prices and attribution explicitly identify the MNX derivative. MINIMAX/ZAI
+are USD marks for Hong Kong shares, already converted by the provider. H100
+is a rental index rather than the GPU purchase price. Existing NVDAx is unchanged.
+See [MNX oracle methodology](https://docs.mnx.fi/contracts/oracle-methodology),
+[market specifications](https://docs.mnx.fi/contracts/market-specs) and
+[API reference](https://docs.mnx.fi/openapi-public.json).
+
+Launch at the manifest's 3× recommendation (or lower if MNX's margin ceiling
+requires it), M25,000 per side, funding sensitivity 1 and a nominal annual
+funding cap of 1. Funding runs hourly for all sixteen. The normal 10bps web
+opening fee and API-effective `max(web, configured API)` fee apply; there is
+no fee waiver. Thinness and public marks still permit latency arbitrage even
+at a 2s tick, so retain the existing fee and exposure controls. Preflight warns
+above the recommendation. Creation rejects leverage above MNX's actual ceiling,
+without forcing operators to use the recommended maximum.
+
+One shared request per 2s means 30 requests/minute. No numeric REST quota was
+found in MNX's public API reference on 2026-09-09; this is a requested poll
+budget, not a claimed provider guarantee. Respect 429/Retry-After and watch the
+source-age and request-error logs during the unlisted soak. If 30/minute is not
+supported, obtain a supported transport or quota before public rollout.
+
+Read-only validation on 2026-09-09 accepted all sixteen live instruments and
+returned 767 completed hourly mark candles per instrument, spanning 31.9167
+days with a maximum one-hour gap between candle buckets. At that sample the
+fifteen non-H100 source ages were about 13–15 seconds; H100 was about 32 minutes.
+Twelve subsequent polls at 2-second intervals accepted all sixteen instruments;
+HTTP response times were 26–263ms with no request errors. These short samples
+do not establish worst-case source ages, overnight behavior or a guaranteed quota.
+The feed preflight independently requires at least 30 days and 720 stored points.
+
+### Execute the rollout
+
+Run from `backend/scripts`, with Firebase's active project and
+`NEXT_PUBLIC_FIREBASE_ENV` both set to the intended `DEV` or `PROD`. Scripts
+refuse mismatched environments. Do DEV end-to-end validation first, then repeat
+for PROD. Each script is read-only without `--apply`.
+
+```powershell
+npx.cmd ts-node backfill-mnx-oracle.ts
+npx.cmd ts-node backfill-mnx-oracle.ts --apply
+npx.cmd ts-node publish-mnx-now.ts
+npx.cmd ts-node publish-mnx-now.ts --apply
+npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=feeds
+npx.cmd ts-node create-mnx-perps.ts
+npx.cmd ts-node create-mnx-perps.ts --apply
+npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=unlisted --allow-warning=external-alert-policies
+```
+
+Backfill refuses any feed already backing an unresolved market, takes the
+same publication lock as the tick, and only inserts completed candles before
+the earliest existing price. It never calls the engine and has no force escape.
+Creation requires `MANIFOLD_API_KEY` belonging to the environment's official
+Manifold creator and sufficient backing (M800,000 for all sixteen). It prints
+exact request bodies and checks duplicates before applying; reruns skip existing
+markets. Do not run these commands until ready to perform their indicated writes.
+
+During the unlisted soak, verify opens/closes and balances, price pushes at the
+2s poll cadence, liquidation/ADL, an actual hourly funding event, frozen-source
+pause and same-mark recovery, restart recovery, and the alert drill. Confirm
+H100 and closed-session equities remain paused when their source validation
+fails. A market starts paused until its first successful atomic tick; history
+alone cannot make it executable. Observe API freshness and the client banner
+agreeing. Rendering and notifications must preserve `$…B` on valuations.
+
+After normal visibility changes, select the same cohort for the progressive
+and final public gates:
+
+```powershell
+npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=rollout --public-feed=mnx-anthropic-mark --acknowledge-latency-risk --allow-warning=external-alert-policies
+npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=public --acknowledge-latency-risk --allow-warning=external-alert-policies
+```
+
+No database writes, market creation, deployments or DEV/PROD trading drills
+were performed as part of the code revision. Those are rollout steps, separate
+from passing the code tests and live-provider read checks.
+
 ## Why oracle latency is still a launch decision
 
 PERPs currently open and close at the cached oracle price with no spread or

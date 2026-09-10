@@ -146,7 +146,7 @@ urgently need is a worse failure than any it would prevent.
 
 Partial closes are rate-limited per user (60/hour); full closes are **never**
 rate-limited, for the same reason. The limit exists because the 1% minimum is a
-fraction of the current *remainder*, so repeated 1% closes decay geometrically
+fraction of the current _remainder_, so repeated 1% closes decay geometrically
 rather than terminating: from an M$100 cost basis it takes ~917 of them to
 reach the dust floor, and more on a larger position.
 
@@ -530,6 +530,63 @@ design notes, and oracle-latency risks live in
 `backend/shared/src/perps/launch-manifest.ts`. Run
 `backend/scripts/perp-launch-preflight.ts` at each rollout phase; the operational
 sequence and rollback are in `perps-launch-runbook.md`.
+
+### MNX marks (2-second bulk adapter)
+
+`common/perps/mnx.ts` pins the sixteen reviewed instrument IDs, feed IDs,
+display units and bounds. `shared/mnx.ts` reads one shared `/v0/markets`
+snapshot per fast tick, with a 1.5s HTTP timeout, an in-flight guard and shared
+failure backoff. This is 30 requests/minute total, not per instrument. MNX's
+public API reference does not state a numeric REST quota; `Retry-After` is
+honored (seconds or HTTP date), and ordinary errors back off to at most 72s
+including jitter. Restarting the process clears local backoff.
+
+All feeds use `update-oracle-feeds`, `validateOraclePoint`, the per-feed
+`oracle-publish:<feedId>` lock, append-only `oracle_prices`, and
+`applyOraclePointToLivePerps`. HTTP happens before the transaction. Live `ts`
+is Manifold's observation time; `source_ts` retains MNX's mark timestamp.
+Unchanged marks get the normal half-staleness heartbeat. Raw e18 strings are
+converted through decimal placement and checked against the numeric field;
+raw responses are not a new database storage format. There is no MNX table,
+new column, migration, or separate scheduler job.
+
+Provider freezes, disabled/delisted or missing instruments, identity/units
+changes, corrupt marks, source regressions and stale sources fail closed.
+The source-age ceiling is 5 minutes, or 75 minutes for the hourly H100 index;
+H100 is still polled every 2s. These are conservative source policy limits,
+not measured maximum gaps. MNX's documented H100 liquidation freshness gate
+is 75 minutes. Hourly candles cannot establish live mark-timestamp cadence.
+
+`common/perps/oracle-health.ts` defines optional provider-neutral health in
+existing contract JSON. `getPerpOracleFreshness` adds its check-age (5 minutes)
+and source expiry to the ordinary cached-mark check. Contracts without health
+retain their previous behavior. `runOracleUpdate` writes successful health and
+price together under the contract lock, and returns that health for the single
+quote push. A duplicate mark can refresh health without replaying liquidation,
+ADL or funding. Only unavailability is applied separately, independently per
+contract, without changing its executable price. Monotonic `checkedAt` keeps a
+delayed success from clearing a newer freeze. Funding checks health under the
+same lock and resumes with one ordinary period, without catch-up charges.
+
+`publish-oracle-observation.ts` throttles provider failures to WARN once a
+minute per feed and ERROR under `[oracle-feeds]` once an hour after a sustained
+five-minute outage; changing error messages cannot defeat that throttle.
+Self-imposed contract-lock timeouts remain WARN. Ordinary tick lag escalation
+and stuck-feed monitoring still apply. Admin manual price writes are disabled
+for feeds requiring a provider observation.
+
+Use `publish-mnx-now.ts` to inspect readiness or publish immediately (`--apply`);
+a fresh process bypasses the scheduler's in-memory backoff. Backfill and creation
+scripts are dry-run-first and environment-checked in DEV and PROD. Creation
+uses the MNX manifest recommendations, the official creator and unlisted
+visibility. New markets start paused until their first atomic live tick.
+The 3× recommendation is advisory; creation permits lower leverage and enforces
+MNX's supported leverage as a ceiling. Provider margin changes never freeze an
+existing feed. MNX derivatives are the defined price target: valuation futures
+are quoted in USD billions and do not assert an externally verified company
+valuation; equity marks need not equal the underlying share or the venue oracle.
+See [the launch runbook](../../../../perps-launch-runbook.md#mnx-rollout-dev-and-prod)
+for the cohort, sources, deployment order and environment validation.
 
 ## Scheduler
 

@@ -1,12 +1,10 @@
-import { getMnxInstrument } from 'common/perps/mnx'
-import { readMnxSnapshot } from 'shared/perps/publish-mnx'
 import { sortBy, uniq } from 'lodash'
 
 import { ENV } from 'common/envs/constants'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed, ORACLE_FEEDS } from 'shared/oracle-feeds'
 import {
-  PERP_LAUNCH_MARKETS,
+  ALL_PERP_LAUNCH_MARKETS,
   getPerpLaunchCreatorId,
 } from 'shared/perps/launch-manifest'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -18,7 +16,6 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
 ) => {
   throwErrorIfNotAdmin(auth.uid)
   const pg = createSupabaseDirectClient()
-  const mnx = await readMnxSnapshot(pg)
   const rows = await pg.manyOrNone<{ feed_id: string }>(
     `select distinct feed_id from oracle_prices order by feed_id asc`
   )
@@ -34,12 +31,11 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
   )
   return feedIds.map((id) => {
     const feed = getOracleFeed(id)
-    const launch = PERP_LAUNCH_MARKETS.find((market) => market.feedId === id)
+    const launch = ALL_PERP_LAUNCH_MARKETS.find(
+      (market) => market.feedId === id
+    )
     return {
       id,
-      ...(getMnxInstrument(id)
-        ? { providerHealth: mnx?.feeds[id]?.health ?? null }
-        : {}),
       updatePeriodMs: feed?.updatePeriodMs ?? null,
       marketCreationEnabled: feed?.marketCreationEnabled ?? false,
       description: feed?.description ?? null,
@@ -47,8 +43,7 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
       launchRecommendation: launch
         ? {
             question: launch.question,
-            maxLeverage:
-              mnx?.feeds[id]?.maxLeverage ?? launch.recommended.maxLeverage,
+            maxLeverage: launch.recommended.maxLeverage,
             annualMaxFundingRate: launch.recommended.annualMaxFundingRate,
             fundingSensitivity: launch.recommended.fundingSensitivity,
             maxOraclePriceAgeMs: launch.recommended.maxOraclePriceAgeMs,

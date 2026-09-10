@@ -1,4 +1,4 @@
-import type { OracleFeedHealth } from './perps/mnx'
+import type { OracleFeedHealth } from './perps/oracle-health'
 import { JSONContent } from '@tiptap/core'
 import type { OgCardProps } from './contract-seo'
 import { getDisplayProbability } from 'common/calculate'

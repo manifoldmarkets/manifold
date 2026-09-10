@@ -1,4 +1,3 @@
-import type { OracleFeedHealth } from '../perps/mnx'
 import { PerpSuggestion } from '../perps/suggestion'
 import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
@@ -1382,7 +1381,6 @@ export const API = (_apiTypeCheck = {
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
-      providerHealth?: OracleFeedHealth | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string

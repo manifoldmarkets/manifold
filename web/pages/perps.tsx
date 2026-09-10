@@ -1,4 +1,4 @@
-import { MNX_INSTRUMENTS, getMnxInstrument } from 'common/perps/mnx'
+import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -22,7 +22,6 @@ import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   formatCountdown,
   formatPerpClosePercent,
-  formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -147,26 +146,12 @@ const tickerOf = (c: PerpContract) =>
   FEED_TICKERS[c.oracleFeedId ?? ''] ??
   (c.oracleFeedId ?? c.slug).split('-')[0].toUpperCase().slice(0, 6)
 
-const PERCENT_FEEDS = new Set([
-  'trump-approval-rating',
-  'votehub-generic-ballot-2026',
-  'vance-favorability',
-  'openrouter-open-weight-share',
-  'openrouter-anthropic-share',
-  'openrouter-chinese-lab-share',
-])
-
 const displayPrice = (c: PerpContract) => {
   const price = Number(
     c.isResolved ? c.resolvedOraclePrice ?? c.oraclePrice : c.oraclePrice
   )
   if (!Number.isFinite(price)) return '—'
-  if (getMnxInstrument(c.oracleFeedId))
-    return formatOraclePrice(c.oracleFeedId, price, inferPriceDecimals([price]))
-  const feedId = c.oracleFeedId ?? ''
-  const prefix = feedId.endsWith('-usd') ? '$' : ''
-  const suffix = PERCENT_FEEDS.has(feedId) ? '%' : ''
-  return prefix + formatPrice(price, inferPriceDecimals([price])) + suffix
+  return formatOraclePrice(c.oracleFeedId, price, inferPriceDecimals([price]))
 }
 
 // Human label for a topic slug: strip the '-default' suffix of catch-all

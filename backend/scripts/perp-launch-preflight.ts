@@ -1,5 +1,8 @@
-import { getMnxInstrument, MNX_INSTRUMENTS } from 'common/perps/mnx'
-import { readMnxSnapshot, requireMnxReady } from 'shared/perps/publish-mnx'
+import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
+import {
+  MNX_LAUNCH_MARKETS,
+  ALL_PERP_LAUNCH_MARKETS,
+} from 'shared/perps/launch-manifest'
 import { PerpContract } from 'common/contract'
 import {
   assertPerpFundingConfig,
@@ -85,9 +88,7 @@ const toWarningKey = (name: string) =>
 const cohort = process.argv.find((arg) => arg.startsWith('--cohort='))?.slice(9)
 if (cohort && cohort !== 'mnx') throw new Error('Unknown launch cohort')
 const selectedLaunchMarkets =
-  cohort === 'mnx'
-    ? PERP_LAUNCH_MARKETS.filter((m) => getMnxInstrument(m.feedId))
-    : PERP_LAUNCH_MARKETS
+  cohort === 'mnx' ? MNX_LAUNCH_MARKETS : PERP_LAUNCH_MARKETS
 const manifestFeedIds = selectedLaunchMarkets.map((market) => market.feedId)
 const unknownPublicFeedIds = expectedPublicFeedIds.filter(
   (feedId) => !manifestFeedIds.includes(feedId)
@@ -177,7 +178,6 @@ if (require.main === module)
 
     const schemaChecks = [
       ['table oracle_prices', 'public.oracle_prices'],
-      ['table MNX provider state', 'public.mnx_provider_state'],
       ['table contract_perp_positions', 'public.contract_perp_positions'],
       ['table contract_perp_events', 'public.contract_perp_events'],
       [
@@ -378,25 +378,26 @@ if (require.main === module)
       }
     })
 
-    await inspect('MNX provider readiness', async () => {
-      const mnx = await readMnxSnapshot(pg)
-      for (const spec of MNX_INSTRUMENTS) {
-        try {
-          const ready = requireMnxReady(mnx, spec.feedId)
-          report(
-            'PASS',
-            `MNX ${spec.symbol}`,
-            `live mark ${ready.point?.price}; launch leverage ${ready.maxLeverage}×`
-          )
-        } catch (error) {
-          report('FAIL', `MNX ${spec.symbol}`, String(error))
+    if (cohort === 'mnx')
+      await inspect('MNX provider readiness', async () => {
+        const mnx = await fetchMnxSnapshot()
+        for (const market of selectedLaunchMarkets) {
+          try {
+            const ready = requireMnxReady(mnx, market.feedId)
+            report(
+              'PASS',
+              `MNX ${market.feedId}`,
+              `live mark ${ready.point?.price}; launch leverage ${ready.maxLeverage}×`
+            )
+          } catch (error) {
+            report('FAIL', `MNX ${market.feedId}`, String(error))
+          }
         }
-      }
-    })
+      })
 
     const feedSnapshots = new Map<string, FeedSnapshot>()
     await inspect('oracle feeds', async () => {
-      const feedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+      const feedIds = selectedLaunchMarkets.map((market) => market.feedId)
       const rows = await pg.manyOrNone<{
         feed_id: string
         latest_ts: string
@@ -564,12 +565,25 @@ if (require.main === module)
         `select data, token from contracts
          where mechanism = 'perp' and resolution_time is null`
       )
-      const contracts = rows.map((row) => row.data)
+      const selectedIds = new Set(
+        selectedLaunchMarkets.map((market) => market.feedId)
+      )
+      // Inspect the chosen rollout cohort; still flag wholly unknown feeds.
+      const knownIds = new Set(
+        ALL_PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+      )
+      const contracts = rows
+        .map((row) => row.data)
+        .filter(
+          (contract) =>
+            selectedIds.has(contract.oracleFeedId) ||
+            !knownIds.has(contract.oracleFeedId)
+        )
       const tokenByContractId = new Map(
         rows.map((row) => [row.data.id, row.token])
       )
       const launchIds = new Set(
-        PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+        selectedLaunchMarkets.map((market) => market.feedId)
       )
       const excludedIds = new Set<string>(PERP_LAUNCH_EXCLUDED_FEED_IDS)
 
@@ -583,7 +597,7 @@ if (require.main === module)
             : `native token is ${nativeToken ?? 'missing'}; PERPs must use MANA`
         )
         const feed = getOracleFeed(contract.oracleFeedId)
-        const definition = PERP_LAUNCH_MARKETS.find(
+        const definition = selectedLaunchMarkets.find(
           (market) => market.feedId === contract.oracleFeedId
         )
         if (excludedIds.has(contract.oracleFeedId)) {
@@ -1077,8 +1091,8 @@ if (require.main === module)
     if (phase === 'public' || phase === 'rollout') {
       const exposedDefinitions =
         phase === 'public'
-          ? PERP_LAUNCH_MARKETS
-          : PERP_LAUNCH_MARKETS.filter((definition) =>
+          ? selectedLaunchMarkets
+          : selectedLaunchMarkets.filter((definition) =>
               expectedPublicFeedIds.includes(definition.feedId)
             )
       for (const definition of exposedDefinitions) {

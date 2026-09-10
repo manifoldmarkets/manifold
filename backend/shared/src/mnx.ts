@@ -4,9 +4,13 @@ import {
   MNX_INSTRUMENTS,
   MNX_POLL_MS,
   MnxInstrument,
-  OracleFeedHealth,
 } from 'common/perps/mnx'
-import { OraclePoint } from 'common/perps/oracle'
+import { OracleFeedHealth } from 'common/perps/oracle-health'
+import {
+  MAX_ORACLE_FUTURE_SKEW_MS,
+  getPerpOracleFreshness,
+  OraclePoint,
+} from 'common/perps/oracle'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 const rawPrice = z.string().regex(/^\d{1,80}$/)
@@ -19,12 +23,10 @@ const marketSchema = z
     price_display: z.string(),
     mark_price: z.number().finite().positive(),
     mark_price_e18_raw: rawPrice,
-    oracle_price: z.number().finite().nullish(),
-    oracle_price_e18_raw: rawPrice.nullish(),
     mark_price_timestamp: z.string(),
     oracle_frozen: z.boolean(),
     trading_enabled: z.boolean(),
-    initial_margin_ratio_e18_raw: rawPrice,
+    initial_margin_ratio_e18_raw: z.unknown(),
     delisting: z.unknown().optional(),
   })
   .passthrough()
@@ -34,7 +36,9 @@ export type MnxFeedSnapshot = {
   marketId?: number
   health: OracleFeedHealth
   point?: OraclePoint
+  supportedLeverage?: number
   maxLeverage?: number
+  markPriceRaw?: string
 }
 export type MnxSnapshot = {
   fetchedAt: number
@@ -50,17 +54,18 @@ export const mnxRawToNumber = (raw: string): number => {
   return Number(`${padded.slice(0, -18)}.${padded.slice(-18)}`)
 }
 
-export const mnxLaunchLeverage = (marginRaw: string): number => {
+export const mnxSupportedLeverage = (marginRaw: string): number => {
   const margin = BigInt(rawPrice.parse(marginRaw))
   if (margin <= BigInt(0) || margin > BigInt(10) ** BigInt(18))
     throw new Error('Invalid MNX initial margin ratio')
   // Integer leverage supported by the initial margin requirement. Providers
   // encode 1/3 as 333333333333333333, which still floors to exactly 3.
   const supported = Number(BigInt(10) ** BigInt(18) / margin)
-  const leverage = Math.max(10, supported)
-  if (leverage > 100) throw new Error('MNX leverage exceeds Manifold maximum')
-  return leverage
+  return Math.min(100, supported)
 }
+
+export const mnxLaunchLeverage = (marginRaw: string) =>
+  Math.min(3, mnxSupportedLeverage(marginRaw))
 
 export const parseMnxSnapshot = (
   payload: unknown,
@@ -89,11 +94,12 @@ export const parseMnxSnapshot = (
       )
         throw new Error('Duplicate MNX market ID')
       if (
+        market.market_id !== spec.marketId ||
         market.slug !== spec.slug ||
         market.type !== spec.type ||
         market.price_display !== spec.priceDisplay
       )
-        throw new Error('MNX instrument type, slug, or units changed')
+        throw new Error('MNX instrument identity, type, slug, or units changed')
       if (prior?.marketId != null && prior.marketId !== market.market_id)
         throw new Error('MNX market identity changed')
       // Bind identity even when an otherwise well-formed market is frozen.
@@ -105,7 +111,7 @@ export const parseMnxSnapshot = (
       if (
         !Number.isFinite(ts) ||
         ts <= 0 ||
-        ts > fetchedAt + MINUTE_MS ||
+        ts > fetchedAt + MAX_ORACLE_FUTURE_SKEW_MS ||
         fetchedAt - ts > spec.maxAgeMs
       )
         throw new Error('MNX source timestamp is missing, invalid, or stale')
@@ -119,40 +125,37 @@ export const parseMnxSnapshot = (
       // The API's numeric convenience fields are rounded to eight decimals.
       if (Math.abs(price - market.mark_price) > Math.max(1e-8, price * 1e-12))
         throw new Error('MNX numeric and exact mark prices disagree')
-      if (prior?.point && ts < prior.point.ts)
+      if (prior?.point && ts < prior.point.sourceTs!)
         throw new Error('MNX source timestamp regressed')
       if (
         prior?.point &&
-        ts === prior.point.ts &&
+        ts === prior.point.sourceTs &&
         (price !== prior.point.price ||
-          prior.point.sourceData?.markPriceRaw !== market.mark_price_e18_raw)
+          prior.markPriceRaw !== market.mark_price_e18_raw)
       )
         throw new Error('MNX price conflicts at an immutable timestamp')
-      const point: OraclePoint = {
-        ts,
-        sourceTs: ts,
-        price,
-        sourceData: {
-          provider: 'mnx',
-          kind: 'live',
-          marketId: market.market_id,
-          symbol: market.symbol,
-          priceDisplay: market.price_display,
-          markPriceRaw: market.mark_price_e18_raw,
-          oraclePriceRaw: market.oracle_price_e18_raw ?? null,
-          oraclePrice: market.oracle_price ?? null,
-          fetchedAt,
-        },
+      const point: OraclePoint = { ts: fetchedAt, sourceTs: ts, price }
+      // Margin configuration affects new launches only, never an existing feed.
+      let supportedLeverage: number | undefined
+      let maxLeverage: number | undefined
+      try {
+        supportedLeverage = mnxSupportedLeverage(
+          String(market.initial_margin_ratio_e18_raw)
+        )
+        maxLeverage = Math.min(3, supportedLeverage)
+      } catch {
+        /* creation refuses unsupported provider margin metadata */
       }
       feeds[spec.feedId] = {
         ...identity,
         point,
-        maxLeverage: mnxLaunchLeverage(market.initial_margin_ratio_e18_raw),
+        maxLeverage,
+        supportedLeverage,
+        markPriceRaw: market.mark_price_e18_raw,
         health: {
           checkedAt: fetchedAt,
           status: 'available',
-          priceTime: ts,
-          price,
+          expiresAt: Math.min(fetchedAt + 5 * MINUTE_MS, ts + spec.maxAgeMs),
         },
       }
     } catch (error) {
@@ -185,8 +188,11 @@ export class MnxHttpError extends Error {
 
 export const fetchMnxMarkets = async (): Promise<unknown> => {
   const response = await fetch(`${MNX_API_URL}/markets`, {
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(10_000),
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'Manifold-oracle/1.0 (+https://manifold.markets/perps)',
+    },
+    signal: AbortSignal.timeout(1_500),
   })
   if (!response.ok) {
     await response.arrayBuffer()
@@ -201,14 +207,12 @@ export const mnxRetryDelay = (
   now: number,
   random = Math.random()
 ) => {
-  const retryable =
-    !(error instanceof MnxHttpError) ||
-    error.status === 429 ||
-    error.status >= 500
-  const backoff = retryable
-    ? Math.min(30 * MINUTE_MS, MNX_POLL_MS * 2 ** Math.min(failures - 1, 5)) *
-      (1 + random * 0.2)
-    : HOUR_MS
+  const backoff =
+    Math.min(
+      MINUTE_MS,
+      MNX_POLL_MS * 2 ** Math.min(Math.max(0, failures - 1), 5)
+    ) *
+    (1 + random * 0.2)
   const header = error instanceof MnxHttpError ? error.retryAfter : null
   const seconds =
     header != null && /^\d+(\.\d+)?$/.test(header.trim()) ? Number(header) : NaN
@@ -249,16 +253,70 @@ export const parseMnxCandles = (
         ts,
         sourceTs: candle.time * 1000,
         price: candle.close,
-        sourceData: {
-          provider: 'mnx',
-          kind: 'candle',
-          marketId,
-          symbol: spec.symbol,
-          priceDisplay: spec.priceDisplay,
-          candleTime: candle.time,
-          interval: '1h',
-        },
       },
     ]
   })
+}
+
+/** Shared request per tick; keep failures shared too so 16 feeds do not each
+ * retry an outage. Restarting polls immediately. Retry-After always wins. */
+export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
+  let cached: Promise<MnxSnapshot> | undefined
+  let previous: MnxSnapshot | undefined
+  let startedAt = 0
+  let inFlight = false
+  let retryAt = 0
+  let failures = 0
+  return () => {
+    const now = Date.now()
+    if (
+      cached &&
+      (inFlight || now - startedAt < MNX_POLL_MS / 2 || now < retryAt)
+    )
+      return cached
+    startedAt = now
+    inFlight = true
+    cached = fetchMarkets()
+      .then((payload) => {
+        previous = parseMnxSnapshot(payload, Date.now(), previous)
+        failures = 0
+        retryAt = 0
+        return previous
+      })
+      .catch((error) => {
+        retryAt = Date.now() + mnxRetryDelay(error, ++failures, Date.now())
+        throw error
+      })
+      .finally(() => {
+        inFlight = false
+      })
+    return cached
+  }
+}
+
+export const fetchMnxSnapshot = createMnxSnapshotFetcher()
+export const fetchMnxObservation = async (feedId: string) =>
+  (await fetchMnxSnapshot()).feeds[feedId]
+
+export const requireMnxReady = (
+  snapshot: MnxSnapshot,
+  feedId: string,
+  now = Date.now()
+) => {
+  const feed = snapshot.feeds[feedId]
+  if (!feed?.point || !feed.maxLeverage || feed.maxLeverage <= 1)
+    throw new Error('MNX has no validated live observation or launch margin')
+  const freshness = getPerpOracleFreshness(
+    {
+      oracleFeedId: feedId,
+      oraclePrice: feed.point.price,
+      oraclePriceTime: feed.point.ts,
+      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      oracleFeedHealth: feed.health,
+    },
+    now
+  )
+  if (freshness.status !== 'fresh')
+    throw new Error(freshness.reason ?? 'MNX observation is stale')
+  return feed
 }

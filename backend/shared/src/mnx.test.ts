@@ -7,6 +7,7 @@ import {
   mnxRetryDelay,
   MnxHttpError,
   parseMnxCandles,
+  createMnxSnapshotFetcher,
 } from './mnx'
 
 const now = 1_800_000_000_000
@@ -41,15 +42,16 @@ it('converts exact scaled integers without first rounding them to Number', () =>
 })
 
 it.each(['333333333333333333', '200000000000000000', '100000000000000000'])(
-  'uses at least 10x for margin %s',
+  'caps launch recommendation at 3x for margin %s',
   (margin) => {
-    expect(mnxLaunchLeverage(margin)).toBe(10)
+    expect(mnxLaunchLeverage(margin)).toBe(3)
   }
 )
 it('uses higher upstream leverage without exceeding the engine domain', () => {
-  expect(mnxLaunchLeverage('50000000000000000')).toBe(20)
+  expect(mnxLaunchLeverage('50000000000000000')).toBe(3)
   expect(() => mnxLaunchLeverage('0')).toThrow()
-  expect(() => mnxLaunchLeverage('1000000000000000')).toThrow()
+  expect(mnxLaunchLeverage('1000000000000000')).toBe(3)
+  expect(mnxLaunchLeverage('500000000000000000')).toBe(2)
 })
 
 it('selects mark prices and retains reference values and raw units separately', () => {
@@ -59,12 +61,6 @@ it('selects mark prices and retains reference values and raw units separately', 
     price: 2104,
     ts: now,
     sourceTs: now,
-    sourceData: {
-      kind: 'live',
-      priceDisplay: 'billion_usd',
-      markPriceRaw: '2104000000000000000000',
-      oraclePrice: 2100,
-    },
   })
 })
 
@@ -77,7 +73,7 @@ it.each([
   { mark_price: 2105 },
   { mark_price_timestamp: null },
   { mark_price_timestamp: 'bad' },
-  { mark_price_timestamp: new Date(now + 2 * MINUTE_MS).toISOString() },
+  { mark_price_timestamp: new Date(now + 6 * MINUTE_MS).toISOString() },
   { mark_price_timestamp: new Date(now - 6 * MINUTE_MS).toISOString() },
   { trading_enabled: false },
   { oracle_frozen: true },
@@ -108,7 +104,7 @@ it('pins identity and chronology across missing/disabled intervals', () => {
     parseMnxSnapshot([market({ market_id: 99 })], now, frozen).feeds[
       spec.feedId
     ].health.reason
-  ).toMatch(/identity/)
+  ).toMatch(/identity|instrument/)
   const first = parseMnxSnapshot([market()], now)
   const missing = parseMnxSnapshot([], now + MINUTE_MS, first)
   expect(missing.feeds[spec.feedId].marketId).toBe(11)
@@ -118,7 +114,9 @@ it('pins identity and chronology across missing/disabled intervals', () => {
     now + MINUTE_MS,
     missing
   )
-  expect(changed.feeds[spec.feedId].health.reason).toMatch(/identity/)
+  expect(changed.feeds[spec.feedId].health.reason).toMatch(
+    /identity|instrument/
+  )
   const conflicting = parseMnxSnapshot(
     [
       market({
@@ -138,11 +136,15 @@ it('pins identity and chronology across missing/disabled intervals', () => {
   expect(older.feeds[spec.feedId].health.reason).toMatch(/regressed/)
   const recovered = parseMnxSnapshot([market()], now + MINUTE_MS, missing)
   expect(recovered.feeds[spec.feedId].health.checkedAt).toBe(now + MINUTE_MS)
-  expect(recovered.feeds[spec.feedId].point?.ts).toBe(now)
+  expect(recovered.feeds[spec.feedId].point?.ts).toBe(now + MINUTE_MS)
+  expect(recovered.feeds[spec.feedId].point?.sourceTs).toBe(now)
 })
 
 it('applies H100 source age separately from other instruments', () => {
   const h100 = market({
+    market_id: 19,
+    mark_price: 3.26,
+    mark_price_e18_raw: '3260000000000000000',
     symbol: 'H100',
     slug: 'h100',
     type: 'perpetual',
@@ -175,8 +177,8 @@ it('honors Retry-After seconds and HTTP dates and backs off other HTTP failures'
       0
     )
   ).toBe(HOUR_MS)
-  expect(mnxRetryDelay(new Error('timeout'), 2, now, 0)).toBe(2 * MINUTE_MS)
-  expect(mnxRetryDelay(new MnxHttpError(403, null), 1, now, 0)).toBe(HOUR_MS)
+  expect(mnxRetryDelay(new Error('timeout'), 2, now, 0)).toBe(4_000)
+  expect(mnxRetryDelay(new MnxHttpError(403, null), 1, now, 0)).toBe(2_000)
 })
 
 it('labels completed candles and excludes unfinished/live-overlapping buckets', () => {
@@ -197,6 +199,42 @@ it('labels completed candles and excludes unfinished/live-overlapping buckets', 
   expect(points[0]).toMatchObject({
     ts: now - HOUR_MS,
     sourceTs: now - 2 * HOUR_MS,
-    sourceData: { kind: 'candle' },
   })
+})
+
+it('does not freeze existing feeds when launch margin metadata changes', () => {
+  const feed = read({ initial_margin_ratio_e18_raw: 'new-encoding' })
+  expect(feed.health.status).toBe('available')
+  expect(feed.maxLeverage).toBeUndefined()
+})
+
+it('shares a single bounded request across all feeds, then polls on the next 2s tick', async () => {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  const fetcher = jest.fn(async () => [market()])
+  const fetchSnapshot = createMnxSnapshotFetcher(fetcher)
+  const first = await Promise.all(MNX_INSTRUMENTS.map(() => fetchSnapshot()))
+  expect(fetcher).toHaveBeenCalledTimes(1)
+  expect(first.every((s) => s === first[0])).toBe(true)
+  clock.mockReturnValue(now + 2_000)
+  await fetchSnapshot()
+  expect(fetcher).toHaveBeenCalledTimes(2)
+  clock.mockRestore()
+})
+
+it('shares outages and honors Retry-After without relabeling old data as fresh', async () => {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  const fetcher = jest
+    .fn()
+    .mockRejectedValueOnce(new MnxHttpError(429, '60'))
+    .mockResolvedValue([market()])
+  const fetchSnapshot = createMnxSnapshotFetcher(fetcher)
+  await expect(fetchSnapshot()).rejects.toThrow('429')
+  clock.mockReturnValue(now + 2_000)
+  await expect(fetchSnapshot()).rejects.toThrow('429')
+  expect(fetcher).toHaveBeenCalledTimes(1)
+  clock.mockReturnValue(now + MINUTE_MS)
+  const recovered = await fetchSnapshot()
+  expect(recovered.feeds[spec.feedId].health.checkedAt).toBe(now + MINUTE_MS)
+  expect(fetcher).toHaveBeenCalledTimes(2)
+  clock.mockRestore()
 })

@@ -8,8 +8,8 @@
 /**
  * Opt-in time bounds for an oracle update.
  *
- * Frequent collectors (the fast tick and minute MNX poll) pass these. Other
- * callers of runOracleUpdate wait however long it takes to apply:
+ * ONLY the fast tick should pass these. Every other caller of runOracleUpdate
+ * wants the opposite trade-off — wait however long it takes, but apply:
  *
  *   - update-perps (hourly) treats a throw as "skip this contract". Funding is
  *     charged per event rather than accrued, so a skipped run permanently
@@ -18,10 +18,9 @@
  *     write path would otherwise persist a point, report success, and leave
  *     the executable mark behind for a whole publication interval.
  *
- * For these frequent collectors giving up beats waiting: another
+ * The fast tick is the one caller for which giving up beats waiting: another
  * tick with a fresher price is already due, so a late apply is worse than
- * none. MNX also retries its durable snapshot on the next poll. Anywhere
- * else, a late apply is the only apply.
+ * none. Anywhere else, a late apply is the only apply.
  */
 export type OracleUpdateBounds = {
   /** Max wait for the contract lock before abandoning this update. */

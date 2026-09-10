@@ -1,9 +1,7 @@
-import { getMnxTradingPauseReason, OracleFeedHealth } from './mnx'
+import type { OracleFeedHealth } from './oracle-health'
 import { MINUTE_MS } from '../util/time'
 
 export type OraclePoint = {
-  /** Immutable provider provenance; omitted by existing feeds. */
-  sourceData?: Record<string, unknown>
   /**
    * Feed-defined effective timestamp used to order source observations. The
    * database separately records when Manifold first published the immutable
@@ -330,7 +328,19 @@ export const getPerpOracleFreshness = (
     contract.maxOraclePriceAgeMs,
     now
   )
-  const reason = getMnxTradingPauseReason(contract, now)
+  const health = contract.oracleFeedHealth
+  const reason = !health
+    ? null
+    : getOracleFreshness(health.checkedAt, 5 * MINUTE_MS, now).status !==
+      'fresh'
+    ? 'Oracle provider checks are unavailable or more than five minutes old'
+    : health.status !== 'available'
+    ? health.reason ?? 'Oracle provider unavailable'
+    : !Number.isFinite(health.expiresAt) ||
+      health.expiresAt! < health.checkedAt ||
+      now > health.expiresAt!
+    ? 'Oracle source price is stale'
+    : null
   return reason
     ? { status: 'stale', ageMs: freshness.ageMs, reason }
     : freshness

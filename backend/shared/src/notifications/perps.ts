@@ -1,6 +1,7 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { PerpContract } from 'common/contract'
 import { Notification } from 'common/notification'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { getPrivateUser } from 'shared/utils'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { MANIFOLD_AVATAR_URL } from 'common/user'
@@ -98,10 +99,12 @@ export const createPerpLiquidationNotification = async (
     contract.question
   } lost its ${formatMoney(
     data.originalCostBasis
-  )} margin. The price hit ${formatPrice(
+  )} margin. The price hit ${formatOraclePrice(
+    contract.oracleFeedId,
     data.oraclePrice,
     decimals
-  )}, past your liquidation price of ${formatPrice(
+  )}, past your liquidation price of ${formatOraclePrice(
+    contract.oracleFeedId,
     data.liquidationPrice,
     decimals
   )}.`

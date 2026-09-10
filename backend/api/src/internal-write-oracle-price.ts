@@ -36,6 +36,11 @@ export const internalWriteOraclePrice: APIHandler<
 
   const feed = getOracleFeed(feedId)
   if (!feed) throw new APIError(400, `Unknown oracle feed "${feedId}"`)
+  if (feed.fetchObservation)
+    throw new APIError(
+      400,
+      'This feed requires a live provider observation; use its publisher'
+    )
   if (getOracleAttribution(feedId)?.showAsOf && sourceTs == null)
     throw new APIError(
       400,

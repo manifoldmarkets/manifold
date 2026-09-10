@@ -1,3 +1,4 @@
+import { formatOraclePrice } from './perps/oracle-display'
 import { Contract, MultiContract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import { getAnswerProbability, getDisplayProbability } from './calculate'
@@ -7,7 +8,7 @@ import { getFormattedNumberExpectedValue } from 'common/number'
 import { Answer, sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
-import { formatPrice, inferPriceDecimals } from './perps/format'
+import { inferPriceDecimals } from './perps/format'
 
 // Bump when the card layout or the encoding of its params changes. The image
 // URL is cached for a year, and the edge route decodes `points` by version.
@@ -182,7 +183,11 @@ function getFormattedPerpPrice(contract: Contract) {
       : contract.oraclePrice
   if (!Number.isFinite(price)) return undefined
 
-  return formatPrice(price, inferPriceDecimals([price]))
+  return formatOraclePrice(
+    contract.oracleFeedId,
+    price,
+    inferPriceDecimals([price])
+  )
 }
 
 function getResolvedValue(contract: Contract) {
