@@ -33,7 +33,10 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'vance-favorability': 'VANCE',
   'crypto-fear-greed': 'FEAR',
   'openrouter-open-weight-share': 'OPENW',
-  'openrouter-anthropic-share': 'ANTH',
+  // The product, not the company: this is the share of OpenRouter tokens
+  // going to Claude models. ANTH is reserved for the Anthropic pre-IPO price
+  // ticker.
+  'openrouter-anthropic-share': 'CLAUDE',
   'openrouter-chinese-lab-share': 'CNLAB',
   'spyx-usd': 'SPYx',
   'qqqx-usd': 'QQQx',
