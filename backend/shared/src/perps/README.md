@@ -146,7 +146,7 @@ urgently need is a worse failure than any it would prevent.
 
 Partial closes are rate-limited per user (60/hour); full closes are **never**
 rate-limited, for the same reason. The limit exists because the 1% minimum is a
-fraction of the current *remainder*, so repeated 1% closes decay geometrically
+fraction of the current _remainder_, so repeated 1% closes decay geometrically
 rather than terminating: from an M$100 cost basis it takes ~917 of them to
 reach the dust floor, and more on a larger position.
 
@@ -442,6 +442,30 @@ rows exist.** Clear them first (top up the deficit side, let a tick apply, or
 clear the field directly) or roll the scheduler back with it.
 
 ## Oracle feeds
+
+### Recovery from a stuck poll
+
+Each oracle feed owns one polling slot. After 60 seconds, the dispatcher logs
+the step that stalled and releases that slot for the next scheduled attempt.
+The regular scheduler heartbeat only proves dispatch is running; the
+`[oracle-feeds]` deadline log is the signal for an individual hung feed.
+
+An abandoned poll stays counted until its underlying work settles. Checkpoints
+stop it before another read, source fetch, price insert, or contract update.
+An oracle transaction already started finishes atomically, and a committed
+result still publishes its quote and notifications. Existing fetch timeouts
+and the shared Solana request are unchanged.
+
+There can be at most three abandoned polls per feed and twenty outstanding
+polls (active plus abandoned) in the process. At either limit, new attempts are
+refused and logged; late completion releases capacity. If unfinished work
+never settles, the affected feed still needs a scheduler restart. This bounds
+accumulation rather than claiming to cancel a database query already running.
+
+These controls apply to oracle polling and daily feed staleness probes.
+Hourly funding and the source-publishing jobs retain their existing behavior.
+
+### Registry
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence
 (`fast` | `daily`), sanity bounds, staleness threshold, and the required

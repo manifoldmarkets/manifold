@@ -68,6 +68,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { randomStringRegex } from 'common/util/random'
 import { UserBan } from 'common/user'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import { isExpectedPerpTradeError } from 'shared/perps/trade-errors'
 import {
   SupabaseDirectClient,
   SupabaseTransaction,
@@ -167,6 +168,15 @@ const runPerpTransaction = <T>(
   maxAttempts = PERP_TX_MAX_ATTEMPTS,
   options?: TransactionRetryOptions
 ): Promise<T> => runTransactionWithRetries(fn, maxAttempts, options)
+
+// A rejected trade is an expected user-visible outcome. Keep scheduled
+// operations and 5xx failures on the default ERROR path.
+const runTradeTransaction = <T>(
+  fn: (pgTrans: SupabaseTransaction) => Promise<T>
+): Promise<T> =>
+  runPerpTransaction(fn, PERP_TX_MAX_ATTEMPTS, {
+    isExpectedError: isExpectedPerpTradeError,
+  })
 
 const buildState = (
   contract: PerpContract,
@@ -529,7 +539,7 @@ export const openOrAddPosition = async (
   if (maxFee !== undefined && (!Number.isFinite(maxFee) || maxFee < 0))
     throw new APIError(400, 'maxFee must be a finite non-negative number')
 
-  return runPerpTransaction(async (pgTrans) => {
+  return runTradeTransaction(async (pgTrans) => {
     if (idempotencyKey) {
       const stored = await getIdempotentEvent(
         pgTrans,
@@ -1215,7 +1225,7 @@ export const closePosition = async (
       'Closing part of a position requires the expected position size'
     )
 
-  return runPerpTransaction(async (pgTrans) => {
+  return runTradeTransaction(async (pgTrans) => {
     if (idempotencyKey) {
       const stored = await getIdempotentEvent(
         pgTrans,
