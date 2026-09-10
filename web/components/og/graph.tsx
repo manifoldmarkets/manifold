@@ -1,4 +1,10 @@
-import { area, curveStepBefore, curveLinear, line } from 'd3-shape'
+import {
+  area,
+  curveStepBefore,
+  curveLinear,
+  curveMonotoneX,
+  line,
+} from 'd3-shape'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { Point } from 'common/edge/og'
 
@@ -143,6 +149,45 @@ export function getProbGraphDomain(data: Point[]): [number, number] {
   return [Math.max(lo, 0), hi]
 }
 
+// Samples across the strip the series is resampled to before drawing
+const GRAPH_SAMPLES = 100
+// Forward-looking window, in samples, that turns a one-bet jump into a short
+// ramp. On a 7.5:1 strip a jump would otherwise draw as a vertical wall.
+const GRAPH_SMOOTHING = 6
+
+/** Resamples the series onto an even time grid (linear interpolation), then
+ * smooths each sample with the average of the next few, so the final value
+ * stays exact and transitions start slightly before they happened */
+export function smoothSeries(
+  data: Point[],
+  samples = GRAPH_SAMPLES,
+  window = GRAPH_SMOOTHING
+): Point[] {
+  if (data.length < 2) return data
+  const x0 = data[0].x
+  const x1 = data[data.length - 1].x
+  if (x1 <= x0) return data
+  const xAt = (i: number) => x0 + ((x1 - x0) * i) / (samples - 1)
+
+  const grid: number[] = []
+  let j = 0
+  for (let i = 0; i < samples; i++) {
+    const x = xAt(i)
+    while (j < data.length - 2 && data[j + 1].x < x) j++
+    const a = data[j]
+    const b = data[j + 1]
+    const t = b.x === a.x ? 1 : (x - a.x) / (b.x - a.x)
+    grid.push(a.y + (b.y - a.y) * Math.min(Math.max(t, 0), 1))
+  }
+
+  return grid.map((_, i) => {
+    const end = Math.min(i + window, samples - 1)
+    let sum = 0
+    for (let k = i; k <= end; k++) sum += grid[k]
+    return { x: xAt(i), y: sum / (end - i + 1) }
+  })
+}
+
 export function ProbGraph(props: {
   data: Point[]
   height: number
@@ -152,22 +197,24 @@ export function ProbGraph(props: {
   /** Space at the bottom of the strip that the outcome row overlays */
   bottomInset?: number
 }) {
-  const {
-    data,
-    height,
-    color = '#14b866',
-    aspectRatio = 1,
-    bottomInset = 0,
-  } = props
+  const { height, color = '#14b866', aspectRatio = 1, bottomInset = 0 } = props
+  const data = smoothSeries(props.data)
   const w = height * aspectRatio
   const h = height
   const visibleRange = [data[0].x, data[data.length - 1].x]
-  const curve = curveLinear
-  const xScale = scaleTime(visibleRange, [0, w])
-  // Keep the line clear of the top edge and of the overlaid outcome row
-  const yScale = scaleLinear(getProbGraphDomain(data), [h - bottomInset - 2, 3])
+  // Rounds the corners of step changes without overshooting the data
+  const curve = curveMonotoneX
+  const endDotRadius = 4.5
+  const xScale = scaleTime(visibleRange, [0, w - endDotRadius - 1])
+  // Keep the line clear of the top edge and of the overlaid outcome row, with
+  // enough padding that a flat stretch never sits on either edge
+  const yScale = scaleLinear(getProbGraphDomain(data), [
+    h - bottomInset - endDotRadius - 2,
+    endDotRadius + 2,
+  ])
   const px = (p: Point) => xScale(p.x)
   const py1 = (p: Point) => yScale(p.y)
+  const last = data[data.length - 1]
   // const clipId = ':rnm:'
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -199,6 +246,16 @@ export function ProbGraph(props: {
           strokeWidth={3}
           fill="none"
           strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {/* Marks the current value, so a late jump reads as data, not a glitch */}
+        <circle
+          cx={px(last)}
+          cy={py1(last)}
+          r={endDotRadius}
+          fill={color}
+          stroke="#ffffff"
+          strokeWidth={2}
         />
       </g>
     </svg>
