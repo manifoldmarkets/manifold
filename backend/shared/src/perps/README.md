@@ -241,9 +241,12 @@ above is preserved. The position tracks its cumulative opening fees in
 `takerFeeCostBasis` (kept separate from margin so leverage/liquidation math
 is untouched), and every user-facing PnL number — the position card, close
 receipts, portfolio metrics, period metrics, and the trade panel's profit
-ladder (`getPerpPriceForUserFacingPnl` solves for the price at which that
-PnL reaches a target, so each tier is net of the fee and agrees with the
-card) — subtracts it: a fresh position starts at PnL = −fee. Admins tune
+ladder (`getPerpProfitScenarios`, via `getPerpPriceForUserFacingPnl`, solves
+for the price at which that PnL reaches each tier, so every tier is net of the
+fee and agrees with the card; the ladder is built on the row the trade RESULTS
+in, so on an add it covers the merged position — held margin and fees included,
+the only base the card can show — and drops any tier the row already exceeds
+at the mark) — subtracts it: a fresh position starts at PnL = −fee. Admins tune
 both knobs live per market via `update-perp-config` (base 0 disables the
 flat part, impact 0 the size part); contracts created before the fields
 existed default to base 10 / impact 0 at trade time.
