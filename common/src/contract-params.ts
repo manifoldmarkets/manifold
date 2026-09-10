@@ -5,7 +5,7 @@ import {
 } from 'common/calculate'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { Contract, ContractParams, MultiContract } from 'common/contract'
-import { getContractOGProps } from 'common/contract-seo'
+import { getContractOGProps, OG_CHART_MIN_BETS } from 'common/contract-seo'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import {
   getPinnedComments,
@@ -160,8 +160,12 @@ export async function getContractParams(
   const ogPoints = isMulti ? [] : binAvg(allBetPoints)
   const serializedPoints = ogPoints.map((p) => [p.x, p.y] as const)
   const pointsString = pointsToBase64(serializedPoints)
-  // The social image doesn't need full precision, and its URL should stay short
-  const ogPointsString = pointsToBase64Float32(serializedPoints)
+  // The social image doesn't need full precision, and its URL should stay
+  // short. Thin markets get no chart at all: it would carry no information.
+  const ogPointsString =
+    allBetPoints.length > OG_CHART_MIN_BETS
+      ? pointsToBase64Float32(serializedPoints)
+      : undefined
   // Built before answers are truncated below so big markets rank all of them
   const ogCardProps = removeUndefinedProps({
     ...getContractOGProps(contract),
