@@ -12,10 +12,10 @@ import {
 import { SEARCH_ANCHOR_CLOCK_SKEW_ERROR } from 'common/search-request-coordination'
 import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { convertContract } from 'common/supabase/contracts'
-import { orderBy } from 'lodash'
 import {
   getSearchQueryPagination,
   getSearchResultPage,
+  sortLikeSql,
 } from 'shared/helpers/search-pagination'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import {
@@ -26,10 +26,10 @@ import {
   basicSearchSQL,
   getForYouSQL,
   getSearchContractSQL,
+  getSearchSort,
   getSemanticSearchContractSQL,
   SearchTypes,
   shouldSuppressStaleSeenMarkets,
-  sortFields,
 } from 'shared/supabase/search-contracts'
 import {
   EMBEDDING_MODEL,
@@ -306,16 +306,18 @@ const search = async (
     const contractsWithStopwords = matchesByType['with-stopwords'] ?? []
     const contractDescriptionMatches = matchesByType.description ?? []
 
-    const contractsOfSimilarRelevance = orderBy(
+    // The tiers of similar relevance, merged in the database's own order so
+    // the page cut below is the page it fetched; answer matches count half.
+    const ordering = getSearchSort(sort)
+    const contractsOfSimilarRelevance = sortLikeSql(
       [
         ...contractsWithoutStopwords,
         ...contractsWithMatchingAnswers,
         ...contractPrefixMatches,
       ],
-      (c) =>
-        sortFields[sort].sortCallback(c.data) *
-        (c.searchType === 'answer' ? 0.5 : 1),
-      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+      ordering,
+      (match) => match.data,
+      (match) => (match.searchType === 'answer' ? 0.5 : 1)
     )
 
     const lexicalResults = getSearchResultPage(
@@ -325,11 +327,7 @@ const search = async (
         ...contractsOfSimilarRelevance, // next most relevant
         ...contractDescriptionMatches, // least obviously relevant
       ].map((c) => c.data),
-      {
-        ...props,
-        sortCallback: sortFields[sort].sortCallback,
-        order: sortFields[sort].order.includes('DESC') ? 'desc' : 'asc',
-      }
+      { ...props, sort, ordering }
     )
     if (!options.markSearchMatches) return lexicalResults
 
