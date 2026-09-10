@@ -241,9 +241,12 @@ above is preserved. The position tracks its cumulative opening fees in
 `takerFeeCostBasis` (kept separate from margin so leverage/liquidation math
 is untouched), and every user-facing PnL number — the position card, close
 receipts, portfolio metrics, period metrics, and the trade panel's profit
-ladder (`getPerpPriceForUserFacingPnl` solves for the price at which that
-PnL reaches a target, so each tier is net of the fee and agrees with the
-card) — subtracts it: a fresh position starts at PnL = −fee. Admins tune
+ladder (`getPerpProfitScenarios`, via `getPerpPriceForUserFacingPnl`, solves
+for the price at which that PnL reaches each tier, so every tier is net of the
+fee and agrees with the card; the ladder is built on the row the trade RESULTS
+in, so on an add it covers the merged position — held margin and fees included,
+the only base the card can show — and drops any tier the row already exceeds
+at the mark) — subtracts it: a fresh position starts at PnL = −fee. Admins tune
 both knobs live per market via `update-perp-config` (base 0 disables the
 flat part, impact 0 the size part); contracts created before the fields
 existed default to base 10 / impact 0 at trade time.
@@ -541,6 +544,18 @@ design notes, and oracle-latency risks live in
 `backend/shared/src/perps/launch-manifest.ts`. Run
 `backend/scripts/perp-launch-preflight.ts` at each rollout phase; the operational
 sequence and rollback are in `perps-launch-runbook.md`.
+
+**Tickers.** Every perp carries a `ticker` (`BTC`, `TRUMP`, `SPYx`): the
+badge in front of its title shows it in place of the word "Perpetual", the
+`/perps` hub labels rows with it, and search matches it (`data->>'ticker'`,
+which is why it is stored on the contract rather than only mapped in client
+code). The canonical assignment is `PERP_FEED_TICKERS` in
+`common/src/perps/ticker.ts`, keyed by feed id; `create-perp` stamps it and
+refuses another name for a feed listed there, the launch manifest requires an
+entry for every launch feed, and the preflight fails a launch market whose
+stored ticker disagrees. `backend/scripts/backfill-perp-tickers.ts` (dry-run
+by default, `--apply` to write) stamps markets created before the field
+existed.
 
 ### MNX marks (2-second bulk adapter)
 

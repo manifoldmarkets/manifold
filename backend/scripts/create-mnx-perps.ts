@@ -1,6 +1,7 @@
 import { getApiUrl } from 'common/api/utils'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { getPerpFeedTicker } from 'common/perps/ticker'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
 import { getLocalEnv } from 'shared/init-admin'
 import {
@@ -59,6 +60,7 @@ if (require.main === module)
         question: spec.question,
         description: `${spec.description}\n\nSource: ${spec.url}\nIf MNX ends this instrument, trading pauses pending administrative settlement; it will not automatically roll into a replacement.`,
         oracleFeedId: spec.feedId,
+        ticker: getPerpFeedTicker(spec.feedId),
         visibility: 'unlisted' as const,
         maxLeverage: Math.min(recommended.maxLeverage, ready.maxLeverage!),
         subsidyLong: recommended.subsidyLong,

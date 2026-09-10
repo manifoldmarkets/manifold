@@ -1905,9 +1905,13 @@ inside the `limit` cap.
 
 Create a perp market. Admin-only; documented for completeness. Takes the
 market question and description, an `oracleFeedId` from the registered feeds,
-and the risk parameters `maxLeverage`, `maxFundingRate`,
-`fundingSensitivity`, `maxOraclePriceAgeMs`, `subsidyLong`, and
-`subsidyShort`. Returns the created market as a `LiteMarket`.
+an optional `ticker` (the market's short identifier, e.g. `BTC`: one
+alphanumeric token of at most 8 characters, shown in place of the market type
+and matched by search; a feed that already has a canonical ticker accepts only
+that one, and it is the default when omitted), and the risk parameters
+`maxLeverage`, `maxFundingRate`, `fundingSensitivity`, `maxOraclePriceAgeMs`,
+`subsidyLong`, and `subsidyShort`. Returns the created market as a
+`LiteMarket`; perp markets carry their `ticker` there.
 
 ## Websockets
 

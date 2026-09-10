@@ -785,7 +785,10 @@ function BetsTable(props: {
                         )}
                       >
                         {(contract as Contract).outcomeType === 'PERP' && (
-                          <PerpMarketBadge className="mr-1 align-middle" />
+                          <PerpMarketBadge
+                            contract={contract as Contract}
+                            className="mr-1"
+                          />
                         )}
                         {contract.question}
                       </Link>

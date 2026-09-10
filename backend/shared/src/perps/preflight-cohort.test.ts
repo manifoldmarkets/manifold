@@ -22,7 +22,7 @@ it.each([
   ['default', []],
   ['mnx', ['--cohort=mnx']],
 ])(
-  'audits token and backing of both cohorts with %s selected',
+  'audits tickers, token and backing of both cohorts with %s selected',
   async (_label, options) => {
     process.argv = ['node', 'preflight', '--phase=feeds', ...options]
     let audit!: (pg: SupabaseDirectClient) => Promise<void>
@@ -76,6 +76,9 @@ it.each([
     )
     for (const contract of contracts) {
       expect(backing).toHaveBeenCalledWith(contract.id)
+      expect(log.error).toHaveBeenCalledWith(
+        expect.stringContaining(`market ${contract.slug} launch ticker`)
+      )
       expect(log.error).toHaveBeenCalledWith(
         expect.stringContaining(`market ${contract.slug} trading token`)
       )

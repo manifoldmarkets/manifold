@@ -90,7 +90,20 @@ Deploy the API **before the scheduler**, then the web client: old API instances
 validate quotes with a strict schema and reject the new optional health field.
 Drain old API instances before enabling the updated scheduler. The scheduler
 uses the existing 2-second `update-oracle-feeds` job; no new job or database
-lease is registered. Rollback should stop the updated scheduler before rolling
+lease is registered. In **both DEV and PROD**, deploy the `main` target first,
+then `perps`: `scheduler` must run `SCHEDULER_JOBS=main`, and `scheduler-perps`
+must run `SCHEDULER_JOBS=perps`. The deploy scripts reject `all`; it is only a
+local-development mode. The perps instance owns all MNX polling, provider-health
+updates, price application and hourly funding. Main must have none of those
+jobs. See [scheduler deployment](backend/scheduler/README.md#to-deploy).
+
+MNX uses the shared stored ticker system introduced in #4046. New markets
+receive their canonical ticker during creation; if any MNX markets predate
+that field, inspect `backfill-perp-tickers.ts` and explicitly apply it in the
+selected environment. This is an ordinary data repair, not an MNX schema
+migration. The preflight requires the stored ticker in either launch cohort.
+
+Rollback should stop the updated scheduler before rolling
 back the API. Do not roll back to code without provider-health enforcement while
 MNX markets exist: first set `PERP_TRADING_MODE=halted` in the API runtime,
 roll and drain all API instances, verify opens **and closes** are rejected,
@@ -370,6 +383,17 @@ Run the first command after creation. A clean set reports zero missing topic
 links and embeddings. Use `--apply` only for prototypes that will be retained;
 topic attachment updates market ranking time, so do not mutate a market that
 will immediately be recreated.
+
+Markets created before the stored ticker existed need it stamped, or search
+cannot find them by ticker and the preflight fails their launch-ticker check:
+
+```powershell
+npx.cmd ts-node backfill-perp-tickers.ts
+npx.cmd ts-node backfill-perp-tickers.ts --apply
+```
+
+It writes only `ticker` (no ranking-time bump), settled markets included, and
+leaves any market on a feed missing from `PERP_FEED_TICKERS` alone.
 
 ## Unlisted smoke pass
 

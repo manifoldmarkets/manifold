@@ -3,6 +3,11 @@ import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
+import {
+  PERP_TICKER_MAX_LENGTH,
+  getPerpFeedTicker,
+  isValidPerpTicker,
+} from 'common/perps/ticker'
 
 import {
   BTC_USD_FEED_ID,
@@ -564,7 +569,20 @@ const collectDefinitionErrors = (
     )
   if (/\bperpetual\b/i.test(market.question))
     errors.push(
-      `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
+      `${market.feedId} repeats "perpetual" in its title; the ticker and market type are rendered separately`
+    )
+  // The ticker is what the title badge shows in place of the market type,
+  // what the /perps hub labels the row with, and what search matches, so a
+  // launch feed without one would launch unlabelled. It lives in `common`
+  // (the web renders it), not in this definition — see common/perps/ticker.
+  const ticker = getPerpFeedTicker(market.feedId)
+  if (!ticker)
+    errors.push(
+      `${market.feedId} has no canonical ticker in PERP_FEED_TICKERS (common/perps/ticker.ts)`
+    )
+  else if (!isValidPerpTicker(ticker))
+    errors.push(
+      `${market.feedId} ticker "${ticker}" is not one alphanumeric token of at most ${PERP_TICKER_MAX_LENGTH} characters starting with a letter`
     )
   if (
     market.requiresSourceAsOf !==

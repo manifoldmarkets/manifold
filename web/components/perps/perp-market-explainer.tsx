@@ -6,6 +6,7 @@ import {
   formatFeePctApprox,
   perpFeeScheduleSummary,
 } from 'common/perps/format'
+import { getPerpTicker } from 'common/perps/ticker'
 import { formatNumber } from 'common/util/format'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
@@ -13,7 +14,7 @@ import { useUser } from 'web/hooks/use-user'
 
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { PERP_MARKET_BADGE_CLASS } from './perp-market-badge'
+import { PERP_TICKER_CLASS } from './perp-market-badge'
 
 export function PerpMarketExplainer(props: {
   // The explainer quotes THIS market's live settings (fees, leverage cap)
@@ -26,23 +27,28 @@ export function PerpMarketExplainer(props: {
 }) {
   const { contract, className } = props
   const [open, setOpen] = useState(false)
+  // The button reads "[TICKER] (i)": the ticker is the market's handle on
+  // /perps and in search, and the (i) is the invitation to learn what a
+  // perpetual market is. The word itself moved into the label and the modal.
+  const ticker = getPerpTicker(contract)
 
   return (
     <>
       <button
         type="button"
         className={clsx(
-          PERP_MARKET_BADGE_CLASS,
-          'hover:bg-primary-200 focus-visible:ring-primary-500 dark:hover:bg-primary-900/70 h-7 cursor-pointer gap-1 px-2.5 text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+          PERP_TICKER_CLASS,
+          // Title-sized like the label everywhere else; the (i) scales with it.
+          'hover:text-primary-500 focus-visible:ring-primary-500 inline-flex cursor-pointer items-center gap-1 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
           className
         )}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label="What are perpetual markets?"
+        aria-label={`${ticker}: how this perpetual market works`}
         onClick={() => setOpen(true)}
       >
-        Perpetual
-        <InformationCircleIcon aria-hidden className="h-4 w-4" />
+        {ticker}
+        <InformationCircleIcon aria-hidden className="h-[0.8em] w-[0.8em]" />
       </button>
       <Modal
         open={open}

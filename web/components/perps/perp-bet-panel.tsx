@@ -36,7 +36,9 @@ import {
 } from 'common/perps/funding'
 import {
   fundingPerPeriod,
-  getPerpPriceForUserFacingPnl,
+  getPerpPositionTotalCost,
+  getPerpProfitScenarios,
+  PerpPnlPositionInput,
 } from 'common/perps/pnl'
 import { formatFeePct, inferPriceDecimals } from 'common/perps/format'
 import {
@@ -310,6 +312,25 @@ export const PerpBetPanel = (props: {
     !Number.isFinite(feeGrossDepth) ||
     (!!myPosition && !Number.isFinite(myPositionValue)) ||
     !Number.isFinite(openFee)
+  // The position this trade RESULTS in — the row the position card will show
+  // once it lands — which the profit ladder is built on. A fresh open (or a
+  // flip's new leg) is just this tranche at the mark. An add merges the
+  // tranche into the held row exactly as the engine does (openPosition, then
+  // accruePerpPositionTakerFee): size and both cost bases sum, the entry
+  // price is the merged one previewed above, and the fee accrues onto the
+  // fee basis. The ladder describes this row rather than the tranche because
+  // the card can only ever show the merged position — a "+25% on the
+  // tranche" target would mix the tranche's cash with the merged entry
+  // price, which is why adds used to get no ladder at all.
+  const heldForAdd = isAddPreview && notional > 0 ? myPosition : null
+  const resultingPosition: PerpPnlPositionInput = {
+    direction,
+    size: (heldForAdd?.size ?? 0) + notional,
+    costBasis: (heldForAdd?.costBasis ?? 0) + marginAmount,
+    originalCostBasis: (heldForAdd?.originalCostBasis ?? 0) + marginAmount,
+    takerFeeCostBasis: (heldForAdd?.takerFeeCostBasis ?? 0) + openFee,
+    entryPrice: preview.entryPrice,
+  }
   // Price protection sent with the trade: the engine rejects rather than
   // charges if the authoritative fee exceeds this. The band is the DISPLAYED
   // fee plus PERP_FEE_SLIPPAGE_BPS of notional — see perpMaxFeeFor for why it
@@ -638,7 +659,8 @@ export const PerpBetPanel = (props: {
 
       <StatsGrid
         feedId={contract.oracleFeedId}
-        direction={direction}
+        resultingPosition={resultingPosition}
+        markPrice={price}
         notional={notional}
         margin={marginAmount}
         entryPrice={preview.entryPrice}
@@ -806,8 +828,9 @@ const LeverageSlider = (props: {
 }
 
 // Profit tiers shown in the scenario ladder: each is a +r NET return on the
-// cash committed to this new position (margin + opening fee) — the same base
-// the position card's percentage uses, so the two agree at the target price.
+// cash committed to the position the trade results in (margin + opening/add
+// fees; the whole merged row on an add) — the same base the position card's
+// percentage uses, so the two agree at the target price.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
 
 const formatPoolShare = (share: number) => {
@@ -828,7 +851,13 @@ const SizeFeeWhyTooltip = () => (
 
 const StatsGrid = (props: {
   feedId: string
-  direction: 'long' | 'short'
+  // The position this trade results in — the row the position card will
+  // show once it lands — which the profit ladder is built on. Just the
+  // tranche on an open or flip; the merged row on an add.
+  resultingPosition: PerpPnlPositionInput
+  // Current oracle price. A tier only counts as a profit scenario when it
+  // takes a favourable move from here.
+  markPrice: number
   notional: number
   margin: number
   entryPrice: number
@@ -843,8 +872,8 @@ const StatsGrid = (props: {
   // The contract's frozen funding period — labels are per-hour on fast
   // feeds, per-day on daily ones.
   fundingPeriodMs: number
-  // True when adding to a held position: entryPrice/leverage/liqPrice
-  // describe the merged result, so the labels say so.
+  // True when adding to a held position: entryPrice/leverage/liqPrice and
+  // the profit ladder describe the merged result, so the labels say so.
   isAddPreview?: boolean
   // Open-side taker fee for THIS trade. Closing is free, so this is the
   // whole round-trip cost. The effective rate is base + size: positions
@@ -863,7 +892,8 @@ const StatsGrid = (props: {
   feePreviewInvalid: boolean
 }) => {
   const {
-    direction,
+    resultingPosition,
+    markPrice,
     notional,
     margin,
     entryPrice,
@@ -894,42 +924,23 @@ const StatsGrid = (props: {
   const feeExceedsMargin =
     margin > 0 && fee >= margin * PERP_MAX_FEE_SHARE_OF_MARGIN
 
-  // Add previews are hidden on purpose: `margin` is the new tranche but
-  // entryPrice describes the merged position, so a "+25% on margin" target
-  // would mix two bases. Defining return for an add is a product decision.
-  const canShowScenarios =
-    !isAddPreview &&
-    !feePreviewInvalid &&
-    Number.isFinite(entryPrice) &&
-    entryPrice > 0 &&
-    margin > 0 &&
-    notional > 0
+  // Hidden while the fee cannot be quoted (every tier is net of it) and until
+  // a trade is configured; getPerpProfitScenarios fails closed on the rest.
+  const canShowScenarios = !feePreviewInvalid && margin > 0 && notional > 0
 
-  // Solve for the price at which the position's user-facing PnL — the number
-  // the position card will show, net of the opening fee — reaches +r of the
-  // cash committed. The base is margin + fee, the same denominator the card's
-  // percentage uses (getUserFacingPnlPercent), so at the solved price the
-  // card reads exactly "+r%" and exactly this mana profit. Without the fee
-  // this is the familiar entry·(1 ± r/ℓ); with it the target sits further
-  // out, so the ladder no longer promises a profit the card would then
-  // report as smaller. Closing is free; future funding remains unknowable
-  // here (and is called out below).
+  // Each tier is the price at which the position's user-facing PnL — the
+  // number the position card will show, net of the opening fee — reaches +r
+  // of the cash committed to the position this trade results in. That base
+  // (margin + fees) is the same denominator the card's percentage uses
+  // (getUserFacingPnlPercent), so at the solved price the card reads exactly
+  // "+r%" and exactly this mana profit. Without the fee this is the familiar
+  // entry·(1 ± r/ℓ); with it the target sits further out, so the ladder
+  // never promises a profit the card would then report as smaller. On an add
+  // the row is the merged position (see resultingPosition), so the ladder
+  // covers the whole position and is captioned as such below. Closing is
+  // free; future funding remains unknowable here (and is called out below).
   const scenarios = canShowScenarios
-    ? RETURN_TIERS.flatMap((ret) => {
-        const pnl = ret * (margin + fee)
-        const price = getPerpPriceForUserFacingPnl(
-          {
-            direction,
-            size: notional,
-            costBasis: margin,
-            originalCostBasis: margin,
-            takerFeeCostBasis: fee,
-            entryPrice,
-          },
-          pnl
-        )
-        return price === undefined ? [] : [{ ret, price, pnl }]
-      })
+    ? getPerpProfitScenarios(resultingPosition, markPrice, RETURN_TIERS)
     : []
 
   const periodPct = marketFundingRate * 100
@@ -1072,6 +1083,16 @@ const StatsGrid = (props: {
                   </span>
                 </Row>
               ))}
+              {isAddPreview && (
+                <span className="text-ink-400 text-xs leading-tight">
+                  Whole {resultingPosition.direction} position after this add —{' '}
+                  {formatMoneyPrecise(
+                    getPerpPositionTotalCost(resultingPosition)
+                  )}{' '}
+                  committed including what you already hold — so it matches what
+                  the position card will show.
+                </span>
+              )}
               {(paysFunding || earnsFunding) && (
                 <span className="text-ink-400 text-xs leading-tight">
                   {paysFunding

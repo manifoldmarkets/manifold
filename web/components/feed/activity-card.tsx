@@ -172,7 +172,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
         >
           <VisibilityIcon contract={contract} />{' '}
           {contract.outcomeType === 'PERP' && (
-            <PerpMarketBadge className="mr-1 align-middle" />
+            <PerpMarketBadge contract={contract} className="mr-1" />
           )}
           {removeEmojis(contract.question)}
         </Link>

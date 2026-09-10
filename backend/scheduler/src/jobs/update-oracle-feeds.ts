@@ -57,7 +57,7 @@ export async function updateOracleFeeds() {
 }
 
 // Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
-// (5s, for BTC); every other feed opts down via pollPeriodMs, so raising the
+// (2s); every other feed opts down via pollPeriodMs, so raising the
 // tick rate for one source does not raise it for all of them. State is
 // in-memory — a scheduler restart polls everything once immediately, which is
 // the correct bias: fresher marks, and staleness alerting re-arms at once.
@@ -151,7 +151,7 @@ export const ORACLE_TICK_PERIOD_MS = 2_000
 // would have quantized to 5s — faster than asked, which is the wrong
 // direction to round for a rate-limited source. Half a tick makes every
 // period land on its nearest multiple of the tick (60s stays 60s) and
-// absorbs up to 2.5s of stamp jitter.
+// absorbs up to 1s of stamp jitter.
 const POLL_JITTER_TOLERANCE_MS = ORACLE_TICK_PERIOD_MS / 2
 
 const isPollDue = (

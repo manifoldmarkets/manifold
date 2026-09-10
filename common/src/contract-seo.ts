@@ -9,6 +9,7 @@ import { Answer, sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
 import { inferPriceDecimals } from './perps/format'
+import { getPerpTicker } from './perps/ticker'
 
 // Bump when the card layout or the encoding of its params changes. The image
 // URL is cached for a year, and the edge route decodes `points` by version.
@@ -78,7 +79,12 @@ export const getContractOGProps = (
     topAnswer: topAnswer?.t,
     answers: rankedAnswers.length ? JSON.stringify(rankedAnswers) : undefined,
     bountyLeft: bountyLeft,
-    ...(outcomeType === 'PERP' ? { outcomeType } : {}),
+    ...(contract.outcomeType === 'PERP'
+      ? {
+          outcomeType: contract.outcomeType,
+          perpTicker: getPerpTicker(contract),
+        }
+      : {}),
     ...(perpPrice === undefined ? {} : { perpPrice }),
   }
 }
@@ -137,6 +143,7 @@ export type OgCardProps = {
   bountyLeft?: string // number
   outcomeType?: 'PERP'
   perpPrice?: string
+  perpTicker?: string
   points?: string // base64ified points
 }
 

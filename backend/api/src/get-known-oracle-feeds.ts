@@ -1,6 +1,7 @@
 import { sortBy, uniq } from 'lodash'
 
 import { ENV } from 'common/envs/constants'
+import { getPerpFeedTicker } from 'common/perps/ticker'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed, ORACLE_FEEDS } from 'shared/oracle-feeds'
 import {
@@ -39,6 +40,7 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
       updatePeriodMs: feed?.updatePeriodMs ?? null,
       marketCreationEnabled: feed?.marketCreationEnabled ?? false,
       description: feed?.description ?? null,
+      ticker: getPerpFeedTicker(id) ?? null,
       launchLatencyRisk: launch?.latencyArbitrageRisk ?? null,
       launchRecommendation: launch
         ? {

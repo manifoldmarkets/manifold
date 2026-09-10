@@ -15,6 +15,11 @@ import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
 import {
+  PERP_TICKER_MAX_LENGTH,
+  PERP_TICKER_PATTERN,
+  getPerpTicker,
+} from 'common/perps/ticker'
+import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
@@ -108,6 +113,9 @@ export type LiteMarket = {
   // number — and it is the input a client needs to size a trade.
   takerFeeApiBps?: number
   resolvedOraclePrice?: number
+  // The market's short on-site identifier ("BTC", "TRUMP"): the label the
+  // /perps hub and the title badge show, and what search matches on.
+  ticker?: string
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -257,6 +265,7 @@ export function toLiteMarket(
           takerFeeImpact: getPerpTakerFeeImpact(contract),
           takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
+          ticker: getPerpTicker(contract),
         }
       : {}),
 
@@ -600,6 +609,16 @@ export const updateMarketProps = z
     homePageScoreAdjustment: z.number().gte(-1).lte(1).nullable().optional(),
     homePageScoreAdjustmentDays: z.number().int().positive().optional(),
     creatorBannedFromBetting: z.boolean().optional(),
+    // Perp markets only, admin only; a feed named in PERP_FEED_TICKERS
+    // accepts only its canonical ticker (see update-market).
+    ticker: z
+      .string()
+      .max(PERP_TICKER_MAX_LENGTH)
+      .regex(
+        PERP_TICKER_PATTERN,
+        'A ticker is one alphanumeric token that starts with a letter'
+      )
+      .optional(),
   })
   .strict()
 
@@ -672,6 +691,18 @@ export const createPerpSchema = z.object({
   visibility: z.enum(VISIBILITIES).optional(),
   groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   oracleFeedId: z.string().min(1).max(200),
+  // Short on-site identifier shown in place of the market type ("BTC").
+  // Omitted = the feed's canonical ticker (PERP_FEED_TICKERS), else one
+  // derived from the feed id; a feed that has a canonical ticker rejects any
+  // other value, so the label can't drift between markets on one feed.
+  ticker: z
+    .string()
+    .max(PERP_TICKER_MAX_LENGTH)
+    .regex(
+      PERP_TICKER_PATTERN,
+      'A ticker is one alphanumeric token that starts with a letter'
+    )
+    .optional(),
   maxLeverage: z.number().gt(1).lte(100),
   maxFundingRate: z.number().gt(0).lt(1),
   fundingSensitivity: z.number().gt(0).lte(100),

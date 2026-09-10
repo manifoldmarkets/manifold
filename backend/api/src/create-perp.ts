@@ -17,6 +17,7 @@ import {
 } from 'common/perps/fees'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
+import { derivePerpTicker, getPerpFeedTicker } from 'common/perps/ticker'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { HOUR_MS } from 'common/util/time'
@@ -76,6 +77,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     visibility = 'unlisted',
     groupIds,
     oracleFeedId,
+    ticker: requestedTicker,
     maxLeverage,
     maxFundingRate,
     fundingSensitivity,
@@ -105,8 +107,25 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   if (launchDefinition && question !== launchDefinition.question)
     throw new APIError(
       400,
-      `The launch title for ${oracleFeedId} must be "${launchDefinition.question}". The Perpetual type label is shown separately.`
+      `The launch title for ${oracleFeedId} must be "${launchDefinition.question}". The ticker and market type are shown separately.`
     )
+  // The ticker is a property of the feed, not of one market on it: two
+  // markets on btc-usd are both "BTC", so a feed named in PERP_FEED_TICKERS
+  // accepts only that name. An unnamed feed takes the caller's choice, or a
+  // label derived from its id — every perp is stored with a ticker, because
+  // search matches the stored value and nothing else.
+  const canonicalTicker = getPerpFeedTicker(oracleFeedId)
+  if (
+    canonicalTicker &&
+    requestedTicker !== undefined &&
+    requestedTicker !== canonicalTicker
+  )
+    throw new APIError(
+      400,
+      `The ticker for ${oracleFeedId} must be "${canonicalTicker}" (PERP_FEED_TICKERS in common/perps/ticker.ts). Change it there if the feed should be renamed.`
+    )
+  const ticker =
+    canonicalTicker ?? requestedTicker ?? derivePerpTicker(oracleFeedId)
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
@@ -293,6 +312,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       initialPoolShort: subsidyShort,
       oracleFeedId,
       ...(oracleFeedHealth ? { oracleFeedHealth } : {}),
+      ticker,
       oraclePrice: oraclePoint.price,
       oraclePriceTime: oraclePoint.ts,
       oracleSourceTime: oracleSourceTime ?? null,
