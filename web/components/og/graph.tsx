@@ -178,8 +178,17 @@ export function ProbGraph(props: {
   color?: string
   /** Space at the bottom of the strip that the outcome row overlays */
   bottomInset?: number
+  /** Draw 0%, 50% and 100% guides with labels, so the line's height and any
+   * move can be read without another reference. Probability series only. */
+  percentAxis?: boolean
 }) {
-  const { height, color = '#14b866', aspectRatio = 1, bottomInset = 0 } = props
+  const {
+    height,
+    color = '#14b866',
+    aspectRatio = 1,
+    bottomInset = 0,
+    percentAxis = false,
+  } = props
   const data = smoothSeries(props.data)
   const w = height * aspectRatio
   const h = height
@@ -187,9 +196,11 @@ export function ProbGraph(props: {
   // Rounds the corners of step changes without overshooting the data
   const curve = curveMonotoneX
   const endDotRadius = 4.5
-  const xScale = scaleTime(visibleRange, [0, w - endDotRadius - 1])
   const domain = getProbGraphDomain(data)
-  const isProbability = domain[0] === 0 && domain[1] === 1
+  const showAxis = percentAxis && domain[0] === 0 && domain[1] === 1
+  const axisWidth = showAxis ? 34 : 0
+  const plotWidth = w - axisWidth
+  const xScale = scaleTime(visibleRange, [0, plotWidth - endDotRadius - 1])
   // Keep the line clear of the top edge and of the overlaid outcome row, with
   // enough padding that a flat stretch never sits on either edge
   const yScale = scaleLinear(domain, [
@@ -199,61 +210,87 @@ export function ProbGraph(props: {
   const px = (p: Point) => xScale(p.x)
   const py1 = (p: Point) => yScale(p.y)
   const last = data[data.length - 1]
-  // const clipId = ':rnm:'
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const da = area(px, h, py1).curve(curve)(data)!
+  const da = area(px, showAxis ? yScale(0) : h, py1).curve(curve)(data)!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!
+  const guides = showAxis ? [1, 0.5, 0] : []
+  const guideLine = (v: number) => (
+    <line
+      x1={0}
+      x2={plotWidth}
+      y1={yScale(v)}
+      y2={yScale(v)}
+      stroke={v === 0.5 ? '#cbd5e1' : '#e5e7eb'}
+      strokeWidth={1}
+      strokeDasharray={v === 0.5 ? '3 4' : undefined}
+    />
+  )
 
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-      <defs>
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id={gradientId}
-          x1="0%"
-          y1="0%"
-          x2="0%"
-          y2="100%"
+    <div className="relative flex" style={{ width: w, height: h }}>
+      {guides.map((v) => (
+        <div
+          key={v}
+          className="absolute flex justify-end text-gray-400"
+          style={{
+            left: 0,
+            width: axisWidth - 6,
+            top: yScale(v) - 7,
+            fontSize: 10,
+            lineHeight: '14px',
+          }}
         >
-          <stop offset="0%" stopColor={color} stopOpacity="1" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.25" />
-        </linearGradient>
-      </defs>
+          {v * 100}%
+        </div>
+      ))}
+      <svg
+        width={plotWidth}
+        height={h}
+        viewBox={`0 0 ${plotWidth} ${h}`}
+        style={{ marginLeft: axisWidth }}
+      >
+        <defs>
+          <linearGradient
+            gradientUnits="userSpaceOnUse"
+            id={gradientId}
+            x1="0%"
+            y1="0%"
+            x2="0%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor={color} stopOpacity="1" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.25" />
+          </linearGradient>
+        </defs>
 
-      <g>
-        {/* 50% guide, so the line's height reads at a glance */}
-        {isProbability && (
-          <line
-            x1={0}
-            x2={w}
-            y1={yScale(0.5)}
-            y2={yScale(0.5)}
-            stroke="#cbd5e1"
-            strokeWidth={1}
-            strokeDasharray="3 4"
+        <g>
+          {/* Written out rather than mapped: satori can't take an array of
+              children inside an inline svg */}
+          {showAxis && guideLine(1)}
+          {showAxis && guideLine(0.5)}
+          {showAxis && guideLine(0)}
+          <path d={da} fill={`url(#${gradientId})`} opacity={0.1} />
+          <path
+            d={dl}
+            stroke={color}
+            strokeWidth={3}
+            fill="none"
+            strokeLinejoin="round"
+            strokeLinecap="round"
           />
-        )}
-        <path d={da} fill={`url(#${gradientId})`} opacity={0.1} />
-        <path
-          d={dl}
-          stroke={color}
-          strokeWidth={3}
-          fill="none"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {/* Marks the current value, so a late jump reads as data, not a glitch */}
-        <circle
-          cx={px(last)}
-          cy={py1(last)}
-          r={endDotRadius}
-          fill={color}
-          stroke="#ffffff"
-          strokeWidth={2}
-        />
-      </g>
-    </svg>
+          {/* Marks the current value, so a late jump reads as data, not a glitch */}
+          <circle
+            cx={px(last)}
+            cy={py1(last)}
+            r={endDotRadius}
+            fill={color}
+            stroke="#ffffff"
+            strokeWidth={2}
+          />
+        </g>
+      </svg>
+    </div>
   )
 }
