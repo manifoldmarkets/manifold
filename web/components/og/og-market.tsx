@@ -36,7 +36,7 @@ export function OgMarket(props: OgCardProps) {
     : []
   const numTraders = Number(props.numTraders ?? 0)
   // Float32 timestamps can collapse to one value for markets only minutes old
-  const showGraph = data.length > 5 && data[0].x !== data[data.length - 1].x
+  const showGraph = data.length >= 2 && data[0].x !== data[data.length - 1].x
   // A canceled market shows the "Canceled" state instead of answer bars
   const answers =
     resolution === 'CANCEL'
@@ -64,7 +64,8 @@ export function OgMarket(props: OgCardProps) {
       </div>
       <div
         className={clsx(
-          'm-4 mt-1 flex flex-col rounded-lg bg-white px-6 py-4 text-black shadow-lg',
+          // Auto margins center a short card between the header and the tagline
+          'mx-4 my-auto flex flex-col rounded-lg bg-white px-6 py-4 text-black shadow-lg',
           // Leave room for the absolutely positioned outcome row
           answers.length ? 'pb-4' : 'pb-10'
         )}
@@ -115,8 +116,8 @@ export function OgMarket(props: OgCardProps) {
             <ProbGraph
               color={numericValue || isPerp ? '#14bbFF' : '#14b8a6'}
               data={data}
-              height={70}
-              aspectRatio={7.5}
+              height={80}
+              aspectRatio={6.5}
               bottomInset={28}
             />
           </div>
@@ -161,7 +162,7 @@ export function OgMarket(props: OgCardProps) {
           )}
       </div>
       {/* Tagline: heads off "isn't this gambling?" reactions to link previews */}
-      <div className="mt-auto flex h-7 shrink-0 items-center justify-center text-base text-white">
+      <div className="flex h-7 shrink-0 items-center justify-center text-base text-white">
         {OG_TAGLINE}
       </div>
     </div>

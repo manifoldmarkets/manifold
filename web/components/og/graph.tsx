@@ -122,31 +122,15 @@ export function Sparkline(props: {
   )
 }
 
-// Smallest probability range the graph spans, so small wiggles don't look
-// like large swings while real moves still fill the strip
-const MIN_PROB_SPAN = 0.2
-
-/** y-domain for the graph: the data's range, widened to MIN_PROB_SPAN for
- * probabilities (kept within 0..1), or as-is for other series like prices */
+/** y-domain for the graph: 0..1 for probabilities, so the line's height means
+ * something on its own (near the top = likely, flat = stable), or the data's
+ * own range for other series like prices */
 export function getProbGraphDomain(data: Point[]): [number, number] {
   const minY = Math.min(...data.map((p) => p.y))
   const maxY = Math.max(...data.map((p) => p.y))
   const isProbability = minY >= 0 && maxY <= 1
   if (!isProbability) return [minY, maxY === minY ? maxY + 1 : maxY]
-
-  const span = Math.max(maxY - minY, MIN_PROB_SPAN)
-  const mid = (minY + maxY) / 2
-  let lo = mid - span / 2
-  let hi = mid + span / 2
-  if (lo < 0) {
-    hi -= lo
-    lo = 0
-  }
-  if (hi > 1) {
-    lo -= hi - 1
-    hi = 1
-  }
-  return [Math.max(lo, 0), hi]
+  return [0, 1]
 }
 
 // Samples across the strip the series is resampled to before drawing
@@ -155,9 +139,10 @@ const GRAPH_SAMPLES = 100
 // ramp. On a 7.5:1 strip a jump would otherwise draw as a vertical wall.
 const GRAPH_SMOOTHING = 6
 
-/** Resamples the series onto an even time grid (linear interpolation), then
- * smooths each sample with the average of the next few, so the final value
- * stays exact and transitions start slightly before they happened */
+/** Resamples the series onto an even time grid, holding each value until the
+ * next point (a probability doesn't move between bets), then smooths each
+ * sample with the average of the next few, so the final value stays exact and
+ * transitions start slightly before they happened */
 export function smoothSeries(
   data: Point[],
   samples = GRAPH_SAMPLES,
@@ -173,11 +158,8 @@ export function smoothSeries(
   let j = 0
   for (let i = 0; i < samples; i++) {
     const x = xAt(i)
-    while (j < data.length - 2 && data[j + 1].x < x) j++
-    const a = data[j]
-    const b = data[j + 1]
-    const t = b.x === a.x ? 1 : (x - a.x) / (b.x - a.x)
-    grid.push(a.y + (b.y - a.y) * Math.min(Math.max(t, 0), 1))
+    while (j < data.length - 1 && data[j + 1].x <= x) j++
+    grid.push(data[j].y)
   }
 
   return grid.map((_, i) => {
@@ -206,9 +188,11 @@ export function ProbGraph(props: {
   const curve = curveMonotoneX
   const endDotRadius = 4.5
   const xScale = scaleTime(visibleRange, [0, w - endDotRadius - 1])
+  const domain = getProbGraphDomain(data)
+  const isProbability = domain[0] === 0 && domain[1] === 1
   // Keep the line clear of the top edge and of the overlaid outcome row, with
   // enough padding that a flat stretch never sits on either edge
-  const yScale = scaleLinear(getProbGraphDomain(data), [
+  const yScale = scaleLinear(domain, [
     h - bottomInset - endDotRadius - 2,
     endDotRadius + 2,
   ])
@@ -239,6 +223,18 @@ export function ProbGraph(props: {
       </defs>
 
       <g>
+        {/* 50% guide, so the line's height reads at a glance */}
+        {isProbability && (
+          <line
+            x1={0}
+            x2={w}
+            y1={yScale(0.5)}
+            y2={yScale(0.5)}
+            stroke="#cbd5e1"
+            strokeWidth={1}
+            strokeDasharray="3 4"
+          />
+        )}
         <path d={da} fill={`url(#${gradientId})`} opacity={0.1} />
         <path
           d={dl}

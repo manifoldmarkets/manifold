@@ -15,9 +15,6 @@ export const OG_CARD_VERSION = '3'
 // How many answers a multiple choice card shows, and how long each can be
 export const OG_CARD_MAX_ANSWERS = 3
 export const OG_CARD_MAX_ANSWER_LENGTH = 60
-// A chart with fewer bets than this is a flat line with a step or two, so the
-// card leaves it out and shows the outcome row directly under the question
-export const OG_CHART_MIN_BETS = 10
 
 export type OgAnswer = {
   t: string // answer text
