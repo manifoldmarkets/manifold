@@ -489,9 +489,9 @@ export default function AdminCreatePerpPage() {
                     {callerUnauthorized && (
                       <p className="text-scarlet-700 mt-2 font-semibold">
                         Sign in as the official Manifold account. The creator
-                        account below pays the backing and receives the
-                        residual at settlement, so another admin cannot
-                        create this market under either name.
+                        account below pays the backing and receives the residual
+                        at settlement, so another admin cannot create this
+                        market under either name.
                       </p>
                     )}
                   </>
@@ -543,8 +543,8 @@ export default function AdminCreatePerpPage() {
             <p className="text-ink-500 mt-1 text-xs">
               The selected account is the market's creator: it pays the backing
               at creation and receives the residual pool at settlement, and its
-              name and badge show on the market. MNX can only own markets on
-              MNX feeds; the official Manifold account can own any feed.
+              name and badge show on the market. MNX can only own markets on MNX
+              feeds; the official Manifold account can own any feed.
             </p>
             {creatorBlockedReason && (
               <p className="text-scarlet-700 mt-1 text-xs">

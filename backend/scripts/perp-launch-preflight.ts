@@ -676,7 +676,7 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
                 contract.ticker ? `"${contract.ticker}"` : 'none'
               }, expected="${expectedTicker}"; run backfill-perp-tickers.ts --apply`
         )
-        const allowedCreators = new Map([
+        const allowedCreators = new Map<string, string>([
           [expectedCreatorId, `official ${environment} Manifold account`],
         ])
         if (
