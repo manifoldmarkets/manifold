@@ -17,6 +17,12 @@ export const ORACLE_TICK_DECORATIONS: Readonly<
   Record<string, OracleTickDecoration>
 > = {
   'btc-usd': { prefix: '$' },
+  // USD per euro, so the dollar sign is the correct unit: "$1.16" reads as
+  // what one euro costs.
+  'eur-usd': { prefix: '$' },
+  // gp, not dollars. A bond costs real money to mint, which makes mislabelling
+  // this one as USD an easy and very misleading mistake.
+  'osrs-bond-gp': { suffix: ' gp' },
   'trump-approval-rating': { suffix: '%' },
   'votehub-generic-ballot-2026': { suffix: '%' },
   'vance-favorability': { suffix: '%' },

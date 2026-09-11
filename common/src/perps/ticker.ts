@@ -32,6 +32,11 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'votehub-generic-ballot-2026': 'BALLOT',
   'vance-favorability': 'VANCE',
   'crypto-fear-greed': 'FEAR',
+  'eur-usd': 'EURUSD',
+  // The instrument, not the currency: this market is the price OF a bond, in
+  // gp. GP is reserved for a market on the gold price itself, if one is ever
+  // built from the other direction.
+  'osrs-bond-gp': 'BOND',
   'openrouter-open-weight-share': 'OPENW',
   // The product, not the company: this is the share of OpenRouter tokens
   // going to Claude models. ANTH is reserved for the Anthropic pre-IPO price

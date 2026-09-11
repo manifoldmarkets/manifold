@@ -3,10 +3,14 @@ import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
 
 import { fetchBtcUsdSpot } from './btc-price'
+import { fetchEurUsdSpot } from './fx-price'
+import { fetchOsrsBondGp } from './osrs-bond-price'
 import {
   BTC_USD_FEED_ID,
   CRYPTO_FEAR_GREED_FEED_ID,
+  EUR_USD_FEED_ID,
   GLDX_USD_FEED_ID,
+  OSRS_BOND_GP_FEED_ID,
   NVDAX_USD_FEED_ID,
   OPENROUTER_ANTHROPIC_SHARE_FEED_ID,
   OPENROUTER_CHINESE_LAB_SHARE_FEED_ID,
@@ -122,6 +126,85 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // roughly a 6x cut in the windows a latency bot can trade against.
     pollPeriodMs: 2_000,
     fetchLatest: fetchBtcUsdSpot,
+  },
+  {
+    id: EUR_USD_FEED_ID,
+    description:
+      'EUR/USD spot (USD per euro), median of Bitstamp/Coinbase/Kraken quotes',
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    // Wide enough for any level the euro has ever traded at (roughly 0.82 to
+    // 1.60 in its lifetime) so a genuine move always publishes. Corruption is
+    // caught where it can be told apart from a real move: fx-price.ts screens
+    // each venue against a plausibility band BEFORE it votes, and then
+    // requires two venues to agree with each other. Note what bounds cannot
+    // catch on an FX pair — an INVERTED quote (1/1.16 = 0.86) sits inside any
+    // honest band, which is why every source is asked for a directly quoted
+    // EUR/USD or crossed through one tested helper.
+    minPrice: 0.5,
+    maxPrice: 2,
+    // Same threshold as BTC. With a 10s poll that is a dozen missed polls
+    // before anyone is woken, which is the right slack: two of the three
+    // venues quote EUR/USD without touching a BTC book, so total silence here
+    // means our egress or all three venues, not a thin market.
+    staleAfterMs: 2 * MINUTE_MS,
+    // EUR/USD quotes continuously, so as with BTC the interval between new
+    // values IS the poll rate. Funding is unaffected either way:
+    // max(1h, updatePeriodMs) is 1h.
+    updatePeriodMs: 10_000,
+    // 10s, not BTC's 2s, and the binding constraint is Kraken rather than
+    // anything about FX: its public limit is ~1 req/s and btc-usd already
+    // spends half of that. A 2s poll here would put us at that ceiling, and
+    // the failure mode is backwards — a rate-limited Kraken degrades BTC,
+    // which is launch-critical, to protect a feed that needs the speed far
+    // less.
+    //
+    // It needs it less because the latency-arb window scales with the
+    // underlying's volatility: EUR/USD realizes roughly a sixth of BTC's, so
+    // the fraction of 10s windows that diverge past the taker fee here is in
+    // the same range as BTC's at a two-to-three-second poll. If a keyed
+    // Kraken tier or a fourth venue ever removes that ceiling, this can come
+    // down; polling faster than the venues requote would not help.
+    pollPeriodMs: 10_000,
+    fetchLatest: fetchEurUsdSpot,
+  },
+  {
+    id: OSRS_BOND_GP_FEED_ID,
+    description:
+      'Old School RuneScape bond midpoint in gp, from the OSRS Wiki real-time prices API',
+    marketCreationEnabled: true,
+    // 'fast' means "polled by the oracle tick", not "changes fast": the wiki
+    // publishes a new five-minute window, and the tick picks it up.
+    cadence: 'fast',
+    // Bonds have traded from about 2M gp (2015) to 16.4M (January 2026), so
+    // the band only catches unit confusion — a price served in millions, in
+    // thousands, or Jagex's zero sentinel. Corruption is caught at the source
+    // in common/perps/osrs-bond.ts: a crossed window, a one-sided or
+    // too-thin window, a blown-out spread, and a structural disagreement with
+    // Jagex's independently computed guide price.
+    minPrice: 1_000_000,
+    maxPrice: 200_000_000,
+    // Generous because a published point is ALREADY several minutes old by
+    // construction: it is stamped at its window's end, and the wiki needs a
+    // moment after that to serve it. 30 minutes is roughly five windows —
+    // enough that a quiet stretch or a couple of thin windows cannot page
+    // anyone, while still bounding how old an executable mark can get.
+    //
+    // Operator note: the FLOOR this feed allows for a market's
+    // maxOraclePriceAgeMs is 10 minutes (two update periods), but a market set
+    // at the floor would pause often — a brand-new point is already ~5 minutes
+    // old, so one skipped quiet window crosses it. Set a market on this feed to
+    // 20-30 minutes unless you want it pausing on ordinary quiet stretches.
+    staleAfterMs: 30 * MINUTE_MS,
+    // One new value per completed five-minute window. This also sets any new
+    // market's frozen funding period to max(1h, 5m) = 1h.
+    updatePeriodMs: 5 * MINUTE_MS,
+    // A minute. The window only turns over every five, so this is purely
+    // about picking a new one up promptly rather than up to a minute late;
+    // re-polling the same window is free (the point is stamped at the window
+    // end, so an unchanged window writes nothing).
+    pollPeriodMs: 60_000,
+    fetchLatest: fetchOsrsBondGp,
   },
   // The `uk-grid-carbon` (NESO) feed was removed when its market was
   // sunset on 2026-08-10. Nothing consumed it afterwards, and the tick kept

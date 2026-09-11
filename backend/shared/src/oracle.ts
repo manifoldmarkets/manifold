@@ -23,6 +23,12 @@ export const NVDAX_USD_FEED_ID = 'nvdax-usd'
 export const VOTEHUB_GENERIC_BALLOT_2026_FEED_ID = 'votehub-generic-ballot-2026'
 export const VANCE_FAVORABILITY_FEED_ID = 'vance-favorability'
 export const CRYPTO_FEAR_GREED_FEED_ID = 'crypto-fear-greed'
+// EUR/USD spot, composited across the venues btc-usd already polls — see
+// backend/shared/src/fx-price.ts.
+export const EUR_USD_FEED_ID = 'eur-usd'
+// Old School RuneScape bond, in gp. Denominated in the game's own currency,
+// hence the suffix: this is not a USD price and must never be charted as one.
+export const OSRS_BOND_GP_FEED_ID = 'osrs-bond-gp'
 
 // Append oracle price points for a feed. Published history is immutable:
 // duplicate (feed_id, ts) values remain unchanged even if a source later

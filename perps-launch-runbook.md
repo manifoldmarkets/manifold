@@ -165,6 +165,18 @@ Keep that redesign separate from the capped day-one launch.
    Before creating a market on `crypto-fear-greed`, read the terms section of
    https://alternative.me/crypto/fear-and-greed-index/ and record it in
    `common/src/perps/oracle-attribution.ts`; the entry says why.
+   Two registry feeds are deliberately OFF-manifest and creatable by hand:
+   `eur-usd` (`backfill-eurusd-oracle`) and `osrs-bond-gp`
+   (`backfill-osrs-bond-oracle --timestep=24h` for a year of context, then
+   `--timestep=6h` if finer recent history is wanted). Neither is part of the
+   public launch set, so neither gets a launch recommendation — pick
+   conservative leverage and backing by hand. Before creating a market on
+   `osrs-bond-gp`, read https://oldschool.runescape.wiki/w/RuneScape:Real-time_Prices
+   and record its terms in `common/src/perps/oracle-attribution.ts`, exactly as
+   the `crypto-fear-greed` gate above requires; that entry says why, and also
+   why the wiki's CC BY-NC-SA article licence is the thing to rule out. Also
+   confirm with one live call that `/5m` still serves the documented shape —
+   the adapter was written where that host was unreachable.
    Before the Chinese-lab backfill, open `/admin/model-classifications` and
    clear every ranked lab-classification row. The audited seed covers the
    launch history; future authors/models are discovered into this DB-backed
@@ -179,7 +191,11 @@ Keep that redesign separate from the capped day-one launch.
 7. Verify GCP alert policies and deliver a test incident:
    - ERROR presence for `[oracle-feeds]`, `[update-perps]`, `[openrouter]`,
      `[trump-approval]`, `[votehub]`, `[fear-greed]`, and scheduler
-     `Error during job execution`.
+     `Error during job execution`. Add `[fx-price]` and `[osrs-bond]` if a
+     market is created on either off-manifest feed: their adapters report
+     source-level failures (too few venues agreeing, a cross-check refusal)
+     under their own prefixes, and the `[oracle-feeds]` filter does not see
+     those lines.
    - Absence/dead-man alerts for `update-oracle-feeds` within two minutes and
      `update-perps` within two hours.
    - Route both policies to a channel with a real on-call owner.

@@ -33,6 +33,23 @@
 //     gate before a market is created on the feed.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
+//   - EUR/USD — same stance as BTC, and the same venues: the published number
+//     is a median WE compute from public keyless tickers, so nothing is
+//     republished. Credited for transparency.
+//   - OSRS bond — ⚠️ TERMS NOT YET READ DIRECTLY (2026-09-11), same status as
+//     NESO and Alternative.me. The wiki's real-time prices page documents the
+//     API and asks automated users for a descriptive User-Agent with contact
+//     info (honoured in backend/shared/src/osrs-bond-price.ts), but the page
+//     could not be fetched from the environment this feed was written in, so
+//     no licence sentence is quoted and no licence label is set. Reading that
+//     page is an operator gate before a market is created on this feed: paste
+//     the relevant sentence(s) here with the date, and set licence/licenceUrl
+//     only if the page names one. The wiki is a Weird Gloop property and its
+//     article text is CC BY-NC-SA, which — if it also covered the price data —
+//     would NOT permit our use; that is exactly why the gate exists rather
+//     than an assumption. Jagex's item database is deliberately absent from
+//     this map: it is consulted only as a cross-check and never published, so
+//     there is nothing to credit.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
 //     price is decoded by us from the token's Solana pool accounts, which
 //     are public chain state that no one licenses, so nothing is consumed
@@ -143,6 +160,18 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',
+  },
+  'eur-usd': {
+    source: 'Bitstamp, Coinbase & Kraken',
+  },
+  // See the ⚠️ note above: credit and a link, no licence label we cannot back
+  // up, and reading the terms is a gate before a market exists on this feed.
+  // RuneLite is named because the data is the trades its client reports, which
+  // is the partnership the wiki describes — crediting only the wiki would
+  // misstate where the numbers come from.
+  'osrs-bond-gp': {
+    source: 'OSRS Wiki real-time prices (data contributed via RuneLite)',
+    url: 'https://prices.runescape.wiki/osrs/item/13190',
   },
   'spyx-usd': {
     source: 'Raydium & Orca pools on Solana (SPYx by Backed xStocks)',

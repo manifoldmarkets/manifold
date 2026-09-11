@@ -468,6 +468,31 @@ Feed adapters live next to it:
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
+- `fx-price.ts` — EUR/USD spot (USD per euro), consensus median of ONE vote per
+  venue on the same exchanges: Bitstamp's direct `eurusd` book, Coinbase's
+  documented `exchange-rates` route, and Kraken's BTC/EUR and BTC/USD legs
+  crossed within a SINGLE response. A venue only gets a cross vote when it can
+  serve both legs at once — two sequential calls put BTC's move between them
+  into the rate, and that error is correlated across venues, so two skewed
+  crosses would agree with each other and outvote a correct direct quote. The
+  tolerance is 0.2%, not BTC's 2% (which is four times EUR/USD's daily range,
+  i.e. wide enough to corroborate garbage). Arithmetic, the two-sided-quote
+  rules and the plausibility band are in `common/src/perps/fx-cross.ts`, which
+  also records the one thing bounds cannot catch on an FX pair: an INVERTED
+  quote is a plausible rate, so only cross-venue disagreement reveals it.
+- `osrs-bond-price.ts` — Old School RuneScape bond price in gp, the midpoint of
+  the instant-buy and instant-sell averages over one completed window from the
+  OSRS Wiki's real-time prices API (`/5m`, falling back to `/1h`). The midpoint
+  rather than a volume-weighted average because the bond's spread is ~3% and a
+  VWAP slides across it with the flow mix, which is jitter a mark should not
+  have; a completed window rather than `/latest` because one print is one
+  player on an item where a market order moves the price. The wiki is the only
+  real-time source that exists for these prices, so instead of BTC-style
+  agreement it carries a VoteHub-style canary: Jagex's independently computed
+  guide price, cached hourly, failing OPEN when unreachable (their outage is
+  not evidence about the bond) and CLOSED on a >25% disagreement. Methodology,
+  both payload parsers and the manipulation caveats are in
+  `common/src/perps/osrs-bond.ts`.
 - `xstocks-price.ts` — tokenized-equity USD prices (SPYx/QQQx/GLDx/NVDAx,
   xStocks by Backed), consensus median across each token's Solana USDC
   pools (Raydium/Orca account state fetched via `solana-rpc.ts`, decoded in
@@ -519,7 +544,10 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter}-oracle.ts`;
+(`backend/scripts/backfill-{btc,xstocks,eurusd,osrs-bond,trump-approval,votehub,fear-greed,openrouter}-oracle.ts`;
+`backfill-osrs-bond-oracle` takes `--timestep=` (5m/1h/6h/24h, default 6h;
+24h is the one that shows a year and therefore that the bond falls as well as
+rises);
 `backfill-votehub-oracle` and `backfill-openrouter-oracle` take
 `--feed=<feedId>`) seed chart history before market creation. They are for
 feeds with NO live market: published history is append-only and a backfill
