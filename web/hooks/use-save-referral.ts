@@ -29,6 +29,13 @@ export const useSaveReferral = (
   }, [user, searchParams, JSON.stringify(options)])
 }
 
-const decodeBase64 = (base64: string) => {
-  return Buffer.from(cleanUsername(base64), 'base64').toString()
-}
+// cleanUsername is for NAMES: it caps at 25 characters and strips everything
+// outside [A-Za-z0-9_], including base64's own '+', '/' and '='. Running it
+// over the still-ENCODED string truncated any payload longer than 25 chars,
+// so every referrer whose username is 19+ characters decoded to a mangled
+// name, matched no user, and had their referral silently dropped. Sanitize
+// the base64 alphabet here; clean the name once it is actually a name.
+const decodeBase64 = (base64: string) =>
+  cleanUsername(
+    Buffer.from(base64.replace(/[^A-Za-z0-9+/=]/g, ''), 'base64').toString()
+  )
