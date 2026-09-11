@@ -1,6 +1,7 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { LiteMarket } from 'common/api/market-types'
 import { getPerpBackingPool } from 'common/perps/amm'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
@@ -14,6 +15,7 @@ export type PerpSummaryMarket = Pick<
   | 'isResolved'
   | 'maxLeverage'
   | 'oraclePrice'
+  | 'oracleFeedId'
   | 'oracleSourceTime'
   | 'poolLong'
   | 'poolShort'
@@ -34,7 +36,7 @@ export function PerpMarketSummary(props: {
     : undefined
   const price = market.isResolved ? resolvedPrice ?? currentPrice : currentPrice
   const formattedPrice = isFiniteNumber(price)
-    ? formatPrice(price, inferPriceDecimals([price]))
+    ? formatOraclePrice(market.oracleFeedId, price, inferPriceDecimals([price]))
     : 'Unavailable'
   const poolLong = market.poolLong
   const poolShort = market.poolShort

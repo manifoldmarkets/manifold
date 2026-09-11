@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
@@ -10,6 +11,8 @@ import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import {
+  ENV,
+  ENV_CONFIG,
   PERPS_SKIP_ORACLE_FRESHNESS,
   isAdminId,
   isModId,
@@ -20,11 +23,12 @@ import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   formatCountdown,
   formatPerpClosePercent,
-  formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
+import { getMnxCreatorId } from 'common/perps/creator-accounts'
+import { getPerpTicker } from 'common/perps/ticker'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -32,7 +36,7 @@ import {
   getPerpFundingRate,
 } from 'common/perps/funding'
 import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer'
-import { getOracleFreshness } from 'common/perps/oracle'
+import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -57,6 +61,9 @@ import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { referralQuery } from 'common/util/share'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 const revalidate = 60
@@ -120,48 +127,12 @@ export async function getStaticProps() {
 // ---------------------------------------------------------------------------
 // Display helpers
 
-// Tickers, keyed by the stable oracle feed id (same reasoning as
-// ORACLE_TICK_DECORATIONS: never infer a label from a renameable question).
-// Unknown feeds fall back to the feed id's leading segment, so a new perp is
-// merely unglamorous until someone adds a line here, never broken.
-const FEED_TICKERS: Record<string, string> = {
-  'btc-usd': 'BTC',
-  'trump-approval-rating': 'TRUMP',
-  'votehub-generic-ballot-2026': 'BALLOT',
-  'vance-favorability': 'VANCE',
-  'crypto-fear-greed': 'FEAR',
-  'openrouter-open-weight-share': 'OPENW',
-  'openrouter-anthropic-share': 'ANTH',
-  'openrouter-chinese-lab-share': 'CNLAB',
-  'spyx-usd': 'SPYx',
-  'qqqx-usd': 'QQQx',
-  'nvdax-usd': 'NVDAx',
-  'gldx-usd': 'GLDx',
-  'uk-grid-carbon': 'UKCO2',
-}
-
-const tickerOf = (c: PerpContract) =>
-  FEED_TICKERS[c.oracleFeedId ?? ''] ??
-  (c.oracleFeedId ?? c.slug).split('-')[0].toUpperCase().slice(0, 6)
-
-const PERCENT_FEEDS = new Set([
-  'trump-approval-rating',
-  'votehub-generic-ballot-2026',
-  'vance-favorability',
-  'openrouter-open-weight-share',
-  'openrouter-anthropic-share',
-  'openrouter-chinese-lab-share',
-])
-
 const displayPrice = (c: PerpContract) => {
   const price = Number(
     c.isResolved ? c.resolvedOraclePrice ?? c.oraclePrice : c.oraclePrice
   )
   if (!Number.isFinite(price)) return '—'
-  const feedId = c.oracleFeedId ?? ''
-  const prefix = feedId.endsWith('-usd') ? '$' : ''
-  const suffix = PERCENT_FEEDS.has(feedId) ? '%' : ''
-  return prefix + formatPrice(price, inferPriceDecimals([price])) + suffix
+  return formatOraclePrice(c.oracleFeedId, price, inferPriceDecimals([price]))
 }
 
 // Human label for a topic slug: strip the '-default' suffix of catch-all
@@ -635,6 +606,16 @@ export default function PerpsPage(props: { perps: Contract[] }) {
   const week = useWeekSeries(open)
   const activity = useRecentActivity(HUB_FEATURES.activity ? open : [])
   const user = useUser()
+  // Nothing records referrals globally — every shareable page wires up both
+  // halves itself. Incoming: a visitor who landed here from someone's link
+  // carries their ?r= code, and this banks it so a sign-up in this session
+  // is credited to them.
+  useSaveReferral(user)
+  // Outgoing: the hub's own link, tagged with the sharer's code. Signed out
+  // there is no code to add and the bare /perps link still shares fine.
+  const shareUrl = `https://${ENV_CONFIG.domain}/perps${
+    user?.username ? referralQuery(user.username) : ''
+  }`
   // `?as=<userId>` previews the positions card as another user — positions
   // are public (the holders tab lists them), so this leaks nothing, and it
   // lets the card be reviewed without an account that holds perps.
@@ -732,6 +713,17 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
                 Perpetuals
               </h1>
+              {/* No `tooltip`: CopyLinkOrShareButton drops it once the button
+                  has a visible label, and "Share" already says it. */}
+              <CopyLinkOrShareButton
+                url={shareUrl}
+                eventTrackingName="share perps page"
+                color="gray-outline"
+                size="sm"
+                className="ml-2 shrink-0 gap-1.5"
+              >
+                Share
+              </CopyLinkOrShareButton>
             </Row>
             <div className="text-ink-600 text-sm sm:text-base">
               Go long or short on a live number, with leverage. No expiry date.{' '}
@@ -743,6 +735,14 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               </a>
             </div>
           </Col>
+          {user && (isAdminId(user.id) || user.id === getMnxCreatorId(ENV)) && (
+            <Link
+              href="/admin/mnx"
+              className="text-primary-600 text-sm hover:underline"
+            >
+              Manage MNX markets
+            </Link>
+          )}
           <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">
             <Stat label="24h volume" amount={stats.volume24h} />
             <Stat label="Open interest" amount={stats.openInterest} />
@@ -906,7 +906,7 @@ const YourPositions = (props: {
               className="hover:bg-canvas-50 grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2 text-left"
             >
               <span className="text-ink-900 truncate font-mono text-sm font-bold">
-                {tickerOf(contract)}
+                {getPerpTicker(contract)}
               </span>
               <Col className="min-w-0 gap-0.5">
                 <Row className="items-center gap-1.5 text-xs">
@@ -1054,7 +1054,7 @@ const RecentActivity = (props: {
                     </span>
                   )}{' '}
                   <span className="text-ink-900 font-mono font-semibold">
-                    {tickerOf(contract)}
+                    {getPerpTicker(contract)}
                   </span>
                   {closing && e.pnl != null && Math.abs(e.pnl) >= 0.5 && (
                     <>
@@ -1128,7 +1128,7 @@ const TopMover = (props: {
         onFocus={() => warmChart(best!.contract)}
         className="hover:bg-canvas-50 -mx-1 flex items-baseline gap-1.5 rounded px-1 text-left font-mono text-lg font-semibold tabular-nums"
       >
-        <span className="text-ink-900">{tickerOf(best.contract)}</span>
+        <span className="text-ink-900">{getPerpTicker(best.contract)}</span>
         <ChangeLabel change={best.change} className="text-lg font-semibold" />
       </button>
     </Col>
@@ -1289,7 +1289,7 @@ const TickerItem = (props: {
       className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
     >
       <span className="text-ink-900 font-mono font-semibold">
-        {tickerOf(contract)}
+        {getPerpTicker(contract)}
       </span>
       <span
         className={clsx(
@@ -1504,13 +1504,7 @@ const useOracleTradingPaused = (contract: PerpContract) => {
     return () => clearInterval(id)
   }, [contract.oraclePriceTime])
   if (now == null || PERPS_SKIP_ORACLE_FRESHNESS) return false
-  return (
-    getOracleFreshness(
-      contract.oraclePriceTime,
-      contract.maxOraclePriceAgeMs,
-      now
-    ).status !== 'fresh'
-  )
+  return getPerpOracleFreshness(contract, now).status !== 'fresh'
 }
 
 // On phones the card's gutter + border + padding cost the chart ~40px of a
@@ -1613,7 +1607,7 @@ const Terminal = (props: {
                   : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
               )}
             >
-              {tickerOf(c)}
+              {getPerpTicker(c)}
             </button>
           )
         })}
@@ -1623,7 +1617,7 @@ const Terminal = (props: {
         <Col className="min-w-0 gap-1">
           <Row className="items-baseline gap-3">
             <span className="text-primary-600 dark:text-primary-400 font-mono text-xl font-bold">
-              {tickerOf(contract)}
+              {getPerpTicker(contract)}
             </span>
             <span className="text-ink-900 truncate text-lg font-medium">
               {contract.question}
@@ -1955,7 +1949,7 @@ const WatchRow = (props: {
           selected ? 'text-primary-600 dark:text-primary-400' : 'text-ink-900'
         )}
       >
-        {tickerOf(contract)}
+        {getPerpTicker(contract)}
       </span>
       <span
         className={clsx(
@@ -2013,7 +2007,7 @@ const RelatedMarkets = (props: {
           Related
         </span>
         <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
-          {tickerOf(perp)}
+          {getPerpTicker(perp)}
         </span>
         <span className="text-ink-500 truncate text-xs">
           {topics.slice(0, 3).map(topicLabel).join(' · ')}
@@ -2520,7 +2514,7 @@ const MarketParameters = (props: { contract: PerpContract }) => {
           This market
         </span>
         <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
-          {tickerOf(contract)}
+          {getPerpTicker(contract)}
         </span>
       </Row>
       <Col className="divide-ink-200 dark:divide-ink-300 divide-y">

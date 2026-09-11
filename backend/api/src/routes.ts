@@ -76,6 +76,7 @@ import { placePerpTrade } from './place-perp-trade'
 import { closePerpPosition } from './close-perp-position'
 import { updatePerpConfig } from './update-perp-config'
 import { addPerpSubsidy } from './add-perp-subsidy'
+import { getMnxDashboard } from './get-mnx-dashboard'
 import {
   getModelClassifications,
   setModelClassification,
@@ -460,6 +461,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'close-perp-position': closePerpPosition,
   'update-perp-config': updatePerpConfig,
   'add-perp-subsidy': addPerpSubsidy,
+  'get-mnx-dashboard': getMnxDashboard,
   'get-model-classifications': getModelClassifications,
   'set-model-classification': setModelClassification,
   'get-openrouter-lab-classifications': getOpenRouterLabClassifications,

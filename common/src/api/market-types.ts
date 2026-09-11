@@ -1,3 +1,4 @@
+import type { OracleFeedHealth } from '../perps/oracle-health'
 import { JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -13,10 +14,17 @@ import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
+import { PERP_CREATOR_ACCOUNTS } from 'common/perps/creator-accounts'
+import {
+  PERP_TICKER_MAX_LENGTH,
+  PERP_TICKER_PATTERN,
+  getPerpTicker,
+} from 'common/perps/ticker'
 import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -81,9 +89,11 @@ export type LiteMarket = {
 
   // Perp markets only (mechanism 'perp'). Exposed so clients (and the perp
   // market page's live poll) can track price/pools without bespoke endpoints.
+  oracleFeedId?: string
   oraclePrice?: number
   oraclePriceTime?: number
   oracleSourceTime?: number | null
+  oracleFeedHealth?: OracleFeedHealth
   poolLong?: number
   poolShort?: number
   // Drives the live funding rate (getPerpFundingRate) — must travel with the
@@ -105,6 +115,9 @@ export type LiteMarket = {
   // number — and it is the input a client needs to size a trade.
   takerFeeApiBps?: number
   resolvedOraclePrice?: number
+  // The market's short on-site identifier ("BTC", "TRUMP"): the label the
+  // /perps hub and the title badge show, and what search matches on.
+  ticker?: string
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -238,9 +251,11 @@ export function toLiteMarket(
     // Perp props (only present on perp markets).
     ...(contract.mechanism === 'perp'
       ? {
+          oracleFeedId: contract.oracleFeedId,
           oraclePrice: contract.oraclePrice,
           oraclePriceTime: contract.oraclePriceTime,
           oracleSourceTime: contract.oracleSourceTime,
+          oracleFeedHealth: contract.oracleFeedHealth,
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
           openInterestLong: contract.openInterestLong,
@@ -252,6 +267,7 @@ export function toLiteMarket(
           takerFeeImpact: getPerpTakerFeeImpact(contract),
           takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
+          ticker: getPerpTicker(contract),
         }
       : {}),
 
@@ -333,6 +349,7 @@ export type UltraLiteMarket = {
   probability?: number
   liquidityTier?: string
   // Perp markets only. Omitted when the source value is not finite.
+  oracleFeedId?: string
   oraclePrice?: number
   // Current perp backing capital (poolLong + poolShort).
   backingPool?: number
@@ -418,6 +435,9 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     probability,
     ...(isPerp
       ? {
+          ...(liteMarket.oracleFeedId
+            ? { oracleFeedId: liteMarket.oracleFeedId }
+            : {}),
           ...(oraclePrice === undefined ? {} : { oraclePrice }),
           ...(backingPool === undefined ? {} : { backingPool }),
         }
@@ -591,6 +611,16 @@ export const updateMarketProps = z
     homePageScoreAdjustment: z.number().gte(-1).lte(1).nullable().optional(),
     homePageScoreAdjustmentDays: z.number().int().positive().optional(),
     creatorBannedFromBetting: z.boolean().optional(),
+    // Perp markets only, admin only; a feed named in PERP_FEED_TICKERS
+    // accepts only its canonical ticker (see update-market).
+    ticker: z
+      .string()
+      .max(PERP_TICKER_MAX_LENGTH)
+      .regex(
+        PERP_TICKER_PATTERN,
+        'A ticker is one alphanumeric token that starts with a letter'
+      )
+      .optional(),
   })
   .strict()
 
@@ -663,6 +693,18 @@ export const createPerpSchema = z.object({
   visibility: z.enum(VISIBILITIES).optional(),
   groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   oracleFeedId: z.string().min(1).max(200),
+  // Short on-site identifier shown in place of the market type ("BTC").
+  // Omitted = the feed's canonical ticker (PERP_FEED_TICKERS), else one
+  // derived from the feed id; a feed that has a canonical ticker rejects any
+  // other value, so the label can't drift between markets on one feed.
+  ticker: z
+    .string()
+    .max(PERP_TICKER_MAX_LENGTH)
+    .regex(
+      PERP_TICKER_PATTERN,
+      'A ticker is one alphanumeric token that starts with a letter'
+    )
+    .optional(),
   maxLeverage: z.number().gt(1).lte(100),
   maxFundingRate: z.number().gt(0).lt(1),
   fundingSensitivity: z.number().gt(0).lte(100),
@@ -670,15 +712,25 @@ export const createPerpSchema = z.object({
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),
   // Open-side taker fee in bps of notional (closing is free). Omitted = the
-  // platform default (see PERP_TAKER_FEE_BPS_DEFAULT); the handler stamps
+  // feed default (MNX_DEFAULT_FEES for MNX, PERP_TAKER_FEE_BPS_DEFAULT
+  // otherwise); the handler stamps
   // the resolved value so later default changes cannot rewrite an existing
   // market's economics.
   takerFeeBps: z.number().min(0).max(100).optional(),
+  // API-key opens use max(web base, API base). MNX defaults to 20 bps;
+  // other feeds inherit the web base when this is omitted.
+  takerFeeApiBps: z.number().min(0).max(PERP_TAKER_FEE_API_BPS_MAX).optional(),
   // Size-impact coefficient of the taker fee (marginal rate is
   // takerFeeBps + takerFeeImpact·(share of pool)² bps). Omitted = the
-  // platform default (see PERP_TAKER_FEE_IMPACT_DEFAULT); stamped like
+  // feed default (10 on MNX, PERP_TAKER_FEE_IMPACT_DEFAULT otherwise); stamped like
   // takerFeeBps above.
   takerFeeImpact: z.number().min(0).max(PERP_TAKER_FEE_IMPACT_MAX).optional(),
+  // Which account owns the market. The owner pays the backing now and is paid
+  // the residual pool at settlement, so the caller must be the official
+  // Manifold account either way (it spends its own balance or acts for the
+  // partner). Omitted = 'manifold' (the handler owns the default, as with
+  // visibility); a partner is accepted only on its own feeds.
+  creatorAccount: z.enum(PERP_CREATOR_ACCOUNTS).optional(),
 })
 
 export const placePerpTradeSchema = z.object({

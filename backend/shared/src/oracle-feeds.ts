@@ -1,3 +1,7 @@
+import { OracleFeedHealth } from 'common/perps/oracle-health'
+import { OraclePoint } from 'common/perps/oracle'
+import { fetchMnxObservation } from './mnx'
+import { MNX_INSTRUMENTS, MNX_POLL_MS } from 'common/perps/mnx'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
@@ -85,7 +89,13 @@ export type OracleFeedDef = {
    * holders too). Trade it off against the source's rate limits: poll faster
    * than the source publishes and you spend quota for no new information. */
   pollPeriodMs?: number
-  fetchLatest?: () => Promise<{ ts: number; price: number } | null>
+  fetchLatest?: () => Promise<OraclePoint | null>
+  /** A provider can withdraw availability independently of its last price.
+   * The fast tick commits successful health and price in one engine update. */
+  fetchObservation?: () => Promise<{
+    point?: OraclePoint
+    health: OracleFeedHealth
+  }>
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
@@ -94,6 +104,25 @@ export type OracleFeedDef = {
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
+  // One shared /v0/markets request prices all sixteen instruments every 2s
+  // (30 requests/minute per scheduler process; briefly 60 during deploy overlap). MNX publishes no numeric REST quota in its
+  // public docs; honor Retry-After and back off on errors. H100 source age is
+  // independent of this tick. The defined target is MNX's mark, not its oracle
+  // or the underlying share/valuation: see common/perps/mnx and the runbook.
+  ...MNX_INSTRUMENTS.map(
+    (i): OracleFeedDef => ({
+      id: i.feedId,
+      description: i.description,
+      marketCreationEnabled: true,
+      cadence: 'fast',
+      pollPeriodMs: MNX_POLL_MS,
+      fetchObservation: () => fetchMnxObservation(i.feedId),
+      minPrice: i.minPrice,
+      maxPrice: i.maxPrice,
+      staleAfterMs: i.maxAgeMs,
+      updatePeriodMs: i.updatePeriodMs,
+    })
+  ),
   {
     id: BTC_USD_FEED_ID,
     description:
@@ -394,7 +423,17 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
 export const MIN_MARK_AGE_UPDATE_PERIODS = 2
 
 export const getMinTradingMarkAgeMs = (feed: OracleFeedDef) =>
-  Math.min(feed.staleAfterMs, MIN_MARK_AGE_UPDATE_PERIODS * feed.updatePeriodMs)
+  Math.max(
+    Math.min(
+      feed.staleAfterMs,
+      MIN_MARK_AGE_UPDATE_PERIODS * feed.updatePeriodMs
+    ),
+    // Observation feeds dedupe unchanged prices until this heartbeat. A tighter
+    // trading budget would pause a healthy flat market before the next row.
+    feed.fetchObservation
+      ? feed.staleAfterMs / 2 + (feed.pollPeriodMs ?? 2_000)
+      : 0
+  )
 
 export const getOracleFeed = (id: string) =>
   ORACLE_FEEDS.find((f) => f.id === id)

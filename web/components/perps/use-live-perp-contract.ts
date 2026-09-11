@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { PerpContract } from 'common/contract'
-import { isNewerPerpQuote, PerpQuote } from 'common/perps/quote'
+import {
+  isNewerPerpQuote,
+  mergePerpQuotes,
+  PerpQuote,
+} from 'common/perps/quote'
 import { api } from 'web/lib/api/api'
 import { scheduleFreshBurst } from './use-perp-positions'
 
@@ -82,11 +86,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
       latestQuoteTime.current = incoming.oraclePriceTime
       lastAppliedQuoteAt.current = Date.now()
     }
-    setQuote((previous) =>
-      isNewerPerpQuote(previous?.oraclePriceTime, incoming.oraclePriceTime)
-        ? incoming
-        : previous
-    )
+    setQuote((previous) => mergePerpQuotes(previous, incoming))
   }, [])
 
   useApiSubscription({
@@ -206,6 +206,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
           applyQuote({
             contractId: ssrContract.id,
             oraclePrice: market.oraclePrice,
+            oracleFeedHealth: market.oracleFeedHealth,
             poolLong: market.poolLong,
             poolShort: market.poolShort,
             ...(market.oraclePriceTime != null
@@ -281,6 +282,10 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
   const contract = {
     ...ssrContract,
     ...meta,
+    ...((quote?.oracleFeedHealth?.checkedAt ?? 0) >
+    (ssrContract.oracleFeedHealth?.checkedAt ?? 0)
+      ? { oracleFeedHealth: quote?.oracleFeedHealth }
+      : {}),
     ...(propConfigIsNewer
       ? {
           maxLeverage: ssrContract.maxLeverage,

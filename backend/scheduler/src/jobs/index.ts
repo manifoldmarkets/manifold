@@ -76,12 +76,12 @@ import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
 
-// Which subset of jobs this process runs. The 15s oracle tick (and the other
+// Which subset of jobs this process runs. The 2s oracle tick (and the other
 // PERP jobs that apply funding and liquidations) must not share an event loop
 // with batch jobs like update-user-portfolio-histories, which block it for
-// minutes at prod scale and freeze the feed mid-liquidation. Prod deploys the
+// minutes at prod scale and freeze the feed mid-liquidation. DEV and PROD deploy the
 // scheduler as a 'main' + 'perps' instance pair; 'all' is the single-instance
-// mode used on dev.
+// mode for local development only.
 export type SchedulerJobSet = 'all' | 'main' | 'perps'
 
 const PERP_JOB_NAMES = new Set([
@@ -260,7 +260,7 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'update-model-classifications',
       // Every 6 hours. Deliberately NOT a perp job: it makes a few hundred
       // outbound HuggingFace calls, and the perps instance exists to keep the
-      // 5s oracle tick on an unshared event loop. It only writes a table the
+      // 2s oracle tick on an unshared event loop. It only writes a table the
       // perps instance reads, so the split costs nothing.
       // LA hours, like every schedule in this file. Chosen to miss both the
       // 08:00 UTC API restart window and the ~10:00-11:30 UTC scheduler memory

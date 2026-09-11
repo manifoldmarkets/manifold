@@ -1,3 +1,4 @@
+import { formatOraclePrice } from './perps/oracle-display'
 import { Contract, MultiContract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import { getAnswerProbability, getDisplayProbability } from './calculate'
@@ -7,11 +8,12 @@ import { getFormattedNumberExpectedValue } from 'common/number'
 import { Answer, sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
-import { formatPrice, inferPriceDecimals } from './perps/format'
+import { inferPriceDecimals } from './perps/format'
+import { getPerpTicker } from './perps/ticker'
 
 // Bump when the card layout or the encoding of its params changes. The image
 // URL is cached for a year, and the edge route decodes `points` by version.
-export const OG_CARD_VERSION = '2'
+export const OG_CARD_VERSION = '3'
 // How many answers a multiple choice card shows, and how long each can be
 export const OG_CARD_MAX_ANSWERS = 3
 export const OG_CARD_MAX_ANSWER_LENGTH = 60
@@ -77,7 +79,12 @@ export const getContractOGProps = (
     topAnswer: topAnswer?.t,
     answers: rankedAnswers.length ? JSON.stringify(rankedAnswers) : undefined,
     bountyLeft: bountyLeft,
-    ...(outcomeType === 'PERP' ? { outcomeType } : {}),
+    ...(contract.outcomeType === 'PERP'
+      ? {
+          outcomeType: contract.outcomeType,
+          perpTicker: getPerpTicker(contract),
+        }
+      : {}),
     ...(perpPrice === undefined ? {} : { perpPrice }),
   }
 }
@@ -136,6 +143,7 @@ export type OgCardProps = {
   bountyLeft?: string // number
   outcomeType?: 'PERP'
   perpPrice?: string
+  perpTicker?: string
   points?: string // base64ified points
 }
 
@@ -182,7 +190,11 @@ function getFormattedPerpPrice(contract: Contract) {
       : contract.oraclePrice
   if (!Number.isFinite(price)) return undefined
 
-  return formatPrice(price, inferPriceDecimals([price]))
+  return formatOraclePrice(
+    contract.oracleFeedId,
+    price,
+    inferPriceDecimals([price])
+  )
 }
 
 function getResolvedValue(contract: Contract) {

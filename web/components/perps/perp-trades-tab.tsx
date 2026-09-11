@@ -1,12 +1,9 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
-import {
-  formatPerpClosePercent,
-  formatPrice,
-  inferPriceDecimals,
-} from 'common/perps/format'
+import { formatPerpClosePercent, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -171,6 +168,7 @@ export const PerpTradesTab = (props: {
         <>
           {events.map((e) => (
             <EventRow
+              feedId={contract.oracleFeedId}
               key={e.id}
               event={e}
               priceDecimals={priceDecimals}
@@ -194,6 +192,7 @@ const EVENT_LABELS: Record<Event['eventType'], string> = {
 }
 
 const EventRow = (props: {
+  feedId: string
   event: Event
   priceDecimals: number
   short: boolean
@@ -273,7 +272,8 @@ const EventRow = (props: {
             <span className="text-ink-500">{event.leverage.toFixed(2)}×</span>
           )}
           <span className="text-ink-500">
-            @ {formatPrice(event.oraclePrice, priceDecimals)}
+            @{' '}
+            {formatOraclePrice(props.feedId, event.oraclePrice, priceDecimals)}
           </span>
           <RelativeTimestamp
             time={event.ts}

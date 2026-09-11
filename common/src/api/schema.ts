@@ -1,4 +1,6 @@
 import { PerpSuggestion } from '../perps/suggestion'
+import { MnxDashboard, perpConfigFields } from 'common/perps/management'
+import { randomStringRegex } from 'common/util/random'
 import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
@@ -37,10 +39,7 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
-import {
-  PERP_TAKER_FEE_API_BPS_MAX,
-  PERP_TAKER_FEE_IMPACT_MAX,
-} from 'common/perps/fees'
+import { PerpCreatorAccount } from 'common/perps/creator-accounts'
 import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
@@ -1230,7 +1229,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  // Admin-only live risk tuning; undocumented deliberately — internal
+  // Admin / MNX-owner live risk tuning; undocumented deliberately — internal
   // operator tooling, not part of the public perp API surface.
   'update-perp-config': {
     method: 'POST',
@@ -1240,6 +1239,7 @@ export const API = (_apiTypeCheck = {
       success: true
       maxLeverage: number
       maxFundingRate: number
+      fundingSensitivity: number
       takerFeeBps: number
       takerFeeImpact: number
       // Configured API-channel base rate, or null when API trades pay the
@@ -1251,67 +1251,32 @@ export const API = (_apiTypeCheck = {
       effectiveTakerFeeApiBps: number
       maxOraclePriceAgeMs: number
     },
-    props: z
-      .object({
+    props: perpConfigFields
+      .extend({
         contractId: z.string().min(1),
-        // Same bounds as createPerpSchema. maxFundingRate must stay inside
-        // the engine's assertPerpFundingConfig domain (0, 1) — at >= 1 the
-        // funding tick fail-closes and the market stops funding entirely.
-        maxLeverage: z.number().gt(1).lte(100).optional(),
-        maxFundingRate: z.number().gt(0).lt(1).optional(),
-        // Open-side BASE taker fee in bps of notional (closing is free);
-        // 0 disables. Bounds match assertPerpTakerFeeConfig — outside them
-        // the engine fail-closes every trade. This caps the base only: the
-        // size-dependent total (base + takerFeeImpact·share² marginal) is
-        // intentionally uncapped.
-        takerFeeBps: z.number().min(0).max(100).optional(),
-        // Size-impact coefficient of the taker fee (NOT the paper's k —
-        // that is fundingSensitivity). 0 keeps the fee flat at the base.
-        // Bounds match assertPerpTakerFeeConfig.
-        takerFeeImpact: z
-          .number()
-          .min(0)
-          .max(PERP_TAKER_FEE_IMPACT_MAX)
-          .optional(),
-        // Base rate for API-KEY opens only, applied as max(takerFeeBps,
-        // takerFeeApiBps) — it can raise the API channel's rate, never
-        // discount it. 0 (or unset) = API pays the web base. Wider cap than
-        // the web base on purpose: it prices hostile bot flow (see
-        // PERP_TAKER_FEE_API_BPS_MAX).
-        takerFeeApiBps: z
-          .number()
-          .min(0)
-          .max(PERP_TAKER_FEE_API_BPS_MAX)
-          .optional(),
-        // How old the executable mark may be before the engine refuses trades
-        // and closes. Tunable live because the right value depends on how
-        // reliably the feed is actually ticking, which is an operational fact
-        // rather than a design-time one. The handler enforces the feed's
-        // cadence floor; a value below it would freeze the market between
-        // healthy updates.
-        maxOraclePriceAgeMs: z.number().int().positive().optional(),
+        // Optimistic check of the values the operator reviewed. Trades do not
+        // change these, so normal activity does not invalidate the preview.
+        expectedConfig: perpConfigFields.optional(),
+        expectedManagerId: z.string().min(1).optional(),
       })
       .strict()
       .refine(
-        // Every optional field above must appear here. Omitting one makes a
-        // request that sets ONLY that field fail as "nothing to update",
-        // which is both baffling and invisible until someone tries it in
-        // prod — maxOraclePriceAgeMs shipped that way.
         (p) =>
-          p.maxLeverage !== undefined ||
-          p.maxFundingRate !== undefined ||
-          p.takerFeeBps !== undefined ||
-          p.takerFeeImpact !== undefined ||
-          p.takerFeeApiBps !== undefined ||
-          p.maxOraclePriceAgeMs !== undefined,
+          Object.keys(perpConfigFields.shape).some(
+            (key) => p[key as keyof typeof perpConfigFields.shape] !== undefined
+          ),
         { message: 'Provide at least one field to update' }
       ),
   },
-  // Admin-only escrow top-up of one side's backing pool on a live perp.
-  // Ops tool for restoring margin cover (a side's pool can fall below its
-  // side's aggregate cost basis when realized profits were paid against
-  // opposing unrealized losses that later recovered — see the UK carbon
-  // incident 2026-08-07). The funder pays from their own balance.
+  'get-mnx-dashboard': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as MnxDashboard,
+    props: z.object({}).strict(),
+  },
+  // The signed-in manager pays. For 'both', amount is added to EACH side.
+  // A request key makes retrying a dashboard operation safe after a timeout.
   'add-perp-subsidy': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1320,8 +1285,14 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string().min(1),
-        side: z.enum(['long', 'short']),
-        amount: z.number().gt(0).lte(1_000_000),
+        side: z.enum(['long', 'short', 'both']),
+        expectedManagerId: z.string().min(1).optional(),
+        amount: z.number().finite().gt(0).lte(1_000_000),
+        idempotencyKey: z
+          .string()
+          .regex(randomStringRegex)
+          .length(10)
+          .optional(),
       })
       .strict(),
   },
@@ -1378,9 +1349,14 @@ export const API = (_apiTypeCheck = {
     // daily feed would understate the cap 24x.
     returns: [] as {
       id: string
+      // Capability probe for scripts that explicitly set the API-channel fee.
+      supportsApiTakerFee: boolean
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
+      // Canonical ticker (PERP_FEED_TICKERS); null for a feed nobody has
+      // named, where the form may choose one.
+      ticker: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string
@@ -1393,6 +1369,20 @@ export const API = (_apiTypeCheck = {
         requiredTopicNames: string[]
         creatorAuthorized: boolean
       } | null
+      // Whether the caller may create on this feed at all: only the official
+      // Manifold account can, because it either pays the backing itself or
+      // acts for a partner account (see createPerpSchema.creatorAccount).
+      callerAuthorized: boolean
+      // Every selectable owner, in display order. `allowed` is feed policy
+      // (a partner owns only its own feeds); `unavailableReason` is set when
+      // the account cannot be resolved in this environment.
+      creatorAccounts: {
+        account: PerpCreatorAccount
+        label: string
+        allowed: boolean
+        username: string | null
+        unavailableReason: string | null
+      }[]
     }[],
     props: z.object({}).strict(),
   },

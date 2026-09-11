@@ -59,8 +59,12 @@ import {
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
 import {
+  OracleFeedHealth,
+  shouldRefreshOracleHealth,
+} from 'common/perps/oracle-health'
+import {
   decideOracleTransition,
-  getOracleFreshness,
+  getPerpOracleFreshness,
   OraclePoint,
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
@@ -112,17 +116,14 @@ type LoadedState = {
 
 const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
   if (PERPS_SKIP_ORACLE_FRESHNESS) return
-  const freshness = getOracleFreshness(
-    contract.oraclePriceTime,
-    contract.maxOraclePriceAgeMs,
-    now
-  )
+  const freshness = getPerpOracleFreshness(contract, now)
   if (freshness.status === 'fresh') return
 
   const detail =
-    freshness.status === 'stale' && freshness.ageMs != null
+    freshness.reason ??
+    (freshness.status === 'stale' && freshness.ageMs != null
       ? `Oracle feed is stale (age ${freshness.ageMs}ms > ${contract.maxOraclePriceAgeMs}ms)`
-      : 'Oracle feed freshness is unavailable'
+      : 'Oracle feed freshness is unavailable')
   throw new APIError(
     400,
     `${detail} — trading is paused until the next valid update`
@@ -178,7 +179,8 @@ const buildState = (
 
 const loadStateForUpdate = async (
   pgTrans: SupabaseTransaction,
-  contractId: string
+  contractId: string,
+  allowResolved = false
 ): Promise<LoadedState> => {
   // `select pg_advisory_xact_lock(...)` returns a row (void column), so
   // .none() would throw "No return data was expected". .one() is correct.
@@ -208,7 +210,7 @@ const loadStateForUpdate = async (
   }
   if (contract.mechanism !== 'perp')
     throw new APIError(400, `Contract ${contractId} is not a perp`)
-  if (contract.isResolved)
+  if (contract.isResolved && !allowResolved)
     throw new APIError(400, `Contract ${contractId} is resolved`)
 
   const positionRows = await pgTrans.any(
@@ -1569,26 +1571,70 @@ export const closePosition = async (
 export const addPerpPoolSubsidy = async (
   contractId: string,
   funderId: string,
-  side: PerpDirection,
-  amount: number
+  side: PerpDirection | 'both',
+  amount: number,
+  options?: {
+    idempotencyKey?: string
+    authorize?: (
+      tx: SupabaseTransaction,
+      contract: PerpContract
+    ) => Promise<void>
+  }
 ) => {
   if (!Number.isFinite(amount) || amount <= 0)
     throw new APIError(400, 'amount must be a finite positive number')
 
+  assertIdempotencyKey(options?.idempotencyKey)
+  const total = amount * (side === 'both' ? 2 : 1)
+
   return runPerpTransaction(async (pgTrans) => {
-    // Rejects resolved markets and non-MANA tokens, and serializes against
-    // every other engine writer on this contract.
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    // Serialize against every other engine writer. Permit reading a resolved
+    // contract only to recover a committed request; new payments are refused
+    // below, before any debit. Non-MANA tokens are always rejected.
+    const { contract, state } = await loadStateForUpdate(
+      pgTrans,
+      contractId,
+      true
+    )
+
+    await options?.authorize?.(pgTrans, contract)
+    // The contract lock serializes duplicate requests. The ledger entry and
+    // pool change commit together; txns.data has a legacy extra data level.
+    if (options?.idempotencyKey) {
+      const prior = await pgTrans.oneOrNone<{ amount: number; side: string }>(
+        `select amount, data->'data'->>'side' as side from txns
+          where from_id = $1 and to_id = $2 and category = 'ADD_SUBSIDY'
+            and token = 'M$' and from_type = 'USER' and to_type = 'CONTRACT'
+            and data->'data'->>'idempotencyKey' = $3 limit 1`,
+        [funderId, contractId, options.idempotencyKey]
+      )
+      if (prior) {
+        if (Number(prior.amount) !== total || prior.side !== side)
+          throw new APIError(
+            409,
+            'This subsidy request key was already used for a different amount or side.'
+          )
+        return {
+          contract,
+          poolLong: state.pool.L,
+          poolShort: state.pool.S,
+          replayed: true,
+        }
+      }
+    }
+
+    if (contract.isResolved)
+      throw new APIError(400, `Contract ${contractId} is resolved`)
 
     const funder = await pgTrans.oneOrNone<{ id: string; balance: number }>(
       `select id, balance from users where id = $1 for update`,
       [funderId]
     )
     if (!funder) throw new APIError(404, `User ${funderId} not found`)
-    if (!Number.isFinite(funder.balance) || funder.balance < amount)
+    if (!Number.isFinite(funder.balance) || funder.balance < total)
       throw new APIError(
         403,
-        `Insufficient balance: needed ${amount}, have ${funder.balance}`
+        `Insufficient balance: needed ${total}, have ${funder.balance}`
       )
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
@@ -1599,14 +1645,20 @@ export const addPerpPoolSubsidy = async (
       fromType: 'USER',
       toId: contractId,
       toType: 'CONTRACT',
-      amount,
+      amount: total,
       token: 'M$',
-      data: { side, reason: 'perp-pool-subsidy' },
+      data: {
+        side,
+        reason: 'perp-pool-subsidy',
+        ...(options?.idempotencyKey
+          ? { idempotencyKey: options.idempotencyKey }
+          : {}),
+      },
     })
 
     const pool = {
-      L: state.pool.L + (side === 'long' ? amount : 0),
-      S: state.pool.S + (side === 'short' ? amount : 0),
+      L: state.pool.L + (side === 'long' || side === 'both' ? amount : 0),
+      S: state.pool.S + (side === 'short' || side === 'both' ? amount : 0),
     }
     await assertPerpEscrowBalance(pgTrans, contractId, pool)
 
@@ -1620,7 +1672,7 @@ export const addPerpPoolSubsidy = async (
       })
     )
 
-    return { contract, poolLong: pool.L, poolShort: pool.S }
+    return { contract, poolLong: pool.L, poolShort: pool.S, replayed: false }
   })
 }
 
@@ -1642,6 +1694,7 @@ export type AdlNotificationResult = {
 }
 
 export type OracleUpdateResult = {
+  oracleFeedHealth?: OracleFeedHealth
   liquidated: PerpPosition[]
   adlAdjusted: AdlNotificationResult['adlAdjusted']
   adlSettled: AdlNotificationResult['adlSettled']
@@ -1902,8 +1955,9 @@ export const runOracleUpdate = async (
   newPrice: number,
   ts: number,
   sourceTs?: number,
-  /** Fast-tick only. Omit to wait as long as it takes; see OracleUpdateBounds. */
-  bounds?: OracleUpdateBounds
+  /** Fast tick only. Omit to wait; see OracleUpdateBounds. */
+  bounds?: OracleUpdateBounds,
+  oracleFeedHealth?: OracleFeedHealth
 ): Promise<OracleUpdateResult | null> => {
   return runPerpTransaction(
     async (pgTrans) => {
@@ -1919,6 +1973,38 @@ export const runOracleUpdate = async (
         )
       const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
+      // An older successful fetch must not clear a newer freeze/recovery.
+      if (
+        oracleFeedHealth &&
+        oracleFeedHealth.checkedAt <=
+          (contract.oracleFeedHealth?.checkedAt ?? 0)
+      )
+        return null
+      if (
+        oracleFeedHealth &&
+        (oracleFeedHealth.status !== 'available' ||
+          getPerpOracleFreshness({
+            ...contract,
+            oraclePrice: newPrice,
+            oraclePriceTime: ts,
+            oracleFeedHealth,
+          }).status !== 'fresh')
+      )
+        return null
+      // The hourly fallback has no new provider observation. It must not apply
+      // a row that outlived its source health while waiting for the tick lock.
+      if (
+        !oracleFeedHealth &&
+        contract.oracleFeedHealth &&
+        getPerpOracleFreshness({
+          ...contract,
+          oraclePrice: newPrice,
+          oraclePriceTime: ts,
+        }).status !== 'fresh'
+      )
+        return null
+      const healthPatch = oracleFeedHealth ? { oracleFeedHealth } : {}
+      const resultHealth = oracleFeedHealth ?? contract.oracleFeedHealth
       const incomingPoint = { price: newPrice, ts, sourceTs }
       const currentPoint =
         contract.oraclePriceTime == null
@@ -1947,7 +2033,32 @@ export const runOracleUpdate = async (
       // Delivery can race even though state writes cannot. Once the contract
       // lock is held, an older point or exact retry must not touch price, pools,
       // positions, metrics, or event history.
-      if (decision.action === 'ignore' && !retryingHalt) return null
+      if (decision.action === 'ignore' && !retryingHalt) {
+        if (
+          decision.reason !== 'duplicate' ||
+          !oracleFeedHealth ||
+          !shouldRefreshOracleHealth(
+            contract.oracleFeedHealth,
+            oracleFeedHealth
+          )
+        )
+          return null
+        // A flat mark still needs a provider heartbeat, including recovery from
+        // a frozen flag. No liquidation or funding event is replayed here.
+        await pgTrans.one(mergeContractDataQuery(contractId, healthPatch))
+        return {
+          oracleFeedHealth: resultHealth,
+          liquidated: [],
+          adlAdjusted: [],
+          adlSettled: [],
+          adlFactorLong: 1,
+          adlFactorShort: 1,
+          poolLongBefore: state.pool.L,
+          poolLongAfter: state.pool.L,
+          poolShortBefore: state.pool.S,
+          poolShortAfter: state.pool.S,
+        }
+      }
 
       const poolLongBefore = state.pool.L
       const poolShortBefore = state.pool.S
@@ -1981,6 +2092,7 @@ export const runOracleUpdate = async (
         const reason = error instanceof Error ? error.message : String(error)
         await pgTrans.one(
           mergeContractDataQuery(contractId, {
+            ...healthPatch,
             oraclePrice: newPrice,
             oraclePriceTime: ts,
             oracleSourceTime: sourceTs ?? null,
@@ -1992,6 +2104,7 @@ export const runOracleUpdate = async (
           })
         )
         return {
+          oracleFeedHealth: resultHealth,
           liquidated: [],
           adlAdjusted: [],
           adlSettled: [],
@@ -2011,6 +2124,7 @@ export const runOracleUpdate = async (
       )
 
       const contractPatch = removeUndefinedProps({
+        ...healthPatch,
         poolLong: applied.finalState.pool.L,
         poolShort: applied.finalState.pool.S,
         ...openInterestPatch(applied.finalState.positions),
@@ -2047,6 +2161,7 @@ export const runOracleUpdate = async (
         // the whole tick (froze every fast-feed perp at its creation price).
         await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
         return {
+          oracleFeedHealth: resultHealth,
           liquidated: [],
           adlAdjusted: [],
           adlSettled: [],
@@ -2096,6 +2211,7 @@ export const runOracleUpdate = async (
       )
 
       return {
+        oracleFeedHealth: resultHealth,
         liquidated: applied.liquidated,
         adlAdjusted: applied.adlAdjusted,
         adlSettled: applied.adlSettled,
@@ -2137,6 +2253,21 @@ export const runFunding = async (
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const appliedTime = Date.now()
+
+    // Read health from the locked contract, not the scheduler's earlier
+    // snapshot. A long source allowance must not extend a provider outage
+    // or a frozen flag into hours of funding while users cannot close.
+    if (!PERPS_SKIP_ORACLE_FRESHNESS && contract.oracleFeedHealth != null) {
+      const freshness = getPerpOracleFreshness(contract, appliedTime)
+      if (freshness.status !== 'fresh') {
+        log(
+          `[perps] skipping funding for ${contract.slug}: ${
+            freshness.reason ?? 'Oracle price is stale'
+          }`
+        )
+        return null
+      }
+    }
 
     // Halt gate, read from the PERSISTED contract under the lock rather than
     // from the caller's oracle result.
