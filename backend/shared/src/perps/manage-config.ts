@@ -59,9 +59,13 @@ export const setPerpConfig = async (
     await requirePerpManager(tx, userId, contract)
     if (contract.isResolved)
       throw new APIError(403, 'Cannot update a resolved market')
+    // A replay of an already-applied patch is successful, without a second
+    // edit. Compare the stored fields, not the defaults they resolve to: an
+    // explicit default must still be stamped onto an unset or out-of-range
+    // field, or the market keeps failing closed (or follows a later default
+    // change) while the dashboard reports success.
+    if (keys.every((key) => patch[key] === contract[key])) return contract
     const current = getPerpConfig(contract)
-    // A replay of an already-applied patch is successful, without a second edit.
-    if (keys.every((key) => patch[key] === current[key])) return contract
     for (const [key, value] of Object.entries(expectedConfig ?? {})) {
       if (value !== undefined && current[key as keyof typeof current] !== value)
         throw new APIError(

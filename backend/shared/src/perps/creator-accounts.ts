@@ -36,7 +36,7 @@ export const resolvePerpCreatorAccount = async (
     return {
       account,
       user: null,
-      reason: `no ${label} account id is configured for ${environment} (MNX_CREATOR_IDS in backend/shared/src/perps/creator-accounts.ts)`,
+      reason: `no ${label} account id is configured for ${environment} (MNX_CREATOR_IDS in common/src/perps/creator-accounts.ts)`,
     }
   const user = await pg.oneOrNone(
     `select * from users where id = $1 limit 1`,

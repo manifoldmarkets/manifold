@@ -300,3 +300,22 @@ it('refuses account switches and resolved-market rule edits', async () => {
   ).rejects.toThrow('resolved')
   expect(tx.none).not.toHaveBeenCalled()
 })
+
+it('stamps an explicit default onto an unset or out-of-range field instead of skipping it as a replay', async () => {
+  // Out of range, so the engine fails closed on every trade while the value
+  // resolves to the default of 10: exactly what an operator sends to repair it.
+  contract.takerFeeBps = 150
+  delete contract.takerFeeImpact
+  await expect(
+    setPerpConfig({ contractId: 'c1', takerFeeBps: 10, takerFeeImpact: 0 }, mnx)
+  ).resolves.toMatchObject({ takerFeeBps: 10, takerFeeImpact: 0 })
+  expect(contract.takerFeeBps).toBe(10)
+  expect(contract.takerFeeImpact).toBe(0)
+  expect(tx.none).toHaveBeenCalledTimes(1)
+  // Now the same request really is a replay.
+  await setPerpConfig(
+    { contractId: 'c1', takerFeeBps: 10, takerFeeImpact: 0 },
+    mnx
+  )
+  expect(tx.none).toHaveBeenCalledTimes(1)
+})

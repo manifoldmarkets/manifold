@@ -6,6 +6,7 @@ import {
   PERP_CREATOR_ACCOUNTS,
   PerpCreatorAccount,
 } from 'common/perps/creator-accounts'
+import { getPerpEffectiveTakerFeeBps } from 'common/perps/fees'
 import { MNX_INSTRUMENTS, MNX_DEFAULT_FEES } from 'common/perps/mnx'
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
@@ -232,9 +233,11 @@ if (require.main === module)
         throw new Error(
           `${market.id} was created under creator ${market.creatorId}, not ${ownerLabel} (${owner.user.id}). Stop and audit before retrying.`
         )
+      // The API publishes the API-channel rate it will actually charge,
+      // max(web, api), not the configured value.
       if (
         market.takerFeeBps !== body.takerFeeBps ||
-        market.takerFeeApiBps !== body.takerFeeApiBps ||
+        market.takerFeeApiBps !== getPerpEffectiveTakerFeeBps(body, true) ||
         market.takerFeeImpact !== body.takerFeeImpact
       )
         throw new Error(

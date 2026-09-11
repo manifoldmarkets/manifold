@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { contractPath } from 'common/contract'
 import { ENV } from 'common/envs/constants'
 import {
   getPerpConfig,
@@ -20,16 +21,22 @@ import { Input } from 'web/components/widgets/input'
 import { api } from 'web/lib/api/api'
 import {
   buildMnxRulePatch,
+  isMnxBatchInProgress,
+  MNX_REQUEST_TIMEOUT_MS,
   MNX_RULE_FIELDS,
   MnxBatch,
   MnxBatchItem,
   MnxRuleForm,
+  mnxBatchKeyPrefix,
+  readMnxBatches,
+  removeMnxBatch,
   ruleValue,
   runMnxBatch,
+  saveMnxBatch,
 } from 'common/perps/mnx-management'
 
-const number = (value: number) =>
-  new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value)
+const formatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+const number = (value: number) => formatter.format(value)
 const mana = (value: number) => `M$${number(value)}`
 const panel = 'border-ink-200 bg-canvas-0 rounded-xl border'
 const errorMessage = (error: unknown) =>
@@ -50,39 +57,48 @@ export function MnxDashboardView({
   const [amount, setAmount] = useState('')
   const [rules, setRules] = useState<MnxRuleForm>({})
   const [preview, setPreview] = useState<MnxBatch>()
-  const [batch, setBatch] = useState<MnxBatch>()
-  const [running, setRunning] = useState(false)
+  // Every unfinished batch this account saved, in this or another tab.
+  const [batches, setBatches] = useState<MnxBatch[]>([])
+  const [runningId, setRunningId] = useState<string>()
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string>()
-  const [acknowledge, setAcknowledge] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
   const active = useRef(true)
   const busy = useRef(false)
   const editor = useRef<HTMLDivElement>(null)
-  const storageKey = `mnx-management-v1:${ENV}:${data.payer.id}`
+  const prefix = mnxBatchKeyPrefix(ENV, data.payer.id)
   useEffect(() => {
     active.current = true
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (stored) {
-        const previous = JSON.parse(stored) as MnxBatch
-        if (
-          previous.version !== 1 ||
-          previous.actorId !== data.payer.id ||
-          !Array.isArray(previous.items)
-        )
-          throw new Error(
-            'The saved MNX batch could not be read. Keep it for recovery before starting another batch.'
-          )
-        setBatch(previous)
+    const load = () => {
+      try {
+        setBatches(readMnxBatches(localStorage, ENV, data.payer.id))
+        setNow(Date.now())
+        setReady(true)
+      } catch (error) {
+        setReady(false)
+        setError(errorMessage(error))
       }
-      setReady(true)
-    } catch (error) {
-      setError(errorMessage(error))
     }
+    load()
+    // Another tab saved, retried, or finished one of this account's batches.
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key.startsWith(prefix)) load()
+    }
+    window.addEventListener('storage', onStorage)
     return () => {
       active.current = false
+      window.removeEventListener('storage', onStorage)
     }
-  }, [storageKey, data.payer.id])
+  }, [prefix, data.payer.id])
+  // A batch another tab is applying unlocks here once its marker goes stale.
+  const watching = batches.some(
+    (b) => b.id !== runningId && isMnxBatchInProgress(b, now)
+  )
+  useEffect(() => {
+    if (!watching) return
+    const timer = setInterval(() => setNow(Date.now()), 5_000)
+    return () => clearInterval(timer)
+  }, [watching])
 
   const live = data.markets.filter(({ contract }) => !contract.isResolved)
   const targets = live.filter(({ contract }) => selected.includes(contract.id))
@@ -92,49 +108,61 @@ export function MnxDashboardView({
   const sum = (fn: (m: MnxDashboardMarket) => number) =>
     live.reduce((total, m) => total + fn(m), 0)
   const totalCost = Number(amount) * (side === 'both' ? 2 : 1) * targets.length
-  const locked = !!batch || !!preview || running
+  const locked = batches.length > 0 || !!preview || !!runningId
   const one = targets.length === 1 ? targets[0].contract : undefined
 
   const saveBatch = (next: MnxBatch) => {
     // If storage fails, runMnxBatch stops before sending another paid request.
-    localStorage.setItem(storageKey, JSON.stringify(next))
+    saveMnxBatch(localStorage, ENV, next)
     if (active.current)
-      setBatch({ ...next, items: next.items.map((i) => ({ ...i })) })
+      setBatches((prev) =>
+        prev.some((b) => b.id === next.id)
+          ? prev.map((b) => (b.id === next.id ? next : b))
+          : [...prev, next]
+      )
+  }
+  const send = async (item: MnxBatchItem) => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), MNX_REQUEST_TIMEOUT_MS)
+    try {
+      return item.kind === 'liquidity'
+        ? await api('add-perp-subsidy', item.params, {
+            signal: controller.signal,
+          })
+        : await api('update-perp-config', item.params, {
+            signal: controller.signal,
+          })
+    } catch (error) {
+      if (controller.signal.aborted)
+        throw new Error(
+          `No response after ${
+            MNX_REQUEST_TIMEOUT_MS / 1000
+          } seconds. The request may still have gone through; Retry remaining is safe and reuses the same request ID.`
+        )
+      throw error
+    } finally {
+      clearTimeout(timeout)
+    }
   }
   const execute = async (next: MnxBatch) => {
     if (busy.current || next.actorId !== data.payer.id) return
+    if (isMnxBatchInProgress(next, Date.now())) {
+      setError('Another tab is applying this batch. Wait for it to finish.')
+      return
+    }
     busy.current = true
-    setRunning(true)
+    setRunningId(next.id)
     setError(undefined)
     try {
       saveBatch(next)
       setPreview(undefined)
-      await runMnxBatch(
-        next,
-        saveBatch,
-        async (item) => {
-          const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), 30_000)
-          try {
-            return item.kind === 'liquidity'
-              ? await api('add-perp-subsidy', item.params, {
-                  signal: controller.signal,
-                })
-              : await api('update-perp-config', item.params, {
-                  signal: controller.signal,
-                })
-          } finally {
-            clearTimeout(timeout)
-          }
-        },
-        () => active.current
-      )
+      await runMnxBatch(next, saveBatch, send, () => active.current)
     } catch (error) {
       if (active.current) setError(errorMessage(error))
     } finally {
       busy.current = false
       if (active.current) {
-        setRunning(false)
+        setRunningId(undefined)
         await refresh()
       }
     }
@@ -199,7 +227,8 @@ export function MnxDashboardView({
         }
       )
       setPreview({
-        version: 1,
+        version: 2,
+        id: randomString(),
         actorId: data.payer.id,
         createdAt: Date.now(),
         items,
@@ -208,11 +237,12 @@ export function MnxDashboardView({
       setError(errorMessage(error))
     }
   }
-  const finish = () => {
+  const finish = (batch: MnxBatch) => {
     try {
-      localStorage.removeItem(storageKey)
-      setBatch(undefined)
-      setAcknowledge(false)
+      // Only this batch's own entry: a batch another tab is applying, or has
+      // not reconciled yet, keeps its request IDs.
+      removeMnxBatch(localStorage, ENV, batch)
+      setBatches((prev) => prev.filter((b) => b.id !== batch.id))
       setSelected([])
       setError(undefined)
     } catch (error) {
@@ -242,7 +272,7 @@ export function MnxDashboardView({
           <Button
             color="gray-outline"
             onClick={refresh}
-            disabled={refreshing || running}
+            disabled={refreshing || !!runningId}
           >
             {refreshing ? 'Refreshing…' : 'Refresh stats'}
           </Button>
@@ -352,7 +382,7 @@ export function MnxDashboardView({
                       </td>
                       <td className="py-4 pr-4">
                         <Link
-                          href={`/${c.creatorUsername}/${c.slug}`}
+                          href={contractPath(c)}
                           className="text-primary-700 font-semibold hover:underline"
                         >
                           {getMnxInstrument(c.oracleFeedId)?.symbol}
@@ -460,58 +490,19 @@ export function MnxDashboardView({
         </div>
       )}
 
-      {batch ? (
-        <section className={`${panel} p-5`} aria-live="polite">
-          <h2 className="font-semibold">
-            {running ? 'Applying batch…' : 'Batch results'} ·{' '}
-            {batch.items.filter((i) => i.status === 'done').length}/
-            {batch.items.length} complete
-          </h2>
-          <p className="text-ink-500 mt-1 text-sm">
-            Completed markets are skipped on retry. Remaining liquidity requests
-            keep their original request IDs.
-          </p>
-          <ul className="my-4 space-y-2 text-sm">
-            {batch.items.map((item) => (
-              <li key={item.params.contractId}>
-                <b>{item.title}</b> ·{' '}
-                {item.status === 'done'
-                  ? 'Done'
-                  : item.status === 'error'
-                  ? 'Needs attention'
-                  : 'Pending'}
-                {item.error && (
-                  <p className="text-scarlet-600 break-words">{item.error}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-          {!running && batch.items.some((i) => i.status !== 'done') && (
-            <>
-              <Button onClick={() => execute(batch)}>Retry remaining</Button>
-              <label className="text-ink-500 my-4 flex items-start gap-2 text-sm">
-                <input
-                  className="mt-1"
-                  type="checkbox"
-                  checked={acknowledge}
-                  onChange={(e) => setAcknowledge(e.target.checked)}
-                />
-                I have checked any uncertain results and want to end this batch
-                without retrying. A new liquidity batch would make new payments.
-              </label>
-            </>
-          )}
-          <Button
-            color="gray-outline"
-            disabled={
-              running ||
-              (batch.items.some((i) => i.status !== 'done') && !acknowledge)
+      {batches.length > 0 ? (
+        batches.map((batch) => (
+          <BatchResults
+            key={batch.id}
+            batch={batch}
+            running={runningId === batch.id}
+            elsewhere={
+              runningId !== batch.id && isMnxBatchInProgress(batch, now)
             }
-            onClick={finish}
-          >
-            Finish batch
-          </Button>
-        </section>
+            onRetry={() => execute(batch)}
+            onFinish={() => finish(batch)}
+          />
+        ))
       ) : preview ? (
         <section className={`${panel} p-5`}>
           <h2 className="text-lg font-semibold">
@@ -591,7 +582,7 @@ export function MnxDashboardView({
             })}
           </ul>
           <div className="flex gap-3">
-            <Button onClick={() => execute(preview)} disabled={running}>
+            <Button onClick={() => execute(preview)} disabled={!!runningId}>
               Apply {preview.items.length === 1 ? 'change' : 'batch'}
             </Button>
             <Button color="gray-outline" onClick={() => setPreview(undefined)}>
@@ -797,5 +788,83 @@ function Stat({
       </p>
       <p className="text-ink-500 mt-2 text-xs">{note}</p>
     </div>
+  )
+}
+
+function BatchResults({
+  batch,
+  running,
+  elsewhere,
+  onRetry,
+  onFinish,
+}: {
+  batch: MnxBatch
+  running: boolean
+  // Another tab is applying this batch right now.
+  elsewhere: boolean
+  onRetry: () => void
+  onFinish: () => void
+}) {
+  const [acknowledge, setAcknowledge] = useState(false)
+  const unfinished = batch.items.some((i) => i.status !== 'done')
+  return (
+    <section className={`${panel} p-5`} aria-live="polite">
+      <h2 className="font-semibold">
+        {running
+          ? 'Applying batch…'
+          : elsewhere
+          ? 'Applying in another tab…'
+          : 'Batch results'}{' '}
+        · {batch.items.filter((i) => i.status === 'done').length}/
+        {batch.items.length} complete
+      </h2>
+      <p className="text-ink-500 mt-1 text-sm">
+        Completed markets are skipped on retry. Remaining liquidity requests
+        keep their original request IDs.
+      </p>
+      {elsewhere && (
+        <p className="text-ink-500 mt-1 text-sm">
+          Another tab or window is applying this batch. If that tab was closed
+          mid-run, this unlocks within a minute.
+        </p>
+      )}
+      <ul className="my-4 space-y-2 text-sm">
+        {batch.items.map((item) => (
+          <li key={item.params.contractId}>
+            <b>{item.title}</b> ·{' '}
+            {item.status === 'done'
+              ? 'Done'
+              : item.status === 'error'
+              ? 'Needs attention'
+              : 'Pending'}
+            {item.error && (
+              <p className="text-scarlet-600 break-words">{item.error}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+      {!running && !elsewhere && unfinished && (
+        <>
+          <Button onClick={onRetry}>Retry remaining</Button>
+          <label className="text-ink-500 my-4 flex items-start gap-2 text-sm">
+            <input
+              className="mt-1"
+              type="checkbox"
+              checked={acknowledge}
+              onChange={(e) => setAcknowledge(e.target.checked)}
+            />
+            I have checked any uncertain results and want to end this batch
+            without retrying. A new liquidity batch would make new payments.
+          </label>
+        </>
+      )}
+      <Button
+        color="gray-outline"
+        disabled={running || elsewhere || (unfinished && !acknowledge)}
+        onClick={onFinish}
+      >
+        Finish batch
+      </Button>
+    </section>
   )
 }

@@ -31,8 +31,12 @@ in place. **Retry remaining** skips completed markets. The browser saves payment
 request IDs before sending, and the backend recognizes those IDs under the
 contract lock, so a timeout/reload can be retried without charging twice. A
 restored batch never resumes automatically. Keep the saved batch until uncertain
-results are reconciled; starting a new batch creates new payments. Rule edits
-check the previewed settings and record their audit history in the same database
+results are reconciled; starting a new batch creates new payments. Each batch is
+saved under its own browser entry, so **Finish batch** removes only that batch
+and can never discard one that another tab is still applying. Other open tabs
+show a batch while it is being applied and cannot retry or finish it until the
+run ends, or about a minute after a tab was closed mid-run. Rule edits check the
+previewed settings and record their audit history in the same database
 transaction as the update.
 
 New MNX-feed markets default to **10 bps web, 20 bps API, impact 10**. These are

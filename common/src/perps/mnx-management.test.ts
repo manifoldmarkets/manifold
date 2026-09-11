@@ -1,7 +1,17 @@
 import { API } from '../api/schema'
 import { PerpContract } from '../contract'
 import { HOUR_MS, YEAR_MS } from '../util/time'
-import { buildMnxRulePatch, MnxBatch, runMnxBatch } from './mnx-management'
+import {
+  buildMnxRulePatch,
+  isMnxBatchInProgress,
+  MNX_BATCH_STALE_MS,
+  MnxBatch,
+  MnxBatchStorage,
+  readMnxBatches,
+  removeMnxBatch,
+  runMnxBatch,
+  saveMnxBatch,
+} from './mnx-management'
 import { MNX_DEFAULT_FEES } from './mnx'
 
 const contract = { fundingPeriodMs: HOUR_MS } as PerpContract
@@ -25,6 +35,13 @@ it('leaves blank fields unchanged but preserves explicit zero fees', () => {
   expect(() => buildMnxRulePatch({}, contract)).toThrow('at least one')
   expect(buildMnxRulePatch({ oracleAgeSeconds: '4500' }, contract)).toEqual({
     maxOraclePriceAgeMs: 4_500_000,
+  })
+})
+
+it('rounds a fractional mark age to whole milliseconds', () => {
+  // 1.005 * 1000 is 1004.9999999999999 in floating point.
+  expect(buildMnxRulePatch({ oracleAgeSeconds: '1.005' }, contract)).toEqual({
+    maxOraclePriceAgeMs: 1005,
   })
 })
 
@@ -55,16 +72,17 @@ it('allows each rule independently and rejects an empty update or client-only fi
   ).toBe(false)
 })
 
-const batch = (): MnxBatch => ({
-  version: 1,
+const batch = (id = 'batch1'): MnxBatch => ({
+  version: 2,
+  id,
   actorId: 'mnx',
   createdAt: 1,
-  items: ['a', 'b', 'c'].map((id) => ({
+  items: ['a', 'b', 'c'].map((contractId) => ({
     kind: 'liquidity',
-    title: id,
+    title: contractId,
     status: 'pending',
     params: {
-      contractId: id,
+      contractId,
       side: 'both',
       amount: 10,
       idempotencyKey: 'abcdefghjk',
@@ -119,4 +137,81 @@ it('sends no payment if saving the retry keys fails or the account unmounts', as
   ).rejects.toThrow('Storage full')
   await runMnxBatch(batch(), jest.fn(), send, () => false)
   expect(send).not.toHaveBeenCalled()
+})
+
+it('marks the batch in progress for other tabs while sending and clears it when the run ends', async () => {
+  const saved: MnxBatch[] = []
+  const send = jest
+    .fn()
+    .mockResolvedValueOnce({})
+    .mockRejectedValueOnce(new Error('Lost response'))
+  const last = await runMnxBatch(
+    batch(),
+    (b) => {
+      saved.push(b)
+    },
+    send,
+    () => true
+  )
+  const during = saved.slice(0, -1)
+  expect(during.length).toBeGreaterThan(0)
+  expect(during.every((b) => isMnxBatchInProgress(b, b.runningAt!))).toBe(true)
+  expect(last.runningAt).toBeUndefined()
+  expect(saved[saved.length - 1]).toEqual(last)
+  // A tab that crashed mid-run stops blocking the others once its mark is stale.
+  const crashed = { ...last, runningAt: 1_000_000 }
+  expect(
+    isMnxBatchInProgress(crashed, 1_000_000 + MNX_BATCH_STALE_MS - 1)
+  ).toBe(true)
+  expect(isMnxBatchInProgress(crashed, 1_000_000 + MNX_BATCH_STALE_MS)).toBe(
+    false
+  )
+})
+
+const fakeStorage = (): MnxBatchStorage => {
+  const map = new Map<string, string>()
+  return {
+    get length() {
+      return map.size
+    },
+    key: (index) => [...map.keys()][index] ?? null,
+    getItem: (key) => map.get(key) ?? null,
+    setItem: (key, value) => {
+      map.set(key, value)
+    },
+    removeItem: (key) => {
+      map.delete(key)
+    },
+  }
+}
+
+it('saves every batch under its own entry, so finishing one never discards another', () => {
+  const storage = fakeStorage()
+  saveMnxBatch(storage, 'DEV', { ...batch('newer'), createdAt: 2 })
+  saveMnxBatch(storage, 'DEV', batch('older'))
+  saveMnxBatch(storage, 'PROD', batch('other-env'))
+  saveMnxBatch(storage, 'DEV', { ...batch('other-account'), actorId: 'admin' })
+  expect(readMnxBatches(storage, 'DEV', 'mnx').map((b) => b.id)).toEqual([
+    'older',
+    'newer',
+  ])
+  removeMnxBatch(storage, 'DEV', batch('newer'))
+  expect(readMnxBatches(storage, 'DEV', 'mnx').map((b) => b.id)).toEqual([
+    'older',
+  ])
+  expect(readMnxBatches(storage, 'PROD', 'mnx').map((b) => b.id)).toEqual([
+    'other-env',
+  ])
+  expect(readMnxBatches(storage, 'DEV', 'admin').map((b) => b.id)).toEqual([
+    'other-account',
+  ])
+})
+
+it('refuses to start over a saved batch it cannot read', () => {
+  const storage = fakeStorage()
+  saveMnxBatch(storage, 'DEV', batch())
+  storage.setItem('mnx-batch-v2:DEV:mnx:legacy', '{"version":1,"items":[]}')
+  expect(() => readMnxBatches(storage, 'DEV', 'mnx')).toThrow(
+    'could not be read'
+  )
 })
