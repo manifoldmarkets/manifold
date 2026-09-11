@@ -14,6 +14,7 @@ import { useUser } from 'web/hooks/use-user'
 
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { Tooltip } from '../widgets/tooltip'
 import { PERP_TICKER_CLASS } from './perp-market-badge'
 
 export function PerpMarketExplainer(props: {
@@ -34,22 +35,31 @@ export function PerpMarketExplainer(props: {
 
   return (
     <>
-      <button
-        type="button"
-        className={clsx(
-          PERP_TICKER_CLASS,
-          // Title-sized like the label everywhere else; the (i) scales with it.
-          'hover:text-primary-500 focus-visible:ring-primary-500 inline-flex cursor-pointer items-center gap-1 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-          className
-        )}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={`${ticker}: how this perpetual market works`}
-        onClick={() => setOpen(true)}
+      {/* Elsewhere the ticker only names the market type on hover; here it is
+          also a button, so the hover says so — the (i) alone is easy to read
+          as decoration next to a title. */}
+      <Tooltip
+        text="Perpetual market — click for info"
+        placement="bottom"
+        noTap
       >
-        {ticker}
-        <InformationCircleIcon aria-hidden className="h-[0.8em] w-[0.8em]" />
-      </button>
+        <button
+          type="button"
+          className={clsx(
+            PERP_TICKER_CLASS,
+            // Title-sized like the label everywhere else; the (i) scales with it.
+            'hover:text-primary-500 focus-visible:ring-primary-500 inline-flex cursor-pointer items-center gap-1 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+            className
+          )}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={`${ticker}: how this perpetual market works`}
+          onClick={() => setOpen(true)}
+        >
+          {ticker}
+          <InformationCircleIcon aria-hidden className="h-[0.8em] w-[0.8em]" />
+        </button>
+      </Tooltip>
       <Modal
         open={open}
         setOpen={setOpen}
