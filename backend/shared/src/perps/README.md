@@ -65,10 +65,14 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
 - `POST /create-perp` (admin) — creates a new perp market. Launch-manifest
   feeds automatically receive their environment-specific required topic; the
   admin form defaults to unlisted and can apply the full reviewed launch
-  recommendation in one click. Launch feeds require the environment's official
-  Manifold creator account because residual backing returns to the creator.
-  New markets preserve their per-side initial backing for later preflight
-  auditing.
+  recommendation in one click. The caller must be the environment's official
+  Manifold account; the market's owner is the `creatorAccount` selection
+  (`common/src/perps/creator-accounts.ts`): `manifold` (default, the official
+  account) or `mnx` (the verified `@MNX` partner account, accepted only on MNX
+  feeds). The selected account pays the backing at creation and receives the
+  residual pool at settlement, so a partner owner must already hold the
+  backing. New markets preserve their per-side initial backing for later
+  preflight auditing.
 - `POST /place-perp-trade` — opens or adds to a position.
 - `POST /close-perp-position` — closes all of a position, or the
   `fraction` of it given (see Partial closes).
@@ -616,8 +620,11 @@ for feeds requiring a provider observation.
 Use `publish-mnx-now.ts` to inspect readiness or publish immediately (`--apply`);
 a fresh process bypasses the scheduler's in-memory backoff. Backfill and creation
 scripts are dry-run-first and environment-checked in DEV and PROD. Creation
-uses the MNX manifest recommendations, the official creator and unlisted
-visibility. New markets start paused until their first atomic live tick.
+uses the MNX manifest recommendations, the official creator as caller and
+unlisted visibility; `--creator=mnx` makes the `@MNX` partner account the
+owner (it must hold the backing, and the preflight accepts it as the creator
+of MNX-feed markets only). New markets start paused until their first atomic
+live tick.
 The 3× recommendation is advisory; creation permits lower leverage and enforces
 MNX's supported leverage as a ceiling. Provider margin changes never freeze an
 existing feed. MNX derivatives are the defined price target: valuation futures

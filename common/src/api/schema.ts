@@ -37,6 +37,7 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
+import { PerpCreatorAccount } from 'common/perps/creator-accounts'
 import {
   PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
@@ -1396,6 +1397,20 @@ export const API = (_apiTypeCheck = {
         requiredTopicNames: string[]
         creatorAuthorized: boolean
       } | null
+      // Whether the caller may create on this feed at all: only the official
+      // Manifold account can, because it either pays the backing itself or
+      // acts for a partner account (see createPerpSchema.creatorAccount).
+      callerAuthorized: boolean
+      // Every selectable owner, in display order. `allowed` is feed policy
+      // (a partner owns only its own feeds); `unavailableReason` is set when
+      // the account cannot be resolved in this environment.
+      creatorAccounts: {
+        account: PerpCreatorAccount
+        label: string
+        allowed: boolean
+        username: string | null
+        unavailableReason: string | null
+      }[]
     }[],
     props: z.object({}).strict(),
   },

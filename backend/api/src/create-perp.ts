@@ -1,3 +1,9 @@
+import {
+  DEFAULT_PERP_CREATOR_ACCOUNT,
+  PERP_CREATOR_ACCOUNT_LABELS,
+  getAllowedPerpCreatorAccounts,
+  isPerpCreatorAccountAllowed,
+} from 'common/perps/creator-accounts'
 import { getMnxInstrument } from 'common/perps/mnx'
 import { OracleFeedHealth } from 'common/perps/oracle-health'
 import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
@@ -26,6 +32,7 @@ import { camelCase, first, uniqBy } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
+import { resolvePerpCreatorAccount } from 'shared/perps/creator-accounts'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
 import {
   ALL_PERP_LAUNCH_MARKETS,
@@ -38,7 +45,7 @@ import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { broadcastNewContract } from 'shared/websockets/helpers'
 import { convertUser } from 'common/supabase/users'
-import { getUser, htmlToRichText, log } from 'shared/utils'
+import { htmlToRichText, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { assertPerpExposureIncreaseEnabled } from './helpers/perp-trading-mode'
 
@@ -86,6 +93,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     subsidyShort,
     takerFeeBps,
     takerFeeImpact,
+    creatorAccount = DEFAULT_PERP_CREATOR_ACCOUNT,
   } = body
 
   const totalSubsidy = subsidyLong + subsidyShort
@@ -99,10 +107,25 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const launchDefinition = ALL_PERP_LAUNCH_MARKETS.find(
     (market) => market.feedId === oracleFeedId
   )
-  if (launchDefinition && auth.uid !== getPerpLaunchCreatorId(ENV))
+  // The owner is a selected account, never the calling admin: it pays the
+  // backing and residual backing returns to it at settlement. Spending that
+  // balance (its own, or the partner's on the partner's behalf) is reserved
+  // for the official Manifold account, so a personal admin session cannot
+  // create a PERP under either name. Every creation-enabled feed is a launch
+  // feed today, so this is the same gate the launch manifest always had.
+  if (auth.uid !== getPerpLaunchCreatorId(ENV))
     throw new APIError(
       403,
-      'Launch PERPs must be created by the official Manifold account because residual backing returns to the creator.'
+      'PERPs must be created by the official Manifold account: the selected creator account pays the backing and residual backing returns to it.'
+    )
+  if (!isPerpCreatorAccountAllowed(creatorAccount, oracleFeedId))
+    throw new APIError(
+      400,
+      `${
+        PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]
+      } cannot own a market on ${oracleFeedId}; allowed creator accounts: ${getAllowedPerpCreatorAccounts(
+        oracleFeedId
+      ).join(', ')}.`
     )
   if (launchDefinition && question !== launchDefinition.question)
     throw new APIError(
@@ -127,12 +150,23 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const ticker =
     canonicalTicker ?? requestedTicker ?? derivePerpTicker(oracleFeedId)
 
-  const user = await getUser(auth.uid)
-  if (!user) throw new APIError(404, 'User not found')
-  if (user.balance < totalSubsidy)
-    throw new APIError(403, `Balance must be at least ${totalSubsidy}.`)
-
   const pg = createSupabaseDirectClient()
+  const creator = await resolvePerpCreatorAccount(creatorAccount, ENV, pg)
+  if (!creator.user)
+    throw new APIError(
+      400,
+      `Cannot create as ${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]}: ${creator.reason}.`
+    )
+  const user = creator.user
+  if (user.balance < totalSubsidy)
+    throw new APIError(
+      403,
+      `${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]} (@${
+        user.username
+      }) pays the backing and has M${Math.floor(
+        user.balance
+      )}; it must hold at least M${totalSubsidy}.`
+    )
 
   // Implicit feed existence check: at least one oracle_prices row must exist.
   const oracle = await pg.oneOrNone<{
@@ -378,7 +412,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     )
     await tx.none(contractQuery)
 
-    // Creator pays the subsidy into the contract pools.
+    // The selected creator account pays the subsidy into the contract pools.
     await runTxnOutsideBetQueue(tx, {
       fromId: user.id,
       fromType: 'USER',

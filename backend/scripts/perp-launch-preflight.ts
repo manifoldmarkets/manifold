@@ -10,6 +10,7 @@ import {
   getPerpOpenInterestCapacity,
   assertPerpStateSolvent,
 } from 'common/perps/amm'
+import { isPerpCreatorAccountAllowed } from 'common/perps/creator-accounts'
 import { isPerpEscrowBalanced } from 'common/perps/escrow'
 import { shouldApplyFunding } from 'common/perps/funding'
 import { getOracleFreshness, getPerpOracleFreshness } from 'common/perps/oracle'
@@ -27,6 +28,7 @@ import {
   getPerpLaunchTopicSlug,
 } from 'shared/perps/launch-manifest'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
+import { resolvePerpCreatorAccount } from 'shared/perps/creator-accounts'
 import { getLocalEnv } from 'shared/init-admin'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
@@ -595,6 +597,24 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
       rows.map((row) => [row.data.id, row.token])
     )
     const excludedIds = new Set<string>(PERP_LAUNCH_EXCLUDED_FEED_IDS)
+    // A launch market's owner is one of the selectable creator accounts, not
+    // only the manifest's official id: the MNX partner may own MNX feeds. A
+    // missing partner account narrows the allowed set instead of failing —
+    // DEV need not have one.
+    const partner = await resolvePerpCreatorAccount('mnx', environment, pg)
+    report(
+      'PASS',
+      'creator accounts',
+      partner.user
+        ? `official ${environment} account ${getPerpLaunchCreatorId(
+            environment
+          )}; MNX partner @${partner.user.username} (${
+            partner.user.id
+          }) may own MNX feeds`
+        : `official ${environment} account ${getPerpLaunchCreatorId(
+            environment
+          )} only; MNX partner unavailable (${partner.reason})`
+    )
 
     for (const contract of contracts) {
       const nativeToken = tokenByContractId.get(contract.id)
@@ -656,12 +676,29 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
                 contract.ticker ? `"${contract.ticker}"` : 'none'
               }, expected="${expectedTicker}"; run backfill-perp-tickers.ts --apply`
         )
+        const allowedCreators = new Map([
+          [expectedCreatorId, `official ${environment} Manifold account`],
+        ])
+        if (
+          partner.user &&
+          isPerpCreatorAccountAllowed('mnx', contract.oracleFeedId)
+        )
+          allowedCreators.set(
+            partner.user.id,
+            `MNX partner account @${partner.user.username}`
+          )
+        const ownerLabel = allowedCreators.get(contract.creatorId)
         report(
-          contract.creatorId === expectedCreatorId ? 'PASS' : 'FAIL',
+          ownerLabel ? 'PASS' : 'FAIL',
           `market ${contract.slug} launch creator`,
-          contract.creatorId === expectedCreatorId
-            ? `official ${environment} Manifold account`
-            : `creator ${contract.creatorId} is not the required official account ${expectedCreatorId}; residual backing returns to the creator`
+          ownerLabel ??
+            `creator ${
+              contract.creatorId
+            } is not an allowed creator account for ${
+              contract.oracleFeedId
+            } (${Array.from(allowedCreators.keys()).join(
+              ', '
+            )}); residual backing returns to the creator`
         )
         const discovery = await pg.one<{
           group_slugs: string[]
