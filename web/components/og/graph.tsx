@@ -122,15 +122,37 @@ export function Sparkline(props: {
   )
 }
 
-/** y-domain for the graph: 0..1 for probabilities, so the line's height means
- * something on its own (near the top = likely, flat = stable), or the data's
- * own range for other series like prices */
+// Smallest probability range the graph spans: moves under a few points stay
+// flat, a 10-point move climbs half the strip, and 20 or more fill it. The
+// start and end labels carry the magnitude, so the line can fit its range.
+const MIN_PROB_SPAN = 0.2
+
+/** y-domain for the graph: the data's range, widened to MIN_PROB_SPAN for
+ * probabilities (kept within 0..1), or as-is for other series like prices */
 export function getProbGraphDomain(data: Point[]): [number, number] {
   const minY = Math.min(...data.map((p) => p.y))
   const maxY = Math.max(...data.map((p) => p.y))
-  const isProbability = minY >= 0 && maxY <= 1
-  if (!isProbability) return [minY, maxY === minY ? maxY + 1 : maxY]
-  return [0, 1]
+  if (!isProbabilitySeries(data)) {
+    return [minY, maxY === minY ? maxY + 1 : maxY]
+  }
+
+  const span = Math.max(maxY - minY, MIN_PROB_SPAN)
+  const mid = (minY + maxY) / 2
+  let lo = mid - span / 2
+  let hi = mid + span / 2
+  if (lo < 0) {
+    hi -= lo
+    lo = 0
+  }
+  if (hi > 1) {
+    lo -= hi - 1
+    hi = 1
+  }
+  return [Math.max(lo, 0), hi]
+}
+
+function isProbabilitySeries(data: Point[]) {
+  return data.every((p) => p.y >= 0 && p.y <= 1)
 }
 
 // Samples across the strip the series is resampled to before drawing
@@ -197,7 +219,7 @@ export function ProbGraph(props: {
   const curve = curveMonotoneX
   const endDotRadius = 4.5
   const domain = getProbGraphDomain(data)
-  const showLabels = endpointLabels && domain[0] === 0 && domain[1] === 1
+  const showLabels = endpointLabels && isProbabilitySeries(data)
   const labelWidth = showLabels ? 36 : 0
   const plotWidth = w - 2 * labelWidth
   const xScale = scaleTime(visibleRange, [0, plotWidth - endDotRadius - 1])
@@ -214,7 +236,7 @@ export function ProbGraph(props: {
   const percent = (p: Point) => `${Math.round(p.y * 100)}%`
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const da = area(px, showLabels ? yScale(0) : h, py1).curve(curve)(data)!
+  const da = area(px, h, py1).curve(curve)(data)!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!
 
