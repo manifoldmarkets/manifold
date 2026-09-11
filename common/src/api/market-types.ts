@@ -14,6 +14,7 @@ import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
+import { PERP_CREATOR_ACCOUNTS } from 'common/perps/creator-accounts'
 import {
   PERP_TICKER_MAX_LENGTH,
   PERP_TICKER_PATTERN,
@@ -719,6 +720,12 @@ export const createPerpSchema = z.object({
   // platform default (see PERP_TAKER_FEE_IMPACT_DEFAULT); stamped like
   // takerFeeBps above.
   takerFeeImpact: z.number().min(0).max(PERP_TAKER_FEE_IMPACT_MAX).optional(),
+  // Which account owns the market. The owner pays the backing now and is paid
+  // the residual pool at settlement, so the caller must be the official
+  // Manifold account either way (it spends its own balance or acts for the
+  // partner). Omitted = 'manifold' (the handler owns the default, as with
+  // visibility); a partner is accepted only on its own feeds.
+  creatorAccount: z.enum(PERP_CREATOR_ACCOUNTS).optional(),
 })
 
 export const placePerpTradeSchema = z.object({
