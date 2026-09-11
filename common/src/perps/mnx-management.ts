@@ -99,6 +99,13 @@ export type MnxBatchItem = {
 } & (
   | { kind: 'liquidity'; params: APIParams<'add-perp-subsidy'> }
   | { kind: 'rules'; params: APIParams<'update-perp-config'> }
+  | {
+      kind: 'visibility'
+      previousVisibility: PerpContract['visibility']
+      params: Pick<APIParams<'market/:contractId/update'>, 'contractId'> & {
+        visibility: 'unlisted' | 'public'
+      }
+    }
 )
 export type MnxBatch = {
   version: 2
