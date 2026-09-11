@@ -1,5 +1,6 @@
 import {
   MNX_CREATOR_USERNAME,
+  getMnxCreatorId,
   PERP_CREATOR_ACCOUNT_LABELS,
   PerpCreatorAccount,
 } from 'common/perps/creator-accounts'
@@ -10,20 +11,8 @@ import { getPerpLaunchCreatorId } from './launch-manifest'
 
 type Environment = 'DEV' | 'PROD'
 
-// The partner is identified by user id, never by username: usernames can be
-// changed and are not reserved, so resolving @MNX at request time would let a
-// rename strand its existing markets and let whoever reclaims the old name
-// become the partner. Fill an environment in from
-//   select id, username from users where username = 'MNX'
-// and leave it undefined to keep MNX unavailable there (the form greys the
-// option out and create-perp refuses it).
-export const MNX_CREATOR_IDS: Record<Environment, string | undefined> = {
-  DEV: undefined,
-  PROD: '0YOMCbJas0UqJdlrqKe1MrQewrF2',
-}
-
-export const getMnxCreatorId = (environment: Environment) =>
-  MNX_CREATOR_IDS[environment]
+// Kept as re-exports for scripts and preflight consumers.
+export { MNX_CREATOR_IDS, getMnxCreatorId } from 'common/perps/creator-accounts'
 
 export type PerpCreatorAccountResolution =
   | { account: PerpCreatorAccount; user: User; reason?: undefined }

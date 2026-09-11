@@ -24,6 +24,7 @@ import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -711,13 +712,17 @@ export const createPerpSchema = z.object({
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),
   // Open-side taker fee in bps of notional (closing is free). Omitted = the
-  // platform default (see PERP_TAKER_FEE_BPS_DEFAULT); the handler stamps
+  // feed default (MNX_DEFAULT_FEES for MNX, PERP_TAKER_FEE_BPS_DEFAULT
+  // otherwise); the handler stamps
   // the resolved value so later default changes cannot rewrite an existing
   // market's economics.
   takerFeeBps: z.number().min(0).max(100).optional(),
+  // API-key opens use max(web base, API base). MNX defaults to 20 bps;
+  // other feeds inherit the web base when this is omitted.
+  takerFeeApiBps: z.number().min(0).max(PERP_TAKER_FEE_API_BPS_MAX).optional(),
   // Size-impact coefficient of the taker fee (marginal rate is
   // takerFeeBps + takerFeeImpact·(share of pool)² bps). Omitted = the
-  // platform default (see PERP_TAKER_FEE_IMPACT_DEFAULT); stamped like
+  // feed default (10 on MNX, PERP_TAKER_FEE_IMPACT_DEFAULT otherwise); stamped like
   // takerFeeBps above.
   takerFeeImpact: z.number().min(0).max(PERP_TAKER_FEE_IMPACT_MAX).optional(),
   // Which account owns the market. The owner pays the backing now and is paid

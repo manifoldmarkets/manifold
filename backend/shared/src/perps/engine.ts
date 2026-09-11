@@ -179,7 +179,8 @@ const buildState = (
 
 const loadStateForUpdate = async (
   pgTrans: SupabaseTransaction,
-  contractId: string
+  contractId: string,
+  allowResolved = false
 ): Promise<LoadedState> => {
   // `select pg_advisory_xact_lock(...)` returns a row (void column), so
   // .none() would throw "No return data was expected". .one() is correct.
@@ -209,7 +210,7 @@ const loadStateForUpdate = async (
   }
   if (contract.mechanism !== 'perp')
     throw new APIError(400, `Contract ${contractId} is not a perp`)
-  if (contract.isResolved)
+  if (contract.isResolved && !allowResolved)
     throw new APIError(400, `Contract ${contractId} is resolved`)
 
   const positionRows = await pgTrans.any(
@@ -1570,26 +1571,70 @@ export const closePosition = async (
 export const addPerpPoolSubsidy = async (
   contractId: string,
   funderId: string,
-  side: PerpDirection,
-  amount: number
+  side: PerpDirection | 'both',
+  amount: number,
+  options?: {
+    idempotencyKey?: string
+    authorize?: (
+      tx: SupabaseTransaction,
+      contract: PerpContract
+    ) => Promise<void>
+  }
 ) => {
   if (!Number.isFinite(amount) || amount <= 0)
     throw new APIError(400, 'amount must be a finite positive number')
 
+  assertIdempotencyKey(options?.idempotencyKey)
+  const total = amount * (side === 'both' ? 2 : 1)
+
   return runPerpTransaction(async (pgTrans) => {
-    // Rejects resolved markets and non-MANA tokens, and serializes against
-    // every other engine writer on this contract.
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    // Serialize against every other engine writer. Permit reading a resolved
+    // contract only to recover a committed request; new payments are refused
+    // below, before any debit. Non-MANA tokens are always rejected.
+    const { contract, state } = await loadStateForUpdate(
+      pgTrans,
+      contractId,
+      true
+    )
+
+    await options?.authorize?.(pgTrans, contract)
+    // The contract lock serializes duplicate requests. The ledger entry and
+    // pool change commit together; txns.data has a legacy extra data level.
+    if (options?.idempotencyKey) {
+      const prior = await pgTrans.oneOrNone<{ amount: number; side: string }>(
+        `select amount, data->'data'->>'side' as side from txns
+          where from_id = $1 and to_id = $2 and category = 'ADD_SUBSIDY'
+            and token = 'M$' and from_type = 'USER' and to_type = 'CONTRACT'
+            and data->'data'->>'idempotencyKey' = $3 limit 1`,
+        [funderId, contractId, options.idempotencyKey]
+      )
+      if (prior) {
+        if (Number(prior.amount) !== total || prior.side !== side)
+          throw new APIError(
+            409,
+            'This subsidy request key was already used for a different amount or side.'
+          )
+        return {
+          contract,
+          poolLong: state.pool.L,
+          poolShort: state.pool.S,
+          replayed: true,
+        }
+      }
+    }
+
+    if (contract.isResolved)
+      throw new APIError(400, `Contract ${contractId} is resolved`)
 
     const funder = await pgTrans.oneOrNone<{ id: string; balance: number }>(
       `select id, balance from users where id = $1 for update`,
       [funderId]
     )
     if (!funder) throw new APIError(404, `User ${funderId} not found`)
-    if (!Number.isFinite(funder.balance) || funder.balance < amount)
+    if (!Number.isFinite(funder.balance) || funder.balance < total)
       throw new APIError(
         403,
-        `Insufficient balance: needed ${amount}, have ${funder.balance}`
+        `Insufficient balance: needed ${total}, have ${funder.balance}`
       )
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
@@ -1600,14 +1645,20 @@ export const addPerpPoolSubsidy = async (
       fromType: 'USER',
       toId: contractId,
       toType: 'CONTRACT',
-      amount,
+      amount: total,
       token: 'M$',
-      data: { side, reason: 'perp-pool-subsidy' },
+      data: {
+        side,
+        reason: 'perp-pool-subsidy',
+        ...(options?.idempotencyKey
+          ? { idempotencyKey: options.idempotencyKey }
+          : {}),
+      },
     })
 
     const pool = {
-      L: state.pool.L + (side === 'long' ? amount : 0),
-      S: state.pool.S + (side === 'short' ? amount : 0),
+      L: state.pool.L + (side === 'long' || side === 'both' ? amount : 0),
+      S: state.pool.S + (side === 'short' || side === 'both' ? amount : 0),
     }
     await assertPerpEscrowBalance(pgTrans, contractId, pool)
 
@@ -1621,7 +1672,7 @@ export const addPerpPoolSubsidy = async (
       })
     )
 
-    return { contract, poolLong: pool.L, poolShort: pool.S }
+    return { contract, poolLong: pool.L, poolShort: pool.S, replayed: false }
   })
 }
 

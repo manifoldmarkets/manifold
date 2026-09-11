@@ -15,10 +15,23 @@ export const PERP_CREATOR_ACCOUNT_LABELS: Record<PerpCreatorAccount, string> = {
   mnx: 'MNX',
 }
 
-// The partner account is resolved by username at request time because its id
-// differs per environment (and DEV may not have one at all). The name is in
-// VERIFIED_USERNAMES, so the badge shows on markets it owns.
+// Display name only; authorization uses the immutable per-environment id.
 export const MNX_CREATOR_USERNAME = 'MNX'
+
+// The partner is identified by user id, never by username: usernames can be
+// changed and are not reserved, so resolving @MNX at request time would let a
+// rename strand its existing markets and let whoever reclaims the old name
+// become the partner. Fill an environment in from
+//   select id, username from users where username = 'MNX'
+// and leave it undefined to keep MNX unavailable there (the form greys the
+// option out and create-perp refuses it).
+export const MNX_CREATOR_IDS: Record<'DEV' | 'PROD', string | undefined> = {
+  DEV: undefined,
+  PROD: '0YOMCbJas0UqJdlrqKe1MrQewrF2',
+}
+
+export const getMnxCreatorId = (environment: 'DEV' | 'PROD') =>
+  MNX_CREATOR_IDS[environment]
 
 // A partner may only own markets on its own feeds: MNX-owned BTC markets would
 // route house backing to a third party for a product it has nothing to do
