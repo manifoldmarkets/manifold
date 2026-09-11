@@ -6,7 +6,8 @@ import {
   PERP_CREATOR_ACCOUNTS,
   PerpCreatorAccount,
 } from 'common/perps/creator-accounts'
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { getPerpEffectiveTakerFeeBps } from 'common/perps/fees'
+import { MNX_INSTRUMENTS, MNX_DEFAULT_FEES } from 'common/perps/mnx'
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
 import { getLocalEnv } from 'shared/init-admin'
@@ -84,6 +85,7 @@ if (require.main === module)
         ticker: getPerpFeedTicker(spec.feedId),
         creatorAccount,
         visibility: 'unlisted' as const,
+        ...MNX_DEFAULT_FEES,
         maxLeverage: Math.min(recommended.maxLeverage, ready.maxLeverage!),
         subsidyLong: recommended.subsidyLong,
         subsidyShort: recommended.subsidyShort,
@@ -178,6 +180,7 @@ if (require.main === module)
     const knownFeeds: {
       id: string
       callerAuthorized?: boolean
+      supportsApiTakerFee?: boolean
       creatorAccounts?: {
         account: string
         allowed: boolean
@@ -193,6 +196,10 @@ if (require.main === module)
       if (!feed?.creatorAccounts || !option)
         throw new Error(
           `The API at ${apiUrl.host} predates the creator account selector (no creator accounts reported for ${body.oracleFeedId}); deploy it before creating with --creator`
+        )
+      if (feed.supportsApiTakerFee !== true)
+        throw new Error(
+          'The API does not support explicit API-channel creation fees. Deploy the current backend before creating MNX markets.'
         )
       if (feed.callerAuthorized === false)
         throw new Error(
@@ -225,6 +232,16 @@ if (require.main === module)
       if (market.creatorId !== owner.user.id)
         throw new Error(
           `${market.id} was created under creator ${market.creatorId}, not ${ownerLabel} (${owner.user.id}). Stop and audit before retrying.`
+        )
+      // The API publishes the API-channel rate it will actually charge,
+      // max(web, api), not the configured value.
+      if (
+        market.takerFeeBps !== body.takerFeeBps ||
+        market.takerFeeApiBps !== getPerpEffectiveTakerFeeBps(body, true) ||
+        market.takerFeeImpact !== body.takerFeeImpact
+      )
+        throw new Error(
+          `${market.id} was created with different fees than requested. Deploy the current backend and correct this market in /admin/mnx before continuing.`
         )
     }
   })

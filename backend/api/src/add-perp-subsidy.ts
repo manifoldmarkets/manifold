@@ -1,28 +1,45 @@
-import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
+import { requirePerpManager } from 'shared/perps/management-auth'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { addPerpPoolSubsidy } from 'shared/perps/engine'
 import { log } from 'shared/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
-import { APIHandler } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
 
-// Admin-only escrow top-up of one side's backing pool on a live perp. The
-// admin pays from their own balance; all state checks (unresolved, MANA
+// The signed-in manager pays from their own balance; all state checks (unresolved, MANA
 // token, escrow invariant) and locking live in the engine.
 export const addPerpSubsidy: APIHandler<'add-perp-subsidy'> = async (
   body,
   auth
 ) => {
-  throwErrorIfNotAdmin(auth.uid)
+  if (
+    body.expectedManagerId !== undefined &&
+    body.expectedManagerId !== auth.uid
+  )
+    throw new APIError(
+      409,
+      'The paying account changed. Sign back in before retrying.'
+    )
+  await requirePerpManager(createSupabaseDirectClient(), auth.uid)
   const { contractId, side, amount } = body
 
-  const { contract, poolLong, poolShort } = await addPerpPoolSubsidy(
+  const { contract, poolLong, poolShort, replayed } = await addPerpPoolSubsidy(
     contractId,
     auth.uid,
     side,
-    amount
+    amount,
+    {
+      idempotencyKey: body.idempotencyKey,
+      authorize: async (tx, contract) => {
+        await requirePerpManager(tx, auth.uid, contract)
+      },
+    }
   )
-  log(
-    `admin ${auth.uid} added M$${amount} ${side} pool subsidy on ${contract.slug}: L=${poolLong} S=${poolShort}`
-  )
+  if (!replayed)
+    log(
+      `perp manager ${auth.uid} added M$${
+        amount * (side === 'both' ? 2 : 1)
+      } to ${side} pools on ${contract.slug}: L=${poolLong} S=${poolShort}`
+    )
   broadcastUpdatedContract(contract.visibility, {
     id: contractId,
     poolLong,

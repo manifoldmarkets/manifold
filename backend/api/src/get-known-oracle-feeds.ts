@@ -55,6 +55,7 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
     )
     return {
       id,
+      supportsApiTakerFee: true,
       updatePeriodMs: feed?.updatePeriodMs ?? null,
       marketCreationEnabled: feed?.marketCreationEnabled ?? false,
       description: feed?.description ?? null,

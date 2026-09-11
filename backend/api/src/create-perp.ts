@@ -4,7 +4,7 @@ import {
   getAllowedPerpCreatorAccounts,
   isPerpCreatorAccountAllowed,
 } from 'common/perps/creator-accounts'
-import { getMnxInstrument } from 'common/perps/mnx'
+import { getMnxInstrument, MNX_DEFAULT_FEES } from 'common/perps/mnx'
 import { OracleFeedHealth } from 'common/perps/oracle-health'
 import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
 import { advisoryLockQuery } from 'shared/perps/queries'
@@ -95,6 +95,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     subsidyLong,
     subsidyShort,
     takerFeeBps,
+    takerFeeApiBps,
     takerFeeImpact,
     creatorAccount = DEFAULT_PERP_CREATOR_ACCOUNT,
   } = body
@@ -338,8 +339,21 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       // Stamp the resolved values so a later change to the platform defaults
       // cannot silently rewrite this market's economics (same reasoning as
       // fundingPeriodMs above).
-      takerFeeBps: takerFeeBps ?? PERP_TAKER_FEE_BPS_DEFAULT,
-      takerFeeImpact: takerFeeImpact ?? PERP_TAKER_FEE_IMPACT_DEFAULT,
+      takerFeeBps:
+        takerFeeBps ??
+        (getMnxInstrument(oracleFeedId)
+          ? MNX_DEFAULT_FEES.takerFeeBps
+          : PERP_TAKER_FEE_BPS_DEFAULT),
+      takerFeeApiBps:
+        takerFeeApiBps ??
+        (getMnxInstrument(oracleFeedId)
+          ? MNX_DEFAULT_FEES.takerFeeApiBps
+          : undefined),
+      takerFeeImpact:
+        takerFeeImpact ??
+        (getMnxInstrument(oracleFeedId)
+          ? MNX_DEFAULT_FEES.takerFeeImpact
+          : PERP_TAKER_FEE_IMPACT_DEFAULT),
       fundingPeriodMs,
       poolLong: subsidyLong,
       poolShort: subsidyShort,

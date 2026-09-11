@@ -3,6 +3,13 @@ import { HOUR_MS, MINUTE_MS } from '../util/time'
 export const MNX_API_URL = 'https://api.app.mnx.fi/v0'
 export const MNX_POLL_MS = 2_000
 
+// Opening fees in bps of notional; impact is the size-fee coefficient.
+export const MNX_DEFAULT_FEES = {
+  takerFeeBps: 10,
+  takerFeeApiBps: 20,
+  takerFeeImpact: 10,
+} as const
+
 // Stable provider IDs and explicit feed IDs prevent silently rolling a delisted
 // instrument into a new market. Bounds are in the displayed units and reject
 // gross scaling mistakes; currency identity is pinned separately (USD vs HKD

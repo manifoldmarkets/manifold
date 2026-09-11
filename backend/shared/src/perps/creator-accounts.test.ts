@@ -54,7 +54,7 @@ it('keeps the partner unavailable until an id is configured', async () => {
   const missing = await resolvePerpCreatorAccount('mnx', 'DEV', pg)
   expect(missing.user).toBeNull()
   expect(missing.reason).toBe(
-    'no MNX account id is configured for DEV (MNX_CREATOR_IDS in backend/shared/src/perps/creator-accounts.ts)'
+    'no MNX account id is configured for DEV (MNX_CREATOR_IDS in common/src/perps/creator-accounts.ts)'
   )
   expect(pg.oneOrNone).not.toHaveBeenCalled()
 })

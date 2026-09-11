@@ -11,6 +11,7 @@ import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import {
+  ENV,
   ENV_CONFIG,
   PERPS_SKIP_ORACLE_FRESHNESS,
   isAdminId,
@@ -26,6 +27,7 @@ import {
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
+import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import { getPerpTicker } from 'common/perps/ticker'
 import {
   fundingPeriodNoun,
@@ -733,6 +735,14 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               </a>
             </div>
           </Col>
+          {user && (isAdminId(user.id) || user.id === getMnxCreatorId(ENV)) && (
+            <Link
+              href="/admin/mnx"
+              className="text-primary-600 text-sm hover:underline"
+            >
+              Manage MNX markets
+            </Link>
+          )}
           <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">
             <Stat label="24h volume" amount={stats.volume24h} />
             <Stat label="Open interest" amount={stats.openInterest} />
