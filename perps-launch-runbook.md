@@ -73,9 +73,10 @@ rollout in either environment. Default gate commands continue to check the
 existing launch cohort; neither cohort requires the other to have created
 markets. All unresolved markets in either cohort still undergo token,
 escrow, solvency, discovery, oracle and funding checks. Other-cohort markets
-are counted and produce explicit warnings outside the feeds phase; only
-launch presence and visibility are scoped. Unknown feeds still fail public preflight. `ALL_PERP_LAUNCH_MARKETS`
-provides title, official-creator, topic, recommendation and manifest-validation
+are counted in one informational PASS line in every phase; their presence
+requires no `--allow-warning` override. Only launch presence and visibility
+are scoped; invariant failures in either cohort still block the gate. Unknown
+feeds still fail public preflight. `ALL_PERP_LAUNCH_MARKETS` provides title, official-creator, topic, recommendation and manifest-validation
 policy for both cohorts. This is a production-capable integration; creation is
 enabled in both environments. Deploying it does not create or publicize markets.
 

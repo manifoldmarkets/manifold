@@ -584,6 +584,8 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
           (market) => market.feedId === contract.oracleFeedId
         )
     )
+    // Other-cohort presence is informational, not an exceptional condition
+    // requiring --allow-warning. Its invariant failures still block either gate.
     report(
       'PASS',
       'market audit scope',
@@ -591,9 +593,6 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
     )
     const tokenByContractId = new Map(
       rows.map((row) => [row.data.id, row.token])
-    )
-    const launchIds = new Set(
-      selectedLaunchMarkets.map((market) => market.feedId)
     )
     const excludedIds = new Set<string>(PERP_LAUNCH_EXCLUDED_FEED_IDS)
 
@@ -621,12 +620,6 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
           'FAIL',
           `market ${contract.slug}`,
           `feed ${contract.oracleFeedId} is unknown or creation-disabled`
-        )
-      } else if (definition && !launchIds.has(contract.oracleFeedId)) {
-        report(
-          phase === 'feeds' ? 'PASS' : 'WARN',
-          `market ${contract.slug} other cohort`,
-          'Invariant checks included; launch membership and visibility belong to another cohort'
         )
       } else if (!definition) {
         report(

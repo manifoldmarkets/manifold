@@ -18,13 +18,29 @@ beforeEach(() => jest.clearAllMocks())
 afterEach(() => {
   process.argv = args
 })
-it.each([
-  ['default', []],
-  ['mnx', ['--cohort=mnx']],
-])(
-  'audits tickers, token and backing of both cohorts with %s selected',
-  async (_label, options) => {
-    process.argv = ['node', 'preflight', '--phase=feeds', ...options]
+it.each(
+  ['default', 'mnx'].flatMap((cohort) =>
+    ['feeds', 'unlisted', 'rollout', 'public'].map((phase) => ({
+      cohort,
+      phase,
+    }))
+  )
+)(
+  'audits both cohorts without membership warnings for $cohort in $phase',
+  async ({ cohort, phase }) => {
+    process.argv = [
+      'node',
+      'preflight',
+      `--phase=${phase}`,
+      ...(cohort === 'mnx' ? ['--cohort=mnx'] : []),
+      ...(phase === 'rollout'
+        ? [
+            `--public-feed=${
+              cohort === 'mnx' ? 'mnx-anthropic-mark' : 'btc-usd'
+            }`,
+          ]
+        : []),
+    ]
     let audit!: (pg: SupabaseDirectClient) => Promise<void>
     jest.isolateModules(() => {
       // CLI options are captured at import time; isolate each cohort's module.
@@ -74,6 +90,20 @@ it.each([
     await expect(audit(pg as unknown as SupabaseDirectClient)).rejects.toThrow(
       /preflight failed/
     )
+    expect(log).toHaveBeenCalledWith(
+      '[PASS] market audit scope: 2 markets inspected, including 1 from other cohorts; only launch membership/visibility expectations are scoped'
+    )
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('other cohort')
+    )
+    expect(log.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('other-cohort')
+    )
+    // Membership is informational; genuine warnings still fail the later gates.
+    if (phase !== 'feeds')
+      expect(log.error).toHaveBeenCalledWith(
+        expect.stringContaining('unexpected warning external-alert-policies')
+      )
     for (const contract of contracts) {
       expect(backing).toHaveBeenCalledWith(contract.id)
       expect(log.error).toHaveBeenCalledWith(
