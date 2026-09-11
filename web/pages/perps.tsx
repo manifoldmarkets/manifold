@@ -12,6 +12,7 @@ import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import {
   ENV,
+  ENV_CONFIG,
   PERPS_SKIP_ORACLE_FRESHNESS,
   isAdminId,
   isModId,
@@ -60,6 +61,9 @@ import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { referralQuery } from 'common/util/share'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 const revalidate = 60
@@ -602,6 +606,16 @@ export default function PerpsPage(props: { perps: Contract[] }) {
   const week = useWeekSeries(open)
   const activity = useRecentActivity(HUB_FEATURES.activity ? open : [])
   const user = useUser()
+  // Nothing records referrals globally — every shareable page wires up both
+  // halves itself. Incoming: a visitor who landed here from someone's link
+  // carries their ?r= code, and this banks it so a sign-up in this session
+  // is credited to them.
+  useSaveReferral(user)
+  // Outgoing: the hub's own link, tagged with the sharer's code. Signed out
+  // there is no code to add and the bare /perps link still shares fine.
+  const shareUrl = `https://${ENV_CONFIG.domain}/perps${
+    user?.username ? referralQuery(user.username) : ''
+  }`
   // `?as=<userId>` previews the positions card as another user — positions
   // are public (the holders tab lists them), so this leaks nothing, and it
   // lets the card be reviewed without an account that holds perps.
@@ -699,6 +713,17 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
                 Perpetuals
               </h1>
+              {/* No `tooltip`: CopyLinkOrShareButton drops it once the button
+                  has a visible label, and "Share" already says it. */}
+              <CopyLinkOrShareButton
+                url={shareUrl}
+                eventTrackingName="share perps page"
+                color="gray-outline"
+                size="sm"
+                className="ml-2 shrink-0 gap-1.5"
+              >
+                Share
+              </CopyLinkOrShareButton>
             </Row>
             <div className="text-ink-600 text-sm sm:text-base">
               Go long or short on a live number, with leverage. No expiry date.{' '}
