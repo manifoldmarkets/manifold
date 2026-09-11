@@ -215,6 +215,30 @@ export default function AdminCreatePerpPage() {
       : selectedCreator?.unavailableReason
       ? `${selectedCreator.label} is unavailable: ${selectedCreator.unavailableReason}.`
       : null
+  // Every greyed-out option explains itself in place: a disabled toggle cannot
+  // be selected to reveal why, so the reason for each one is listed below.
+  const creatorApiOutOfDate = selectedFeed != null && !creatorSelectorSupported
+  const disabledCreatorReasons = creatorApiOutOfDate
+    ? []
+    : creatorAccounts.flatMap((a) =>
+        !a.allowed
+          ? [
+              {
+                account: a.account,
+                reason: selectedFeed
+                  ? `${a.label} cannot own a market on this feed.`
+                  : `${a.label} is only available on MNX feeds; choose the feed first.`,
+              },
+            ]
+          : a.unavailableReason
+          ? [
+              {
+                account: a.account,
+                reason: `${a.label} is unavailable: ${a.unavailableReason}.`,
+              },
+            ]
+          : []
+      )
   const callerUnauthorized =
     launchCreatorUnauthorized || selectedFeed?.callerAuthorized === false
   const feedCreationDisabled = selectedFeed?.marketCreationEnabled === false
@@ -546,19 +570,24 @@ export default function AdminCreatePerpPage() {
               name and badge show on the market. MNX can only own markets on MNX
               feeds; the official Manifold account can own any feed.
             </p>
-            {creatorBlockedReason && (
+            {disabledCreatorReasons.map(({ account, reason }) => (
+              <p
+                key={account}
+                className={
+                  account === form.creatorAccount
+                    ? 'text-scarlet-700 mt-1 text-xs'
+                    : 'text-ink-500 mt-1 text-xs'
+                }
+              >
+                {reason}
+              </p>
+            ))}
+            {creatorApiOutOfDate && (
               <p className="text-scarlet-700 mt-1 text-xs">
-                {creatorBlockedReason}
+                This API predates the creator selector; redeploy it before
+                relying on the options above.
               </p>
             )}
-            {selectedFeed != null &&
-              !callerUnauthorized &&
-              selectedFeed.callerAuthorized == null && (
-                <p className="text-scarlet-700 mt-1 text-xs">
-                  This API predates the creator selector; redeploy it before
-                  relying on the options above.
-                </p>
-              )}
           </div>
 
           <div>

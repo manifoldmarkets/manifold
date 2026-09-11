@@ -32,7 +32,10 @@ import { camelCase, first, uniqBy } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
-import { resolvePerpCreatorAccount } from 'shared/perps/creator-accounts'
+import {
+  getPerpCreatorAccountMismatch,
+  resolvePerpCreatorAccount,
+} from 'shared/perps/creator-accounts'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
 import {
   ALL_PERP_LAUNCH_MARKETS,
@@ -152,10 +155,13 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
 
   const pg = createSupabaseDirectClient()
   const creator = await resolvePerpCreatorAccount(creatorAccount, ENV, pg)
-  if (!creator.user)
+  const creatorProblem = creator.user
+    ? getPerpCreatorAccountMismatch(creator)
+    : creator.reason
+  if (!creator.user || creatorProblem)
     throw new APIError(
       400,
-      `Cannot create as ${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]}: ${creator.reason}.`
+      `Cannot create as ${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]}: ${creatorProblem}.`
     )
   const user = creator.user
   if (user.balance < totalSubsidy)

@@ -69,10 +69,13 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
   Manifold account; the market's owner is the `creatorAccount` selection
   (`common/src/perps/creator-accounts.ts`): `manifold` (default, the official
   account) or `mnx` (the verified `@MNX` partner account, accepted only on MNX
-  feeds). The selected account pays the backing at creation and receives the
-  residual pool at settlement, so a partner owner must already hold the
-  backing. New markets preserve their per-side initial backing for later
-  preflight auditing.
+  feeds). Both are pinned by user id per environment (`MNX_CREATOR_IDS` in
+  `backend/shared/src/perps/creator-accounts.ts`); MNX stays unavailable
+  where no id is configured, and creation refuses a pinned id whose account
+  no longer carries the `MNX` name. The selected account pays the backing at
+  creation and receives the residual pool at settlement, so a partner owner
+  must already hold the backing. New markets preserve their per-side initial
+  backing for later preflight auditing.
 - `POST /place-perp-trade` — opens or adds to a position.
 - `POST /close-perp-position` — closes all of a position, or the
   `fraction` of it given (see Partial closes).
@@ -623,8 +626,11 @@ scripts are dry-run-first and environment-checked in DEV and PROD. Creation
 uses the MNX manifest recommendations, the official creator as caller and
 unlisted visibility; `--creator=mnx` makes the `@MNX` partner account the
 owner (it must hold the backing, and the preflight accepts it as the creator
-of MNX-feed markets only). New markets start paused until their first atomic
-live tick.
+of MNX-feed markets only). Before any write the script requires the API to
+advertise the creator option for every feed and agree on the owner, and it
+checks each created market's `creatorId`, because an older API silently
+strips the field. New markets start paused until their first atomic live
+tick.
 The 3× recommendation is advisory; creation permits lower leverage and enforces
 MNX's supported leverage as a ceiling. Provider margin changes never freeze an
 existing feed. MNX derivatives are the defined price target: valuation futures

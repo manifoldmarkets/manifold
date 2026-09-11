@@ -222,8 +222,12 @@ Manifold creator and sufficient backing (M800,000 for all sixteen). By default
 the official account owns the markets; `--creator=mnx` makes the verified
 `@MNX` partner account the owner instead, in which case that account must hold
 the backing (the owner pays it at creation and receives the residual pool at
-settlement) while the API key stays the official creator's. The admin form
-offers the same choice as its **Creator account** selector. It prints
+settlement) while the API key stays the official creator's. The partner's user
+id must first be pinned for the environment in `MNX_CREATOR_IDS`
+(`backend/shared/src/perps/creator-accounts.ts`); until then the option is
+unavailable everywhere. The script refuses to apply against an API that does
+not advertise the option and verifies each created market's creator. The
+admin form offers the same choice as its **Creator account** selector. It prints
 per-instrument readiness and exact request bodies, refuses a partially ready
 apply before any creation, and checks duplicates before applying; reruns skip existing
 markets. Do not run these commands until ready to perform their indicated writes.

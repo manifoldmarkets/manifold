@@ -10,7 +10,10 @@ import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
 import { getLocalEnv } from 'shared/init-admin'
-import { resolvePerpCreatorAccount } from 'shared/perps/creator-accounts'
+import {
+  getPerpCreatorAccountMismatch,
+  resolvePerpCreatorAccount,
+} from 'shared/perps/creator-accounts'
 import {
   getPerpLaunchCreatorId,
   MNX_LAUNCH_MARKETS,
@@ -97,11 +100,13 @@ if (require.main === module)
       0
     )
     const callerId = getPerpLaunchCreatorId(ENV)
+    const ownerLabel = PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]
     const owner = await resolvePerpCreatorAccount(creatorAccount, ENV, pg)
-    if (!owner.user)
-      throw new Error(
-        `Cannot create as ${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]}: ${owner.reason}`
-      )
+    const ownerProblem = owner.user
+      ? getPerpCreatorAccountMismatch(owner)
+      : owner.reason
+    if (!owner.user || ownerProblem)
+      throw new Error(`Cannot create as ${ownerLabel}: ${ownerProblem}`)
     log(
       JSON.stringify(
         {
@@ -157,6 +162,53 @@ if (require.main === module)
     })
     if (!me.ok || (await me.json()).id !== callerId)
       throw new Error('API key does not belong to the official creator')
+    // An API that predates the creator selector strips the unknown field and
+    // creates every market under the caller with a 200, so a successful
+    // response proves nothing. Require the API to advertise the option for
+    // each feed, agree on who the account is, and then check every created
+    // market's creator before moving to the next.
+    const feedsResponse = await fetch(getApiUrl('get-known-oracle-feeds'), {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!feedsResponse.ok)
+      throw new Error(
+        `get-known-oracle-feeds failed: HTTP ${feedsResponse.status}`
+      )
+    const knownFeeds: {
+      id: string
+      callerAuthorized?: boolean
+      creatorAccounts?: {
+        account: string
+        allowed: boolean
+        username: string | null
+        unavailableReason: string | null
+      }[]
+    }[] = await feedsResponse.json()
+    for (const body of bodies) {
+      const feed = knownFeeds.find((f) => f.id === body.oracleFeedId)
+      const option = feed?.creatorAccounts?.find(
+        (a) => a.account === creatorAccount
+      )
+      if (!feed?.creatorAccounts || !option)
+        throw new Error(
+          `The API at ${apiUrl.host} predates the creator account selector (no creator accounts reported for ${body.oracleFeedId}); deploy it before creating with --creator`
+        )
+      if (feed.callerAuthorized === false)
+        throw new Error(
+          'The API does not accept this key as the official creator'
+        )
+      if (!option.allowed || option.unavailableReason)
+        throw new Error(
+          `${ownerLabel} cannot own ${body.oracleFeedId} on the API: ${
+            option.unavailableReason ?? 'not allowed on this feed'
+          }`
+        )
+      if (option.username !== owner.user.username)
+        throw new Error(
+          `The API resolves ${ownerLabel} to @${option.username} but this script to @${owner.user.username}; reconcile MNX_CREATOR_IDS before creating`
+        )
+    }
     for (const body of bodies) {
       const response = await fetch(getApiUrl('create-perp'), {
         method: 'POST',
@@ -170,5 +222,9 @@ if (require.main === module)
         )
       const market = await response.json()
       log(`Created unlisted ${body.oracleFeedId}: ${market.id}`)
+      if (market.creatorId !== owner.user.id)
+        throw new Error(
+          `${market.id} was created under creator ${market.creatorId}, not ${ownerLabel} (${owner.user.id}). Stop and audit before retrying.`
+        )
     }
   })

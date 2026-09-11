@@ -1,5 +1,9 @@
 import { SupabaseDirectClient } from '../supabase/init'
-import { resolvePerpCreatorAccount } from './creator-accounts'
+import {
+  getPerpCreatorAccountMismatch,
+  MNX_CREATOR_IDS,
+  resolvePerpCreatorAccount,
+} from './creator-accounts'
 import { getPerpLaunchCreatorId } from './launch-manifest'
 
 const row = (overrides: Record<string, unknown>) => ({
@@ -29,6 +33,9 @@ const clientReturning = (
     ),
   } as unknown as SupabaseDirectClient)
 
+const configured = { ...MNX_CREATOR_IDS }
+afterEach(() => Object.assign(MNX_CREATOR_IDS, configured))
+
 it('pins the official account by environment id', async () => {
   const calls: { sql: string; values: unknown[] }[] = []
   const pg = clientReturning(
@@ -41,34 +48,49 @@ it('pins the official account by environment id', async () => {
   expect(calls[0].values).toEqual([getPerpLaunchCreatorId('PROD')])
 })
 
-it('looks the partner up by username and explains a missing account', async () => {
+it('keeps the partner unavailable until an id is configured', async () => {
+  MNX_CREATOR_IDS.DEV = undefined
+  const pg = clientReturning(row({}))
+  const missing = await resolvePerpCreatorAccount('mnx', 'DEV', pg)
+  expect(missing.user).toBeNull()
+  expect(missing.reason).toBe(
+    'no MNX account id is configured for DEV (MNX_CREATOR_IDS in backend/shared/src/perps/creator-accounts.ts)'
+  )
+  expect(pg.oneOrNone).not.toHaveBeenCalled()
+})
+
+it('resolves the partner by its pinned id, never by username', async () => {
+  MNX_CREATOR_IDS.PROD = 'mnx-user'
   const calls: { sql: string; values: unknown[] }[] = []
   const found = await resolvePerpCreatorAccount(
     'mnx',
-    'DEV',
+    'PROD',
     clientReturning(row({}), calls)
   )
   expect(found.user?.id).toBe('mnx-user')
-  expect(calls[0].sql).toContain('where username = $1')
-  expect(calls[0].values).toEqual(['MNX'])
+  expect(calls[0].sql).toContain('where id = $1')
+  expect(calls[0].sql).not.toContain('username')
+  expect(calls[0].values).toEqual(['mnx-user'])
+  expect(getPerpCreatorAccountMismatch(found)).toBeNull()
 
-  const missing = await resolvePerpCreatorAccount(
+  const gone = await resolvePerpCreatorAccount(
     'mnx',
-    'DEV',
+    'PROD',
     clientReturning(null)
   )
-  expect(missing.user).toBeNull()
-  expect(missing.reason).toBe('no @MNX account exists in DEV')
+  expect(gone.user).toBeNull()
+  expect(gone.reason).toBe('MNX account mnx-user does not exist in PROD')
 })
 
 it('refuses a deleted or banned owner', async () => {
+  MNX_CREATOR_IDS.PROD = 'mnx-user'
   const banned = await resolvePerpCreatorAccount(
     'mnx',
     'PROD',
     clientReturning(row({ isBannedFromPosting: true }))
   )
   expect(banned.user).toBeNull()
-  expect(banned.reason).toBe('MNX (@MNX) is banned')
+  expect(banned.reason).toBe('MNX (@MNX, mnx-user) is banned')
 
   const deleted = await resolvePerpCreatorAccount(
     'mnx',
@@ -76,5 +98,24 @@ it('refuses a deleted or banned owner', async () => {
     clientReturning(row({ data: { userDeleted: true } }))
   )
   expect(deleted.user).toBeNull()
-  expect(deleted.reason).toBe('MNX (@MNX) is deleted')
+  expect(deleted.reason).toBe('MNX (@MNX, mnx-user) is deleted')
+})
+
+it('flags a pinned id whose account no longer carries the partner name', async () => {
+  MNX_CREATOR_IDS.PROD = 'mnx-user'
+  const renamed = await resolvePerpCreatorAccount(
+    'mnx',
+    'PROD',
+    clientReturning(row({ username: 'SomeoneElse' }))
+  )
+  expect(renamed.user?.id).toBe('mnx-user')
+  expect(getPerpCreatorAccountMismatch(renamed)).toBe(
+    'configured MNX partner account mnx-user is now @SomeoneElse, not @MNX; confirm MNX_CREATOR_IDS before creating'
+  )
+  const official = await resolvePerpCreatorAccount(
+    'manifold',
+    'PROD',
+    clientReturning(row({ id: getPerpLaunchCreatorId('PROD'), username: 'X' }))
+  )
+  expect(getPerpCreatorAccountMismatch(official)).toBeNull()
 })

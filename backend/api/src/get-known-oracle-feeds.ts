@@ -9,7 +9,10 @@ import {
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed, ORACLE_FEEDS } from 'shared/oracle-feeds'
-import { resolvePerpCreatorAccount } from 'shared/perps/creator-accounts'
+import {
+  getPerpCreatorAccountMismatch,
+  resolvePerpCreatorAccount,
+} from 'shared/perps/creator-accounts'
 import {
   ALL_PERP_LAUNCH_MARKETS,
   getPerpLaunchCreatorId,
@@ -78,7 +81,9 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
         label: PERP_CREATOR_ACCOUNT_LABELS[resolved.account],
         allowed: isPerpCreatorAccountAllowed(resolved.account, id),
         username: resolved.user?.username ?? null,
-        unavailableReason: resolved.user ? null : resolved.reason,
+        unavailableReason: resolved.user
+          ? getPerpCreatorAccountMismatch(resolved)
+          : resolved.reason,
       })),
     }
   })

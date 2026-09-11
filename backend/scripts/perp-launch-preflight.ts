@@ -28,7 +28,10 @@ import {
   getPerpLaunchTopicSlug,
 } from 'shared/perps/launch-manifest'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
-import { resolvePerpCreatorAccount } from 'shared/perps/creator-accounts'
+import {
+  getMnxCreatorId,
+  resolvePerpCreatorAccount,
+} from 'shared/perps/creator-accounts'
 import { getLocalEnv } from 'shared/init-admin'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
@@ -598,22 +601,28 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
     )
     const excludedIds = new Set<string>(PERP_LAUNCH_EXCLUDED_FEED_IDS)
     // A launch market's owner is one of the selectable creator accounts, not
-    // only the manifest's official id: the MNX partner may own MNX feeds. A
-    // missing partner account narrows the allowed set instead of failing —
-    // DEV need not have one.
+    // only the manifest's official id: the pinned MNX partner id may own MNX
+    // feeds. Ownership is judged by the id alone so a renamed partner keeps
+    // its markets; an unconfigured id (DEV need not have one) narrows the
+    // allowed set, while a configured id whose row is missing, deleted or
+    // banned is worth an explicit --allow-warning.
+    const partnerId = getMnxCreatorId(environment)
     const partner = await resolvePerpCreatorAccount('mnx', environment, pg)
+    const partnerLabel = partner.user
+      ? `MNX partner account @${partner.user.username} (${partner.user.id})`
+      : `MNX partner account ${partnerId}`
     report(
-      'PASS',
+      !partnerId || partner.user ? 'PASS' : 'WARN',
       'creator accounts',
-      partner.user
+      !partnerId
         ? `official ${environment} account ${getPerpLaunchCreatorId(
             environment
-          )}; MNX partner @${partner.user.username} (${
-            partner.user.id
-          }) may own MNX feeds`
-        : `official ${environment} account ${getPerpLaunchCreatorId(
+          )} only; MNX partner not configured for ${environment}`
+        : partner.user
+        ? `official ${environment} account ${getPerpLaunchCreatorId(
             environment
-          )} only; MNX partner unavailable (${partner.reason})`
+          )}; ${partnerLabel} may own MNX feeds`
+        : `${partnerLabel} may own MNX feeds but ${partner.reason}`
     )
 
     for (const contract of contracts) {
@@ -680,13 +689,10 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
           [expectedCreatorId, `official ${environment} Manifold account`],
         ])
         if (
-          partner.user &&
+          partnerId &&
           isPerpCreatorAccountAllowed('mnx', contract.oracleFeedId)
         )
-          allowedCreators.set(
-            partner.user.id,
-            `MNX partner account @${partner.user.username}`
-          )
+          allowedCreators.set(partnerId, partnerLabel)
         const ownerLabel = allowedCreators.get(contract.creatorId)
         report(
           ownerLabel ? 'PASS' : 'FAIL',
