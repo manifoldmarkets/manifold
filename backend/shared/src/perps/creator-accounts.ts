@@ -19,7 +19,7 @@ type Environment = 'DEV' | 'PROD'
 // option out and create-perp refuses it).
 export const MNX_CREATOR_IDS: Record<Environment, string | undefined> = {
   DEV: undefined,
-  PROD: undefined,
+  PROD: '0YOMCbJas0UqJdlrqKe1MrQewrF2',
 }
 
 export const getMnxCreatorId = (environment: Environment) =>
