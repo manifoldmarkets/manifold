@@ -201,15 +201,30 @@ export const publishOracleObservation = async (
       }
       const rejection = validateOraclePoint(feed, previous, point)
       if (rejection) throw new InvalidOracleObservation(rejection)
+      // An older provider stamp is "nothing new", not an incident. Providers
+      // served from load-balanced nodes hand out observations that lag each
+      // other, so a poll can retrieve a stamp older than one already
+      // published (MNX, reproduced 2026-09-11: GOOGL read 21:59:12 then
+      // 21:58:11 four seconds later). Keep the published point, exactly as
+      // the `point.ts < previous.ts` branch above already does, rather than
+      // withdrawing availability and paging on a healthy feed.
+      //
+      // A CONFLICT at an identical stamp is still corruption and still fails
+      // closed: same immutable observation, two different prices.
       if (
         previous?.sourceTs != null &&
         point.sourceTs != null &&
-        (point.sourceTs < previous.sourceTs ||
-          (point.sourceTs === previous.sourceTs &&
-            point.price !== previous.price))
+        point.sourceTs < previous.sourceTs
+      )
+        return previous
+      if (
+        previous?.sourceTs != null &&
+        point.sourceTs != null &&
+        point.sourceTs === previous.sourceTs &&
+        point.price !== previous.price
       )
         throw new InvalidOracleObservation(
-          'Provider source timestamp regressed or conflicts with published history'
+          'Provider source timestamp conflicts with published history'
         )
       // Price changes and flat-price heartbeats follow the normal fast-tick rule.
       if (
