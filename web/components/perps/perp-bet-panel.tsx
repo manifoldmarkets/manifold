@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -39,11 +40,7 @@ import {
   getPerpProfitScenarios,
   PerpPnlPositionInput,
 } from 'common/perps/pnl'
-import {
-  formatFeePct,
-  formatPrice,
-  inferPriceDecimals,
-} from 'common/perps/format'
+import { formatFeePct, inferPriceDecimals } from 'common/perps/format'
 import {
   formatMoney,
   formatMoneyPrecise,
@@ -508,7 +505,8 @@ export const PerpBetPanel = (props: {
       })
       const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
       toast.success(
-        `${verb} ${direction} at ${formatPrice(
+        `${verb} ${direction} at ${formatOraclePrice(
+          contract.oracleFeedId,
           res.position.entryPrice,
           priceDecimals
         )}`
@@ -660,6 +658,7 @@ export const PerpBetPanel = (props: {
       </Col>
 
       <StatsGrid
+        feedId={contract.oracleFeedId}
         resultingPosition={resultingPosition}
         markPrice={price}
         notional={notional}
@@ -851,6 +850,7 @@ const SizeFeeWhyTooltip = () => (
 )
 
 const StatsGrid = (props: {
+  feedId: string
   // The position this trade results in — the row the position card will
   // show once it lands — which the profit ladder is built on. Just the
   // tranche on an open or flip; the merged row on an add.
@@ -958,11 +958,11 @@ const StatsGrid = (props: {
       <StatRow label="Notional" value={formatMoney(notional)} bold />
       <StatRow
         label={isAddPreview ? 'New avg. entry' : 'Entry price'}
-        value={formatPrice(entryPrice, priceDecimals)}
+        value={formatOraclePrice(props.feedId, entryPrice, priceDecimals)}
       />
       <StatRow
         label={isAddPreview ? 'New liquidation' : 'Liquidation'}
-        value={formatPrice(liqPrice, priceDecimals)}
+        value={formatOraclePrice(props.feedId, liqPrice, priceDecimals)}
         valueClass="text-scarlet-600"
       />
       <StatRow
@@ -1076,7 +1076,7 @@ const StatsGrid = (props: {
                     +{Math.round(s.ret * 100)}%
                   </span>
                   <span className="text-ink-700 w-20 text-right">
-                    {formatPrice(s.price, priceDecimals)}
+                    {formatOraclePrice(props.feedId, s.price, priceDecimals)}
                   </span>
                   <span className="w-20 text-right font-medium text-teal-600">
                     +{formatMoneyPrecise(s.pnl)}

@@ -146,7 +146,7 @@ urgently need is a worse failure than any it would prevent.
 
 Partial closes are rate-limited per user (60/hour); full closes are **never**
 rate-limited, for the same reason. The limit exists because the 1% minimum is a
-fraction of the current *remainder*, so repeated 1% closes decay geometrically
+fraction of the current _remainder_, so repeated 1% closes decay geometrically
 rather than terminating: from an M$100 cost basis it takes ~917 of them to
 reach the dust floor, and more on a larger position.
 
@@ -444,6 +444,13 @@ The same asymmetry applies in reverse: **do not roll the API back while halt
 rows exist.** Clear them first (top up the deficit side, let a tick apply, or
 clear the field directly) or roll the scheduler back with it.
 
+Provider health has the same deployment asymmetry: `oracleFeedHealth` requires
+an upgraded API before the scheduler sends it in quotes. Before rolling an API
+back with MNX markets present, set **`PERP_TRADING_MODE=halted`** and roll/drain
+all API instances, then stop/roll back the MNX scheduler. Keep trading halted
+until health-aware API and scheduler versions are restored and fresh checks
+pass. Unlisting alone does not stop API trading. See the runbook for rollback.
+
 ## Oracle feeds
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence
@@ -465,6 +472,9 @@ agreement in `btc-price.ts`, `validateOpenWeightPublication` in
 `votehub-average.ts`, and the untrusted-payload parser in `fear-greed.ts`.
 
 Feed adapters live next to it:
+
+- `mnx.ts` ? sixteen MNX derivative marks via a shared `fetchObservation`
+  on the 2-second tick; see the detailed MNX section below.
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
@@ -519,14 +529,15 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter}-oracle.ts`;
+(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter,mnx}-oracle.ts`;
 `backfill-votehub-oracle` and `backfill-openrouter-oracle` take
 `--feed=<feedId>`) seed chart history before market creation. They are for
 feeds with NO live market: published history is append-only and a backfill
 stamps day boundaries, so on a live feed it would add a second point to every
 day rather than fill a hole. The VoteHub, Fear & Greed and OpenRouter scripts
 check this (`backfill-guard.ts`) and refuse a feed that backs an unresolved
-market unless `--force` is passed.
+market unless `--force` is passed. MNX also uses the guard, with **no force
+escape**, and accepts `--feed=<feedId>`.
 
 The executable launch set, conservative initial parameters, feed-specific game
 design notes, and oracle-latency risks live in
@@ -546,12 +557,82 @@ stored ticker disagrees. `backend/scripts/backfill-perp-tickers.ts` (dry-run
 by default, `--apply` to write) stamps markets created before the field
 existed.
 
+### MNX marks (2-second bulk adapter)
+
+`common/perps/mnx.ts` pins the sixteen reviewed instrument IDs, feed IDs,
+display units and bounds. `shared/mnx.ts` reads one shared `/v0/markets`
+snapshot per fast tick, with a 1.5s HTTP timeout, an in-flight guard and shared
+failure backoff. This is approximately 30 requests/minute per scheduler
+process (briefly 60 during deployment overlap), plus API/script reads. Tick
+jitter can put two requests about one second apart. MNX's
+public API reference does not state a numeric REST quota; `Retry-After` is
+honored up to ten minutes (seconds or HTTP date), and ordinary errors back off to at most 72s
+including jitter. Backoff logs include the next retry timestamp and are
+throttled to once a minute across the bulk request. Monitor
+`perps/mnx_backoff_remaining_ms` and `perps/mnx_backoff_suppressed_reads`
+(the latter counts per-feed reads sharing a cached rejection). Restarting the process clears local backoff.
+
+All feeds use `update-oracle-feeds`, `validateOraclePoint`, the per-feed
+`oracle-publish:<feedId>` lock, append-only `oracle_prices`, and
+`applyOraclePointToLivePerps`. HTTP happens before the transaction. Live `ts`
+is Manifold's observation time; `source_ts` retains MNX's mark timestamp.
+Unchanged marks get the normal half-staleness heartbeat. Raw e18 strings are
+converted through decimal placement and checked against the numeric field;
+raw responses are not a new database storage format. There is no MNX table,
+new column, migration, or separate scheduler job.
+
+Provider freezes, disabled/delisted or missing instruments, identity/units
+changes, corrupt marks, source regressions and stale sources fail closed.
+The source-age ceiling is 5 minutes, or 75 minutes for the hourly H100 index;
+H100 is still polled every 2s. These are conservative source policy limits,
+not measured maximum gaps. MNX's documented H100 liquidation freshness gate
+is 75 minutes. Hourly candles cannot establish live mark-timestamp cadence.
+
+`common/perps/oracle-health.ts` defines optional provider-neutral health in
+existing contract JSON. `getPerpOracleFreshness` adds its check-age (5 minutes)
+and source expiry to the ordinary cached-mark check. Contracts without health
+retain their previous behavior. `runOracleUpdate` writes successful health and
+price together under the contract lock, and returns that health for the single
+quote push. A duplicate mark can refresh health without replaying liquidation,
+ADL or funding. An unchanged status is persisted/pushed at most once per
+minute; status/reason transitions and a near-expiry extension are immediate.
+The unlocked precheck avoids taking the contract and position locks at every
+flat-price tick; the engine rechecks after locking. Only unavailability is applied separately, independently per
+contract, without changing its executable price. Monotonic `checkedAt` keeps a
+delayed success from clearing a newer freeze. Funding checks health under the
+same lock and resumes with one ordinary period, without catch-up charges.
+
+`publish-oracle-observation.ts` throttles provider failures to WARN once a
+minute per feed and ERROR under `[oracle-feeds]` once an hour after a sustained
+five-minute outage, including intermittent failures with less than five
+uninterrupted healthy minutes between them. Warning/page budgets survive
+recovery. Configure alert auto-close longer than one hour; changing error
+messages cannot defeat the throttle. Database faults and code bugs remain
+immediate ERRORs; bounded database contention does not seed provider incidents.
+Self-imposed contract-lock timeouts remain WARN. Ordinary tick lag escalation
+and stuck-feed monitoring still apply. Admin manual price writes are disabled
+for feeds requiring a provider observation.
+
+Use `publish-mnx-now.ts` to inspect readiness or publish immediately (`--apply`);
+a fresh process bypasses the scheduler's in-memory backoff. Backfill and creation
+scripts are dry-run-first and environment-checked in DEV and PROD. Creation
+uses the MNX manifest recommendations, the official creator and unlisted
+visibility. New markets start paused until their first atomic live tick.
+The 3× recommendation is advisory; creation permits lower leverage and enforces
+MNX's supported leverage as a ceiling. Provider margin changes never freeze an
+existing feed. MNX derivatives are the defined price target: valuation futures
+are quoted in USD billions and do not assert an externally verified company
+valuation; equity marks need not equal the underlying share or the venue oracle.
+See [the launch runbook](../../../../perps-launch-runbook.md#mnx-rollout-dev-and-prod)
+for the cohort, sources, deployment order and environment validation.
+
 ## Scheduler
 
-- `update-oracle-feeds.ts` fires **every 5 seconds** (croner handles
+- `update-oracle-feeds.ts` fires **every 2 seconds** (croner handles
   sub-minute fine — see the existing `sports-live` job). It fetches `fast`
   feeds, validates points against the registry, writes `oracle_prices`, and
-  applies `runOracleUpdate` to live perps on those feeds. Liquidation + ADL
+  applies `runOracleUpdate` to live perps on those feeds. `fetchObservation`
+  feeds use `publish-oracle-observation.ts` to carry health with the price. Liquidation + ADL
   always run in the same transaction as the price write — never add a
   price-only update path; closes settle against the cached price.
 - `update-perps.ts` runs hourly: oracle updates for `daily`-feed contracts

@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -30,7 +31,6 @@ import { DAY_MS } from 'common/util/time'
 import {
   formatCountdown,
   formatPerpClosePercent,
-  formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
 import {
@@ -243,7 +243,9 @@ export const PerpPositionPanel = (props: {
           oracleTradingPaused={oracleTradingPaused}
         />
       ))}
-      {pastEvents.length > 0 && <PositionHistory events={pastEvents} />}
+      {pastEvents.length > 0 && (
+        <PositionHistory feedId={contract.oracleFeedId} events={pastEvents} />
+      )}
     </Col>
   )
 }
@@ -267,7 +269,10 @@ type PerpHistoryEvent = {
 // short list reads as "this is everything".
 const HISTORY_PREVIEW_COUNT = 5
 
-const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
+const PositionHistory = (props: {
+  events: PerpHistoryEvent[]
+  feedId: string
+}) => {
   const { events: allEvents } = props
   const [expanded, setExpanded] = useState(false)
   const events = expanded
@@ -314,7 +319,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 −{formatMoneyPrecise(lost)} margin
               </span>
               <span className="text-ink-500 tabular-nums">
-                at {formatPrice(e.oraclePrice, decimals)}
+                at {formatOraclePrice(props.feedId, e.oraclePrice, decimals)}
               </span>
               <span className="text-ink-400 text-xs">{at}</span>
             </Row>
@@ -343,7 +348,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                 {formatMoneyPrecise(pnl)}
               </span>
               <span className="text-ink-500 tabular-nums">
-                at {formatPrice(e.oraclePrice, decimals)}
+                at {formatOraclePrice(props.feedId, e.oraclePrice, decimals)}
               </span>
               <span className="text-ink-400 text-xs">{at}</span>
             </Row>
@@ -378,7 +383,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
               {formatMoneyPrecise(pnl)}
             </span>
             <span className="text-ink-500 tabular-nums">
-              at {formatPrice(e.oraclePrice, decimals)}
+              at {formatOraclePrice(props.feedId, e.oraclePrice, decimals)}
             </span>
             <span className="text-ink-400 text-xs">{at}</span>
           </Row>
@@ -628,19 +633,27 @@ const PositionSummary = (props: {
         <span>
           Entry{' '}
           <span className="text-ink-700">
-            {formatPrice(p.entryPrice, priceDecimals)}
+            {formatOraclePrice(
+              contract.oracleFeedId,
+              p.entryPrice,
+              priceDecimals
+            )}
           </span>
         </span>
         <span>
           Mark{' '}
           <span className="text-ink-700">
-            {formatPrice(markPrice, priceDecimals)}
+            {formatOraclePrice(contract.oracleFeedId, markPrice, priceDecimals)}
           </span>
         </span>
         <span>
           Liquidation{' '}
           <span className={liqDangerClass}>
-            {formatPrice(p.liquidationPrice, priceDecimals)}
+            {formatOraclePrice(
+              contract.oracleFeedId,
+              p.liquidationPrice,
+              priceDecimals
+            )}
             {' ('}
             {distToLiq > 0
               ? `${(distToLiq * 100).toFixed(1)}% away`
@@ -708,7 +721,12 @@ const PositionSummary = (props: {
               </h2>
               <p className="text-ink-500 mt-1 text-sm">
                 {formatMoney(p.size)} notional at the latest oracle price of{' '}
-                {formatPrice(markPrice, priceDecimals)}. Closing is free.
+                {formatOraclePrice(
+                  contract.oracleFeedId,
+                  markPrice,
+                  priceDecimals
+                )}
+                . Closing is free.
               </p>
             </div>
 

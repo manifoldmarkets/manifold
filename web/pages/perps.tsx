@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
@@ -20,7 +21,6 @@ import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   formatCountdown,
   formatPerpClosePercent,
-  formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -33,7 +33,7 @@ import {
   getPerpFundingRate,
 } from 'common/perps/funding'
 import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer'
-import { getOracleFreshness } from 'common/perps/oracle'
+import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -121,24 +121,12 @@ export async function getStaticProps() {
 // ---------------------------------------------------------------------------
 // Display helpers
 
-const PERCENT_FEEDS = new Set([
-  'trump-approval-rating',
-  'votehub-generic-ballot-2026',
-  'vance-favorability',
-  'openrouter-open-weight-share',
-  'openrouter-anthropic-share',
-  'openrouter-chinese-lab-share',
-])
-
 const displayPrice = (c: PerpContract) => {
   const price = Number(
     c.isResolved ? c.resolvedOraclePrice ?? c.oraclePrice : c.oraclePrice
   )
   if (!Number.isFinite(price)) return '—'
-  const feedId = c.oracleFeedId ?? ''
-  const prefix = feedId.endsWith('-usd') ? '$' : ''
-  const suffix = PERCENT_FEEDS.has(feedId) ? '%' : ''
-  return prefix + formatPrice(price, inferPriceDecimals([price])) + suffix
+  return formatOraclePrice(c.oracleFeedId, price, inferPriceDecimals([price]))
 }
 
 // Human label for a topic slug: strip the '-default' suffix of catch-all
@@ -1481,13 +1469,7 @@ const useOracleTradingPaused = (contract: PerpContract) => {
     return () => clearInterval(id)
   }, [contract.oraclePriceTime])
   if (now == null || PERPS_SKIP_ORACLE_FRESHNESS) return false
-  return (
-    getOracleFreshness(
-      contract.oraclePriceTime,
-      contract.maxOraclePriceAgeMs,
-      now
-    ).status !== 'fresh'
-  )
+  return getPerpOracleFreshness(contract, now).status !== 'fresh'
 }
 
 // On phones the card's gutter + border + padding cost the chart ~40px of a

@@ -45,6 +45,23 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   // Retired feed (see the note in backend/shared/src/oracle-feeds.ts). Its
   // settled market page still renders the badge, so it keeps its name.
   'uk-grid-carbon': 'UKCO2',
+  // MNX derivative marks, distinct from the OpenRouter usage-share feeds.
+  'mnx-anthropic-mark': 'ANTH',
+  'mnx-openai-mark': 'OPENAI',
+  'mnx-deepseek-mark': 'DEEP',
+  'mnx-moonshot-mark': 'MOON',
+  'mnx-h100-mark': 'H100',
+  'mnx-asml-mark': 'ASML',
+  'mnx-crwv-mark': 'CRWV',
+  'mnx-dram-mark': 'DRAM',
+  'mnx-googl-mark': 'GOOGL',
+  'mnx-meta-mark': 'META',
+  'mnx-minimax-mark': 'MINI',
+  'mnx-mu-mark': 'MU',
+  'mnx-sndk-mark': 'SNDK',
+  'mnx-spcx-mark': 'SPCX',
+  'mnx-tsm-mark': 'TSM',
+  'mnx-zai-mark': 'ZAI',
 }
 
 export const getPerpFeedTicker = (feedId: string | undefined) =>

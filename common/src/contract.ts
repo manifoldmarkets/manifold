@@ -1,3 +1,4 @@
+import type { OracleFeedHealth } from './perps/oracle-health'
 import { JSONContent } from '@tiptap/core'
 import type { OgCardProps } from './contract-seo'
 import { getDisplayProbability } from 'common/calculate'
@@ -359,6 +360,7 @@ export type PerpMechanism = {
   oraclePrice: number // last applied P
   oraclePriceTime?: number // ts of last applied P
   oracleSourceTime?: number | null // provider-declared source data as-of
+  oracleFeedHealth?: OracleFeedHealth
   lastFundingTime?: number
   fundingRate?: number // last applied rate; +ve = longs pay
   resolvedOraclePrice?: number

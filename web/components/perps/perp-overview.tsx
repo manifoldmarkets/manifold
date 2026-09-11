@@ -1,3 +1,6 @@
+import { ORACLE_HEALTH_MAX_AGE_MS } from 'common/perps/oracle-health'
+import { getMnxInstrument } from 'common/perps/mnx'
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { fromNow } from 'client-common/lib/time'
@@ -10,12 +13,8 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import {
-  formatCountdown,
-  formatPrice,
-  inferPriceDecimals,
-} from 'common/perps/format'
-import { getOracleFreshness } from 'common/perps/oracle'
+import { formatCountdown, inferPriceDecimals } from 'common/perps/format'
+import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -56,8 +55,15 @@ const useOracleFreshness = (contract: PerpContract) => {
   useEffect(() => {
     const update = () => setNow(Date.now())
     update()
-    const staleAt =
+    const sourceStaleAt =
       (contract.oraclePriceTime ?? Number.NaN) + contract.maxOraclePriceAgeMs
+    const staleAt = contract.oracleFeedHealth
+      ? Math.min(
+          sourceStaleAt,
+          contract.oracleFeedHealth.checkedAt + ORACLE_HEALTH_MAX_AGE_MS,
+          contract.oracleFeedHealth.expiresAt ?? 0
+        )
+      : sourceStaleAt
     const delay = staleAt - Date.now()
     const timeout =
       Number.isFinite(delay) && delay >= 0
@@ -68,15 +74,15 @@ const useOracleFreshness = (contract: PerpContract) => {
       if (timeout !== undefined) clearTimeout(timeout)
       clearInterval(interval)
     }
-  }, [contract.oraclePriceTime, contract.maxOraclePriceAgeMs])
+  }, [
+    contract.oraclePriceTime,
+    contract.maxOraclePriceAgeMs,
+    contract.oracleFeedId,
+    contract.oracleFeedHealth?.checkedAt,
+    contract.oracleFeedHealth?.expiresAt,
+  ])
 
-  return now == null
-    ? null
-    : getOracleFreshness(
-        contract.oraclePriceTime,
-        contract.maxOraclePriceAgeMs,
-        now
-      )
+  return now == null ? null : getPerpOracleFreshness(contract, now)
 }
 
 export const PerpOverview = (props: { contract: PerpContract }) => {
@@ -126,7 +132,14 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         <Row className="min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2 sm:gap-x-8">
           <Col>
             <div className="text-ink-500 text-sm">
-              {contract.isResolved ? 'Final oracle price' : 'Oracle price'}
+              {contract.isResolved
+                ? 'Final oracle price'
+                : getMnxInstrument(contract.oracleFeedId)?.category ===
+                  'valuation'
+                ? 'MNX valuation futures price'
+                : getMnxInstrument(contract.oracleFeedId)
+                ? 'MNX mark price'
+                : 'Oracle price'}
             </div>
             <div
               className={clsx(
@@ -135,7 +148,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
                 flash === 'down' && 'text-scarlet-500 duration-0'
               )}
             >
-              {formatPrice(price, priceDecimals)}
+              {formatOraclePrice(contract.oracleFeedId, price, priceDecimals)}
             </div>
           </Col>
           {contract.isResolved ? (
@@ -198,6 +211,9 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
             </>
           ) : (
             <>
+              {oracleFreshness?.reason && (
+                <span>{oracleFreshness.reason}. </span>
+              )}
               Trading and position closes are paused to prevent execution at an
               outdated price.{' '}
               {oracleFreshness?.ageMs != null &&
@@ -231,7 +247,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           <div className="text-ink-900 font-semibold">Market settled</div>
           All open positions were closed at the final oracle price of{' '}
           <span className="font-semibold tabular-nums">
-            {formatPrice(price, priceDecimals)}
+            {formatOraclePrice(contract.oracleFeedId, price, priceDecimals)}
           </span>
           . Funding and trading have stopped.
         </div>

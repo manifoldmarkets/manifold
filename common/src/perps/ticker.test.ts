@@ -1,3 +1,4 @@
+import { MNX_INSTRUMENTS } from './mnx'
 import {
   PERP_FEED_TICKERS,
   PERP_TICKER_MAX_LENGTH,
@@ -39,6 +40,16 @@ describe('PERP_FEED_TICKERS', () => {
   it('never gives two feeds the same ticker, even ignoring case', () => {
     const tickers = Object.values(PERP_FEED_TICKERS).map((t) => t.toLowerCase())
     expect(new Set(tickers).size).toBe(tickers.length)
+  })
+
+  it('names every MNX instrument without colliding with the Claude usage feed', () => {
+    for (const spec of MNX_INSTRUMENTS) {
+      const ticker = getPerpFeedTicker(spec.feedId)
+      expect(ticker).toBeDefined()
+      expect(getPerpTicker({ oracleFeedId: spec.feedId })).toBe(ticker)
+    }
+    expect(getPerpFeedTicker('mnx-anthropic-mark')).toBe('ANTH')
+    expect(getPerpFeedTicker('openrouter-anthropic-share')).toBe('CLAUDE')
   })
 
   it('keeps the launch tickers the hub has always shown', () => {

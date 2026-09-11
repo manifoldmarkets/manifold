@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
@@ -22,7 +23,7 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { median } from 'common/util/math'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
@@ -967,7 +968,7 @@ export const PerpChart = (props: {
                 fill="currentColor"
                 opacity={0.6}
               >
-                {formatTick(t, mode, yTickDecimals)}
+                {formatTick(t, mode, yTickDecimals, contract.oracleFeedId)}
               </text>
             </g>
           ))}
@@ -1324,7 +1325,8 @@ export const PerpChart = (props: {
                 hovered.value,
                 mode,
                 priceDecimals,
-                fundingPeriodUnit(fundingPeriodMs)
+                fundingPeriodUnit(fundingPeriodMs),
+                contract.oracleFeedId
               )}
             </div>
             {mode === 'funding' && (
@@ -1561,7 +1563,8 @@ const formatProjectionEndTick = (d: Date, spanMs: number) => {
 const formatTick = (
   v: number,
   mode: 'price' | 'funding',
-  priceDecimals: number
+  priceDecimals: number,
+  feedId: string
 ) => {
   if (mode === 'funding') {
     // Per-period percent, trailing zeros trimmed — the chart is read in the
@@ -1570,14 +1573,15 @@ const formatTick = (
     const trimmed = (v * 100).toFixed(3).replace(/\.?0+$/, '')
     return `${trimmed === '' || trimmed === '-' ? '0' : trimmed}%`
   }
-  return formatPrice(v, priceDecimals)
+  return formatOraclePrice(feedId, v, priceDecimals)
 }
 
 const formatHoverValue = (
   v: number,
   mode: 'price' | 'funding',
   priceDecimals: number,
-  fundingUnit: string
+  fundingUnit: string,
+  feedId: string
 ) => {
   if (mode === 'funding') {
     const pct = v * 100
@@ -1586,7 +1590,7 @@ const formatHoverValue = (
   // For price mode, bump decimals slightly for the hover readout so tiny
   // movements are visible even on coarse-scale axes.
   const hoverDecimals = Math.max(priceDecimals, v === Math.round(v) ? 0 : 2)
-  return formatPrice(v, hoverDecimals)
+  return formatOraclePrice(feedId, v, hoverDecimals)
 }
 
 // Sub-1% carry needs the extra digit to say anything at all; past that the

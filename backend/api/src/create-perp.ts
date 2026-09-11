@@ -1,3 +1,7 @@
+import { getMnxInstrument } from 'common/perps/mnx'
+import { OracleFeedHealth } from 'common/perps/oracle-health'
+import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
+import { advisoryLockQuery } from 'shared/perps/queries'
 import { toLiteMarket } from 'common/api/market-types'
 import { ENV } from 'common/envs/constants'
 import {
@@ -24,7 +28,7 @@ import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
 import {
-  PERP_LAUNCH_MARKETS,
+  ALL_PERP_LAUNCH_MARKETS,
   getPerpLaunchCreatorId,
   getPerpLaunchTopicSlug,
 } from 'shared/perps/launch-manifest'
@@ -92,7 +96,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   // them before database work so a runtime-only feed is rejected even when it
   // has no price rows in the current environment.
   const feedDef = requireOracleFeedForPerpCreation(oracleFeedId)
-  const launchDefinition = PERP_LAUNCH_MARKETS.find(
+  const launchDefinition = ALL_PERP_LAUNCH_MARKETS.find(
     (market) => market.feedId === oracleFeedId
   )
   if (launchDefinition && auth.uid !== getPerpLaunchCreatorId(ENV))
@@ -227,9 +231,54 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     (group) => group.id
   )
 
+  // Fetch live provider readiness before opening a transaction. Candles alone
+  // cannot authorize creation, and provider-margin failures affect launches only.
+  let oracleFeedHealth: OracleFeedHealth | undefined
+  if (getMnxInstrument(oracleFeedId)) {
+    const snapshot = await fetchMnxSnapshot()
+    let ready
+    try {
+      ready = requireMnxReady(snapshot, oracleFeedId)
+    } catch (error) {
+      throw new APIError(
+        400,
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+    if (maxLeverage > ready.supportedLeverage!)
+      throw new APIError(
+        400,
+        `MNX launch leverage must be at most MNX’s supported ${ready.supportedLeverage}×`
+      )
+    if (Date.now() - oraclePoint.ts > maxOraclePriceAgeMs)
+      throw new APIError(
+        400,
+        'MNX published price is stale; wait for the oracle tick'
+      )
+    // Creation starts paused. Only the tick can atomically pair current health
+    // with the executable mark, avoiding a race with a newer provider snapshot.
+    oracleFeedHealth = {
+      checkedAt: oraclePoint.ts,
+      status: 'unavailable',
+      reason: 'Waiting for the first live oracle tick',
+    }
+  }
   const proposedSlug = slugify(question)
 
   const contract = await pg.tx(async (tx) => {
+    if (getMnxInstrument(oracleFeedId)) {
+      await tx.one(advisoryLockQuery(`create-perp:${oracleFeedId}`))
+      const existing = await tx.oneOrNone<{ id: string }>(
+        `select id from contracts where mechanism = 'perp' and resolution_time is null
+         and data->>'oracleFeedId' = $1`,
+        [oracleFeedId]
+      )
+      if (existing)
+        throw new APIError(
+          409,
+          `A live market already exists for ${oracleFeedId}: ${existing.id}`
+        )
+    }
     const collision = await tx.oneOrNone<{ id: string }>(
       `select 1 as id from contracts where slug = $1 limit 1`,
       [proposedSlug]
@@ -262,6 +311,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       initialPoolLong: subsidyLong,
       initialPoolShort: subsidyShort,
       oracleFeedId,
+      ...(oracleFeedHealth ? { oracleFeedHealth } : {}),
       ticker,
       oraclePrice: oraclePoint.price,
       oraclePriceTime: oraclePoint.ts,

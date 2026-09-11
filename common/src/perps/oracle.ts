@@ -1,3 +1,5 @@
+import { ORACLE_HEALTH_MAX_AGE_MS } from './oracle-health'
+import type { OracleFeedHealth } from './oracle-health'
 import { MINUTE_MS } from '../util/time'
 
 export type OraclePoint = {
@@ -310,4 +312,37 @@ export const decideOracleTransition = (
     action: 'reject',
     reason: `timestamp ${incoming.ts} conflicts with current price ${current.price} (incoming ${incoming.price})`,
   }
+}
+
+export const getPerpOracleFreshness = (
+  contract: {
+    oracleFeedId: string
+    oraclePrice: number
+    oraclePriceTime?: number
+    maxOraclePriceAgeMs: number
+    oracleFeedHealth?: OracleFeedHealth
+  },
+  now = Date.now()
+): OracleFreshness & { reason?: string } => {
+  const freshness = getOracleFreshness(
+    contract.oraclePriceTime,
+    contract.maxOraclePriceAgeMs,
+    now
+  )
+  const health = contract.oracleFeedHealth
+  const reason = !health
+    ? null
+    : getOracleFreshness(health.checkedAt, ORACLE_HEALTH_MAX_AGE_MS, now)
+        .status !== 'fresh'
+    ? 'Oracle provider checks are unavailable or more than five minutes old'
+    : health.status !== 'available'
+    ? health.reason ?? 'Oracle provider unavailable'
+    : !Number.isFinite(health.expiresAt) ||
+      health.expiresAt! < health.checkedAt ||
+      now > health.expiresAt!
+    ? 'Oracle source price is stale'
+    : null
+  return reason
+    ? { status: 'stale', ageMs: freshness.ageMs, reason }
+    : freshness
 }
