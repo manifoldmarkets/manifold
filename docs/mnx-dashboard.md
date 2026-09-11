@@ -24,6 +24,12 @@ Select live markets, or use **Manage** on one market:
   below the web base. Lower leverage caps affect new opens/adds, and increases
   on MNX feeds require current provider support. Oracle age also gates closes
   and cannot be reduced below the feed's cadence floor.
+- **Visibility:** choose Unlisted or Public in the bottom management panel,
+  review each selected market's before/after visibility, then apply. Markets
+  already at the chosen visibility are skipped. Public markets appear in search
+  and on `/perps`; unlisted markets can still be accessed and traded through
+  their links. This uses the existing creator/admin market-update API, so only
+  the web deployment is needed for the visibility controls.
 
 Review the market list, changes, and total contribution, then apply. Markets are
 processed sequentially; a failure stops the batch and leaves earlier successes

@@ -52,7 +52,12 @@ export function MnxDashboardView({
   refreshing: boolean
 }) {
   const [selected, setSelected] = useState<string[]>([])
-  const [mode, setMode] = useState<'liquidity' | 'rules'>('liquidity')
+  const [mode, setMode] = useState<'liquidity' | 'rules' | 'visibility'>(
+    'liquidity'
+  )
+  const [visibility, setVisibility] = useState<'unlisted' | 'public'>(
+    'unlisted'
+  )
   const [side, setSide] = useState<'both' | 'long' | 'short'>('both')
   const [amount, setAmount] = useState('')
   const [rules, setRules] = useState<MnxRuleForm>({})
@@ -125,19 +130,23 @@ export function MnxDashboardView({
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), MNX_REQUEST_TIMEOUT_MS)
     try {
-      return item.kind === 'liquidity'
-        ? await api('add-perp-subsidy', item.params, {
-            signal: controller.signal,
-          })
-        : await api('update-perp-config', item.params, {
-            signal: controller.signal,
-          })
+      const options = { signal: controller.signal }
+      switch (item.kind) {
+        case 'liquidity':
+          return await api('add-perp-subsidy', item.params, options)
+        case 'rules':
+          return await api('update-perp-config', item.params, options)
+        case 'visibility':
+          return await api('market/:contractId/update', item.params, options)
+        default:
+          throw new Error('Unknown saved batch action. Reload before retrying.')
+      }
     } catch (error) {
       if (controller.signal.aborted)
         throw new Error(
           `No response after ${
             MNX_REQUEST_TIMEOUT_MS / 1000
-          } seconds. The request may still have gone through; Retry remaining is safe and reuses the same request ID.`
+          } seconds. The request may still have gone through; Retry remaining uses the same saved request.`
         )
       throw error
     } finally {
@@ -184,7 +193,13 @@ export function MnxDashboardView({
         throw new Error(
           `@${data.payer.username} needs ${mana(totalCost)} to fund this batch.`
         )
-      const items: MnxBatchItem[] = targets.map(
+      const changedTargets =
+        mode === 'visibility'
+          ? targets.filter(({ contract }) => contract.visibility !== visibility)
+          : targets
+      if (!changedTargets.length)
+        throw new Error(`The selected markets are already ${visibility}.`)
+      const items: MnxBatchItem[] = changedTargets.map(
         ({ contract, minOraclePriceAgeMs }) => {
           const base = {
             title:
@@ -192,6 +207,13 @@ export function MnxDashboardView({
               contract.question,
             status: 'pending' as const,
           }
+          if (mode === 'visibility')
+            return {
+              ...base,
+              kind: 'visibility',
+              previousVisibility: contract.visibility,
+              params: { contractId: contract.id, visibility },
+            }
           if (mode === 'liquidity')
             return {
               ...base,
@@ -552,6 +574,11 @@ export function MnxDashboardView({
                         ? 'each side'
                         : `the ${item.params.side} side`}
                     </p>
+                  ) : item.kind === 'visibility' ? (
+                    <p className="text-ink-600">
+                      Visibility: {item.previousVisibility} →{' '}
+                      <b>{item.params.visibility}</b>
+                    </p>
                   ) : (
                     <>
                       <div className="text-ink-600 mt-1 flex flex-wrap gap-x-6 gap-y-1">
@@ -605,10 +632,12 @@ export function MnxDashboardView({
                 update.
               </p>
             </div>
-            <div className="bg-canvas-50 flex gap-1 rounded-lg p-1">
-              {(['liquidity', 'rules'] as const).map((tab) => (
+            <div className="bg-canvas-50 flex flex-wrap gap-1 rounded-lg p-1">
+              {(['liquidity', 'rules', 'visibility'] as const).map((tab) => (
                 <button
                   key={tab}
+                  type="button"
+                  aria-pressed={mode === tab}
                   onClick={() => setMode(tab)}
                   className={clsx(
                     'rounded-md px-3 py-2 text-sm',
@@ -617,7 +646,11 @@ export function MnxDashboardView({
                       : 'text-ink-500'
                   )}
                 >
-                  {tab === 'liquidity' ? 'Add liquidity' : 'Trading rules'}
+                  {tab === 'liquidity'
+                    ? 'Add liquidity'
+                    : tab === 'rules'
+                    ? 'Trading rules'
+                    : 'Visibility'}
                 </button>
               ))}
             </div>
@@ -678,6 +711,44 @@ export function MnxDashboardView({
                   shares or a right to withdraw.
                 </p>
               </div>
+            </div>
+          ) : mode === 'visibility' ? (
+            <div className="mt-5">
+              <fieldset>
+                <legend className="text-sm font-medium">
+                  Market visibility
+                </legend>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  {(['unlisted', 'public'] as const).map((value) => (
+                    <label
+                      key={value}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name="mnx-visibility"
+                        value={value}
+                        checked={visibility === value}
+                        onChange={() => setVisibility(value)}
+                      />
+                      {value === 'unlisted' ? 'Unlisted' : 'Public'}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <p className="text-ink-500 mt-3 text-sm">
+                Public markets appear in search and on /perps. Unlisted markets
+                remain accessible and tradeable through their links.
+              </p>
+              <p className="text-ink-600 mt-2 text-sm">
+                {
+                  targets.filter(
+                    ({ contract }) => contract.visibility !== visibility
+                  ).length
+                }{' '}
+                of {targets.length} selected markets will change to {visibility}
+                .
+              </p>
             </div>
           ) : (
             <div className="mt-5">
@@ -760,9 +831,22 @@ export function MnxDashboardView({
           <div className="border-ink-100 mt-5 border-t pt-4">
             <Button
               onClick={review}
-              disabled={!ready || !targets.length || refreshing}
+              disabled={
+                !ready ||
+                !targets.length ||
+                refreshing ||
+                (mode === 'visibility' &&
+                  targets.every(
+                    ({ contract }) => contract.visibility === visibility
+                  ))
+              }
             >
-              Review {mode === 'liquidity' ? 'contribution' : 'rule changes'}
+              Review{' '}
+              {mode === 'liquidity'
+                ? 'contribution'
+                : mode === 'rules'
+                ? 'rule changes'
+                : 'visibility changes'}
             </Button>
           </div>
         </section>
@@ -831,7 +915,9 @@ function BatchResults({
       <ul className="my-4 space-y-2 text-sm">
         {batch.items.map((item) => (
           <li key={item.params.contractId}>
-            <b>{item.title}</b> ·{' '}
+            <b>{item.title}</b>
+            {item.kind === 'visibility' &&
+              ` → ${item.params.visibility}`} ·{' '}
             {item.status === 'done'
               ? 'Done'
               : item.status === 'error'
@@ -854,7 +940,9 @@ function BatchResults({
               onChange={(e) => setAcknowledge(e.target.checked)}
             />
             I have checked any uncertain results and want to end this batch
-            without retrying. A new liquidity batch would make new payments.
+            without retrying.
+            {batch.items.some((item) => item.kind === 'liquidity') &&
+              ' A new liquidity batch would make new payments.'}
           </label>
         </>
       )}
