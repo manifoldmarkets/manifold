@@ -1,4 +1,3 @@
-import { cleanUsername } from 'common/util/clean-username'
 import { useEffect } from 'react'
 
 import { User, writeReferralInfo } from 'web/lib/firebase/users'
@@ -29,13 +28,22 @@ export const useSaveReferral = (
   }, [user, searchParams, JSON.stringify(options)])
 }
 
-// cleanUsername is for NAMES: it caps at 25 characters and strips everything
-// outside [A-Za-z0-9_], including base64's own '+', '/' and '='. Running it
-// over the still-ENCODED string truncated any payload longer than 25 chars,
-// so every referrer whose username is 19+ characters decoded to a mangled
-// name, matched no user, and had their referral silently dropped. Sanitize
-// the base64 alphabet here; clean the name once it is actually a name.
+// An existing username is not the same shape as cleanUsername's output, which
+// is why that helper is the wrong tool at both ends of this decode.
+// create-user-main.ts and the onboarding flows both append randomString(4|5)
+// — nanoid, whose alphabet includes '-' — to an already-25-character cleaned
+// name, so real usernames run to 30 characters and can contain dashes.
+const MAX_USERNAME_LENGTH = 25 + 5
+
+// Sanitize the ?r= payload with base64's own alphabet (it is an encoding, not
+// a name), then bound the decoded value the way a real username is bounded.
+// Passing the ENCODED string to cleanUsername truncated it at 25 characters,
+// so every referrer with a username of 19+ characters decoded to a mangled
+// name that matched no user and was silently dropped; passing the DECODED
+// name to it eats the '-' in a nanoid suffix, which breaks a referrer whose
+// link works today.
 const decodeBase64 = (base64: string) =>
-  cleanUsername(
-    Buffer.from(base64.replace(/[^A-Za-z0-9+/=]/g, ''), 'base64').toString()
-  )
+  Buffer.from(base64.replace(/[^A-Za-z0-9+/=]/g, ''), 'base64')
+    .toString()
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .slice(0, MAX_USERNAME_LENGTH)
