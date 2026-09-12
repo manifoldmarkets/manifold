@@ -644,11 +644,10 @@ for the cohort, sources, deployment order and environment validation.
 `common/perps/mnx-cta.ts` owns every link that sends a reader to MNX, and
 `web/components/perps/mnx-cta.tsx` renders them. `MnxTradeCta` is the call to
 action — "Trade `<TICKER>` with real money" — shown under the chart on a market
-page and on the /perps terminal; the source credit under the chart is a credit
-again rather than a second CTA, because there is now a real one. Both are
-withheld for markets on non-MNX feeds, and the CTA is also withheld once a
-market has settled, since MNX ending an instrument is exactly what pauses
-trading here pending administrative settlement and its page may be gone.
+page and on the /perps terminal. It replaces the MNX source/date footnote
+under the chart. Where there is no CTA, source attribution stays visible,
+including on settled markets and markets using other feeds. The CTA is
+withheld for non-MNX feeds and settled markets.
 
 The CTA wears MNX's colours, not Manifold's: their wordmark
 (`web/public/mnx-logo.svg`, white, the same asset the /jobs partner block uses)
@@ -660,14 +659,11 @@ page instead of on top of it.
 
 From `sm` up the card is wordmark │ pitch and instrument line │ "Trade
 `<TICKER>` on MNX". A phone gets the wordmark and that same button alone on one
-row: the card sits right above the bet panel, so a line spent here is a line
-taken from what people came for. The button keeps its one label at every width
-— the wordmark shrinks to `h-4` and the row to `gap-3` below `sm` instead,
-which is what leaves the button real slack rather than four pixels of it at
-360px. That holds it to one 60px line from 360px up; 320px is the only width
-where it wraps, and it wraps to two lines rather than overflowing. A longer
-label does not fit: "Trade `<TICKER>` with real money on MNX" needs a 334px
-button against 182–292px of room beside the wordmark on phones.
+row. The card is 40px tall, below the Long/Short buttons' 44px, with an 8px
+gap between its elements and a 28px trade button. The desktop copy truncates
+when space is tight, while the button keeps its full label at every width.
+The card's vertical margins reduce the gaps to the chart and bet panel, so
+the external link stays compact beside Manifold's trading controls.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,
