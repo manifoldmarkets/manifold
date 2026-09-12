@@ -71,6 +71,7 @@ import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { SliderColor } from '../widgets/slider'
 import { Tooltip } from '../widgets/tooltip'
+import { LimitOrderFillRow } from './limit-order-fill-row'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import {
@@ -474,6 +475,8 @@ export const BuyPanelBody = (
     probAfter: newProbAfter,
     currentReturn,
     betDeps,
+    limitOrderFill,
+    shares: filledShares,
     limitProb,
     prob,
     calculationError,
@@ -963,6 +966,11 @@ export const BuyPanelBody = (
                     </span>
                   </Row>
                 </Row>
+                <LimitOrderFillRow
+                  contract={contract}
+                  fill={limitOrderFill}
+                  totalShares={filledShares}
+                />
               </Col>
             </Row>
           </>

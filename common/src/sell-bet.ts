@@ -1,4 +1,4 @@
-import { Bet, LimitBet } from './bet'
+import { Bet, getLimitOrderFill, LimitBet } from './bet'
 import {
   calculateCpmmMultiSumsToOneSale,
   calculateCpmmSale,
@@ -319,6 +319,7 @@ export const getSaleResult = (
     probChange,
     fees,
     makers,
+    limitOrderFill: getLimitOrderFill(wholeMakers),
   }
 }
 
@@ -365,5 +366,11 @@ export const getSaleResultMultiSumsToOne = (
     probChange,
     fees,
     makers,
+    // Other-answer orders also affect the quote, but their shares are not
+    // shares of the answer being sold. Report their order count separately.
+    limitOrderFill: getLimitOrderFill(
+      newBetResult.makers,
+      otherBetResults.flatMap((r) => r.makers)
+    ),
   }
 }
