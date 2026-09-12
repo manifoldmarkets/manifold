@@ -1,7 +1,8 @@
 import { JSONContent } from '@tiptap/core'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { Contract } from 'common/contract'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { ENV, isAdminId, isModId } from 'common/envs/constants'
+import { isMnxOwnedPerp } from 'common/perps/creator-accounts'
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { DAY_MS } from 'common/util/time'
 import { buildArray } from 'common/util/array'
@@ -61,6 +62,9 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
         : undefined
     if (
       launchDefinition &&
+      // MNX owns its display copy. The creator/mod permission check above
+      // still applies; oracle feed and ticker cannot be changed by the partner.
+      !isMnxOwnedPerp(contract, ENV) &&
       question !== undefined &&
       question !== launchDefinition.question
     )

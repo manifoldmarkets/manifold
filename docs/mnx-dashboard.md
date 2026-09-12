@@ -10,6 +10,13 @@ and resolved markets. Stats are refreshed from the database with **Refresh stats
 backing, open interest, active traders, 24-hour margin volume, opening fees, and
 oracle health. Fees are added to the backing pools. Stats cannot be manually edited.
 
+To edit a market's title or description, open its market link while signed in
+as MNX. Use the pencil beside the title or **Edit description** below the
+description. Both are editable on MNX-owned markets; the oracle feed and ticker
+remain fixed. Title editing requires the updated API deployment. Description
+editing already uses the existing creator permissions. The launch audit accepts
+custom MNX-owned titles while still checking the feed, ticker, and owner.
+
 Select live markets, or use **Manage** on one market:
 
 - **Add liquidity:** choose long, short, or both. The entered amount is **per
@@ -61,3 +68,30 @@ and verifies the fees and creator in each response. The MNX identity remains
 pinned by environment in `common/src/perps/creator-accounts.ts` (re-exported from
 the existing shared module); usernames do not grant management access. DEV stays
 unconfigured until it has its own verified partner account.
+
+New MNX markets use the partner's category templates: `[Company] IPO Market Cap
+(MNX)` for valuation futures, `[Company] (MNX)` for equities, and `H100 GPU rental
+price (MNX)` for compute. Descriptions come from the same instrument registry;
+canonical display tickers remain unchanged (including `ANTH`, `SNDK`, and `H100`).
+The market's oracle attribution continues to link to MNX independently of its
+editable description. A fixed notice beside that source explains that if MNX
+ends the instrument, trading pauses pending administrative settlement and does
+not automatically roll into a replacement. Deploy the web change before running
+the copy backfill so this notice stays visible when descriptions are replaced.
+
+The launch preflight reports an edited MNX-owned title as `INFO`, printing both
+the stored title and the template. Matching titles still report `PASS`; title
+mismatches on other markets still fail. An edited MNX title does not require a
+warning override.
+
+To apply the templates to existing live MNX-owned markets, use
+`backend/scripts/update-mnx-market-copy.ts` with the normal script credentials,
+`NEXT_PUBLIC_FIREBASE_ENV` explicitly set to `PROD`, and the matching Firebase
+project selected. Run without arguments to preview the before/after metadata;
+then add `--apply --editor-id=USER_ID` using the operator's Manifold user ID for
+edit history. This writes titles, descriptions, and canonical tickers together
+with their edit history in one transaction, verifies the stored metadata, and
+revalidates the market pages. It refuses concurrent metadata or cohort changes,
+skips resolved markets, and targets only the pinned MNX owner and registered MNX
+feeds. Trading settings and balances are unaffected. Merging the PR does not
+run this backfill.
