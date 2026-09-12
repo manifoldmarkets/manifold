@@ -26,6 +26,7 @@ import {
   inferPriceDecimals,
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { useDraggableTicker } from 'web/hooks/use-draggable-ticker'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import { getPerpTicker } from 'common/perps/ticker'
@@ -595,7 +596,6 @@ const windowMs = (w: ChangeWindow) => (w === '24h' ? DAY_MS : 7 * DAY_MS)
 // column drops out below 360px.
 const WATCH_GRID =
   'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.75rem] min-[360px]:grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.5rem_3.75rem]'
-const DEFAULT_ROWS = 5
 
 export default function PerpsPage(props: { perps: Contract[] }) {
   const initial = useMemo(() => props.perps.filter(isListed), [props.perps])
@@ -1246,26 +1246,36 @@ const TickerTape = (props: {
   onSelect: (id: string) => void
 }) => {
   const { contracts, week, onSelect } = props
+  const { viewportRef, trackRef, groupRef, copies } = useDraggableTicker(
+    contracts.length
+  )
   if (contracts.length === 0) return null
-  const items = [...contracts, ...contracts]
-  const duration = Math.max(24, contracts.length * 9)
   return (
-    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 group sticky top-0 z-20 overflow-hidden whitespace-nowrap border-b">
-      <style>{`
-        @keyframes perps-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-        @media (prefers-reduced-motion: reduce) { .perps-marquee { animation: none !important } }
-      `}</style>
-      <div
-        className="perps-marquee inline-block py-1.5 group-hover:[animation-play-state:paused]"
-        style={{ animation: `perps-marquee ${duration}s linear infinite` }}
-      >
-        {items.map((c, i) => (
-          <TickerItem
-            key={c.id + i}
-            contract={c}
-            series={week[c.id]}
-            onSelect={() => onSelect(c.id)}
-          />
+    <div
+      ref={viewportRef}
+      role="region"
+      aria-label="Perpetual markets ticker"
+      className="bg-canvas-0 sticky top-0 z-20 cursor-grab select-none overflow-hidden whitespace-nowrap active:cursor-grabbing"
+      style={{ touchAction: 'pan-y pinch-zoom' }}
+    >
+      <div ref={trackRef} className="flex w-max will-change-transform">
+        {Array.from({ length: copies }, (_, copy) => (
+          <div
+            key={copy}
+            ref={copy === 0 ? groupRef : undefined}
+            aria-hidden={copy !== 0 ? true : undefined}
+            className="flex shrink-0"
+          >
+            {contracts.map((c) => (
+              <TickerItem
+                key={c.id}
+                contract={c}
+                series={week[c.id]}
+                onSelect={() => onSelect(c.id)}
+                tabIndex={copy === 0 ? 0 : -1}
+              />
+            ))}
+          </div>
         ))}
       </div>
     </div>
@@ -1276,17 +1286,19 @@ const TickerItem = (props: {
   contract: PerpContract
   series: WeekSeries | undefined
   onSelect: () => void
+  tabIndex: number
 }) => {
-  const { contract, series, onSelect } = props
+  const { contract, series, onSelect, tabIndex } = props
   const price = Number(contract.oraclePrice)
   const flash = useTickFlash(price)
   const change = weekChange(series, contract)
   return (
     <button
+      tabIndex={tabIndex}
       onClick={onSelect}
       onPointerEnter={() => warmChart(contract)}
       onFocus={() => warmChart(contract)}
-      className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
+      className="hover:bg-canvas-50 inline-flex h-11 shrink-0 items-center gap-2 px-4 text-sm"
     >
       <span className="text-ink-900 font-mono font-semibold">
         {getPerpTicker(contract)}
@@ -1771,7 +1783,7 @@ const Terminal = (props: {
 }
 
 // ---------------------------------------------------------------------------
-// Watchlist: every open perp, sortable, top rows only until expanded.
+// Watchlist: every open perp, sortable, with a bounded scrolling body.
 
 const Watchlist = (props: {
   contracts: PerpContract[]
@@ -1793,90 +1805,100 @@ const Watchlist = (props: {
     onChangeWindow,
     onSelect,
   } = props
-  const [showAll, setShowAll] = useState(false)
-  const visible = showAll ? contracts : contracts.slice(0, DEFAULT_ROWS)
-  const hidden = contracts.length - visible.length
+  const listRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const list = listRef.current
+    const selected = list?.querySelector<HTMLElement>('[aria-current="true"]')
+    if (!list || !selected) return
+    // Ticker/position selections reveal their row without scrolling the page.
+    const row = selected.getBoundingClientRect()
+    const bounds = list.getBoundingClientRect()
+    const top =
+      bounds.top + (list.firstElementChild?.getBoundingClientRect().height ?? 0)
+    if (row.top < top) list.scrollTop += row.top - top
+    else if (row.bottom > bounds.bottom)
+      list.scrollTop += row.bottom - bounds.bottom
+  }, [selectedId])
   const header = { sort, onSort }
 
   return (
     <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
       <div
-        className={clsx(
-          WATCH_GRID,
-          'border-ink-200 dark:border-ink-300 border-b px-3 py-2 text-[11px] font-medium'
-        )}
+        ref={listRef}
+        role="region"
+        aria-label="Perpetual markets"
+        className="max-h-[min(28rem,60vh)] overflow-y-auto overscroll-contain"
       >
-        <SortHeader {...header} label="Market" sortKey="volume" />
-        <SortHeader {...header} label="Price" className="text-right" />
-        {HUB_FEATURES.changeWindow ? (
-          // The change column doubles as the window switch: click the
-          // inactive window to switch to it (and sort by it), click the
-          // active one to flip sort direction.
-          <span className="flex justify-end gap-1.5">
-            {(['24h', '7d'] as const).map((w) => {
-              const isWindow = changeWindow === w
-              const active = isWindow && sort.key === 'change'
-              return (
-                <button
-                  key={w}
-                  onClick={() => {
-                    if (isWindow) onSort('change')
-                    else {
-                      onChangeWindow(w)
-                      if (sort.key !== 'change') onSort('change')
-                    }
-                  }}
-                  className={clsx(
-                    'hover:text-ink-700 uppercase tracking-wider',
-                    isWindow ? 'text-ink-800' : 'text-ink-400'
-                  )}
-                >
-                  {w}
-                  {active && (
-                    <span className="ml-0.5 text-[9px]">
-                      {sort.desc ? '▼' : '▲'}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </span>
-        ) : (
+        <div
+          className={clsx(
+            WATCH_GRID,
+            'border-ink-200 dark:border-ink-300 bg-canvas-0 sticky top-0 z-10 border-b px-3 py-2 text-[11px] font-medium'
+          )}
+        >
+          <SortHeader {...header} label="Market" sortKey="volume" />
+          <SortHeader {...header} label="Price" className="text-right" />
+          {HUB_FEATURES.changeWindow ? (
+            // The change column doubles as the window switch: click the
+            // inactive window to switch to it (and sort by it), click the
+            // active one to flip sort direction.
+            <span className="flex justify-end gap-1.5">
+              {(['24h', '7d'] as const).map((w) => {
+                const isWindow = changeWindow === w
+                const active = isWindow && sort.key === 'change'
+                return (
+                  <button
+                    key={w}
+                    onClick={() => {
+                      if (isWindow) onSort('change')
+                      else {
+                        onChangeWindow(w)
+                        if (sort.key !== 'change') onSort('change')
+                      }
+                    }}
+                    className={clsx(
+                      'hover:text-ink-700 uppercase tracking-wider',
+                      isWindow ? 'text-ink-800' : 'text-ink-400'
+                    )}
+                  >
+                    {w}
+                    {active && (
+                      <span className="ml-0.5 text-[9px]">
+                        {sort.desc ? '▼' : '▲'}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </span>
+          ) : (
+            <SortHeader
+              {...header}
+              label="7d"
+              sortKey="change"
+              className="text-right"
+            />
+          )}
+          <span className="hidden min-[360px]:block" />
           <SortHeader
             {...header}
-            label="7d"
-            sortKey="change"
+            label="Lean"
+            sortKey="lean"
             className="text-right"
           />
-        )}
-        <span className="hidden min-[360px]:block" />
-        <SortHeader
-          {...header}
-          label="Lean"
-          sortKey="lean"
-          className="text-right"
-        />
+        </div>
+        <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+          {contracts.map((c) => (
+            <WatchRow
+              key={c.id}
+              contract={c}
+              series={week[c.id]}
+              changeWindow={changeWindow}
+              selected={c.id === selectedId}
+              onSelect={() => onSelect(c.id)}
+            />
+          ))}
+        </Col>
       </div>
-      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
-        {visible.map((c) => (
-          <WatchRow
-            key={c.id}
-            contract={c}
-            series={week[c.id]}
-            changeWindow={changeWindow}
-            selected={c.id === selectedId}
-            onSelect={() => onSelect(c.id)}
-          />
-        ))}
-      </Col>
-      {(hidden > 0 || showAll) && (
-        <button
-          onClick={() => setShowAll((s) => !s)}
-          className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
-        >
-          {showAll ? 'Show fewer' : `Show all ${contracts.length}`}
-        </button>
-      )}
     </Col>
   )
 }
