@@ -45,7 +45,8 @@ export const MultiBinaryChartTooltip = (props: {
   bottomColor: string
   bottomLabel: string
 }) => {
-  const { ttProps, xScale, topColor, bottomColor } = props
+  const { ttProps, xScale, topColor, topLabel, bottomColor, bottomLabel } =
+    props
   const { prev, next, x } = ttProps
   if (!prev) return null
 
@@ -53,21 +54,38 @@ export const MultiBinaryChartTooltip = (props: {
   const [start, end] = xScale.domain()
   const dateLabel = formatDateInRange(d, start, end)
 
+  // `prev.y` is the main (first) answer's probability, drawn as the bottom
+  // band; the other answer fills the top band.
   return (
     <div>
       <div>{next ? dateLabel : 'Now'}</div>
-      <div
-        className="flex items-center gap-1 text-base font-semibold"
-        style={{ color: topColor }}
-      >
-        {formatPct(1 - prev.y)}
-      </div>
-      <div
-        className="flex items-center gap-1 text-base font-semibold"
-        style={{ color: bottomColor }}
-      >
-        {formatPct(prev.y)}
-      </div>
+      <MultiBinaryTooltipRow
+        label={topLabel}
+        color={topColor}
+        value={formatPct(1 - prev.y)}
+      />
+      <MultiBinaryTooltipRow
+        label={bottomLabel}
+        color={bottomColor}
+        value={formatPct(prev.y)}
+      />
+    </div>
+  )
+}
+
+const MultiBinaryTooltipRow = (props: {
+  label: string
+  color: string
+  value: string
+}) => {
+  const { label, color, value } = props
+  return (
+    <div
+      className="flex items-center justify-between gap-3 text-base font-semibold"
+      style={{ color }}
+    >
+      <span className="max-w-[8rem] truncate">{label}</span>
+      <span>{value}</span>
     </div>
   )
 }
