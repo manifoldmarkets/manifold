@@ -643,12 +643,20 @@ for the cohort, sources, deployment order and environment validation.
 
 `common/perps/mnx-cta.ts` owns every link that sends a reader to MNX, and
 `web/components/perps/mnx-cta.tsx` renders them. `MnxTradeCta` is the call to
-action — "Trade `<TICKER>` with real money on MNX" — shown under the chart on a
-market page and on the /perps terminal; the source credit under the chart is a
-credit again rather than a second CTA, because there is now a real one. Both
-are withheld for markets on non-MNX feeds, and the CTA is also withheld once a
+action — "Trade `<TICKER>` with real money" — shown under the chart on a market
+page and on the /perps terminal; the source credit under the chart is a credit
+again rather than a second CTA, because there is now a real one. Both are
+withheld for markets on non-MNX feeds, and the CTA is also withheld once a
 market has settled, since MNX ending an instrument is exactly what pauses
 trading here pending administrative settlement and its page may be gone.
+
+The CTA wears MNX's colours, not Manifold's: their wordmark
+(`web/public/mnx-logo.svg`, white, the same asset the /jobs partner block uses)
+on a near-black panel, with the button inverted to white. One treatment serves
+both themes, so the white wordmark never needs an inverted copy — and the panel
+is `slate-950` rather than the /jobs tile's `slate-900` because dark-mode
+`canvas-0` is itself roughly `slate-900`, which would leave it level with the
+page instead of on top of it.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,

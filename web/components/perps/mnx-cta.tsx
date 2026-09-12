@@ -89,22 +89,46 @@ export const MnxTradeCta = (props: {
     instrument.type === 'future' ? 'valuation future' : 'perpetual'
 
   return (
+    // MNX's own colours rather than Manifold's: their wordmark is white on
+    // near-black (see the partner block on /jobs, which uses the same asset),
+    // so the card is a black panel and the button inverts to white. It reads
+    // as somewhere else — which is the point of a CTA that leaves the site —
+    // and it is one treatment in both themes, so the white wordmark never
+    // needs a second, inverted copy. slate-950 rather than the /jobs tile's
+    // slate-900 because dark-mode canvas-0 IS roughly slate-900: at this size
+    // the panel has to be darker than the page, not level with it.
     <Row
       className={clsx(
-        'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-900/20 flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-lg border px-4 py-3',
+        'flex-wrap items-center gap-x-4 gap-y-3 rounded-lg bg-slate-950 px-4 py-3 ring-1 ring-slate-800',
         className
       )}
     >
-      <Col className="min-w-[14rem] flex-1 gap-0.5">
-        <div className="text-ink-900 text-sm font-semibold">
-          Trade {ticker} with real money on MNX
-        </div>
-        <div className="text-ink-600 text-xs">
-          Positions here are in mana. This market tracks MNX's {derivative} on{' '}
-          {instrument.name} — the instrument itself trades on MNX, a separate
-          exchange.
-        </div>
-      </Col>
+      <Row className="min-w-[13rem] flex-1 items-center gap-3">
+        {/* Plain img, like the /jobs partner block: it is a fixed-size static
+            asset, so next/image would add a request and a wrapper for nothing.
+            alt is the brand name — the heading beside it deliberately doesn't
+            repeat it. */}
+        <img
+          src="/mnx-logo.svg"
+          alt="MNX"
+          width={300}
+          height={103}
+          className="h-5 w-auto shrink-0"
+        />
+        <div aria-hidden className="w-px shrink-0 self-stretch bg-slate-700" />
+        <Col className="min-w-0 gap-0.5">
+          <div className="text-sm font-semibold text-white">
+            Trade {ticker} with real money
+          </div>
+          {/* Two short sentences: what the price is, and that this market is
+              not it. The wordmark, the button and the new tab say the rest —
+              nobody needs a paragraph to be told they are leaving. */}
+          <div className="text-xs text-slate-400">
+            Tracks MNX's {derivative} on {instrument.name}. Positions here are
+            in mana.
+          </div>
+        </Col>
+      </Row>
       <a
         {...mnxLinkProps({
           url: instrument.url,
@@ -112,7 +136,10 @@ export const MnxTradeCta = (props: {
           feedId: contract.oracleFeedId,
           contractId: contract.id,
         })}
-        className={clsx(buttonClass('sm', 'indigo'), 'shrink-0 gap-1.5')}
+        className={clsx(
+          buttonClass('sm', 'none'),
+          'shrink-0 gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200'
+        )}
       >
         Trade {ticker} on MNX
         <ExternalLinkIcon aria-hidden className="h-4 w-4" />
