@@ -1,4 +1,5 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { applyLimitOrderUpdates } from 'client-common/hooks/use-bets'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { getCountdownString } from 'client-common/lib/time'
 import clsx from 'clsx'
@@ -144,12 +145,18 @@ export function OrderTable(props: {
   const [isCancelling, setIsCancelling] = useState(false)
   const onCancel = async () => {
     setIsCancelling(true)
-    await Promise.all(
-      limitBets
-        .filter((b) => !b.isCancelled)
-        .map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
-    )
-    setIsCancelling(false)
+    try {
+      const results = await Promise.allSettled(
+        limitBets
+          .filter((b) => !b.isCancelled)
+          .map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
+      )
+      applyLimitOrderUpdates(
+        results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
+      )
+    } finally {
+      setIsCancelling(false)
+    }
   }
 
   // If showAnswers is true and we have answers, group bets by answerId
@@ -288,8 +295,16 @@ function OrderRow(props: {
 
   const onCancel = async () => {
     setIsCancelling(true)
-    await api('bet/cancel/:betId', { betId: bet.id })
-    setIsCancelling(false)
+    try {
+      // Drop the order from the shared order book right away so the bet and
+      // sell panels stop pricing against it, rather than waiting on the
+      // websocket to tell us what we already know.
+      applyLimitOrderUpdates([
+        await api('bet/cancel/:betId', { betId: bet.id }),
+      ])
+    } finally {
+      setIsCancelling(false)
+    }
   }
   const isCashContract = contract.token === 'CASH'
   const expired = bet.expiresAt && bet.expiresAt < Date.now()

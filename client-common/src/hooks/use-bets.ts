@@ -1,10 +1,11 @@
 import { APIParams, APIResponse } from 'common/api/schema'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
 import { User } from 'common/user'
-import { sortBy, uniq, uniqBy } from 'lodash'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
+import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export function useBetsOnce(
@@ -167,6 +168,49 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   return newBets
 }
 
+// Filling and cancelling a limit order are both terminal, so once we've seen an
+// order close we can keep it out of every order book we hold, even if a request
+// that was already in flight comes back still reporting it as open.
+const CLOSED_ORDER_MEMORY_MS = 30 * 60 * 1000
+const CLOSED_ORDER_PRUNE_SIZE = 500
+const closedOrderTimes = new Map<string, number>()
+
+const rememberClosedOrders = (bets: LimitBet[], now: number) => {
+  for (const bet of bets) {
+    if (!isOpenLimitOrder(bet, now)) closedOrderTimes.set(bet.id, now)
+  }
+  if (closedOrderTimes.size <= CLOSED_ORDER_PRUNE_SIZE) return
+  for (const [id, closedAt] of closedOrderTimes) {
+    if (closedAt < now - CLOSED_ORDER_MEMORY_MS) closedOrderTimes.delete(id)
+  }
+}
+
+const openOrdersOnly = (bets: LimitBet[]) => {
+  const now = Date.now()
+  return bets.filter(
+    (bet) => isOpenLimitOrder(bet, now) && !closedOrderTimes.has(bet.id)
+  )
+}
+
+type LimitOrderListener = (bets: LimitBet[]) => void
+const unfilledBetListeners = new Map<string, Set<LimitOrderListener>>()
+
+/** Push limit order updates straight into every mounted `useUnfilledBets`,
+ * without waiting for the websocket to echo them back. Cancel an order and the
+ * order book the bet and sell panels price against drops it immediately, so
+ * they stop quoting a counterparty that has gone. */
+export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
+  if (bets.length === 0) return
+  rememberClosedOrders(bets, Date.now())
+  for (const [contractId, contractBets] of Object.entries(
+    groupBy(bets, 'contractId')
+  )) {
+    for (const listener of unfilledBetListeners.get(contractId) ?? []) {
+      listener(contractBets)
+    }
+  }
+}
+
 export const useUnfilledBets = (
   contractId: string,
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -182,29 +226,38 @@ export const useUnfilledBets = (
     `unfilled-bets-${contractId}`
   )
 
-  const addBets = (newBets: LimitBet[]) => {
-    setBets((bets) => {
-      return sortBy(
-        uniqBy([...newBets, ...(bets ?? [])], 'id'),
-        'createdTime'
-      ).filter(
-        (bet) =>
-          !bet.isFilled &&
-          !bet.isCancelled &&
-          (!bet.expiresAt || bet.expiresAt > Date.now())
+  const addBets = useEvent((newBets: LimitBet[]) => {
+    rememberClosedOrders(newBets, Date.now())
+    setBets((bets) =>
+      openOrdersOnly(
+        sortBy(uniqBy([...newBets, ...(bets ?? [])], 'id'), 'createdTime')
       )
-    })
-  }
+    )
+  })
 
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
     if (enabled)
-      api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
+      api({ contractId, kinds: 'open-limit', order: 'asc' }).then((bets) =>
         // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
-        (bets) => setBets(bets as LimitBet[])
+        setBets(openOrdersOnly(bets as LimitBet[]))
       )
   }, [enabled, contractId, isPageVisible])
+
+  // Local updates (e.g. you cancelling one of your own orders) reach every
+  // other panel on the page through here rather than over the network.
+  useEffect(() => {
+    if (!enabled) return
+    const listeners =
+      unfilledBetListeners.get(contractId) ?? new Set<LimitOrderListener>()
+    unfilledBetListeners.set(contractId, listeners)
+    listeners.add(addBets)
+    return () => {
+      listeners.delete(addBets)
+      if (listeners.size === 0) unfilledBetListeners.delete(contractId)
+    }
+  }, [enabled, contractId, addBets])
 
   useApiSubscription({
     enabled,
@@ -214,7 +267,9 @@ export const useUnfilledBets = (
     },
   })
 
-  return bets
+  // A panel that mounts after a cancel starts from the in-memory cache, which
+  // can still be holding the order that was just cancelled.
+  return useMemo(() => bets && openOrdersOnly(bets), [bets])
 }
 
 export const useUnfilledBetsAndBalanceByUserId = (
