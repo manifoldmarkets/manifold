@@ -658,17 +658,16 @@ is `slate-950` rather than the /jobs tile's `slate-900` because dark-mode
 `canvas-0` is itself roughly `slate-900`, which would leave it level with the
 page instead of on top of it.
 
-The offer lives in the button, once — a heading saying "Trade `<TICKER>` with
-real money" above a button saying the same thing was the sentence twice. On a
-phone the card is exactly wordmark + button ("Trade with real money": the
-wordmark beside it is the "on MNX", and the ticker is already in the market
-header), which is what keeps it to one 60px line from 360px up; the full label
-needs a 334px button and never fits beside the wordmark on a phone, so widening
-it back is a two-line button, not a tidier card. From `sm` the divider and a
-line naming the instrument appear and the button takes the full label; between
-`sm` and ~768px that button wraps onto its own row, and above it the card is a
-single line. The link's `aria-label` is the full sentence at every width, so
-the phone's shorter wording costs a screen reader nothing.
+From `sm` up the card is wordmark │ pitch and instrument line │ "Trade
+`<TICKER>` on MNX". A phone gets the wordmark and that same button alone on one
+row: the card sits right above the bet panel, so a line spent here is a line
+taken from what people came for. The button keeps its one label at every width
+— the wordmark shrinks to `h-4` and the row to `gap-3` below `sm` instead,
+which is what leaves the button real slack rather than four pixels of it at
+360px. That holds it to one 60px line from 360px up; 320px is the only width
+where it wraps, and it wraps to two lines rather than overflowing. A longer
+label does not fit: "Trade `<TICKER>` with real money on MNX" needs a 334px
+button against 182–292px of room beside the wordmark on phones.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,

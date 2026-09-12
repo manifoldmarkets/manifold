@@ -12,6 +12,7 @@ import {
 import { getPerpTicker } from 'common/perps/ticker'
 import { buttonClass } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
+import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 
 /**
@@ -104,8 +105,8 @@ export const MnxTradeCta = (props: {
     >
       {/* Plain img, like the /jobs partner block: it is a fixed-size static
           asset, so next/image would add a request and a wrapper for nothing.
-          alt is the brand name, which is also what earns the button the right
-          to leave "on MNX" out on a phone. */}
+          alt is the brand name — on a phone it is the only thing left beside
+          the button. */}
       <img
         src="/mnx-logo.svg"
         alt="MNX"
@@ -117,14 +118,18 @@ export const MnxTradeCta = (props: {
         aria-hidden
         className="hidden w-px shrink-0 self-stretch bg-slate-700 sm:block"
       />
-      {/* Which instrument you'd be trading over there. The offer itself lives
-          in the button — saying it here as well was the same sentence twice.
-          Phones get neither this nor the divider: the card sits right above
-          the bet panel, so a line here is a line taken from what people came
-          for. */}
-      <div className="hidden min-w-[12rem] flex-1 text-sm text-slate-300 sm:block">
-        MNX's {derivative} on {instrument.name}
-      </div>
+      {/* The pitch and the instrument it's on. Phones get neither this nor the
+          divider, leaving the wordmark and the button alone on one line: the
+          card sits right above the bet panel, so a line here is a line taken
+          from what people came for, and the button already says the offer. */}
+      <Col className="hidden min-w-[12rem] flex-1 gap-0.5 sm:flex">
+        <div className="text-sm font-semibold text-white">
+          Trade {ticker} with real money
+        </div>
+        <div className="text-xs text-slate-400">
+          MNX's {derivative} on {instrument.name}
+        </div>
+      </Col>
       <a
         {...mnxLinkProps({
           url: instrument.url,
@@ -132,26 +137,17 @@ export const MnxTradeCta = (props: {
           feedId: contract.oracleFeedId,
           contractId: contract.id,
         })}
-        // The label a screen reader gets is the full one at every width, so
-        // the phone's shorter wording never costs a link its meaning.
-        aria-label={`Trade ${ticker} with real money on MNX`}
         className={clsx(
           buttonClass('sm', 'none'),
           'gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200',
-          // Fills the row beside the wordmark on a phone; natural width beside
-          // the description on wider screens, where shrinking it would squeeze
-          // the label instead of wrapping the row.
+          // Fills the row beside the wordmark on a phone, where it is the only
+          // other thing there; natural width beside the text on wider screens,
+          // where shrinking it would squeeze the label instead of wrapping the
+          // row.
           'max-sm:flex-1 sm:shrink-0'
         )}
       >
-        {/* Phones: the wordmark to its left IS the "on MNX", and the ticker is
-            in the market header — so the button carries the offer alone. That
-            is what keeps it on one line from 360px up; the full label needs
-            334px of button and never fits beside the wordmark on a phone. */}
-        <span className="sm:hidden">Trade with real money</span>
-        <span className="hidden sm:inline">
-          Trade {ticker} with real money on MNX
-        </span>
+        Trade {ticker} on MNX
         <ExternalLinkIcon aria-hidden className="h-4 w-4 shrink-0" />
       </a>
     </Row>
