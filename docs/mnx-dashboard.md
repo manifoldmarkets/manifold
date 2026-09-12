@@ -63,3 +63,22 @@ and verifies the fees and creator in each response. The MNX identity remains
 pinned by environment in `common/src/perps/creator-accounts.ts` (re-exported from
 the existing shared module); usernames do not grant management access. DEV stays
 unconfigured until it has its own verified partner account.
+
+New MNX markets use the partner's category templates: `[Company] IPO Market Cap
+(MNX)` for valuation futures, `[Company] (MNX)` for equities, and `H100 GPU rental
+price (MNX)` for compute. Descriptions come from the same instrument registry;
+canonical display tickers remain unchanged (including `ANTH`, `SNDK`, and `H100`).
+The market's oracle attribution continues to link to MNX independently of its
+editable description.
+
+To apply the templates to existing live MNX-owned markets, use
+`backend/scripts/update-mnx-market-copy.ts` with the normal script credentials,
+`NEXT_PUBLIC_FIREBASE_ENV` explicitly set to `PROD`, and the matching Firebase
+project selected. Run without arguments to preview the before/after metadata;
+then add `--apply --editor-id=USER_ID` using the operator's Manifold user ID for
+edit history. This writes titles, descriptions, and canonical tickers together
+with their edit history in one transaction, verifies the stored metadata, and
+revalidates the market pages. It refuses concurrent metadata or cohort changes,
+skips resolved markets, and targets only the pinned MNX owner and registered MNX
+feeds. Trading settings and balances are unaffected. Merging the PR does not
+run this backfill.

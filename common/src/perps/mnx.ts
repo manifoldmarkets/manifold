@@ -53,13 +53,17 @@ export const MNX_INSTRUMENTS = instruments.map(
       minPrice,
       maxPrice,
       question: valuation
-        ? `${name} — MNX valuation futures price (USD billions)`
-        : `${name} — MNX mark price (${symbol}, USD)`,
-      description: valuation
-        ? `Tracks the MNX ${name} valuation futures mark price, in billions of US dollars. This is a futures price, not a stock price or a confirmed current company valuation. MNX's contract references market capitalization after IPO, or the last public valuation if no listing happens before 2028.`
+        ? `${name} IPO Market Cap (MNX)`
         : category === 'compute'
-        ? 'Tracks the MNX H100 rental-price mark in USD. MNX references the SemiAnalysis H100 Selected Spot Rental Price Index. This measures GPU rental prices, not the purchase price of a GPU.'
-        : `Tracks the MNX ${symbol} market mark price in USD. This is the price of the MNX derivative; it can differ from the underlying share price.`,
+        ? 'H100 GPU rental price (MNX)'
+        : `${name} (MNX)`,
+      description: valuation
+        ? `Tracks MNX futures contract on ${name}'s market capitalization after IPO — or its last public valuation if no listing happens before 2028 — in billions of US dollars.`
+        : category === 'compute'
+        ? 'Tracks the MNX perpetual on the rental price of NVIDIA H100 GPUs, as measured by the SemiAnalysis H100 Selected Spot Rental Price Index.'
+        : `Tracks the MNX perpetual on one share of ${
+            symbol === 'SNDK' ? 'Sandisk Corporation' : name
+          } (${symbol}).`,
     }
   }
 )

@@ -80,7 +80,7 @@ if (require.main === module)
       )!.recommended
       return {
         question: spec.question,
-        description: `${spec.description}\n\nSource: ${spec.url}\nIf MNX ends this instrument, trading pauses pending administrative settlement; it will not automatically roll into a replacement.`,
+        description: spec.description,
         oracleFeedId: spec.feedId,
         ticker: getPerpFeedTicker(spec.feedId),
         creatorAccount,
