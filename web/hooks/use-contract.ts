@@ -4,7 +4,10 @@ import { getContract, getContracts } from 'common/supabase/contracts'
 import { getPublicContractIdsInTopics } from 'web/lib/supabase/contracts'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { difference, uniqBy } from 'lodash'
-import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import {
+  useApiSubscription,
+  useWebsocketReconnectCount,
+} from 'client-common/hooks/use-api-subscription'
 import { useIsPageVisible } from './use-page-visible'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
@@ -96,15 +99,21 @@ export function useLiveAllNewContracts(limit: number) {
 
 export function useLiveContract<C extends Contract = Contract>(initial: C): C {
   const isPageVisible = useIsPageVisible()
+  const reconnectCount = useWebsocketReconnectCount()
+  const [subscriptionCount, setSubscriptionCount] = useState(0)
   // ian: Batching is helpful on pages like /browse
   const [contract, setContract] = useBatchedGetter<C>(
     queryHandlers,
     'markets',
     initial.id,
     initial,
-    isPageVisible
+    isPageVisible,
+    undefined,
+    reconnectCount + subscriptionCount
   )
 
-  useContractUpdates(initial, setContract)
+  useContractUpdates(initial, setContract, () => {
+    if (isPageVisible) setSubscriptionCount((count) => count + 1)
+  })
   return contract ?? initial
 }

@@ -10,7 +10,10 @@ import {
   useMemo,
   useSyncExternalStore,
 } from 'react'
-import { useApiSubscription } from './use-api-subscription'
+import {
+  useApiSubscription,
+  useWebsocketReconnectCount,
+} from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
@@ -222,8 +225,9 @@ export const useUnfilledBets = (
     getServerSnapshot
   )
   const isPageVisible = useIsPageVisible()
+  const reconnectCount = useWebsocketReconnectCount()
 
-  useEffect(() => {
+  const refresh = useEvent(() => {
     if (!enabled || !isPageVisible) return
     book
       .refresh(
@@ -233,9 +237,11 @@ export const useUnfilledBets = (
           >
       )
       .catch((e) => console.error('Failed to load limit orders', e))
-  }, [enabled, book, contractId, isPageVisible])
+  })
+  useEffect(refresh, [enabled, book, contractId, isPageVisible, reconnectCount])
 
   useApiSubscription({
+    onSubscribed: refresh,
     enabled,
     topics: [`contract/${contractId}/orders`],
     onBroadcast: ({ data }) => book.update(data.bets as LimitBet[]),
