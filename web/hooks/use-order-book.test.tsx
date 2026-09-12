@@ -1,4 +1,3 @@
-import React from 'react'
 import { act, create, ReactTestRenderer } from 'react-test-renderer'
 import { LimitBet } from 'common/bet'
 import {
@@ -11,7 +10,7 @@ let mockGeneration = 0
 const mockReconnectListeners = new Set<(count: number) => void>()
 const mockSubscriptions = new Set<any>()
 jest.mock('client-common/hooks/use-api-subscription', () => {
-  const React = require('react')
+  const React = jest.requireActual('react')
   return {
     useWebsocketReconnectCount: () => {
       const [count, setCount] = React.useState(mockGeneration)
