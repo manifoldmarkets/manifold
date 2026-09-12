@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 
-const RESUME_DELAY_MS = 2000
 const DRAG_THRESHOLD_PX = 6
 
 // Keep animation and dragging on the same offset so grabbing the tape never
@@ -22,9 +21,7 @@ export const useDraggableTicker = (marketCount: number) => {
     let width = 0
     let offset = 0
     let velocity = 0
-    let hovered = false
     let focused = false
-    let resumeAt = 0
     let suppressClick = false
     let gesture:
       | {
@@ -53,12 +50,10 @@ export const useDraggableTicker = (marketCount: number) => {
     observer.observe(group)
     measure()
 
-    const pause = () => {
-      resumeAt = performance.now() + RESUME_DELAY_MS
-    }
     const down = (event: PointerEvent) => {
       if (!event.isPrimary || event.button !== 0) return
       velocity = 0
+      focused = false
       suppressClick = false
       gesture = {
         id: event.pointerId,
@@ -78,7 +73,6 @@ export const useDraggableTicker = (marketCount: number) => {
         // Leave vertical gestures to the page. touch-action allows pan-y.
         if (Math.abs(dy) > Math.abs(dx)) {
           gesture = undefined
-          pause()
           return
         }
         gesture.dragging = true
@@ -112,7 +106,6 @@ export const useDraggableTicker = (marketCount: number) => {
       gesture = undefined
       if (viewport.hasPointerCapture(event.pointerId))
         viewport.releasePointerCapture(event.pointerId)
-      pause()
     }
     const click = (event: MouseEvent) => {
       // Keyboard activation (detail === 0) must still work after a swipe.
@@ -121,11 +114,7 @@ export const useDraggableTicker = (marketCount: number) => {
       event.stopPropagation()
       suppressClick = false
     }
-    const enter = (event: PointerEvent) => {
-      if (event.pointerType === 'mouse') hovered = true
-    }
     const leave = (event: PointerEvent) => {
-      if (event.pointerType === 'mouse') hovered = false
       if (gesture && !gesture.dragging) end(event)
     }
     const focus = (event: FocusEvent) => {
@@ -150,7 +139,6 @@ export const useDraggableTicker = (marketCount: number) => {
       )
         return
       focused = false
-      pause()
     }
     let previous = performance.now()
     let frame: number
@@ -161,8 +149,7 @@ export const useDraggableTicker = (marketCount: number) => {
         if (Math.abs(velocity) > 0.015 && !reducedMotion.matches) {
           offset += velocity * elapsed
           velocity *= Math.exp(-elapsed / 250)
-          pause()
-        } else if (!hovered && now >= resumeAt && !reducedMotion.matches) {
+        } else if (!reducedMotion.matches) {
           velocity = 0
           offset += (width * elapsed) / (duration * 1000)
         }
@@ -177,7 +164,6 @@ export const useDraggableTicker = (marketCount: number) => {
     viewport.addEventListener('pointercancel', end)
     viewport.addEventListener('lostpointercapture', end)
     viewport.addEventListener('click', click, true)
-    viewport.addEventListener('pointerenter', enter)
     viewport.addEventListener('pointerleave', leave)
     viewport.addEventListener('focusin', focus)
     viewport.addEventListener('focusout', blur)
@@ -190,7 +176,6 @@ export const useDraggableTicker = (marketCount: number) => {
       viewport.removeEventListener('pointercancel', end)
       viewport.removeEventListener('lostpointercapture', end)
       viewport.removeEventListener('click', click, true)
-      viewport.removeEventListener('pointerenter', enter)
       viewport.removeEventListener('pointerleave', leave)
       viewport.removeEventListener('focusin', focus)
       viewport.removeEventListener('focusout', blur)
