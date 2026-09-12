@@ -232,6 +232,7 @@ export const BuyPanelBody = (
     outcome?: BinaryOutcomes
     setOutcome: (outcome: 'YES' | 'NO') => void
     onClose?: () => void
+    outcomeControl?: React.ReactNode
     cancelDismissTimerRef?: React.MutableRefObject<(() => void) | null>
   }
 ) => {
@@ -247,6 +248,7 @@ export const BuyPanelBody = (
     feedReason,
     className,
     children,
+    outcomeControl,
     cancelDismissTimerRef,
   } = props
 
@@ -765,26 +767,28 @@ export const BuyPanelBody = (
     <>
       <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
         {children}
-        <Row className={'mb-2 mt-2 justify-between'}>
-          <Row
-            className={clsx(
-              ' gap-1',
-              // Hide toggle for binary MC questions or prop-provided pseudonyms (but NOT for PAMPU skin)
-              (isBinaryMC || propPseudonymName) && 'invisible'
-            )}
-          >
-            <ChoicesToggleGroup
-              currentChoice={outcome}
-              color={outcome === 'YES' ? 'light-green' : 'light-red'}
-              choicesMap={choicesMap}
-              setChoice={(outcome) => {
-                setOutcome(outcome as 'YES' | 'NO')
-                // Cancel dismiss timer if user is switching outcomes
-                cancelDismissTimerFn()
-              }}
-            />
-          </Row>
-          <Row className="items-center justify-end gap-2">
+        <Row className="mb-2 mt-2 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          {outcomeControl ?? (
+            <Row
+              className={clsx(
+                'gap-1',
+                // Hide toggle for binary MC questions or prop-provided pseudonyms (but NOT for PAMPU skin)
+                (isBinaryMC || propPseudonymName) && 'invisible'
+              )}
+            >
+              <ChoicesToggleGroup
+                currentChoice={outcome}
+                color={outcome === 'YES' ? 'light-green' : 'light-red'}
+                choicesMap={choicesMap}
+                setChoice={(outcome) => {
+                  setOutcome(outcome as 'YES' | 'NO')
+                  // Cancel dismiss timer if user is switching outcomes
+                  cancelDismissTimerFn()
+                }}
+              />
+            </Row>
+          )}
+          <Row className="ml-auto shrink-0 items-center justify-end gap-2">
             {!isStonk && (
               <ChoicesToggleGroup
                 currentChoice={betType}
@@ -804,6 +808,7 @@ export const BuyPanelBody = (
                 size="sm"
                 onClick={onClose}
                 className="-mr-2"
+                aria-label="Close betting panel"
               >
                 <XIcon className="h-5 w-5" />
               </Button>
