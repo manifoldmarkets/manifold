@@ -10,6 +10,13 @@ and resolved markets. Stats are refreshed from the database with **Refresh stats
 backing, open interest, active traders, 24-hour margin volume, opening fees, and
 oracle health. Fees are added to the backing pools. Stats cannot be manually edited.
 
+To edit a market's title or description, open its market link while signed in
+as MNX. Use the pencil beside the title or **Edit description** below the
+description. Both are editable on MNX-owned markets; the oracle feed and ticker
+remain fixed. Title editing requires the updated API deployment. Description
+editing already uses the existing creator permissions. The launch audit accepts
+custom MNX-owned titles while still checking the feed, ticker, and owner.
+
 Select live markets, or use **Manage** on one market:
 
 - **Add liquidity:** choose long, short, or both. The entered amount is **per

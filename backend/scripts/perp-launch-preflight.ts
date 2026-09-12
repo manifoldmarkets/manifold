@@ -10,7 +10,10 @@ import {
   getPerpOpenInterestCapacity,
   assertPerpStateSolvent,
 } from 'common/perps/amm'
-import { isPerpCreatorAccountAllowed } from 'common/perps/creator-accounts'
+import {
+  isMnxOwnedPerp,
+  isPerpCreatorAccountAllowed,
+} from 'common/perps/creator-accounts'
 import { isPerpEscrowBalanced } from 'common/perps/escrow'
 import { shouldApplyFunding } from 'common/perps/funding'
 import { getOracleFreshness, getPerpOracleFreshness } from 'common/perps/oracle'
@@ -660,10 +663,15 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
 
       if (definition) {
         const expectedCreatorId = getPerpLaunchCreatorId(environment)
+        const editableTitle = isMnxOwnedPerp(contract, environment)
         report(
-          contract.question === definition.question ? 'PASS' : 'FAIL',
+          editableTitle || contract.question === definition.question
+            ? 'PASS'
+            : 'FAIL',
           `market ${contract.slug} launch title`,
-          contract.question === definition.question
+          editableTitle
+            ? `MNX-owned display title: "${contract.question}"`
+            : contract.question === definition.question
             ? definition.question
             : `stored="${contract.question}", expected="${definition.question}"; the ticker and market type are rendered separately`
         )

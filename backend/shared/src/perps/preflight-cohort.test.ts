@@ -217,6 +217,15 @@ it('accepts the pinned MNX partner as creator of MNX-feed markets only', async (
   expect(log).toHaveBeenCalledWith(
     '[PASS] market mnx-anthropic-mark launch creator: MNX partner account @MNX (mnx-user)'
   )
+  expect(log).toHaveBeenCalledWith(
+    '[PASS] market mnx-anthropic-mark launch title: MNX-owned display title: "fixture"'
+  )
+  expect(log.error).toHaveBeenCalledWith(
+    expect.stringContaining('[FAIL] market btc-usd launch title:')
+  )
+  expect(log.error).toHaveBeenCalledWith(
+    expect.stringContaining('[FAIL] market mnx-anthropic-mark launch ticker:')
+  )
   expect(log.error).toHaveBeenCalledWith(
     expect.stringContaining(
       '[FAIL] market btc-usd launch creator: creator mnx-user is not an allowed creator account for btc-usd (MxyCh2xvsFMFywwjg3Az0w4xP5B3)'

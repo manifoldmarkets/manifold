@@ -1,4 +1,5 @@
 import { getMnxInstrument } from './mnx'
+import type { Contract } from '../contract'
 
 // Accounts a PERP can be created under. The selection is the market's creator
 // in every sense the engine knows: it pays the backing at creation and
@@ -32,6 +33,18 @@ export const MNX_CREATOR_IDS: Record<'DEV' | 'PROD', string | undefined> = {
 
 export const getMnxCreatorId = (environment: 'DEV' | 'PROD') =>
   MNX_CREATOR_IDS[environment]
+
+// Partner-owned market copy is editable; feed identity is still fixed. Use
+// the same ownership test in the update API and the launch audit.
+export const isMnxOwnedPerp = (
+  contract: Pick<Contract, 'mechanism' | 'creatorId'> & {
+    oracleFeedId?: string
+  },
+  environment: 'DEV' | 'PROD'
+) =>
+  contract.mechanism === 'perp' &&
+  contract.creatorId === getMnxCreatorId(environment) &&
+  !!getMnxInstrument(contract.oracleFeedId)
 
 // A partner may only own markets on its own feeds: MNX-owned BTC markets would
 // route house backing to a third party for a product it has nothing to do
