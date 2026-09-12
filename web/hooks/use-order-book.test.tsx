@@ -2,6 +2,7 @@ import { act, create, ReactTestRenderer } from 'react-test-renderer'
 import { LimitBet } from 'common/bet'
 import {
   useUnfilledBets,
+  useUnfilledBetsAndBalanceByUserId,
   applyLimitOrderUpdates,
 } from 'client-common/hooks/use-bets'
 
@@ -191,4 +192,137 @@ it('expires an idle order without waiting for another render or event', async ()
   } finally {
     jest.useRealTimers()
   }
+})
+
+async function mountBalances(
+  read: (params: {
+    ids: string[]
+  }) => Promise<{ id: string; balance: number }[]>,
+  n = 1,
+  id = `balances-${nextId++}`
+) {
+  const latest: ReturnType<typeof useUnfilledBetsAndBalanceByUserId>[] = []
+  const readOrders = jest.fn(async () => [order(id)])
+  function Consumer({ i }: { i: number }) {
+    latest[i] = useUnfilledBetsAndBalanceByUserId(
+      id,
+      readOrders,
+      read,
+      () => mockVisible
+    )
+    return null
+  }
+  const render = () => (
+    <>
+      {Array.from({ length: n }, (_, i) => (
+        <Consumer key={i} i={i} />
+      ))}
+    </>
+  )
+  await act(async () => {
+    root = create(render())
+  })
+  return {
+    id,
+    latest,
+    readOrders,
+    update: async () => act(async () => root!.update(render())),
+    broadcast: async (topic: string, data: any) =>
+      act(async () => {
+        for (const sub of mockSubscriptions)
+          if (sub.topics.includes(topic)) sub.onBroadcast({ data })
+      }),
+    reconnect: async () =>
+      act(async () => {
+        mockGeneration++
+        for (const listener of mockReconnectListeners) listener(mockGeneration)
+      }),
+  }
+}
+
+it('deduplicates mounted consumers without reusing an old request after refocus', async () => {
+  const read = jest.fn(async () => [{ id: 'maker', balance: 100 }])
+  const m = await mountBalances(read, 3)
+  expect(m.readOrders).toHaveBeenCalledTimes(1)
+  expect(read).toHaveBeenCalledTimes(1)
+  mockVisible = false
+  await m.update()
+  mockVisible = true
+  await m.update()
+  expect(m.readOrders).toHaveBeenCalledTimes(2)
+  expect(read).toHaveBeenCalledTimes(2)
+})
+
+it('refreshes known balances after hidden reconnects, refocus, and remount', async () => {
+  let balance = 100
+  const read = jest.fn(async () => [{ id: 'maker', balance }])
+  const m = await mountBalances(read)
+  mockVisible = false
+  await m.update()
+  balance = 0
+  await m.reconnect()
+  expect(read).toHaveBeenCalledTimes(1)
+  mockVisible = true
+  await m.update()
+  expect(m.latest[0].balanceByUserId.maker).toBe(0)
+  await act(async () => root!.unmount())
+  root = undefined
+  balance = 5
+  const later = await mountBalances(read, 1, m.id)
+  expect(later.latest[0].balanceByUserId.maker).toBe(5)
+})
+
+it('retains a known empty balance when an unseen maker appears', async () => {
+  const pending = deferred<{ id: string; balance: number }[]>()
+  let calls = 0
+  const m = await mountBalances(() =>
+    ++calls === 1
+      ? Promise.resolve([{ id: 'maker', balance: 0 }])
+      : pending.promise
+  )
+  await m.broadcast(`contract/${m.id}/orders`, {
+    bets: [order(m.id, 'b', { userId: 'new-maker' })],
+  })
+  expect(m.latest[0].balanceByUserId).toEqual({ maker: 0, 'new-maker': 0 })
+  await act(async () =>
+    pending.resolve([
+      { id: 'maker', balance: 0 },
+      { id: 'new-maker', balance: 20 },
+    ])
+  )
+  expect(m.latest[0].balanceByUserId).toEqual({ maker: 0, 'new-maker': 20 })
+})
+
+it('does not let an old balance response overwrite recovery or live updates', async () => {
+  const old = deferred<{ id: string; balance: number }[]>()
+  const fresh = deferred<{ id: string; balance: number }[]>()
+  let calls = 0
+  const m = await mountBalances(() =>
+    ++calls === 1 ? old.promise : fresh.promise
+  )
+  await m.reconnect()
+  await m.broadcast('user/maker', { user: { id: 'maker', balance: 0 } })
+  await act(async () => fresh.resolve([{ id: 'maker', balance: 50 }]))
+  await act(async () => old.resolve([{ id: 'maker', balance: 100 }]))
+  expect(m.latest[0].balanceByUserId.maker).toBe(0)
+})
+
+it('treats omitted makers as unfunded and accepts their later websocket updates', async () => {
+  const m = await mountBalances(async () => [])
+  expect(m.latest[0].balanceByUserId.maker).toBe(0)
+  await m.broadcast('user/maker', { user: { id: 'maker', balance: 25 } })
+  expect(m.latest[0].balanceByUserId.maker).toBe(25)
+})
+
+it('refreshes a returning maker after its subscription was removed', async () => {
+  let balance = 100
+  const read = jest.fn(async () => [{ id: 'maker', balance }])
+  const m = await mountBalances(read)
+  await m.broadcast(`contract/${m.id}/orders`, {
+    bets: [order(m.id, 'a', { isCancelled: true })],
+  })
+  balance = 0
+  await m.broadcast(`contract/${m.id}/orders`, { bets: [order(m.id, 'b')] })
+  expect(read).toHaveBeenCalledTimes(2)
+  expect(m.latest[0].balanceByUserId.maker).toBe(0)
 })

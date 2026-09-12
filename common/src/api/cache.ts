@@ -5,4 +5,5 @@ export const isUncachedQuoteRead = (
   params: Record<string, unknown>
 ) =>
   (path === 'bets' && params.kinds === 'open-limit') ||
-  path === 'markets-by-ids'
+  path === 'markets-by-ids' ||
+  path === 'users/by-id/balance'
