@@ -12,7 +12,6 @@ import { computeCpmmBet } from 'common/new-bet'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { MarketContract } from 'common/contract'
-import { isBinaryMulti } from 'common/contract'
 const DEFAULT_SLIPPAGE = 0.1
 
 export const getLimitBetReturns = (
@@ -28,13 +27,9 @@ export const getLimitBetReturns = (
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
   const arbitrageProps = shouldAnswersSumToOne ? multiProps : undefined
-  const isBinaryMC = isBinaryMulti(contract)
-  const outcome =
-    (isBinaryMC && arbitrageProps
-      ? arbitrageProps.answerText === arbitrageProps.answerToBuy.text
-        ? 'YES'
-        : 'NO'
-      : undefined) ?? binaryOutcome
+  // The outcome is always relative to `answerToBuy`. On a versus market the
+  // panel bets on the main answer: YES backs it, NO backs the other answer.
+  const outcome = binaryOutcome
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   const cpmmState = isCpmmMulti
@@ -156,5 +151,10 @@ export const getLimitBetReturns = (
 export type MultiBetProps = {
   answers: Answer[]
   answerToBuy: Answer
+  /**
+   * Display-only label of the answer being backed. It does not decide which
+   * side is bought: that is the bet outcome relative to `answerToBuy` (see
+   * `versusSide` in common/versus).
+   */
   answerText?: string
 }

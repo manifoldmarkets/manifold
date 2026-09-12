@@ -6,12 +6,8 @@ import { APIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import {
-  getBinaryMCProb,
-  isBinaryMulti,
-  MarketContract,
-  MultiContract,
-} from 'common/contract'
+import { isBinaryMulti, MarketContract, MultiContract } from 'common/contract'
+import { versusSide, versusSideProb } from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import { CandidateBet } from 'common/new-bet'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -81,19 +77,16 @@ export default function LimitOrderPanel(props: {
     pseudonym,
     expiration,
   } = props
-  const { pseudonymName, pseudonymColor } =
-    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
+  const { pseudonymColor } = pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
     ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
-  const binaryMCOutcome =
-    isBinaryMC && multiProps
-      ? multiProps.answerText === multiProps.answerToBuy.text
-        ? 'YES'
-        : 'NO'
-      : undefined
+  // When the two sides have names (versus markets, or binary markets shown
+  // with pseudonyms such as Republican/Democratic) the probability input is
+  // the price of the side being bought rather than the YES price.
+  const showsSideProb = isBinaryMC || !!pseudonym
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
@@ -160,15 +153,12 @@ export default function LimitOrderPanel(props: {
       ? selectedExpiration
       : undefined
 
+  const answerProb = isCpmmMulti
+    ? multiProps!.answerToBuy.prob
+    : getProbability(contract)
   const initialProb =
     props.initialProb ??
-    (isBinaryMC && outcome === 'YES'
-      ? multiProps!.answerToBuy.prob
-      : isBinaryMC && outcome === 'NO'
-      ? 1 - multiProps!.answerToBuy.prob
-      : isCpmmMulti
-      ? multiProps!.answerToBuy.prob
-      : getProbability(contract))
+    (showsSideProb ? versusSideProb(outcome ?? 'YES', answerProb) : answerProb)
 
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
@@ -220,10 +210,11 @@ export default function LimitOrderPanel(props: {
           0.001,
           0.999
         )
+  // Convert the side's price back into the price of `answerToBuy` (or YES).
   const limitProb =
-    !preLimitProb || !isBinaryMC
+    !preLimitProb || !showsSideProb
       ? preLimitProb
-      : getBinaryMCProb(preLimitProb, outcome as 'YES' | 'NO')
+      : versusSideProb(outcome ?? 'YES', preLimitProb)
 
   const amount = betAmount ?? 0
 
@@ -467,7 +458,7 @@ export default function LimitOrderPanel(props: {
           onProbChange={setLimitProbIntClamped}
           disabled={isSubmitting}
           color={pseudonymColor}
-          outcome={isBinaryMC ? 'YES' : outcome}
+          outcome={showsSideProb ? 'YES' : outcome}
         />
       </Col>
 
@@ -639,11 +630,9 @@ export default function LimitOrderPanel(props: {
                         amount={betAmount}
                         isCashContract={isCashContract}
                       />{' '}
-                      {!binaryMCOutcome && !pseudonymName ? outcome : ''} at{' '}
+                      {!showsSideProb ? outcome : ''} at{' '}
                       {formatPercent(
-                        binaryMCOutcome || pseudonymName
-                          ? preLimitProb ?? 0
-                          : limitProb
+                        showsSideProb ? preLimitProb ?? 0 : limitProb
                       )}
                     </span>
                   )}
@@ -687,12 +676,26 @@ export default function LimitOrderPanel(props: {
                   open={isSharing}
                   setOpen={setIsSharing}
                   questionText={contract.question}
-                  outcome={formatOutcomeLabel(
-                    contract,
-                    lastBetDetails.outcome as 'YES' | 'NO'
+                  outcome={
+                    isBinaryMC
+                      ? 'YES'
+                      : formatOutcomeLabel(
+                          contract,
+                          lastBetDetails.outcome as 'YES' | 'NO'
+                        )
+                  }
+                  answer={
+                    versusSide(contract, lastBetDetails)?.answer.text ??
+                    multiProps?.answerToBuy.text
+                  }
+                  avgPrice={formatPercent(
+                    showsSideProb
+                      ? versusSideProb(
+                          lastBetDetails.outcome,
+                          lastBetDetails.limitProb ?? 0
+                        )
+                      : lastBetDetails.limitProb ?? 0
                   )}
-                  answer={multiProps?.answerToBuy.text}
-                  avgPrice={formatPercent(lastBetDetails.limitProb ?? 0)}
                   betAmount={
                     lastBetDetails.orderAmount ?? lastBetDetails.amount
                   }

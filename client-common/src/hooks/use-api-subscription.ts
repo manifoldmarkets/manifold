@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useEvent } from './use-event'
 import { getWebsocketUrl } from 'common/api/utils'
 import { ServerMessage } from 'common/api/websockets'
 import { APIRealtimeClient } from 'common/api/websocket-client'
@@ -13,25 +14,33 @@ export type SubscriptionOptions = {
   onBroadcast: (msg: ServerMessage<'broadcast'>) => void
   onError?: (err: Error) => void
   enabled?: boolean
+  onSubscribed?: () => void
 }
 
 export function useApiSubscription(opts: SubscriptionOptions) {
+  const onBroadcast = useEvent(opts.onBroadcast)
+  const onSubscribed = useEvent(() => opts.onSubscribed?.())
   useEffect(() => {
     const ws = client
     if (ws != null && (opts.enabled ?? true)) {
-      ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+      let active = true
+      ws.subscribe(opts.topics, onBroadcast)
+        .then(() => {
+          if (active && ws.state === WebSocket.OPEN) onSubscribed()
+        })
+        .catch(opts.onError ?? console.error)
       return () => {
-        ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        active = false
+        ws.unsubscribe(opts.topics, onBroadcast).catch(
+          opts.onError ?? console.error
+        )
       }
     }
   }, [opts.enabled, JSON.stringify(opts.topics)])
 }
 
-/** Counts how many times the websocket has come back after dropping. Add it to
- * a fetch effect's dependencies to reconcile after an outage: we resubscribe on
- * reconnect but the broadcasts sent while we were away are gone for good, so
- * cached server state is silently stale until something refetches it. Costs one
- * request per reconnect, not per message. */
+/** Connection generation, incremented after subscriptions are acknowledged.
+ * Includes the first successful connection, which can follow a stale HTTP read. */
 export function useWebsocketReconnectCount() {
   const [count, setCount] = useState(client?.reconnectCount ?? 0)
 

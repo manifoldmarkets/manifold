@@ -1,3 +1,4 @@
+import { isUncachedQuoteRead } from 'common/api/cache'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { APIError, ErrorCode, getApiUrl } from 'common/api/utils'
 import { forEach } from 'lodash'
@@ -19,7 +20,8 @@ export function unauthedApi<P extends APIPath>(path: P, params: APIParams<P>) {
     formatApiUrlWithParams(path, params),
     API[path].method,
     params,
-    null
+    null,
+    isUncachedQuoteRead(path, params) ? { cache: 'no-store' } : undefined
   ) as Promise<APIResponse<P>>
 }
 
