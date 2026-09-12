@@ -74,10 +74,12 @@ New MNX markets use the partner's category templates: `[Company] IPO Market Cap
 price (MNX)` for compute. Descriptions come from the same instrument registry;
 canonical display tickers remain unchanged (including `ANTH`, `SNDK`, and `H100`).
 The market's oracle attribution continues to link to MNX independently of its
-editable description. A fixed notice beside that source explains that if MNX
-ends the instrument, trading pauses pending administrative settlement and does
-not automatically roll into a replacement. Deploy the web change before running
-the copy backfill so this notice stays visible when descriptions are replaced.
+editable description, and the CTA beside it links to the instrument on MNX (see
+the perps README). The delisting behaviour still holds — if MNX ends the
+instrument, trading pauses pending administrative settlement and does not
+automatically roll into a replacement — but the market page no longer prints a
+standing notice saying so; a settled market shows no CTA for exactly that
+reason.
 
 The launch preflight reports an edited MNX-owned title as `INFO`, printing both
 the stored title and the template. Matching titles still report `PASS`; title

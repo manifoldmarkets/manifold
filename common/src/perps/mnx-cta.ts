@@ -50,10 +50,9 @@ export const getMnxTradeTarget = (contract: {
   const instrument = getMnxInstrument(contract.oracleFeedId)
   // A settled market is precisely the case where the instrument may no longer
   // exist: MNX ending one is what pauses trading here pending administrative
-  // settlement (see the note under the chart), so a "trade it on MNX" button
-  // on a settled page is the one that can point at a delisted instrument. The
-  // source credit keeps its link either way — that one is a credit, not a
-  // promotion.
+  // settlement, so a "trade it on MNX" button on a settled page is the one
+  // that can point at a delisted instrument. The source credit keeps its link
+  // either way — that one is a credit, not a promotion.
   return instrument && !contract.isResolved ? instrument : undefined
 }
 
