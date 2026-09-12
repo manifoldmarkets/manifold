@@ -189,8 +189,9 @@ function BinaryMultiChoiceBetPanel(props: {
       contract={contract}
       multiProps={{
         answers: contract.answers,
-        answerToBuy: contract.answers[0],
-        answerText: answer.text,
+        // Versus bets are always placed on the main answer: outcome YES backs
+        // it, NO backs the other answer (see `versusSide` in common/versus).
+        answerToBuy: mainAnswer,
       }}
       pseudonym={{
         YES: {
@@ -208,43 +209,51 @@ function BinaryMultiChoiceBetPanel(props: {
       onClose={closePanel}
       location={'contract page answer'}
       className="bg-canvas-50"
-    >
-      {showSelector ? (
-        <Row className="bg-canvas-100 mb-1 mt-1 w-full items-stretch gap-1 rounded-lg p-1">
-          {contract.answers.map((a, i) => {
-            const oc = i === 0 ? 'YES' : 'NO'
-            const isSelected = outcome === oc
-            return (
-              <button
-                key={a.id}
-                onClick={() => setOutcome(oc)}
-                aria-label={`Bet ${a.text}`}
-                className={clsx(
-                  'flex min-w-0 flex-1 items-center justify-between gap-1 truncate rounded-md px-3 py-2 text-base font-semibold transition-colors',
-                  isSelected ? 'text-white' : 'text-ink-600 hover:text-ink-900'
-                )}
-                style={
-                  isSelected
-                    ? { backgroundColor: getAnswerColor(a) }
-                    : undefined
-                }
-              >
-                <span className="truncate">{a.text}</span>
-                <span className="shrink-0">{formatPercent(a.prob)}</span>
-              </button>
-            )
-          })}
-        </Row>
-      ) : (
-        <Row className="items-baseline justify-between">
-          <div className={'group mr-6 text-2xl'}>
-            {answer.text}
+      outcomeControl={
+        showSelector ? (
+          <Row className="bg-canvas-100 min-w-0 flex-[1_1_24rem] items-stretch gap-1 rounded-lg p-1">
+            {contract.answers.map((a, i) => {
+              const oc = i === 0 ? 'YES' : 'NO'
+              const isSelected = outcome === oc
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setOutcome(oc)}
+                  aria-label={`Bet ${a.text}`}
+                  aria-pressed={isSelected}
+                  title={a.text}
+                  className={clsx(
+                    'flex min-w-0 flex-1 items-center justify-between gap-1 truncate rounded-md px-3 py-2 text-base font-semibold transition-colors',
+                    isSelected
+                      ? 'text-white'
+                      : 'text-ink-600 hover:text-ink-900'
+                  )}
+                  style={
+                    isSelected
+                      ? { backgroundColor: getAnswerColor(a) }
+                      : undefined
+                  }
+                >
+                  <span className="truncate">{a.text}</span>
+                  <span className="shrink-0">{formatPercent(a.prob)}</span>
+                </button>
+              )
+            })}
+          </Row>
+        ) : (
+          <Row className="group min-w-0 flex-[1_1_16rem] items-center gap-2">
+            <span className="min-w-0 break-words text-base font-semibold">
+              {answer.text}
+            </span>
+            <span className="text-ink-600 shrink-0 text-base">
+              {formatPercent(answer.prob)}
+            </span>
             {canEdit && user && (
-              <div>
+              <>
                 <Button
                   color="gray-white"
                   aria-label={`Edit answer ${answer.text}`}
-                  className="visible group-hover:visible sm:invisible"
+                  className="shrink-0 sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover:opacity-100"
                   size="xs"
                   onClick={() => setEditing(true)}
                 >
@@ -257,12 +266,11 @@ function BinaryMultiChoiceBetPanel(props: {
                   answer={answer}
                   color={color}
                 />
-              </div>
+              </>
             )}
-          </div>
-          <span className="text-2xl">{formatPercent(answer.prob)}</span>
-        </Row>
-      )}
-    </BuyPanelBody>
+          </Row>
+        )
+      }
+    />
   )
 }

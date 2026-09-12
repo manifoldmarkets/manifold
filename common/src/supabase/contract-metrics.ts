@@ -155,6 +155,24 @@ export async function getContractMetricsCount(
   return count
 }
 
+export async function getContractProfitCounts(
+  contractId: string,
+  db: SupabaseClient
+): Promise<{ profit: number; loss: number }> {
+  const query = () =>
+    db
+      .from('user_contract_metrics')
+      .select('*', { head: true, count: 'exact' })
+      .eq('contract_id', contractId)
+      .is('answer_id', null)
+  // Profit rankings include sold-out traders, independently of current shares.
+  const [profit, loss] = await Promise.all([
+    run(query().gt('profit', 0)),
+    run(query().lt('profit', 0)),
+  ])
+  return { profit: profit.count, loss: loss.count }
+}
+
 export const convertContractMetricRows = (
   docs: Row<'user_contract_metrics'>[]
 ) =>
