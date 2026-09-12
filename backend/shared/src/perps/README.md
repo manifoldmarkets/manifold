@@ -656,7 +656,9 @@ on a near-black panel, with the button inverted to white. One treatment serves
 both themes, so the white wordmark never needs an inverted copy — and the panel
 is `slate-950` rather than the /jobs tile's `slate-900` because dark-mode
 `canvas-0` is itself roughly `slate-900`, which would leave it level with the
-page instead of on top of it.
+page instead of on top of it. The subtitle naming the instrument is `sm:` and
+up only: on a phone the card sits directly above the bet panel, where every
+line it costs is a line of the thing the reader came for.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,

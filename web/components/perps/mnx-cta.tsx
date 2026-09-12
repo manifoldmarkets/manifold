@@ -120,12 +120,12 @@ export const MnxTradeCta = (props: {
           <div className="text-sm font-semibold text-white">
             Trade {ticker} with real money
           </div>
-          {/* Two short sentences: what the price is, and that this market is
-              not it. The wordmark, the button and the new tab say the rest —
-              nobody needs a paragraph to be told they are leaving. */}
-          <div className="text-xs text-slate-400">
-            Tracks MNX's {derivative} on {instrument.name}. Positions here are
-            in mana.
+          {/* Which instrument you'd be trading over there, and nothing else —
+              the wordmark, the button and the new tab say the rest. Dropped
+              entirely on phones, where it costs two lines of a card sitting
+              above the thing people came to use. */}
+          <div className="hidden text-xs text-slate-400 sm:block">
+            MNX's {derivative} on {instrument.name}
           </div>
         </Col>
       </Row>
