@@ -40,7 +40,9 @@ export function LimitOrderFillRow(props: {
       } for this outcome. `
     : ''
   const otherText = otherAnswerOrderCount
-    ? `${hasDirectFill ? 'It also' : 'This quote'} depends on ${otherAnswerOrderCount} resting ${
+    ? `${
+        hasDirectFill ? 'It also' : 'This quote'
+      } depends on ${otherAnswerOrderCount} resting ${
         otherAnswerOrderCount === 1 ? 'order' : 'orders'
       } on other answers. `
     : ''
