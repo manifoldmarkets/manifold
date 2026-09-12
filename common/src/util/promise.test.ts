@@ -1,6 +1,16 @@
 import { createRequestDeduper } from './promise'
 
 describe('createRequestDeduper', () => {
+  it('burst mode starts a new read after the current microtask even while the old read is pending', async () => {
+    const dedupe = createRequestDeduper<string>('burst')
+    const read = jest.fn(() => new Promise<string>(() => {}))
+    const first = dedupe('key', read)
+    expect(dedupe('key', read)).toBe(first)
+    await Promise.resolve()
+    expect(dedupe('key', read)).not.toBe(first)
+    expect(read).toHaveBeenCalledTimes(2)
+  })
+
   const deferred = <T>() => {
     let resolve!: (value: T) => void
     let reject!: (err: unknown) => void
