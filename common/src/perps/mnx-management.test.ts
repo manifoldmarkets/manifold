@@ -85,6 +85,7 @@ const batch = (id = 'batch1'): MnxBatch => ({
       contractId,
       side: 'both',
       amount: 10,
+      fundingAccount: 'mnx',
       idempotencyKey: 'abcdefghjk',
     },
   })),
@@ -137,6 +138,37 @@ it('sends no payment if saving the retry keys fails or the account unmounts', as
   ).rejects.toThrow('Storage full')
   await runMnxBatch(batch(), jest.fn(), send, () => false)
   expect(send).not.toHaveBeenCalled()
+})
+
+it('keeps legacy personal-account requests for reconciliation without sending or changing their payer', async () => {
+  const legacy = batch()
+  for (const item of legacy.items)
+    if (item.kind === 'liquidity') delete item.params.fundingAccount
+  legacy.items[0].status = 'done'
+  const send = jest.fn()
+  const result = await runMnxBatch(legacy, jest.fn(), send, () => true)
+  expect(send).not.toHaveBeenCalled()
+  expect(result.items.map((item) => item.status)).toEqual([
+    'done',
+    'error',
+    'pending',
+  ])
+  expect(result.items[1].error).toContain('Check its payment results')
+  expect(result.items.map((item) => item.params)).toEqual(
+    legacy.items.map((item) => item.params)
+  )
+})
+
+it('accepts MNX funding but rejects arbitrary funding accounts in the subsidy API', () => {
+  const props = API['add-perp-subsidy'].props
+  const params = { contractId: 'c', side: 'both', amount: 50 }
+  expect(props.safeParse(params).success).toBe(true)
+  expect(props.safeParse({ ...params, fundingAccount: 'mnx' }).success).toBe(
+    true
+  )
+  expect(
+    props.safeParse({ ...params, fundingAccount: 'another-user' }).success
+  ).toBe(false)
 })
 
 it('marks the batch in progress for other tabs while sending and clears it when the run ends', async () => {

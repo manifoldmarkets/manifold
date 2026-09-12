@@ -189,10 +189,18 @@ export function MnxDashboardView({
         throw new Error(
           'Enter between 0 and 1,000,000 mana per side, greater than zero.'
         )
-      if (mode === 'liquidity' && totalCost > data.payer.balance)
-        throw new Error(
-          `@${data.payer.username} needs ${mana(totalCost)} to fund this batch.`
-        )
+      if (mode === 'liquidity') {
+        if (!data.account)
+          throw new Error(
+            'The MNX account is not configured or is unavailable.'
+          )
+        if (totalCost > data.account.balance)
+          throw new Error(
+            `@${data.account.username} needs ${mana(
+              totalCost
+            )} to fund this batch.`
+          )
+      }
       const changedTargets =
         mode === 'visibility'
           ? targets.filter(({ contract }) => contract.visibility !== visibility)
@@ -222,6 +230,7 @@ export function MnxDashboardView({
                 contractId: contract.id,
                 side,
                 amount: Number(amount),
+                fundingAccount: 'mnx',
                 idempotencyKey: randomString(),
                 expectedManagerId: data.payer.id,
               },
@@ -551,7 +560,7 @@ export function MnxDashboardView({
                     0
                   )
                 )}{' '}
-                from @{data.payer.username}
+                from the MNX account (@{data.account?.username})
               </p>
               <p className="text-ink-600 mt-1 text-sm">
                 This adds backing, with no withdrawable LP shares. Remaining
@@ -703,8 +712,15 @@ export function MnxDashboardView({
                   {Number.isFinite(Number(amount)) ? mana(Number(amount)) : '—'}
                 </p>
                 <p className="text-ink-500 mt-3 text-sm">
-                  Paid by <b>@{data.payer.username}</b> ·{' '}
-                  {mana(data.payer.balance)} available
+                  {data.account ? (
+                    <>
+                      Paid by the MNX account (<b>@{data.account.username}</b>)
+                      {' · '}
+                      {mana(data.account.balance)} available
+                    </>
+                  ) : (
+                    'The MNX account is not configured or is unavailable.'
+                  )}
                 </p>
                 <p className="text-ink-500 mt-2 text-xs">
                   Backing is committed to the markets. This does not buy LP
@@ -835,6 +851,7 @@ export function MnxDashboardView({
                 !ready ||
                 !targets.length ||
                 refreshing ||
+                (mode === 'liquidity' && !data.account) ||
                 (mode === 'visibility' &&
                   targets.every(
                     ({ contract }) => contract.visibility === visibility
