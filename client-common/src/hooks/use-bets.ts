@@ -10,6 +10,7 @@ import {
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { createRequestDeduper } from 'common/util/promise'
 
 export function useBetsOnce(
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -214,6 +215,24 @@ export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
   }
 }
 
+// Every panel on a market page mounts its own useUnfilledBets, and they all
+// want the same request at the same moment — on load, on tab refocus, on
+// reconnect. One request between them rather than N identical ones.
+const dedupeUnfilledBetsFetch = createRequestDeduper<LimitBet[]>()
+
+const fetchUnfilledBets = (
+  contractId: string,
+  triggerKey: string,
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>
+) =>
+  // The trigger is part of the key so a reconnect mid-request doesn't get
+  // handed the snapshot taken before the socket dropped.
+  dedupeUnfilledBetsFetch(`${contractId}|${triggerKey}`, () =>
+    api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
+      (bets) => bets as LimitBet[]
+    )
+  )
+
 export const useUnfilledBets = (
   contractId: string,
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -244,11 +263,14 @@ export const useUnfilledBets = (
   const reconnectCount = useWebsocketReconnectCount()
 
   useEffect(() => {
-    if (enabled)
-      api({ contractId, kinds: 'open-limit', order: 'asc' }).then((bets) =>
-        // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
-        setBets(openOrdersOnly(bets as LimitBet[]))
-      )
+    // Skip while the tab is hidden — we refetch on the way back. Matches
+    // useContractBets, and stops a backgrounded tab firing a request when it
+    // loses focus.
+    if (!enabled || !isPageVisible) return
+    fetchUnfilledBets(contractId, `${reconnectCount}`, api)
+      // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
+      .then((bets) => setBets(openOrdersOnly(bets)))
+      .catch((e) => console.error('Failed to load limit orders', e))
   }, [enabled, contractId, isPageVisible, reconnectCount])
 
   // Local updates (e.g. you cancelling one of your own orders) reach every
@@ -289,50 +311,79 @@ export const useUnfilledBetsAndBalanceByUserId = (
   const unfilledBets =
     useUnfilledBets(contractId, api, useIsPageVisible, { enabled: true }) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
-  const balances = useUserBalances(userIds, usersApi, useIsPageVisible) ?? []
-
-  const balanceByUserId = Object.fromEntries(
-    balances.map(({ id, balance }) => [id, balance])
+  const balanceByUserId = useUserBalances(
+    contractId,
+    userIds,
+    usersApi,
+    useIsPageVisible
   )
+
   return { unfilledBets, balanceByUserId }
 }
 
 const useUserBalances = (
+  cacheKey: string,
   userIds: string[],
   api: (
     params: APIParams<'users/by-id/balance'>
   ) => Promise<APIResponse<'users/by-id/balance'>>,
   useIsPageVisible: () => boolean
 ) => {
-  const [users, setUsers] = usePersistentInMemoryState<
-    { id: string; balance: number }[]
-  >([], `user-balances-${userIds.join('-')}`)
+  // Keyed by the contract rather than by the set of makers. Keying by the set
+  // minted a new cache entry every time anyone posted an order, and — because
+  // a changed key resets the state to its initial value — briefly emptied the
+  // balances. An unknown balance counts as unlimited in computeFills, so for
+  // the length of the refetch every maker looked fully funded.
+  const [balances, setBalances] = usePersistentInMemoryState<
+    Record<string, number>
+  >({}, `user-balances-${cacheKey}`)
   const isPageVisible = useIsPageVisible()
+  const reconnectCount = useWebsocketReconnectCount()
 
-  // Load initial data
+  const fetchBalances = useEvent(async (ids: string[]) => {
+    if (!ids.length) return
+    try {
+      const users = await api({ ids })
+      setBalances((prev) => ({
+        ...prev,
+        ...Object.fromEntries(users.map(({ id, balance }) => [id, balance])),
+      }))
+    } catch (e) {
+      console.error('Failed to load maker balances', e)
+    }
+  })
+
+  // Ask only for makers we haven't seen. The subscriptions below keep the ones
+  // we hold current, so a new order from a new account no longer refetches the
+  // balance of every other maker in the book.
+  const missingIds = userIds.filter((id) => balances[id] === undefined)
+  const missingKey = missingIds.join(',')
+
   useEffect(() => {
-    if (!userIds.length || !isPageVisible) return
-    api({ ids: userIds }).then((users) => {
-      setUsers(users)
-    })
-  }, [userIds.join(','), isPageVisible])
+    if (!isPageVisible) return
+    fetchBalances(missingIds)
+  }, [missingKey, isPageVisible])
 
-  // Subscribe to updates
+  // Balances can have moved while the socket was down, and those updates
+  // aren't replayed.
+  useEffect(() => {
+    if (!isPageVisible || !reconnectCount) return
+    fetchBalances(userIds)
+  }, [reconnectCount])
+
   useApiSubscription({
     topics: userIds.map((id) => `user/${id}`),
     onBroadcast: ({ data }) => {
       const { user } = data as { user: Partial<User> }
-      if (!user) return
-      const prevUser = users.find((u) => u.id === user.id)
-      if (!prevUser) return
-      setUsers((prevUsers) => {
-        return prevUsers.map((prevU) =>
-          prevU.id === user.id ? { ...prevU, ...user } : prevU
-        )
-      })
+      const { id, balance } = user ?? {}
+      if (id === undefined || balance === undefined) return
+      setBalances((prev) =>
+        // Only track balances we actually asked for.
+        prev[id] === undefined ? prev : { ...prev, [id]: balance }
+      )
     },
     enabled: userIds.length > 0 && isPageVisible,
   })
 
-  return users
+  return balances
 }
