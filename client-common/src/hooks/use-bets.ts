@@ -3,7 +3,10 @@ import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
 import { User } from 'common/user'
 import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
 import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
-import { useApiSubscription } from './use-api-subscription'
+import {
+  useApiSubscription,
+  useWebsocketReconnectCount,
+} from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
@@ -236,6 +239,9 @@ export const useUnfilledBets = (
   })
 
   const isPageVisible = useIsPageVisible()
+  // Resubscribing after an outage doesn't replay the order updates we missed
+  // while the socket was down, so reconcile whenever it comes back.
+  const reconnectCount = useWebsocketReconnectCount()
 
   useEffect(() => {
     if (enabled)
@@ -243,7 +249,7 @@ export const useUnfilledBets = (
         // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
         setBets(openOrdersOnly(bets as LimitBet[]))
       )
-  }, [enabled, contractId, isPageVisible])
+  }, [enabled, contractId, isPageVisible, reconnectCount])
 
   // Local updates (e.g. you cancelling one of your own orders) reach every
   // other panel on the page through here rather than over the network.

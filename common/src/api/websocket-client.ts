@@ -55,13 +55,30 @@ export class APIRealtimeClient {
   subscriptions: Map<string, BroadcastHandler[]>
   connectTimeout?: NodeJS.Timeout
   heartbeat?: NodeJS.Timeout
+  /** Incremented each time the socket comes back after dropping. Resubscribing
+   * doesn't backfill the broadcasts sent while we were away, so anything
+   * caching server state should watch this and refetch. */
+  reconnectCount: number
+  private hasConnected: boolean
+  private reconnectListeners: Set<(count: number) => void>
 
   constructor(url: string) {
     this.url = url
     this.txid = 0
     this.txns = new Map()
     this.subscriptions = new Map()
+    this.reconnectCount = 0
+    this.hasConnected = false
+    this.reconnectListeners = new Set()
     this.connect()
+  }
+
+  /** Returns an unsubscribe function. */
+  onReconnect(listener: (count: number) => void) {
+    this.reconnectListeners.add(listener)
+    return () => {
+      this.reconnectListeners.delete(listener)
+    }
   }
 
   get state() {
@@ -106,6 +123,17 @@ export class APIRealtimeClient {
           topics: Array.from(this.subscriptions.keys()),
         }).catch(console.error)
       }
+      // Only after the first connection: on the first one there is nothing to
+      // have missed, and subscribers have just fetched their initial state.
+      // Notify after asking to resubscribe so a refetch can't snapshot the
+      // server before our topics are back on.
+      if (this.hasConnected) {
+        this.reconnectCount++
+        for (const listener of Array.from(this.reconnectListeners)) {
+          listener(this.reconnectCount)
+        }
+      }
+      this.hasConnected = true
     }
     this.ws.onclose = (ev) => {
       // note that if the connection closes due to an error, onerror fires and then this
