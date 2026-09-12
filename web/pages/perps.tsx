@@ -10,6 +10,7 @@ import { getUserFacingPnl, getUserFacingPnlPercent } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
+import { isEligibleRelatedMarket } from 'common/related-markets'
 import {
   ENV,
   ENV_CONFIG,
@@ -358,41 +359,53 @@ const changeSince = (
 const weekChange = (series: WeekSeries | undefined, c: PerpContract) =>
   changeSince(series, c, 7 * DAY_MS)
 
-// Related markets per perp, via the group-overlap endpoint behind the contract
-// page's related-questions rail: everything sharing a topic with the perp,
-// ranked by importance.
+// Semantic matches come first, using the existing embedding-similarity and
+// importance ranking. Topic matches fill gaps, including for perps without
+// embeddings. Neither source depends on the other succeeding.
 // Fetched on demand for the SELECTED market and kept for the session, so
-// the first paint costs one request rather than one per market, and
+// the first paint costs two requests rather than two per market, and
 // switching back to a market is instant.
 const useRelatedMarkets = (selectedId: string | undefined) => {
   const [byPerp, setByPerp] = useState<Record<string, Contract[]>>({})
+  const loaded = useRef(new Set<string>())
 
   useEffect(() => {
-    if (!selectedId || byPerp[selectedId]) return
+    if (!selectedId || loaded.current.has(selectedId)) return
     let cancelled = false
-    api('get-related-markets-by-group', {
-      contractId: selectedId,
-      limit: 30,
-      offset: 0,
+    Promise.allSettled([
+      api('get-related-markets', { contractId: selectedId, limit: 30 }),
+      api('get-related-markets-by-group', {
+        contractId: selectedId,
+        limit: 30,
+        offset: 0,
+      }),
+    ]).then(([semantic, topical]) => {
+      if (cancelled) return
+      const seen = new Set<string>()
+      const markets = [
+        ...(semantic.status === 'fulfilled'
+          ? semantic.value.marketsFromEmbeddings
+          : []),
+        ...(topical.status === 'fulfilled' ? topical.value.groupContracts : []),
+      ].filter((c) => {
+        if (seen.has(c.id)) return false
+        seen.add(c.id)
+        return true
+      })
+      setByPerp((prev) => ({ ...prev, [selectedId]: markets }))
+      // A failed source can be retried when the user returns to this perp.
+      if (semantic.status === 'fulfilled' && topical.status === 'fulfilled')
+        loaded.current.add(selectedId)
     })
-      .then((r) => {
-        if (!cancelled)
-          setByPerp((prev) => ({ ...prev, [selectedId]: r.groupContracts }))
-      })
-      .catch(() => {
-        if (!cancelled) setByPerp((prev) => ({ ...prev, [selectedId]: [] }))
-      })
     return () => {
       cancelled = true
     }
-    // byPerp is read only as a "have we fetched this yet" guard.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId])
 
   return byPerp
 }
 
-// get-related-markets-by-group returns contracts without their answers, so a
+// Related-market endpoints return contracts without their answers, so a
 // multiple-choice row had nothing to show. markets-by-ids attaches answers;
 // hydrate just those rows, one batched request per new set of ids.
 const answersOf = (c: Contract): Answer[] | undefined =>
@@ -2010,7 +2023,7 @@ const RelatedMarkets = (props: {
       (c) =>
         !perpIds.has(c.id) &&
         c.mechanism !== 'perp' &&
-        !c.isResolved &&
+        isEligibleRelatedMarket(c) &&
         !isNearCertain(c)
     )
     .slice(0, 6)
