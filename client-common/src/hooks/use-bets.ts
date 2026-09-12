@@ -1,8 +1,15 @@
 import { APIParams, APIResponse } from 'common/api/schema'
 import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
+import { createLiveSnapshot } from 'common/util/live-snapshot'
 import { User } from 'common/user'
 import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
-import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
 import {
   useApiSubscription,
   useWebsocketReconnectCount,
@@ -10,7 +17,6 @@ import {
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { createRequestDeduper } from 'common/util/promise'
 
 export function useBetsOnce(
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -172,132 +178,87 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   return newBets
 }
 
-// Filling and cancelling a limit order are both terminal, so once we've seen an
-// order close we can keep it out of every order book we hold, even if a request
-// that was already in flight comes back still reporting it as open.
-const CLOSED_ORDER_MEMORY_MS = 30 * 60 * 1000
-const CLOSED_ORDER_PRUNE_SIZE = 500
-const closedOrderTimes = new Map<string, number>()
-
-const rememberClosedOrders = (bets: LimitBet[], now: number) => {
-  for (const bet of bets) {
-    if (!isOpenLimitOrder(bet, now)) closedOrderTimes.set(bet.id, now)
-  }
-  if (closedOrderTimes.size <= CLOSED_ORDER_PRUNE_SIZE) return
-  for (const [id, closedAt] of closedOrderTimes) {
-    if (closedAt < now - CLOSED_ORDER_MEMORY_MS) closedOrderTimes.delete(id)
-  }
-}
-
-const openOrdersOnly = (bets: LimitBet[]) => {
-  const now = Date.now()
-  return bets.filter(
-    (bet) => isOpenLimitOrder(bet, now) && !closedOrderTimes.has(bet.id)
-  )
-}
-
-type LimitOrderListener = (bets: LimitBet[]) => void
-const unfilledBetListeners = new Map<string, Set<LimitOrderListener>>()
-
-/** Push limit order updates straight into every mounted `useUnfilledBets`,
- * without waiting for the websocket to echo them back. Cancel an order and the
- * order book the bet and sell panels price against drops it immediately, so
- * they stop quoting a counterparty that has gone. */
-export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
-  if (bets.length === 0) return
-  rememberClosedOrders(bets, Date.now())
-  for (const [contractId, contractBets] of Object.entries(
-    groupBy(bets, 'contractId')
-  )) {
-    for (const listener of unfilledBetListeners.get(contractId) ?? []) {
-      listener(contractBets)
-    }
-  }
-}
-
-// Every panel on a market page mounts its own useUnfilledBets, and they all
-// want the same request at the same moment — on load, on tab refocus, on
-// reconnect. One request between them rather than N identical ones.
-const dedupeUnfilledBetsFetch = createRequestDeduper<LimitBet[]>()
-
-const fetchUnfilledBets = (
-  contractId: string,
-  triggerKey: string,
-  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>
-) =>
-  // The trigger is part of the key so a reconnect mid-request doesn't get
-  // handed the snapshot taken before the socket dropped.
-  dedupeUnfilledBetsFetch(`${contractId}|${triggerKey}`, () =>
-    api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
-      (bets) => bets as LimitBet[]
+// Each contract has one observable snapshot. A confirmed cancel changes the
+// cache itself, including when no quote panel is mounted. Live updates are
+// retained only while a snapshot request is in flight; no tombstone TTL is needed.
+const createOrderBook = () =>
+  createLiveSnapshot<LimitBet>((bets) =>
+    sortBy(
+      bets.filter((bet) => isOpenLimitOrder(bet)),
+      'createdTime'
     )
   )
+const orderBooks = new Map<string, ReturnType<typeof createOrderBook>>()
+const getOrderBook = (contractId: string) => {
+  // Never share mutable market state between SSR requests.
+  if (typeof window === 'undefined') return createOrderBook()
+  let book = orderBooks.get(contractId)
+  if (!book) {
+    book = createOrderBook()
+    orderBooks.set(contractId, book)
+  }
+  return book
+}
+const getServerSnapshot = () => undefined
+
+/** Apply confirmed mutations to the same snapshot every quote panel reads. */
+export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
+  for (const [contractId, updates] of Object.entries(
+    groupBy(bets, 'contractId')
+  )) {
+    // With no cached book, a later mount starts from a fresh server read.
+    orderBooks.get(contractId)?.update(updates)
+  }
+}
 
 export const useUnfilledBets = (
   contractId: string,
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
   useIsPageVisible: () => boolean,
-  options?: {
-    enabled?: boolean
-  }
+  options?: { enabled?: boolean }
 ) => {
   const { enabled = true } = options ?? {}
-
-  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
-    undefined,
-    `unfilled-bets-${contractId}`
+  const book = useMemo(() => getOrderBook(contractId), [contractId])
+  const bets = useSyncExternalStore(
+    book.subscribe,
+    book.getSnapshot,
+    getServerSnapshot
   )
-
-  const addBets = useEvent((newBets: LimitBet[]) => {
-    rememberClosedOrders(newBets, Date.now())
-    setBets((bets) =>
-      openOrdersOnly(
-        sortBy(uniqBy([...newBets, ...(bets ?? [])], 'id'), 'createdTime')
-      )
-    )
-  })
-
   const isPageVisible = useIsPageVisible()
-  // Resubscribing after an outage doesn't replay the order updates we missed
-  // while the socket was down, so reconcile whenever it comes back.
   const reconnectCount = useWebsocketReconnectCount()
 
-  useEffect(() => {
-    // Skip while the tab is hidden — we refetch on the way back. Matches
-    // useContractBets, and stops a backgrounded tab firing a request when it
-    // loses focus.
+  const refresh = useEvent(() => {
     if (!enabled || !isPageVisible) return
-    fetchUnfilledBets(contractId, `${reconnectCount}`, api)
-      // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
-      .then((bets) => setBets(openOrdersOnly(bets)))
+    book
+      .refresh(
+        () =>
+          api({ contractId, kinds: 'open-limit', order: 'asc' }) as Promise<
+            LimitBet[]
+          >
+      )
       .catch((e) => console.error('Failed to load limit orders', e))
-  }, [enabled, contractId, isPageVisible, reconnectCount])
-
-  // Local updates (e.g. you cancelling one of your own orders) reach every
-  // other panel on the page through here rather than over the network.
-  useEffect(() => {
-    if (!enabled) return
-    const listeners =
-      unfilledBetListeners.get(contractId) ?? new Set<LimitOrderListener>()
-    unfilledBetListeners.set(contractId, listeners)
-    listeners.add(addBets)
-    return () => {
-      listeners.delete(addBets)
-      if (listeners.size === 0) unfilledBetListeners.delete(contractId)
-    }
-  }, [enabled, contractId, addBets])
+  })
+  useEffect(refresh, [enabled, book, contractId, isPageVisible, reconnectCount])
 
   useApiSubscription({
+    onSubscribed: refresh,
     enabled,
     topics: [`contract/${contractId}/orders`],
-    onBroadcast: ({ data }) => {
-      addBets(data.bets as LimitBet[])
-    },
+    onBroadcast: ({ data }) => book.update(data.bets as LimitBet[]),
   })
 
-  // A panel that mounts after a cancel starts from the in-memory cache, which
-  // can still be holding the order that was just cancelled.
-  return useMemo(() => bets && openOrdersOnly(bets), [bets])
+  useEffect(() => {
+    if (!enabled || !bets?.length) return
+    const expiry = Math.min(...bets.map((b) => b.expiresAt ?? Infinity))
+    if (!Number.isFinite(expiry)) return
+    const timer = setTimeout(
+      book.normalize,
+      Math.min(2 ** 31 - 1, Math.max(0, expiry - Date.now()))
+    )
+    return () => clearTimeout(timer)
+  }, [enabled, book, bets])
+
+  return bets
 }
 
 export const useUnfilledBetsAndBalanceByUserId = (
@@ -311,79 +272,50 @@ export const useUnfilledBetsAndBalanceByUserId = (
   const unfilledBets =
     useUnfilledBets(contractId, api, useIsPageVisible, { enabled: true }) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
-  const balanceByUserId = useUserBalances(
-    contractId,
-    userIds,
-    usersApi,
-    useIsPageVisible
-  )
+  const balances = useUserBalances(userIds, usersApi, useIsPageVisible) ?? []
 
+  const balanceByUserId = Object.fromEntries(
+    balances.map(({ id, balance }) => [id, balance])
+  )
   return { unfilledBets, balanceByUserId }
 }
 
 const useUserBalances = (
-  cacheKey: string,
   userIds: string[],
   api: (
     params: APIParams<'users/by-id/balance'>
   ) => Promise<APIResponse<'users/by-id/balance'>>,
   useIsPageVisible: () => boolean
 ) => {
-  // Keyed by the contract rather than by the set of makers. Keying by the set
-  // minted a new cache entry every time anyone posted an order, and — because
-  // a changed key resets the state to its initial value — briefly emptied the
-  // balances. An unknown balance counts as unlimited in computeFills, so for
-  // the length of the refetch every maker looked fully funded.
-  const [balances, setBalances] = usePersistentInMemoryState<
-    Record<string, number>
-  >({}, `user-balances-${cacheKey}`)
+  const [users, setUsers] = usePersistentInMemoryState<
+    { id: string; balance: number }[]
+  >([], `user-balances-${userIds.join('-')}`)
   const isPageVisible = useIsPageVisible()
-  const reconnectCount = useWebsocketReconnectCount()
 
-  const fetchBalances = useEvent(async (ids: string[]) => {
-    if (!ids.length) return
-    try {
-      const users = await api({ ids })
-      setBalances((prev) => ({
-        ...prev,
-        ...Object.fromEntries(users.map(({ id, balance }) => [id, balance])),
-      }))
-    } catch (e) {
-      console.error('Failed to load maker balances', e)
-    }
-  })
-
-  // Ask only for makers we haven't seen. The subscriptions below keep the ones
-  // we hold current, so a new order from a new account no longer refetches the
-  // balance of every other maker in the book.
-  const missingIds = userIds.filter((id) => balances[id] === undefined)
-  const missingKey = missingIds.join(',')
-
+  // Load initial data
   useEffect(() => {
-    if (!isPageVisible) return
-    fetchBalances(missingIds)
-  }, [missingKey, isPageVisible])
+    if (!userIds.length || !isPageVisible) return
+    api({ ids: userIds }).then((users) => {
+      setUsers(users)
+    })
+  }, [userIds.join(','), isPageVisible])
 
-  // Balances can have moved while the socket was down, and those updates
-  // aren't replayed.
-  useEffect(() => {
-    if (!isPageVisible || !reconnectCount) return
-    fetchBalances(userIds)
-  }, [reconnectCount])
-
+  // Subscribe to updates
   useApiSubscription({
     topics: userIds.map((id) => `user/${id}`),
     onBroadcast: ({ data }) => {
       const { user } = data as { user: Partial<User> }
-      const { id, balance } = user ?? {}
-      if (id === undefined || balance === undefined) return
-      setBalances((prev) =>
-        // Only track balances we actually asked for.
-        prev[id] === undefined ? prev : { ...prev, [id]: balance }
-      )
+      if (!user) return
+      const prevUser = users.find((u) => u.id === user.id)
+      if (!prevUser) return
+      setUsers((prevUsers) => {
+        return prevUsers.map((prevU) =>
+          prevU.id === user.id ? { ...prevU, ...user } : prevU
+        )
+      })
     },
     enabled: userIds.length > 0 && isPageVisible,
   })
 
-  return balances
+  return users
 }
