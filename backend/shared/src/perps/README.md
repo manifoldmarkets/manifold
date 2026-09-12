@@ -639,6 +639,39 @@ valuation; equity marks need not equal the underlying share or the venue oracle.
 See [the launch runbook](../../../../perps-launch-runbook.md#mnx-rollout-dev-and-prod)
 for the cohort, sources, deployment order and environment validation.
 
+### Outbound MNX links and click tracking
+
+`common/perps/mnx-cta.ts` owns every link that sends a reader to MNX, and
+`web/components/perps/mnx-cta.tsx` renders them. `MnxTradeCta` is the call to
+action — "Trade `<TICKER>` with real money on MNX" — shown under the chart on a
+market page and on the /perps terminal; the source credit under the chart is a
+credit again rather than a second CTA, because there is now a real one. Both
+are withheld for markets on non-MNX feeds, and the CTA is also withheld once a
+market has settled, since MNX ending an instrument is exactly what pauses
+trading here pending administrative settlement and its page may be gone.
+
+Every one of those clicks writes a `user_events` row named **`click mnx link`**
+carrying the placement (`market page cta`, `market page credit`,
+`perps hub cta`, `perps hub credit`), the market in `contract_id`, and the feed
+id, MNX symbol and tagged url in `data` — so click-through counts and the
+identity of the clickers come from our own table rather than from MNX. Signed-out
+clicks land with a null `user_id` and the device id `track()` already attaches.
+The same href carries `utm_source=manifold&utm_medium=referral&utm_campaign=perps`
+plus a `utm_content` built from the same placement string, so MNX's own
+attribution can be reconciled with ours placement by placement.
+
+Read it with `backend/scripts/count-mnx-clicks.ts [days] [top]` (read-only;
+totals, per-placement and per-instrument breakdowns, and who clicked). Any
+ad-hoc query must bound `ts` — that is the only index on `user_events`, and the
+table is hundreds of millions of rows:
+
+```sql
+select data->>'location' as placement, count(*), count(distinct user_id)
+from user_events
+where name = 'click mnx link' and ts >= now() - interval '7 days'
+group by 1 order by 2 desc;
+```
+
 ## Scheduler
 
 - `update-oracle-feeds.ts` fires **every 2 seconds** (croner handles

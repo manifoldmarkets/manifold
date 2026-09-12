@@ -45,6 +45,7 @@ import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { MnxTradeCta } from 'web/components/perps/mnx-cta'
 import { PerpBetPanel } from 'web/components/perps/perp-bet-panel'
 import { PerpChart, prefetchPerpChart } from 'web/components/perps/perp-chart'
 import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribution'
@@ -1750,7 +1751,10 @@ const Terminal = (props: {
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
         asOfTime={contract.oracleSourceTime}
+        mnxLinkLocation="perps hub credit"
+        contractId={contract.id}
       />
+      <MnxTradeCta contract={contract} location="perps hub cta" />
 
       <PerpBetPanel
         contract={contract}
@@ -2532,7 +2536,11 @@ const MarketParameters = (props: { contract: PerpContract }) => {
           </Col>
         ))}
         <div className="px-4 py-3">
-          <PerpOracleAttribution feedId={contract.oracleFeedId} />
+          <PerpOracleAttribution
+            feedId={contract.oracleFeedId}
+            mnxLinkLocation="perps hub credit"
+            contractId={contract.id}
+          />
         </div>
       </Col>
     </Col>

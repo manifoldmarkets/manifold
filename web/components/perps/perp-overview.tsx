@@ -22,6 +22,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
+import { MnxTradeCta } from './mnx-cta'
 import { PerpOracleAttribution } from './perp-oracle-attribution'
 import { PerpPositionPanel } from './perp-position-panel'
 import { useLivePerpContract } from './use-live-perp-contract'
@@ -240,7 +241,12 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
         asOfTime={contract.oracleSourceTime}
+        mnxLinkLocation="market page credit"
+        contractId={contract.id}
       />
+      {/* The click-through to MNX itself, directly under the credit that names
+          it as the source: same instrument, real money. */}
+      <MnxTradeCta contract={contract} location="market page cta" />
       {/* Keep settlement behavior visible even when MNX edits its description. */}
       {getMnxInstrument(contract.oracleFeedId) && (
         <p className="text-ink-500 text-sm">
