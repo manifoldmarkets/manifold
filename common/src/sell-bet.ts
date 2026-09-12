@@ -1,4 +1,4 @@
-import { Bet, LimitBet } from './bet'
+import { Bet, getLimitOrderFill, LimitBet } from './bet'
 import {
   calculateCpmmMultiSumsToOneSale,
   calculateCpmmSale,
@@ -319,6 +319,7 @@ export const getSaleResult = (
     probChange,
     fees,
     makers,
+    limitOrderFill: getLimitOrderFill(wholeMakers),
   }
 }
 
@@ -365,5 +366,9 @@ export const getSaleResultMultiSumsToOne = (
     probChange,
     fees,
     makers,
+    // Only the answer being sold. The arbitrage legs on the other answers also
+    // match orders, but counting their shares here would read as if they were
+    // part of this sale.
+    limitOrderFill: getLimitOrderFill(newBetResult.makers),
   }
 }

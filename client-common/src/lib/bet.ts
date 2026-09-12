@@ -2,7 +2,7 @@ import {
   CPMM_ARBITRAGE_ERROR_PREFIX,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
-import { LimitBet } from 'common/bet'
+import { getLimitOrderFill, LimitBet, LimitOrderFill } from 'common/bet'
 import { Answer } from 'common/answer'
 import { noFees } from 'common/fees'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
@@ -68,6 +68,7 @@ export const getLimitBetReturns = (
   let shares = 0
   let fees = noFees
   let betDeps: LimitBet[] = []
+  let limitOrderFill: LimitOrderFill = { shares: 0, orderCount: 0 }
   let probAfter = 0
   let calculationError: string | undefined = undefined
   try {
@@ -90,6 +91,8 @@ export const getLimitBetReturns = (
         .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
         .concat(newBetResult.ordersToCancel)
         .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
+      // Only the answer being bought — see getSaleResultMultiSumsToOne.
+      limitOrderFill = getLimitOrderFill(newBetResult.makers)
       fees = addObjects(
         newBetResult.totalFees,
         otherBetResults.reduce(
@@ -115,6 +118,7 @@ export const getLimitBetReturns = (
       shares = result.shares
       fees = result.fees
       betDeps = result.makers.map((m) => m.bet).concat(result.ordersToCancel)
+      limitOrderFill = getLimitOrderFill(result.makers)
       probAfter = result.probAfter
     }
   } catch (err: any) {
@@ -142,6 +146,7 @@ export const getLimitBetReturns = (
     currentReturn,
     fees,
     betDeps,
+    limitOrderFill,
     probAfter,
     limitProb,
     prob,
