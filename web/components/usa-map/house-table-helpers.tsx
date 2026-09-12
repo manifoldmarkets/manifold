@@ -7,8 +7,8 @@ import {
   CPMMMultiContract,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
-  isBinaryMulti,
 } from 'common/contract'
+import { versusSideProb } from 'common/versus'
 import {
   formatPercent,
   formatPercentShort,
@@ -322,13 +322,13 @@ export const BuyPanelBody = (props: {
   )
   const currentPayout = result.shares
 
-  const probBefore = result.probBefore
-  const probAfter = result.probAfter
+  // `result` prices the answer (YES = Republican); show the side being bought
+  // so a Democratic bet reads as the Democratic probability going up.
+  const probBefore = versusSideProb(outcome ?? 'YES', result.probBefore)
+  const probAfter = versusSideProb(outcome ?? 'YES', result.probAfter)
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
   const probChange = Math.abs(probAfter - probBefore)
-
-  const isBinaryMC = isBinaryMulti(contract)
 
   const displayedAfter = formatPercent(probAfter)
 
@@ -458,7 +458,7 @@ export const BuyPanelBody = (props: {
             </span>
             {!probStayedSame && (
               <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
-                {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                ↑
                 {getFormattedMappedValue(
                   contract,
                   Math.abs(probAfter - probBefore)

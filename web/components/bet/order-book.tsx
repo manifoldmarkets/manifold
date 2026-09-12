@@ -9,12 +9,16 @@ import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
   CPMMMultiContract,
-  getBinaryMCProb,
   isBinaryMulti,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import {
+  toMainAnswerOrder,
+  versusSideOutcome,
+  versusSideProb,
+} from 'common/versus'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
 import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
@@ -297,6 +301,9 @@ function OrderRow(props: {
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
+  // On a versus market the order may be stored on either answer; show the
+  // side it backs and that side's price.
+  const sideOutcome = versusSideOutcome(contract, bet) ?? outcome
   const user = useDisplayUserById(bet.userId)
 
   const [isCancelling, setIsCancelling] = useState(false)
@@ -346,7 +353,7 @@ function OrderRow(props: {
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
             contract={contract}
-            outcome={outcome}
+            outcome={sideOutcome}
             truncate={'short'}
           />
         ) : (
@@ -357,7 +364,7 @@ function OrderRow(props: {
         {isPseudoNumeric
           ? getFormattedMappedValue(contract, limitProb)
           : isBinaryMC
-          ? formatPercent(getBinaryMCProb(limitProb, outcome))
+          ? formatPercent(versusSideProb(outcome, limitProb))
           : formatPercent(limitProb)}
       </td>
       <td className="text-ink-900 py-3 font-medium">
@@ -497,9 +504,19 @@ export function OrderBookPanel(props: {
   onOrderClick?: (data: OrderClickData) => void
 }) {
   const { contract, answer, showTitle, pseudonym, onOrderClick } = props
-  const limitBets = props.limitBets.filter(
-    (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
-  )
+  const isBinaryMC = isBinaryMulti(contract)
+  // On a versus market orders can be stored on either answer. Express them
+  // all relative to the main answer so the two columns, the prices, the
+  // depth chart and click-to-fill line up: an order on the second answer is
+  // mirrored (YES on it at p == NO on the main answer at 1 - p).
+  const limitBets = props.limitBets
+    .filter((b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent)
+    .map((b) => {
+      const mirrored = isBinaryMC ? toMainAnswerOrder(contract, b) : undefined
+      return mirrored ? { ...b, ...mirrored } : b
+    })
+  // Show the price of the side being bought when the sides have names.
+  const showsSideProb = isBinaryMC || !!pseudonym
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -541,6 +558,7 @@ export function OrderBookPanel(props: {
             contract={contract}
             side="YES"
             pseudonym={pseudonym}
+            showsSideProb={showsSideProb}
             onOrderClick={onOrderClick}
           />
         </div>
@@ -550,6 +568,7 @@ export function OrderBookPanel(props: {
             contract={contract}
             side="NO"
             pseudonym={pseudonym}
+            showsSideProb={showsSideProb}
             onOrderClick={onOrderClick}
           />
         </div>
@@ -593,9 +612,11 @@ function OrderBookSide(props: {
     YES: { pseudonymName: string; pseudonymColor: string }
     NO: { pseudonymName: string; pseudonymColor: string }
   }
+  // Show each order at the price of the side being bought (NO at 1 - p).
+  showsSideProb: boolean
   onOrderClick?: (data: OrderClickData) => void
 }) {
-  const { contract, side, pseudonym, onOrderClick } = props
+  const { contract, side, pseudonym, showsSideProb, onOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => !b.expiresAt || b.expiresAt > Date.now()
   )
@@ -634,6 +655,7 @@ function OrderBookSide(props: {
               contract={contract}
               limitProb={Number(prob)}
               bets={bets}
+              showsSideProb={showsSideProb}
               onOrderClick={onOrderClick}
               sideBgHover={sideBgHover}
             />
@@ -653,13 +675,20 @@ function OrderBookRow(props: {
     | MultiContract
   limitProb: number
   bets: LimitBet[]
+  showsSideProb: boolean
   onOrderClick?: (data: OrderClickData) => void
   sideBgHover: string
 }) {
-  const { contract, limitProb, bets, onOrderClick, sideBgHover } = props
+  const {
+    contract,
+    limitProb,
+    bets,
+    showsSideProb,
+    onOrderClick,
+    sideBgHover,
+  } = props
   const { outcome } = bets[0]
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const isBinaryMC = isBinaryMulti(contract)
 
   const total = sumBy(bets, (b) => b.orderAmount - b.amount)
 
@@ -707,8 +736,8 @@ function OrderBookRow(props: {
           <span className="text-ink-600 w-10 text-sm font-medium">
             {isPseudoNumeric
               ? getFormattedMappedValue(contract, limitProb)
-              : isBinaryMC
-              ? formatPercent(getBinaryMCProb(limitProb, outcome))
+              : showsSideProb
+              ? formatPercent(versusSideProb(outcome, limitProb))
               : formatPercent(limitProb)}
           </span>
           <div
