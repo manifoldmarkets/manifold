@@ -656,9 +656,19 @@ on a near-black panel, with the button inverted to white. One treatment serves
 both themes, so the white wordmark never needs an inverted copy — and the panel
 is `slate-950` rather than the /jobs tile's `slate-900` because dark-mode
 `canvas-0` is itself roughly `slate-900`, which would leave it level with the
-page instead of on top of it. The subtitle naming the instrument is `sm:` and
-up only: on a phone the card sits directly above the bet panel, where every
-line it costs is a line of the thing the reader came for.
+page instead of on top of it.
+
+The offer lives in the button, once — a heading saying "Trade `<TICKER>` with
+real money" above a button saying the same thing was the sentence twice. On a
+phone the card is exactly wordmark + button ("Trade with real money": the
+wordmark beside it is the "on MNX", and the ticker is already in the market
+header), which is what keeps it to one 60px line from 360px up; the full label
+needs a 334px button and never fits beside the wordmark on a phone, so widening
+it back is a two-line button, not a tidier card. From `sm` the divider and a
+line naming the instrument appear and the button takes the full label; between
+`sm` and ~768px that button wraps onto its own row, and above it the card is a
+single line. The link's `aria-label` is the full sentence at every width, so
+the phone's shorter wording costs a screen reader nothing.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,

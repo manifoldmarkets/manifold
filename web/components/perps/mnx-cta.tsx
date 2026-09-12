@@ -12,7 +12,6 @@ import {
 import { getPerpTicker } from 'common/perps/ticker'
 import { buttonClass } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
-import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 
 /**
@@ -99,36 +98,33 @@ export const MnxTradeCta = (props: {
     // the panel has to be darker than the page, not level with it.
     <Row
       className={clsx(
-        'flex-wrap items-center gap-x-4 gap-y-3 rounded-lg bg-slate-950 px-4 py-3 ring-1 ring-slate-800',
+        'flex-wrap items-center gap-x-3 gap-y-3 rounded-lg bg-slate-950 px-4 py-3 ring-1 ring-slate-800 sm:gap-x-4',
         className
       )}
     >
-      <Row className="min-w-[13rem] flex-1 items-center gap-3">
-        {/* Plain img, like the /jobs partner block: it is a fixed-size static
-            asset, so next/image would add a request and a wrapper for nothing.
-            alt is the brand name — the heading beside it deliberately doesn't
-            repeat it. */}
-        <img
-          src="/mnx-logo.svg"
-          alt="MNX"
-          width={300}
-          height={103}
-          className="h-5 w-auto shrink-0"
-        />
-        <div aria-hidden className="w-px shrink-0 self-stretch bg-slate-700" />
-        <Col className="min-w-0 gap-0.5">
-          <div className="text-sm font-semibold text-white">
-            Trade {ticker} with real money
-          </div>
-          {/* Which instrument you'd be trading over there, and nothing else —
-              the wordmark, the button and the new tab say the rest. Dropped
-              entirely on phones, where it costs two lines of a card sitting
-              above the thing people came to use. */}
-          <div className="hidden text-xs text-slate-400 sm:block">
-            MNX's {derivative} on {instrument.name}
-          </div>
-        </Col>
-      </Row>
+      {/* Plain img, like the /jobs partner block: it is a fixed-size static
+          asset, so next/image would add a request and a wrapper for nothing.
+          alt is the brand name, which is also what earns the button the right
+          to leave "on MNX" out on a phone. */}
+      <img
+        src="/mnx-logo.svg"
+        alt="MNX"
+        width={300}
+        height={103}
+        className="h-4 w-auto shrink-0 sm:h-5"
+      />
+      <div
+        aria-hidden
+        className="hidden w-px shrink-0 self-stretch bg-slate-700 sm:block"
+      />
+      {/* Which instrument you'd be trading over there. The offer itself lives
+          in the button — saying it here as well was the same sentence twice.
+          Phones get neither this nor the divider: the card sits right above
+          the bet panel, so a line here is a line taken from what people came
+          for. */}
+      <div className="hidden min-w-[12rem] flex-1 text-sm text-slate-300 sm:block">
+        MNX's {derivative} on {instrument.name}
+      </div>
       <a
         {...mnxLinkProps({
           url: instrument.url,
@@ -136,13 +132,27 @@ export const MnxTradeCta = (props: {
           feedId: contract.oracleFeedId,
           contractId: contract.id,
         })}
+        // The label a screen reader gets is the full one at every width, so
+        // the phone's shorter wording never costs a link its meaning.
+        aria-label={`Trade ${ticker} with real money on MNX`}
         className={clsx(
           buttonClass('sm', 'none'),
-          'shrink-0 gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200'
+          'gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200',
+          // Fills the row beside the wordmark on a phone; natural width beside
+          // the description on wider screens, where shrinking it would squeeze
+          // the label instead of wrapping the row.
+          'max-sm:flex-1 sm:shrink-0'
         )}
       >
-        Trade {ticker} on MNX
-        <ExternalLinkIcon aria-hidden className="h-4 w-4" />
+        {/* Phones: the wordmark to its left IS the "on MNX", and the ticker is
+            in the market header — so the button carries the offer alone. That
+            is what keeps it on one line from 360px up; the full label needs
+            334px of button and never fits beside the wordmark on a phone. */}
+        <span className="sm:hidden">Trade with real money</span>
+        <span className="hidden sm:inline">
+          Trade {ticker} with real money on MNX
+        </span>
+        <ExternalLinkIcon aria-hidden className="h-4 w-4 shrink-0" />
       </a>
     </Row>
   )
