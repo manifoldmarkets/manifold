@@ -1,7 +1,6 @@
 module.exports = {
   rootDir: '..',
   roots: ['<rootDir>/web', '<rootDir>/client-common', '<rootDir>/common'],
-  roots: ['<rootDir>/web', '<rootDir>/client-common', '<rootDir>/common'],
   testEnvironment: 'node',
   testMatch: ['<rootDir>/web/**/*.test.tsx'],
   transform: {
