@@ -40,7 +40,7 @@ import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
 type Phase = 'feeds' | 'unlisted' | 'rollout' | 'public'
-type Level = 'PASS' | 'WARN' | 'FAIL'
+type Level = 'PASS' | 'INFO' | 'WARN' | 'FAIL'
 
 type FeedSnapshot = {
   feedId: string
@@ -664,15 +664,14 @@ export const auditPerpLaunch = async (pg: SupabaseDirectClient) => {
       if (definition) {
         const expectedCreatorId = getPerpLaunchCreatorId(environment)
         const editableTitle = isMnxOwnedPerp(contract, environment)
+        const matchesTitle = contract.question === definition.question
         report(
-          editableTitle || contract.question === definition.question
-            ? 'PASS'
-            : 'FAIL',
+          matchesTitle ? 'PASS' : editableTitle ? 'INFO' : 'FAIL',
           `market ${contract.slug} launch title`,
-          editableTitle
-            ? `MNX-owned display title: "${contract.question}"`
-            : contract.question === definition.question
+          matchesTitle
             ? definition.question
+            : editableTitle
+            ? `stored="${contract.question}", template="${definition.question}"; MNX-owned display titles are editable`
             : `stored="${contract.question}", expected="${definition.question}"; the ticker and market type are rendered separately`
         )
         // The ticker is what the badge shows in place of "Perpetual" and
