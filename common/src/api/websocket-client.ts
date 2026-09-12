@@ -153,9 +153,8 @@ export class APIRealtimeClient {
       }
       clearInterval(this.heartbeat)
 
-      // mqp: we might need to change how the txn stuff works if we ever want to
-      // implement "wait until i am subscribed, and then do something" in a component.
-      // right now it cannot be reliably used to detect that in the presence of reconnects
+      // Acknowledgments belong to this connection. Recovery establishes new
+      // subscriptions before announcing the next connection generation.
       for (const txn of Array.from(this.txns.values())) {
         clearTimeout(txn.timeout)
         txn.reject(new Error('Websocket was closed.'))
@@ -241,13 +240,13 @@ export class APIRealtimeClient {
         this.txns.set(txid, { resolve, reject, timeout })
         this.ws.send(JSON.stringify({ type, txid, ...data }))
       }).catch((error) => {
-        // If this is a heartbeat message that failed, trigger reconnection
+        // A failed ping or subscription leaves this connection unusable.
         if (
           (type === 'ping' || type === 'subscribe') &&
           this.ws === socket &&
           !this.stopped
         ) {
-          console.error('Heartbeat failed, attempting to reconnect:', error)
+          console.error('Websocket request failed, attempting to reconnect:', error)
           socket.close()
           this.waitAndReconnect()
         }
