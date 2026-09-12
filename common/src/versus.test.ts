@@ -292,6 +292,27 @@ describe('toMainAnswerOrder', () => {
       )
     ).toBeUndefined()
   })
+
+  it('groups equivalent orders at every supported limit price', () => {
+    // OrderBookSide groups by the exact numeric limitProb. Complementing a
+    // price such as 0.7 must produce the same key as a stored 0.3 order.
+    for (let percent = 1; percent < 100; percent++) {
+      for (const outcome of ['YES', 'NO'] as const) {
+        const main = toMainAnswerOrder(versus, {
+          answerId: 'home',
+          outcome,
+          limitProb: percent / 100,
+        })!
+        const other = toMainAnswerOrder(versus, {
+          answerId: 'away',
+          outcome: outcome === 'YES' ? 'NO' : 'YES',
+          limitProb: (100 - percent) / 100,
+        })!
+        expect(other).toEqual(main)
+        expect(new Set([main.limitProb, other.limitProb]).size).toBe(1)
+      }
+    }
+  })
 })
 
 describe('partitionVersusBets', () => {
@@ -391,6 +412,22 @@ describe('toMainAnswerMetric', () => {
     const summary = makeMetric(null, 5, 3)
     expect(toMainAnswerMetric(versus, summary)).toBe(summary)
   })
+
+  it.each([0, 0.4, 1])('mirrors a last trade probability of %s', (lastProb) => {
+    const metric = { ...makeMetric('away', 5, 0), lastProb }
+    const remapped = toMainAnswerMetric(versus, metric)
+    expect(remapped.maxSharesOutcome).toBe('NO')
+    expect(remapped.lastProb).toBeCloseTo(1 - lastProb)
+    // The NO probability shown in the holder details is the Away price.
+    expect(1 - remapped.lastProb!).toBeCloseTo(lastProb)
+    expect(metric.lastProb).toBe(lastProb)
+  })
+
+  it('preserves a missing last trade probability', () => {
+    expect(
+      toMainAnswerMetric(versus, makeMetric('away', 5, 0)).lastProb
+    ).toBeNull()
+  })
 })
 
 describe('mergeVersusMetricsByUser', () => {
@@ -420,6 +457,81 @@ describe('mergeVersusMetricsByUser', () => {
     expect(merged[0].invested).toBe(24)
     expect(merged[0].hasYesShares).toBe(true)
     expect(merged[0].hasNoShares).toBe(true)
+  })
+
+  it('sums cost basis on each remapped side without changing the inputs', () => {
+    const homeMetric = {
+      ...makeMetric('home', 100, 50),
+      totalSpent: { YES: 60, NO: 20 },
+    }
+    const awayMetric = {
+      ...makeMetric('away', 50, 100),
+      totalSpent: { YES: 30, NO: 60 },
+    }
+    const [merged] = mergeVersusMetricsByUser(versus, [
+      homeMetric,
+      awayMetric,
+      awayMetric, // Duplicate pages must not double-count cost basis.
+    ])
+    expect(merged.totalShares).toEqual({ YES: 200, NO: 100 })
+    expect(merged.totalSpent).toEqual({ YES: 120, NO: 50 })
+    expect(merged.totalSpent!.YES / merged.totalShares.YES).toBe(0.6)
+    expect(merged.totalSpent!.NO / merged.totalShares.NO).toBe(0.5)
+    expect(homeMetric.totalSpent).toEqual({ YES: 60, NO: 20 })
+    expect(awayMetric.totalSpent).toEqual({ YES: 30, NO: 60 })
+  })
+
+  it('keeps available cost basis when the other metric has none', () => {
+    const homeMetric = { ...makeMetric('home', 0, 0), totalSpent: undefined }
+    const awayMetric = makeMetric('away', 50, 100)
+    for (const metrics of [
+      [homeMetric, awayMetric],
+      [awayMetric, homeMetric],
+    ]) {
+      expect(mergeVersusMetricsByUser(versus, metrics)[0].totalSpent).toEqual({
+        YES: 50,
+        NO: 25,
+      })
+    }
+    expect(
+      mergeVersusMetricsByUser(versus, [
+        homeMetric,
+        { ...awayMetric, totalSpent: undefined },
+      ])[0].totalSpent
+    ).toBeUndefined()
+  })
+
+  it.each(['home', 'away'])(
+    'uses the latest trade probability when the newer metric is on %s',
+    (newestAnswer) => {
+      const homeMetric = {
+        ...makeMetric('home', 100, 0),
+        lastBetTime: newestAnswer === 'home' ? 200 : 100,
+        lastProb: 0.7,
+      }
+      const awayMetric = {
+        ...makeMetric('away', 100, 0),
+        lastBetTime: newestAnswer === 'away' ? 200 : 100,
+        lastProb: 0.4,
+      }
+      for (const metrics of [
+        [homeMetric, awayMetric],
+        [awayMetric, homeMetric],
+      ]) {
+        const [merged] = mergeVersusMetricsByUser(versus, metrics)
+        expect(merged.lastBetTime).toBe(200)
+        expect(merged.lastProb).toBeCloseTo(newestAnswer === 'home' ? 0.7 : 0.6)
+      }
+    }
+  )
+
+  it('does not associate an older probability with a newer trade lacking one', () => {
+    const [merged] = mergeVersusMetricsByUser(versus, [
+      { ...makeMetric('home', 100, 0), lastBetTime: 100, lastProb: 0.7 },
+      { ...makeMetric('away', 100, 0), lastBetTime: 200, lastProb: null },
+    ])
+    expect(merged.lastBetTime).toBe(200)
+    expect(merged.lastProb).toBeNull()
   })
 
   it('leaves non-versus markets alone', () => {

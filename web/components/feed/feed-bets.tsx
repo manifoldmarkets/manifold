@@ -3,6 +3,7 @@ import { DisplayUser } from 'common/api/user-types'
 import { Bet, fill } from 'common/bet'
 import { Contract, isBinaryMulti, MarketContract } from 'common/contract'
 import { versusSide, versusSideOutcome, versusSideProb } from 'common/versus'
+import { getBetSharePrice } from 'common/share-bet'
 import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
@@ -867,15 +868,7 @@ function BetActions(props: {
               ? contract.answers?.find((a) => a.id === bet.answerId)?.text
               : undefined)
           }
-          avgPrice={
-            bet.limitProb !== undefined
-              ? formatPercent(bet.limitProb)
-              : formatPercent(
-                  bet.outcome === 'YES'
-                    ? bet.amount / bet.shares
-                    : 1 - bet.amount / bet.shares
-                )
-          }
+          avgPrice={formatPercent(getBetSharePrice(contract, bet, 'limit'))}
           betAmount={bet.amount}
           winAmount={
             bet.limitProb !== undefined && bet.orderAmount !== undefined
@@ -983,15 +976,7 @@ function BetActionsWithGraph(props: {
               ? contract.answers?.find((a) => a.id === bet.answerId)?.text
               : undefined)
           }
-          avgPrice={
-            bet.limitProb !== undefined
-              ? formatPercent(bet.limitProb)
-              : formatPercent(
-                  bet.outcome === 'YES'
-                    ? bet.amount / bet.shares
-                    : 1 - bet.amount / bet.shares
-                )
-          }
+          avgPrice={formatPercent(getBetSharePrice(contract, bet, 'limit'))}
           betAmount={bet.amount}
           winAmount={
             bet.limitProb !== undefined && bet.orderAmount !== undefined

@@ -60,6 +60,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { versusSide, versusSideProb } from 'common/versus'
+import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
@@ -1111,9 +1112,11 @@ export const BuyPanelBody = (
               multiProps?.answerToBuy.text
             }
             avgPrice={formatPercent(
-              lastBetDetails.outcome === 'YES'
-                ? lastBetDetails.amount / lastBetDetails.shares
-                : 1 - lastBetDetails.amount / lastBetDetails.shares
+              getBetSharePrice(
+                contract,
+                lastBetDetails,
+                isBinaryMC ? 'limit' : 'average'
+              )
             )}
             betAmount={lastBetDetails.amount}
             winAmount={lastBetDetails.shares}

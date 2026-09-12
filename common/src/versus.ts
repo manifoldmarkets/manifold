@@ -137,7 +137,11 @@ export const toMainAnswerOrder = (
   if (!side) return undefined
   return {
     outcome: side.sideOutcome,
-    limitProb: side.isOnMainAnswer ? bet.limitProb : 1 - bet.limitProb,
+    // Limit orders use whole percentage points. Normalize the complement so
+    // equivalent orders share a price key (1 - 0.7 is not exactly 0.3).
+    limitProb: side.isOnMainAnswer
+      ? bet.limitProb
+      : Math.round((1 - bet.limitProb) * 100) / 100,
   }
 }
 
@@ -224,6 +228,7 @@ export const toMainAnswerMetric = <
     | 'hasNoShares'
     | 'maxSharesOutcome'
     | 'totalSpent'
+    | 'lastProb'
   >
 >(
   contract: Pick<Contract, 'mechanism' | 'outcomeType'> & Partial<Contract>,
@@ -242,6 +247,7 @@ export const toMainAnswerMetric = <
     answerId: answers.main.id,
     totalShares: flip(metric.totalShares) ?? {},
     totalSpent: flip(metric.totalSpent),
+    lastProb: metric.lastProb == null ? metric.lastProb : 1 - metric.lastProb,
     hasYesShares: metric.hasNoShares,
     hasNoShares: metric.hasYesShares,
     maxSharesOutcome:
@@ -281,9 +287,21 @@ export const mergeVersusMetricsByUser = (
     const yes =
       (existing.totalShares?.YES ?? 0) + (remapped.totalShares?.YES ?? 0)
     const no = (existing.totalShares?.NO ?? 0) + (remapped.totalShares?.NO ?? 0)
+    const latest =
+      remapped.lastBetTime > existing.lastBetTime ? remapped : existing
     byUser.set(metric.userId, {
       ...existing,
       totalShares: { ...existing.totalShares, YES: yes, NO: no },
+      totalSpent:
+        existing.totalSpent || remapped.totalSpent
+          ? {
+              YES:
+                (existing.totalSpent?.YES ?? 0) +
+                (remapped.totalSpent?.YES ?? 0),
+              NO:
+                (existing.totalSpent?.NO ?? 0) + (remapped.totalSpent?.NO ?? 0),
+            }
+          : undefined,
       hasYesShares: yes >= 1,
       hasNoShares: no >= 1,
       hasShares: existing.hasShares || remapped.hasShares,
@@ -294,7 +312,8 @@ export const mergeVersusMetricsByUser = (
       totalAmountInvested:
         existing.totalAmountInvested + remapped.totalAmountInvested,
       totalAmountSold: existing.totalAmountSold + remapped.totalAmountSold,
-      lastBetTime: Math.max(existing.lastBetTime, remapped.lastBetTime),
+      lastBetTime: latest.lastBetTime,
+      lastProb: latest.lastProb,
     })
   }
   return Array.from(byUser.values())
