@@ -55,11 +55,13 @@ export class APIRealtimeClient {
   subscriptions: Map<string, BroadcastHandler[]>
   connectTimeout?: NodeJS.Timeout
   heartbeat?: NodeJS.Timeout
-  /** Incremented each time the socket comes back after dropping. Resubscribing
+  /** Incremented after each successful connection and resubscription. Resubscribing
    * doesn't backfill the broadcasts sent while we were away, so anything
    * caching server state should watch this and refetch. */
   reconnectCount: number
-  private hasConnected: boolean
+  private stopped = false
+  private reconnectAttempt = 0
+  private subscriptionRequests = new Map<string, Promise<void>>()
   private reconnectListeners: Set<(count: number) => void>
 
   constructor(url: string) {
@@ -68,7 +70,6 @@ export class APIRealtimeClient {
     this.txns = new Map()
     this.subscriptions = new Map()
     this.reconnectCount = 0
-    this.hasConnected = false
     this.reconnectListeners = new Set()
     this.connect()
   }
@@ -86,6 +87,7 @@ export class APIRealtimeClient {
   }
 
   close() {
+    this.stopped = true
     if (this.heartbeat) {
       clearInterval(this.heartbeat)
       this.heartbeat = undefined
@@ -97,45 +99,54 @@ export class APIRealtimeClient {
   connect() {
     // you may wish to refer to https://websockets.spec.whatwg.org/
     // in order to check the semantics of events etc.
-    this.ws = new WebSocket(this.url)
+    const socket = new WebSocket(this.url)
+    this.ws = socket
     this.ws.onmessage = (ev) => {
       this.receiveMessage(JSON.parse(ev.data))
     }
     this.ws.onerror = (ev) => {
       console.error('API websocket error: ', ev)
-      // this can fire without an onclose if this is the first time we ever try
-      // to connect, so we need to turn on our reconnect in that case
+      // Browser errors are followed by close. The timer guard coalesces both.
       this.waitAndReconnect()
     }
-    this.ws.onopen = (_ev) => {
-      if (VERBOSE_LOGGING) {
-        console.info('API websocket opened.')
-      }
-      if (this.heartbeat) {
-        clearInterval(this.heartbeat)
-      }
+    this.ws.onopen = async () => {
+      clearTimeout(this.connectTimeout)
+      this.connectTimeout = undefined
+      clearInterval(this.heartbeat)
       this.heartbeat = setInterval(
-        async () => this.sendMessage('ping', {}).catch(console.error),
+        () => this.sendMessage('ping', {}).catch(console.error),
         HEARTBEAT_MS
       )
-      if (this.subscriptions.size > 0) {
-        this.sendMessage('subscribe', {
-          topics: Array.from(this.subscriptions.keys()),
-        }).catch(console.error)
-      }
-      // Only after the first connection: on the first one there is nothing to
-      // have missed, and subscribers have just fetched their initial state.
-      // Notify after asking to resubscribe so a refetch can't snapshot the
-      // server before our topics are back on.
-      if (this.hasConnected) {
+      try {
+        if (this.subscriptions.size > 0) {
+          const topics = Array.from(this.subscriptions.keys())
+          const request = this.sendMessage('subscribe', { topics })
+          for (const topic of topics)
+            this.subscriptionRequests.set(topic, request)
+          await request
+        }
+        if (
+          this.stopped ||
+          this.ws !== socket ||
+          socket.readyState !== WebSocket.OPEN
+        )
+          return
+        this.reconnectAttempt = 0
+        // Also reconcile the first successful connection: the initial HTTP
+        // read may have completed before this socket (or its retries) opened.
         this.reconnectCount++
-        for (const listener of Array.from(this.reconnectListeners)) {
+        for (const listener of Array.from(this.reconnectListeners))
           listener(this.reconnectCount)
+      } catch (error) {
+        console.error('Failed to restore websocket subscriptions', error)
+        if (!this.stopped && this.ws === socket) {
+          socket.close()
+          this.waitAndReconnect()
         }
       }
-      this.hasConnected = true
     }
     this.ws.onclose = (ev) => {
+      if (this.ws !== socket) return
       // note that if the connection closes due to an error, onerror fires and then this
       if (VERBOSE_LOGGING) {
         console.info(`API websocket closed with code=${ev.code}: ${ev.reason}`)
@@ -159,11 +170,16 @@ export class APIRealtimeClient {
   }
 
   waitAndReconnect() {
-    if (this.connectTimeout == null) {
+    if (!this.stopped && this.connectTimeout == null) {
+      const cap = Math.min(
+        30_000,
+        RECONNECT_WAIT_MS * 2 ** Math.min(this.reconnectAttempt++, 3)
+      )
+      const delay = 1000 + Math.random() * (cap - 1000)
       this.connectTimeout = setTimeout(() => {
         this.connectTimeout = undefined
         this.connect()
-      }, RECONNECT_WAIT_MS)
+      }, delay)
     }
   }
 
@@ -214,6 +230,7 @@ export class APIRealtimeClient {
     if (VERBOSE_LOGGING) {
       console.info(`> Outgoing API websocket ${type} message: `, data)
     }
+    const socket = this.ws
     if (this.state === WebSocket.OPEN) {
       return new Promise<void>((resolve, reject) => {
         const txid = this.txid++
@@ -225,9 +242,13 @@ export class APIRealtimeClient {
         this.ws.send(JSON.stringify({ type, txid, ...data }))
       }).catch((error) => {
         // If this is a heartbeat message that failed, trigger reconnection
-        if (type === 'ping') {
+        if (
+          (type === 'ping' || type === 'subscribe') &&
+          this.ws === socket &&
+          !this.stopped
+        ) {
           console.error('Heartbeat failed, attempting to reconnect:', error)
-          this.ws.close()
+          socket.close()
           this.waitAndReconnect()
         }
         throw error // Re-throw the error for other message types
@@ -244,31 +265,39 @@ export class APIRealtimeClient {
   }
 
   async subscribe(topics: string[], handler: BroadcastHandler) {
+    const added: string[] = []
     for (const topic of topics) {
-      let existingHandlers = this.subscriptions.get(topic)
-      if (existingHandlers == null) {
-        this.subscriptions.set(topic, (existingHandlers = [handler]))
-        return await this.sendMessage('subscribe', { topics: [topic] })
-      } else {
-        existingHandlers.push(handler)
+      const existing = this.subscriptions.get(topic)
+      if (existing) existing.push(handler)
+      else {
+        this.subscriptions.set(topic, [handler])
+        added.push(topic)
       }
     }
+    if (added.length) {
+      const request = this.sendMessage('subscribe', { topics: added })
+      for (const topic of added) this.subscriptionRequests.set(topic, request)
+    }
+    // A second consumer of a topic must also wait for its pending subscribe.
+    await Promise.all(
+      topics.map((topic) => this.subscriptionRequests.get(topic))
+    )
   }
 
   async unsubscribe(topics: string[], handler: BroadcastHandler) {
+    const removed: string[] = []
     for (const topic of topics) {
-      const existingHandlers = this.subscriptions.get(topic)
-      if (existingHandlers == null) {
-        console.error(`Subscription mapping busted -- ${topic} handlers null.`)
-      } else {
-        const remainingHandlers = existingHandlers.filter((h) => h != handler)
-        if (remainingHandlers.length > 0) {
-          this.subscriptions.set(topic, remainingHandlers)
-        } else {
-          this.subscriptions.delete(topic)
-          return await this.sendMessage('unsubscribe', { topics: [topic] })
-        }
+      const remaining = (this.subscriptions.get(topic) ?? []).filter(
+        (h) => h !== handler
+      )
+      if (remaining.length) this.subscriptions.set(topic, remaining)
+      else {
+        this.subscriptions.delete(topic)
+        this.subscriptionRequests.delete(topic)
+        removed.push(topic)
       }
     }
+    if (removed.length)
+      await this.sendMessage('unsubscribe', { topics: removed })
   }
 }
