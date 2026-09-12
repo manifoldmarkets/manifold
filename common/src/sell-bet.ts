@@ -366,9 +366,11 @@ export const getSaleResultMultiSumsToOne = (
     probChange,
     fees,
     makers,
-    // Only the answer being sold. The arbitrage legs on the other answers also
-    // match orders, but counting their shares here would read as if they were
-    // part of this sale.
-    limitOrderFill: getLimitOrderFill(newBetResult.makers),
+    // Other-answer orders also affect the quote, but their shares are not
+    // shares of the answer being sold. Report their order count separately.
+    limitOrderFill: getLimitOrderFill(
+      newBetResult.makers,
+      otherBetResults.flatMap((r) => r.makers)
+    ),
   }
 }

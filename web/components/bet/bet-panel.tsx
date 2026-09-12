@@ -967,9 +967,9 @@ export const BuyPanelBody = (
                   </Row>
                 </Row>
                 <LimitOrderFillRow
+                  contract={contract}
                   fill={limitOrderFill}
                   totalShares={filledShares}
-                  isCashContract={isCashContract}
                 />
               </Col>
             </Row>

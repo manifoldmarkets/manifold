@@ -86,8 +86,8 @@ export const getLimitBetReturns = (
         .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
         .concat(newBetResult.ordersToCancel)
         .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
-      // Only the answer being bought — see getSaleResultMultiSumsToOne.
-      limitOrderFill = getLimitOrderFill(newBetResult.makers)
+      // Keep other-answer dependencies separate from shares of this answer.
+      limitOrderFill = getLimitOrderFill(newBetResult.makers, otherBetResults.flatMap((r) => r.makers))
       fees = addObjects(
         newBetResult.totalFees,
         otherBetResults.reduce(

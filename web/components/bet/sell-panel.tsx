@@ -36,7 +36,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 import { LimitOrderFillRow } from './limit-order-fill-row'
-import { AnimatedMoneyDisplay, MoneyDisplay } from './money-display'
+import { MoneyDisplay } from './money-display'
 
 export function SellPanel(props: {
   contract: CPMMContract | MultiContract
@@ -296,7 +296,7 @@ export function SellPanel(props: {
           <Row className="items-center justify-between">
             <span className="text-ink-500">Sale value</span>
             <span className="text-ink-900 tabular-nums">
-              <AnimatedMoneyDisplay
+              <MoneyDisplay
                 amount={saleValue + totalFees}
                 isCashContract={isCashContract}
               />
@@ -343,9 +343,9 @@ export function SellPanel(props: {
         </Row>
 
         <LimitOrderFillRow
+          contract={contract}
           fill={limitOrderFill}
           totalShares={sellQuantity}
-          isCashContract={isCashContract}
         />
 
         <div className="border-ink-200 my-2 border-t" />
@@ -353,7 +353,7 @@ export function SellPanel(props: {
         <Row className="items-center justify-between">
           <span className="text-ink-900 font-medium">Payout</span>
           <span className="text-ink-900 text-lg font-semibold tabular-nums">
-            <AnimatedMoneyDisplay
+            <MoneyDisplay
               amount={netProceeds}
               isCashContract={isCashContract}
             />
