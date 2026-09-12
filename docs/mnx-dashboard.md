@@ -14,8 +14,9 @@ Select live markets, or use **Manage** on one market:
 
 - **Add liquidity:** choose long, short, or both. The entered amount is **per
   market, per selected side**. For example, M$1,000 to both sides of 16 markets
-  costs M$32,000. The signed-in account pays, including when that account is an
-  admin. Contributions do not create withdrawable LP shares; remaining backing
+  costs M$32,000. The configured MNX account always pays, including when an
+  admin applies the batch. The form checks and displays MNX's available balance.
+  Contributions do not create withdrawable LP shares; remaining backing
   belongs to the market creator at settlement.
 - **Trading rules:** change web/API opening fees, the size-impact coefficient,
   leverage cap, funding cap/sensitivity, or the maximum oracle mark age. Blank
@@ -44,6 +45,10 @@ show a batch while it is being applied and cannot retry or finish it until the
 run ends, or about a minute after a tab was closed mid-run. Rule edits check the
 previewed settings and record their audit history in the same database
 transaction as the update.
+
+Saved liquidity batches from before MNX account funding cannot be retried here.
+Check their payment results and finish the old batch before creating a new
+contribution; switching an old request to MNX could make a second payment.
 
 New MNX-feed markets default to **10 bps web, 20 bps API, impact 10**. These are
 opening fees on notional; 20 bps is 0.20%, plus the size-dependent fee. The impact

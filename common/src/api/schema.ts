@@ -1275,7 +1275,8 @@ export const API = (_apiTypeCheck = {
     returns: {} as MnxDashboard,
     props: z.object({}).strict(),
   },
-  // The signed-in manager pays. For 'both', amount is added to EACH side.
+  // Defaults to the signed-in manager; the MNX dashboard uses MNX funds.
+  // For 'both', amount is added to EACH side.
   // A request key makes retrying a dashboard operation safe after a timeout.
   'add-perp-subsidy': {
     method: 'POST',
@@ -1286,6 +1287,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().min(1),
         side: z.enum(['long', 'short', 'both']),
+        fundingAccount: z.enum(['mnx']).optional(),
         expectedManagerId: z.string().min(1).optional(),
         amount: z.number().finite().gt(0).lte(1_000_000),
         idempotencyKey: z

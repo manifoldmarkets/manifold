@@ -228,7 +228,14 @@ export const runMnxBatch = async (
         runningAt: Date.now(),
       })
       try {
-        await send(current.items[index])
+        const item = current.items[index]
+        // Old receipts are keyed to the original payer. Changing their funding
+        // account on retry could debit MNX for an already-committed payment.
+        if (item.kind === 'liquidity' && item.params.fundingAccount !== 'mnx')
+          throw new Error(
+            'This saved contribution used the signed-in account. Check its payment results and finish the batch before creating a new MNX-funded contribution.'
+          )
+        await send(item)
       } catch (error) {
         persist(
           withItem(index, {
