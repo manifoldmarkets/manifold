@@ -16,7 +16,7 @@ import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
 import { capitalize } from 'lodash'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -365,12 +365,8 @@ export const BinaryMultiSellRow = (props: {
   const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
   const otherAnswer = contract.answers.find((a) => a.id !== answer.id)!
-  const { totalShares, maxSharesOutcome } = metric ?? {
-    totalShares: { YES: 0, NO: 0 },
-    maxSharesOutcome: 'YES',
-  }
-  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
-  const sharesSum = totalShares?.[sharesOutcome ?? 'YES'] ?? 0
+  const sharesOutcome = metric?.maxSharesOutcome
+  const sharesSum = metric?.totalShares[sharesOutcome ?? 'YES'] ?? 0
   // `sharesOutcome` is relative to the answer the position is stored on: YES
   // backs `answer`, NO backs the other one (see `versusSide` in common/versus).
   const answerPseudonym = {
@@ -384,7 +380,20 @@ export const BinaryMultiSellRow = (props: {
     },
   }
 
-  if (!sharesOutcome || !user || contract.isResolved) return null
+  // Match the whole-share threshold used by per-answer position metrics.
+  // An absent metric means no position, not a zero-share YES position.
+  const canSell =
+    !!metric &&
+    (sharesOutcome === 'YES' || sharesOutcome === 'NO') &&
+    !!user &&
+    !contract.isResolved &&
+    Number.isFinite(sharesSum) &&
+    sharesSum >= 1
+  useEffect(() => {
+    if (!canSell) setOpen(false)
+  }, [canSell])
+
+  if (!canSell) return null
   return (
     <Row className={'mt-2'}>
       {open && (
