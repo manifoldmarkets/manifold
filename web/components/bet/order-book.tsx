@@ -19,6 +19,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
 import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
@@ -149,11 +150,18 @@ export function OrderTable(props: {
       const results = await Promise.allSettled(
         limitBets
           .filter((b) => !b.isCancelled)
-          .map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
+          .map(async (bet) => {
+            const cancelled = await api('bet/cancel/:betId', { betId: bet.id })
+            applyLimitOrderUpdates([cancelled])
+          })
       )
-      applyLimitOrderUpdates(
-        results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
-      )
+      const failures = results.filter((r) => r.status === 'rejected').length
+      if (failures)
+        toast.error(
+          `Could not cancel ${failures} order${
+            failures === 1 ? '' : 's'
+          }. Please retry.`
+        )
     } finally {
       setIsCancelling(false)
     }
@@ -302,6 +310,9 @@ function OrderRow(props: {
       applyLimitOrderUpdates([
         await api('bet/cancel/:betId', { betId: bet.id }),
       ])
+    } catch (e) {
+      console.error('Failed to cancel order', e)
+      toast.error('Could not cancel this order. Please retry.')
     } finally {
       setIsCancelling(false)
     }
