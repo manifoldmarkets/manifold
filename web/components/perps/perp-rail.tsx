@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 // ---------------------------------------------------------------------------
 // The stack of cards that sits under the chart on phones and beside it in the
@@ -213,10 +214,25 @@ const TabsRail = (props: { sections: PerpRailSection[] }) => {
 // accordion — every header stays in view; opening one closes the rest, so the
 // four titles never scroll away and nothing is more than one click off screen.
 
+// Section keys are never empty, so the empty string is free to mean "the
+// reader closed the one that was open" as distinct from "hasn't chosen yet".
+const ALL_CLOSED = ''
+
 const AccordionRail = (props: { sections: PerpRailSection[] }) => {
   const { sections } = props
-  const [open, setOpen] = useState<string | undefined>(sections[0]?.key)
-  const current = sections.some((s) => s.key === open) ? open : undefined
+  // Remembered across visits: the watchlist is the only way to change market
+  // below xl now that the ticker chips are gone, and a reader who opens it
+  // shouldn't have to open it again every time they come back.
+  const [open, setOpen] = usePersistentLocalState<string | null>(
+    null,
+    'perp-rail-open'
+  )
+  // Stored: a section key, ALL_CLOSED once they have shut the last open one,
+  // or null before they have chosen anything. Both null and a key that is no
+  // longer on the list (positions, after signing out) open the first section,
+  // which is their own positions whenever they hold any.
+  const stored = sections.some((s) => s.key === open) ? open : null
+  const current = open === ALL_CLOSED ? undefined : stored ?? sections[0]?.key
   return (
     <Col className={CARD}>
       {sections.map((s, i) => {
@@ -230,7 +246,7 @@ const AccordionRail = (props: { sections: PerpRailSection[] }) => {
             )}
           >
             <button
-              onClick={() => setOpen(on ? undefined : s.key)}
+              onClick={() => setOpen(on ? ALL_CLOSED : s.key)}
               aria-expanded={on}
               aria-controls={`perp-rail-section-${s.key}`}
               className={clsx(

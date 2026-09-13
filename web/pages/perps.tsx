@@ -80,6 +80,10 @@ import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
+import {
+  getPersistentLocalState,
+  setPersistentLocalState,
+} from 'web/hooks/use-persistent-local-state'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { referralQuery } from 'common/util/share'
@@ -102,11 +106,11 @@ const HUB_FEATURES = {
 }
 
 // How the cards under the chart (positions, markets, related, activity) are
-// arranged. `stack` is what ships: each card open, one under the other, which
-// on a phone is a long scroll from the first to the last. The alternatives are
-// in perp-rail.tsx and any visitor can try one with ?rail=<layout>; set the
-// default here to ship one.
-const PERP_RAIL_LAYOUT: PerpRailLayout = 'stack'
+// arranged. The four titles stay on screen and one section is open at a time,
+// so nothing is more than a tap away — the stacked column it replaced put the
+// last card a screen and a half below the fold on a phone. The alternatives
+// live in perp-rail.tsx and any visitor can try one with ?rail=<layout>.
+const PERP_RAIL_LAYOUT: PerpRailLayout = 'accordion'
 
 // A section inside a PerpRail shell would otherwise be a card in a card: in
 // `bare` the shell owns the border and the title, and the section renders the
@@ -499,6 +503,64 @@ const pollWhileVisible = (load: () => Promise<unknown>, intervalMs: number) => {
   }
 }
 
+// Does this reader already know what a perp is? `undefined` means not yet
+// knowable — their own book is still in flight, and deciding before it lands
+// would flash the explainer open at someone holding three positions.
+const knowsPerps = (
+  user: ReturnType<typeof useUser>,
+  positions: MyPosition[] | null
+): boolean | undefined => {
+  if (user === undefined) return undefined // auth still resolving
+  if (user === null) return false
+  if (user.hasSeenPerpsExplainer) return true
+  // An open position is the hub's free answer to "has done this before": it
+  // is already on screen, and it cost no request of its own.
+  if (!HUB_FEATURES.positions) return false
+  if (positions === null) return undefined
+  return positions.length > 0
+}
+
+const EXPLAINER_DISMISSED_KEY = 'perps-explainer-dismissed'
+
+// The explainer is a disclosure that opens itself for readers who look new to
+// perps, and keeps doing so until they put it away — a newcomer who scrolled
+// past it without reading gets another chance, and closing it once ends that
+// for good. The dismissal rides the user doc when there is one (a single row
+// update into the users JSONB, the same shape and cost as hasSeenLoanModal)
+// and localStorage otherwise, which is also what carries a signed-out reader.
+const useExplainerDisclosure = (
+  user: ReturnType<typeof useUser>,
+  positions: MyPosition[] | null
+) => {
+  const knows = knowsPerps(user, positions)
+  const [open, setOpen] = useState(false)
+  const decided = useRef(false)
+  useEffect(() => {
+    // One decision per visit, taken as soon as `knows` settles. Reading the
+    // dismissal straight out of storage rather than through
+    // usePersistentLocalState: that hook reports its initial value on the
+    // first render and corrects in an effect, which is exactly when this runs.
+    if (decided.current || knows === undefined) return
+    decided.current = true
+    if (!knows && !getPersistentLocalState(EXPLAINER_DISMISSED_KEY))
+      setOpen(true)
+  }, [knows])
+
+  const toggle = () => {
+    setOpen((wasOpen) => {
+      if (wasOpen) {
+        setPersistentLocalState(EXPLAINER_DISMISSED_KEY, true)
+        // Failing this write costs the reader one more auto-open later, so it
+        // is not worth surfacing.
+        if (user && !user.hasSeenPerpsExplainer)
+          api('me/update', { hasSeenPerpsExplainer: true }).catch(() => {})
+      }
+      return !wasOpen
+    })
+  }
+  return [open, toggle] as const
+}
+
 type MyPosition = APIResponse<'get-perp-positions'>[number]
 const useMyPositions = (userId: string | undefined, perps: PerpContract[]) => {
   const [rows, setRows] = useState<MyPosition[] | null>(null)
@@ -698,6 +760,10 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     ? router.query.rail
     : PERP_RAIL_LAYOUT
   const railParam = router.query.rail !== undefined
+  const [explainerOpen, toggleExplainer] = useExplainerDisclosure(
+    user,
+    myPositions
+  )
   // Ticker clicks can happen from anywhere on the page: select and bring
   // the terminal into view (its scroll margin clears the pinned tape).
   const selectRow = (id: string) => {
@@ -876,12 +942,15 @@ export default function PerpsPage(props: { perps: Contract[] }) {
             </Row>
             <div className="text-ink-600 text-sm sm:text-base">
               Go long or short on a live number, with leverage. No expiry date.{' '}
-              <a
-                href="#perps-explainer"
+              <button
+                type="button"
+                onClick={toggleExplainer}
+                aria-expanded={explainerOpen}
+                aria-controls="perps-explainer"
                 className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
               >
-                How perps work ↓
-              </a>
+                How perps work {explainerOpen ? '↑' : '↓'}
+              </button>
             </div>
           </Col>
           {user && (isAdminId(user.id) || user.id === getMnxCreatorId(ENV)) && (
@@ -910,15 +979,19 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               {/* Fixed-width rail: a third of the grid was only ~330px at the
                   xl breakpoint, not enough for a ticker, sparkline, price,
                   change and lean side by side. */}
-              <div className="min-w-0">
+              <Col className="min-w-0 gap-4">
                 <Terminal
                   key={selected.id}
                   contract={selected}
-                  all={sorted}
                   week={week[selected.id]}
-                  onSelect={setSelectedId}
                 />
-              </div>
+                {/* Opens here rather than under its trigger in the header: at
+                    phone width the explainer runs about 1,200px, and a reader
+                    it opens itself for would otherwise meet the manual before
+                    they had seen a single market. Under the chart they have
+                    the thing in front of them while they read about it. */}
+                <Explainer contract={selected} open={explainerOpen} />
+              </Col>
               {railLayout === 'stack' ? (
                 <>
                   <Col className="min-w-0 gap-4 xl:row-span-2">
@@ -941,12 +1014,15 @@ export default function PerpsPage(props: { perps: Contract[] }) {
             </div>
           </Col>
         ) : (
-          <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
-            No open perpetual markets right now.
-          </div>
+          <Col className="gap-4">
+            <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
+              No open perpetual markets right now.
+            </div>
+            {/* Nothing to sit under, but the header's toggle still has to open
+                something. */}
+            <Explainer contract={undefined} open={explainerOpen} />
+          </Col>
         )}
-
-        <Explainer contract={selected} />
 
         <Suggestions />
       </Col>
@@ -1748,11 +1824,9 @@ const useMobileBleed = (ref: RefObject<HTMLElement>) => {
 
 const Terminal = (props: {
   contract: PerpContract
-  all: PerpContract[]
   week: WeekSeries | undefined
-  onSelect: (id: string) => void
 }) => {
-  const { all, week, onSelect } = props
+  const { week } = props
   const cardRef = useRef<HTMLDivElement>(null)
   const bleed = useMobileBleed(cardRef)
   const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
@@ -1796,30 +1870,10 @@ const Terminal = (props: {
         bleed ? '-mx-3 rounded-none border-x-0' : 'rounded-xl'
       )}
     >
-      {/* Below xl the watchlist sits under the chart, so give phones and
-          tablets a switcher up here. */}
-      <Row className="-mx-1 gap-1.5 overflow-x-auto px-1 pb-1 xl:hidden">
-        {all.map((c) => {
-          const active = c.id === contract.id
-          return (
-            <button
-              key={c.id}
-              onClick={() => onSelect(c.id)}
-              onPointerEnter={() => warmChart(c)}
-              onFocus={() => warmChart(c)}
-              className={clsx(
-                'shrink-0 rounded-md border px-2.5 py-1 font-mono text-xs font-semibold transition-colors',
-                active
-                  ? 'bg-primary-500 border-primary-500 text-white'
-                  : 'border-ink-200 text-ink-600 hover:bg-canvas-50 dark:border-ink-300'
-              )}
-            >
-              {getPerpTicker(c)}
-            </button>
-          )
-        })}
-      </Row>
-
+      {/* No ticker switcher here any more: below xl the accordion's Markets
+          section sits directly under the chart with prices, change and lean
+          on every row, and the pinned tape switches markets from anywhere.
+          A row of bare tickers was a third way to do the same thing. */}
       <Row className="flex-wrap items-start justify-between gap-3">
         <Col className="min-w-0 gap-1">
           <Row className="items-baseline gap-3">
@@ -2694,10 +2748,17 @@ const Suggestions = () => {
 // PerpExplainerContent) next to the selected market's actual parameters —
 // the abstract rules on the left, what they mean for THIS market on the
 // right.
-const Explainer = (props: { contract: PerpContract | undefined }) => {
-  const { contract } = props
+const Explainer = (props: {
+  contract: PerpContract | undefined
+  open: boolean
+}) => {
+  const { contract, open } = props
   return (
-    <Col id="perps-explainer" className="scroll-mt-12 gap-3">
+    // Always mounted so the trigger's aria-controls has something to point at
+    // — it sits above the stats strip, too far up the DOM to be implied by
+    // position. `hidden` sorts after `flex` in Tailwind's display group, so
+    // this takes no room in the page's flex column when shut.
+    <Col id="perps-explainer" className={clsx('gap-3', !open && 'hidden')}>
       <SectionHeader title="What are perps?" />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
         <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
