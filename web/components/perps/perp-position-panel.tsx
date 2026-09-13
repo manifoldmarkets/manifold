@@ -44,6 +44,7 @@ import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Slider } from 'web/components/widgets/slider'
@@ -599,13 +600,25 @@ const PositionSummary = (props: {
 
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
           <div className="min-w-0">
-            <dt className="text-ink-500 text-xs">Position value</dt>
+            <dt className="text-ink-500 text-xs">
+              Position value{' '}
+              <InfoTooltip
+                size="sm"
+                text="Amount returned if you close the entire remaining position at the current oracle price. Closing is free; the price can change before execution."
+              />
+            </dt>
             <dd className="text-ink-900 mt-1 break-words text-xl font-semibold tabular-nums sm:text-2xl">
               {formatMoneyPrecise(fullPayout)}
             </dd>
           </div>
           <div className="min-w-0">
-            <dt className="text-ink-500 text-xs">Unrealized P&amp;L</dt>
+            <dt className="text-ink-500 text-xs">
+              Unrealized P&amp;L{' '}
+              <InfoTooltip
+                size="sm"
+                text="Profit or loss on your remaining open position, including funding and opening fees. Does not include portions you have already closed."
+              />
+            </dt>
             <dd
               className={clsx(
                 'mt-1 flex flex-wrap items-baseline gap-x-2',
@@ -660,13 +673,25 @@ const PositionSummary = (props: {
         <div className="border-ink-200 border-t px-4 py-4 sm:px-5">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
             <div>
-              <dt className="text-ink-500 text-xs">Margin</dt>
+              <dt className="text-ink-500 text-xs">
+                Margin{' '}
+                <InfoTooltip
+                  size="sm"
+                  text="Original margin allocated to the portion of your position still open, excluding opening fees. Closing part of a position reduces this proportionally."
+                />
+              </dt>
               <dd className="text-ink-900 mt-1 tabular-nums">
                 {formatMoney(p.originalCostBasis)}
               </dd>
             </div>
             <div>
-              <dt className="text-ink-500 text-xs">Notional exposure</dt>
+              <dt className="text-ink-500 text-xs">
+                Notional exposure{' '}
+                <InfoTooltip
+                  size="sm"
+                  text="Notional exposure of your remaining open position, including leverage. This is not the amount returned when you close."
+                />
+              </dt>
               <dd className="text-ink-900 mt-1 tabular-nums">
                 {formatMoney(p.size)}
               </dd>
@@ -722,18 +747,6 @@ const PositionSummary = (props: {
               </div>
             )}
           </dl>
-          <div className="text-ink-500 mt-4 space-y-2 text-xs leading-relaxed">
-            <p>
-              Position value is the estimated mana returned if you close now.
-              Unrealized P&amp;L includes funding and opening fees for your
-              remaining position. The final payout can change with the price.
-            </p>
-            <p>
-              Margin is the original mana allocated to your remaining position,
-              excluding opening fees. Notional exposure includes leverage; it is
-              not your payout.
-            </p>
-          </div>
         </div>
       </details>
 
