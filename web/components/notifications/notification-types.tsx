@@ -368,7 +368,13 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+  } else if (
+    reason === 'perp_liquidation' ||
+    reason === 'perp_adl' ||
+    reason === 'perp_profit' ||
+    reason === 'perp_loss' ||
+    reason === 'perp_liquidation_warning'
+  ) {
     // Must come before the contract/updated suppressor below — perp engine
     // notifications carry sourceType 'contract' + sourceUpdateType 'updated'
     // and were being swallowed into blank rows.
@@ -2557,7 +2563,8 @@ function PerpEngineNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceText, reason } = notification
-  const isLiquidation = reason === 'perp_liquidation'
+  const isLiquidation =
+    reason === 'perp_liquidation' || reason === 'perp_liquidation_warning'
   return (
     <NotificationFrame
       notification={notification}
@@ -2566,7 +2573,11 @@ function PerpEngineNotification(props: {
       setHighlighted={setHighlighted}
       icon={
         <div className="flex h-full w-full items-center justify-center">
-          {isLiquidation ? (
+          {reason === 'perp_profit' ? (
+            <FaArrowTrendUp className="h-6 w-6 text-teal-500" />
+          ) : reason === 'perp_loss' ? (
+            <FaArrowTrendDown className="text-scarlet-500 h-6 w-6" />
+          ) : isLiquidation ? (
             <FaBolt className="text-scarlet-500 h-6 w-6" />
           ) : (
             <FaScaleUnbalanced className="h-6 w-6 text-amber-500" />

@@ -400,6 +400,21 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Perp liquidations',
     detailed: 'When one of your perpetual futures positions is liquidated',
   },
+  perp_profit: {
+    simple: 'Perp profit milestones',
+    detailed:
+      'When your position first reaches +50%, +100%, +200%, +500%, or +1,000% return, including funding and opening fees. At most 3 gain/loss alerts per day across all positions, at least 1 hour apart.',
+  },
+  perp_loss: {
+    simple: 'Perp loss milestones',
+    detailed:
+      'When your position first reaches −25% or −50% return, including funding and opening fees. Shares the gain/loss limit of 3 alerts per day, at least 1 hour apart.',
+  },
+  perp_liquidation_warning: {
+    simple: 'Perp liquidation warnings',
+    detailed:
+      'When 25%, then 10%, of your current margin buffer remains. Warns again only after recovery above 50% and at least 6 hours since the last warning. Checked about once a minute; fast moves can liquidate before an alert arrives.',
+  },
   perp_adl: {
     simple: 'Perp auto-deleveraging',
     detailed:
