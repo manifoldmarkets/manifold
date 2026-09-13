@@ -10,6 +10,7 @@ import { getUserFacingPnl, getUserFacingPnlPercent } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
+import { isEligibleRelatedMarket } from 'common/related-markets'
 import {
   ENV,
   ENV_CONFIG,
@@ -26,6 +27,7 @@ import {
   inferPriceDecimals,
 } from 'common/perps/format'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { useDraggableTicker } from 'web/hooks/use-draggable-ticker'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import { getPerpTicker } from 'common/perps/ticker'
@@ -357,41 +359,53 @@ const changeSince = (
 const weekChange = (series: WeekSeries | undefined, c: PerpContract) =>
   changeSince(series, c, 7 * DAY_MS)
 
-// Related markets per perp, via the group-overlap endpoint behind the contract
-// page's related-questions rail: everything sharing a topic with the perp,
-// ranked by importance.
+// Semantic matches come first, using the existing embedding-similarity and
+// importance ranking. Topic matches fill gaps, including for perps without
+// embeddings. Neither source depends on the other succeeding.
 // Fetched on demand for the SELECTED market and kept for the session, so
-// the first paint costs one request rather than one per market, and
+// the first paint costs two requests rather than two per market, and
 // switching back to a market is instant.
 const useRelatedMarkets = (selectedId: string | undefined) => {
   const [byPerp, setByPerp] = useState<Record<string, Contract[]>>({})
+  const loaded = useRef(new Set<string>())
 
   useEffect(() => {
-    if (!selectedId || byPerp[selectedId]) return
+    if (!selectedId || loaded.current.has(selectedId)) return
     let cancelled = false
-    api('get-related-markets-by-group', {
-      contractId: selectedId,
-      limit: 30,
-      offset: 0,
+    Promise.allSettled([
+      api('get-related-markets', { contractId: selectedId, limit: 30 }),
+      api('get-related-markets-by-group', {
+        contractId: selectedId,
+        limit: 30,
+        offset: 0,
+      }),
+    ]).then(([semantic, topical]) => {
+      if (cancelled) return
+      const seen = new Set<string>()
+      const markets = [
+        ...(semantic.status === 'fulfilled'
+          ? semantic.value.marketsFromEmbeddings
+          : []),
+        ...(topical.status === 'fulfilled' ? topical.value.groupContracts : []),
+      ].filter((c) => {
+        if (seen.has(c.id)) return false
+        seen.add(c.id)
+        return true
+      })
+      setByPerp((prev) => ({ ...prev, [selectedId]: markets }))
+      // A failed source can be retried when the user returns to this perp.
+      if (semantic.status === 'fulfilled' && topical.status === 'fulfilled')
+        loaded.current.add(selectedId)
     })
-      .then((r) => {
-        if (!cancelled)
-          setByPerp((prev) => ({ ...prev, [selectedId]: r.groupContracts }))
-      })
-      .catch(() => {
-        if (!cancelled) setByPerp((prev) => ({ ...prev, [selectedId]: [] }))
-      })
     return () => {
       cancelled = true
     }
-    // byPerp is read only as a "have we fetched this yet" guard.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId])
 
   return byPerp
 }
 
-// get-related-markets-by-group returns contracts without their answers, so a
+// Related-market endpoints return contracts without their answers, so a
 // multiple-choice row had nothing to show. markets-by-ids attaches answers;
 // hydrate just those rows, one batched request per new set of ids.
 const answersOf = (c: Contract): Answer[] | undefined =>
@@ -595,7 +609,6 @@ const windowMs = (w: ChangeWindow) => (w === '24h' ? DAY_MS : 7 * DAY_MS)
 // column drops out below 360px.
 const WATCH_GRID =
   'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.75rem] min-[360px]:grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.5rem_3.75rem]'
-const DEFAULT_ROWS = 5
 
 export default function PerpsPage(props: { perps: Contract[] }) {
   const initial = useMemo(() => props.perps.filter(isListed), [props.perps])
@@ -1246,26 +1259,36 @@ const TickerTape = (props: {
   onSelect: (id: string) => void
 }) => {
   const { contracts, week, onSelect } = props
+  const { viewportRef, trackRef, groupRef, copies } = useDraggableTicker(
+    contracts.length
+  )
   if (contracts.length === 0) return null
-  const items = [...contracts, ...contracts]
-  const duration = Math.max(24, contracts.length * 9)
   return (
-    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 group sticky top-0 z-20 overflow-hidden whitespace-nowrap border-b">
-      <style>{`
-        @keyframes perps-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-        @media (prefers-reduced-motion: reduce) { .perps-marquee { animation: none !important } }
-      `}</style>
-      <div
-        className="perps-marquee inline-block py-1.5 group-hover:[animation-play-state:paused]"
-        style={{ animation: `perps-marquee ${duration}s linear infinite` }}
-      >
-        {items.map((c, i) => (
-          <TickerItem
-            key={c.id + i}
-            contract={c}
-            series={week[c.id]}
-            onSelect={() => onSelect(c.id)}
-          />
+    <div
+      ref={viewportRef}
+      role="region"
+      aria-label="Perpetual markets ticker"
+      className="bg-canvas-0 sticky top-0 z-20 cursor-grab select-none overflow-hidden whitespace-nowrap active:cursor-grabbing"
+      style={{ touchAction: 'pan-y pinch-zoom' }}
+    >
+      <div ref={trackRef} className="flex w-max will-change-transform">
+        {Array.from({ length: copies }, (_, copy) => (
+          <div
+            key={copy}
+            ref={copy === 0 ? groupRef : undefined}
+            aria-hidden={copy !== 0 ? true : undefined}
+            className="flex shrink-0"
+          >
+            {contracts.map((c) => (
+              <TickerItem
+                key={c.id}
+                contract={c}
+                series={week[c.id]}
+                onSelect={() => onSelect(c.id)}
+                tabIndex={copy === 0 ? 0 : -1}
+              />
+            ))}
+          </div>
         ))}
       </div>
     </div>
@@ -1276,17 +1299,19 @@ const TickerItem = (props: {
   contract: PerpContract
   series: WeekSeries | undefined
   onSelect: () => void
+  tabIndex: number
 }) => {
-  const { contract, series, onSelect } = props
+  const { contract, series, onSelect, tabIndex } = props
   const price = Number(contract.oraclePrice)
   const flash = useTickFlash(price)
   const change = weekChange(series, contract)
   return (
     <button
+      tabIndex={tabIndex}
       onClick={onSelect}
       onPointerEnter={() => warmChart(contract)}
       onFocus={() => warmChart(contract)}
-      className="hover:bg-canvas-50 inline-flex items-center gap-2 px-4 text-sm"
+      className="hover:bg-canvas-50 inline-flex h-11 shrink-0 items-center gap-2 px-4 text-sm"
     >
       <span className="text-ink-900 font-mono font-semibold">
         {getPerpTicker(contract)}
@@ -1771,7 +1796,7 @@ const Terminal = (props: {
 }
 
 // ---------------------------------------------------------------------------
-// Watchlist: every open perp, sortable, top rows only until expanded.
+// Watchlist: every open perp, sortable, with a bounded scrolling body.
 
 const Watchlist = (props: {
   contracts: PerpContract[]
@@ -1793,90 +1818,100 @@ const Watchlist = (props: {
     onChangeWindow,
     onSelect,
   } = props
-  const [showAll, setShowAll] = useState(false)
-  const visible = showAll ? contracts : contracts.slice(0, DEFAULT_ROWS)
-  const hidden = contracts.length - visible.length
+  const listRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const list = listRef.current
+    const selected = list?.querySelector<HTMLElement>('[aria-current="true"]')
+    if (!list || !selected) return
+    // Ticker/position selections reveal their row without scrolling the page.
+    const row = selected.getBoundingClientRect()
+    const bounds = list.getBoundingClientRect()
+    const top =
+      bounds.top + (list.firstElementChild?.getBoundingClientRect().height ?? 0)
+    if (row.top < top) list.scrollTop += row.top - top
+    else if (row.bottom > bounds.bottom)
+      list.scrollTop += row.bottom - bounds.bottom
+  }, [selectedId])
   const header = { sort, onSort }
 
   return (
     <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
       <div
-        className={clsx(
-          WATCH_GRID,
-          'border-ink-200 dark:border-ink-300 border-b px-3 py-2 text-[11px] font-medium'
-        )}
+        ref={listRef}
+        role="region"
+        aria-label="Perpetual markets"
+        className="max-h-[min(28rem,60vh)] overflow-y-auto overscroll-contain"
       >
-        <SortHeader {...header} label="Market" sortKey="volume" />
-        <SortHeader {...header} label="Price" className="text-right" />
-        {HUB_FEATURES.changeWindow ? (
-          // The change column doubles as the window switch: click the
-          // inactive window to switch to it (and sort by it), click the
-          // active one to flip sort direction.
-          <span className="flex justify-end gap-1.5">
-            {(['24h', '7d'] as const).map((w) => {
-              const isWindow = changeWindow === w
-              const active = isWindow && sort.key === 'change'
-              return (
-                <button
-                  key={w}
-                  onClick={() => {
-                    if (isWindow) onSort('change')
-                    else {
-                      onChangeWindow(w)
-                      if (sort.key !== 'change') onSort('change')
-                    }
-                  }}
-                  className={clsx(
-                    'hover:text-ink-700 uppercase tracking-wider',
-                    isWindow ? 'text-ink-800' : 'text-ink-400'
-                  )}
-                >
-                  {w}
-                  {active && (
-                    <span className="ml-0.5 text-[9px]">
-                      {sort.desc ? '▼' : '▲'}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </span>
-        ) : (
+        <div
+          className={clsx(
+            WATCH_GRID,
+            'border-ink-200 dark:border-ink-300 bg-canvas-0 sticky top-0 z-10 border-b px-3 py-2 text-[11px] font-medium'
+          )}
+        >
+          <SortHeader {...header} label="Market" sortKey="volume" />
+          <SortHeader {...header} label="Price" className="text-right" />
+          {HUB_FEATURES.changeWindow ? (
+            // The change column doubles as the window switch: click the
+            // inactive window to switch to it (and sort by it), click the
+            // active one to flip sort direction.
+            <span className="flex justify-end gap-1.5">
+              {(['24h', '7d'] as const).map((w) => {
+                const isWindow = changeWindow === w
+                const active = isWindow && sort.key === 'change'
+                return (
+                  <button
+                    key={w}
+                    onClick={() => {
+                      if (isWindow) onSort('change')
+                      else {
+                        onChangeWindow(w)
+                        if (sort.key !== 'change') onSort('change')
+                      }
+                    }}
+                    className={clsx(
+                      'hover:text-ink-700 uppercase tracking-wider',
+                      isWindow ? 'text-ink-800' : 'text-ink-400'
+                    )}
+                  >
+                    {w}
+                    {active && (
+                      <span className="ml-0.5 text-[9px]">
+                        {sort.desc ? '▼' : '▲'}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </span>
+          ) : (
+            <SortHeader
+              {...header}
+              label="7d"
+              sortKey="change"
+              className="text-right"
+            />
+          )}
+          <span className="hidden min-[360px]:block" />
           <SortHeader
             {...header}
-            label="7d"
-            sortKey="change"
+            label="Lean"
+            sortKey="lean"
             className="text-right"
           />
-        )}
-        <span className="hidden min-[360px]:block" />
-        <SortHeader
-          {...header}
-          label="Lean"
-          sortKey="lean"
-          className="text-right"
-        />
+        </div>
+        <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+          {contracts.map((c) => (
+            <WatchRow
+              key={c.id}
+              contract={c}
+              series={week[c.id]}
+              changeWindow={changeWindow}
+              selected={c.id === selectedId}
+              onSelect={() => onSelect(c.id)}
+            />
+          ))}
+        </Col>
       </div>
-      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
-        {visible.map((c) => (
-          <WatchRow
-            key={c.id}
-            contract={c}
-            series={week[c.id]}
-            changeWindow={changeWindow}
-            selected={c.id === selectedId}
-            onSelect={() => onSelect(c.id)}
-          />
-        ))}
-      </Col>
-      {(hidden > 0 || showAll) && (
-        <button
-          onClick={() => setShowAll((s) => !s)}
-          className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
-        >
-          {showAll ? 'Show fewer' : `Show all ${contracts.length}`}
-        </button>
-      )}
     </Col>
   )
 }
@@ -1988,7 +2023,7 @@ const RelatedMarkets = (props: {
       (c) =>
         !perpIds.has(c.id) &&
         c.mechanism !== 'perp' &&
-        !c.isResolved &&
+        isEligibleRelatedMarket(c) &&
         !isNearCertain(c)
     )
     .slice(0, 6)
