@@ -986,26 +986,13 @@ export function Search(props: SearchProps) {
         )}
 
         {searchError && (
-          <Col role="alert" className="text-ink-700 my-6 items-center gap-3">
-            <span>Questions couldn’t load. Please try again.</span>
-            <Row className="gap-2">
-              <Button
-                color="gray-outline"
-                onClick={retrySearch}
-                loading={loading}
-              >
-                Retry
-              </Button>
-              {selectedForYou && (
-                <Button
-                  color="gray-outline"
-                  onClick={() => onChange({ fy: '0' })}
-                >
-                  Browse All
-                </Button>
-              )}
-            </Row>
-          </Col>
+          <SearchErrorNotice
+            onRetry={retrySearch}
+            loading={loading}
+            onBrowseAll={
+              selectedForYou ? () => onChange({ fy: '0' }) : undefined
+            }
+          />
         )}
         {!contracts && !posts ? (
           searchError ? null : (
@@ -1072,6 +1059,29 @@ export const LoadingContractResults = () => {
       <LoadingContractRow />
       <LoadingContractRow />
       <LoadingContractRow />
+    </Col>
+  )
+}
+
+export const SearchErrorNotice = (props: {
+  onRetry: () => void
+  loading: boolean
+  onBrowseAll?: () => void
+}) => {
+  const { onRetry, loading, onBrowseAll } = props
+  return (
+    <Col role="alert" className="text-ink-700 my-6 items-center gap-3">
+      <span>Questions couldn’t load. Please try again.</span>
+      <Row className="gap-2">
+        <Button color="gray-outline" onClick={onRetry} loading={loading}>
+          Retry
+        </Button>
+        {onBrowseAll && (
+          <Button color="gray-outline" onClick={onBrowseAll}>
+            Browse All
+          </Button>
+        )}
+      </Row>
     </Col>
   )
 }
@@ -1759,6 +1769,9 @@ export const useSearchResults = (props: {
     // change. Advance the generation before checking for a controller.
     paramsGeneration.current++
     requestId.current++
+    // Pagination retries also set loading, but have no fresh controller.
+    // Their stale completion cannot clear the busy state after invalidation.
+    setLoading(false)
     const controller = freshRequestAbortController.current
     if (!controller) return
 
@@ -1767,7 +1780,6 @@ export const useSearchResults = (props: {
     // required by the new params.
     freshRequestAbortController.current = undefined
     controller.abort()
-    setLoading(false)
   })
 
   const serializedSearchParams = JSON.stringify({
