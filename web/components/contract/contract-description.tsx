@@ -14,6 +14,7 @@ import { Row } from '../layout/row'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PendingClarifications } from './pending-clarifications'
 import { CreatorBannedFromBettingInfo } from './creator-banned-from-betting-info'
+import { MnxTradeCta } from '../perps/mnx-cta'
 
 export function ContractDescription(props: {
   contractId: string // the description is stored on this contract
@@ -70,6 +71,13 @@ export function ContractDescription(props: {
           <CreatorBannedFromBettingInfo
             contract={contract}
             creatorId={creatorId}
+          />
+        )}
+        {contract.mechanism === 'perp' && (
+          <MnxTradeCta
+            contract={contract}
+            location="market page cta"
+            className="mt-4"
           />
         )}
       </div>

@@ -240,14 +240,9 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
         asOfTime={contract.oracleSourceTime}
+        mnxLinkLocation="market page credit"
+        contractId={contract.id}
       />
-      {/* Keep settlement behavior visible even when MNX edits its description. */}
-      {getMnxInstrument(contract.oracleFeedId) && (
-        <p className="text-ink-500 text-sm">
-          If MNX ends this instrument, trading pauses pending administrative
-          settlement; it will not automatically roll into a replacement.
-        </p>
-      )}
 
       {contract.isResolved ? (
         <div className="border-primary-200 bg-primary-50 text-ink-700 dark:bg-primary-900/20 rounded-lg border px-4 py-3 text-sm">
