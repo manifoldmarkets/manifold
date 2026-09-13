@@ -195,27 +195,41 @@ export const sumExcludedPerpEquity = (
 }
 
 /**
- * Whether a user may take loans at all (daily free loans, and margin loans
- * subject to their subscription entitlements).
+ * Whether a user's bonusEligibility state permits taking loans (daily free
+ * loans, and margin loans subject to their subscription entitlements).
  *
- * Loans are deliberately NOT on the bonus axis. They're borrowed against the
- * user's own positions rather than granted, so unverified users aren't excluded
- * — and the membership benefits table has always advertised the 1% daily free
- * loan to them (the `freeLoan` row defines no `unverifiedValue`, so the
- * unverified column falls through to baseValue '1%'). Gating this on
- * hasFullBonusAccess contradicted what that page promises.
+ * Loans are deliberately NOT on the full-bonus axis. They're borrowed against
+ * the user's own positions rather than granted, so *unverified* users aren't
+ * excluded — and the membership benefits table has always advertised the 1%
+ * daily free loan to them (the `freeLoan` row defines no `unverifiedValue`, so
+ * the unverified column falls through to baseValue '1%'). Gating on
+ * hasFullBonusAccess contradicted what that page promises. Default-unverified
+ * users (bonusEligibility undefined) are the case this opens up.
  *
- * The one exception is 'requires_verification', the admin/system flag for
- * suspected alts and accounts under manual review: those stay blocked while
- * frozen. KYC-failed ('ineligible') users are NOT blocked — the tier config
- * already treats them as reduced-earning rather than cut off, resolving them to
- * the 'unverified' tier instead of 'restricted'.
+ * Both explicit deny states stay denied, because bonusEligibility is overloaded
+ * and they are the field's only load-bearing authorization signals:
+ *
+ *   'requires_verification' — admin/system flag for suspected alts and accounts
+ *       under manual review; frozen pending that review.
+ *   'ineligible' — NOT merely "KYC failed". Three paths land here, two of them
+ *       enforcement: the iDenfy callback writes it on denied/suspected AND on
+ *       EXPIRED/DELETED sessions (mapIdenfyStatus folds those into 'denied'),
+ *       and superBanUserCore writes it alongside permanent bans. Allowing it
+ *       would let a flagged account launder a 'requires_verification' hold into
+ *       loan access by simply letting its verification session expire, and
+ *       would restore borrowing to superbanned users.
+ *
+ * This predicate is necessary but not sufficient: bonusEligibility is not a ban
+ * record, so callers must ALSO check user_bans independently (see
+ * claim-free-loan). Don't let this function grow into the ban check.
  *
  * Takes just the one field it reads, so this module needs no User import.
  */
 export const canTakeLoans = (user: {
   bonusEligibility?: string | undefined
-}): boolean => user.bonusEligibility !== 'requires_verification'
+}): boolean =>
+  user.bonusEligibility !== 'requires_verification' &&
+  user.bonusEligibility !== 'ineligible'
 
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
   const { investmentValue, loanTotal } = portfolio

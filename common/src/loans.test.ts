@@ -19,15 +19,11 @@ const contractsById = {
 }
 
 describe('canTakeLoans', () => {
-  // Loans are off the bonus axis: borrowed against the user's own positions,
-  // and the membership table advertises the 1% daily free loan to unverified
-  // users. Only accounts frozen pending admin review are held back.
+  // The point of the change: loans are off the full-bonus axis, because they're
+  // borrowed against the user's own positions and the membership table
+  // advertises the 1% daily free loan to unverified users.
   it('allows unverified users (bonusEligibility undefined)', () => {
     expect(canTakeLoans({})).toBe(true)
-  })
-
-  it('allows KYC-failed users — reduced earning, not cut off', () => {
-    expect(canTakeLoans({ bonusEligibility: 'ineligible' })).toBe(true)
   })
 
   it('allows verified, grandfathered, and purchase/admin-granted users', () => {
@@ -42,14 +38,36 @@ describe('canTakeLoans', () => {
     )
   })
 
+  // 'ineligible' is overloaded and two of its three writers are enforcement:
+  // the iDenfy callback on denied/suspected/EXPIRED/DELETED, and
+  // superBanUserCore alongside permanent bans. Allowing it would hand loans
+  // back to superbanned accounts.
+  it('blocks explicitly-ineligible accounts (superban, failed/expired KYC)', () => {
+    expect(canTakeLoans({ bonusEligibility: 'ineligible' })).toBe(false)
+  })
+
+  // Regression guard: mapIdenfyStatus folds EXPIRED/DELETED into 'denied', and
+  // the denial branch rewrites a non-grandfathered user to 'ineligible'. So an
+  // admin hold must not become loan access just by letting a session lapse.
+  it('does not let an admin hold lapse into loan access via expiry', () => {
+    const flagged = { bonusEligibility: 'requires_verification' }
+    expect(canTakeLoans(flagged)).toBe(false)
+    // ... iDenfy session expires, callback rewrites the field:
+    const afterExpiry = { bonusEligibility: 'ineligible' }
+    expect(canTakeLoans(afterExpiry)).toBe(false)
+  })
+
   // Bots self-exclude from bonuses, but that exclusion lives on isBot and the
   // bonus predicates — it must not reach through to borrowing. An unverified
-  // bot borrows; only the review flag still blocks, bot or not.
+  // bot borrows; the deny states still apply, bot or not.
   it('ignores bot status', () => {
     expect(canTakeLoans({ isBot: true } as any)).toBe(true)
     expect(
-      canTakeLoans({ isBot: true, bonusEligibility: 'ineligible' } as any)
+      canTakeLoans({ isBot: true, bonusEligibility: 'verified' } as any)
     ).toBe(true)
+    expect(
+      canTakeLoans({ isBot: true, bonusEligibility: 'ineligible' } as any)
+    ).toBe(false)
     expect(
       canTakeLoans({
         isBot: true,
