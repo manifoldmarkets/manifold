@@ -104,26 +104,11 @@ if ($LASTEXITCODE -ne 0) { Write-Host "Template creation failed" -ForegroundColo
 # Step 6: Start rollout
 Write-Host "`n=== Step 6: Starting rollout ===" -ForegroundColor Yellow
 
-gcloud compute instance-groups managed rolling-action start-update api-group-east `
-    --project=dev-mantic-markets `
-    --zone=us-east4-a `
-    --version=template=$TEMPLATE_NAME `
-    --no-user-output-enabled `
-    --max-unavailable=0 `
-    --max-surge=1
-
-if ($LASTEXITCODE -ne 0) { Write-Host "Rollout failed to start" -ForegroundColor Red; exit 1 }
-
-# Step 7: Wait for completion
-Write-Host "`n=== Step 7: Waiting for rollout to complete ===" -ForegroundColor Yellow
-Write-Host "This usually takes 2-5 minutes..."
-
-gcloud compute instance-groups managed wait-until --stable api-group-east `
-    --project=dev-mantic-markets `
-    --zone=us-east4-a
+node "$PSScriptRoot\deploy-rollout.cjs" `
+    dev-mantic-markets us-east4-a api-group-east $TEMPLATE_NAME
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Rollout may have failed. Check GCP console." -ForegroundColor Red
+    Write-Host "Rollout failed. Check GCP console and deploy-rollout.md before removing any VM." -ForegroundColor Red
     exit 1
 }
 

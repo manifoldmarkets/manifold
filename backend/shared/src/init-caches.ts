@@ -23,20 +23,28 @@ const getRecentlyActiveUserIds = (pg: SupabaseDirectClient) =>
     (r) => r.user_id as string
   )
 
-export const initCaches = async (timeoutId: NodeJS.Timeout) => {
-  if (DEBUG_TOPIC_INTERESTS) {
-    clearTimeout(timeoutId)
-    return
-  }
+export const initCaches = async () => {
+  if (DEBUG_TOPIC_INTERESTS) return
   const pg = createSupabaseDirectClient()
   log('Connected to the db')
-  const activeUserIdsToCacheInterests = await getRecentlyActiveUserIds(pg)
-  clearTimeout(timeoutId)
+  // Reject through the startup promise, rather than throwing from a timer in
+  // an already-listening process. Only the first DB response has this deadline;
+  // the batched user-interest build can legitimately take longer.
+  let timeoutId: NodeJS.Timeout | undefined
+  const activeUserIdsToCacheInterests = await Promise.race([
+    getRecentlyActiveUserIds(pg),
+    new Promise<never>((_resolve, reject) => {
+      timeoutId = setTimeout(
+        () => reject(new Error('No startup response from postgres in 30000ms')),
+        30_000
+      )
+    }),
+  ]).finally(() => clearTimeout(timeoutId))
   log(
     'Active user ids to cache interests: ',
     activeUserIdsToCacheInterests.length
   )
-  buildUserInterestsCache(activeUserIdsToCacheInterests)
+  await buildUserInterestsCache(activeUserIdsToCacheInterests)
 }
 
 // Once cached, a user's topic-interest scores are never recomputed and the map
@@ -49,10 +57,11 @@ export const scheduleDailyCacheRefresh = () => {
     CACHE_REFRESH_HOUR_UTC,
     'User interests cache refresh',
     async () => {
-      const cleared = clearUserInterestsCache()
       const activeUserIds = await getRecentlyActiveUserIds(
         createSupabaseDirectClient()
       )
+      // Preserve the warm cache if the active-user query fails.
+      const cleared = clearUserInterestsCache()
       log('Refreshing user interests cache', {
         cleared,
         activeUsers: activeUserIds.length,

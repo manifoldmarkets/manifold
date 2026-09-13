@@ -43,6 +43,8 @@ create_or_update_http_health_check_port() {
     local name=$1
     local port=$2
     local request_path=$3
+    local check_interval=${4:-5s}
+    local unhealthy_threshold=${5:-3}
 
     if gcloud compute health-checks describe "${name}" \
         --project "${GCLOUD_PROJECT}" \
@@ -66,10 +68,10 @@ create_or_update_http_health_check_port() {
             --global \
             --port "${port}" \
             --request-path "${request_path}" \
-            --check-interval 5s \
+            --check-interval "${check_interval}" \
             --timeout 5s \
             --healthy-threshold 2 \
-            --unhealthy-threshold 3
+            --unhealthy-threshold "${unhealthy_threshold}"
     else
         echo "Creating HTTP health check ${name} -> :${port}${request_path}"
         gcloud compute health-checks create http "${name}" \
@@ -77,10 +79,10 @@ create_or_update_http_health_check_port() {
             --global \
             --port "${port}" \
             --request-path "${request_path}" \
-            --check-interval 5s \
+            --check-interval "${check_interval}" \
             --timeout 5s \
             --healthy-threshold 2 \
-            --unhealthy-threshold 3
+            --unhealthy-threshold "${unhealthy_threshold}"
     fi
 }
 
@@ -152,7 +154,9 @@ echo "Updating API health checks in ${GCLOUD_PROJECT} (${ENV})"
 
 echo
 echo "Creating/updating liveness health check for MIG autohealing"
-create_or_update_http_health_check_port "api-live-health-check" "80" "/healthz/live"
+# Allow short process restarts without recreating the whole VM. Keep the LB
+# readiness checks below at their existing, faster 5s/3 thresholds.
+create_or_update_http_health_check_port "api-live-health-check" "80" "/healthz/live" "10s" "6"
 
 echo
 echo "Creating/updating readiness health checks for load balancer backend services"
