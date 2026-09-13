@@ -15,6 +15,15 @@ export const healthzLive: RequestHandler = (_req, res) => {
 // flapping on a single in-flight burst.
 const READY_MAX_WAITING = 5
 
+// Whether startup cache init has finished. The server starts listening before
+// initCaches so liveness answers within seconds of a process restart (the MIG
+// autohealer only tolerates 15s of dead liveness before recreating the VM);
+// readiness holds off the LB until the caches are warm.
+let cachesLoaded = false
+export const markCachesLoaded = () => {
+  cachesLoaded = true
+}
+
 // Readiness: should the load balancer route new requests to this instance right
 // now? We report not-ready purely from local pool state and run NO db query, so
 // a db-wide slowdown can never make the check itself hang. This is per-instance
@@ -26,6 +35,10 @@ const READY_MAX_WAITING = 5
 // worst case degrades to today's behaviour rather than a full blackout, and the
 // common case (one wedged instance) gets traffic pulled off it automatically.
 export const healthzReady: RequestHandler = (_req, res) => {
+  if (!cachesLoaded) {
+    res.status(503).json({ status: 'warming' })
+    return
+  }
   const pool = createSupabaseDirectClient().$pool
   const { idleCount, waitingCount } = pool
   const saturated = idleCount === 0 && waitingCount > READY_MAX_WAITING

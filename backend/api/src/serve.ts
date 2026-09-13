@@ -3,9 +3,10 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { LOCAL_DEV, LOCAL_ONLY, log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
-import { initCaches } from 'shared/init-caches'
+import { initCaches, scheduleDailyCacheRefresh } from 'shared/init-caches'
 import { listen as webSocketListen } from 'shared/websockets/server'
 import { app } from './app'
+import { markCachesLoaded } from './healthz'
 
 if (!LOCAL_ONLY) {
   // Normal mode: initialize Firebase and GCP services
@@ -39,6 +40,23 @@ const startupProcess = async () => {
     log('Secrets loaded.')
   }
 
+  // Listen before cache init: /healthz/live must answer within seconds of a
+  // process restart, because the MIG autohealer recreates the whole VM after
+  // 15s of dead liveness (5s checks x 3). Awaiting initCaches here turned
+  // PM2's old nightly cron_restart (and would turn any crash restart) into a
+  // multi-minute full outage while the instance was rebuilt. The LB routes on
+  // /healthz/ready, which reports 'warming' until markCachesLoaded, so no
+  // traffic arrives early.
+  const PORT = process.env.PORT ?? 8088
+  const httpServer = app.listen(PORT, () => {
+    log.info(`Serving API on port ${PORT}.`)
+  })
+
+  if (!process.env.READ_ONLY) {
+    webSocketListen(httpServer, '/ws')
+    log.info('Web socket server listening on /ws')
+  }
+
   log('Starting server <> postgres timeout')
   const timeoutId = setTimeout(() => {
     log.error(
@@ -54,17 +72,11 @@ const startupProcess = async () => {
   } else {
     await initCaches(timeoutId)
     log('Caches loaded.')
+    // PM2 only ever restarted the main process; the read replicas keep their
+    // startup cache until the next deploy, so leave their db load unchanged.
+    if (!process.env.READ_ONLY) scheduleDailyCacheRefresh()
   }
-
-  const PORT = process.env.PORT ?? 8088
-  const httpServer = app.listen(PORT, () => {
-    log.info(`Serving API on port ${PORT}.`)
-  })
-
-  if (!process.env.READ_ONLY) {
-    webSocketListen(httpServer, '/ws')
-    log.info('Web socket server listening on /ws')
-  }
+  markCachesLoaded()
 
   log('Server started successfully')
 }

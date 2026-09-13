@@ -28,6 +28,17 @@ export const userIdsToAverageTopicConversionScores: {
   [userId: string]: TopicToInterestWeights
 } = {}
 
+// Drop every user's cached scores; readers rebuild a missing user on demand.
+// Clears in place because other modules import this object directly. Returns
+// how many users were dropped.
+export const clearUserInterestsCache = () => {
+  const userIds = Object.keys(userIdsToAverageTopicConversionScores)
+  for (const userId of userIds) {
+    delete userIdsToAverageTopicConversionScores[userId]
+  }
+  return userIds.length
+}
+
 export const activeTopics: { [topicId: string]: number } = {}
 let lastRefreshTime = 0
 

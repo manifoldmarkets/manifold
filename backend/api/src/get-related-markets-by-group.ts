@@ -12,12 +12,20 @@ import { HOUR_MS } from 'common/util/time'
 import { log } from 'shared/monitoring/log'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { cleanContractForStaticProps } from 'api/get-related-markets'
+import { setBoundedCacheEntry } from 'shared/helpers/bounded-cache'
 
 type cacheType = {
   groupContractIds: string[]
   lastUpdated: number
 }
 const cachedRelatedMarkets = new Map<string, cacheType>()
+const RELATED_BY_GROUP_CACHE_TTL_MS = HOUR_MS
+// Bound the L1: stale entries are never read again, and without a cap it grows
+// with every contract ever viewed for the life of the process.
+const RELATED_BY_GROUP_L1_LIMITS = {
+  ttlMs: RELATED_BY_GROUP_CACHE_TTL_MS,
+  maxEntries: 10_000,
+}
 
 export const getRelatedMarketsByGroup: APIHandler<
   'get-related-markets-by-group'
@@ -26,7 +34,10 @@ export const getRelatedMarketsByGroup: APIHandler<
   const key = `related-markets-by-group:v2:${contractId}:offset:${offset}:limit:${limit}`
   const pg = createSupabaseDirectClient()
   const cachedResults = cachedRelatedMarkets.get(key)
-  if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
+  if (
+    cachedResults &&
+    cachedResults.lastUpdated > Date.now() - RELATED_BY_GROUP_CACHE_TTL_MS
+  ) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
 
@@ -110,10 +121,15 @@ export const getRelatedMarketsByGroup: APIHandler<
     isEligibleRelatedMarket(contract)
   )
 
-  cachedRelatedMarkets.set(key, {
-    groupContractIds: eligibleGroupContracts.map((contract) => contract.id),
-    lastUpdated: Date.now(),
-  })
+  setBoundedCacheEntry(
+    cachedRelatedMarkets,
+    key,
+    {
+      groupContractIds: eligibleGroupContracts.map((contract) => contract.id),
+      lastUpdated: Date.now(),
+    },
+    RELATED_BY_GROUP_L1_LIMITS
+  )
   return {
     groupContracts: eligibleGroupContracts,
   }
