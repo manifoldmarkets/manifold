@@ -60,3 +60,22 @@ it('keeps the instrument page intact while tagging it', () => {
 it('never breaks a link it cannot parse', () => {
   expect(mnxLinkUrl('not a url', 'market page cta')).toBe('not a url')
 })
+
+it('encodes signed usernames without changing the destination or referral tags', () => {
+  const invite = {
+    username: 'a+b &雪',
+    token: '5cdf54ab0c52493c296c73a4b9259add',
+  }
+  const url = mnxLinkUrl(
+    'https://app.mnx.fi/trade/anthropic?theme=dark&u=old&t=old#book',
+    'market page cta',
+    invite
+  )
+  const parsed = new URL(url)
+  expect(parsed.searchParams.getAll('u')).toEqual([invite.username])
+  expect(parsed.searchParams.getAll('t')).toEqual([invite.token])
+  expect(parsed.searchParams.get('theme')).toBe('dark')
+  expect(parsed.searchParams.get('utm_source')).toBe('manifold')
+  expect(parsed.hash).toBe('#book')
+  expect(mnxLinkUrl(url, 'market page cta', invite)).toBe(url)
+})

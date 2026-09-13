@@ -60,7 +60,11 @@ export const getMnxTradeTarget = (contract: {
  * An MNX url tagged with the placement the click came from, so MNX can
  * attribute the visit without us having to ask them for numbers.
  */
-export const mnxLinkUrl = (url: string, location: MnxLinkLocation) => {
+export const mnxLinkUrl = (
+  url: string,
+  location: MnxLinkLocation,
+  invite?: { username: string; token: string }
+) => {
   try {
     const tagged = new URL(url)
     // set(), not append(): re-tagging a url that already carries utm params
@@ -69,6 +73,10 @@ export const mnxLinkUrl = (url: string, location: MnxLinkLocation) => {
     tagged.searchParams.set('utm_medium', 'referral')
     tagged.searchParams.set('utm_campaign', 'perps')
     tagged.searchParams.set('utm_content', mnxLinkContent(location))
+    if (invite) {
+      tagged.searchParams.set('u', invite.username)
+      tagged.searchParams.set('t', invite.token)
+    }
     return tagged.toString()
   } catch {
     // A url we can't parse is still a link we shouldn't break. The

@@ -46,7 +46,11 @@ export const mnxLinkProps = (props: {
       url: href,
     })
   return {
-    href,
+    // Resolve auth in the new tab before requesting a signed link. This also
+    // handles middle clicks and copied links without a popup or prefetch race.
+    href: instrument
+      ? `/mnx?${new URLSearchParams({ feedId: instrument.feedId, location })}`
+      : href,
     target: '_blank',
     rel: 'noopener noreferrer',
     // track() is fire-and-forget, which is safe here only because the link
