@@ -551,7 +551,7 @@ export function ContractPageContent(props: ContractParams) {
                 contract={liveContract}
               />
             )}
-            {props.contract.isRanked !== false && (
+            {!isPerp && props.contract.isRanked !== false && (
               <MarketContext contractId={props.contract.id} />
             )}
 
