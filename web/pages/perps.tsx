@@ -2,7 +2,15 @@ import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { ExternalLinkIcon, PlusIcon, XIcon } from '@heroicons/react/outline'
+import {
+  BriefcaseIcon,
+  ClockIcon,
+  CollectionIcon,
+  ExternalLinkIcon,
+  LinkIcon,
+  PlusIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 import { Answer } from 'common/answer'
 import { APIResponse } from 'common/api/schema'
@@ -52,6 +60,14 @@ import { PerpBetPanel } from 'web/components/perps/perp-bet-panel'
 import { PerpChart, prefetchPerpChart } from 'web/components/perps/perp-chart'
 import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribution'
 import { PerpPositionPanel } from 'web/components/perps/perp-position-panel'
+import {
+  PERP_RAIL_BLURBS,
+  PERP_RAIL_LAYOUTS,
+  PerpRail,
+  PerpRailLayout,
+  PerpRailSection,
+  isPerpRailLayout,
+} from 'web/components/perps/perp-rail'
 import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract'
 import { usePerpPositions } from 'web/components/perps/use-perp-positions'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -84,6 +100,22 @@ const HUB_FEATURES = {
   /** Cross-market recent-activity feed in the rail. */
   activity: true,
 }
+
+// How the cards under the chart (positions, markets, related, activity) are
+// arranged. `stack` is what ships: each card open, one under the other, which
+// on a phone is a long scroll from the first to the last. The alternatives are
+// in perp-rail.tsx and any visitor can try one with ?rail=<layout>; set the
+// default here to ship one.
+const PERP_RAIL_LAYOUT: PerpRailLayout = 'stack'
+
+// A section inside a PerpRail shell would otherwise be a card in a card: in
+// `bare` the shell owns the border and the title, and the section renders the
+// body alone.
+type Chrome = 'card' | 'bare'
+const cardChrome = (chrome: Chrome) =>
+  chrome === 'card'
+    ? 'border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border'
+    : undefined
 
 // Perps are created unlisted and flipped public at launch, so the search APIs
 // can't enumerate them — the anon supabase client can, since contracts RLS is
@@ -660,6 +692,12 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     open[0]
   const related = useRelatedMarkets(selected?.id)
   usePrefetchCharts(open, selected?.id)
+  // `?rail=<layout>` overrides the shipped arrangement of the cards under the
+  // chart, and reveals the switcher for flipping between the rest.
+  const railLayout = isPerpRailLayout(router.query.rail)
+    ? router.query.rail
+    : PERP_RAIL_LAYOUT
+  const railParam = router.query.rail !== undefined
   // Ticker clicks can happen from anywhere on the page: select and bring
   // the terminal into view (its scroll margin clears the pinned tape).
   const selectRow = (id: string) => {
@@ -706,6 +744,103 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     ),
     traders: open.reduce((sum, c) => sum + (c.uniqueBettorCount ?? 0), 0),
   }
+
+  // Every card under the chart, in either chrome. `stack` frames each one
+  // itself and leaves them in the places they ship in; every other layout
+  // hands the bare bodies to a PerpRail shell that owns frame and title.
+  const perpIds = new Set(contracts.map((c) => c.id))
+  const myRows = positionRows(
+    HUB_FEATURES.positions ? myPositions ?? [] : [],
+    open
+  )
+  const relatedCount = related[selected?.id ?? '']
+    ? relatedPicks(related[selected?.id ?? ''], perpIds).length
+    : undefined
+  const cards = {
+    positions: (chrome: Chrome) => (
+      <YourPositions
+        positions={myPositions ?? []}
+        contracts={open}
+        onSelect={selectRow}
+        chrome={chrome}
+      />
+    ),
+    markets: (chrome: Chrome) => (
+      <Watchlist
+        contracts={sorted}
+        week={week}
+        selectedId={selected?.id ?? ''}
+        sort={sort}
+        onSort={toggleSort}
+        changeWindow={changeWindow}
+        onChangeWindow={setChangeWindow}
+        onSelect={setSelectedId}
+        chrome={chrome}
+      />
+    ),
+    related: (chrome: Chrome) =>
+      selected ? (
+        <RelatedMarkets
+          perp={selected}
+          markets={related[selected.id]}
+          perpIds={perpIds}
+          chrome={chrome}
+        />
+      ) : null,
+    activity: (chrome: Chrome) => (
+      <RecentActivity
+        events={activity}
+        contracts={open}
+        onSelect={selectRow}
+        chrome={chrome}
+      />
+    ),
+  }
+  const railSections: PerpRailSection[] = [
+    ...(HUB_FEATURES.positions && myRows.length
+      ? [
+          {
+            key: 'positions',
+            label: 'Your positions',
+            shortLabel: 'Positions',
+            icon: BriefcaseIcon,
+            badge: <PnlLabel amount={totalPnlOf(myRows)} className="text-xs" />,
+            content: cards.positions('bare'),
+          },
+        ]
+      : []),
+    {
+      key: 'markets',
+      label: 'Markets',
+      icon: CollectionIcon,
+      badge: <CountBadge value={open.length} />,
+      content: cards.markets('bare'),
+    },
+    {
+      key: 'related',
+      label: 'Related',
+      icon: LinkIcon,
+      badge:
+        relatedCount === undefined ? undefined : (
+          <CountBadge value={relatedCount} />
+        ),
+      content: cards.related('bare'),
+    },
+    ...(HUB_FEATURES.activity
+      ? [
+          {
+            key: 'activity',
+            label: 'Recent activity',
+            shortLabel: 'Activity',
+            icon: ClockIcon,
+            badge: (
+              <span className="text-ink-400 text-[10px]">all markets</span>
+            ),
+            content: cards.activity('bare'),
+          },
+        ]
+      : []),
+  ]
 
   return (
     <Page trackPageView="perps page" className="!col-span-10">
@@ -769,55 +904,42 @@ export default function PerpsPage(props: { perps: Contract[] }) {
         </Row>
 
         {selected ? (
-          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-            {/* Fixed-width rail: a third of the grid was only ~330px at the
-                xl breakpoint, not enough for a ticker, sparkline, price,
-                change and lean side by side. */}
-            <div className="min-w-0">
-              <Terminal
-                key={selected.id}
-                contract={selected}
-                all={sorted}
-                week={week[selected.id]}
-                onSelect={setSelectedId}
-              />
-            </div>
-            <Col className="min-w-0 gap-4 xl:row-span-2">
-              {HUB_FEATURES.positions && !!myPositions?.length && (
-                <YourPositions
-                  positions={myPositions}
-                  contracts={open}
-                  onSelect={selectRow}
-                />
-              )}
-              <Watchlist
-                contracts={sorted}
-                week={week}
-                selectedId={selected.id}
-                sort={sort}
-                onSort={toggleSort}
-                changeWindow={changeWindow}
-                onChangeWindow={setChangeWindow}
-                onSelect={setSelectedId}
-              />
-              <RelatedMarkets
-                perp={selected}
-                markets={related[selected.id]}
-                perpIds={new Set(contracts.map((c) => c.id))}
-              />
-            </Col>
-            {/* Under the terminal on desktop (the rail spans both rows), last
-                on mobile: it is the widest-reading card and the least urgent. */}
-            {HUB_FEATURES.activity && (
-              <div className="min-w-0 xl:col-start-1">
-                <RecentActivity
-                  events={activity}
-                  contracts={open}
-                  onSelect={selectRow}
+          <Col className="gap-3">
+            {railParam && <RailLayoutSwitcher current={railLayout} />}
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+              {/* Fixed-width rail: a third of the grid was only ~330px at the
+                  xl breakpoint, not enough for a ticker, sparkline, price,
+                  change and lean side by side. */}
+              <div className="min-w-0">
+                <Terminal
+                  key={selected.id}
+                  contract={selected}
+                  all={sorted}
+                  week={week[selected.id]}
+                  onSelect={setSelectedId}
                 />
               </div>
-            )}
-          </div>
+              {railLayout === 'stack' ? (
+                <>
+                  <Col className="min-w-0 gap-4 xl:row-span-2">
+                    {HUB_FEATURES.positions && cards.positions('card')}
+                    {cards.markets('card')}
+                    {cards.related('card')}
+                  </Col>
+                  {/* Under the terminal on desktop (the rail spans both rows),
+                      last on mobile: it is the widest-reading card and the
+                      least urgent. */}
+                  {HUB_FEATURES.activity && (
+                    <div className="min-w-0 xl:col-start-1">
+                      {cards.activity('card')}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <PerpRail layout={railLayout} sections={railSections} />
+              )}
+            </div>
+          </Col>
         ) : (
           <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
             No open perpetual markets right now.
@@ -841,6 +963,54 @@ const SectionHeader = (props: { title: string }) => (
   </div>
 )
 
+// How many rows are behind a collapsed section — the one number that makes a
+// shut panel worth leaving shut.
+const CountBadge = (props: { value: number }) => (
+  <span className="text-ink-600 bg-ink-100 dark:bg-ink-300 rounded px-1 font-mono text-[10px] tabular-nums">
+    {props.value}
+  </span>
+)
+
+// Shown only on ?rail=..., so the layouts can be compared a click apart on the
+// live board rather than in the abstract.
+const RailLayoutSwitcher = (props: { current: PerpRailLayout }) => {
+  const { current } = props
+  const router = useRouter()
+  return (
+    <Col className="border-ink-200 dark:border-ink-300 gap-1 rounded-lg border border-dashed px-2.5 py-2">
+      <Row className="flex-wrap items-center gap-1">
+        <span className="text-ink-400 mr-1 text-[11px] font-medium uppercase tracking-wider">
+          Panel layout
+        </span>
+        {PERP_RAIL_LAYOUTS.map((layout) => (
+          <button
+            key={layout}
+            onClick={() =>
+              router.replace(
+                {
+                  pathname: router.pathname,
+                  query: { ...router.query, rail: layout },
+                },
+                undefined,
+                { shallow: true, scroll: false }
+              )
+            }
+            className={clsx(
+              'rounded px-2 py-0.5 text-xs font-medium capitalize transition-colors',
+              layout === current
+                ? 'bg-primary-500 text-white'
+                : 'text-ink-600 hover:bg-canvas-50'
+            )}
+          >
+            {layout}
+          </button>
+        ))}
+      </Row>
+      <span className="text-ink-500 text-xs">{PERP_RAIL_BLURBS[current]}</span>
+    </Col>
+  )
+}
+
 // Mana amounts render through TokenNumber (coin icon + number) rather than
 // the text moniker: the monospace stack has no glyph for it.
 const Stat = (props: { label: string; amount?: number; value?: string }) => (
@@ -862,16 +1032,9 @@ const Stat = (props: { label: string; amount?: number; value?: string }) => (
   </Col>
 )
 
-// The reason a trader reopens the page: how are my trades doing, across all
-// markets, at a glance. Side, leverage, size, P&L, and how far the price
-// is from liquidation. Click a row to load that market.
-const YourPositions = (props: {
-  positions: MyPosition[]
-  contracts: PerpContract[]
-  onSelect: (id: string) => void
-}) => {
-  const { positions, contracts, onSelect } = props
-  const rows = positions
+// Pure, so a rail badge and the card itself can't disagree about the total.
+const positionRows = (positions: MyPosition[], contracts: PerpContract[]) =>
+  positions
     .map((p) => {
       const contract = contracts.find((c) => c.id === p.contractId)
       if (!contract) return null
@@ -887,29 +1050,50 @@ const YourPositions = (props: {
     })
     .filter((r): r is NonNullable<typeof r> => r !== null)
     .sort((a, b) => b.p.size - a.p.size)
+
+const totalPnlOf = (rows: ReturnType<typeof positionRows>) =>
+  rows.reduce((sum, r) => sum + r.pnl, 0)
+
+const PnlLabel = (props: { amount: number; className?: string }) => (
+  <TokenNumber
+    amount={props.amount}
+    numberType="short"
+    className={clsx(
+      'font-mono font-semibold tabular-nums',
+      props.amount >= 0
+        ? 'text-teal-600 dark:text-teal-400'
+        : 'text-scarlet-600 dark:text-scarlet-400',
+      props.className
+    )}
+  />
+)
+
+// The reason a trader reopens the page: how are my trades doing, across all
+// markets, at a glance. Side, leverage, size, P&L, and how far the price
+// is from liquidation. Click a row to load that market.
+const YourPositions = (props: {
+  positions: MyPosition[]
+  contracts: PerpContract[]
+  onSelect: (id: string) => void
+  chrome?: Chrome
+}) => {
+  const { positions, contracts, onSelect, chrome = 'card' } = props
+  const rows = positionRows(positions, contracts)
   if (rows.length === 0) return null
-  const totalPnl = rows.reduce((sum, r) => sum + r.pnl, 0)
 
   return (
-    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
-      <Row className="border-ink-200 dark:border-ink-300 items-center justify-between border-b px-3 py-2">
-        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
-          Your positions
-        </span>
-        <Row className="items-center gap-1 text-xs">
-          <span className="text-ink-400">P&L</span>
-          <TokenNumber
-            amount={totalPnl}
-            numberType="short"
-            className={clsx(
-              'font-mono font-semibold tabular-nums',
-              totalPnl >= 0
-                ? 'text-teal-600 dark:text-teal-400'
-                : 'text-scarlet-600 dark:text-scarlet-400'
-            )}
-          />
+    <Col className={cardChrome(chrome)}>
+      {chrome === 'card' && (
+        <Row className="border-ink-200 dark:border-ink-300 items-center justify-between border-b px-3 py-2">
+          <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+            Your positions
+          </span>
+          <Row className="items-center gap-1 text-xs">
+            <span className="text-ink-400">P&L</span>
+            <PnlLabel amount={totalPnlOf(rows)} />
+          </Row>
         </Row>
-      </Row>
+      )}
       <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
         {rows.map(({ p, contract, pnl, pnlPct, liqDistance }) => {
           const long = p.direction === 'long'
@@ -947,16 +1131,7 @@ const YourPositions = (props: {
                 )}
               </Col>
               <Col className="items-end">
-                <TokenNumber
-                  amount={pnl}
-                  numberType="short"
-                  className={clsx(
-                    'font-mono text-sm font-semibold tabular-nums',
-                    pnl >= 0
-                      ? 'text-teal-600 dark:text-teal-400'
-                      : 'text-scarlet-600 dark:text-scarlet-400'
-                  )}
-                />
+                <PnlLabel amount={pnl} className="text-sm" />
                 <ChangeLabel change={pnlPct} className="text-xs" />
               </Col>
             </button>
@@ -966,6 +1141,9 @@ const YourPositions = (props: {
     </Col>
   )
 }
+
+// How many events the feed opens with; the rest are one click away.
+const ACTIVITY_PREVIEW = 8
 
 const ACTIVITY_VERB: Record<string, string> = {
   open: 'opened',
@@ -982,8 +1160,9 @@ const RecentActivity = (props: {
   events: ActivityEvent[] | null
   contracts: PerpContract[]
   onSelect: (id: string) => void
+  chrome?: Chrome
 }) => {
-  const { events, contracts, onSelect } = props
+  const { events, contracts, onSelect, chrome = 'card' } = props
   const [showAll, setShowAll] = useState(false)
   const isClient = useIsClient()
   const rows = (events ?? [])
@@ -991,15 +1170,17 @@ const RecentActivity = (props: {
     .filter(
       (r): r is { e: ActivityEvent; contract: PerpContract } => !!r.contract
     )
-  const visible = showAll ? rows : rows.slice(0, 8)
+  const visible = showAll ? rows : rows.slice(0, ACTIVITY_PREVIEW)
   return (
-    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
-      <Row className="border-ink-200 dark:border-ink-300 items-baseline justify-between border-b px-3 py-2">
-        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
-          Recent activity
-        </span>
-        <span className="text-ink-400 text-xs">all markets</span>
-      </Row>
+    <Col className={cardChrome(chrome)}>
+      {chrome === 'card' && (
+        <Row className="border-ink-200 dark:border-ink-300 items-baseline justify-between border-b px-3 py-2">
+          <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+            Recent activity
+          </span>
+          <span className="text-ink-400 text-xs">all markets</span>
+        </Row>
+      )}
       {/* One line per event, two columns on wide screens: eight events in
           four lines instead of eight tall rows. */}
       <div className="divide-ink-200 dark:divide-ink-300 grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0">
@@ -1103,7 +1284,7 @@ const RecentActivity = (props: {
           })
         )}
       </div>
-      {rows.length > 8 && (
+      {rows.length > ACTIVITY_PREVIEW && (
         <button
           onClick={() => setShowAll((v) => !v)}
           className="text-ink-500 hover:bg-canvas-50 hover:text-ink-700 border-ink-200 dark:border-ink-300 border-t px-3 py-2 text-xs"
@@ -1811,6 +1992,7 @@ const Watchlist = (props: {
   changeWindow: ChangeWindow
   onChangeWindow: (w: ChangeWindow) => void
   onSelect: (id: string) => void
+  chrome?: Chrome
 }) => {
   const {
     contracts,
@@ -1821,6 +2003,7 @@ const Watchlist = (props: {
     changeWindow,
     onChangeWindow,
     onSelect,
+    chrome = 'card',
   } = props
   const listRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -1839,7 +2022,7 @@ const Watchlist = (props: {
   const header = { sort, onSort }
 
   return (
-    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+    <Col className={cardChrome(chrome)}>
       <div
         ref={listRef}
         role="region"
@@ -2015,14 +2198,11 @@ const WatchRow = (props: {
 // ---------------------------------------------------------------------------
 // Related markets for the selected perp, with the create prompt.
 
-const RelatedMarkets = (props: {
-  perp: PerpContract
-  markets: Contract[] | undefined
-  perpIds: Set<string>
-}) => {
-  const { perp, markets, perpIds } = props
-  const topics = perp.groupSlugs ?? []
-  const picks = (markets ?? [])
+const RELATED_LIMIT = 6
+
+// Pure, so a rail badge can count the same list the card will show.
+const relatedPicks = (markets: Contract[] | undefined, perpIds: Set<string>) =>
+  (markets ?? [])
     .filter(
       (c) =>
         !perpIds.has(c.id) &&
@@ -2030,7 +2210,17 @@ const RelatedMarkets = (props: {
         isEligibleRelatedMarket(c) &&
         !isNearCertain(c)
     )
-    .slice(0, 6)
+    .slice(0, RELATED_LIMIT)
+
+const RelatedMarkets = (props: {
+  perp: PerpContract
+  markets: Contract[] | undefined
+  perpIds: Set<string>
+  chrome?: Chrome
+}) => {
+  const { perp, markets, perpIds, chrome = 'card' } = props
+  const topics = perp.groupSlugs ?? []
+  const picks = relatedPicks(markets, perpIds)
   const hydrated = useAnswersFor(picks)
   const primaryTopic =
     topics.find((t) => !t.endsWith('-default')) ?? topics[0] ?? 'this'
@@ -2040,11 +2230,13 @@ const RelatedMarkets = (props: {
       JSON.stringify({ groupSlugs: topics, rand: perp.id.slice(0, 6) })
     )
   return (
-    <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 overflow-hidden rounded-xl border">
+    <Col className={cardChrome(chrome)}>
       <Row className="border-ink-200 dark:border-ink-300 items-baseline gap-2 border-b px-3 py-2">
-        <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
-          Related
-        </span>
+        {chrome === 'card' && (
+          <span className="text-ink-400 text-[11px] font-medium uppercase tracking-wider">
+            Related
+          </span>
+        )}
         <span className="text-primary-600 dark:text-primary-400 font-mono text-xs font-bold">
           {getPerpTicker(perp)}
         </span>
