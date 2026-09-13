@@ -60,6 +60,9 @@ export type notification_preferences = {
   // Perps
   perp_liquidation: notification_destination_types[]
   perp_adl: notification_destination_types[]
+  perp_profit: notification_destination_types[]
+  perp_loss: notification_destination_types[]
+  perp_liquidation_warning: notification_destination_types[]
 
   // Manifold.love
   new_match: notification_destination_types[]
@@ -169,6 +172,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Perps
     perp_liquidation: constructPref(true, true, true),
     perp_adl: constructPref(true, false, false),
+    perp_profit: constructPref(true, false, false),
+    perp_loss: constructPref(true, false, false),
+    perp_liquidation_warning: constructPref(true, false, true),
 
     // Manifold.love
     new_match: constructPref(true, true, true),

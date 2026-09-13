@@ -40,6 +40,7 @@ import {
 } from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
+import { PerpAlertSettings } from 'web/components/notification-settings'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
@@ -243,6 +244,16 @@ export const PerpPositionPanel = (props: {
           oracleTradingPaused={oracleTradingPaused}
         />
       ))}
+      {positions.length > 0 && (
+        <details className="border-ink-200 rounded-lg border p-3">
+          <summary className="text-ink-600 cursor-pointer text-sm font-medium">
+            Position alerts
+          </summary>
+          <div className="mt-3">
+            <PerpAlertSettings />
+          </div>
+        </details>
+      )}
       {pastEvents.length > 0 && (
         <PositionHistory feedId={contract.oracleFeedId} events={pastEvents} />
       )}
