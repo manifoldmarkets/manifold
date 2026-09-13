@@ -1,13 +1,13 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
-import { hasFullBonusAccess } from 'common/user'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
   calculateMarketLoanMax,
   calculatePositionFreeLoan,
   canClaimDailyFreeLoan,
+  canTakeLoans,
   filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
@@ -44,12 +44,14 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     throw new APIError(404, `User ${userId} not found`)
   }
 
-  // Daily free loans are a full-bonus perk: identity-verified/grandfathered
-  // users and purchase/admin-granted users can claim them.
-  if (!hasFullBonusAccess(user)) {
+  // Daily free loans are open to everyone, verified or not — they're borrowed
+  // against the user's own positions, and the membership page has always
+  // advertised the 1% daily free loan to unverified users. Only admin-flagged
+  // accounts (suspected alt / manual review) are held back.
+  if (!canTakeLoans(user)) {
     throw new APIError(
       403,
-      'Complete identity verification to access daily free loans'
+      'Your account is flagged for review. Complete identity verification to access daily free loans.'
     )
   }
 

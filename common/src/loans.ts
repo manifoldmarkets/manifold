@@ -194,6 +194,29 @@ export const sumExcludedPerpEquity = (
   return Math.max(0, total)
 }
 
+/**
+ * Whether a user may take loans at all (daily free loans, and margin loans
+ * subject to their subscription entitlements).
+ *
+ * Loans are deliberately NOT on the bonus axis. They're borrowed against the
+ * user's own positions rather than granted, so unverified users aren't excluded
+ * — and the membership benefits table has always advertised the 1% daily free
+ * loan to them (the `freeLoan` row defines no `unverifiedValue`, so the
+ * unverified column falls through to baseValue '1%'). Gating this on
+ * hasFullBonusAccess contradicted what that page promises.
+ *
+ * The one exception is 'requires_verification', the admin/system flag for
+ * suspected alts and accounts under manual review: those stay blocked while
+ * frozen. KYC-failed ('ineligible') users are NOT blocked — the tier config
+ * already treats them as reduced-earning rather than cut off, resolving them to
+ * the 'unverified' tier instead of 'restricted'.
+ *
+ * Takes just the one field it reads, so this module needs no User import.
+ */
+export const canTakeLoans = (user: {
+  bonusEligibility?: string | undefined
+}): boolean => user.bonusEligibility !== 'requires_verification'
+
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
   const { investmentValue, loanTotal } = portfolio
   return investmentValue > 0 && !overLeveraged(loanTotal ?? 0, investmentValue)

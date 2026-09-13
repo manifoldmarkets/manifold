@@ -1,4 +1,8 @@
-import { filterLoanEquityMetrics, sumExcludedPerpEquity } from './loans'
+import {
+  canTakeLoans,
+  filterLoanEquityMetrics,
+  sumExcludedPerpEquity,
+} from './loans'
 
 // Build minimal shapes — the helper only reads contractId and mechanism.
 const metric = (contractId: string, extra?: Record<string, unknown>) => ({
@@ -13,6 +17,47 @@ const contractsById = {
   binary: { mechanism: 'cpmm-1' as const, token: 'MANA' as const },
   multi: { mechanism: 'cpmm-multi-1' as const, token: 'MANA' as const },
 }
+
+describe('canTakeLoans', () => {
+  // Loans are off the bonus axis: borrowed against the user's own positions,
+  // and the membership table advertises the 1% daily free loan to unverified
+  // users. Only accounts frozen pending admin review are held back.
+  it('allows unverified users (bonusEligibility undefined)', () => {
+    expect(canTakeLoans({})).toBe(true)
+  })
+
+  it('allows KYC-failed users — reduced earning, not cut off', () => {
+    expect(canTakeLoans({ bonusEligibility: 'ineligible' })).toBe(true)
+  })
+
+  it('allows verified, grandfathered, and purchase/admin-granted users', () => {
+    expect(canTakeLoans({ bonusEligibility: 'verified' })).toBe(true)
+    expect(canTakeLoans({ bonusEligibility: 'grandfathered' })).toBe(true)
+    expect(canTakeLoans({ bonusEligibility: 'eligible' })).toBe(true)
+  })
+
+  it('blocks admin-flagged accounts pending review', () => {
+    expect(canTakeLoans({ bonusEligibility: 'requires_verification' })).toBe(
+      false
+    )
+  })
+
+  // Bots self-exclude from bonuses, but that exclusion lives on isBot and the
+  // bonus predicates — it must not reach through to borrowing. An unverified
+  // bot borrows; only the review flag still blocks, bot or not.
+  it('ignores bot status', () => {
+    expect(canTakeLoans({ isBot: true } as any)).toBe(true)
+    expect(
+      canTakeLoans({ isBot: true, bonusEligibility: 'ineligible' } as any)
+    ).toBe(true)
+    expect(
+      canTakeLoans({
+        isBot: true,
+        bonusEligibility: 'requires_verification',
+      } as any)
+    ).toBe(false)
+  })
+})
 
 describe('filterLoanEquityMetrics', () => {
   it('excludes perp positions from loan equity', () => {
