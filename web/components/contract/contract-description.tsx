@@ -40,13 +40,6 @@ export function ContractDescription(props: {
   return (
     <>
       <div className="mb-2 mt-6">
-        {contract.mechanism === 'perp' && (
-          <MnxTradeCta
-            contract={contract}
-            location="market page cta"
-            className="mb-4"
-          />
-        )}
         {isCreator || isModOrAdmin ? (
           <EditableDescription
             contractId={contractId}
@@ -78,6 +71,13 @@ export function ContractDescription(props: {
           <CreatorBannedFromBettingInfo
             contract={contract}
             creatorId={creatorId}
+          />
+        )}
+        {contract.mechanism === 'perp' && (
+          <MnxTradeCta
+            contract={contract}
+            location="market page cta"
+            className="mt-4"
           />
         )}
       </div>

@@ -643,9 +643,8 @@ for the cohort, sources, deployment order and environment validation.
 
 `common/perps/mnx-cta.ts` owns every link that sends a reader to MNX, and
 `web/components/perps/mnx-cta.tsx` renders them. `MnxTradeCta` is the call to
-action — "Trade `<TICKER>` with real money" — shown at the top of the market
-description, below the trading controls and position information. On the
-/perps terminal it sits after the position panel. The chart keeps its
+action — "Trade `<TICKER>` with real money" — shown below the market
+description. On the /perps terminal it sits after the position panel. The chart keeps its
 "Source: MNX" credit, with a compact UTC date/time and the full timestamp on
 hover. The CTA is withheld for non-MNX feeds and settled markets.
 
@@ -662,9 +661,8 @@ From `sm` up the card is wordmark │ pitch and instrument line │ "Trade
 line with no separate button. The entire mobile card is a link, and an
 external-link icon follows "money" in the heading. The mobile card and desktop
 button share the same URL and click tracking. Text can wrap on narrow screens.
-The card is separate from the chart
-footnote and trading controls, introducing the description instead of
-competing with the Long/Short buttons above it.
+The card sits below the description, separate from the chart footnote and
+trading controls.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,
