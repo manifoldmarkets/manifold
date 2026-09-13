@@ -733,6 +733,42 @@ separate transactions and one contract can briefly lag or fail. If reporting
 ever needs the historically executable contract price instead, persist
 per-contract oracle-application history and value from that record.
 
+## House liquidity stats
+
+`/stats` shows total backing minus open traders' marked position values, before
+future ADL. `capture_perp_hourly_stats()` records one row per perp per UTC hour
+using database cron at minute 5, independently of the application scheduler.
+Charts use daily closing samples and include only currently listed markets.
+Missing observations stay unknown; historical house values are estimates.
+
+For a new environment, apply these migrations before deploying API/web:
+
+1. `backend/supabase/migrations/2026090701_add_perp_hourly_stats.sql`
+2. `backend/supabase/migrations/2026090702_schedule_perp_hourly_stats.sql`
+
+Both are already applied in production (September 6, 2026). Recording and
+backfill are live; only API/web deployment is needed to display the data.
+The capture's SQL valuation must stay consistent with `getPositionValue`.
+
+To replay historical funding observations in the selected script environment,
+run `yarn --cwd backend/scripts ts-node backfill-perp-house-stats.ts`.
+It defaults to a dry run; add `--write` to save reconstructable house values.
+Retries preserve live captures and leave inconsistent historical values null.
+
+Monitor `cron.job_run_details` and the page's last capture time (overdue after
+two hours). Stop recording with
+`select cron.unschedule('capture-perp-hourly-stats');` without deleting history.
+API/web rollback alone does not stop this job. To resume, reapply migration 2
+and run `select capture_perp_hourly_stats();`.
+
+The database integration tests use a disposable local `perp_stats_test` database:
+
+```sh
+docker run --rm -d --name perp-stats-test -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=perp_stats_test -p 127.0.0.1:55437:5432 postgres:15-alpine
+PERP_POOL_STATS_TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55437/perp_stats_test yarn --cwd backend/shared test --runInBand pool-stats.test.ts
+docker stop perp-stats-test
+```
+
 ## Integration points (grep for these to find everything)
 
 - `outcomeType === 'PERP'` — UI switch branches.

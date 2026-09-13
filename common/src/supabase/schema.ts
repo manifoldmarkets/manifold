@@ -682,6 +682,36 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_perp_hourly_stats: {
+        Row: {
+          contract_id: string
+          hour: string
+          captured_at: string
+          total_pool: number
+          marked_position_value: number | null
+          oracle_price: number
+          source: string
+        }
+        Insert: {
+          contract_id: string
+          hour: string
+          captured_at: string
+          total_pool: number
+          marked_position_value?: number | null
+          oracle_price: number
+          source: string
+        }
+        Update: {
+          contract_id?: string
+          hour?: string
+          captured_at?: string
+          total_pool?: number
+          marked_position_value?: number | null
+          oracle_price?: number
+          source?: string
+        }
+        Relationships: []
+      }
       contract_perp_positions: {
         Row: {
           contract_id: string
