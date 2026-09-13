@@ -67,8 +67,8 @@ export const mnxLinkProps = (props: {
  * instrument, tradable there with real money.
  *
  * Renders nothing for a market that isn't on an MNX feed, and nothing once it
- * has settled — see getMnxTradeTarget for why. Replaces the MNX source footnote
- * under the chart. The card is shorter than the Long/Short buttons.
+ * has settled — see getMnxTradeTarget for why. Appears above the market
+ * description, below the trading controls and position information.
  */
 export const MnxTradeCta = (props: {
   contract: PerpContract
@@ -97,7 +97,7 @@ export const MnxTradeCta = (props: {
     // the panel has to be darker than the page, not level with it.
     <Row
       className={clsx(
-        'h-10 min-w-0 items-center gap-2 rounded-lg bg-slate-950 px-3 ring-1 ring-slate-800',
+        'flex-wrap items-center gap-x-3 gap-y-3 rounded-lg bg-slate-950 px-4 py-3 ring-1 ring-slate-800 sm:gap-x-4',
         className
       )}
     >
@@ -110,21 +110,18 @@ export const MnxTradeCta = (props: {
         alt="MNX"
         width={300}
         height={103}
-        className="h-3.5 w-auto shrink-0 sm:h-4"
+        className="h-4 w-auto shrink-0 sm:h-5"
       />
       <div
         aria-hidden
-        className="hidden h-7 w-px shrink-0 bg-slate-700 sm:block"
+        className="hidden w-px shrink-0 self-stretch bg-slate-700 sm:block"
       />
-      {/* The pitch and the instrument it's on. Phones get neither this nor the
-          divider, leaving the wordmark and the button alone on one line: the
-          card sits right above the bet panel, so a line here is a line taken
-          from what people came for, and the button already says the offer. */}
-      <Col className="hidden min-w-0 flex-1 sm:flex">
-        <div className="truncate text-xs font-semibold leading-[14px] text-white">
+      {/* Phones show just the wordmark and trade button. */}
+      <Col className="hidden min-w-[12rem] flex-1 gap-0.5 sm:flex">
+        <div className="text-sm font-semibold text-white">
           Trade {ticker} with real money
         </div>
-        <div className="truncate text-[11px] leading-[14px] text-slate-400">
+        <div className="text-xs text-slate-400">
           MNX's {derivative} on {instrument.name}
         </div>
       </Col>
@@ -136,8 +133,8 @@ export const MnxTradeCta = (props: {
           contractId: contract.id,
         })}
         className={clsx(
-          buttonClass('2xs', 'none'),
-          'h-7 gap-1.5 whitespace-nowrap bg-white font-semibold text-slate-900 hover:bg-slate-200',
+          buttonClass('sm', 'none'),
+          'gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200',
           // Fills the row beside the wordmark on a phone, where it is the only
           // other thing there; natural width beside the text on wider screens.
           'max-sm:flex-1 sm:shrink-0'

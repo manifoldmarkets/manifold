@@ -28,7 +28,6 @@ import {
 import { useIsClient } from 'web/hooks/use-is-client'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMnxCreatorId } from 'common/perps/creator-accounts'
-import { getMnxTradeTarget } from 'common/perps/mnx-cta'
 import { getPerpTicker } from 'common/perps/ticker'
 import {
   fundingPeriodNoun,
@@ -1749,18 +1748,11 @@ const Terminal = (props: {
           bleed && '-mx-4'
         )}
       />
-      {!getMnxTradeTarget(contract) && (
-        <PerpOracleAttribution
-          feedId={contract.oracleFeedId}
-          asOfTime={contract.oracleSourceTime}
-          mnxLinkLocation="perps hub credit"
-          contractId={contract.id}
-        />
-      )}
-      <MnxTradeCta
-        contract={contract}
-        location="perps hub cta"
-        className="-my-2"
+      <PerpOracleAttribution
+        feedId={contract.oracleFeedId}
+        asOfTime={contract.oracleSourceTime}
+        mnxLinkLocation="perps hub credit"
+        contractId={contract.id}
       />
 
       <PerpBetPanel
@@ -1777,6 +1769,7 @@ const Terminal = (props: {
         positions={positions}
         oracleTradingPaused={oracleTradingPaused}
       />
+      <MnxTradeCta contract={contract} location="perps hub cta" />
     </Col>
   )
 }

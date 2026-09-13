@@ -4,6 +4,15 @@ import { MnxLinkLocation } from 'common/perps/mnx-cta'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import { mnxLinkProps } from './mnx-cta'
 
+const mnxAsOfFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'UTC',
+})
+
 // Source credit for the oracle feed, rendered as a chart footnote.
 //
 // Deliberately a component rather than prose in the market description: some
@@ -19,7 +28,7 @@ export const PerpOracleAttribution = (props: {
    * Count clicks on an MNX credit as coming from this placement. Optional
    * because this line is a credit first — a placement that doesn't care where
    * its clicks came from renders the plain link it always did — but every
-   * placement that sits next to a CTA should pass it, or the CTA's numbers
+   * placement that also has a CTA should pass it, or the CTA's numbers
    * look better than the page's.
    */
   mnxLinkLocation?: MnxLinkLocation
@@ -34,6 +43,7 @@ export const PerpOracleAttribution = (props: {
   if (!attribution) return null
 
   const { source, url, licence, licenceUrl, showAsOf } = attribution
+  const isMnx = getMnxInstrument(feedId) != null
   const validAsOfTime =
     typeof asOfTime === 'number' && Number.isFinite(asOfTime) && asOfTime > 0
       ? asOfTime
@@ -44,7 +54,7 @@ export const PerpOracleAttribution = (props: {
   // The href is still tagged and counted, since a reader who clicks the credit
   // line left for MNX just the same.
   const trackedMnxLink =
-    url && mnxLinkLocation && getMnxInstrument(feedId)
+    url && mnxLinkLocation && isMnx
       ? mnxLinkProps({
           url,
           location: mnxLinkLocation,
@@ -88,7 +98,20 @@ export const PerpOracleAttribution = (props: {
           ` (${licence})`
         ))}
       {showAsOf &&
-        (validAsOfTime == null
+        (isMnx
+          ? validAsOfTime != null && (
+              <>
+                {' · '}
+                <time
+                  dateTime={new Date(validAsOfTime).toISOString()}
+                  title={new Date(validAsOfTime).toISOString()}
+                  className="whitespace-nowrap"
+                >
+                  {mnxAsOfFormatter.format(validAsOfTime)} UTC
+                </time>
+              </>
+            )
+          : validAsOfTime == null
           ? ', source as-of unavailable.'
           : `, as of ${new Date(validAsOfTime).toISOString()}.`)}
     </div>

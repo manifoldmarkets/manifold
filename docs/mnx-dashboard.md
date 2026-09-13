@@ -73,9 +73,9 @@ New MNX markets use the partner's category templates: `[Company] IPO Market Cap
 (MNX)` for valuation futures, `[Company] (MNX)` for equities, and `H100 GPU rental
 price (MNX)` for compute. Descriptions come from the same instrument registry;
 canonical display tickers remain unchanged (including `ANTH`, `SNDK`, and `H100`).
-The compact CTA links to the instrument on MNX independently of the market's
-editable description, replacing the source/date footnote below the chart (see
-the perps README). The delisting behaviour still holds — if MNX ends the
+The chart's source credit links to MNX with a compact UTC timestamp. A separate
+CTA sits at the top of the description, below the trading and position panels
+(see the perps README). The delisting behaviour still holds — if MNX ends the
 instrument, trading pauses pending administrative settlement and does not
 automatically roll into a replacement — but the market page no longer prints a
 standing notice saying so; a settled market shows no CTA for exactly that

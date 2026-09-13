@@ -1,6 +1,5 @@
 import { ORACLE_HEALTH_MAX_AGE_MS } from 'common/perps/oracle-health'
 import { getMnxInstrument } from 'common/perps/mnx'
-import { getMnxTradeTarget } from 'common/perps/mnx-cta'
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
@@ -23,7 +22,6 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
-import { MnxTradeCta } from './mnx-cta'
 import { PerpOracleAttribution } from './perp-oracle-attribution'
 import { PerpPositionPanel } from './perp-position-panel'
 import { useLivePerpContract } from './use-live-perp-contract'
@@ -239,18 +237,11 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           mean the credit is absent for anything reading raw HTML. Fixing that
           means restructuring the page, not moving this line — it renders no
           earlier inside PerpChart. */}
-      {!getMnxTradeTarget(contract) && (
-        <PerpOracleAttribution
-          feedId={contract.oracleFeedId}
-          asOfTime={contract.oracleSourceTime}
-          mnxLinkLocation="market page credit"
-          contractId={contract.id}
-        />
-      )}
-      <MnxTradeCta
-        contract={contract}
-        location="market page cta"
-        className="-my-2"
+      <PerpOracleAttribution
+        feedId={contract.oracleFeedId}
+        asOfTime={contract.oracleSourceTime}
+        mnxLinkLocation="market page credit"
+        contractId={contract.id}
       />
 
       {contract.isResolved ? (

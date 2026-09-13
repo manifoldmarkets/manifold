@@ -643,11 +643,11 @@ for the cohort, sources, deployment order and environment validation.
 
 `common/perps/mnx-cta.ts` owns every link that sends a reader to MNX, and
 `web/components/perps/mnx-cta.tsx` renders them. `MnxTradeCta` is the call to
-action — "Trade `<TICKER>` with real money" — shown under the chart on a market
-page and on the /perps terminal. It replaces the MNX source/date footnote
-under the chart. Where there is no CTA, source attribution stays visible,
-including on settled markets and markets using other feeds. The CTA is
-withheld for non-MNX feeds and settled markets.
+action — "Trade `<TICKER>` with real money" — shown at the top of the market
+description, below the trading controls and position information. On the
+/perps terminal it sits after the position panel. The chart keeps its
+"Source: MNX" credit, with a compact UTC date/time and the full timestamp on
+hover. The CTA is withheld for non-MNX feeds and settled markets.
 
 The CTA wears MNX's colours, not Manifold's: their wordmark
 (`web/public/mnx-logo.svg`, white, the same asset the /jobs partner block uses)
@@ -659,11 +659,10 @@ page instead of on top of it.
 
 From `sm` up the card is wordmark │ pitch and instrument line │ "Trade
 `<TICKER>` on MNX". A phone gets the wordmark and that same button alone on one
-row. The card is 40px tall, below the Long/Short buttons' 44px, with an 8px
-gap between its elements and a 28px trade button. The desktop copy truncates
-when space is tight, while the button keeps its full label at every width.
-The card's vertical margins reduce the gaps to the chart and bet panel, so
-the external link stays compact beside Manifold's trading controls.
+row. The card uses readable heading and instrument text on desktop, with
+room for the row to wrap on narrow screens. It is separate from the chart
+footnote and trading controls, introducing the description instead of
+competing with the Long/Short buttons above it.
 
 Every one of those clicks writes a `user_events` row named **`click mnx link`**
 carrying the placement (`market page cta`, `market page credit`,
