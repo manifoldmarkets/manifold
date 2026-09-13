@@ -172,7 +172,13 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join trade_stats on true
       left join longest_streak on true`
 
-  const result = await pg.oneOrNone(queryWithPerMV, [userId])
+  let result: any = null
+  try {
+    result = await pg.oneOrNone(queryWithPerMV, [userId])
+  } catch (e) {
+    // Materialized views may not exist on dev — return zeroed stats
+    console.warn('get-user-achievements: main query failed, returning zeros', e)
+  }
 
   const defaultRanks = {
     creatorTraders: { rank: null, percentile: null },
@@ -197,9 +203,33 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     charityDonated: { rank: null, percentile: null },
   }
 
+  // Fetch trophy claims + showcase pins (graceful fallback if tables don't exist yet)
+  let claimedRows: any[] = []
+  let showcaseRow: any = null
+  try {
+    ;[claimedRows, showcaseRow] = await Promise.all([
+      pg.manyOrNone(
+        `select trophy_id as "trophyId", milestone, claimed_at as "claimedAt"
+         from user_trophy_claims where user_id = $1`,
+        [userId]
+      ),
+      pg.oneOrNone(
+        `select pins from user_showcase where user_id = $1`,
+        [userId]
+      ),
+    ])
+  } catch {
+    // Tables may not exist yet during deployment — return empty data
+  }
+
   const rawRanks = (result?.ranks_json as any) ?? defaultRanks
-  const { n } = await pg.one('select count(*)::int as n from mv_ach_volume')
-  const N = Number(n ?? 0)
+  let N = 0
+  try {
+    const { n } = await pg.one('select count(*)::int as n from mv_ach_volume')
+    N = Number(n ?? 0)
+  } catch {
+    // mv_ach_volume may not exist on dev
+  }
   const conv = (e?: { rank: number | null; percentile: number | null }) =>
     e?.rank && N > 0
       ? { rank: e.rank, percentile: (e.rank / N) * 100 }
@@ -259,5 +289,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     modTicketsResolved: Number(result?.mod_tickets_resolved ?? 0),
     charityDonatedMana: Number(result?.charity_donated_mana ?? 0),
     ranks,
+    showcasePins: showcaseRow ? (showcaseRow.pins as string[]) : null,
+    claimedTrophies: (claimedRows ?? []).map((r: any) => ({
+      trophyId: r.trophyId,
+      milestone: r.milestone,
+      claimedAt: new Date(r.claimedAt).toISOString(),
+    })),
   }
 }
