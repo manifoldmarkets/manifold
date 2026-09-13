@@ -658,9 +658,11 @@ is `slate-950` rather than the /jobs tile's `slate-900` because dark-mode
 page instead of on top of it.
 
 From `sm` up the card is wordmark │ pitch and instrument line │ "Trade
-`<TICKER>` on MNX". A phone gets the wordmark and that same button alone on one
-row. The card uses readable heading and instrument text on desktop, with
-room for the row to wrap on narrow screens. It is separate from the chart
+`<TICKER>` on MNX". A phone gets the wordmark, divider, heading and instrument
+line with no separate button. The entire mobile card is a link, and an
+external-link icon follows "money" in the heading. The mobile card and desktop
+button share the same URL and click tracking. Text can wrap on narrow screens.
+The card is separate from the chart
 footnote and trading controls, introducing the description instead of
 competing with the Long/Short buttons above it.
 

@@ -85,6 +85,12 @@ export const MnxTradeCta = (props: {
   // reader who trades on MNX notices immediately.
   const derivative =
     instrument.type === 'future' ? 'valuation future' : 'perpetual'
+  const linkProps = mnxLinkProps({
+    url: instrument.url,
+    location,
+    feedId: contract.oracleFeedId,
+    contractId: contract.id,
+  })
 
   return (
     // MNX's own colours rather than Manifold's: their wordmark is white on
@@ -97,14 +103,17 @@ export const MnxTradeCta = (props: {
     // the panel has to be darker than the page, not level with it.
     <Row
       className={clsx(
-        'flex-wrap items-center gap-x-3 gap-y-3 rounded-lg bg-slate-950 px-4 py-3 ring-1 ring-slate-800 sm:gap-x-4',
+        'relative items-center gap-x-3 gap-y-3 rounded-lg bg-slate-950 px-3 py-3 ring-1 ring-slate-800 sm:flex-wrap sm:gap-x-4 sm:px-4',
         className
       )}
     >
-      {/* Plain img, like the /jobs partner block: it is a fixed-size static
-          asset, so next/image would add a request and a wrapper for nothing.
-          alt is the brand name — on a phone it is the only thing left beside
-          the button. */}
+      {/* Cover the whole card on phones; the desktop button is a separate
+          sibling link, so one activation only records one click. */}
+      <a
+        {...linkProps}
+        aria-label={`Trade ${ticker} with real money on MNX (opens in a new tab)`}
+        className="absolute inset-0 z-10 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:hidden"
+      />
       <img
         src="/mnx-logo.svg"
         alt="MNX"
@@ -112,32 +121,27 @@ export const MnxTradeCta = (props: {
         height={103}
         className="h-4 w-auto shrink-0 sm:h-5"
       />
-      <div
-        aria-hidden
-        className="hidden w-px shrink-0 self-stretch bg-slate-700 sm:block"
-      />
-      {/* Phones show just the wordmark and trade button. */}
-      <Col className="hidden min-w-[12rem] flex-1 gap-0.5 sm:flex">
+      <div aria-hidden className="w-px shrink-0 self-stretch bg-slate-700" />
+      <Col className="min-w-0 flex-1 gap-0.5 sm:min-w-[12rem]">
         <div className="text-sm font-semibold text-white">
-          Trade {ticker} with real money
+          Trade {ticker} with real{' '}
+          <span className="whitespace-nowrap">
+            money
+            <ExternalLinkIcon
+              aria-hidden
+              className="ml-1 inline h-4 w-4 align-text-bottom sm:hidden"
+            />
+          </span>
         </div>
         <div className="text-xs text-slate-400">
           MNX's {derivative} on {instrument.name}
         </div>
       </Col>
       <a
-        {...mnxLinkProps({
-          url: instrument.url,
-          location,
-          feedId: contract.oracleFeedId,
-          contractId: contract.id,
-        })}
+        {...linkProps}
         className={clsx(
           buttonClass('sm', 'none'),
-          'gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200',
-          // Fills the row beside the wordmark on a phone, where it is the only
-          // other thing there; natural width beside the text on wider screens.
-          'max-sm:flex-1 sm:shrink-0'
+          'hidden gap-1.5 bg-white font-semibold text-slate-900 hover:bg-slate-200 sm:inline-flex sm:shrink-0'
         )}
       >
         Trade {ticker} on MNX
