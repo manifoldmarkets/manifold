@@ -1,14 +1,68 @@
 /* eslint-env es2022 */
-// Usage: node deploy-rollout.cjs PROJECT ZONE GROUP TEMPLATE [RESTORE_AUTOSCALING_MODE]
+// Usage: node deploy-rollout.cjs PROJECT ZONE GROUP TEMPLATE [RESTORE_AUTOSCALING_MODE] [--allow-disruptive-bootstrap]
 // A single-VM API deployment: add a replacement, wait for LB readiness on all
 // serving ports, then remove the old VM. See deploy-rollout.md for recovery.
 const assert = require('node:assert/strict')
 const { execFileSync } = require('node:child_process')
 const { setTimeout: sleep } = require('node:timers/promises')
+const { load: parseYaml, JSON_SCHEMA } = require('js-yaml')
 
 const nameOf = (resource) => resource.split('/').pop()
 const templateOf = (instance) =>
   nameOf(instance.version?.instanceTemplate ?? '')
+
+function broadcastConfig(resource, project) {
+  const metadata = resource.properties?.metadata ?? resource.metadata
+  const declaration = metadata?.items?.find(
+    (item) => item.key === 'gce-container-declaration'
+  )?.value
+  assert(
+    declaration,
+    'Missing container declaration; cannot verify shared broadcasts'
+  )
+  let containers
+  try {
+    containers = parseYaml(declaration, { schema: JSON_SCHEMA })?.spec
+      ?.containers
+  } catch {
+    // YAML errors can include source snippets containing environment secrets.
+    throw new Error(
+      'Invalid container declaration; cannot verify shared broadcasts'
+    )
+  }
+  assert(containers?.length === 1, 'Expected exactly one API container')
+  const env = Object.fromEntries(
+    (containers[0].env ?? []).map(({ name, value }) => [
+      name,
+      String(value ?? ''),
+    ])
+  )
+  const url = env.REDIS_URL?.trim() || undefined
+  const required = env.REQUIRE_REDIS_BROADCASTS === 'true'
+  assert(!required || url, 'Shared broadcast readiness requires a Redis URL')
+  if (url) {
+    let valid = false
+    try {
+      valid = ['redis:', 'rediss:'].includes(new URL(url).protocol)
+    } catch {
+      // Reject invalid URLs without printing credentials from the input.
+    }
+    assert(valid, 'Invalid Redis broadcast URL')
+  }
+  const channel =
+    env.NEXT_PUBLIC_FIREBASE_ENV?.trim().toLowerCase() ||
+    ((env.GOOGLE_CLOUD_PROJECT ?? project) === 'mantic-markets'
+      ? 'prod'
+      : 'dev')
+  return { url, required, channel }
+}
+
+const shareBroadcasts = (a, b) =>
+  a.required &&
+  b.required &&
+  !!a.url &&
+  a.url === b.url &&
+  a.channel === b.channel
 
 function runGcloud(args) {
   const command = [...args, '--quiet', '--format=json']
@@ -34,7 +88,14 @@ function runGcloud(args) {
 }
 
 async function rollout(
-  { project, zone, group, template, restoreAutoscalingMode },
+  {
+    project,
+    zone,
+    group,
+    template,
+    restoreAutoscalingMode,
+    allowDisruptiveBootstrap = false,
+  },
   {
     gcloud = runGcloud,
     pause = sleep,
@@ -68,6 +129,12 @@ async function rollout(
   assert(info.instanceGroup, 'The MIG must expose its instance group URL')
   const autoscaling = info.autoscaler?.autoscalingPolicy
   const autoscalingMode = restoreAutoscalingMode ?? autoscaling?.mode
+  assert(
+    !autoscaling ||
+      info.updatePolicy?.type !== 'OPPORTUNISTIC' ||
+      restoreAutoscalingMode,
+    'Resume with the original autoscaling mode from the recovery command printed by the deploy'
+  )
   if (autoscaling) {
     assert(
       ['ON', 'OFF', 'ONLY_SCALE_OUT'].includes(autoscalingMode),
@@ -148,7 +215,7 @@ async function rollout(
       await pause(5_000)
     }
     throw new Error(
-      `Timed out: ${label}. No automatic rollback or scale-down was attempted. See deploy-rollout.md.`
+      `Timed out: ${label}. Rollout stopped without automatic rollback. Inspect the MIG and follow deploy-rollout.md.`
     )
   }
 
@@ -162,14 +229,10 @@ async function rollout(
     resuming || (info.targetSize === 1 && info.status?.isStable),
     'Expected a stable single-VM MIG, or an interrupted rollout of this template'
   )
-  assert(
-    !resuming || !autoscaling || restoreAutoscalingMode,
-    'Resume with the original autoscaling mode from the recovery command printed by the deploy'
-  )
   log(
     `Recovery command: node deploy-rollout.cjs ${project} ${zone} ${group} ${template}${
       autoscalingMode ? ` ${autoscalingMode}` : ''
-    }`
+    }${allowDisruptiveBootstrap ? ' --allow-disruptive-bootstrap' : ''}`
   )
   if (
     !resuming &&
@@ -202,7 +265,27 @@ async function rollout(
   )
   const oldInstance = oldInstances[0].instance
 
-  if (!resuming) {
+  const targetBroadcasts = broadcastConfig(
+    globalResource('instance-templates', 'describe', template),
+    project
+  )
+  const readOldBroadcasts = () =>
+    broadcastConfig(
+      globalResource(
+        'instances',
+        'describe',
+        nameOf(oldInstance),
+        `--zone=${zone}`
+      ),
+      project
+    )
+  const canOverlap = shareBroadcasts(readOldBroadcasts(), targetBroadcasts)
+  assert(
+    canOverlap || (allowDisruptiveBootstrap && !resuming),
+    'Cannot overlap writers without matching Redis URLs/channels and REQUIRE_REDIS_BROADCASTS=true on both. The initial migration needs an explicit --allow-disruptive-bootstrap maintenance window; see deploy-rollout.md.'
+  )
+
+  const prepareUpdate = () => {
     // The production autoscaler is ON with min=max=1. Pause it before adding
     // a VM so it cannot scale down the replacement while readiness is pending.
     if (autoscaling && autoscaling.mode !== 'OFF') {
@@ -215,6 +298,74 @@ async function rollout(
       '--update-policy-type=opportunistic',
       `--template=${template}`
     )
+  }
+
+  if (!canOverlap) {
+    // A legacy/local-only writer cannot share its events with the replacement.
+    // This opt-in migration has an outage, but never silently splits the feed.
+    log(
+      `MAINTENANCE: deleting ${nameOf(
+        oldInstance
+      )} before starting the replacement. API and WebSocket connections will be interrupted.`
+    )
+    prepareUpdate()
+    managed('delete-instances', `--instances=${nameOf(oldInstance)}`)
+    await waitFor(
+      'Waiting for the old VM to be fully deleted before bootstrap',
+      () => {
+        const current = describe()
+        assert.equal(current.targetSize, 0, 'MIG size changed during bootstrap')
+        assert.equal(
+          desiredTemplate(current),
+          template,
+          'MIG template changed during bootstrap'
+        )
+        assert.equal(
+          current.updatePolicy?.type,
+          'OPPORTUNISTIC',
+          'MIG update policy changed during bootstrap'
+        )
+        assert(
+          !current.autoscaler ||
+            current.autoscaler.autoscalingPolicy.mode === 'OFF',
+          'Autoscaling was enabled during bootstrap'
+        )
+        // delete-instances returns once deletion is scheduled. Also check the
+        // Compute VM inventory so the old process cannot still be broadcasting.
+        const oldVms = globalResource(
+          'instances',
+          'list',
+          `--zones=${zone}`,
+          `--filter=name=${nameOf(oldInstance)}`
+        )
+        return instances().length === 0 && oldVms.length === 0
+      }
+    )
+    managed('resize', '--size=1')
+    await waitFor('Waiting for the bootstrapped VM and every backend', () => {
+      const current = describe()
+      assert.equal(current.targetSize, 1, 'MIG size changed during bootstrap')
+      assert.equal(
+        desiredTemplate(current),
+        template,
+        'MIG template changed during bootstrap'
+      )
+      const vms = instances()
+      return (
+        current.status?.isStable &&
+        vms.length === 1 &&
+        templateOf(vms[0]) === template &&
+        running(vms[0]) &&
+        readyInEveryBackend(vms[0].instance)
+      )
+    })
+    restorePolicies()
+    log('API bootstrap complete; all load-balancer backends are healthy')
+    return
+  }
+
+  if (!resuming) {
+    prepareUpdate()
     managed('resize', '--size=2')
   }
   const replacement = await waitFor(
@@ -286,6 +437,10 @@ async function rollout(
       ),
     'MIG instances changed during rollout'
   )
+  assert(
+    shareBroadcasts(readOldBroadcasts(), targetBroadcasts),
+    'Old VM broadcast configuration changed during rollout'
+  )
 
   log(
     `Replacement ${nameOf(replacement.instance)} is ready; removing ${nameOf(
@@ -317,22 +472,32 @@ async function rollout(
 
 module.exports = { rollout }
 if (require.main === module) {
-  const [project, zone, group, template, restoreAutoscalingMode, ...extra] =
-    process.argv.slice(2)
+  const [project, zone, group, template, ...flags] = process.argv.slice(2)
+  const allowDisruptiveBootstrap = flags.includes(
+    '--allow-disruptive-bootstrap'
+  )
+  const [restoreAutoscalingMode, ...extra] = flags.filter(
+    (flag) => flag !== '--allow-disruptive-bootstrap'
+  )
   if (!template || extra.length) {
     console.error(
-      'Usage: node deploy-rollout.cjs PROJECT ZONE GROUP TEMPLATE [RESTORE_AUTOSCALING_MODE]'
+      'Usage: node deploy-rollout.cjs PROJECT ZONE GROUP TEMPLATE [RESTORE_AUTOSCALING_MODE] [--allow-disruptive-bootstrap]'
     )
     process.exitCode = 1
   } else {
-    rollout({ project, zone, group, template, restoreAutoscalingMode }).catch(
-      (error) => {
-        console.error(error)
-        console.error(
-          'Rollout stopped. Inspect the MIG before any manual deletion; see deploy-rollout.md.'
-        )
-        process.exitCode = 1
-      }
-    )
+    rollout({
+      project,
+      zone,
+      group,
+      template,
+      restoreAutoscalingMode,
+      allowDisruptiveBootstrap,
+    }).catch((error) => {
+      console.error(error)
+      console.error(
+        'Rollout stopped. Inspect the MIG before any manual deletion; see deploy-rollout.md.'
+      )
+      process.exitCode = 1
+    })
   }
 }

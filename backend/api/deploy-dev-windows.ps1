@@ -7,7 +7,8 @@ $ErrorActionPreference = "Stop"
 Write-Host "=== Starting dev deployment ===" -ForegroundColor Cyan
 Write-Host "Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
-$REDIS_URL = ""
+$REDIS_URL = if ($env:REDIS_URL) { $env:REDIS_URL } else { "" }
+$REQUIRE_REDIS_BROADCASTS = if ($REDIS_URL) { "true" } else { "false" }
 $DISABLE_REDIS_CACHE = "true"
 $PERP_TRADING_MODE = if ($env:PERP_TRADING_MODE) {
     $env:PERP_TRADING_MODE
@@ -94,7 +95,7 @@ gcloud compute instance-templates create-with-container $TEMPLATE_NAME `
     --container-image=$IMAGE_URL `
     --machine-type=e2-small `
     --boot-disk-size=100GB `
-    --container-env="NEXT_PUBLIC_FIREBASE_ENV=DEV,GOOGLE_CLOUD_PROJECT=dev-mantic-markets,REDIS_URL=$REDIS_URL,DISABLE_REDIS_CACHE=$DISABLE_REDIS_CACHE,PERP_TRADING_MODE=$PERP_TRADING_MODE" `
+    --container-env="NEXT_PUBLIC_FIREBASE_ENV=DEV,GOOGLE_CLOUD_PROJECT=dev-mantic-markets,REDIS_URL=$REDIS_URL,DISABLE_REDIS_CACHE=$DISABLE_REDIS_CACHE,REQUIRE_REDIS_BROADCASTS=$REQUIRE_REDIS_BROADCASTS,PERP_TRADING_MODE=$PERP_TRADING_MODE" `
     --no-user-output-enabled `
     --scopes="default,cloud-platform" `
     --tags=lb-health-check
@@ -104,8 +105,12 @@ if ($LASTEXITCODE -ne 0) { Write-Host "Template creation failed" -ForegroundColo
 # Step 6: Start rollout
 Write-Host "`n=== Step 6: Starting rollout ===" -ForegroundColor Yellow
 
+$rolloutArgs = @()
+if ($env:ALLOW_DISRUPTIVE_BOOTSTRAP -eq "true") {
+    $rolloutArgs += "--allow-disruptive-bootstrap"
+}
 node "$PSScriptRoot\deploy-rollout.cjs" `
-    dev-mantic-markets us-east4-a api-group-east $TEMPLATE_NAME
+    dev-mantic-markets us-east4-a api-group-east $TEMPLATE_NAME @rolloutArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Rollout failed. Check GCP console and deploy-rollout.md before removing any VM." -ForegroundColor Red

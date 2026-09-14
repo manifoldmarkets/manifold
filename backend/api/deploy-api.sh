@@ -48,18 +48,15 @@ case $ENV in
     dev)
         PERP_TRADING_MODE=${PERP_TRADING_MODE:-enabled}
         NEXT_PUBLIC_FIREBASE_ENV=DEV
-        REDIS_URL=
+        REDIS_URL=${REDIS_URL:-}
         DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;; # previously n2-standard-2
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
-        # Private Memorystore instance. Passed at the container level so both
-        # the main API process and PM2 read replicas inherit it.
-        # Disabled since we scaled back down to one instance.
-        # REDIS_URL=redis://10.215.204.211:6379
-        # DISABLE_REDIS_CACHE=false
-        REDIS_URL=
+        # Shared WebSocket broadcasts are required while deploys overlap VMs.
+        # Keep the independent L2 cache disabled.
+        REDIS_URL=${REDIS_URL:-redis://10.215.204.211:6379}
         DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=c2-standard-4 ;;
@@ -67,6 +64,9 @@ case $ENV in
         echo "Invalid environment; must be dev or prod."
         exit 1
 esac
+
+REQUIRE_REDIS_BROADCASTS=false
+if [ -n "${REDIS_URL}" ]; then REQUIRE_REDIS_BROADCASTS=true; fi
 
 # Prod inherits the live mode when not explicitly overridden, so a routine
 # deploy can never flip the kill switch by accident.
@@ -151,7 +151,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE},PERP_TRADING_MODE=${PERP_TRADING_MODE} \
+       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE},REQUIRE_REDIS_BROADCASTS=${REQUIRE_REDIS_BROADCASTS},PERP_TRADING_MODE=${PERP_TRADING_MODE} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
        --tags lb-health-check
@@ -164,5 +164,9 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
 #         --global
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
+ROLLOUT_ARGS=()
+if [ "${ALLOW_DISRUPTIVE_BOOTSTRAP:-false}" = "true" ]; then
+    ROLLOUT_ARGS+=(--allow-disruptive-bootstrap)
+fi
 node "$(dirname "$0")/deploy-rollout.cjs" \
-    "${GCLOUD_PROJECT}" "${ZONE}" "${SERVICE_GROUP}" "${TEMPLATE_NAME}"
+    "${GCLOUD_PROJECT}" "${ZONE}" "${SERVICE_GROUP}" "${TEMPLATE_NAME}" "${ROLLOUT_ARGS[@]}"

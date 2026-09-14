@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { isWebSocketBroadcastReady } from 'shared/websockets/server'
 
 // Liveness: is this process up with a responsive event loop? Used for restart
 // decisions. Deliberately does NOT touch the db or the connection pool — a
@@ -34,6 +35,10 @@ export const markCachesLoaded = () => {
 export const healthzReady: RequestHandler = (_req, res) => {
   if (!cachesLoaded) {
     res.status(503).json({ status: 'warming' })
+    return
+  }
+  if (!process.env.READ_ONLY && !isWebSocketBroadcastReady()) {
+    res.status(503).json({ status: 'broadcast-unavailable' })
     return
   }
   const pool = createSupabaseDirectClient().$pool
