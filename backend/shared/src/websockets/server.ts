@@ -33,6 +33,7 @@ let redisPublisher: RedisClient | undefined
 let redisPublisherConnect: Promise<RedisClient> | undefined
 let redisSubscriber: RedisClient | undefined
 let redisSubscriberConnect: Promise<void> | undefined
+let redisSubscriberSubscribed = false
 let redisSubscriberShouldRun = false
 let redisSubscriberRetryTimeout: NodeJS.Timeout | undefined
 let redisSubscriberRetryDelayMs = REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS
@@ -203,6 +204,24 @@ function redisBroadcastsEnabled() {
   return getRedisUrl() != null
 }
 
+// Single-process local development can run without Redis. Deployments that
+// overlap writers opt in to requiring both sides of the shared broadcast path.
+export function isWebSocketBroadcastReady() {
+  if (process.env.REQUIRE_REDIS_BROADCASTS !== 'true') return true
+  return !!(
+    redisPublisher?.isReady &&
+    redisSubscriber?.isReady &&
+    redisSubscriberSubscribed
+  )
+}
+
+function disconnectSubscribersOnBroadcastFailure() {
+  if (process.env.REQUIRE_REDIS_BROADCASTS !== 'true') return
+  // A live socket with a broken shared subscription can silently miss events.
+  // Force clients to reconnect/resubscribe and use their usual reconciliation.
+  for (const [ws] of SWITCHBOARD.getAll()) ws.terminate()
+}
+
 function recordBroadcastMetrics(topics: string[]) {
   for (const topic of topics) {
     const topicCategory = getTopicCategory(topic)
@@ -281,8 +300,13 @@ async function getRedisPublisher() {
     'Starting Redis websocket publisher connection.',
     getRedisLogContext()
   )
-  redisPublisher = createClient({ url })
+  redisPublisher = createClient({
+    url,
+    disableOfflineQueue: true,
+    socket: { connectTimeout: 5_000 },
+  })
   redisPublisher.on('error', (err: unknown) => {
+    disconnectSubscribersOnBroadcastFailure()
     log.error('Redis websocket publisher error.', {
       ...getRedisErrorDetails(err),
       ...getRedisLogContext(),
@@ -290,8 +314,10 @@ async function getRedisPublisher() {
     metrics.inc('ws/redis_publisher_errors')
   })
   redisPublisher.on('reconnecting', () => {
+    disconnectSubscribersOnBroadcastFailure()
     log.warn('Redis websocket publisher reconnecting.', getRedisLogContext())
   })
+  redisPublisher.on('end', disconnectSubscribersOnBroadcastFailure)
 
   redisPublisherConnect = redisPublisher
     .connect()
@@ -386,9 +412,11 @@ function startRedisBroadcastSubscriber() {
     'Starting Redis websocket subscriber connection.',
     getRedisLogContext()
   )
-  const subscriber = createClient({ url })
+  const subscriber = createClient({ url, socket: { connectTimeout: 5_000 } })
   redisSubscriber = subscriber
+  redisSubscriberSubscribed = false
   subscriber.on('error', (err: unknown) => {
+    disconnectSubscribersOnBroadcastFailure()
     log.error('Redis websocket subscriber error.', {
       ...getRedisErrorDetails(err),
       ...getRedisLogContext(),
@@ -396,13 +424,18 @@ function startRedisBroadcastSubscriber() {
     metrics.inc('ws/redis_subscriber_errors')
   })
   subscriber.on('reconnecting', () => {
+    disconnectSubscribersOnBroadcastFailure()
     log.warn('Redis websocket subscriber reconnecting.', getRedisLogContext())
   })
+  subscriber.on('end', disconnectSubscribersOnBroadcastFailure)
 
   redisSubscriberConnect = subscriber
     .connect()
     .then(() => subscriber.subscribe(channel, handleRedisBroadcast))
     .then(() => {
+      // node-redis restores subscriptions before isReady on reconnect. This
+      // flag also prevents initial readiness before the first SUBSCRIBE ack.
+      redisSubscriberSubscribed = true
       resetRedisSubscriberRetryDelay()
       log.info('Redis websocket subscriber connected.', getRedisLogContext())
       log.info('Redis websocket subscriber listening.', getRedisLogContext())
@@ -433,6 +466,7 @@ function stopRedisBroadcastSubscriber() {
   const subscriber = redisSubscriber
   redisSubscriber = undefined
   redisSubscriberConnect = undefined
+  redisSubscriberSubscribed = false
   subscriber?.quit().catch((err: unknown) => {
     log.error('Failed to quit Redis websocket subscriber.', {
       ...getRedisErrorDetails(err),
@@ -452,6 +486,7 @@ export function broadcastMulti(topics: string[], data: BroadcastPayload) {
         ...getRedisLogContext(),
       })
       metrics.inc('ws/redis_broadcast_publish_errors')
+      disconnectSubscribersOnBroadcastFailure()
     })
   }
 }
@@ -462,6 +497,9 @@ export function broadcast(topic: string, data: BroadcastPayload) {
 
 export function listen(server: HttpServer, path: string) {
   startRedisBroadcastSubscriber()
+  // Establish the publisher before admitting traffic, rather than waiting for
+  // the first write. getRedisPublisher already logs connection failures.
+  if (redisBroadcastsEnabled()) getRedisPublisher().catch(() => {})
   const wss = new WebSocketServer({ server, path })
   let deadConnectionCleaner: NodeJS.Timeout | undefined
   wss.on('listening', () => {
@@ -480,6 +518,16 @@ export function listen(server: HttpServer, path: string) {
     log.error('Error on websocket server.', { error: err })
   })
   wss.on('connection', (ws) => {
+    ws.on('error', (err) => {
+      log.error('Error on websocket connection.', { error: err })
+    })
+    // LB health changes propagate asynchronously; reject sockets arriving in
+    // that interval too. Code 1013 asks clients to retry, rather than silently
+    // accepting a subscription that cannot receive cross-writer events.
+    if (!isWebSocketBroadcastReady()) {
+      ws.close(1013, 'Shared broadcasts unavailable; reconnect and resubscribe')
+      return
+    }
     // todo: should likely kill connections that haven't sent any ping for a long time
     metrics.inc('ws/connections_established')
     metrics.set('ws/open_connections', wss.clients.size)
@@ -495,9 +543,6 @@ export function listen(server: HttpServer, path: string) {
       metrics.set('ws/open_connections', wss.clients.size)
       log.debug(`WS client disconnected.`, { code, reason: reason.toString() })
       SWITCHBOARD.disconnect(ws)
-    })
-    ws.on('error', (err) => {
-      log.error('Error on websocket connection.', { error: err })
     })
   })
   wss.on('close', function close() {

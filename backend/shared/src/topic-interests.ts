@@ -28,6 +28,17 @@ export const userIdsToAverageTopicConversionScores: {
   [userId: string]: TopicToInterestWeights
 } = {}
 
+// Drop every user's cached scores; readers rebuild a missing user on demand.
+// Clears in place because other modules import this object directly. Returns
+// how many users were dropped.
+export const clearUserInterestsCache = () => {
+  const userIds = Object.keys(userIdsToAverageTopicConversionScores)
+  for (const userId of userIds) {
+    delete userIdsToAverageTopicConversionScores[userId]
+  }
+  return userIds.length
+}
+
 export const activeTopics: { [topicId: string]: number } = {}
 let lastRefreshTime = 0
 
@@ -55,7 +66,11 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   // it. (refreshActiveTopics self-gates to ~hourly via lastRefreshTime.)
   if (Object.keys(activeTopics).length === 0) await refreshActiveTopics(pg)
   // Refresh the cache, and use the old one in the meantime
-  if (lastRefreshTime < Date.now() - HOUR_MS) refreshActiveTopics(pg)
+  if (lastRefreshTime < Date.now() - HOUR_MS) {
+    refreshActiveTopics(pg).catch((error) =>
+      log.error('Active topics refresh failed', { error })
+    )
+  }
   const topicIdsMeetingMinimumBar = Object.keys(activeTopics)
 
   // L2: try the shared Redis cache before touching the db. On a redeploy this
