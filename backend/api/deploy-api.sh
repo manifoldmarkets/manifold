@@ -105,11 +105,8 @@ IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
 # steps to deploy new version to GCP:
 # 1. build new docker image & upload to Google
 # 2. create a new GCP instance template with the new docker image
-# 3. tell the GCP 'backend service' for the API to update to the new template
-# 4. a. GCP creates a new instance with the new template
-#    b. wait for the new instance to be healthy (serving TCP connections)
-#    c. route new connections to the new instance
-#    d. delete the old instance
+# 3. add a replacement VM and wait for readiness in every LB backend
+# 4. delete the old VM only after the replacement can serve traffic
 
 yarn build
 
@@ -167,16 +164,5 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
 #         --global
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
-gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \
-        --project ${GCLOUD_PROJECT} \
-        --zone ${ZONE} \
-        --version template=${TEMPLATE_NAME} \
-        --no-user-output-enabled \
-        --max-unavailable 0 \
-        --max-surge 1
-
-echo "Rollout underway. Waiting for update to finish rolling out"
-echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
-gcloud compute instance-groups managed wait-until --stable ${SERVICE_GROUP} \
-        --project ${GCLOUD_PROJECT} \
-        --zone ${ZONE}
+node "$(dirname "$0")/deploy-rollout.cjs" \
+    "${GCLOUD_PROJECT}" "${ZONE}" "${SERVICE_GROUP}" "${TEMPLATE_NAME}"

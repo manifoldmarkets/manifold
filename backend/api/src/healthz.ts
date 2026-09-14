@@ -16,8 +16,7 @@ export const healthzLive: RequestHandler = (_req, res) => {
 const READY_MAX_WAITING = 5
 
 // Whether startup cache init has finished. The server starts listening before
-// initCaches so liveness answers within seconds of a process restart (the MIG
-// autohealer only tolerates 15s of dead liveness before recreating the VM);
+// initCaches so liveness answers within seconds of a process restart;
 // readiness holds off the LB until the caches are warm.
 let cachesLoaded = false
 export const markCachesLoaded = () => {
@@ -29,11 +28,9 @@ export const markCachesLoaded = () => {
 // a db-wide slowdown can never make the check itself hang. This is per-instance
 // backpressure: a hot instance sheds load onto cooler ones.
 //
-// On the failure mode this is meant to survive — every instance saturating at
-// once during a true db-wide pin — GCP health checking fails open: when all
-// backends in a service are unhealthy it routes to all of them anyway. So the
-// worst case degrades to today's behaviour rather than a full blackout, and the
-// common case (one wedged instance) gets traffic pulled off it automatically.
+// The external Application Load Balancer returns 503 if all backends are
+// unhealthy. Deployments must retain the old VM until the replacement passes
+// this check on every serving port, not just the MIG's liveness check.
 export const healthzReady: RequestHandler = (_req, res) => {
   if (!cachesLoaded) {
     res.status(503).json({ status: 'warming' })

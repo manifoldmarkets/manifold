@@ -171,16 +171,5 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --tags lb-health-check
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
-gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \
-       --project ${GCLOUD_PROJECT} \
-       --zone ${ZONE} \
-       --version template=${TEMPLATE_NAME} \
-       --no-user-output-enabled \
-       --max-unavailable 0 \
-       --max-surge 1 # don't kill old one until new one is healthy
-
-echo "Rollout underway. Waiting for update to finish rolling out"
-echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
-gcloud compute instance-groups managed wait-until --stable ${SERVICE_GROUP} \
-       --project ${GCLOUD_PROJECT} \
-       --zone ${ZONE}
+node ./deploy-rollout.cjs \
+    "${GCLOUD_PROJECT}" "${ZONE}" "${SERVICE_GROUP}" "${TEMPLATE_NAME}"

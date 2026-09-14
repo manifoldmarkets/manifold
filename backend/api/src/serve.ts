@@ -27,8 +27,6 @@ if (!LOCAL_ONLY) {
   log('Api server starting up in LOCAL_ONLY mode...')
 }
 
-const DB_RESPONSE_TIMEOUT = 30_000
-
 const startupProcess = async () => {
   if (LOCAL_ONLY) {
     log('LOCAL_ONLY mode: skipping Secret Manager, using env vars directly.')
@@ -40,13 +38,9 @@ const startupProcess = async () => {
     log('Secrets loaded.')
   }
 
-  // Listen before cache init: /healthz/live must answer within seconds of a
-  // process restart, because the MIG autohealer recreates the whole VM after
-  // 15s of dead liveness (5s checks x 3). Awaiting initCaches here turned
-  // PM2's old nightly cron_restart (and would turn any crash restart) into a
-  // multi-minute full outage while the instance was rebuilt. The LB routes on
-  // /healthz/ready, which reports 'warming' until markCachesLoaded, so no
-  // traffic arrives early.
+  // Answer liveness during cache init so a process restart doesn't trigger a
+  // VM repair. deploy-rollout.cjs keeps the old VM until every LB backend
+  // reports the replacement ready; MIG liveness alone cannot gate a rollout.
   const PORT = process.env.PORT ?? 8088
   const httpServer = app.listen(PORT, () => {
     log.info(`Serving API on port ${PORT}.`)
@@ -57,20 +51,11 @@ const startupProcess = async () => {
     log.info('Web socket server listening on /ws')
   }
 
-  log('Starting server <> postgres timeout')
-  const timeoutId = setTimeout(() => {
-    log.error(
-      `Server hasn't heard from postgres in ${DB_RESPONSE_TIMEOUT}ms. Exiting.`
-    )
-    throw new Error('Server startup timed out')
-  }, DB_RESPONSE_TIMEOUT)
-
   if (LOCAL_ONLY) {
     // Skip cache initialization in local mode
-    clearTimeout(timeoutId)
     log('LOCAL_ONLY mode: skipping cache initialization.')
   } else {
-    await initCaches(timeoutId)
+    await initCaches()
     log('Caches loaded.')
     // PM2 only ever restarted the main process; the read replicas keep their
     // startup cache until the next deploy, so leave their db load unchanged.
@@ -80,4 +65,9 @@ const startupProcess = async () => {
 
   log('Server started successfully')
 }
-startupProcess()
+startupProcess().catch((error) => {
+  log.error('API startup failed', { error })
+  // Let PM2 retry. Readiness has never been marked healthy, and the deployment
+  // helper retains the old VM when the replacement cannot initialize.
+  process.exit(1)
+})
