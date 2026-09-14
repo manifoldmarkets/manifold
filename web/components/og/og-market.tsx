@@ -6,7 +6,7 @@ import Logo from 'web/public/logo.svg'
 import { ProbGraph } from './graph'
 
 // Shown at the bottom of every market card in social link previews
-export const OG_TAGLINE = 'Play-money prediction markets · Create your own'
+export const OG_TAGLINE = 'User-created play-money prediction markets'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
