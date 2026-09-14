@@ -41,6 +41,7 @@ import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
 import { PerpCreatorAccount } from 'common/perps/creator-accounts'
 import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
+import type { PerpPoolStats } from 'common/perps/pool-accounting'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -2722,6 +2723,18 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limitDays: z.coerce.number(),
+      })
+      .strict(),
+  },
+  'get-perp-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=300',
+    returns: {} as PerpPoolStats,
+    props: z
+      .object({
+        limitDays: z.coerce.number().int().min(1).max(730).default(365),
       })
       .strict(),
   },
