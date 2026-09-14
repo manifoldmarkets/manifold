@@ -14,6 +14,12 @@ import { APIParams, APIResponse } from 'common/api/schema'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 
+// The merged cache below is persisted to localStorage, which is ~5MB for the
+// whole site. Without a ceiling it only ever grows — the server trims nothing,
+// since it returns the newest notifications (or, for newOnly, just the ones we
+// haven't seen) — until a write no longer fits.
+export const MAX_CACHED_NOTIFICATIONS = 15 * NOTIFICATIONS_PER_PAGE
+
 export function useNotifications(
   userId: string,
   api: (
@@ -23,9 +29,12 @@ export function useNotifications(
     initialValue: T,
     key: string
   ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean],
-  count = 15 * NOTIFICATIONS_PER_PAGE,
+  count = MAX_CACHED_NOTIFICATIONS,
   newOnly?: boolean
 ) {
+  // Callers asking for fewer (the bell icon asks for a page) still keep the
+  // full window cached, so the unseen badge doesn't under-count.
+  const cacheLimit = Math.max(count, MAX_CACHED_NOTIFICATIONS)
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, 'notifications-' + userId)
@@ -80,7 +89,10 @@ export function useNotifications(
             }
           }
 
-          const updatedNotifications = Array.from(byId.values())
+          const updatedNotifications = sortBy(
+            Array.from(byId.values()),
+            (n) => -n.createdTime
+          ).slice(0, cacheLimit)
           const newLatestCreatedTime = Math.max(
             ...updatedNotifications.map((n) => n.createdTime),
             latestCreatedTime ?? 0
@@ -101,7 +113,7 @@ export function useNotifications(
         setLatestCreatedTime((prevTime) =>
           Math.max(prevTime ?? 0, newNotification.createdTime)
         )
-        return [newNotification, ...(notifs ?? [])]
+        return [newNotification, ...(notifs ?? [])].slice(0, cacheLimit)
       })
     },
   })

@@ -41,7 +41,9 @@ export const clearLocalStoragePreservingNativeInfo = () => {
   const preserved = NATIVE_INFO_LOCAL_KEYS.map(
     (key) => [key, safeLocalStorage?.getItem(key) ?? null] as const
   )
-  localStorage.clear()
+  // Via the proxy so a store that refuses access can't throw out of the
+  // Firebase auth observer that calls this and abort the rest of sign-out.
+  safeLocalStorage?.clear()
   if (isNative) setIsNativeOld(true, platform ?? '')
   preserved.forEach(([key, value]) => {
     if (value !== null) safeLocalStorage?.setItem(key, value)
