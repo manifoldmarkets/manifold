@@ -85,3 +85,23 @@ export const mnxLinkUrl = (
     return url
   }
 }
+
+/** Native's new-window handler only opens external URLs, never /mnx. */
+export const mnxNavigationHref = (props: {
+  url: string | undefined
+  feedId: string | undefined
+  location: MnxLinkLocation | undefined
+  isNative: boolean
+  authorized: boolean | undefined
+  inviteUrl: string | undefined
+}) => {
+  const { url, feedId, location, isNative, authorized, inviteUrl } = props
+  const instrument = getMnxInstrument(feedId)
+  if (!instrument || !location) return url
+  if (isNative) {
+    // No href during auth/signing: tapping must never silently lose the invite
+    // or open a previous user's URL while auth is changing.
+    return authorized === false ? url : authorized ? inviteUrl : undefined
+  }
+  return `/mnx?${new URLSearchParams({ feedId: instrument.feedId, location })}`
+}
