@@ -17,6 +17,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { PrivateUser } from 'common/user'
+import { PERP_ALERT_REASONS } from 'common/perps/alerts'
 import {
   getDefaultNotificationPreferences,
   notification_destination_types,
@@ -86,6 +87,7 @@ const browserDisabled: Array<notification_preference> = [
 ]
 
 const mobilePushEnabled: Array<notification_preference> = [
+  ...PERP_ALERT_REASONS,
   'resolutions_on_watched_markets',
   'resolutions_on_watched_markets_with_shares_in',
   'opt_out_all',
@@ -174,7 +176,7 @@ const otherBalances: NotificationSectionData = {
 }
 const perps: NotificationSectionData = {
   label: 'Perps',
-  subscriptionTypes: ['perp_liquidation', 'perp_adl'],
+  subscriptionTypes: [...PERP_ALERT_REASONS, 'perp_liquidation', 'perp_adl'],
 }
 const userInteractions: NotificationSectionData = {
   label: 'Users',
@@ -342,6 +344,33 @@ function AppReviewPromptToggle(props: { privateUser: PrivateUser }) {
   )
 }
 
+export function PerpAlertSettings() {
+  const privateUser = usePrivateUser()
+  if (!privateUser) return null
+  return (
+    <Col className="gap-2">
+      <p className="text-ink-500 text-sm">
+        Applies to all your perp positions. Gain/loss alerts are limited to 3
+        per day, at least 1 hour apart. Risk warnings can still escalate.
+      </p>
+      {PERP_ALERT_REASONS.map((reason) => (
+        <NotificationSettingLine
+          key={reason}
+          description={NOTIFICATION_DESCRIPTIONS[reason].simple}
+          subscriptionTypeKey={reason}
+          destinations={getUsersSavedPreference(reason, privateUser)}
+          optOutAll={getUsersSavedPreference('opt_out_all', privateUser)}
+        />
+      ))}
+      <p className="text-ink-500 text-xs">
+        Alerts start tracking gains and losses when your position is first
+        checked. Fast moves can liquidate before a warning arrives. Alerts do
+        not close positions.
+      </p>
+    </Col>
+  )
+}
+
 function NotificationSettingLine(props: {
   description: string
   subscriptionTypeKey: notification_preference
@@ -360,6 +389,10 @@ function NotificationSettingLine(props: {
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
 
+  useEffect(() => setInAppEnabled(previousInAppValue), [previousInAppValue])
+  useEffect(() => setEmailEnabled(previousEmailValue), [previousEmailValue])
+  useEffect(() => setMobileEnabled(previousMobileValue), [previousMobileValue])
+
   return (
     <Row
       className={clsx(
@@ -371,6 +404,13 @@ function NotificationSettingLine(props: {
         <Row className="text-ink-700 gap-2 font-medium">
           <span>{description}</span>
         </Row>
+        {PERP_ALERT_REASONS.some(
+          (reason) => reason === subscriptionTypeKey
+        ) && (
+          <p className="text-ink-500 text-xs">
+            {NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey].detailed}
+          </p>
+        )}
         <Row className={'gap-4'}>
           {!browserDisabled.includes(subscriptionTypeKey) && (
             <SwitchSetting
