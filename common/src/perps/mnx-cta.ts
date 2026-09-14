@@ -99,9 +99,11 @@ export const mnxNavigationHref = (props: {
   const instrument = getMnxInstrument(feedId)
   if (!instrument || !location) return url
   if (isNative) {
+    // Native only displays the WebView for a signed-in user. Its initial false
+    // auth state can precede the native session handoff, so it must also wait.
     // No href during auth/signing: tapping must never silently lose the invite
     // or open a previous user's URL while auth is changing.
-    return authorized === false ? url : authorized ? inviteUrl : undefined
+    return authorized ? inviteUrl : undefined
   }
   return `/mnx?${new URLSearchParams({ feedId: instrument.feedId, location })}`
 }

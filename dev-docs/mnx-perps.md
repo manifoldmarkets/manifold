@@ -13,10 +13,10 @@ The MNX market CTAs and tracked chart credits open `/mnx?feedId=...&location=...
 in a new tab. That page waits for authentication, then calls the authenticated
 `POST /v0/get-mnx-invite-link` endpoint. The backend looks up the current username
 using the authenticated user ID and returns the instrument's MNX URL with the
-existing UTM tags plus `u` (username) and `t` (token). Signed-out visitors continue
-to the ordinary tagged MNX URL. A signing failure offers a retry instead of
-silently dropping a signed-in user's invite. Click analytics retain the unsigned
-destination URL so tokens are not stored in `user_events`.
+existing UTM tags plus `u` (username) and `t` (token). Signed-out browser visitors
+continue to the ordinary tagged MNX URL. A signing failure offers a retry instead
+of silently dropping a signed-in user's invite. Click analytics retain the
+unsigned destination URL so tokens are not stored in `user_events`.
 
 In the native iOS and Android apps, the link instead fetches its signed URL
 inside the authenticated WebView before it can be opened. Its `_blank` href is
@@ -24,9 +24,11 @@ the final external MNX URL, which the existing native `onOpenWindow` handler
 opens in the system browser. Native never receives the same-origin `/mnx` URL
 (the handler ignores it), and signing does not depend on the system browser
 sharing the app's login. While auth or signing is pending, taps show a loading
-message; failed requests can be retried by tapping again. Results are scoped to
-the user and destination and discarded when either changes. No native binary
-update is required.
+message; failed requests can be retried by tapping again. This includes the
+WebView's initial signed-out state before native transfers its signed-in session;
+native links never fall back to an unsigned URL during that handoff. Results are
+scoped to the user and destination and discarded when either changes. No native
+binary update is required.
 
 The agreed protocol is:
 

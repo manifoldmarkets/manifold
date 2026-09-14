@@ -117,11 +117,20 @@ describe('MNX native navigation', () => {
     }
   })
 
-  it('keeps signed-out native navigation external and unsigned', () => {
-    expect(mnxNavigationHref({ ...props, authorized: false })).toBe(url)
+  it('waits through a fresh WebView auth handoff before exposing the invite', () => {
+    const loading = { ...props, inviteUrl: undefined }
+    expect([
+      mnxNavigationHref({ ...loading, authorized: undefined }),
+      // Firebase initially reports no user before native transfers its session.
+      mnxNavigationHref({ ...loading, authorized: false }),
+      mnxNavigationHref({ ...loading, authorized: undefined }),
+      mnxNavigationHref({ ...loading, authorized: true }),
+      mnxNavigationHref(props),
+    ]).toEqual([undefined, undefined, undefined, undefined, inviteUrl])
   })
 
   it('withholds native links during auth or signing, including signing failures', () => {
+    expect(mnxNavigationHref({ ...props, authorized: false })).toBeUndefined()
     expect(
       mnxNavigationHref({ ...props, authorized: undefined })
     ).toBeUndefined()
