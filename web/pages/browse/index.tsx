@@ -68,6 +68,7 @@ export function BrowsePageContent() {
         showTopicsFilterPills
         showHotTopics
         persistPrefix={browseDefault.persistPrefix}
+        discoverySourceComponent="search"
         onBrowseModeChange={browseDefault.rememberMode}
         autoFocus={autoFocus}
         additionalFilter={{
