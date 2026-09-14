@@ -195,6 +195,7 @@ import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
 import { setJobInterest } from './set-job-interest'
 import { getJobInterest } from './get-job-interest'
+import { getMnxInviteLink } from './get-mnx-invite-link'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -427,6 +428,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-notif-settings': updateNotifSettings,
   'set-job-interest': setJobInterest,
   'get-job-interest': getJobInterest,
+  'get-mnx-invite-link': getMnxInviteLink,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,

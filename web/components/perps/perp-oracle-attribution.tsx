@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { getMnxInstrument } from 'common/perps/mnx'
 import { MnxLinkLocation } from 'common/perps/mnx-cta'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
-import { mnxLinkProps } from './mnx-cta'
+import { useMnxLinkProps } from './mnx-cta'
 
 const mnxAsOfFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -38,6 +38,12 @@ export const PerpOracleAttribution = (props: {
 }) => {
   const { feedId, asOfTime, mnxLinkLocation, contractId, className } = props
   const attribution = getOracleAttribution(feedId)
+  const trackedMnxLink = useMnxLinkProps({
+    url: attribution?.url,
+    location: mnxLinkLocation,
+    feedId,
+    contractId,
+  })
   // An unregistered or brand-new feed renders nothing rather than "Source:
   // undefined".
   if (!attribution) return null
@@ -53,26 +59,18 @@ export const PerpOracleAttribution = (props: {
   // reading as what it is — a credit — and the selling happens in MnxTradeCta.
   // The href is still tagged and counted, since a reader who clicks the credit
   // line left for MNX just the same.
-  const trackedMnxLink =
-    url && mnxLinkLocation && isMnx
-      ? mnxLinkProps({
-          url,
-          location: mnxLinkLocation,
-          feedId,
-          contractId,
-        })
-      : undefined
-
   return (
     <div className={clsx('text-ink-400 text-xs', className)}>
       Source:{' '}
       {url ? (
         <a
-          {...(trackedMnxLink ?? {
-            href: url,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          })}
+          {...(mnxLinkLocation && isMnx
+            ? trackedMnxLink
+            : {
+                href: url,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+              })}
           className="hover:text-ink-600 underline underline-offset-2"
         >
           {source}

@@ -1,6 +1,7 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { MouseEvent } from 'react'
+import { MouseEvent, useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { getMnxInstrument } from 'common/perps/mnx'
 import {
@@ -8,10 +9,14 @@ import {
   MnxLinkLocation,
   getMnxTradeTarget,
   mnxLinkUrl,
+  mnxNavigationHref,
 } from 'common/perps/mnx-cta'
 import { getPerpTicker } from 'common/perps/ticker'
 import { buttonClass } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
+import { api } from 'web/lib/api/api'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useNativeInfo } from 'web/components/native-message-provider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 
@@ -24,16 +29,61 @@ import { Row } from '../layout/row'
  * placement that looks like the others but is counted by nobody is worse than
  * no placement at all, because it silently deflates the number we act on.
  */
-export const mnxLinkProps = (props: {
-  url: string
-  location: MnxLinkLocation
+export const useMnxLinkProps = (props: {
+  url: string | undefined
+  location: MnxLinkLocation | undefined
   feedId: string | undefined
   /** Lands in `user_events.contract_id`, so clicks group by market. */
   contractId?: string
 }) => {
   const { url, location, feedId, contractId } = props
-  const href = mnxLinkUrl(url, location)
+  const href = url && location ? mnxLinkUrl(url, location) : url
   const instrument = getMnxInstrument(feedId)
+  const { isNative } = useNativeInfo()
+  const authorized = useIsAuthorized()
+  const user = useUser()
+  const [attempt, setAttempt] = useState(0)
+  const [invite, setInvite] = useState<{
+    key: string
+    url?: string
+    failed?: boolean
+  }>()
+  // Scope results to both the account and destination. Never reuse a previous
+  // user's token or a different market's link while a new request is pending.
+  const requestKey = JSON.stringify([
+    user?.id,
+    user?.username,
+    feedId,
+    location,
+  ])
+  useEffect(() => {
+    if (!isNative || !authorized || !instrument || !location) return
+    let cancelled = false
+    setInvite(undefined)
+    api('get-mnx-invite-link', { feedId: instrument.feedId, location }).then(
+      ({ url }) => {
+        if (!cancelled) setInvite({ key: requestKey, url })
+      },
+      () => {
+        if (!cancelled) setInvite({ key: requestKey, failed: true })
+      }
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [isNative, authorized, instrument, location, requestKey, attempt])
+
+  const currentInvite = invite?.key === requestKey ? invite : undefined
+  const nativeInviteRequired = isNative && !!instrument && !!location
+  const navigationHref = mnxNavigationHref({
+    url: href,
+    feedId,
+    location,
+    isNative,
+    authorized,
+    inviteUrl: currentInvite?.url,
+  })
+  const waitingForInvite = nativeInviteRequired && !navigationHref
   const record = () =>
     track(MNX_CLICK_EVENT, {
       location,
@@ -46,18 +96,42 @@ export const mnxLinkProps = (props: {
       url: href,
     })
   return {
-    href,
+    // Native's onOpenWindow ignores same-origin URLs. Give it the final
+    // external URL synchronously on tap, signed with the WebView's session.
+    // Browsers still resolve auth in a new tab for native anchor behavior.
+    href: navigationHref,
+    'aria-busy': waitingForInvite && !currentInvite?.failed,
+    role: waitingForInvite ? ('link' as const) : undefined,
+    tabIndex: waitingForInvite ? 0 : undefined,
+    onKeyDown: (e: React.KeyboardEvent<HTMLAnchorElement>) => {
+      if (waitingForInvite && e.key === 'Enter') {
+        e.preventDefault()
+        e.currentTarget.click()
+      }
+    },
     target: '_blank',
     rel: 'noopener noreferrer',
     // track() is fire-and-forget, which is safe here only because the link
     // opens a new tab: this page stays mounted, so the insert is not racing a
     // navigation that would cancel it.
-    onClick: record,
+    onClick: (e: MouseEvent<HTMLAnchorElement>) => {
+      if (waitingForInvite) {
+        e.preventDefault()
+        if (currentInvite?.failed) {
+          toast.error(
+            'Couldn’t create your MNX invite. Retrying—tap again shortly.'
+          )
+          setAttempt((value) => value + 1)
+        } else toast('Preparing your MNX invite. Please tap again shortly.')
+        return
+      }
+      record()
+    },
     // A middle click opens a background tab and fires auxclick, not click —
     // without this, those read as zero. Middle button only: right-click fires
     // auxclick too, and opening a context menu is not a click-through.
     onAuxClick: (e: MouseEvent<HTMLAnchorElement>) => {
-      if (e.button === 1) record()
+      if (e.button === 1 && !waitingForInvite) record()
     },
   }
 }
@@ -77,6 +151,12 @@ export const MnxTradeCta = (props: {
 }) => {
   const { contract, location, className } = props
   const instrument = getMnxTradeTarget(contract)
+  const linkProps = useMnxLinkProps({
+    url: instrument?.url,
+    location,
+    feedId: instrument ? contract.oracleFeedId : undefined,
+    contractId: contract.id,
+  })
   if (!instrument) return null
 
   const ticker = getPerpTicker(contract)
@@ -85,12 +165,6 @@ export const MnxTradeCta = (props: {
   // reader who trades on MNX notices immediately.
   const derivative =
     instrument.type === 'future' ? 'valuation future' : 'perpetual'
-  const linkProps = mnxLinkProps({
-    url: instrument.url,
-    location,
-    feedId: contract.oracleFeedId,
-    contractId: contract.id,
-  })
 
   return (
     // MNX's own colours rather than Manifold's: their wordmark is white on
