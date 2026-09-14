@@ -4,27 +4,33 @@ export interface Store {
   removeItem: (key: string) => void
 }
 
-function getStorageProxy(store: Storage): Store | undefined {
-  try {
-    store.setItem('test', '')
-    store.getItem('test')
-    store.removeItem('test')
-  } catch (e) {
-    console.warn(e)
-    return undefined
-  }
+function getStorageProxy(store: Storage): Store {
+  // Storage can become full or unavailable after initialization. Treat every
+  // operation as best effort, so persistence failures don't crash the UI.
   return {
-    getItem: (key: string) => store.getItem(key) ?? null,
+    getItem: (key: string) => {
+      try {
+        return store.getItem(key) ?? null
+      } catch (e) {
+        console.warn(e)
+        return null
+      }
+    },
     setItem: (key: string, value: string) => {
       try {
         store.setItem(key, value)
       } catch (e) {
-        store.clear()
-        // try again
-        store.setItem(key, value)
+        // Keep the caller's in-memory state and leave other stored data intact.
+        console.warn(e)
       }
     },
-    removeItem: (key: string) => store.removeItem(key),
+    removeItem: (key: string) => {
+      try {
+        store.removeItem(key)
+      } catch (e) {
+        console.warn(e)
+      }
+    },
   }
 }
 
