@@ -23,14 +23,16 @@ export function BinaryMultiAnswersPanel(props: {
   // picker: open pre-selected on a side with a persistent two-side selector so
   // both options stay visible and switching sides updates the panel in place.
   preselect?: boolean
+  /** With preselect: which side to open on (YES = first answer). */
+  preselectOutcome?: 'YES' | 'NO'
   onClose?: () => void
 }) {
-  const { feedReason, contract, preselect, onClose } = props
+  const { feedReason, contract, preselect, preselectOutcome, onClose } = props
   const answers = contract.answers
   const user = useUser()
 
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
-    preselect ? 'YES' : undefined
+    preselect ? preselectOutcome ?? 'YES' : undefined
   )
 
   if (contract.isResolved) {

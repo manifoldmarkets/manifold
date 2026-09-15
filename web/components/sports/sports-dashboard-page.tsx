@@ -14,6 +14,8 @@ import {
   MatchOutcome,
   SportsDashboardTabButton,
 } from 'web/components/sports/sports-match-card'
+import { teamBadge } from 'common/sports'
+import { splitFlag as parseAnswerText } from 'common/sports-schedule'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
 import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
@@ -117,19 +119,6 @@ function MarketCardSkeletonGrid() {
   )
 }
 
-function parseAnswerText(text: string): { flag: string; name: string } {
-  const chars = [...text.trim()]
-  const isRegionalIndicator = (c?: string) => {
-    const cp = c?.codePointAt(0)
-    return cp !== undefined && cp >= 0x1f1e6 && cp <= 0x1f1ff
-  }
-  if (isRegionalIndicator(chars[0]) && isRegionalIndicator(chars[1])) {
-    const flag = chars[0] + chars[1]
-    return { flag, name: text.trim().slice(flag.length).trim() }
-  }
-  return { flag: '', name: text.trim() }
-}
-
 // football-data live statuses (no HALF_TIME exists — the break is PAUSED).
 const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 // Poller runs ~every 10s and pushes a FINISHED status when a match ends; this
@@ -164,11 +153,26 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
   const a1 = parseAnswerText(m.answers[1].text)
   const drawAnswer = m.answers.find((a) => a.text === 'Draw')
 
+  // For binary sports markets (NFL, CFB, etc.) the answers are synthesized
+  // from sportsHomeTeam/sportsAwayTeam with id='YES'/'NO'. Use teamBadge for
+  // the badge slot instead of a flag emoji.
+  const isBinaryMarket = m.answers[0].id === 'YES' && m.answers[1].id === 'NO'
+  const badgeA = isBinaryMarket ? teamBadge(a0.name, m.sportsLeague) : a0.flag
+  const badgeB = isBinaryMarket ? teamBadge(a1.name, m.sportsLeague) : a1.flag
+
   const resolved = !!m.resolution
   let winner: MatchOutcome | undefined
   if (resolved && m.resolvedAnswer) {
-    if (m.resolvedAnswer === m.answers[0].text) winner = 'teamA'
-    else if (m.resolvedAnswer === m.answers[1].text) winner = 'teamB'
+    if (
+      m.resolvedAnswer === m.answers[0].text ||
+      m.resolvedAnswer === m.sportsHomeTeam
+    )
+      winner = 'teamA'
+    else if (
+      m.resolvedAnswer === m.answers[1].text ||
+      m.resolvedAnswer === m.sportsAwayTeam
+    )
+      winner = 'teamB'
     else if (m.resolvedAnswer === 'Draw') winner = 'draw'
   }
 
@@ -181,12 +185,12 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
     question: m.question,
     teamA: {
       name: a0.name,
-      flag: a0.flag,
+      flag: badgeA,
       prob: Math.round(m.answers[0].prob * 100),
     },
     teamB: {
       name: a1.name,
-      flag: a1.flag,
+      flag: badgeB,
       prob: Math.round(m.answers[1].prob * 100),
     },
     draw: { prob: drawAnswer ? Math.round(drawAnswer.prob * 100) : 0 },
@@ -215,6 +219,7 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
     // absolute URL) so SPA navigation + preview deployments work.
     marketUrl: `/${m.creatorUsername}/${m.slug}`,
     contractId: m.id,
+    isBinary: isBinaryMarket,
     teamAAnswerId: m.answers[0].id,
     teamBAnswerId: m.answers[1].id,
     drawAnswerId: drawAnswer?.id,
@@ -946,22 +951,6 @@ export function SportsDashboardPage({
 
   return (
     <Page trackPageView={trackPageView}>
-      <style>{`
-        :root {
-          --sports-team-a: #1A7A9A;
-          --sports-team-a-vibrant: #0A8FAD;
-          --sports-team-b: #8B3A52;
-          --sports-team-b-vibrant: #C4436E;
-          --sports-draw: #6B7A8E;
-          --sports-draw-vibrant: #7A8CA0;
-        }
-        .dark {
-          --sports-team-a-vibrant: #25C4E8;
-          --sports-team-b-vibrant: #E85A8A;
-          --sports-draw: #7A8A9E;
-          --sports-draw-vibrant: #A8AABF;
-        }
-      `}</style>
       <Head>
         <title>{title} | Manifold</title>
       </Head>

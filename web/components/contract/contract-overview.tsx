@@ -1177,10 +1177,29 @@ export function BinaryBetPanel(props: {
   contract: BinaryOrPseudoNumericContract
 }) {
   const { contract } = props
+  const anyC = contract as any
+  const pseudonym =
+    anyC.sportsHomeTeam && anyC.sportsAwayTeam
+      ? {
+          YES: {
+            pseudonymName: anyC.sportsHomeTeam as string,
+            pseudonymColor: 'green' as const,
+          },
+          NO: {
+            pseudonymName: anyC.sportsAwayTeam as string,
+            pseudonymColor: 'red' as const,
+          },
+        }
+      : undefined
 
   return (
     <Col className="mt-2 w-full">
-      <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
+      <BuyPanel
+        inModal={false}
+        contract={contract}
+        className="bg-canvas-50"
+        pseudonym={pseudonym}
+      />
     </Col>
   )
 }

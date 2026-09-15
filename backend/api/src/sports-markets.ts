@@ -3,10 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SportsMarket } from 'common/sports'
 import { ENV_CONFIG } from 'common/envs/constants'
 
-export const sportsMarkets: APIHandler<'sports-markets'> = async (
-  props
-) => {
-
+export const sportsMarkets: APIHandler<'sports-markets'> = async (props) => {
   const { sportsLeague } = props
   const pg = createSupabaseDirectClient()
 
@@ -30,22 +27,42 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
     const closeTime: number = Number.isFinite(closeTimeRaw) ? closeTimeRaw : 0
     const resolution: string | null = d.resolution ?? null
 
+    const homeTeam: string | null = (d.sportsHomeTeam as string) ?? null
+    const awayTeam: string | null = (d.sportsAwayTeam as string) ?? null
+    const isBinary = !d.answers?.length && !!homeTeam && !!awayTeam
+
     let resolvedAnswer: string | null = null
-    if (resolution && d.answers) {
-      const answers: Array<{ id: string; text: string }> = d.answers
-      const winner = answers.find((a) => a.id === resolution)
-      resolvedAnswer = winner?.text ?? resolution
+    if (resolution) {
+      if (d.answers?.length) {
+        const winner = (d.answers as Array<{ id: string; text: string }>).find(
+          (a) => a.id === resolution
+        )
+        resolvedAnswer = winner?.text ?? resolution
+      } else {
+        // Binary market: resolution is YES/NO/NA
+        if (resolution === 'YES') resolvedAnswer = homeTeam
+        else if (resolution === 'NO') resolvedAnswer = awayTeam
+        else if (resolution === 'NA') resolvedAnswer = 'Cancelled/Tie'
+      }
     }
 
     const needsAttention =
       !resolution && closeTime > 0 && now - closeTime > attentionThresholdMs
 
-    const answers: Array<{ id: string; text: string; prob: number }> =
-      (d.answers ?? []).map((a: { id: string; text: string; prob?: number }) => ({
-        id: a.id,
-        text: a.text,
-        prob: a.prob ?? 0,
-      }))
+    // For binary sports markets, synthesize two answer objects so the dashboard
+    // card can render team names and probabilities without special-casing.
+    const answers: Array<{ id: string; text: string; prob: number }> = isBinary
+      ? [
+          { id: 'YES', text: homeTeam!, prob: d.prob ?? 0.5 },
+          { id: 'NO', text: awayTeam!, prob: 1 - (d.prob ?? 0.5) },
+        ]
+      : (d.answers ?? []).map(
+          (a: { id: string; text: string; prob?: number }) => ({
+            id: a.id,
+            text: a.text,
+            prob: a.prob ?? 0,
+          })
+        )
 
     return {
       id: d.id as string,
@@ -54,15 +71,22 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
       sportsStartTimestamp: (d.sportsStartTimestamp as string) ?? null,
       resolution,
       resolvedAnswer,
+      sportsHomeTeam: homeTeam,
+      sportsAwayTeam: awayTeam,
+      sportsLeague: (d.sportsLeague as string) ?? null,
       resolutionTime:
         d.resolutionTime != null && Number.isFinite(Number(d.resolutionTime))
           ? Number(d.resolutionTime)
           : null,
-      sportsHomeScore: d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
-      sportsAwayScore: d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
+      sportsHomeScore:
+        d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
+      sportsAwayScore:
+        d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
       sportsScoreDuration: (d.sportsScoreDuration as string) ?? null,
-      sportsPenHome: d.sportsPenHome != null ? (d.sportsPenHome as number) : null,
-      sportsPenAway: d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
+      sportsPenHome:
+        d.sportsPenHome != null ? (d.sportsPenHome as number) : null,
+      sportsPenAway:
+        d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
       sportsLiveStatus: (d.sportsLiveStatus as string) ?? null,
       sportsLiveMinute: (d.sportsLiveMinute as string) ?? null,
       sportsLiveUpdatedTime:

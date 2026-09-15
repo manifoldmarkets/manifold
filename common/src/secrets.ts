@@ -39,6 +39,7 @@ export const secrets = (
     'FIRECRAWL_API_KEY',
     'SPORTSDB_KEY',
     'FOOTBALL_DATA_API_KEY',
+    'THE_ODDS_API_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
     'OPENROUTER_API_KEY',
