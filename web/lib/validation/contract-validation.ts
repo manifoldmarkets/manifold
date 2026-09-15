@@ -1,5 +1,6 @@
 import { OutcomeType } from 'common/contract'
 import { JSONContent } from '@tiptap/core'
+import { getAnswerProbsError } from 'common/new-contract'
 
 export type ContractFormState = {
   question: string
@@ -13,6 +14,7 @@ export type ContractFormState = {
   liquidityTier: number
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  answerProbs?: number[]
   probability?: number
   totalBounty?: number
   min?: number
@@ -131,6 +133,22 @@ export function validateContractForm(
         if (uniqueAnswers.size < nonEmptyAnswers.length) {
           warnings.answers = 'Some answers are duplicates'
         }
+      }
+
+      // Manually set starting probabilities, if the creator turned them on.
+      // Blank answer slots get dropped on submit, so their probability goes too.
+      if (state.answerProbs) {
+        const namedAnswerProbs = state.answerProbs.filter(
+          (_, i) => !!answers?.[i]?.trim()
+        )
+        const answerProbsError = getAnswerProbsError({
+          answerProbs: namedAnswerProbs,
+          numAnswers: nonEmptyAnswers.length,
+          shouldAnswersSumToOne: state.shouldAnswersSumToOne ?? true,
+          hasOtherAnswer:
+            addAnswersModeEnabled && state.shouldAnswersSumToOne === true,
+        })
+        if (answerProbsError) errors.answerProbs = answerProbsError
       }
       break
     }
