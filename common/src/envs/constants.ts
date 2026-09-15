@@ -613,6 +613,7 @@ export const RESERVED_PATHS = [
   'portfolio',
   'posts',
   'predictle',
+  'poker',
   'press',
   'privacy',
   'profile',

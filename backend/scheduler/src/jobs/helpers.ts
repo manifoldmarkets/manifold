@@ -56,16 +56,33 @@ const DEFAULT_OPTS: CronOptions = {
   },
 }
 
+export type JobOptions = {
+  // High-frequency jobs sample routine logs and scheduler_info writes. Errors
+  // and overlap protection still apply to every invocation.
+  bookkeepingIntervalMs?: number
+}
+
 export function createJob(
   name: string,
   schedule: string | null,
-  fn: (ctx: JobContext) => Promise<void>
+  fn: (ctx: JobContext) => Promise<void>,
+  { bookkeepingIntervalMs = 0 }: JobOptions = {}
 ) {
   const opts = { name, ...DEFAULT_OPTS }
+  let lastBookkeepingTime = -Infinity
+  let previousRun: JobContext = {}
   return new Cron(schedule ?? new Date(0), opts, async () => {
     const traceId = crypto.randomUUID()
     const context = { job: name, traceId }
     return await withMonitoringContext(context, async () => {
+      const startedAt = Date.now()
+      if (startedAt - lastBookkeepingTime < bookkeepingIntervalMs) {
+        await fn(previousRun)
+        previousRun = { lastStartTime: startedAt, lastEndTime: Date.now() }
+        consecutiveFailures.delete(name)
+        return
+      }
+      lastBookkeepingTime = startedAt
       log('Starting up.')
       const db = createSupabaseClient()
 
@@ -90,16 +107,21 @@ export function createJob(
         )
       log(`Last end time: ${lastEndTimeStamp ?? 'never'}`)
 
-      const jobPromise = fn({
-        lastEndTime: lastEndTimeStamp
-          ? new Date(lastEndTimeStamp).valueOf()
-          : undefined,
-        lastStartTime: lastStartTimeStamp
-          ? new Date(lastStartTimeStamp).valueOf()
-          : undefined,
-      })
+      const jobPromise = fn(
+        bookkeepingIntervalMs > 0 && previousRun.lastStartTime !== undefined
+          ? previousRun
+          : {
+              lastEndTime: lastEndTimeStamp
+                ? new Date(lastEndTimeStamp).valueOf()
+                : undefined,
+              lastStartTime: lastStartTimeStamp
+                ? new Date(lastStartTimeStamp).valueOf()
+                : undefined,
+            }
+      )
 
       await jobPromise
+      previousRun = { lastStartTime: startedAt, lastEndTime: Date.now() }
       consecutiveFailures.delete(name)
       // Update last end time
       await db

@@ -9,6 +9,7 @@ import {
 import { league_user_info } from './leagues'
 
 type AnyTxnType =
+  | PokerTxn
   | Donation
   | Tip
   | LootBoxPurchase
@@ -895,3 +896,11 @@ export type SweepstakesTicketTxn = Txn & SweepstakesTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
 export type PreKycBonusTxn = Txn & PreKycBonus
+
+// Hand/table associations live in the private poker ledger, not public txn data.
+export type PokerTxn = {
+  category: 'POKER_CONTRIBUTION' | 'POKER_REFUND' | 'POKER_PAYOUT'
+  token: 'M$'
+  fromType: 'USER' | 'BANK'
+  toType: 'USER' | 'BANK'
+}
