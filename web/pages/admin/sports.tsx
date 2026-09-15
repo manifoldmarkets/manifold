@@ -796,218 +796,223 @@ export default function SportsAdminPage() {
         </Section>
 
         {/* ── 2. Tournament Settings ── */}
-        <Section
-          title={`2. Competition Settings${
-            !isApiConnected ? ' — unavailable' : ''
-          }`}
-        >
-          {!isApiConnected ? (
-            <p className="text-ink-400 text-sm">
-              Select an active competition above to configure settings.
-            </p>
-          ) : null}
-          <Col
-            className="gap-5"
-            style={
-              !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
-            }
+        {!isOddsApi && (
+          <Section
+            title={`2. Competition Settings${
+              !isApiConnected ? ' — unavailable' : ''
+            }`}
           >
-            {/* Tag + group status */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Official group tag
-              </label>
-              <Row className="gap-2">
+            {!isApiConnected ? (
+              <p className="text-ink-400 text-sm">
+                Select an active competition above to configure settings.
+              </p>
+            ) : null}
+            <Col
+              className="gap-5"
+              style={
+                !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+              }
+            >
+              {/* Tag + group status */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Official group tag
+                </label>
+                <Row className="gap-2">
+                  <input
+                    type="text"
+                    value={groupSlug}
+                    onChange={(e) => setGroupSlug(e.target.value)}
+                    placeholder="ms-official-wc2026"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                  />
+                </Row>
+                <p className="text-ink-400 text-xs">
+                  Convention: <code>ms-official-[tournament]-[year]</code>.
+                  Group is auto-created as curated (admin-restricted) on first
+                  creation run.
+                </p>
+                {groupStatus && (
+                  <span
+                    className={clsx(
+                      'mt-1 text-xs font-medium',
+                      groupStatus.restricted
+                        ? 'text-green-600'
+                        : 'text-yellow-600'
+                    )}
+                  >
+                    {groupStatus.created
+                      ? `✅ Group created (${groupStatus.id}) — admin-restricted`
+                      : groupStatus.restricted
+                      ? `✅ Group exists and restricted (${groupStatus.id})`
+                      : `⚠️ Group exists but will be restricted on next run`}
+                  </span>
+                )}
+              </Col>
+
+              {/* Dashboard URL */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Dashboard URL
+                </label>
                 <input
                   type="text"
-                  value={groupSlug}
-                  onChange={(e) => setGroupSlug(e.target.value)}
-                  placeholder="ms-official-wc2026"
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                  value={dashboardUrl}
+                  onChange={(e) => setDashboardUrl(e.target.value)}
+                  placeholder="manifold.markets/dashboard/ms-official-wc2026"
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-full max-w-lg rounded border px-3 py-1.5 text-sm"
                 />
-              </Row>
-              <p className="text-ink-400 text-xs">
-                Convention: <code>ms-official-[tournament]-[year]</code>. Group
-                is auto-created as curated (admin-restricted) on first creation
-                run.
-              </p>
-              {groupStatus && (
-                <span
-                  className={clsx(
-                    'mt-1 text-xs font-medium',
-                    groupStatus.restricted
-                      ? 'text-green-600'
-                      : 'text-yellow-600'
-                  )}
-                >
-                  {groupStatus.created
-                    ? `✅ Group created (${groupStatus.id}) — admin-restricted`
-                    : groupStatus.restricted
-                    ? `✅ Group exists and restricted (${groupStatus.id})`
-                    : `⚠️ Group exists but will be restricted on next run`}
-                </span>
-              )}
-            </Col>
+                <p className="text-ink-400 text-xs">
+                  Auto-appended to every market description.
+                </p>
+              </Col>
 
-            {/* Dashboard URL */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Dashboard URL
-              </label>
-              <input
-                type="text"
-                value={dashboardUrl}
-                onChange={(e) => setDashboardUrl(e.target.value)}
-                placeholder="manifold.markets/dashboard/ms-official-wc2026"
-                className="border-ink-300 bg-canvas-0 text-ink-900 w-full max-w-lg rounded border px-3 py-1.5 text-sm"
-              />
-              <p className="text-ink-400 text-xs">
-                Auto-appended to every market description.
-              </p>
-            </Col>
+              {/* Custom note */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Custom tournament note
+                </label>
+                <p className="text-ink-400 text-xs">
+                  Tokens available:{' '}
+                  <code className="bg-ink-100 rounded px-1 text-xs">
+                    {'{team1}'} {'{team2}'} {'{kickoff}'} {'{stage}'}{' '}
+                    {'{dashboard_url}'}
+                  </code>
+                  . Written once, appears in all market descriptions.
+                </p>
+                <textarea
+                  value={customNote}
+                  onChange={(e) => setCustomNote(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. 48 teams, 104 matches, 3 host nations (USA, Canada, Mexico). This is the first ever World Cup with a 48-team format."
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-3 py-2 text-sm"
+                />
+              </Col>
 
-            {/* Custom note */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Custom tournament note
-              </label>
-              <p className="text-ink-400 text-xs">
-                Tokens available:{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">
-                  {'{team1}'} {'{team2}'} {'{kickoff}'} {'{stage}'}{' '}
-                  {'{dashboard_url}'}
-                </code>
-                . Written once, appears in all market descriptions.
-              </p>
-              <textarea
-                value={customNote}
-                onChange={(e) => setCustomNote(e.target.value)}
-                rows={3}
-                placeholder="e.g. 48 teams, 104 matches, 3 host nations (USA, Canada, Mexico). This is the first ever World Cup with a 48-team format."
-                className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-3 py-2 text-sm"
-              />
-            </Col>
+              {/* Description preview */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Description preview
+                </label>
+                <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
+                  {sampleDesc}
+                </pre>
+              </Col>
 
-            {/* Description preview */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Description preview
-              </label>
-              <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
-                {sampleDesc}
-              </pre>
-            </Col>
-
-            {/* Extra topic tags */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Extra topic tags ({extraTags.length}/{maxExtraTags})
-              </label>
-              <p className="text-ink-400 text-xs">
-                Markets are always tagged with the official group{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">
-                  {tournament.officialGroupSlug}
-                </code>
-                . Add extra topic slugs here (e.g.{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>)
-                to surface them in those feeds too. Unknown slugs are ignored.
-                Markets allow {MAX_GROUPS_PER_MARKET} topics total, and{' '}
-                {baseGroupCount} are used by the official/configured groups, so
-                up to <strong>{maxExtraTags}</strong> extra tag(s) fit.
-              </p>
-              <Row className="flex-wrap items-center gap-2">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
+              {/* Extra topic tags */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Extra topic tags ({extraTags.length}/{maxExtraTags})
+                </label>
+                <p className="text-ink-400 text-xs">
+                  Markets are always tagged with the official group{' '}
+                  <code className="bg-ink-100 rounded px-1 text-xs">
+                    {tournament.officialGroupSlug}
+                  </code>
+                  . Add extra topic slugs here (e.g.{' '}
+                  <code className="bg-ink-100 rounded px-1 text-xs">
+                    soccer
+                  </code>
+                  ) to surface them in those feeds too. Unknown slugs are
+                  ignored. Markets allow {MAX_GROUPS_PER_MARKET} topics total,
+                  and {baseGroupCount} are used by the official/configured
+                  groups, so up to <strong>{maxExtraTags}</strong> extra tag(s)
+                  fit.
+                </p>
+                <Row className="flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addTag(tagInput)
+                        setTagInput('')
+                      }
+                    }}
+                    placeholder="add a topic slug…"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    color="gray-outline"
+                    disabled={extraTags.length >= maxExtraTags}
+                    onClick={() => {
                       addTag(tagInput)
                       setTagInput('')
-                    }
-                  }}
-                  placeholder="add a topic slug…"
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 font-mono text-sm"
-                />
-                <Button
-                  size="sm"
-                  color="gray-outline"
-                  disabled={extraTags.length >= maxExtraTags}
-                  onClick={() => {
-                    addTag(tagInput)
-                    setTagInput('')
-                  }}
-                >
-                  Add
-                </Button>
-                <Button
-                  size="sm"
-                  color="indigo"
-                  onClick={suggestTags}
-                  disabled={suggesting || extraTags.length >= maxExtraTags}
-                >
-                  {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="indigo"
+                    onClick={suggestTags}
+                    disabled={suggesting || extraTags.length >= maxExtraTags}
+                  >
+                    {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
+                  </Button>
+                </Row>
+                {extraTags.length > 0 && (
+                  <Row className="flex-wrap gap-1.5">
+                    {extraTags.map((slug) => (
+                      <span
+                        key={slug}
+                        className="bg-ink-100 text-ink-700 flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-xs"
+                      >
+                        {slug}
+                        <button
+                          onClick={() =>
+                            setExtraTags((t) => t.filter((x) => x !== slug))
+                          }
+                          className="text-ink-400 font-bold leading-none hover:text-red-600"
+                          title="Remove tag"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </Row>
+                )}
+              </Col>
+
+              {/* Liquidity tiers per stage */}
+              <Col className="gap-2">
+                <label className="text-ink-700 text-sm font-medium">
+                  Liquidity tiers (mana)
+                </label>
+                <p className="text-ink-400 text-xs">
+                  Valid Manifold tiers: 100 · 1,000 · 10,000 · 100,000
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {Object.entries(STAGE_LABELS).map(([code, label]) => (
+                    <Col key={code} className="gap-1">
+                      <label className="text-ink-500 text-xs">{label}</label>
+                      <input
+                        type="number"
+                        value={stageTiers[code] ?? 1000}
+                        onChange={(e) =>
+                          setStageTiers((t) => ({
+                            ...t,
+                            [code]: parseInt(e.target.value) || 1000,
+                          }))
+                        }
+                        className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-2 py-1 text-sm"
+                      />
+                    </Col>
+                  ))}
+                </div>
+              </Col>
+
+              <Row>
+                <Button size="sm" onClick={saveSettings}>
+                  Save settings
                 </Button>
               </Row>
-              {extraTags.length > 0 && (
-                <Row className="flex-wrap gap-1.5">
-                  {extraTags.map((slug) => (
-                    <span
-                      key={slug}
-                      className="bg-ink-100 text-ink-700 flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-xs"
-                    >
-                      {slug}
-                      <button
-                        onClick={() =>
-                          setExtraTags((t) => t.filter((x) => x !== slug))
-                        }
-                        className="text-ink-400 font-bold leading-none hover:text-red-600"
-                        title="Remove tag"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </Row>
-              )}
             </Col>
-
-            {/* Liquidity tiers per stage */}
-            <Col className="gap-2">
-              <label className="text-ink-700 text-sm font-medium">
-                Liquidity tiers (mana)
-              </label>
-              <p className="text-ink-400 text-xs">
-                Valid Manifold tiers: 100 · 1,000 · 10,000 · 100,000
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {Object.entries(STAGE_LABELS).map(([code, label]) => (
-                  <Col key={code} className="gap-1">
-                    <label className="text-ink-500 text-xs">{label}</label>
-                    <input
-                      type="number"
-                      value={stageTiers[code] ?? 1000}
-                      onChange={(e) =>
-                        setStageTiers((t) => ({
-                          ...t,
-                          [code]: parseInt(e.target.value) || 1000,
-                        }))
-                      }
-                      className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-2 py-1 text-sm"
-                    />
-                  </Col>
-                ))}
-              </div>
-            </Col>
-
-            <Row>
-              <Button size="sm" onClick={saveSettings}>
-                Save settings
-              </Button>
-            </Row>
-          </Col>
-        </Section>
+          </Section>
+        )}
 
         {/* ── 3b. Odds API Market Creation (NFL, CFB, MLB, NBA, WNBA) ── */}
         {isOddsApi && (

@@ -186,16 +186,16 @@ export function BuyPanel(
                   ? 'HIGHER'
                   : isStonk
                   ? STONK_YES
-                  : customYesText ?? 'YES'
+                  : pseudonym?.YES?.pseudonymName ?? customYesText ?? 'YES'
               }
               noLabel={
                 isPseudoNumeric
                   ? 'LOWER'
                   : isStonk
                   ? STONK_NO
-                  : customNoText ?? 'NO'
+                  : pseudonym?.NO?.pseudonymName ?? customNoText ?? 'NO'
               }
-              includeWordBet={!isStonk && !customYesText}
+              includeWordBet={!isStonk && !customYesText && !pseudonym}
             />
           </Row>
         </Col>
