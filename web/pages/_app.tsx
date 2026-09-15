@@ -110,6 +110,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   useEffect(() => {
     const handleRouteChange = (url: string) => {
+      if (url.startsWith('/poker'))
+        return // Private invite fragments are capabilities.
       ;(window as any).dataLayer?.push({
         event: 'page_view',
         page_path: url,
@@ -223,23 +225,28 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
       <GoogleOneTapSetup />
 
-      {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
-      <Script
-        src="https://analytics.umami.is/script.js"
-        data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
-      />
+      {!router.pathname.startsWith('/poker') && (
+        <>
+          {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
+          <Script
+            src="https://analytics.umami.is/script.js"
+            data-exclude-hash="true"
+            data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+          />
 
-      <Script
-        id="gtm"
-        dangerouslySetInnerHTML={{
-          __html: `
+          <Script
+            id="gtm"
+            dangerouslySetInnerHTML={{
+              __html: `
   (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','${ENV_CONFIG.googleAnalyticsId}');`,
-        }}
-      />
+            }}
+          />
+        </>
+      )}
     </>
   )
 }

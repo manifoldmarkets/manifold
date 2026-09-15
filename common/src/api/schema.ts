@@ -1,3 +1,4 @@
+import { pokerAPI } from 'common/poker/api'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
 import { randomStringRegex } from 'common/util/random'
@@ -128,6 +129,7 @@ type APIGenericSchema = {
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
+  ...pokerAPI,
   'refresh-all-clients': {
     method: 'POST',
     visibility: 'public',

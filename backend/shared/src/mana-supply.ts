@@ -115,7 +115,10 @@ export const getManaSupplyEachDayBetweeen = async (
         ) uph on true
       )
       select
-        sum(balance) as full_mana_balance
+        (select coalesce(sum(case when l.kind = 'contribution' then l.amount else -l.amount end), 0)
+         from poker_ledger l join txns t on t.id = l.txn_id
+         where t.created_time <= millis_to_ts($1)) as poker_escrow,
+        sum(balance) as full_mana_balance,
         sum(balance) ${filter} as mana_balance,
         sum(spice_balance) as full_spice_balance,
         sum(spice_balance) ${filter} as spice_balance,
@@ -132,12 +135,17 @@ export const getManaSupplyEachDayBetweeen = async (
       [end],
       (r: any) => ({
         day: millisToTs(start),
+        pokerEscrow: r.poker_escrow,
         fullTotalManaValue:
           r.full_mana_balance +
           r.full_spice_balance +
-          r.full_mana_investment_value,
+          r.full_mana_investment_value +
+          r.poker_escrow,
         totalManaValue:
-          r.mana_balance + r.spice_balance + r.mana_investment_value,
+          r.mana_balance +
+          r.spice_balance +
+          r.mana_investment_value +
+          r.poker_escrow,
         totalCashValue: r.cash_balance + r.cash_investment_value,
         fullManaBalance: r.full_mana_balance,
         manaBalance: r.mana_balance,
@@ -163,6 +171,7 @@ export const getManaSupply = async (pg: SupabaseDirectClient) => {
 
   const userPortfolio = await pg.one(
     `select
+      (select coalesce(sum(escrow), 0) from poker_hands where escrow > 0) as poker_escrow,
       sum(u.balance + u.spice_balance + uphl.investment_value) as full_total_mana_value,
       sum(greatest(0, u.balance + u.spice_balance + uphl.investment_value)) as total_mana_value,
       sum(u.cash_balance + uphl.cash_investment_value) as total_cash_value,
@@ -180,6 +189,7 @@ export const getManaSupply = async (pg: SupabaseDirectClient) => {
     left join user_portfolio_history_latest uphl on u.id = uphl.user_id`,
     undefined,
     (r: any) => ({
+      pokerEscrow: r.poker_escrow,
       fullTotalManaValue: r.full_total_mana_value,
       totalManaValue: r.total_mana_value,
       totalCashValue: r.total_cash_value,
@@ -198,10 +208,15 @@ export const getManaSupply = async (pg: SupabaseDirectClient) => {
 
   const liquidity = await getAMMLiquidity()
 
-  const totalManaValue = userPortfolio.totalManaValue + liquidity.mana
+  // Read wallets and poker escrow in the same SQL snapshot above.
+  const { pokerEscrow } = userPortfolio
+  const totalManaValue =
+    userPortfolio.totalManaValue + liquidity.mana + pokerEscrow
   const totalCashValue = userPortfolio.totalCashValue + liquidity.cash
   return {
     ...userPortfolio,
+    fullTotalManaValue: userPortfolio.fullTotalManaValue + pokerEscrow,
+    pokerEscrow,
     ammManaLiquidity: liquidity.mana,
     ammCashLiquidity: liquidity.cash,
     totalManaValue,
