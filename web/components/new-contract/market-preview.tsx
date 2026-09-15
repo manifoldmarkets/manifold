@@ -9,6 +9,11 @@ import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { MAX_ANSWERS } from 'common/answer'
+import {
+  roundAnswerProbs,
+  withAnswerProbRemoved,
+  withAnswerProbSet,
+} from 'common/answer-probs'
 import { getAnswerProbsError } from 'common/new-contract'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { Group } from 'common/group'
@@ -49,10 +54,6 @@ import {
   suggestMarketType,
 } from './market-type-suggestions'
 import { SimilarContractsSection } from './similar-contracts-section'
-import {
-  withAnswerProbAdded,
-  withAnswerProbRemoved,
-} from './utils/answer-probs'
 import { detectAmbiguousDates } from 'web/lib/util/date-ambiguity'
 import { detectAmbiguousTemporalPhrases } from 'web/lib/util/temporal-ambiguity'
 import { TemporalAmbiguityBanner } from './temporal-ambiguity-banner'
@@ -469,27 +470,51 @@ export function MarketPreview(props: {
       (data.answerProbs ?? []).map((p, index) => (index === i ? prob : p))
     )
   // A blank answer slot isn't an answer yet — it gets dropped on submit, so it
-  // doesn't get a starting probability either.
+  // holds no starting probability until it's named.
   const isNamedAnswer = (i: number) => !!answers[i]?.text.trim()
   const namedAnswerCount = answers.filter((a) => !!a.text.trim()).length
   const namedAnswerProbs = (data.answerProbs ?? []).filter((_, i) =>
     isNamedAnswer(i)
   )
   const answerProbsTotal = sum(namedAnswerProbs)
-  const evenAnswerProb = shouldAnswersSumToOne
-    ? 100 / (namedAnswerCount + (hasOtherAnswer ? 1 : 0))
-    : 50
-  // Answers and their starting probabilities have to be added and removed
-  // together, otherwise the percentages end up against the wrong answers.
+  // What one answer gets when `namedCount` named answers split evenly. For
+  // answers that sum to one that's a slice of whatever the named ones add up
+  // to, so Other's share stays put; with nothing named yet, of the whole 100%.
+  const evenAnswerProb = (namedCount: number) =>
+    !shouldAnswersSumToOne
+      ? 50
+      : answerProbsTotal > 0
+      ? answerProbsTotal / namedCount
+      : 100 / (namedCount + (hasOtherAnswer ? 1 : 0))
+  // Answers and their starting probabilities move together, otherwise the
+  // percentages end up against the wrong answers.
   const addMCAnswer = () => {
     onEditAnswers?.([...answers.map((a) => a.text), ''])
-    if (data.answerProbs)
-      onEditAnswerProbs?.(withAnswerProbAdded(data.answerProbs))
+    // The new slot is blank, so it holds nothing until it's named.
+    if (data.answerProbs) onEditAnswerProbs?.([...data.answerProbs, 0])
   }
   const removeMCAnswer = (i: number) => {
     onEditAnswers?.(answers.filter((_, idx) => idx !== i).map((a) => a.text))
     if (data.answerProbs)
-      onEditAnswerProbs?.(withAnswerProbRemoved(data.answerProbs, i))
+      onEditAnswerProbs?.(
+        shouldAnswersSumToOne
+          ? withAnswerProbRemoved(data.answerProbs, i)
+          : data.answerProbs.filter((_, idx) => idx !== i)
+      )
+  }
+  const setMCAnswerText = (i: number, text: string) => {
+    onEditAnswers?.(answers.map((a, idx) => (idx === i ? text : a.text)))
+    const nowNamed = !!text.trim()
+    if (!data.answerProbs || isNamedAnswer(i) === nowNamed) return
+    // The slot just became an answer, or stopped being one: it takes an even
+    // share of the named answers, or hands its share back. Independent answers
+    // don't share a pie, so one simply starts at 50%.
+    const prob = nowNamed ? evenAnswerProb(namedAnswerCount + 1) : 0
+    onEditAnswerProbs?.(
+      shouldAnswersSumToOne
+        ? withAnswerProbSet(data.answerProbs, i, prob)
+        : data.answerProbs.map((p, idx) => (idx === i ? prob : p))
+    )
   }
   const answerProbsError = data.answerProbs
     ? getAnswerProbsError({
@@ -982,14 +1007,7 @@ export function MarketPreview(props: {
                           className="min-w-0 flex-1"
                           placeholder={`Answer ${i + 1}`}
                           value={answer.text}
-                          onChange={(e) => {
-                            const newAnswers = [...answers]
-                            newAnswers[i] = {
-                              ...newAnswers[i],
-                              text: e.target.value,
-                            }
-                            onEditAnswers(newAnswers.map((a) => a.text))
-                          }}
+                          onChange={(e) => setMCAnswerText(i, e.target.value)}
                           onUp={() => {
                             // Focus previous answer
                             if (i > 0) {
@@ -1095,14 +1113,7 @@ export function MarketPreview(props: {
                             className="w-full"
                             placeholder={`Answer ${i + 1}`}
                             value={answer.text}
-                            onChange={(e) => {
-                              const newAnswers = [...answers]
-                              newAnswers[i] = {
-                                ...newAnswers[i],
-                                text: e.target.value,
-                              }
-                              onEditAnswers(newAnswers.map((a) => a.text))
-                            }}
+                            onChange={(e) => setMCAnswerText(i, e.target.value)}
                             onUp={() => {
                               // Focus previous answer
                               if (i > 0) {
@@ -1228,8 +1239,12 @@ export function MarketPreview(props: {
                         setOn={(on) =>
                           onEditAnswerProbs(
                             on
-                              ? answers.map(
-                                  () => Math.round(evenAnswerProb * 10) / 10
+                              ? roundAnswerProbs(
+                                  answers.map((a) =>
+                                    a.text.trim()
+                                      ? evenAnswerProb(namedAnswerCount)
+                                      : 0
+                                  )
                                 )
                               : undefined
                           )
