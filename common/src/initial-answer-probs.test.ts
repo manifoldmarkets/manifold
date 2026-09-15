@@ -1,0 +1,239 @@
+import { getInitialAnswerPools } from './calculate-cpmm'
+import { CPMMMultiContract } from './contract'
+import {
+  ANSWER_PROB_SUM_TOLERANCE,
+  getAnswerProbsError,
+  getNewContract,
+  MAX_ANSWER_PROB,
+  MIN_ANSWER_PROB,
+} from './new-contract'
+import { User } from './user'
+
+const probOf = (pool: { YES: number; NO: number }) =>
+  pool.NO / (pool.YES + pool.NO)
+
+// What the liquidity providers are paid if answer k is the one that resolves
+// YES: their YES shares in k, plus their NO shares in every other answer.
+const payoutIfAnswerWins = (pools: { YES: number; NO: number }[], k: number) =>
+  pools[k].YES +
+  pools.reduce((total, pool, i) => total + (i === k ? 0 : pool.NO), 0)
+
+describe('getInitialAnswerPools', () => {
+  it('matches the even-split formula when every answer starts equal', () => {
+    const ante = 1000
+    for (const n of [2, 3, 4, 10, 25]) {
+      const pools = getInitialAnswerPools(Array(n).fill(1 / n), ante, true)
+      for (const pool of pools) {
+        expect(pool.YES).toBeCloseTo(ante / 2, 4)
+        expect(pool.NO).toBeCloseTo(ante / (2 * n - 2), 4)
+      }
+    }
+  })
+
+  it('starts answers at the probabilities they were given', () => {
+    const cases = [
+      [0.6, 0.3, 0.1],
+      [0.9, 0.05, 0.05],
+      [0.8, 0.2],
+      [0.5, 0.25, 0.15, 0.1],
+      [0.02, 0.98],
+    ]
+    for (const probs of cases) {
+      const pools = getInitialAnswerPools(probs, 1000, true)
+      pools.forEach((pool, i) => expect(probOf(pool)).toBeCloseTo(probs[i], 6))
+    }
+  })
+
+  it('never pays out more than the ante that seeded it', () => {
+    const cases = [
+      [0.6, 0.3, 0.1],
+      [0.9, 0.05, 0.05],
+      [0.8, 0.2],
+      [0.34, 0.33, 0.33],
+      [0.5, 0.25, 0.15, 0.1],
+      Array(20).fill(0.05),
+    ]
+    const ante = 1000
+    for (const probs of cases) {
+      const pools = getInitialAnswerPools(probs, ante, true)
+      pools.forEach((_, k) =>
+        expect(payoutIfAnswerWins(pools, k)).toBeLessThanOrEqual(ante + 1e-6)
+      )
+    }
+  })
+
+  it('spends the whole ante on the answer that needs it most', () => {
+    // Some answer has to pay out the full ante, otherwise we left liquidity on
+    // the table.
+    const ante = 1000
+    const pools = getInitialAnswerPools([0.6, 0.3, 0.1], ante, true)
+    const payouts = pools.map((_, k) => payoutIfAnswerWins(pools, k))
+    expect(Math.max(...payouts)).toBeCloseTo(ante, 4)
+  })
+
+  it('gives independent answers their own share of the ante', () => {
+    const pools = getInitialAnswerPools([0.75, 0.5, 0.2], 300, false)
+    pools.forEach((pool) => {
+      // Each answer is its own binary market, so neither side can pay out more
+      // than the 100 mana that seeded it.
+      expect(Math.max(pool.YES, pool.NO)).toBeCloseTo(100, 6)
+    })
+    expect(probOf(pools[0])).toBeCloseTo(0.75, 6)
+    expect(probOf(pools[1])).toBeCloseTo(0.5, 6)
+    expect(probOf(pools[2])).toBeCloseTo(0.2, 6)
+  })
+})
+
+describe('getAnswerProbsError', () => {
+  const sumToOne = {
+    numAnswers: 3,
+    shouldAnswersSumToOne: true,
+    hasOtherAnswer: false,
+  }
+
+  it('accepts probabilities that add up to 100', () => {
+    expect(
+      getAnswerProbsError({ ...sumToOne, answerProbs: [50, 30, 20] })
+    ).toBeUndefined()
+  })
+
+  it('tolerates rounding, but not a real mistake', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        answerProbs: [33, 33, 33 + ANSWER_PROB_SUM_TOLERANCE],
+      })
+    ).toBeUndefined()
+    expect(
+      getAnswerProbsError({ ...sumToOne, answerProbs: [50, 30, 30] })
+    ).toContain('110')
+  })
+
+  it('rejects a count that does not match the answers', () => {
+    expect(
+      getAnswerProbsError({ ...sumToOne, answerProbs: [50, 50] })
+    ).toContain('got 2')
+  })
+
+  it('rejects probabilities outside the tradeable range', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        answerProbs: [MIN_ANSWER_PROB - 0.5, 50, 50],
+      })
+    ).toContain(`${MIN_ANSWER_PROB}%`)
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        numAnswers: 2,
+        answerProbs: [MAX_ANSWER_PROB + 0.5, 0.5],
+      })
+    ).toContain(`${MAX_ANSWER_PROB}%`)
+  })
+
+  it('keeps the Other answer inside the same bounds', () => {
+    const withOther = { ...sumToOne, hasOtherAnswer: true }
+    expect(
+      getAnswerProbsError({ ...withOther, answerProbs: [50, 20, 10] })
+    ).toBeUndefined()
+    // Nothing left for Other
+    expect(
+      getAnswerProbsError({ ...withOther, answerProbs: [50, 30, 20] })
+    ).toContain('Other')
+    // Everything left for Other, which would open it at 100%
+    expect(
+      getAnswerProbsError({ ...withOther, numAnswers: 0, answerProbs: [] })
+    ).toContain('Other')
+  })
+
+  it('does not constrain the sum for independent answers', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        shouldAnswersSumToOne: false,
+        answerProbs: [80, 70, 60],
+      })
+    ).toBeUndefined()
+  })
+})
+
+describe('getNewContract with answerProbs', () => {
+  const creator = {
+    id: 'creator',
+    name: 'Creator',
+    username: 'creator',
+    createdTime: 0,
+  } as User
+
+  const makeMultiContract = (props: {
+    answers: string[]
+    answerProbs?: number[]
+    addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+    ante?: number
+  }) =>
+    getNewContract({
+      id: 'contract',
+      slug: 'contract',
+      creator,
+      question: 'Who wins?',
+      outcomeType: 'MULTIPLE_CHOICE',
+      description: '',
+      initialProb: 50,
+      ante: props.ante ?? 1000,
+      closeTime: undefined,
+      visibility: 'public',
+      isTwitchContract: undefined,
+      token: 'MANA',
+      min: 0,
+      max: 0,
+      isLogScale: false,
+      answers: props.answers,
+      answerProbs: props.answerProbs,
+      addAnswersMode: props.addAnswersMode ?? 'DISABLED',
+      shouldAnswersSumToOne: true,
+      unit: undefined,
+      midpoints: undefined,
+      timezone: undefined,
+      voterVisibility: undefined,
+      pollType: undefined,
+      maxSelections: undefined,
+    } as any) as CPMMMultiContract
+
+  it('still splits evenly when no probabilities are given', () => {
+    const { answers } = makeMultiContract({ answers: ['A', 'B', 'C', 'D'] })
+    expect(answers.map((a) => a.prob)).toEqual([0.25, 0.25, 0.25, 0.25])
+  })
+
+  it('starts each answer where the creator set it', () => {
+    const { answers } = makeMultiContract({
+      answers: ['A', 'B', 'C'],
+      answerProbs: [60, 30, 10],
+    })
+    expect(answers.map((a) => a.prob)).toEqual([0.6, 0.3, 0.1])
+    answers.forEach((answer) =>
+      expect(answer.poolNo / (answer.poolYes + answer.poolNo)).toBeCloseTo(
+        answer.prob,
+        6
+      )
+    )
+  })
+
+  it('gives the Other answer whatever is left over', () => {
+    const { answers } = makeMultiContract({
+      answers: ['A', 'B'],
+      answerProbs: [60, 30],
+      addAnswersMode: 'ANYONE',
+    })
+    expect(answers.map((a) => a.text)).toEqual(['A', 'B', 'Other'])
+    expect(answers.map((a) => a.prob)).toEqual([0.6, 0.3, 0.1])
+    expect(answers[2].isOther).toBe(true)
+  })
+
+  it('normalises percentages that are a rounding point off', () => {
+    const { answers } = makeMultiContract({
+      answers: ['A', 'B', 'C'],
+      answerProbs: [33, 33, 33],
+    })
+    expect(answers.reduce((total, a) => total + a.prob, 0)).toBeCloseTo(1, 10)
+  })
+})

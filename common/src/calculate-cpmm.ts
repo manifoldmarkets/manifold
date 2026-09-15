@@ -814,6 +814,59 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
   return newPools
 }
 
+// The pool for a single answer at `prob`, minted out of `amount` mana worth of
+// shares. 1 mana mints one YES and one NO share, but holding both sides equally
+// would put the answer at 50%, so the excess on the cheap side is thrown away.
+export const getPoolAtProb = (prob: number, amount: number) =>
+  prob < 0.5
+    ? { YES: amount, NO: (prob / (1 - prob)) * amount }
+    : { YES: ((1 - prob) / prob) * amount, NO: amount }
+
+// Seed pools for a brand new cpmm-multi-1 market whose answers start at `probs`,
+// backed by exactly `ante` mana.
+//
+// When exactly one answer resolves YES, `amount` mana mints `amount` YES shares
+// of *every* answer (a full set), and a NO share of one answer is a YES share of
+// each other answer. So we spread the ante over the answers, keep only the
+// shares that hold each answer at its target probability, and then recombine the
+// leftovers into full sets to add back — the same recycling
+// addCpmmMultiLiquidityAnswersSumToOne does when subsidising a live market.
+export const getInitialAnswerPools = (
+  probs: number[],
+  ante: number,
+  shouldAnswersSumToOne: boolean
+) => {
+  const n = probs.length
+  // Independent answers are each their own binary market with their own ante.
+  if (!shouldAnswersSumToOne || n === 1)
+    return probs.map((prob) => getPoolAtProb(prob, ante / n))
+
+  const pools = probs.map(() => ({ YES: 0, NO: 0 }))
+  let amountRemaining = ante
+  // Each round recovers a fraction of the previous one, so this converges
+  // geometrically; the cap is just a guard against a pathological ratio.
+  for (let round = 0; round < 1000 && amountRemaining > EPSILON; round++) {
+    const amount = amountRemaining / n
+    // Shares minted this round that the target probability left unused.
+    const unusedYes = probs.map(() => 0)
+    const unusedNo = probs.map(() => 0)
+    probs.forEach((prob, i) => {
+      const pool = getPoolAtProb(prob, amount)
+      pools[i].YES += pool.YES
+      pools[i].NO += pool.NO
+      unusedYes[i] = amount - pool.YES
+      unusedNo[i] = amount - pool.NO
+    })
+    // An unused NO share of one answer is a YES share of every other answer, so
+    // we can rebuild (and re-spend) as many full sets as the scarcest answer has.
+    const totalUnusedNo = sum(unusedNo)
+    amountRemaining = Math.min(
+      ...probs.map((_, i) => unusedYes[i] + totalUnusedNo - unusedNo[i])
+    )
+  }
+  return pools
+}
+
 // Must be at least this many yes and no shares
 export const MINIMUM_LIQUIDITY = 100
 
