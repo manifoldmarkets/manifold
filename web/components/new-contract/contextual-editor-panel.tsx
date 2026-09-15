@@ -30,6 +30,8 @@ export type FormState = {
   liquidityTier: number
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  // Starting probability of each answer, in percent. Undefined means an even split.
+  answerProbs?: number[]
   probability?: number
   min?: number
   max?: number

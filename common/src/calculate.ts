@@ -93,6 +93,14 @@ export function getInitialAnswerProbability(
   contract: MultiContract,
   answer: Answer
 ) {
+  // A creator who set the starting probabilities has them on record;
+  // everything below assumes the market opened at an even split.
+  const initialProbability =
+    'initialProbabilities' in contract
+      ? contract.initialProbabilities?.[answer.id]
+      : undefined
+  if (initialProbability !== undefined) return initialProbability
+
   if (!contract.shouldAnswersSumToOne) {
     return 0.5
   } else {
