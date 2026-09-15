@@ -81,6 +81,8 @@ export function GameRelatedMarkets(props: { game: ScheduleGame }) {
           </Col>
           <Link
             href={gamePath(game)}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-primary-700 hover:bg-primary-50 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
           >
             Open market

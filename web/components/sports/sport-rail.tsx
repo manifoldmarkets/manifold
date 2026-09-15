@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { SportKey, SPORT_CATEGORIES } from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
+import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
 
 export type SportSelection = SportKey | 'all' | 'live'
@@ -32,28 +33,33 @@ export function SportRail(props: {
   }
 
   return (
-    <Carousel
-      className={clsx('w-full', className)}
-      labelsParentClassName="gap-1.5 py-2"
-      fadeEdges
-      showArrowsOnHover
-    >
-      <SportChip
-        active={selected === 'all'}
-        onClick={() => select('all')}
-        emoji="🏟️"
-        label="All"
-        count={totalGames || undefined}
-      />
-      {liveCount > 0 && (
+    <Row className={clsx('w-full items-center', className)}>
+      {/* "All" stays pinned — never scrolls away */}
+      <Row className="bg-canvas-0 relative z-10 shrink-0 gap-1.5 py-2 pr-1.5">
         <SportChip
-          active={selected === 'live'}
-          onClick={() => select('live')}
-          label="Live"
-          count={liveCount}
-          live
+          active={selected === 'all'}
+          onClick={() => select('all')}
+          emoji="🏟️"
+          label="All"
+          count={totalGames || undefined}
         />
-      )}
+        {liveCount > 0 && (
+          <SportChip
+            active={selected === 'live'}
+            onClick={() => select('live')}
+            label="Live"
+            count={liveCount}
+            live
+          />
+        )}
+        <div className="bg-ink-200 my-auto h-5 w-px shrink-0" />
+      </Row>
+      <Carousel
+        className="min-w-0 flex-1"
+        labelsParentClassName="gap-1.5 py-2"
+        fadeEdges
+        showArrowsOnHover
+      >
       {withGames.map((s) => (
         <SportChip
           key={s.key}
@@ -76,7 +82,8 @@ export function SportRail(props: {
           label={s.label}
         />
       ))}
-    </Carousel>
+      </Carousel>
+    </Row>
   )
 }
 

@@ -196,7 +196,7 @@ describe('the market a game becomes', () => {
     expect(p.outcomeType).toBe('BINARY')
     expect(p.answers).toBeUndefined()
     expect(p.initialProb).toBeGreaterThan(50)
-    expect(p.question).toMatch(/^Buffalo Bills at Kansas City Chiefs \[/)
+    expect(p.question).toBe('Buffalo Bills at Kansas City Chiefs [official]')
     expect(p.sportsEventId).toBe('odds:americanfootball_nfl:abc123')
     expect(p.sportsStartTimestamp).toBe('2026-09-13T17:00:00Z')
     expect(p.sportsLeague).toBe('NFL')
@@ -210,7 +210,7 @@ describe('the market a game becomes', () => {
     const p = buildOddsMarketParams(soccerEvent, epl)
     expect(p.outcomeType).toBe('MULTIPLE_CHOICE')
     expect(p.answers).toEqual(['Arsenal', 'Chelsea', 'Draw'])
-    expect(p.question).toMatch(/^Arsenal vs Chelsea \[/)
+    expect(p.question).toBe('Arsenal vs Chelsea [official]')
     expect(p.sportsLeague).toBe('Soccer')
   })
   it('lets a calendar entry override the tie rule', () => {

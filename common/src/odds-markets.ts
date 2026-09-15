@@ -149,7 +149,7 @@ export interface OddsMarketParams {
   question: string
   /** Markdown */
   description: string
-  /** Binary: home-win probability as a percentage. Three-way: unused (answers start level). */
+  /** Binary: home-win probability as a percentage (seeded from moneyline). Three-way: unused (answers start level). */
   initialProb: number
   /** Three-way only: home, away, Draw. */
   answers?: string[]
@@ -176,32 +176,35 @@ export function buildOddsMarketParams(
   const away = event.away_team
   const homeProb = fairWinProb(event, home)
   const initialProb = homeProb !== null ? Math.round(homeProb * 100) : 50
-  const seeded =
-    homeProb !== null
-      ? `Opening probability seeded from the bookmakers' moneyline.`
-      : `Opening probability 50%: no moneyline was available at creation.`
 
   const question = threeWay
-    ? `${home} vs ${away} [${entry.competition}, ${date}]`
-    : `${away} at ${home} [${entry.competition}, ${date}]`
+    ? `${home} vs ${away} [official]`
+    : `${away} at ${home} [official]`
 
+  const sportParam = entry.sport
+  const manifoldSportsLink =
+    '[@ManifoldSports](https://manifold.markets/ManifoldSports)'
   const description = threeWay
     ? [
-        `**${home}** vs **${away}**`,
+        `**${home} vs ${away}**`,
         ``,
-        `Resolves to the team that wins, or to Draw if the match ends level after any extra time and penalties that count for the competition.`,
+        `Market auto-resolves to the winner, or to Draw if the match ends level after any extra time and penalties.`,
         `Resolves N/A if the match is cancelled or postponed indefinitely.`,
         ``,
-        `Created and resolved automatically by @ManifoldSports.`,
+        `Created and resolved automatically by ${manifoldSportsLink}.`,
+        ``,
+        `[See all markets on Manifold Sports](/sports?sport=${sportParam})`,
       ].join('\n')
     : [
-        `**${away}** at **${home}**`,
+        `**${away} at ${home}**`,
         ``,
-        `Resolves YES if ${home} wins and NO if ${away} wins.`,
+        `Market auto-resolves to the winner.`,
         `If the game ends in a tie, resolves at 50% (both sides get half their winnings).`,
         `Resolves N/A if the game is cancelled or postponed indefinitely.`,
         ``,
-        `${seeded} Created and resolved automatically by @ManifoldSports.`,
+        `Created and resolved automatically by ${manifoldSportsLink}.`,
+        ``,
+        `[See all markets on Manifold Sports](/sports?sport=${sportParam})`,
       ].join('\n')
 
   const closeTime =
