@@ -543,6 +543,10 @@ function validateMarketBody(body: Body) {
       addAnswersMode,
       shouldAnswersSumToOne,
     } = validateMarketType(outcomeType, createMultiSchema, body))
+    // Answers sum to one unless the creator says otherwise (getNewContract
+    // applies the same default), and that decides whether an "Other" answer
+    // gets created, so resolve it here before anything counts the answers.
+    shouldAnswersSumToOne = shouldAnswersSumToOne ?? true
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
@@ -550,8 +554,8 @@ function validateMarketBody(body: Body) {
       const error = getAnswerProbsError({
         answerProbs,
         numAnswers: answers.length,
-        shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
-        hasOtherAnswer: !!hasOtherAnswer,
+        shouldAnswersSumToOne,
+        hasOtherAnswer,
       })
       if (error) throw new APIError(400, error)
     }

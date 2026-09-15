@@ -403,7 +403,7 @@ const getMultipleChoiceProps = (
         : undefined,
     })
   )
-  const system: CPMMMulti = {
+  const system: CPMMMulti = removeUndefinedProps({
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     addAnswersMode: addAnswersMode ?? 'DISABLED',
@@ -411,7 +411,12 @@ const getMultipleChoiceProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
-  }
+    // Answer probs move with every bet, so keep a record of where the creator
+    // opened them for the chart's starting point.
+    initialProbabilities: answerProbs
+      ? Object.fromEntries(answerObjects.map((a) => [a.id, a.prob]))
+      : undefined,
+  })
 
   return system
 }

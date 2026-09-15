@@ -1,3 +1,9 @@
+import {
+  roundAnswerProbs,
+  withAnswerProbRemoved,
+  withAnswerProbSet,
+} from './answer-probs'
+import { getInitialAnswerProbability } from './calculate'
 import { getInitialAnswerPools } from './calculate-cpmm'
 import { CPMMMultiContract } from './contract'
 import {
@@ -235,5 +241,69 @@ describe('getNewContract with answerProbs', () => {
       answerProbs: [33, 33, 33],
     })
     expect(answers.reduce((total, a) => total + a.prob, 0)).toBeCloseTo(1, 10)
+  })
+
+  it('remembers where each answer opened, so history starts there', () => {
+    const contract = makeMultiContract({
+      answers: ['A', 'B'],
+      answerProbs: [60, 30],
+      addAnswersMode: 'ANYONE',
+    })
+    const [a, b, other] = contract.answers
+    expect(contract.initialProbabilities).toEqual({
+      [a.id]: 0.6,
+      [b.id]: 0.3,
+      [other.id]: 0.1,
+    })
+    // Even after trading moves the live probability, history starts where
+    // the creator put it — not at the even split the fallback assumes.
+    const traded = {
+      ...contract,
+      answers: contract.answers.map((ans) => ({ ...ans, prob: 1 / 3 })),
+    }
+    expect(getInitialAnswerProbability(traded, traded.answers[0])).toBe(0.6)
+    expect(getInitialAnswerProbability(traded, traded.answers[2])).toBe(0.1)
+  })
+
+  it('leaves the even split unrecorded, so old markets are unaffected', () => {
+    const contract = makeMultiContract({ answers: ['A', 'B', 'C', 'D'] })
+    expect(contract.initialProbabilities).toBeUndefined()
+    expect(getInitialAnswerProbability(contract, contract.answers[0])).toBe(
+      0.25
+    )
+  })
+})
+
+describe('editing starting probabilities in the create form', () => {
+  it('rounds to a tenth without changing the total', () => {
+    const rounded = roundAnswerProbs([100 / 3, 100 / 3, 100 / 3, 0])
+    expect(rounded).toEqual([33.4, 33.3, 33.3, 0])
+    expect(rounded.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10)
+  })
+
+  it('gives a newly named answer an even slice taken from the others', () => {
+    // Two named answers at 50/50 and a blank slot that just got named.
+    const probs = withAnswerProbSet([50, 50, 0], 2, 100 / 3)
+    expect(probs).toEqual([33.4, 33.3, 33.3])
+  })
+
+  it('hands a blanked answer’s share back to the rest, in proportion', () => {
+    expect(withAnswerProbSet([40, 40, 20], 2, 0)).toEqual([50, 50, 0])
+    expect(withAnswerProbSet([60, 20, 20], 2, 0)).toEqual([75, 25, 0])
+  })
+
+  it('leaves a valid split alone when a blank slot is deleted', () => {
+    // A blank slot holds 0, so removing it changes nothing for the others.
+    expect(withAnswerProbRemoved([50, 50, 0], 2)).toEqual([50, 50])
+  })
+
+  it('spreads a deleted answer’s share over the rest in proportion', () => {
+    expect(withAnswerProbRemoved([60, 30, 10], 2)).toEqual([66.7, 33.3])
+  })
+
+  it('keeps whatever total the named answers had, so Other is untouched', () => {
+    // 80% across the named answers, 20% left for Other.
+    const probs = withAnswerProbSet([40, 40, 0], 2, 80 / 3)
+    expect(probs.reduce((a, b) => a + b, 0)).toBeCloseTo(80, 10)
   })
 })
