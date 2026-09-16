@@ -1,0 +1,180 @@
+jest.mock('./utils', () => ({ getUser: jest.fn(), getPrivateUser: jest.fn() }))
+jest.mock('./supabase/init', () => ({
+  createSupabaseDirectClient: jest.fn(() => ({})),
+}))
+jest.mock('./supabase/entitlements', () => ({
+  getActiveSupporterEntitlements: jest.fn(),
+}))
+jest.mock('./supabase/notifications', () => ({
+  insertNotificationToSupabase: jest.fn(),
+}))
+import { getPrivateUser, getUser } from './utils'
+import { getActiveSupporterEntitlements } from './supabase/entitlements'
+import { insertNotificationToSupabase } from './supabase/notifications'
+import {
+  assertSocialInteraction,
+  getSocialViewer,
+  limitSocialWrite,
+  socialAuthor,
+  SocialRow,
+  validateSocialMarkets,
+  validateSocialSource,
+  notifySocial,
+} from './social-posts'
+import { SupabaseDirectClient } from './supabase/init'
+import { User } from 'common/user'
+import { SUPPORTER_TIERS } from 'common/supporter-config'
+
+const post = {
+  id: 'reply',
+  user_id: 'parent-author',
+  root_id: 'root',
+  text: 'hello',
+  deleted_time: null,
+} as SocialRow
+const db = (methods: Record<string, unknown>) =>
+  methods as unknown as SupabaseDirectClient
+beforeEach(() => jest.clearAllMocks())
+test('membership comes from authoritative entitlements, and expiry does not block author access', async () => {
+  jest
+    .mocked(getUser)
+    .mockResolvedValue({
+      id: 'u',
+      entitlements: [
+        { enabled: true, entitlementId: SUPPORTER_TIERS.basic.id },
+      ],
+    } as User)
+  jest.mocked(getActiveSupporterEntitlements).mockResolvedValue([])
+  await expect(socialAuthor('u', true)).rejects.toMatchObject({ code: 403 })
+  await expect(socialAuthor('u')).resolves.toMatchObject({ id: 'u' })
+  for (const tier of ['basic', 'plus', 'premium'] as const) {
+    jest
+      .mocked(getActiveSupporterEntitlements)
+      .mockResolvedValue([
+        {
+          enabled: true,
+          entitlementId: SUPPORTER_TIERS[tier].id,
+          grantedTime: 1,
+          userId: 'u',
+          autoRenew: false,
+        },
+      ])
+    await expect(socialAuthor('u', true)).resolves.toMatchObject({ id: 'u' })
+  }
+})
+test('blocks work in both directions and protect root authors from nested replies', async () => {
+  jest
+    .mocked(getPrivateUser)
+    .mockResolvedValue({
+      blockedUserIds: ['a'],
+      blockedByUserIds: ['b', 'a'],
+    } as never)
+  expect((await getSocialViewer('u')).blocked).toEqual(['a', 'b'])
+  const pg = db({
+    oneOrNone: jest
+      .fn()
+      .mockResolvedValue({ id: 'root', user_id: 'root-author' }),
+  })
+  for (const blocked of [['parent-author'], ['root-author']]) {
+    await expect(
+      assertSocialInteraction(pg, post, { id: 'u', blocked }, true)
+    ).rejects.toMatchObject({ code: 403 })
+  }
+  await expect(
+    assertSocialInteraction(pg, post, { id: 'u', blocked: [] }, true)
+  ).resolves.toBeUndefined()
+})
+test('root deletion closes replies while a removed target rejects all new interactions', async () => {
+  const pg = db({
+    oneOrNone: jest.fn().mockResolvedValue({ id: 'root', deleted_time: 'now' }),
+  })
+  await expect(
+    assertSocialInteraction(pg, post, { blocked: [] }, true)
+  ).rejects.toMatchObject({ code: 403 })
+  await expect(
+    assertSocialInteraction(
+      pg,
+      { ...post, deleted_time: 'now' },
+      { blocked: [] }
+    )
+  ).rejects.toMatchObject({ code: 403 })
+})
+test('unavailable markets and mismatched repost source are rejected', async () => {
+  await expect(
+    validateSocialMarkets(
+      db({ manyOrNone: jest.fn().mockResolvedValue([{ id: 'a' }]) }),
+      ['a', 'private']
+    )
+  ).rejects.toMatchObject({ code: 400 })
+  await expect(
+    validateSocialSource(db({}), { contractId: 'other' }, ['a'], {
+      blocked: [],
+    })
+  ).rejects.toMatchObject({ code: 400 })
+  await expect(
+    validateSocialSource(
+      db({ oneOrNone: jest.fn().mockResolvedValue(null) }),
+      { contractId: 'a', commentId: 'hidden' },
+      ['a'],
+      { blocked: [] }
+    )
+  ).rejects.toMatchObject({ code: 400 })
+})
+test('database rate-limit exhaustion returns 429', async () => {
+  await expect(
+    limitSocialWrite(
+      db({ oneOrNone: jest.fn().mockResolvedValue(null) }),
+      'u',
+      'post',
+      10
+    )
+  ).rejects.toMatchObject({ code: 429 })
+})
+test('social notifications suppress self, blocks, and opt-outs and use reply content', async () => {
+  const actor = { id: 'actor', name: 'Actor', username: 'actor' } as User
+  await notifySocial(db({}), { ...post, user_id: 'actor' }, actor, 'like')
+  expect(insertNotificationToSupabase).not.toHaveBeenCalled()
+  jest
+    .mocked(getPrivateUser)
+    .mockResolvedValue({
+      blockedUserIds: ['actor'],
+      blockedByUserIds: [],
+    } as never)
+  await notifySocial(db({}), post, actor, 'like')
+  expect(insertNotificationToSupabase).not.toHaveBeenCalled()
+  jest
+    .mocked(getPrivateUser)
+    .mockResolvedValue({
+      blockedUserIds: [],
+      blockedByUserIds: [],
+      notificationPreferences: { opt_out_all: [], social_replies: [] },
+    } as never)
+  await notifySocial(db({}), post, actor, 'reply', 'new-reply')
+  expect(insertNotificationToSupabase).not.toHaveBeenCalled()
+  jest
+    .mocked(getPrivateUser)
+    .mockResolvedValue({
+      blockedUserIds: [],
+      blockedByUserIds: [],
+      notificationPreferences: { opt_out_all: [], social_replies: ['browser'] },
+    } as never)
+  await notifySocial(
+    db({
+      oneOrNone: jest
+        .fn()
+        .mockResolvedValue({ ...post, id: 'new-reply', text: 'actual reply' }),
+    }),
+    post,
+    actor,
+    'reply',
+    'new-reply'
+  )
+  expect(insertNotificationToSupabase).toHaveBeenCalledWith(
+    expect.objectContaining({
+      sourceText: 'actual reply',
+      sourceSlug: '/yap/new-reply',
+      sourceType: 'social_reply',
+    }),
+    expect.anything()
+  )
+})
