@@ -1,4 +1,5 @@
 import { SocialText } from './social-text'
+import { SocialLinkPreview } from './social-link-preview'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -254,6 +255,7 @@ export function SocialPostCard({
           ) : (
             <>
               <SocialText text={post.text} />
+              <SocialLinkPreview text={post.text} />
               {post.source && post.source.text !== 'View original market' && (
                 <a
                   className="border-ink-200 dark:border-ink-300 bg-canvas-50/60 hover:bg-canvas-50 mt-3 block rounded-2xl border p-4 transition-colors"
