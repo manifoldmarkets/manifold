@@ -19,6 +19,7 @@ export type Database = {
           id: string
           user_id: string
           text: string
+          image_urls: string[]
           created_time: string
           edited_time: string | null
           parent_id: string | null
@@ -34,6 +35,7 @@ export type Database = {
           id: string
           user_id: string
           text: string
+          image_urls?: string[]
           created_time?: string
           edited_time?: string | null
           parent_id?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           id?: string
           user_id?: string
           text?: string
+          image_urls?: string[]
           created_time?: string
           edited_time?: string | null
           parent_id?: string | null

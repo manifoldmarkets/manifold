@@ -290,6 +290,7 @@ export async function hydrateSocialPosts(
       id: row.id,
       author: displayUser(users.find((u) => u.id === row.user_id)),
       text: removed ? '' : row.text,
+      imageUrls: removed ? [] : row.image_urls ?? [],
       createdTime: socialTimestamp(row.created_time),
       editedTime: row.edited_time ? socialTimestamp(row.edited_time) : null,
       parentAuthor: parent

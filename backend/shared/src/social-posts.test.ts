@@ -20,6 +20,7 @@ import {
   validateSocialMarkets,
   validateSocialSource,
   notifySocial,
+  hydrateSocialPosts,
 } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { User } from 'common/user'
@@ -35,6 +36,37 @@ const post = {
 const db = (methods: Record<string, unknown>) =>
   methods as unknown as SupabaseDirectClient
 beforeEach(() => jest.clearAllMocks())
+test('hydrates attached images and hides them on removed or blocked posts', async () => {
+  for (const state of ['visible', 'deleted', 'blocked'] as const) {
+    const row = {
+      ...post,
+      id: 'root',
+      root_id: 'root',
+      parent_id: null,
+      created_time: '2026-09-16 00:00:00+00',
+      deleted_time: state === 'deleted' ? '2026-09-16 01:00:00+00' : null,
+      image_urls: ['https://example.com/a.png', 'https://example.com/b.png'],
+    } as SocialRow
+    const pg = db({
+      manyOrNone: jest
+        .fn()
+        .mockResolvedValueOnce([
+          { id: row.user_id, name: 'Author', username: 'author', data: {} },
+        ])
+        .mockResolvedValueOnce([row])
+        .mockResolvedValue([]),
+    })
+    const [result] = await hydrateSocialPosts(
+      pg,
+      [row],
+      {
+        blocked: state === 'blocked' ? [row.user_id] : [],
+      },
+      false
+    )
+    expect(result.imageUrls).toEqual(state === 'visible' ? row.image_urls : [])
+  }
+})
 test('membership comes from authoritative entitlements, and expiry does not block author access', async () => {
   jest
     .mocked(getUser)

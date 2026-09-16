@@ -6,6 +6,43 @@ import {
 import { combineReactionNotifications, Notification } from './notification'
 
 describe('social post validation', () => {
+  test('accepts image-only posts with at most four HTTPS images', () => {
+    const imageUrls = Array.from(
+      { length: 4 },
+      (_, i) => `https://example.com/${i}.png`
+    )
+    expect(
+      socialPostContentSchema.parse({ text: '', imageUrls }).imageUrls
+    ).toEqual(imageUrls)
+    expect(
+      socialPostContentSchema.safeParse({
+        text: '',
+        imageUrls: [...imageUrls, 'https://example.com/5.png'],
+      }).success
+    ).toBe(false)
+    for (const url of [
+      'javascript:alert(1)',
+      'data:image/png;base64,a',
+      'http://example.com/a.png',
+      'not-a-url',
+    ]) {
+      expect(
+        socialPostContentSchema.safeParse({ text: '', imageUrls: [url] })
+          .success
+      ).toBe(false)
+    }
+    expect(
+      socialPostContentSchema.safeParse({ text: '', imageUrls: [] }).success
+    ).toBe(false)
+    // Older clients omit imageUrls; edits must distinguish omission from removal.
+    expect(
+      socialPostContentSchema.parse({ text: 'old client' }).imageUrls
+    ).toBeUndefined()
+    expect(
+      socialPostContentSchema.parse({ text: 'remove images', imageUrls: [] })
+        .imageUrls
+    ).toEqual([])
+  })
   test('accepts text or one to five distinct markets', () => {
     expect(
       socialPostContentSchema.parse({ text: '  hello\nworld  ' }).text

@@ -10,6 +10,7 @@ import {
   socialPostContentSchema,
   SOCIAL_POST_MAX_LENGTH,
   SOCIAL_POST_MAX_MARKETS,
+  SOCIAL_POST_MAX_IMAGES,
   socialPostPath,
 } from 'common/social-post'
 import { Button } from '../buttons/button'
@@ -19,7 +20,13 @@ import { Avatar } from '../widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { ChatAlt2Icon, PlusIcon, XIcon } from '@heroicons/react/outline'
+import { uploadPublicImage } from 'web/lib/firebase/storage'
+import {
+  ChatAlt2Icon,
+  PhotographIcon,
+  PlusIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 
 export function SocialComposer(props: {
   parentId?: string
@@ -34,11 +41,15 @@ export function SocialComposer(props: {
   const { parentId, editing, source, onPosted, onCancel } = props
   const user = useUser()
   const input = useRef<HTMLTextAreaElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const uploadInProgress = useRef(false)
   const [text, setText] = useState(editing?.text ?? props.initialText ?? '')
   const [markets, setMarkets] = useState(
     editing?.markets ?? props.initialMarkets ?? []
   )
   const [selecting, setSelecting] = useState(false)
+  const [images, setImages] = useState(editing?.imageUrls ?? [])
+  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string>()
   const count = [...text.trim()].length
@@ -49,9 +60,54 @@ export function SocialComposer(props: {
   const parsed = socialPostContentSchema.safeParse({
     text,
     marketIds: markets.map((m) => m.id),
+    imageUrls: images,
   })
+  async function addImages(files: File[]) {
+    if (!user || saving || uploadInProgress.current || !files.length) return
+    setError(undefined)
+    if (images.length + files.length > SOCIAL_POST_MAX_IMAGES) {
+      setError(`Attach up to ${SOCIAL_POST_MAX_IMAGES} images.`)
+      return
+    }
+    if (
+      files.some(
+        (file) =>
+          !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(
+            file.type
+          )
+      )
+    ) {
+      setError('Choose JPEG, PNG, WebP, or GIF images.')
+      return
+    }
+    if (files.some((file) => file.size > 20 * 1024 ** 2)) {
+      setError('Each image must be 20 MB or smaller.')
+      return
+    }
+    uploadInProgress.current = true
+    setUploading(true)
+    try {
+      const results = await Promise.allSettled(
+        files.map((file) => uploadPublicImage(user.username, file, 'yap'))
+      )
+      const uploaded = results.flatMap((result) =>
+        result.status === 'fulfilled' ? [result.value] : []
+      )
+      setImages((previous) => [...previous, ...uploaded])
+      const failure = results.find((result) => result.status === 'rejected')
+      if (failure?.status === 'rejected')
+        setError(
+          `Some images could not be uploaded: ${
+            failure.reason?.message ?? failure.reason
+          }. Please try again.`
+        )
+    } finally {
+      uploadInProgress.current = false
+      setUploading(false)
+    }
+  }
   async function submit() {
-    if (!parsed.success || saving) return
+    if (!parsed.success || saving || uploadInProgress.current) return
     setSaving(true)
     setError(undefined)
     try {
@@ -70,6 +126,7 @@ export function SocialComposer(props: {
           })
       setText('')
       setMarkets([])
+      setImages([])
       toast.success(
         <span>
           {editing
@@ -143,6 +200,37 @@ export function SocialComposer(props: {
               }
             }}
           />
+          {!!images.length && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {images.map((url, index) => (
+                <div
+                  key={url}
+                  className="bg-canvas-50 relative h-20 w-20 overflow-hidden rounded-lg"
+                >
+                  <img
+                    src={url}
+                    alt={`Attachment ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    aria-label={`Remove image ${index + 1}`}
+                    disabled={saving || uploading}
+                    onClick={() =>
+                      setImages(images.filter((_, i) => i !== index))
+                    }
+                    className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {uploading && (
+            <p role="status" className="text-ink-600 mb-2 text-sm">
+              Uploading images…
+            </p>
+          )}
           {!!markets.length && (
             <div className="my-3 space-y-2">
               {markets.map((m) => (
@@ -177,13 +265,38 @@ export function SocialComposer(props: {
             </p>
           )}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <button
-              className="text-primary-700 hover:bg-primary-500/10 -ml-2 flex items-center gap-1 rounded-full px-2 py-2 text-sm transition-colors disabled:opacity-40"
-              disabled={saving || markets.length >= SOCIAL_POST_MAX_MARKETS}
-              onClick={() => setSelecting(true)}
-            >
-              <PlusIcon className="h-4 w-4" /> Markets
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                className="text-primary-700 hover:bg-primary-500/10 -ml-2 flex items-center gap-1 rounded-full px-2 py-2 text-sm transition-colors disabled:opacity-40"
+                disabled={saving || markets.length >= SOCIAL_POST_MAX_MARKETS}
+                onClick={() => setSelecting(true)}
+              >
+                <PlusIcon className="h-4 w-4" /> Markets
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                className="hidden"
+                aria-label="Upload images"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? [])
+                  e.target.value = ''
+                  void addImages(files)
+                }}
+              />
+              <button
+                title={`Add up to ${SOCIAL_POST_MAX_IMAGES} images`}
+                className="text-primary-700 hover:bg-primary-500/10 flex items-center gap-1 rounded-full px-2 py-2 text-sm transition-colors disabled:opacity-40"
+                disabled={
+                  saving || uploading || images.length >= SOCIAL_POST_MAX_IMAGES
+                }
+                onClick={() => fileInput.current?.click()}
+              >
+                <PhotographIcon className="h-4 w-4" /> Images
+              </button>
+            </div>
             <div className="flex items-center gap-3">
               {count >= SOCIAL_POST_MAX_LENGTH * 0.9 && (
                 <span
@@ -202,7 +315,7 @@ export function SocialComposer(props: {
                 <Button
                   color="gray"
                   size="xs"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   onClick={onCancel}
                 >
                   Cancel
@@ -211,7 +324,7 @@ export function SocialComposer(props: {
               <Button
                 size="sm"
                 className="min-w-[76px] !rounded-full font-semibold"
-                disabled={!parsed.success || saving}
+                disabled={!parsed.success || saving || uploading}
                 loading={saving}
                 onClick={submit}
               >

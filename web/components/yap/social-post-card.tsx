@@ -1,5 +1,6 @@
 import { SocialText } from './social-text'
 import { SocialLinkPreview } from './social-link-preview'
+import { SocialImageCarousel } from './social-image-carousel'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -136,7 +137,7 @@ export function SocialPostCard({
         onClick={(e) => {
           if (
             !(e.target as HTMLElement).closest(
-              'a,button,input,textarea,select,[data-social-composer]'
+              'a,button,input,textarea,select,[data-social-composer],[data-social-images]'
             ) &&
             !window.getSelection()?.toString()
           )
@@ -255,6 +256,12 @@ export function SocialPostCard({
           ) : (
             <>
               <SocialText text={post.text} />
+              {!!post.imageUrls?.length && (
+                <SocialImageCarousel
+                  key={post.imageUrls.join('|')}
+                  images={post.imageUrls}
+                />
+              )}
               <SocialLinkPreview text={post.text} />
               {post.source && post.source.text !== 'View original market' && (
                 <a

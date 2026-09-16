@@ -40,8 +40,8 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         await validateSocialMarkets(tx, content.marketIds)
         await validateSocialSource(tx, source, content.marketIds, viewer)
         const row = await tx.one<SocialRow>(
-          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id)
-      values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
+          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
           [
             id,
             auth.uid,
@@ -51,6 +51,7 @@ export const createSocialPost: APIHandler<'create-social-post'> =
             source?.contractId ?? null,
             source?.commentId ?? null,
             source?.betId ?? null,
+            content.imageUrls ?? [],
           ]
         )
         await writeSocialMarkets(tx, id, content.marketIds)
@@ -80,12 +81,17 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
       await writeSocialMarkets(tx, id, content.marketIds)
       // Removing the original attachment also removes the repost context.
       return tx.one<SocialRow>(
-        `update social_posts set text=$2, edited_time=clock_timestamp(),
+        `update social_posts set text=$2, image_urls=$4, edited_time=clock_timestamp(),
       source_contract_id=case when source_contract_id=any($3::text[]) then source_contract_id else null end,
       source_comment_id=case when source_contract_id=any($3::text[]) then source_comment_id else null end,
       source_bet_id=case when source_contract_id=any($3::text[]) then source_bet_id else null end
       where id=$1 returning *`,
-        [id, content.text, content.marketIds]
+        [
+          id,
+          content.text,
+          content.marketIds,
+          content.imageUrls ?? post.image_urls,
+        ]
       )
     })
     return (
@@ -109,7 +115,7 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
       )
     if (post.deleted_time) return
     await tx.none(
-      `update social_posts set text='', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
+      `update social_posts set text='', image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
       source_contract_id=null, source_comment_id=null, source_bet_id=null where id=$1`,
       [id, auth.uid, post.user_id !== auth.uid]
     )

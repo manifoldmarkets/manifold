@@ -4,6 +4,7 @@ import { DisplayUser } from './api/user-types'
 
 export const SOCIAL_POST_MAX_LENGTH = 2000
 export const SOCIAL_POST_MAX_MARKETS = 5
+export const SOCIAL_POST_MAX_IMAGES = 4
 export const socialPostContentSchema = z
   .object({
     text: z
@@ -17,11 +18,26 @@ export const socialPostContentSchema = z
       .array(z.string().min(1).max(200))
       .max(SOCIAL_POST_MAX_MARKETS)
       .default([]),
+    imageUrls: z
+      .array(
+        z
+          .string()
+          .url()
+          .max(2048)
+          .refine((url) => url.startsWith('https://'), {
+            message: 'Images must use HTTPS URLs',
+          })
+      )
+      .max(SOCIAL_POST_MAX_IMAGES)
+      .optional(),
   })
   .strict()
-  .superRefine(({ text, marketIds }, ctx) => {
-    if (!text && !marketIds.length)
-      ctx.addIssue({ code: 'custom', message: 'Add text or a market' })
+  .superRefine(({ text, marketIds, imageUrls }, ctx) => {
+    if (!text && !marketIds.length && !imageUrls?.length)
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Add text, a market, or an image',
+      })
     if (new Set(marketIds).size !== marketIds.length)
       ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
   })
@@ -44,6 +60,7 @@ export type SocialPost = {
   rootId: string
   removed: 'author' | 'moderator' | 'blocked' | null
   markets: Contract[]
+  imageUrls?: string[]
   unavailableMarketCount: number
   source: { url: string; text: string } | null
   likeCount: number
