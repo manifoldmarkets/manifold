@@ -969,7 +969,7 @@ export function MarketPreview(props: {
             id="answers-section"
             className={clsx(
               'gap-2 rounded-lg transition-all',
-              fieldErrors.answers
+              fieldErrors.answers || fieldErrors.answerProbs
                 ? 'p-3 ring-2 ring-red-500 focus-within:ring-2 focus-within:ring-red-500 dark:ring-red-600 dark:focus-within:ring-red-600'
                 : ''
             )}
@@ -1230,54 +1230,58 @@ export function MarketPreview(props: {
                     </div>
                   )}
 
-                {/* Starting probabilities */}
-                {isEditable && onEditAnswerProbs && namedAnswerCount > 0 && (
-                  <Col className="gap-1">
-                    <Row className="flex-wrap items-center gap-2">
-                      <ShortToggle
-                        on={!!data.answerProbs}
-                        setOn={(on) =>
-                          onEditAnswerProbs(
-                            on
-                              ? roundAnswerProbs(
-                                  answers.map((a) =>
-                                    a.text.trim()
-                                      ? evenAnswerProb(namedAnswerCount)
-                                      : 0
+                {/* Starting probabilities. Once they're on, the toggle stays even
+                    with nothing named, so they can be turned off again and the
+                    error explaining why creation is blocked stays in view. */}
+                {isEditable &&
+                  onEditAnswerProbs &&
+                  (namedAnswerCount > 0 || !!data.answerProbs) && (
+                    <Col className="gap-1">
+                      <Row className="flex-wrap items-center gap-2">
+                        <ShortToggle
+                          on={!!data.answerProbs}
+                          setOn={(on) =>
+                            onEditAnswerProbs(
+                              on
+                                ? roundAnswerProbs(
+                                    answers.map((a) =>
+                                      a.text.trim()
+                                        ? evenAnswerProb(namedAnswerCount)
+                                        : 0
+                                    )
                                   )
-                                )
-                              : undefined
-                          )
-                        }
-                      />
-                      <span className="text-ink-700 text-sm">
-                        Set starting probabilities
-                      </span>
-                      <InfoTooltip text="Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them." />
-                      {data.answerProbs && shouldAnswersSumToOne && (
-                        <span
-                          className={clsx(
-                            'text-sm',
-                            answerProbsError ? 'text-red-500' : 'text-ink-500'
-                          )}
-                        >
-                          {hasOtherAnswer
-                            ? `${
-                                Math.round((100 - answerProbsTotal) * 10) / 10
-                              }% left for Other`
-                            : `Total ${
-                                Math.round(answerProbsTotal * 10) / 10
-                              }%`}
+                                : undefined
+                            )
+                          }
+                        />
+                        <span className="text-ink-700 text-sm">
+                          Set starting probabilities
+                        </span>
+                        <InfoTooltip text="Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them." />
+                        {data.answerProbs && shouldAnswersSumToOne && (
+                          <span
+                            className={clsx(
+                              'text-sm',
+                              answerProbsError ? 'text-red-500' : 'text-ink-500'
+                            )}
+                          >
+                            {hasOtherAnswer
+                              ? `${
+                                  Math.round((100 - answerProbsTotal) * 10) / 10
+                                }% left for Other`
+                              : `Total ${
+                                  Math.round(answerProbsTotal * 10) / 10
+                                }%`}
+                          </span>
+                        )}
+                      </Row>
+                      {answerProbsError && (
+                        <span className="text-sm text-red-500">
+                          {answerProbsError}
                         </span>
                       )}
-                    </Row>
-                    {answerProbsError && (
-                      <span className="text-sm text-red-500">
-                        {answerProbsError}
-                      </span>
-                    )}
-                  </Col>
-                )}
+                    </Col>
+                  )}
 
                 {/* Action buttons row */}
                 {isEditable && onEditAnswers && (
