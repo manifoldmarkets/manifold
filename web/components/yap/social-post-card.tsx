@@ -219,7 +219,7 @@ export function SocialPostCard({
           ) : (
             <>
               <SocialText text={post.text} />
-              {post.source && (
+              {post.source && post.source.text !== 'View original market' && (
                 <a
                   className="border-ink-200 dark:border-ink-300 text-ink-600 mt-3 flex items-start gap-2 rounded-2xl border p-3 text-sm hover:underline"
                   href={post.source.url}
