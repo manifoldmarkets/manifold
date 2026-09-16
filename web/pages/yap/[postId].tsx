@@ -7,7 +7,10 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { SocialPostCard } from 'web/components/yap/social-post-card'
 import { SocialComposer } from 'web/components/yap/social-composer'
-import { SocialPostList } from 'web/components/yap/social-post-list'
+import {
+  SocialPostList,
+  SocialPostSkeleton,
+} from 'web/components/yap/social-post-list'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
@@ -66,13 +69,15 @@ export default function YapPostPage() {
           </div>
         ) : current ? (
           <>
-            {current.ancestors.map((post) => (
+            {current.ancestors.map((post, index) => (
               <SocialPostCard
                 key={post.id}
                 post={post}
                 onChanged={refresh}
                 previews={false}
                 refreshKey={version}
+                connectedAbove={index > 0}
+                continueThread
               />
             ))}
             <SocialPostCard
@@ -82,6 +87,7 @@ export default function YapPostPage() {
               previews={false}
               refreshKey={version}
               showReplyActions={false}
+              connectedAbove={current.ancestors.length > 0}
             />
             {current.post.canReply ? (
               <SocialComposer
@@ -105,7 +111,7 @@ export default function YapPostPage() {
             />
           </>
         ) : (
-          <p className="text-ink-400 p-5">Loading…</p>
+          <SocialPostSkeleton />
         )}
       </section>
     </Page>

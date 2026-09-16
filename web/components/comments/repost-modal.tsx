@@ -1,14 +1,11 @@
 import { formatMoney } from 'common/util/format'
 import clsx from 'clsx'
 import { useState } from 'react'
-import Link from 'next/link'
-import { toast } from 'react-hot-toast'
 import { ChatAlt2Icon } from '@heroicons/react/outline'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
 import { richTextToString } from 'common/util/parse'
-import { socialPostPath } from 'common/social-post'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -86,20 +83,9 @@ export const RepostModal = (props: {
             }}
             focusOnMount
             onCancel={() => setOpen(false)}
-            onPosted={(post) => {
+            onPosted={() => {
               props.onPosted?.()
               setOpen(false)
-              toast.success(
-                <span>
-                  Posted to Yap.{' '}
-                  <Link
-                    className="text-primary-700 underline"
-                    href={socialPostPath(post.id)}
-                  >
-                    View post
-                  </Link>
-                </span>
-              )
             }}
           />
         ) : (

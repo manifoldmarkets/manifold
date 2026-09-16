@@ -84,13 +84,15 @@ export function SocialPostList({
   }
   return (
     <div aria-busy={loading}>
-      {page.posts.map((post) => (
+      {page.posts.map((post, index) => (
         <SocialPostCard
           key={post.id}
           post={post}
           onChanged={changed}
           depth={depth}
           refreshKey={refreshKey + version}
+          connectedAbove={depth > 0}
+          continueThread={depth > 0 && index < page.posts.length - 1}
         />
       ))}
       {!loading && !error && !page.posts.length && (
@@ -113,7 +115,9 @@ export function SocialPostList({
           </Button>
         </div>
       )}
-      {loading && <p className="text-ink-400 p-5 text-center">Loading…</p>}
+      {loading && (
+        <SocialPostSkeleton count={page.posts.length || parentId ? 1 : 3} />
+      )}
       <div ref={sentinel} />
       {page.nextCursor && !loading && !error && (
         <div className="p-4 text-center">
@@ -122,6 +126,29 @@ export function SocialPostList({
           </Button>
         </div>
       )}
+    </div>
+  )
+}
+
+export function SocialPostSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div role="status" aria-label="Loading posts">
+      <span className="sr-only">Loading posts…</span>
+      {Array.from({ length: count }, (_, index) => (
+        <div
+          key={index}
+          aria-hidden="true"
+          className="border-ink-200 dark:border-ink-300 flex gap-3 border-b px-4 py-4 motion-safe:animate-pulse"
+        >
+          <div className="bg-ink-200 h-8 w-8 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="bg-ink-200 h-3 w-2/5 rounded-full" />
+            <div className="bg-ink-100 dark:bg-ink-200 h-3 w-full rounded-full" />
+            <div className="bg-ink-100 dark:bg-ink-200 h-3 w-3/4 rounded-full" />
+            <div className="border-ink-200 dark:border-ink-300 h-20 rounded-2xl border" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import Textarea from 'react-expanding-textarea'
+import { toast } from 'react-hot-toast'
 import { Contract } from 'common/contract'
 import { isSupporter } from 'common/supporter'
 import {
@@ -8,6 +10,7 @@ import {
   socialPostContentSchema,
   SOCIAL_POST_MAX_LENGTH,
   SOCIAL_POST_MAX_MARKETS,
+  socialPostPath,
 } from 'common/social-post'
 import { Button } from '../buttons/button'
 import { SelectMarkets } from '../contract-select-modal'
@@ -67,6 +70,21 @@ export function SocialComposer(props: {
           })
       setText('')
       setMarkets([])
+      toast.success(
+        <span>
+          {editing
+            ? 'Post updated.'
+            : parentId
+            ? 'Reply posted.'
+            : 'Posted to Yap.'}{' '}
+          <Link
+            className="text-primary-700 underline"
+            href={socialPostPath(post.id)}
+          >
+            View post
+          </Link>
+        </span>
+      )
       onPosted(post)
     } catch (e) {
       setError((e as Error).message)
@@ -103,7 +121,7 @@ export function SocialComposer(props: {
       <div className="flex items-start gap-3">
         <Avatar avatarUrl={user.avatarUrl} username={user.username} size="sm" />
         <div className="min-w-0 flex-1">
-          <textarea
+          <Textarea
             aria-label={
               editing
                 ? 'Edit post'
@@ -112,7 +130,7 @@ export function SocialComposer(props: {
                 : 'Write a post'
             }
             placeholder={parentId ? 'Write a reply…' : 'What’s on your mind?'}
-            className="bg-canvas-50 border-ink-300 placeholder:text-ink-500 dark:placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-y rounded-lg border p-3 text-base transition-colors focus:outline-none focus:ring-1"
+            className="bg-canvas-50 border-ink-300 placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-none rounded-2xl border p-3 text-base transition-colors focus:outline-none focus:ring-1"
             rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -130,9 +148,16 @@ export function SocialComposer(props: {
               {markets.map((m) => (
                 <div
                   key={m.id}
-                  className="border-ink-200 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+                  className="border-ink-200 dark:border-ink-300 flex items-center gap-3 rounded-2xl border p-4 text-sm"
                 >
-                  <span className="grow">{m.question}</span>
+                  <div className="min-w-0 grow">
+                    <span className="text-ink-600 mb-1 block text-xs">
+                      Market
+                    </span>
+                    <span className="text-ink-900 break-words font-medium">
+                      {m.question}
+                    </span>
+                  </div>
                   <button
                     aria-label={`Remove ${m.question}`}
                     disabled={saving}
@@ -160,16 +185,19 @@ export function SocialComposer(props: {
               <PlusIcon className="h-4 w-4" /> Markets
             </button>
             <div className="flex items-center gap-3">
-              <span
-                className={
-                  count > SOCIAL_POST_MAX_LENGTH
-                    ? 'text-xs text-red-600'
-                    : 'text-ink-500 dark:text-ink-600 text-xs tabular-nums'
-                }
-              >
-                {count.toLocaleString()}/
-                {SOCIAL_POST_MAX_LENGTH.toLocaleString('en-US')}
-              </span>
+              {count >= SOCIAL_POST_MAX_LENGTH * 0.9 && (
+                <span
+                  role="status"
+                  className={
+                    count > SOCIAL_POST_MAX_LENGTH
+                      ? 'text-xs text-red-600'
+                      : 'text-ink-500 dark:text-ink-600 text-xs tabular-nums'
+                  }
+                >
+                  {count.toLocaleString()}/
+                  {SOCIAL_POST_MAX_LENGTH.toLocaleString('en-US')}
+                </span>
+              )}
               {onCancel && (
                 <Button
                   color="gray"

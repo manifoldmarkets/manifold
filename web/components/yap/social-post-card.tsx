@@ -35,6 +35,8 @@ export function SocialPostCard({
   depth = 0,
   refreshKey = 0,
   showReplyActions = true,
+  connectedAbove = false,
+  continueThread = false,
 }: {
   post: SocialPost
   onChanged: () => void
@@ -42,6 +44,8 @@ export function SocialPostCard({
   depth?: number
   refreshKey?: number
   showReplyActions?: boolean
+  connectedAbove?: boolean
+  continueThread?: boolean
 }) {
   const router = useRouter()
   const user = useUser()
@@ -92,18 +96,27 @@ export function SocialPostCard({
     onChanged()
   }
   const own = user?.id === post.author.id
+  const hasPreviews = previews && post.replyPreviews.length > 0
+  const connectedBelow = continueThread || expanded || hasPreviews
   const replyCountButton = showReplyActions && post.replyCount > 0 && (
     <button
-      className="text-ink-500 dark:text-ink-600 hover:text-primary-700 rounded-full px-2 py-2 text-xs hover:underline"
+      className="hover:text-primary-700 min-h-[36px] pr-2 text-xs tabular-nums hover:underline"
+      aria-label={`${expanded ? 'Hide' : 'View'} ${post.replyCount} ${
+        post.replyCount === 1 ? 'reply' : 'replies'
+      }`}
       aria-expanded={expanded}
       onClick={() => setExpanded(!expanded)}
     >
-      {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
+      {post.replyCount}
     </button>
   )
   return (
     <article
-      className="border-ink-200 dark:border-ink-300 border-b last:border-b-0"
+      className={
+        depth === 0
+          ? 'border-ink-200 dark:border-ink-300 border-b last:border-b-0'
+          : ''
+      }
       aria-label={`Post by ${post.author.name}`}
     >
       <div
@@ -127,11 +140,25 @@ export function SocialPostCard({
             void router.push(socialPostPath(post.id))
         }}
       >
-        <Avatar
-          size="sm"
-          avatarUrl={post.author.avatarUrl}
-          username={post.author.username}
-        />
+        <div className="relative">
+          {connectedAbove && (
+            <span
+              aria-hidden="true"
+              className="bg-ink-200 dark:bg-ink-300 absolute -top-3 left-4 h-3 w-px"
+            />
+          )}
+          <Avatar
+            size="sm"
+            avatarUrl={post.author.avatarUrl}
+            username={post.author.username}
+          />
+          {connectedBelow && (
+            <span
+              aria-hidden="true"
+              className="bg-ink-200 dark:bg-ink-300 absolute -bottom-3 left-4 top-9 w-px"
+            />
+          )}
+        </div>
         <div className="min-w-0">
           <div className="mb-1 flex min-w-0 items-center gap-1 text-sm">
             <Link
@@ -140,32 +167,32 @@ export function SocialPostCard({
             >
               {post.author.name}
             </Link>
-            <span className="text-ink-500 dark:text-ink-600 min-w-0 truncate">
+            <span className="text-ink-600 min-w-0 truncate">
               @{post.author.username}
             </span>
-            <span className="text-ink-500" aria-hidden="true">
+            <span className="text-ink-600" aria-hidden="true">
               ·
             </span>
             <Link
-              className="text-ink-500 dark:text-ink-600 shrink-0 text-sm hover:underline"
+              className="text-ink-600 shrink-0 text-sm hover:underline"
               href={socialPostPath(post.id)}
             >
               <RelativeTimestamp
                 time={Date.parse(post.createdTime)}
                 shortened
-                className="text-ink-500 dark:text-ink-600"
+                className="text-ink-600"
               />
             </Link>
             {post.editedTime && !post.removed && (
               <span
                 title={new Date(post.editedTime).toLocaleString()}
-                className="text-ink-400 text-xs"
+                className="text-ink-600 text-xs"
               >
                 edited
               </span>
             )}
             {user && !post.removed && (
-              <div className="text-ink-500 dark:text-ink-600 ml-auto shrink-0">
+              <div className="text-ink-600 ml-auto shrink-0">
                 <DropdownMenu
                   closeOnClick
                   items={[
@@ -190,7 +217,7 @@ export function SocialPostCard({
           </div>
           {post.parentId && (
             <Link
-              className="text-ink-500 mb-2 block text-xs hover:underline"
+              className="text-ink-600 mb-2 block text-xs hover:underline"
               href={socialPostPath(post.parentId)}
             >
               {post.parentAuthor
@@ -200,14 +227,19 @@ export function SocialPostCard({
           )}
           {post.removed ? (
             <>
-              <p className="text-ink-400 py-2 italic">
+              <p className="text-ink-600 py-2 italic">
                 {post.removed === 'blocked'
                   ? 'Post unavailable because of a block'
                   : post.removed === 'moderator'
                   ? 'Removed by moderators'
                   : 'Deleted by author'}
               </p>
-              {replyCountButton}
+              <div className="text-ink-600 flex items-center gap-2">
+                {post.replyCount > 0 && (
+                  <ChatAltIcon className="h-[18px] w-[18px]" />
+                )}
+                {replyCountButton}
+              </div>
             </>
           ) : editing ? (
             <SocialComposer
@@ -221,11 +253,18 @@ export function SocialPostCard({
               <SocialText text={post.text} />
               {post.source && post.source.text !== 'View original market' && (
                 <a
-                  className="border-ink-200 dark:border-ink-300 text-ink-600 mt-3 flex items-start gap-2 rounded-2xl border p-3 text-sm hover:underline"
+                  className="border-ink-200 dark:border-ink-300 bg-canvas-50/60 hover:bg-canvas-50 mt-3 block rounded-2xl border p-4 transition-colors"
                   href={post.source.url}
                 >
-                  <ExternalLinkIcon className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span className="line-clamp-3">{post.source.text}</span>
+                  <span className="text-ink-600 mb-2 flex items-center gap-2 text-xs">
+                    <ExternalLinkIcon className="h-3.5 w-3.5 shrink-0" />
+                    {post.source.url.includes('#')
+                      ? 'Quoted comment'
+                      : 'Shared trade'}
+                  </span>
+                  <span className="border-primary-500/50 text-ink-800 line-clamp-3 border-l-2 pl-3 text-sm leading-relaxed">
+                    {post.source.text}
+                  </span>
                 </a>
               )}
               <div className={post.markets.length ? 'mt-3 space-y-2' : ''}>
@@ -235,18 +274,24 @@ export function SocialPostCard({
                     <Link
                       key={market.id}
                       href={contractPath(market)}
-                      className="border-ink-200 dark:border-ink-300 hover:bg-canvas-50 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors"
+                      className="border-ink-200 dark:border-ink-300 hover:border-primary-400 hover:bg-canvas-50 flex items-center justify-between gap-3 rounded-xl border px-3 py-3 transition-colors"
                     >
-                      <span className="min-w-0 break-words font-medium">
+                      <span className="text-ink-900 min-w-0 flex-1 break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">
                         {market.question}
                       </span>
-                      <span className="text-primary-700 bg-primary-500/10 shrink-0 rounded-lg px-2 py-1 font-semibold tabular-nums">
-                        {market.resolution ??
-                          (market.outcomeType === 'BINARY'
-                            ? getBinaryProbPercent(market)
-                            : market.isResolved
-                            ? 'Resolved'
-                            : 'View market')}
+                      <span className="bg-primary-500/10 text-primary-700 shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
+                        {market.isResolved && market.resolution && (
+                          <span className="sr-only">Resolved: </span>
+                        )}
+                        {market.isResolved
+                          ? market.resolution ?? 'Resolved'
+                          : market.outcomeType === 'BINARY'
+                          ? getBinaryProbPercent(market)
+                          : 'View market'}
+                        {market.outcomeType === 'BINARY' &&
+                          !market.isResolved && (
+                            <span className="sr-only"> chance</span>
+                          )}
                       </span>
                     </Link>
                   ))}
@@ -262,22 +307,27 @@ export function SocialPostCard({
                 </button>
               )}
               {post.unavailableMarketCount > 0 && (
-                <p className="text-ink-400 mt-2 text-sm">
+                <p className="text-ink-600 mt-2 text-sm">
                   {post.unavailableMarketCount === 1
                     ? 'Market unavailable'
                     : `${post.unavailableMarketCount} markets unavailable`}
                 </p>
               )}
-              <div className="text-ink-500 dark:text-ink-600 -mb-1 -ml-2 mt-2 flex flex-wrap items-center gap-x-5 text-sm">
+              <div className="text-ink-600 -mb-1 -ml-2 mt-2 flex flex-wrap items-center gap-x-8 text-sm">
                 {showReplyActions && (
-                  <button
-                    className="hover:text-primary-700 hover:bg-primary-500/10 flex items-center gap-2 rounded-full px-2 py-2 transition-colors disabled:opacity-40"
-                    disabled={!post.canReply}
-                    aria-expanded={replying}
-                    onClick={() => setReplying(!replying)}
-                  >
-                    <ChatAltIcon className="h-[18px] w-[18px]" /> Reply
-                  </button>
+                  <div className="flex min-w-[48px] items-center">
+                    <button
+                      className="hover:text-primary-700 hover:bg-primary-500/10 rounded-full p-2 transition-colors disabled:opacity-40"
+                      aria-label="Reply"
+                      title={post.canReply ? 'Reply' : 'Replies closed'}
+                      disabled={!post.canReply}
+                      aria-expanded={replying}
+                      onClick={() => setReplying(!replying)}
+                    >
+                      <ChatAltIcon className="h-[18px] w-[18px]" />
+                    </button>
+                    {replyCountButton}
+                  </div>
                 )}
                 <div className="flex items-center">
                   <button
@@ -295,15 +345,16 @@ export function SocialPostCard({
                       <HeartIcon className="h-[18px] w-[18px]" />
                     )}
                   </button>
-                  <button
-                    aria-label="View people who liked this post"
-                    className="py-2 pr-2 text-xs tabular-nums hover:text-rose-500 hover:underline"
-                    onClick={() => setLikersOpen(true)}
-                  >
-                    {likeCount}
-                  </button>
+                  {likeCount > 0 && (
+                    <button
+                      aria-label="View people who liked this post"
+                      className="py-2 pr-2 text-xs tabular-nums hover:text-rose-500 hover:underline"
+                      onClick={() => setLikersOpen(true)}
+                    >
+                      {likeCount}
+                    </button>
+                  )}
                 </div>
-                {replyCountButton}
               </div>
             </>
           )}
@@ -323,13 +374,7 @@ export function SocialPostCard({
         />
       )}
       {expanded ? (
-        <div
-          className={
-            depth < 2
-              ? 'border-ink-200 dark:border-ink-300 ml-5 border-l sm:ml-8'
-              : ''
-          }
-        >
+        <div>
           <SocialPostList
             parentId={post.id}
             depth={depth + 1}
@@ -338,16 +383,9 @@ export function SocialPostCard({
           />
         </div>
       ) : (
-        previews &&
-        post.replyPreviews.length > 0 && (
-          <div
-            className={
-              depth < 2
-                ? 'border-ink-200 dark:border-ink-300 ml-5 border-l sm:ml-8'
-                : ''
-            }
-          >
-            {post.replyPreviews.map((reply) => (
+        hasPreviews && (
+          <div>
+            {post.replyPreviews.map((reply, index) => (
               <SocialPostCard
                 key={reply.id}
                 post={reply}
@@ -355,6 +393,8 @@ export function SocialPostCard({
                 previews={false}
                 depth={depth + 1}
                 refreshKey={refreshKey}
+                connectedAbove
+                continueThread={index < post.replyPreviews.length - 1}
               />
             ))}
             {post.replyCount > post.replyPreviews.length && (
