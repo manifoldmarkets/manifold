@@ -279,8 +279,19 @@ export function SocialPostCard({
                       href={contractPath(market)}
                       className="border-ink-200 dark:border-ink-300 hover:border-primary-400 hover:bg-canvas-50 flex items-center justify-between gap-3 rounded-xl border px-3 py-3 transition-colors"
                     >
-                      <span className="text-ink-900 min-w-0 flex-1 break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">
-                        {market.question}
+                      <span className="min-w-0 flex-1">
+                        <span className="text-ink-900 block break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">
+                          {market.question}
+                        </span>
+                        <span className="text-ink-600 mt-1.5 flex min-w-0 items-center gap-1.5 text-xs">
+                          <Avatar
+                            username={market.creatorUsername}
+                            avatarUrl={market.creatorAvatarUrl}
+                            size="2xs"
+                            noLink
+                          />
+                          <span className="truncate">{market.creatorName}</span>
+                        </span>
                       </span>
                       <span className="bg-primary-500/10 text-primary-700 shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
                         {market.isResolved && market.resolution && (
