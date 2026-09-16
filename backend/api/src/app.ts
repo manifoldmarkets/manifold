@@ -1,3 +1,4 @@
+import { isUncachedQuoteRead } from 'common/api/cache'
 import { API, type APIPath } from 'common/api/schema'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { randomString } from 'common/util/random'
@@ -22,9 +23,11 @@ export const allowCorsUnrestricted: RequestHandler = cors({
   maxAge: 86400, // 24 hours
 })
 
-function cacheController(policy?: string): RequestHandler {
-  return (_req, res, next) => {
-    if (policy) res.appendHeader('Cache-Control', policy)
+function cacheController(path: string, policy?: string): RequestHandler {
+  return (req, res, next) => {
+    if (isUncachedQuoteRead(path, req.query)) {
+      res.setHeader('Cache-Control', 'no-store')
+    } else if (policy) res.appendHeader('Cache-Control', policy)
     next()
   }
 }
@@ -145,7 +148,7 @@ app.options('*', allowCorsUnrestricted)
 
 Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
-  const cache = cacheController((api as any).cache)
+  const cache = cacheController(path, (api as any).cache)
   const url = '/' + pathWithPrefix(path as APIPath)
 
   const apiRoute = [

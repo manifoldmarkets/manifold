@@ -1,10 +1,18 @@
 import { APIParams, APIResponse } from 'common/api/schema'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
+import { createLiveSnapshot } from 'common/util/live-snapshot'
 import { User } from 'common/user'
-import { sortBy, uniq, uniqBy } from 'lodash'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export function useBetsOnce(
@@ -167,52 +175,82 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   return newBets
 }
 
+// Each contract has one observable snapshot. A confirmed cancel changes the
+// cache itself, including when no quote panel is mounted. Live updates are
+// retained only while a snapshot request is in flight; no tombstone TTL is needed.
+const createOrderBook = () =>
+  createLiveSnapshot<LimitBet>((bets) =>
+    sortBy(
+      bets.filter((bet) => isOpenLimitOrder(bet)),
+      'createdTime'
+    )
+  )
+const orderBooks = new Map<string, ReturnType<typeof createOrderBook>>()
+const getOrderBook = (contractId: string) => {
+  // Never share mutable market state between SSR requests.
+  if (typeof window === 'undefined') return createOrderBook()
+  let book = orderBooks.get(contractId)
+  if (!book) {
+    book = createOrderBook()
+    orderBooks.set(contractId, book)
+  }
+  return book
+}
+const getServerSnapshot = () => undefined
+
+/** Apply confirmed mutations to the same snapshot every quote panel reads. */
+export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
+  for (const [contractId, updates] of Object.entries(
+    groupBy(bets, 'contractId')
+  )) {
+    // With no cached book, a later mount starts from a fresh server read.
+    orderBooks.get(contractId)?.update(updates)
+  }
+}
+
 export const useUnfilledBets = (
   contractId: string,
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
   useIsPageVisible: () => boolean,
-  options?: {
-    enabled?: boolean
-  }
+  options?: { enabled?: boolean }
 ) => {
   const { enabled = true } = options ?? {}
-
-  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
-    undefined,
-    `unfilled-bets-${contractId}`
+  const book = useMemo(() => getOrderBook(contractId), [contractId])
+  const bets = useSyncExternalStore(
+    book.subscribe,
+    book.getSnapshot,
+    getServerSnapshot
   )
-
-  const addBets = (newBets: LimitBet[]) => {
-    setBets((bets) => {
-      return sortBy(
-        uniqBy([...newBets, ...(bets ?? [])], 'id'),
-        'createdTime'
-      ).filter(
-        (bet) =>
-          !bet.isFilled &&
-          !bet.isCancelled &&
-          (!bet.expiresAt || bet.expiresAt > Date.now())
-      )
-    })
-  }
-
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    if (enabled)
-      api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
-        // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
-        (bets) => setBets(bets as LimitBet[])
+    if (!enabled || !isPageVisible) return
+    book
+      .refresh(
+        () =>
+          api({ contractId, kinds: 'open-limit', order: 'asc' }) as Promise<
+            LimitBet[]
+          >
       )
-  }, [enabled, contractId, isPageVisible])
+      .catch((e) => console.error('Failed to load limit orders', e))
+  }, [enabled, book, contractId, isPageVisible])
 
   useApiSubscription({
     enabled,
     topics: [`contract/${contractId}/orders`],
-    onBroadcast: ({ data }) => {
-      addBets(data.bets as LimitBet[])
-    },
+    onBroadcast: ({ data }) => book.update(data.bets as LimitBet[]),
   })
+
+  useEffect(() => {
+    if (!enabled || !bets?.length) return
+    const expiry = Math.min(...bets.map((b) => b.expiresAt ?? Infinity))
+    if (!Number.isFinite(expiry)) return
+    const timer = setTimeout(
+      book.normalize,
+      Math.min(2 ** 31 - 1, Math.max(0, expiry - Date.now()))
+    )
+    return () => clearTimeout(timer)
+  }, [enabled, book, bets])
 
   return bets
 }
