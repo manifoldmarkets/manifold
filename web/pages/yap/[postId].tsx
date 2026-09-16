@@ -38,7 +38,7 @@ export default function YapPostPage() {
   }, [id, user?.id, version])
   const current = detail?.post.id === id ? detail : undefined
   return (
-    <Page trackPageView="yap post page">
+    <Page trackPageView="yap post page" hideFooter>
       <SEO
         title="Post on Yap"
         description="Join the conversation on Manifold."
@@ -46,9 +46,9 @@ export default function YapPostPage() {
       />
       <section
         aria-label="Yap"
-        className="border-ink-100 mx-auto w-full max-w-2xl border-x"
+        className="border-ink-200 dark:border-ink-300 mx-auto min-h-screen w-full max-w-2xl border-x"
       >
-        <header className="border-ink-100 border-b px-4 py-4">
+        <header className="bg-canvas-0/95 border-ink-200 dark:border-ink-300 sticky top-0 z-10 border-b px-4 py-4 backdrop-blur-md">
           <Link
             href="/yap"
             className="text-ink-900 flex items-center gap-3 text-lg font-semibold"
@@ -94,7 +94,7 @@ export default function YapPostPage() {
                 This post is closed to new replies.
               </p>
             )}
-            <h2 className="border-ink-100 border-y px-4 py-3 font-semibold">
+            <h2 className="border-ink-200 dark:border-ink-300 border-y px-4 py-3 font-semibold">
               Replies
             </h2>
             <SocialPostList

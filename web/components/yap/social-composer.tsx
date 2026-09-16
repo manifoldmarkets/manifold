@@ -99,7 +99,7 @@ export function SocialComposer(props: {
       </div>
     )
   return (
-    <div className="bg-canvas-0 w-full p-4" data-social-composer>
+    <div className="bg-canvas-0 w-full px-4 py-3" data-social-composer>
       <div className="flex items-start gap-3">
         <Avatar avatarUrl={user.avatarUrl} username={user.username} size="sm" />
         <div className="min-w-0 flex-1">
@@ -112,8 +112,8 @@ export function SocialComposer(props: {
                 : 'Write a post'
             }
             placeholder={parentId ? 'Write a reply…' : 'What’s on your mind?'}
-            className="placeholder:text-ink-400 text-ink-900 w-full resize-y border-0 bg-transparent p-0 text-base focus:ring-0"
-            rows={3}
+            className="bg-canvas-50 border-ink-300 placeholder:text-ink-500 dark:placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-y rounded-lg border p-3 text-base transition-colors focus:outline-none focus:ring-1"
+            rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
             ref={input}
@@ -151,21 +151,20 @@ export function SocialComposer(props: {
               {error}
             </p>
           )}
-          <div className="border-ink-100 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <button
-              className="text-primary-700 flex items-center gap-1 text-sm disabled:opacity-40"
+              className="text-primary-700 hover:bg-primary-500/10 -ml-2 flex items-center gap-1 rounded-full px-2 py-2 text-sm transition-colors disabled:opacity-40"
               disabled={saving || markets.length >= SOCIAL_POST_MAX_MARKETS}
               onClick={() => setSelecting(true)}
             >
-              <PlusIcon className="h-4 w-4" /> Markets {markets.length}/
-              {SOCIAL_POST_MAX_MARKETS}
+              <PlusIcon className="h-4 w-4" /> Markets
             </button>
             <div className="flex items-center gap-3">
               <span
                 className={
                   count > SOCIAL_POST_MAX_LENGTH
                     ? 'text-xs text-red-600'
-                    : 'text-ink-400 text-xs'
+                    : 'text-ink-500 dark:text-ink-600 text-xs tabular-nums'
                 }
               >
                 {count.toLocaleString()}/
@@ -183,6 +182,7 @@ export function SocialComposer(props: {
               )}
               <Button
                 size="sm"
+                className="min-w-[76px] !rounded-full font-semibold"
                 disabled={!parsed.success || saving}
                 loading={saving}
                 onClick={submit}

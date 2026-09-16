@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChatAlt2Icon, RefreshIcon } from '@heroicons/react/outline'
+import { RefreshIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { SocialComposer } from 'web/components/yap/social-composer'
@@ -8,7 +8,7 @@ import { SocialPostList } from 'web/components/yap/social-post-list'
 export default function YapPage() {
   const [version, setVersion] = useState(0)
   return (
-    <Page trackPageView="yap page">
+    <Page trackPageView="yap page" hideFooter>
       <SEO
         title="Yap"
         description="Thoughts, markets, and conversations on Manifold."
@@ -16,25 +16,22 @@ export default function YapPage() {
       />
       <section
         aria-label="Yap"
-        className="border-ink-100 mx-auto w-full max-w-2xl border-x"
+        className="border-ink-200 dark:border-ink-300 mx-auto min-h-screen w-full max-w-2xl border-x"
       >
-        <header className="border-ink-100 flex items-center gap-3 border-b px-4 py-5">
-          <ChatAlt2Icon className="text-primary-600 h-7 w-7" />
-          <div>
-            <h1 className="text-ink-900 text-2xl font-bold">Yap</h1>
-            <p className="text-ink-500 text-sm">
-              One conversation. Everyone welcome.
-            </p>
+        <header className="bg-canvas-0/95 border-ink-200 dark:border-ink-300 sticky top-0 z-10 border-b backdrop-blur-md">
+          <div className="flex items-center justify-between px-4 py-3">
+            <h1 className="text-ink-900 text-xl font-bold">Yap</h1>
+            <button
+              aria-label="Refresh timeline"
+              title="Refresh timeline"
+              className="text-ink-600 hover:bg-ink-100 rounded-full p-2 transition-colors"
+              onClick={() => setVersion((v) => v + 1)}
+            >
+              <RefreshIcon className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            aria-label="Refresh timeline"
-            className="text-ink-500 hover:text-primary-700 ml-auto p-2"
-            onClick={() => setVersion((v) => v + 1)}
-          >
-            <RefreshIcon className="h-5 w-5" />
-          </button>
         </header>
-        <div className="border-ink-100 border-b-4">
+        <div className="border-ink-200 dark:border-ink-300 border-b">
           <SocialComposer onPosted={() => setVersion((v) => v + 1)} />
         </div>
         <SocialPostList refreshKey={version} />

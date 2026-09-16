@@ -94,7 +94,7 @@ export function SocialPostCard({
   const own = user?.id === post.author.id
   const replyCountButton = showReplyActions && post.replyCount > 0 && (
     <button
-      className="text-ink-500 hover:text-primary-700 text-sm"
+      className="text-ink-500 dark:text-ink-600 hover:text-primary-700 rounded-full px-2 py-2 text-xs hover:underline"
       aria-expanded={expanded}
       onClick={() => setExpanded(!expanded)}
     >
@@ -103,11 +103,11 @@ export function SocialPostCard({
   )
   return (
     <article
-      className="border-ink-100 border-b"
+      className="border-ink-200 dark:border-ink-300 border-b last:border-b-0"
       aria-label={`Post by ${post.author.name}`}
     >
       <div
-        className="hover:bg-canvas-50 cursor-pointer px-4 py-4"
+        className="hover:bg-canvas-50/50 grid cursor-pointer grid-cols-[2rem_minmax(0,1fr)] gap-x-3 px-4 py-3 transition-colors"
         role="link"
         tabIndex={0}
         aria-label={`Open post by ${post.author.name}`}
@@ -127,174 +127,192 @@ export function SocialPostCard({
             void router.push(socialPostPath(post.id))
         }}
       >
-        <div className="mb-2 flex items-center gap-2 text-sm">
-          <Avatar
-            size="sm"
-            avatarUrl={post.author.avatarUrl}
-            username={post.author.username}
-          />
-          <Link
-            className="text-ink-900 truncate font-semibold hover:underline"
-            href={`/${post.author.username}`}
-          >
-            {post.author.name}
-          </Link>
-          <span className="text-ink-400 hidden truncate sm:inline">
-            @{post.author.username}
-          </span>
-          <Link
-            className="text-ink-400 ml-auto shrink-0 text-xs"
-            href={socialPostPath(post.id)}
-          >
-            <RelativeTimestamp time={Date.parse(post.createdTime)} />
-          </Link>
-          {post.editedTime && !post.removed && (
-            <span
-              title={new Date(post.editedTime).toLocaleString()}
-              className="text-ink-400 text-xs"
+        <Avatar
+          size="sm"
+          avatarUrl={post.author.avatarUrl}
+          username={post.author.username}
+        />
+        <div className="min-w-0">
+          <div className="mb-1 flex min-w-0 items-center gap-1 text-sm">
+            <Link
+              className="text-ink-900 min-w-0 truncate font-bold hover:underline"
+              href={`/${post.author.username}`}
             >
-              edited
+              {post.author.name}
+            </Link>
+            <span className="text-ink-500 dark:text-ink-600 min-w-0 truncate">
+              @{post.author.username}
             </span>
-          )}
-          {user && !post.removed && (
-            <DropdownMenu
-              closeOnClick
-              items={[
-                ...(own
-                  ? [{ name: 'Edit', onClick: () => setEditing(true) }]
-                  : []),
-                ...(own || mod
-                  ? [
-                      {
-                        name: own ? 'Delete' : 'Remove',
-                        onClick: () => setDeleting(true),
-                      },
-                    ]
-                  : []),
-                ...(!own
-                  ? [{ name: 'Report', onClick: () => setReporting(true) }]
-                  : []),
-              ]}
-            />
-          )}
-        </div>
-        {post.parentId && (
-          <Link
-            className="text-ink-500 mb-2 block text-xs hover:underline"
-            href={socialPostPath(post.parentId)}
-          >
-            {post.parentAuthor
-              ? `Replying to @${post.parentAuthor.username}`
-              : 'View parent post'}
-          </Link>
-        )}
-        {post.removed ? (
-          <>
-            <p className="text-ink-400 py-2 italic">
-              {post.removed === 'blocked'
-                ? 'Post unavailable because of a block'
-                : post.removed === 'moderator'
-                ? 'Removed by moderators'
-                : 'Deleted by author'}
-            </p>
-            {replyCountButton}
-          </>
-        ) : editing ? (
-          <SocialComposer
-            editing={post}
-            onPosted={changed}
-            onCancel={() => setEditing(false)}
-            focusOnMount
-          />
-        ) : (
-          <>
-            <SocialText text={post.text} />
-            {post.source && (
-              <a
-                className="border-ink-200 text-ink-500 mt-3 flex items-start gap-2 rounded-lg border p-3 text-sm hover:underline"
-                href={post.source.url}
+            <span className="text-ink-500" aria-hidden="true">
+              ·
+            </span>
+            <Link
+              className="text-ink-500 dark:text-ink-600 shrink-0 text-sm hover:underline"
+              href={socialPostPath(post.id)}
+            >
+              <RelativeTimestamp
+                time={Date.parse(post.createdTime)}
+                shortened
+                className="text-ink-500 dark:text-ink-600"
+              />
+            </Link>
+            {post.editedTime && !post.removed && (
+              <span
+                title={new Date(post.editedTime).toLocaleString()}
+                className="text-ink-400 text-xs"
               >
-                <ExternalLinkIcon className="mt-0.5 h-4 w-4 shrink-0" />
-                <span className="line-clamp-3">{post.source.text}</span>
-              </a>
+                edited
+              </span>
             )}
-            <div className="mt-3 space-y-2">
-              {post.markets
-                .slice(0, allMarkets ? SOCIAL_POST_MAX_MARKETS : 3)
-                .map((market) => (
-                  <Link
-                    key={market.id}
-                    href={contractPath(market)}
-                    className="border-ink-200 hover:border-primary-300 flex items-center justify-between gap-4 rounded-lg border px-3 py-3 text-sm"
-                  >
-                    <span>{market.question}</span>
-                    <span className="text-primary-700 shrink-0 font-semibold">
-                      {market.resolution ??
-                        (market.outcomeType === 'BINARY'
-                          ? getBinaryProbPercent(market)
-                          : market.isResolved
-                          ? 'Resolved'
-                          : 'View market')}
-                    </span>
-                  </Link>
-                ))}
-            </div>
-            {post.markets.length > 3 && (
-              <button
-                className="text-primary-700 mt-2 text-sm"
-                onClick={() => setAllMarkets(!allMarkets)}
-              >
-                {allMarkets
-                  ? 'Show fewer markets'
-                  : `Show all ${post.markets.length} markets`}
-              </button>
+            {user && !post.removed && (
+              <div className="text-ink-500 dark:text-ink-600 ml-auto shrink-0">
+                <DropdownMenu
+                  closeOnClick
+                  items={[
+                    ...(own
+                      ? [{ name: 'Edit', onClick: () => setEditing(true) }]
+                      : []),
+                    ...(own || mod
+                      ? [
+                          {
+                            name: own ? 'Delete' : 'Remove',
+                            onClick: () => setDeleting(true),
+                          },
+                        ]
+                      : []),
+                    ...(!own
+                      ? [{ name: 'Report', onClick: () => setReporting(true) }]
+                      : []),
+                  ]}
+                />
+              </div>
             )}
-            {post.unavailableMarketCount > 0 && (
-              <p className="text-ink-400 mt-2 text-sm">
-                {post.unavailableMarketCount === 1
-                  ? 'Market unavailable'
-                  : `${post.unavailableMarketCount} markets unavailable`}
+          </div>
+          {post.parentId && (
+            <Link
+              className="text-ink-500 mb-2 block text-xs hover:underline"
+              href={socialPostPath(post.parentId)}
+            >
+              {post.parentAuthor
+                ? `Replying to @${post.parentAuthor.username}`
+                : 'View parent post'}
+            </Link>
+          )}
+          {post.removed ? (
+            <>
+              <p className="text-ink-400 py-2 italic">
+                {post.removed === 'blocked'
+                  ? 'Post unavailable because of a block'
+                  : post.removed === 'moderator'
+                  ? 'Removed by moderators'
+                  : 'Deleted by author'}
               </p>
-            )}
-            <div className="text-ink-500 mt-4 flex flex-wrap items-center gap-4 text-sm">
-              <button
-                aria-label={liked ? 'Unlike post' : 'Like post'}
-                aria-pressed={liked}
-                disabled={busy}
-                onClick={like}
-                className={liked ? 'text-rose-500' : 'hover:text-rose-500'}
-              >
-                {liked ? (
-                  <HeartSolid className="h-5 w-5" />
-                ) : (
-                  <HeartIcon className="h-5 w-5" />
-                )}
-              </button>
-              <button
-                aria-label="View people who liked this post"
-                className="-ml-3"
-                onClick={() => setLikersOpen(true)}
-              >
-                {likeCount}
-              </button>
-              {showReplyActions && (
-                <button
-                  className="hover:text-primary-700 flex items-center gap-1 disabled:opacity-40"
-                  disabled={!post.canReply}
-                  onClick={() => setReplying(!replying)}
+              {replyCountButton}
+            </>
+          ) : editing ? (
+            <SocialComposer
+              editing={post}
+              onPosted={changed}
+              onCancel={() => setEditing(false)}
+              focusOnMount
+            />
+          ) : (
+            <>
+              <SocialText text={post.text} />
+              {post.source && (
+                <a
+                  className="border-ink-200 dark:border-ink-300 text-ink-600 mt-3 flex items-start gap-2 rounded-2xl border p-3 text-sm hover:underline"
+                  href={post.source.url}
                 >
-                  <ChatAltIcon className="h-5 w-5" /> Reply
+                  <ExternalLinkIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span className="line-clamp-3">{post.source.text}</span>
+                </a>
+              )}
+              <div className={post.markets.length ? 'mt-3 space-y-2' : ''}>
+                {post.markets
+                  .slice(0, allMarkets ? SOCIAL_POST_MAX_MARKETS : 3)
+                  .map((market) => (
+                    <Link
+                      key={market.id}
+                      href={contractPath(market)}
+                      className="border-ink-200 dark:border-ink-300 hover:bg-canvas-50 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors"
+                    >
+                      <span className="min-w-0 break-words font-medium">
+                        {market.question}
+                      </span>
+                      <span className="text-primary-700 bg-primary-500/10 shrink-0 rounded-lg px-2 py-1 font-semibold tabular-nums">
+                        {market.resolution ??
+                          (market.outcomeType === 'BINARY'
+                            ? getBinaryProbPercent(market)
+                            : market.isResolved
+                            ? 'Resolved'
+                            : 'View market')}
+                      </span>
+                    </Link>
+                  ))}
+              </div>
+              {post.markets.length > 3 && (
+                <button
+                  className="text-primary-700 mt-2 text-sm"
+                  onClick={() => setAllMarkets(!allMarkets)}
+                >
+                  {allMarkets
+                    ? 'Show fewer markets'
+                    : `Show all ${post.markets.length} markets`}
                 </button>
               )}
-              {replyCountButton}
-            </div>
-          </>
-        )}
-        {error && (
-          <p role="alert" className="mt-2 text-sm text-red-600">
-            {error}
-          </p>
-        )}
+              {post.unavailableMarketCount > 0 && (
+                <p className="text-ink-400 mt-2 text-sm">
+                  {post.unavailableMarketCount === 1
+                    ? 'Market unavailable'
+                    : `${post.unavailableMarketCount} markets unavailable`}
+                </p>
+              )}
+              <div className="text-ink-500 dark:text-ink-600 -mb-1 -ml-2 mt-2 flex flex-wrap items-center gap-x-5 text-sm">
+                {showReplyActions && (
+                  <button
+                    className="hover:text-primary-700 hover:bg-primary-500/10 flex items-center gap-2 rounded-full px-2 py-2 transition-colors disabled:opacity-40"
+                    disabled={!post.canReply}
+                    aria-expanded={replying}
+                    onClick={() => setReplying(!replying)}
+                  >
+                    <ChatAltIcon className="h-[18px] w-[18px]" /> Reply
+                  </button>
+                )}
+                <div className="flex items-center">
+                  <button
+                    aria-label={liked ? 'Unlike post' : 'Like post'}
+                    aria-pressed={liked}
+                    disabled={busy}
+                    onClick={like}
+                    className={`rounded-full p-2 transition-colors hover:bg-rose-500/10 ${
+                      liked ? 'text-rose-500' : 'hover:text-rose-500'
+                    }`}
+                  >
+                    {liked ? (
+                      <HeartSolid className="h-[18px] w-[18px]" />
+                    ) : (
+                      <HeartIcon className="h-[18px] w-[18px]" />
+                    )}
+                  </button>
+                  <button
+                    aria-label="View people who liked this post"
+                    className="py-2 pr-2 text-xs tabular-nums hover:text-rose-500 hover:underline"
+                    onClick={() => setLikersOpen(true)}
+                  >
+                    {likeCount}
+                  </button>
+                </div>
+                {replyCountButton}
+              </div>
+            </>
+          )}
+          {error && (
+            <p role="alert" className="mt-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
       {replying && !post.removed && (
         <SocialComposer
@@ -306,7 +324,11 @@ export function SocialPostCard({
       )}
       {expanded ? (
         <div
-          className={depth < 2 ? 'border-ink-200 ml-5 border-l sm:ml-9' : ''}
+          className={
+            depth < 2
+              ? 'border-ink-200 dark:border-ink-300 ml-5 border-l sm:ml-8'
+              : ''
+          }
         >
           <SocialPostList
             parentId={post.id}
@@ -319,7 +341,11 @@ export function SocialPostCard({
         previews &&
         post.replyPreviews.length > 0 && (
           <div
-            className={depth < 2 ? 'border-ink-200 ml-5 border-l sm:ml-9' : ''}
+            className={
+              depth < 2
+                ? 'border-ink-200 dark:border-ink-300 ml-5 border-l sm:ml-8'
+                : ''
+            }
           >
             {post.replyPreviews.map((reply) => (
               <SocialPostCard
