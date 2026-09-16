@@ -1,25 +1,18 @@
+import { formatMoney } from 'common/util/format'
 import clsx from 'clsx'
+import { useState } from 'react'
+import Link from 'next/link'
+import { toast } from 'react-hot-toast'
+import { ChatAlt2Icon } from '@heroicons/react/outline'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
-import { useState } from 'react'
-import { toast } from 'react-hot-toast'
-import { BiRepost } from 'react-icons/bi'
+import { Contract, contractPath } from 'common/contract'
+import { richTextToString } from 'common/util/parse'
+import { socialPostPath } from 'common/social-post'
 import { Button, SizeType } from 'web/components/buttons/button'
-import {
-  CommentReplyHeader,
-  CommentReplyHeaderWithBet,
-  FeedCommentHeader,
-} from 'web/components/comments/comment-header'
-import { ContractCommentInput } from 'web/components/comments/comment-input'
-import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Content } from 'web/components/widgets/editor'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { api } from 'web/lib/api/api'
-import { Row } from '../layout/row'
-import { UserHovercard } from '../user/user-hovercard'
+import { SocialComposer } from '../yap/social-composer'
 
 export const RepostButton = (props: {
   playContract: Contract
@@ -28,29 +21,24 @@ export const RepostButton = (props: {
   className?: string
   iconClassName?: string
 }) => {
-  const { playContract, bet, size, className, iconClassName } = props
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Tooltip
-        text="Repost with comment to followers"
-        placement="bottom"
-        noTap
-        className="flex select-none items-center"
-      >
+      <Tooltip text="Post to Yap" placement="bottom" noTap>
         <Button
-          color={'gray-white'}
-          size={size}
-          className={clsx(className)}
+          color="gray-white"
+          size={props.size}
+          className={props.className}
+          aria-label="Post to Yap"
           onClick={() => setOpen(true)}
         >
-          <BiRepost className={clsx(iconClassName, 'h-6 w-6')} />
+          <ChatAlt2Icon className={clsx(props.iconClassName, 'h-6 w-6')} />
         </Button>
       </Tooltip>
       {open && (
         <RepostModal
-          bet={bet}
-          playContract={playContract}
+          playContract={props.playContract}
+          bet={props.bet}
           open={open}
           setOpen={setOpen}
         />
@@ -58,106 +46,66 @@ export const RepostButton = (props: {
     </>
   )
 }
-
 export const RepostModal = (props: {
   playContract: Contract
   bet?: Bet
   comment?: ContractComment
+  initialText?: string
+  onPosted?: () => void
   open: boolean
   setOpen: (open: boolean) => void
 }) => {
-  const { playContract, comment, bet, open, setOpen } = props
-  const [loading, setLoading] = useState(false)
-  const repost = async () =>
-    api('post', {
-      contractId: playContract.id,
-      commentId: comment?.id,
-      betId: bet?.id,
-    })
-      .then(() => toast.success('Reposted to your followers!'))
-      .catch((e: Error) => {
-        toast.error(e.message)
-      })
-
-  const commenterIsBettor = comment?.userId === bet?.userId
+  const { playContract, bet, comment, open, setOpen } = props
   return (
-    <Modal
-      open={open}
-      setOpen={setOpen}
-      className={'bg-canvas-0 text-ink-1000 gap-4 rounded-md px-4 pb-4 sm:px-6'}
-    >
-      <Col className={'w-full'}>
-        <span className={'text-primary-700 mb-4 pt-3 text-lg'}>
-          Repost to your followers
-        </span>
-        {comment ? (
-          <Col>
-            {((bet && !commenterIsBettor) ||
-              (comment.bettorUsername && !commenterIsBettor)) &&
-              (bet ? (
-                <CommentReplyHeaderWithBet
-                  contract={playContract}
-                  comment={comment}
-                  bet={bet}
-                />
-              ) : (
-                <CommentReplyHeader comment={comment} contract={playContract} />
-              ))}
-            <Row className={'gap-1'}>
-              <UserHovercard userId={comment.userId}>
-                <Avatar
-                  username={comment.userUsername}
-                  size={'sm'}
-                  avatarUrl={comment.userAvatarUrl}
-                  className={clsx('z-10 mt-1')}
-                />
-              </UserHovercard>
-              <Col
-                className={clsx(
-                  'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
-                  'bg-canvas-50'
-                )}
-              >
-                <FeedCommentHeader
-                  comment={comment}
-                  playContract={playContract}
-                  inTimeline={false}
-                  isParent={true}
-                />
-
-                <Content size="sm" content={comment.content} />
-              </Col>
-            </Row>
-            <Row className={'mt-4 justify-between'}>
-              <Button color={'gray'} size={'sm'} onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                size={'sm'}
-                loading={loading}
-                disabled={loading}
-                onClick={async () => {
-                  setLoading(true)
-                  await repost()
-                    .then(() => setOpen(false))
-                    .finally(() => setLoading(false))
-                }}
-              >
-                Repost
-              </Button>
-            </Row>
-          </Col>
-        ) : (
-          <ContractCommentInput
-            autoFocus
-            replyTo={bet}
-            playContract={playContract}
-            trackingLocation={'contract page'}
-            commentTypes={['repost']}
-            onClearInput={() => setOpen(false)}
-          />
+    <Modal open={open} setOpen={setOpen}>
+      <div className="bg-canvas-0 rounded-xl">
+        <h2 className="px-4 pt-4 text-lg font-semibold">Post to Yap</h2>
+        {(comment || bet) && (
+          <a
+            href={
+              contractPath(playContract) + (comment ? '#' + comment.id : '')
+            }
+            className="text-ink-500 mx-4 mt-3 block whitespace-pre-wrap rounded-lg border p-3 text-sm hover:underline"
+          >
+            {comment
+              ? richTextToString(comment.content).slice(0, 300)
+              : `Trade: ${formatMoney(
+                  Math.abs(bet!.amount),
+                  playContract.token
+                )} on ${bet!.outcome}. View market`}
+          </a>
         )}
-      </Col>
+        {playContract.visibility === 'public' && !playContract.deleted ? (
+          <SocialComposer
+            initialMarkets={[playContract]}
+            initialText={props.initialText}
+            source={{
+              contractId: playContract.id,
+              betId: bet?.id,
+              commentId: comment?.id,
+            }}
+            focusOnMount
+            onCancel={() => setOpen(false)}
+            onPosted={(post) => {
+              props.onPosted?.()
+              setOpen(false)
+              toast.success(
+                <span>
+                  Posted to Yap.{' '}
+                  <Link
+                    className="text-primary-700 underline"
+                    href={socialPostPath(post.id)}
+                  >
+                    View post
+                  </Link>
+                </span>
+              )
+            }}
+          />
+        ) : (
+          <p className="p-4">Only public markets can be shared on Yap.</p>
+        )}
+      </div>
     </Modal>
   )
 }

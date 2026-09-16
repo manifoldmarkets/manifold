@@ -1,6 +1,7 @@
 import {
   BriefcaseIcon,
   ChatIcon,
+  ChatAlt2Icon,
   DeviceMobileIcon,
   DotsHorizontalIcon,
   GiftIcon,
@@ -26,7 +27,6 @@ import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
 import { LuGem } from 'react-icons/lu'
-import { IoCompassOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -335,9 +335,9 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Explore',
-        href: '/explore',
-        icon: IoCompassOutline,
+        name: 'Yap',
+        href: '/yap',
+        icon: ChatAlt2Icon,
         iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
       isLiveTV && {

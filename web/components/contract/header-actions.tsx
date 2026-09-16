@@ -139,7 +139,7 @@ export function HeaderActions(props: {
             ),
           },
           {
-            name: 'Repost',
+            name: 'Post to Yap',
             onClick: () => {
               setRepostOpen(true)
             },
