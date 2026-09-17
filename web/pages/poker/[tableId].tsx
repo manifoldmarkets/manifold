@@ -30,6 +30,7 @@ import {
   PokerRules,
 } from 'web/components/poker/poker-ui'
 import { usePoker } from 'web/components/poker/use-poker'
+import { PokerAuthGate } from 'web/components/poker/poker-auth-gate'
 
 const SEAT_POSITIONS = [
   [25, 14],
@@ -44,6 +45,14 @@ const SEAT_POSITIONS = [
 ]
 
 export default function PokerTablePage() {
+  return (
+    <PokerAuthGate>
+      <PokerTableContent />
+    </PokerAuthGate>
+  )
+}
+
+function PokerTableContent() {
   const router = useRouter()
   const id =
     typeof router.query.tableId === 'string' ? router.query.tableId : undefined

@@ -26,8 +26,17 @@ import clsx from 'clsx'
 import styles from 'web/components/poker/poker.module.css'
 import { submitPokerAction } from 'web/components/poker/api'
 import { savePokerToken } from 'web/components/poker/access-token'
+import { PokerAuthGate } from 'web/components/poker/poker-auth-gate'
 
 export default function PokerLobby() {
+  return (
+    <PokerAuthGate>
+      <PokerLobbyContent />
+    </PokerAuthGate>
+  )
+}
+
+function PokerLobbyContent() {
   const user = useUser()
   const router = useRouter()
   const [tables, setTables] = useState<PokerTableSummary[]>()
