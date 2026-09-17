@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SocialPost, SocialPostPage } from 'common/social-post'
+import { SocialPostPage } from 'common/social-post'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
@@ -10,24 +10,18 @@ export function SocialPostList({
   refreshKey = 0,
   depth = 0,
   onChanged,
-  initialPage,
 }: {
   parentId?: string
   refreshKey?: number
   depth?: number
   onChanged?: () => void
-  initialPage?: SocialPostPage
 }) {
   const user = useUser()
-  const [page, setPage] = useState<SocialPostPage>(
-    initialPage ?? {
-      posts: [],
-      nextCursor: null,
-    }
-  )
-  const [loading, setLoading] = useState(!initialPage)
-  const [reactionViewer, setReactionViewer] = useState<string>()
-  const reactionsLoading = !!initialPage && !!user && reactionViewer !== user.id
+  const [page, setPage] = useState<SocialPostPage>({
+    posts: [],
+    nextCursor: null,
+  })
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ message: string; cursor?: string }>()
   const [version, setVersion] = useState(0)
   const sentinel = useRef<HTMLDivElement>(null)
@@ -35,15 +29,22 @@ export function SocialPostList({
   const pending = useRef(false)
   const load = useCallback(
     async (cursor?: string) => {
-      if (pending.current) return
+      if (!user || pending.current) return
       const current = generation.current
       pending.current = true
       setLoading(true)
       setError(undefined)
       try {
-        const next = await api('get-social-posts', { parentId, cursor })
+        const next = await api('get-social-posts', {
+          parentId,
+          cursor,
+          limit: 30,
+          useCache:
+            !parentId && !cursor && refreshKey === 0 && version === 0
+              ? 'true'
+              : 'false',
+        })
         if (current !== generation.current) return
-        setReactionViewer(user?.id)
         setPage((previous) => {
           if (!cursor) return next
           const previousIds = new Set(previous.posts.map((post) => post.id))
@@ -65,59 +66,18 @@ export function SocialPostList({
         }
       }
     },
-    [parentId, user?.id]
+    [parentId, user?.id, refreshKey, version]
   )
   useEffect(() => {
     generation.current++
     pending.current = false
-    const current = generation.current
-    if (initialPage && refreshKey === 0 && version === 0) {
-      setPage(initialPage)
-      setLoading(false)
-      setError(undefined)
-      // Static props include public counts. Fetch only the viewer's liked IDs
-      // so personalization stays bounded even for popular posts.
-      if (user) {
-        const postIds = initialPage.posts.flatMap((post) => [
-          post.id,
-          ...post.replyPreviews.map((reply) => reply.id),
-        ])
-        if (!postIds.length) setReactionViewer(user.id)
-        else
-          void api('get-social-liked-posts', { postIds }, { cache: 'no-store' })
-            .then((likedPostIds) => {
-              if (current !== generation.current) return
-              const likedIds = new Set(likedPostIds)
-              const personalize = (post: SocialPost): SocialPost => {
-                const liked = !post.removed && likedIds.has(post.id)
-                return {
-                  ...post,
-                  liked,
-                  // A new like may not yet be included in the cached count.
-                  likeCount: post.removed
-                    ? 0
-                    : Math.max(post.likeCount, liked ? 1 : 0),
-                  replyPreviews: post.replyPreviews.map(personalize),
-                }
-              }
-              setPage({
-                ...initialPage,
-                posts: initialPage.posts.map(personalize),
-              })
-              setReactionViewer(user.id)
-            })
-            .catch(() => {
-              if (current === generation.current) void load()
-            })
-      }
-    } else void load()
+    void load()
     return () => {
       generation.current++
     }
-  }, [load, refreshKey, version, initialPage])
+  }, [load])
   useEffect(() => {
-    if (parentId || !page.nextCursor || loading || reactionsLoading || error)
-      return
+    if (parentId || !page.nextCursor || loading || error) return
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) void load(page.nextCursor!)
@@ -126,7 +86,7 @@ export function SocialPostList({
     )
     if (sentinel.current) observer.observe(sentinel.current)
     return () => observer.disconnect()
-  }, [parentId, page.nextCursor, loading, reactionsLoading, error, load])
+  }, [parentId, page.nextCursor, loading, error, load])
   const changed = () => {
     setVersion((v) => v + 1)
     onChanged?.()
@@ -142,7 +102,6 @@ export function SocialPostList({
           refreshKey={refreshKey + version}
           connectedAbove={depth > 0}
           continueThread={depth > 0 && index < page.posts.length - 1}
-          reactionsLoading={reactionsLoading}
         />
       ))}
       {!loading && !error && !page.posts.length && (
@@ -164,7 +123,7 @@ export function SocialPostList({
         <SocialPostSkeleton count={page.posts.length || parentId ? 1 : 3} />
       )}
       <div ref={sentinel} />
-      {page.nextCursor && !loading && !reactionsLoading && !error && (
+      {page.nextCursor && !loading && !error && (
         <div className="p-4 text-center">
           <Button size="sm" color="gray" onClick={() => load(page.nextCursor!)}>
             Load more

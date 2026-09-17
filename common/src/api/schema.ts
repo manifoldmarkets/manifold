@@ -5033,11 +5033,15 @@ export const API = (_apiTypeCheck = {
   'get-social-posts': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: false,
+    authed: true,
     cache: 'no-store',
     props: z
       .object({
         parentId: z.string().optional(),
+        useCache: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
         cursor: socialCursorSchema.optional(),
         limit: z.coerce.number().int().min(1).max(30).default(20),
       })
@@ -5047,7 +5051,7 @@ export const API = (_apiTypeCheck = {
   'get-social-post': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: false,
+    authed: true,
     cache: 'no-store',
     props: z.object({ id: z.string() }).strict(),
     returns: {} as SocialPostDetail,
@@ -5063,7 +5067,7 @@ export const API = (_apiTypeCheck = {
   'get-social-likers': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: false,
+    authed: true,
     cache: 'no-store',
     props: z
       .object({

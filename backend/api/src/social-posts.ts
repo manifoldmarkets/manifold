@@ -1,8 +1,12 @@
-import { socialTimestamp } from 'common/social-post'
+import { SocialPost, SocialPostPage, socialTimestamp } from 'common/social-post'
+import { ValidatedAPIParams } from 'common/api/schema'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { APIHandler, APIError } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { nanoid } from 'common/util/random'
 import { DisplayUser } from 'common/api/user-types'
 import {
@@ -15,6 +19,7 @@ import {
   notifySocial,
   socialAuthor,
   SocialRow,
+  SocialViewer,
   validateSocialMarkets,
   validateSocialSource,
   writeSocialMarkets,
@@ -135,12 +140,63 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
   return { success: true }
 }
 
+// Share only viewer-neutral data, behind API authentication. Coalesce concurrent
+// cache misses; failed loads are retried on the next request.
+let initialFeed: { expires: number; page: Promise<SocialPostPage> } | undefined
+
 export const getSocialPosts: APIHandler<'get-social-posts'> = async (
-  { parentId, cursor, limit },
+  props,
   auth
 ) => {
   const pg = createSupabaseDirectClient()
-  const viewer = await getSocialViewer(auth?.uid)
+  const viewer = await getSocialViewer(auth.uid)
+  if (
+    props.useCache &&
+    !props.parentId &&
+    !props.cursor &&
+    props.limit === 30 &&
+    !viewer.blocked.length
+  ) {
+    if (!initialFeed || initialFeed.expires <= Date.now()) {
+      const entry = {
+        expires: Infinity,
+        page: readSocialPosts(pg, { blocked: [] }, props),
+      }
+      initialFeed = entry
+      void entry.page.then(
+        () => {
+          entry.expires = Date.now() + 30_000
+        },
+        () => {
+          if (initialFeed === entry) initialFeed = undefined
+        }
+      )
+    }
+    const page = await initialFeed.page
+    const ids = page.posts.flatMap((post) => [
+      post.id,
+      ...post.replyPreviews.map((reply) => reply.id),
+    ])
+    const likedIds = new Set(await getSocialLikedPostIds(pg, auth.uid, ids))
+    const personalize = (post: SocialPost): SocialPost => {
+      const liked = !post.removed && likedIds.has(post.id)
+      return {
+        ...post,
+        liked,
+        likeCount: post.removed ? 0 : Math.max(post.likeCount, liked ? 1 : 0),
+        replyPreviews: post.replyPreviews.map(personalize),
+      }
+    }
+    return { ...page, posts: page.posts.map(personalize) }
+  }
+  return readSocialPosts(pg, viewer, props)
+}
+
+async function readSocialPosts(
+  pg: SupabaseDirectClient,
+  viewer: SocialViewer,
+  { parentId, cursor, limit }: ValidatedAPIParams<'get-social-posts'>
+): Promise<SocialPostPage> {
   if (parentId) await getSocialRow(pg, parentId)
   const [time, id] = cursor?.split('|') ?? []
   const direction = parentId ? 'asc' : 'desc'
@@ -179,7 +235,7 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   ) select * from ancestors order by depth desc`,
     [row.parent_id]
   )
-  const viewer = await getSocialViewer(auth?.uid)
+  const viewer = await getSocialViewer(auth.uid)
   const posts = await hydrateSocialPosts(pg, [...ancestors, row], viewer, false)
   return { post: posts[posts.length - 1], ancestors: posts.slice(0, -1) }
 }
@@ -188,13 +244,20 @@ export const getSocialLikedPosts: APIHandler<'get-social-liked-posts'> = async (
   { postIds },
   auth
 ) => {
+  return getSocialLikedPostIds(createSupabaseDirectClient(), auth.uid, postIds)
+}
+
+async function getSocialLikedPostIds(
+  pg: SupabaseDirectClient,
+  userId: string,
+  postIds: string[]
+) {
   if (!postIds.length) return []
-  const pg = createSupabaseDirectClient()
   const rows = await pg.manyOrNone<{ content_id: string }>(
     `select content_id from user_reactions
     where user_id=$1 and content_id=any($2::text[])
     and content_type='social_post' and reaction_type='like'`,
-    [auth.uid, postIds]
+    [userId, postIds]
   )
   return rows.map((row) => row.content_id)
 }

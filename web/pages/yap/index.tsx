@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { SocialPostPage } from 'common/social-post'
-import { unauthedApi } from 'common/util/api'
 import { RefreshIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
@@ -10,24 +8,14 @@ import {
   SocialPostSkeleton,
 } from 'web/components/yap/social-post-list'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
-export async function getStaticProps() {
-  const initialPage = await unauthedApi('get-social-posts', { limit: 30 })
-  return { props: { initialPage }, revalidate: 30 }
-}
-
-export default function YapPage({
-  initialPage,
-}: {
-  initialPage: SocialPostPage
-}) {
+export default function YapPage() {
+  useRedirectIfSignedOut()
   const [version, setVersion] = useState(0)
   const user = useUser()
   const privateUser = usePrivateUser()
   const isAuthorized = useIsAuthorized()
-  const hasBlocks = !!(
-    privateUser?.blockedUserIds?.length || privateUser?.blockedByUserIds?.length
-  )
   // Remount on account/block changes so a previous viewer's pages are never reused.
   const viewerKey = JSON.stringify([
     user?.id,
@@ -58,17 +46,15 @@ export default function YapPage({
             </button>
           </div>
         </header>
-        <div className="border-ink-200 dark:border-ink-300 border-b">
-          <SocialComposer onPosted={() => setVersion((v) => v + 1)} />
-        </div>
-        {isAuthorized === undefined ? (
+        {isAuthorized && user && (
+          <div className="border-ink-200 dark:border-ink-300 border-b">
+            <SocialComposer onPosted={() => setVersion((v) => v + 1)} />
+          </div>
+        )}
+        {!isAuthorized || !user ? (
           <SocialPostSkeleton />
         ) : (
-          <SocialPostList
-            key={viewerKey}
-            initialPage={hasBlocks ? undefined : initialPage}
-            refreshKey={version}
-          />
+          <SocialPostList key={viewerKey} refreshKey={version} />
         )}
       </section>
     </Page>

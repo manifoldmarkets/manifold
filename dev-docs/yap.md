@@ -1,6 +1,6 @@
 # Yap
 
-Yap is the public discussion feed at `/yap`; posts and replies have permanent URLs
+Yap is the shared discussion feed for signed-in users at `/yap`; posts and replies have permanent URLs
 at `/yap/[postId]`. It replaces the Explore navigation entry, while `/explore`,
 `/feed`, Forum, and their existing data and APIs remain available.
 
@@ -19,6 +19,13 @@ is run by the application or by the development tests.
 
 ## Behavior
 
+- Reading the feed, discussions, and liker lists requires sign-in. Logged-out
+  page visitors use the site's existing signed-out redirect. Posts are never
+  embedded in public static page props.
+- The API keeps one viewer-neutral initial page (30 posts) in memory per instance
+  for 30 seconds, combining concurrent cache misses. Authenticated requests add
+  only that viewer's liked IDs. Blocked-user feeds, refreshes, pagination, and
+  discussion reads bypass the cache; HTTP responses use `no-store`.
 - Plain text, up to 2,000 Unicode code points and five distinct public markets.
   Posts and replies may contain only attachments. Closed/resolved markets work.
 - Active membership (including the existing renewal grace period) is required

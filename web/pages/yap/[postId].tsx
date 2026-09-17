@@ -12,25 +12,37 @@ import {
   SocialPostSkeleton,
 } from 'web/components/yap/social-post-list'
 import { api } from 'web/lib/api/api'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Button } from 'web/components/buttons/button'
 
 export default function YapPostPage() {
+  useRedirectIfSignedOut()
+  const isAuthorized = useIsAuthorized()
   const router = useRouter()
   const id =
     typeof router.query.postId === 'string' ? router.query.postId : undefined
   const user = useUser()
-  const [detail, setDetail] = useState<SocialPostDetail>()
+  const privateUser = usePrivateUser()
+  const viewerKey = JSON.stringify([
+    user?.id,
+    privateUser?.blockedUserIds,
+    privateUser?.blockedByUserIds,
+  ])
+  const [detail, setDetail] = useState<
+    SocialPostDetail & { viewerKey: string }
+  >()
   const [error, setError] = useState<string>()
   const [version, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
   useEffect(() => {
-    if (!id) return
+    setDetail(undefined)
+    if (!id || !isAuthorized || !user) return
     let cancelled = false
     setError(undefined)
     api('get-social-post', { id })
       .then((result) => {
-        if (!cancelled) setDetail(result)
+        if (!cancelled) setDetail({ ...result, viewerKey })
       })
       .catch((e) => {
         if (!cancelled) setError(e.message)
@@ -38,8 +50,11 @@ export default function YapPostPage() {
     return () => {
       cancelled = true
     }
-  }, [id, user?.id, version])
-  const current = detail?.post.id === id ? detail : undefined
+  }, [id, viewerKey, isAuthorized, version])
+  const current =
+    detail && detail.post.id === id && detail.viewerKey === viewerKey
+      ? detail
+      : undefined
   return (
     <Page trackPageView="yap post page" hideFooter>
       <SEO
@@ -60,7 +75,9 @@ export default function YapPostPage() {
             Yap
           </Link>
         </header>
-        {error ? (
+        {!isAuthorized || !user ? (
+          <SocialPostSkeleton />
+        ) : error ? (
           <div role="alert" className="p-5">
             <p>{error}</p>
             <Button onClick={refresh} color="gray" size="sm">
