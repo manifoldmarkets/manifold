@@ -10,7 +10,20 @@ import { Input } from 'web/components/widgets/input'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { api } from 'web/lib/api/api'
-import { PokerRules } from 'web/components/poker/poker-ui'
+import {
+  PokerCard,
+  PokerRules,
+  PokerStatus,
+} from 'web/components/poker/poker-ui'
+import {
+  ArrowRightIcon,
+  GlobeAltIcon,
+  LockClosedIcon,
+  PlusIcon,
+  UsersIcon,
+} from '@heroicons/react/outline'
+import clsx from 'clsx'
+import styles from 'web/components/poker/poker.module.css'
 import { submitPokerAction } from 'web/components/poker/api'
 import { savePokerToken } from 'web/components/poker/access-token'
 
@@ -116,131 +129,250 @@ export default function PokerLobby() {
         <title>RPS Poker | Manifold</title>
         <meta name="referrer" content="no-referrer" />
       </Head>
-      <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
-        <header>
-          <div className="text-primary-600 mb-2 text-sm font-semibold">
-            ROCK · PAPER · SCISSORS
-          </div>
-          <h1 className="text-3xl font-bold">Poker, together.</h1>
-          <p className="text-ink-500 mt-2">
-            Hold’em with simultaneous betting. Play with friends using mana.
-          </p>
-        </header>
+      <div className={clsx(styles.page, 'space-y-7')}>
         {error && (
-          <p role="alert" className="text-red-600">
+          <p
+            role="alert"
+            className="rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+          >
             {error}
           </p>
         )}
         {!enabled && (
-          <p className="bg-canvas-50 rounded-lg p-3">
+          <p className="bg-canvas-50 rounded-xl p-4 text-sm">
             New hands are temporarily paused. Games already in progress can
             finish.
           </p>
         )}
         {yourTable && (
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={`/poker/${yourTable}`}
-                className="text-primary-600 font-semibold"
-              >
-                Return to your table →
-              </Link>
-              <Button
-                color="gray-outline"
-                size="sm"
-                disabled={leaving || departureRequested}
-                onClick={leaveSeat}
-              >
-                Leave seat
-              </Button>
-            </div>
+          <div className="border-primary-200 bg-primary-50 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+            <Link
+              href={`/poker/${yourTable}`}
+              className="text-primary-600 flex items-center gap-2 text-sm font-semibold"
+            >
+              Your seat is waiting <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+            <Button
+              color="gray-outline"
+              size="sm"
+              disabled={leaving || departureRequested}
+              onClick={leaveSeat}
+            >
+              Leave seat
+            </Button>
             {departureRequested && (
-              <p role="status" className="text-ink-500 text-sm">
+              <p role="status" className="text-ink-500 w-full text-xs">
                 Departure requested. Any active hand will finish first.
               </p>
             )}
           </div>
         )}
-        <section className="bg-canvas-0 border-ink-200 rounded-xl border p-5">
-          <h2 className="mb-4 text-lg font-semibold">Create a table</h2>
-          <div className="flex flex-wrap items-end gap-4">
-            <label className="flex flex-col gap-1 text-sm">
-              Visibility
-              <select
-                className="bg-canvas-0 border-ink-300 rounded-md border p-2"
-                value={visibility}
-                onChange={(e) =>
-                  setVisibility(e.target.value as 'public' | 'private')
-                }
+        <div className={styles.lobbyTop}>
+          <header className={styles.hero}>
+            <div className={styles.eyebrow}>The Manifold card room</div>
+            <h1 className={styles.heroTitle}>RPS Poker</h1>
+            <p className={styles.heroCopy}>
+              Hold’em, with a simultaneous twist. Read the table, choose your
+              move, and play with mana.
+            </p>
+            <div className={styles.heroFacts}>
+              <span>2–9 players</span>
+              <span>No buy-in</span>
+              <span>No rake</span>
+            </div>
+            <div className={styles.cardFan} aria-hidden>
+              <PokerCard card={12} />
+              <PokerCard card={38} />
+              <PokerCard card={51} />
+            </div>
+          </header>
+          <section
+            className={clsx(styles.panel, styles.create)}
+            aria-labelledby="create-table-heading"
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <h2
+                id="create-table-heading"
+                className="text-lg font-semibold tracking-tight"
               >
-                <option value="public">Public — anyone can join</option>
-                <option value="private">Private — share a link</option>
-              </select>
-            </label>
-            <label htmlFor="poker-ante" className="flex flex-col gap-1 text-sm">
-              Ante (mana)
-              <Input
-                id="poker-ante"
-                className="w-28"
-                type="number"
-                min={1}
-                step={1}
-                value={ante}
-                onChange={(e) => setAnte(e.target.value)}
-              />
-            </label>
-            <Button disabled={!valid || busy || !enabled} onClick={create}>
-              {busy ? 'Creating…' : user ? 'Create table' : 'Sign in to create'}
-            </Button>
-          </div>
-          <p className="text-ink-500 mt-3 text-sm">
-            {valid
-              ? `${formatMoney(
-                  amount * POKER_MINIMUM_MULTIPLIER
-                )} required to start or resume.`
-              : 'Enter a positive whole-mana ante.'}{' '}
-            No buy-in. No fee.
-            {visibility === 'private' &&
-              ' You choose when the first hand starts.'}
-          </p>
-        </section>
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">Public tables</h2>
-          {!tables ? (
-            <p className="text-ink-500">Loading tables…</p>
-          ) : tables.length === 0 ? (
-            <div className="bg-canvas-0 border-ink-200 rounded-xl border border-dashed p-8 text-center">
-              <p className="font-semibold">There’s a seat waiting to happen.</p>
-              <p className="text-ink-500 mt-1">
-                Create the first table and invite someone to play.
+                Start a table
+              </h2>
+              <PlusIcon className="text-ink-400 h-5 w-5" aria-hidden />
+            </div>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void create()
+              }}
+            >
+              <div>
+                <div
+                  id="visibility-label"
+                  className="text-ink-600 mb-2 text-xs font-medium"
+                >
+                  Who can join?
+                </div>
+                <div
+                  className={styles.visibility}
+                  role="group"
+                  aria-labelledby="visibility-label"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={visibility === 'public'}
+                    onClick={() => setVisibility('public')}
+                  >
+                    <GlobeAltIcon className="h-4 w-4" />
+                    Public
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={visibility === 'private'}
+                    onClick={() => setVisibility('private')}
+                  >
+                    <LockClosedIcon className="h-4 w-4" />
+                    Private
+                  </button>
+                </div>
+                <p className="text-ink-500 mt-2 text-xs">
+                  {visibility === 'public'
+                    ? 'Anyone can find your table and join.'
+                    : 'Invite friends with a link. You start the first hand.'}
+                </p>
+              </div>
+              <div className="flex items-end gap-4">
+                <label
+                  htmlFor="poker-ante"
+                  className="text-ink-600 flex flex-col gap-2 text-xs font-medium"
+                >
+                  Ante per hand
+                  <Input
+                    id="poker-ante"
+                    className="!w-24 !rounded-lg"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={ante}
+                    onChange={(e) => setAnte(e.target.value)}
+                  />
+                </label>
+                <div className="pb-2">
+                  <div className="text-ink-500 mb-1 text-xs">
+                    Minimum balance
+                  </div>
+                  <div className="text-sm font-semibold tabular-nums">
+                    {valid
+                      ? formatMoney(amount * POKER_MINIMUM_MULTIPLIER)
+                      : '—'}
+                  </div>
+                </div>
+              </div>
+              {!valid && (
+                <p className="text-xs text-red-600">
+                  Enter a positive whole-mana ante.
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="!w-full !rounded-lg !py-2.5"
+                disabled={!valid || busy || !enabled}
+              >
+                {busy
+                  ? 'Creating…'
+                  : user
+                  ? 'Create table'
+                  : 'Sign in to create'}
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </form>
+          </section>
+        </div>
+        <section aria-labelledby="public-tables-heading">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2
+                id="public-tables-heading"
+                className="text-xl font-semibold tracking-tight"
+              >
+                Find your table
+              </h2>
+              <p className="text-ink-500 mt-1 text-sm">
+                Take an open seat, or watch a hand unfold.
               </p>
             </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {tables.map((t) => (
+            <span className="text-ink-500 flex items-center gap-1.5 text-xs">
+              <GlobeAltIcon className="h-4 w-4" />
+              {tables
+                ? `${tables.length} public ${
+                    tables.length === 1 ? 'table' : 'tables'
+                  }`
+                : 'Public tables'}
+            </span>
+          </div>
+          <div className={clsx(styles.panel, 'overflow-hidden')}>
+            {!tables ? (
+              <p className="text-ink-500 p-8 text-center text-sm">
+                Loading tables…
+              </p>
+            ) : !tables.length ? (
+              <div className="flex flex-col items-center px-5 py-10 text-center">
+                <div className={styles.guideIcon}>
+                  <UsersIcon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 font-semibold">Be first at the table</h3>
+                <p className="text-ink-500 mt-1 max-w-xs text-sm">
+                  Start a public table above and make room for a few new faces.
+                </p>
+              </div>
+            ) : (
+              tables.map((t) => (
                 <Link
                   key={t.id}
                   href={`/poker/${t.id}`}
-                  className="bg-canvas-0 border-ink-200 hover:border-primary-400 rounded-xl border p-4"
+                  className={styles.tableRow}
                 >
-                  <div className="flex justify-between gap-2">
-                    <h3 className="font-semibold">{t.name}</h3>
-                    <span className="text-ink-500 text-sm">
-                      {t.seats}/9 seats
-                    </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate font-semibold">{t.name}</h3>
+                      <PokerStatus status={t.status} />
+                    </div>
+                    <dl className={styles.rowInfo}>
+                      <div>
+                        <dt>Ante</dt>
+                        <dd>{formatMoney(t.ante)}</dd>
+                      </div>
+                      <div>
+                        <dt>Minimum balance</dt>
+                        <dd>{formatMoney(t.minimumBalance)}</dd>
+                      </div>
+                      <div>
+                        <dt>Players</dt>
+                        <dd className="flex items-center gap-2">
+                          {t.seats} / 9{' '}
+                          <span className="hidden gap-0.5 sm:flex" aria-hidden>
+                            {Array.from({ length: 9 }, (_, i) => (
+                              <span
+                                key={i}
+                                className={clsx(
+                                  'h-2 w-1 rounded-sm',
+                                  i < t.seats ? 'bg-primary-400' : 'bg-ink-200'
+                                )}
+                              />
+                            ))}
+                          </span>
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
-                  <p className="text-ink-600 mt-2 text-sm">
-                    {formatMoney(t.ante)} ante · {formatMoney(t.minimumBalance)}{' '}
-                    to start
-                  </p>
-                  <p className="text-primary-600 mt-2 text-sm capitalize">
-                    {t.status} · Join or watch →
-                  </p>
+                  <span className="text-primary-600 flex items-center gap-2 text-sm font-semibold">
+                    <span className="hidden sm:inline">View table</span>
+                    <ArrowRightIcon className="h-5 w-5" />
+                  </span>
                 </Link>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </section>
         <PokerRules />
       </div>

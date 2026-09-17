@@ -2,7 +2,17 @@ import Head from 'next/head'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { CSSProperties, useEffect, useState } from 'react'
+import {
+  ArrowLeftIcon,
+  ClockIcon,
+  GlobeAltIcon,
+  LockClosedIcon,
+  ChatAlt2Icon,
+  PlusIcon,
+  UsersIcon,
+} from '@heroicons/react/outline'
+import styles from 'web/components/poker/poker.module.css'
 import { POKER_STREETS } from 'common/poker/types'
 import { formatMoney } from 'common/util/format'
 import { Page } from 'web/components/layout/page'
@@ -14,10 +24,24 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import {
   HandResult,
+  GestureIcon,
+  PokerStatus,
   PokerCard,
   PokerRules,
 } from 'web/components/poker/poker-ui'
 import { usePoker } from 'web/components/poker/use-poker'
+
+const SEAT_POSITIONS = [
+  [25, 14],
+  [50, 12],
+  [75, 14],
+  [90, 48],
+  [83, 83],
+  [61, 87],
+  [39, 87],
+  [17, 83],
+  [10, 48],
+]
 
 export default function PokerTablePage() {
   const router = useRouter()
@@ -101,13 +125,17 @@ export default function PokerTablePage() {
     return (
       <div
         key={index}
-        className={clsx(
-          'bg-canvas-0 flex min-w-0 flex-col items-center gap-1 rounded-xl border p-2 text-center sm:p-3',
-          isMe
-            ? 'border-primary-400 ring-primary-200 ring-1'
-            : 'border-ink-200',
-          p?.folded && 'opacity-60'
-        )}
+        role="group"
+        aria-label={`Seat ${index + 1}`}
+        data-empty={!s && !p}
+        data-mine={isMe}
+        style={
+          {
+            '--seat-x': `${SEAT_POSITIONS[index][0]}%`,
+            '--seat-y': `${SEAT_POSITIONS[index][1]}%`,
+          } as CSSProperties
+        }
+        className={clsx(styles.seat, p?.folded && 'opacity-60')}
       >
         {s || p ? (
           <>
@@ -117,9 +145,12 @@ export default function PokerTablePage() {
                 size="2xs"
                 noLink
               />
-              <span className="truncate text-xs font-semibold sm:text-sm">
+              <span
+                className="truncate text-[10px] font-semibold"
+                title={p?.name ?? s?.name}
+              >
                 {p?.name ?? s?.name}
-                {isMe ? ' (you)' : ''}
+                {isMe ? ' · you' : ''}
               </span>
               {p && hand?.dealer === index && (
                 <span
@@ -130,7 +161,7 @@ export default function PokerTablePage() {
                 </span>
               )}
             </div>
-            <div className="my-1 flex gap-1">
+            <div className="my-0.5 flex gap-1">
               <PokerCard card={p?.cards?.[0]} small />
               <PokerCard card={p?.cards?.[1]} small />
             </div>
@@ -174,8 +205,11 @@ export default function PokerTablePage() {
             )}
           </>
         ) : (
-          <div className="text-ink-300 flex h-16 items-center text-xs">
-            Empty seat
+          <div className={styles.emptySeat}>
+            <span className={styles.emptySeatIcon}>
+              <PlusIcon className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <span>Open seat</span>
           </div>
         )}
       </div>
@@ -188,9 +222,12 @@ export default function PokerTablePage() {
         <meta name="robots" content="noindex,nofollow" />
         <meta name="referrer" content="no-referrer" />
       </Head>
-      <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:p-5">
-        <Link href="/poker" className="text-ink-500 text-sm">
-          ← Poker lobby
+      <div className={styles.page}>
+        <Link
+          href="/poker"
+          className="text-ink-500 hover:text-primary-600 inline-flex items-center gap-1.5 text-xs font-medium"
+        >
+          <ArrowLeftIcon className="h-3.5 w-3.5" /> Poker lobby
         </Link>
         {!data ? (
           <div className="bg-canvas-0 rounded-xl p-8">
@@ -205,20 +242,47 @@ export default function PokerTablePage() {
           </div>
         ) : (
           <>
-            <header className="flex flex-wrap items-start justify-between gap-3">
+            <header className={styles.gameHeader}>
               <div>
-                <h1 className="text-xl font-bold sm:text-2xl">
-                  {data.table.name}
-                </h1>
-                <p className="text-ink-500 text-sm">
-                  {formatMoney(data.table.ante)} ante ·{' '}
-                  {formatMoney(data.table.minimumBalance)} to start/resume ·{' '}
-                  {data.table.visibility === 'private'
-                    ? 'Private link'
-                    : 'Public table'}
-                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight">
+                    {data.table.name}
+                  </h1>
+                  <PokerStatus status={data.table.status} />
+                </div>
+                <div className={styles.gameMeta}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {data.table.visibility === 'private' ? (
+                      <LockClosedIcon className="h-3.5 w-3.5" />
+                    ) : (
+                      <GlobeAltIcon className="h-3.5 w-3.5" />
+                    )}
+                    {data.table.visibility === 'private'
+                      ? 'Private table'
+                      : 'Public table'}
+                  </span>
+                  <span>
+                    <strong className="text-ink-700 font-semibold">
+                      {formatMoney(data.table.ante)}
+                    </strong>{' '}
+                    ante
+                  </span>
+                  <span>
+                    {formatMoney(data.table.minimumBalance)} to start / resume
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <UsersIcon className="h-3.5 w-3.5" />
+                    {data.seats.length} / 9
+                  </span>
+                </div>
               </div>
-              <Button color="gray-outline" size="sm" onClick={share}>
+              <Button
+                color="gray-outline"
+                size="sm"
+                className="!rounded-lg"
+                onClick={share}
+              >
+                <PlusIcon className="mr-1.5 h-4 w-4" />
                 {copied ? 'Link copied' : 'Invite friends'}
               </Button>
             </header>
@@ -249,28 +313,35 @@ export default function PokerTablePage() {
                   : 'New hands are temporarily paused. This hand can finish.'}
               </p>
             )}
-            <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-              <main className="space-y-4">
-                <section
-                  aria-label="Poker table"
-                  className="border-primary-100 bg-primary-50/30 dark:bg-canvas-50 space-y-3 rounded-3xl border-4 p-2 sm:p-4"
-                >
-                  <div className="grid grid-cols-3 gap-2">
-                    {[0, 1, 2].map(renderSeat)}
-                  </div>
-                  <div className="flex flex-col items-center gap-3 py-4 text-center">
-                    <div className="text-ink-500 text-xs font-semibold uppercase tracking-widest">
+            <div className={styles.gameLayout}>
+              <main className={clsx(styles.gameColumn, 'space-y-4')}>
+                <section aria-label="Poker table" className={styles.arena}>
+                  {SEAT_POSITIONS.map((_, i) => renderSeat(i))}
+                  <div className={styles.board}>
+                    <div className={styles.eyebrow}>
                       {hand
                         ? `Hand ${hand.number} · ${
                             settled ? 'Results' : POKER_STREETS[hand.street]
                           }`
                         : 'Waiting to deal'}
                     </div>
+                    {hand && !settled && (
+                      <div
+                        className={styles.streetTrack}
+                        aria-label="Betting streets"
+                      >
+                        {POKER_STREETS.map((street, i) => (
+                          <span key={street} data-current={i === hand.street}>
+                            {street}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div>
                       <div className="text-ink-500 text-xs">
                         {settled ? 'Hand pot' : 'Total pot'}
                       </div>
-                      <div className="text-3xl font-bold tabular-nums">
+                      <div className="text-3xl font-bold tabular-nums tracking-tight">
                         {formatMoney(
                           hand?.players.reduce(
                             (sum, p) => sum + p.contributed,
@@ -280,27 +351,37 @@ export default function PokerTablePage() {
                       </div>
                     </div>
                     <div
-                      className="flex gap-1.5 sm:gap-2"
+                      className={styles.boardCards}
                       aria-label="Community cards"
                     >
                       {[0, 1, 2, 3, 4].map((i) => (
                         <PokerCard key={i} card={hand?.board[i]} />
                       ))}
                     </div>
-                    {hand && hand.pots.length > 1 && (
-                      <p className="text-ink-500 text-xs">
-                        {hand.pots
-                          .map(
-                            (p, i) =>
-                              `${
-                                i ? `Side pot ${i}` : 'Main pot'
-                              } ${formatMoney(p.amount)}`
-                          )
-                          .join(' · ')}
-                      </p>
+                    {hand && (hand.pots.length > 1 || settled) && (
+                      <div className={styles.boardDetails}>
+                        {hand.pots.length > 1 && (
+                          <p className="text-ink-500 text-xs">
+                            {hand.pots
+                              .map(
+                                (p, i) =>
+                                  `${
+                                    i ? `Side pot ${i}` : 'Main pot'
+                                  } ${formatMoney(p.amount)}`
+                              )
+                              .join(' · ')}
+                          </p>
+                        )}
+                        {settled && <HandResult hand={hand} />}
+                      </div>
                     )}
-                    {settled && hand && <HandResult hand={hand} />}
-                    <p className="text-ink-500 text-sm" role="status">
+                    <p className={styles.clock} role="status">
+                      {deadline && (
+                        <ClockIcon
+                          className="h-3.5 w-3.5 shrink-0"
+                          aria-hidden
+                        />
+                      )}
                       {data.table.status === 'closed'
                         ? 'Table closed'
                         : data.table.status === 'paused'
@@ -316,20 +397,35 @@ export default function PokerTablePage() {
                         : 'Waiting to deal…'}
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[3, 4, 5, 6, 7, 8].map(renderSeat)}
-                  </div>
                 </section>
                 <section
-                  className="bg-canvas-0 border-ink-200 sticky bottom-14 z-10 space-y-3 rounded-xl border p-4 shadow-sm lg:bottom-0"
+                  className={clsx(styles.panel, styles.controls, 'space-y-3')}
                   aria-label="Your controls"
                 >
                   {user ? (
-                    <div className="flex flex-wrap justify-between gap-2 text-sm">
-                      <span>
-                        Available:{' '}
-                        <strong>{formatMoney(data.viewer.balance ?? 0)}</strong>
-                      </span>
+                    <div className={styles.controlsHeader}>
+                      <div>
+                        <h2 className="text-sm font-semibold">
+                          {seat ? 'Your seat' : 'Join the table'}
+                        </h2>
+                        <p className="text-ink-500 mt-1 text-xs">
+                          {seat
+                            ? seat.leaving
+                              ? 'Leaving when this hand finishes'
+                              : seat.ready
+                              ? 'Ready for the next hand'
+                              : 'Sitting out'
+                            : 'Take a seat, then ready up to play.'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-ink-500 text-[10px] uppercase tracking-wide">
+                          Available mana
+                        </div>
+                        <strong className="text-sm tabular-nums">
+                          {formatMoney(data.viewer.balance ?? 0)}
+                        </strong>
+                      </div>
                       {seat && (
                         <span>
                           Session:{' '}
@@ -367,6 +463,7 @@ export default function PokerTablePage() {
                             <Button
                               key={move}
                               size="lg"
+                              className="!rounded-xl !py-4"
                               color={
                                 hand.yourMove === move
                                   ? 'indigo'
@@ -393,13 +490,10 @@ export default function PokerTablePage() {
                               }
                             >
                               <span>
-                                <span className="block text-lg">
-                                  {move === 'rock'
-                                    ? '✊'
-                                    : move === 'paper'
-                                    ? '✋'
-                                    : '✌️'}
-                                </span>
+                                <GestureIcon
+                                  move={move}
+                                  className="mx-auto mb-2 h-6 w-6"
+                                />
                                 <span className="block capitalize">{move}</span>
                                 <span className="block text-xs font-normal">
                                   {move === 'rock'
@@ -505,7 +599,7 @@ export default function PokerTablePage() {
                   )}
                 </section>
                 <PokerRules />
-                <details className="bg-canvas-0 border-ink-200 rounded-xl border p-4">
+                <details className={clsx(styles.panel, 'p-4')}>
                   <summary className="cursor-pointer font-semibold">
                     Hand history
                   </summary>
@@ -544,16 +638,30 @@ export default function PokerTablePage() {
                 </details>
               </main>
               <aside className="space-y-4">
-                <section className="bg-canvas-0 border-ink-200 rounded-xl border p-3">
-                  <h2 className="mb-3 font-semibold">Table chat</h2>
+                <section className={clsx(styles.panel, styles.chat)}>
+                  <div className={styles.chatHeading}>
+                    <h2 className="flex items-center gap-2 text-sm font-semibold">
+                      <ChatAlt2Icon className="text-ink-400 h-4 w-4" />
+                      Table chat
+                    </h2>
+                    <span className="text-ink-500 text-[10px]">
+                      Players & spectators
+                    </span>
+                  </div>
                   <div
-                    className="max-h-96 min-h-[120px] space-y-2 overflow-y-auto"
+                    className={clsx(styles.chatBody, 'space-y-2')}
                     aria-label="Chat messages"
                   >
                     {!data.messages.length && (
-                      <p className="text-ink-400 text-sm">
-                        Players and spectators can chat here.
-                      </p>
+                      <div className="text-ink-500 flex h-full flex-col items-center justify-center gap-3 text-center">
+                        <ChatAlt2Icon className="text-ink-300 h-8 w-8" />
+                        <p className="text-sm">
+                          A good game starts with hello.
+                        </p>
+                        <p className="text-xs">
+                          Players and spectators can chat here.
+                        </p>
+                      </div>
                     )}
                     {data.messages.map((m) => (
                       <ChatMessageItem
@@ -589,7 +697,7 @@ export default function PokerTablePage() {
                     ))}
                   </div>
                   <form
-                    className="mt-3 flex gap-2"
+                    className={styles.chatForm}
                     onSubmit={async (e) => {
                       e.preventDefault()
                       if (await act({ type: 'chat', text: message.trim() }))
@@ -627,7 +735,7 @@ export default function PokerTablePage() {
                   </form>
                 </section>
                 {host && (
-                  <details className="bg-canvas-0 border-ink-200 rounded-xl border p-3">
+                  <details className={clsx(styles.panel, 'p-4')}>
                     <summary className="cursor-pointer font-semibold">
                       Host controls
                     </summary>

@@ -1,5 +1,16 @@
 import clsx from 'clsx'
-import { PokerCard as Card, PokerHandView } from 'common/poker/types'
+import {
+  PokerCard as Card,
+  PokerHandView,
+  PokerMove,
+  PokerTableSummary,
+} from 'common/poker/types'
+import {
+  FaRegHandRock,
+  FaRegHandPaper,
+  FaRegHandScissors,
+} from 'react-icons/fa'
+import styles from './poker.module.css'
 import { handRankName } from 'common/poker/engine'
 import { formatMoney } from 'common/util/format'
 export function PokerCard({
@@ -25,30 +36,70 @@ export function PokerCard({
     <div
       aria-label={card === undefined ? 'Hidden card' : `${rank} of ${suitName}`}
       className={clsx(
-        'flex shrink-0 flex-col items-center justify-center rounded-md border font-semibold shadow-sm',
-        small
-          ? 'h-10 w-7 text-sm sm:h-12 sm:w-9'
-          : 'h-16 w-11 text-xl sm:h-20 sm:w-14 sm:text-2xl',
-        card === undefined
-          ? 'border-primary-200 bg-primary-100 text-primary-400'
-          : 'border-ink-200 bg-white',
+        styles.card,
+        small && styles.cardSmall,
+        card === undefined && styles.cardBack,
         suit === '♦' || suit === '♥' ? 'text-red-600' : 'text-gray-900'
       )}
     >
       {card === undefined ? (
-        <span aria-hidden>✦</span>
+        <span
+          aria-hidden
+          className="absolute inset-0 flex items-center justify-center text-xs"
+        >
+          ✦
+        </span>
       ) : (
         <>
-          <span>{rank}</span>
-          <span className="leading-none">{suit}</span>
+          <span className={styles.cardCorner}>{rank}</span>
+          <span className={styles.cardPip}>{suit}</span>
         </>
       )}
     </div>
   )
 }
+export function GestureIcon({
+  move,
+  className,
+}: {
+  move: PokerMove
+  className?: string
+}) {
+  const Icon = {
+    rock: FaRegHandRock,
+    paper: FaRegHandPaper,
+    scissors: FaRegHandScissors,
+  }[move]
+  return <Icon aria-hidden className={className} />
+}
+
+export function PokerStatus({
+  status,
+}: {
+  status: PokerTableSummary['status']
+}) {
+  const labels = {
+    waiting: 'Waiting for players',
+    countdown: 'Starting soon',
+    playing: 'In play',
+    results: 'Between hands',
+    closed: 'Closed',
+    paused: 'Paused',
+  }
+  return (
+    <span
+      className={styles.status}
+      data-active={status === 'playing' || status === 'countdown'}
+    >
+      <span className={styles.statusDot} aria-hidden />
+      {labels[status]}
+    </span>
+  )
+}
+
 export function PokerRules() {
   return (
-    <details className="bg-canvas-0 border-ink-200 rounded-xl border p-4 text-sm">
+    <details className={clsx(styles.panel, 'p-4 text-sm')}>
       <summary className="cursor-pointer font-semibold">
         How to play RPS poker
       </summary>
@@ -101,7 +152,7 @@ export function HandResult({ hand }: { hand: PokerHandView }) {
   const name = (id: string) =>
     hand.players.find((p) => p.userId === id)?.name ?? 'Player'
   return (
-    <div className="space-y-1 text-sm" aria-live="polite">
+    <div className="space-y-1 text-xs" aria-live="polite">
       {hand.settlement.pots.map((pot, i) => (
         <p key={i}>
           <strong>{pot.winners?.map(name).join(' & ')}</strong> win
