@@ -42,7 +42,6 @@ export function SocialPostCard({
   showReplyActions = true,
   connectedAbove = false,
   continueThread = false,
-  reactionsLoading = false,
 }: {
   post: SocialPost
   onChanged: () => void
@@ -52,7 +51,6 @@ export function SocialPostCard({
   showReplyActions?: boolean
   connectedAbove?: boolean
   continueThread?: boolean
-  reactionsLoading?: boolean
 }) {
   const router = useRouter()
   const user = useUser()
@@ -77,7 +75,7 @@ export function SocialPostCard({
       await firebaseLogin()
       return
     }
-    if (busy || reactionsLoading) return
+    if (busy) return
     setBusy(true)
     setError(undefined)
     const previous = liked
@@ -375,7 +373,7 @@ export function SocialPostCard({
                   <button
                     aria-label={liked ? 'Unlike post' : 'Like post'}
                     aria-pressed={liked}
-                    disabled={busy || reactionsLoading}
+                    disabled={busy}
                     onClick={like}
                     className={`rounded-full p-2 transition-colors hover:bg-rose-500/10 ${
                       liked ? 'text-rose-500' : 'hover:text-rose-500'
@@ -437,7 +435,6 @@ export function SocialPostCard({
                 refreshKey={refreshKey}
                 connectedAbove
                 continueThread={index < post.replyPreviews.length - 1}
-                reactionsLoading={reactionsLoading}
               />
             ))}
             {post.replyCount > post.replyPreviews.length && (
