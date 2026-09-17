@@ -27,6 +27,11 @@ export function SocialPostList({
   const sentinel = useRef<HTMLDivElement>(null)
   const generation = useRef(0)
   const pending = useRef(false)
+  const pageRef = useRef(page)
+  useEffect(() => {
+    pageRef.current = { posts: [], nextCursor: null }
+    setPage(pageRef.current)
+  }, [parentId, user?.id])
   const load = useCallback(
     async (cursor?: string) => {
       if (!user || pending.current) return
@@ -35,7 +40,7 @@ export function SocialPostList({
       setLoading(true)
       setError(undefined)
       try {
-        const next = await api('get-social-posts', {
+        let next = await api('get-social-posts', {
           parentId,
           cursor,
           limit: 30,
@@ -45,17 +50,37 @@ export function SocialPostList({
               : 'false',
         })
         if (current !== generation.current) return
-        setPage((previous) => {
-          if (!cursor) return next
+        // Refresh every loaded reply page before updating so drafts on later
+        // replies stay mounted. A failed refresh leaves the whole list intact.
+        if (parentId && !cursor) {
+          const loadedCount = pageRef.current.posts.length
+          while (next.nextCursor && next.posts.length < loadedCount) {
+            const more = await api('get-social-posts', {
+              parentId,
+              cursor: next.nextCursor,
+              limit: 30,
+              useCache: 'false',
+            })
+            if (current !== generation.current) return
+            next = {
+              posts: [...next.posts, ...more.posts],
+              nextCursor: more.nextCursor,
+            }
+          }
+        }
+        if (cursor) {
+          const previous = pageRef.current
           const previousIds = new Set(previous.posts.map((post) => post.id))
-          return {
+          next = {
             nextCursor: next.nextCursor,
             posts: [
               ...previous.posts,
               ...next.posts.filter((post) => !previousIds.has(post.id)),
             ],
           }
-        })
+        }
+        pageRef.current = next
+        setPage(next)
       } catch (e) {
         if (current === generation.current)
           setError({ message: (e as Error).message, cursor })

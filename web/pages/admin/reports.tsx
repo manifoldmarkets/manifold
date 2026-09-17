@@ -25,33 +25,18 @@ import { convertPost } from 'common/top-level-post'
 
 const PAGE_SIZE = 20
 
-export async function getStaticProps() {
-  try {
-    const reports = await getReports({ limit: PAGE_SIZE })
-    // Direct database lookups can leave nested undefined fields (e.g. optional
-    // entitlement expiry/metadata), which Next.js rejects in static props.
-    const serializedReports: LiteReport[] = JSON.parse(JSON.stringify(reports))
-    return {
-      props: { reports: serializedReports },
-      revalidate: 60,
-    }
-  } catch (e) {
-    console.error(e)
-    return { props: { reports: [] }, revalidate: 60 }
-  }
+export default function Reports() {
+  const isAdmin = useAdmin()
+  return isAdmin ? <ReportsContent /> : <></>
 }
 
-export default function Reports(props: { reports: LiteReport[] }) {
+function ReportsContent() {
   const pagination = usePagination<LiteReport>({
     pageSize: PAGE_SIZE,
     q: getReports,
-    prefix: props.reports,
   })
 
   const reportsByContent = Object.values(groupBy(pagination.items, 'contentId'))
-
-  const isAdmin = useAdmin()
-  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={false} className="px-2">
