@@ -11,7 +11,7 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { api } from 'web/lib/api/api'
 import {
-  PokerCard,
+  GestureIcon,
   PokerRules,
   PokerStatus,
 } from 'web/components/poker/poker-ui'
@@ -171,20 +171,37 @@ function PokerLobbyContent() {
           </div>
         )}
         <header className={styles.hero}>
-          <div className={styles.eyebrow}>The Manifold card room</div>
-          <h1 className={styles.heroTitle}>RPS Poker</h1>
-          <p className={styles.heroCopy}>
-            Hold’em meets rock, paper, scissors. Pick a room and play with mana.
-          </p>
-          <div className={styles.heroFacts}>
-            <span>2–9 players</span>
-            <span>No buy-in</span>
-            <span>No rake</span>
+          <div>
+            <div className={styles.eyebrow}>The Manifold card room</div>
+            <h1 className={styles.heroTitle}>RPS Poker</h1>
+            <p className={styles.heroCopy}>
+              Rock Paper Scissors Poker combines Hold’em cards with simultaneous
+              betting. Everyone chooses a gesture, then reveals together. Play
+              with mana at a public table or invite your friends.
+            </p>
+            <a
+              href="https://rps.poker"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary-600 mt-3 inline-flex items-center gap-1 text-sm font-medium hover:underline"
+            >
+              Learn the rules at rps.poker <span aria-hidden>↗</span>
+            </a>
+            <div className={styles.heroFacts}>
+              <span>2–9 players</span>
+              <span>No buy-in</span>
+              <span>No rake</span>
+            </div>
           </div>
-          <div className={styles.cardFan} aria-hidden>
-            <PokerCard card={12} />
-            <PokerCard card={38} />
-            <PokerCard card={51} />
+          <div className={styles.heroGestures}>
+            {(['rock', 'paper', 'scissors'] as const).map((move) => (
+              <div key={move} className={styles.heroGesture}>
+                <span>
+                  <GestureIcon move={move} className="h-7 w-7" />
+                </span>
+                <span className="text-ink-500 text-xs capitalize">{move}</span>
+              </div>
+            ))}
           </div>
         </header>
         <section aria-labelledby="public-tables-heading">

@@ -21,7 +21,10 @@
   padding-top: 40px;
 }
 .hero {
-  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
   padding: 12px 0 28px;
   border-bottom: 1px solid rgb(var(--color-ink-200) / 0.7);
 }
@@ -39,19 +42,25 @@
   font-size: 15px;
   line-height: 1.65;
 }
-.cardFan {
-  position: absolute;
-  right: 32px;
-  top: 48px;
+.heroGestures {
   display: flex;
-  transform: scale(1.2) rotate(12deg);
-  filter: drop-shadow(0 12px 16px rgb(0 0 0 / 0.12));
+  gap: 12px;
 }
-.cardFan > :first-child {
-  transform: rotate(-22deg) translate(16px, 9px);
+.heroGesture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
-.cardFan > :last-child {
-  transform: rotate(14deg) translate(-12px, 8px);
+.heroGesture > :first-child {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgb(var(--color-primary-300) / 0.4);
+  border-radius: 18px;
+  background: rgb(var(--color-primary-500) / 0.08);
+  color: rgb(var(--color-primary-600));
 }
 .heroFacts {
   display: flex;
@@ -509,14 +518,12 @@
     padding-top: 24px;
   }
   .hero {
+    grid-template-columns: minmax(0, 1fr);
     padding: 4px 0 24px;
   }
   .heroCopy {
     max-width: 340px;
     font-size: 14px;
-  }
-  .cardFan {
-    display: none;
   }
   .roomGrid {
     grid-template-columns: minmax(0, 1fr);
