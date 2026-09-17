@@ -36,8 +36,10 @@ export default function YapPostPage() {
   const [version, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
   useEffect(() => {
-    setDetail(undefined)
-    if (!id || !isAuthorized || !user) return
+    if (!id || !isAuthorized || !user) {
+      setDetail(undefined)
+      return
+    }
     let cancelled = false
     setError(undefined)
     api('get-social-post', { id })
@@ -77,58 +79,63 @@ export default function YapPostPage() {
         </header>
         {!isAuthorized || !user ? (
           <SocialPostSkeleton />
-        ) : error ? (
-          <div role="alert" className="p-5">
-            <p>{error}</p>
-            <Button onClick={refresh} color="gray" size="sm">
-              Try again
-            </Button>
-          </div>
-        ) : current ? (
-          <>
-            {current.ancestors.map((post, index) => (
-              <SocialPostCard
-                key={post.id}
-                post={post}
-                onChanged={refresh}
-                previews={false}
-                refreshKey={version}
-                connectedAbove={index > 0}
-                continueThread
-              />
-            ))}
-            <SocialPostCard
-              key={current.post.id}
-              post={current.post}
-              onChanged={refresh}
-              previews={false}
-              refreshKey={version}
-              showReplyActions={false}
-              connectedAbove={current.ancestors.length > 0}
-            />
-            {current.post.canReply ? (
-              <SocialComposer
-                key={`reply-${id}`}
-                parentId={id}
-                onPosted={refresh}
-              />
-            ) : (
-              <p className="text-ink-500 p-4 text-sm">
-                This post is closed to new replies.
-              </p>
-            )}
-            <h2 className="border-ink-200 dark:border-ink-300 border-y px-4 py-3 font-semibold">
-              Replies
-            </h2>
-            <SocialPostList
-              key={id}
-              parentId={id}
-              refreshKey={version}
-              onChanged={refresh}
-            />
-          </>
         ) : (
-          <SocialPostSkeleton />
+          <>
+            {error && (
+              <div role="alert" className="p-5">
+                <p>{error}</p>
+                <Button onClick={refresh} color="gray" size="sm">
+                  Try again
+                </Button>
+              </div>
+            )}
+            {current ? (
+              <>
+                {current.ancestors.map((post, index) => (
+                  <SocialPostCard
+                    key={post.id}
+                    post={post}
+                    onChanged={refresh}
+                    previews={false}
+                    refreshKey={version}
+                    connectedAbove={index > 0}
+                    continueThread
+                  />
+                ))}
+                <SocialPostCard
+                  key={current.post.id}
+                  post={current.post}
+                  onChanged={refresh}
+                  previews={false}
+                  refreshKey={version}
+                  showReplyActions={false}
+                  connectedAbove={current.ancestors.length > 0}
+                />
+                {current.post.canReply ? (
+                  <SocialComposer
+                    key={`reply-${id}`}
+                    parentId={id}
+                    onPosted={refresh}
+                  />
+                ) : (
+                  <p className="text-ink-500 p-4 text-sm">
+                    This post is closed to new replies.
+                  </p>
+                )}
+                <h2 className="border-ink-200 dark:border-ink-300 border-y px-4 py-3 font-semibold">
+                  Replies
+                </h2>
+                <SocialPostList
+                  key={id}
+                  parentId={id}
+                  refreshKey={version}
+                  onChanged={refresh}
+                />
+              </>
+            ) : !error ? (
+              <SocialPostSkeleton />
+            ) : null}
+          </>
         )}
       </section>
     </Page>
