@@ -1,3 +1,7 @@
+import {
+  SocialReplyDraftProvider,
+  useReplyDraftContext,
+} from './social-reply-drafts'
 import { SocialText } from './social-text'
 import { SocialLinkPreview } from './social-link-preview'
 import { SocialImageCarousel } from './social-image-carousel'
@@ -33,7 +37,21 @@ import { UserReactedItem } from '../contract/react-button'
 import { Tooltip } from '../widgets/tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
-export function SocialPostCard({
+export function SocialPostCard(
+  props: Parameters<typeof SocialPostCardContent>[0]
+) {
+  const context = useReplyDraftContext()
+  const user = useUser()
+  return context ? (
+    <SocialPostCardContent {...props} />
+  ) : (
+    <SocialReplyDraftProvider key={user?.id}>
+      <SocialPostCardContent {...props} />
+    </SocialReplyDraftProvider>
+  )
+}
+
+function SocialPostCardContent({
   post,
   onChanged,
   previews = true,
@@ -55,7 +73,17 @@ export function SocialPostCard({
   const router = useRouter()
   const user = useUser()
   const mod = useAdminOrMod()
-  const [replying, setReplying] = useState(false)
+  const replyDraft = useReplyDraftContext()?.drafts[post.id]
+  const [replying, setReplying] = useState(
+    () =>
+      !!(
+        replyDraft &&
+        (replyDraft.text ||
+          replyDraft.markets.length ||
+          replyDraft.images.length ||
+          replyDraft.saving)
+      )
+  )
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)

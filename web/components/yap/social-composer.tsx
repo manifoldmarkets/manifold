@@ -1,3 +1,4 @@
+import { useSocialComposerDraft } from './social-reply-drafts'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Textarea from 'react-expanding-textarea'
@@ -42,25 +43,17 @@ export function SocialComposer(props: {
   const user = useUser()
   const input = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
-  const submitting = useRef(false)
-  const localImages = useRef(
-    new Map<string, { file: File; uploadedUrl?: string }>()
-  )
-  useEffect(
-    () => () => {
-      for (const url of localImages.current.keys()) URL.revokeObjectURL(url)
+  const { draft, setField, clear } = useSocialComposerDraft(
+    {
+      text: editing?.text ?? props.initialText ?? '',
+      markets: editing?.markets ?? props.initialMarkets ?? [],
+      images: editing?.imageUrls ?? [],
     },
-    []
+    editing ? undefined : parentId
   )
-  const [text, setText] = useState(editing?.text ?? props.initialText ?? '')
-  const [markets, setMarkets] = useState(
-    editing?.markets ?? props.initialMarkets ?? []
-  )
+  const { text, markets, images, uploading, saving, error, submitting } = draft
+  const localImages = draft.localImages
   const [selecting, setSelecting] = useState(false)
-  const [images, setImages] = useState(editing?.imageUrls ?? [])
-  const [uploading, setUploading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string>()
   const count = [...text.trim()].length
   const eligible = !!editing || isSupporter(user?.entitlements)
   useEffect(() => {
@@ -71,9 +64,9 @@ export function SocialComposer(props: {
     !!(count || markets.length || images.length)
   function addImages(files: File[]) {
     if (!user || submitting.current || !files.length) return
-    setError(undefined)
+    setField('error', undefined)
     if (images.length + files.length > SOCIAL_POST_MAX_IMAGES) {
-      setError(`Attach up to ${SOCIAL_POST_MAX_IMAGES} images.`)
+      setField('error', `Attach up to ${SOCIAL_POST_MAX_IMAGES} images.`)
       return
     }
     if (
@@ -84,30 +77,33 @@ export function SocialComposer(props: {
           )
       )
     ) {
-      setError('Choose JPEG, PNG, WebP, or GIF images.')
+      setField('error', 'Choose JPEG, PNG, WebP, or GIF images.')
       return
     }
     if (files.some((file) => file.size > 20 * 1024 ** 2)) {
-      setError('Each image must be 20 MB or smaller.')
+      setField('error', 'Each image must be 20 MB or smaller.')
       return
     }
     const urls = files.map((file) => {
       const url = URL.createObjectURL(file)
-      localImages.current.set(url, { file })
+      localImages.set(url, { file })
       return url
     })
-    setImages((previous) => [...previous, ...urls])
+    setField('images', (previous) => [...previous, ...urls])
   }
   async function submit() {
     if (!canSubmit || !user || submitting.current) return
     submitting.current = true
-    setSaving(true)
-    setError(undefined)
+    setField('saving', true)
+    setField('error', undefined)
     try {
-      setUploading(images.some((url) => localImages.current.has(url)))
+      setField(
+        'uploading',
+        images.some((url) => localImages.has(url))
+      )
       const uploads = await Promise.allSettled(
         images.map(async (url) => {
-          const local = localImages.current.get(url)
+          const local = localImages.get(url)
           if (!local) return url
           // Reuse completed uploads if posting fails and the user retries.
           local.uploadedUrl ??= await uploadPublicImage(
@@ -118,7 +114,7 @@ export function SocialComposer(props: {
           return local.uploadedUrl
         })
       )
-      setUploading(false)
+      setField('uploading', false)
       const imageUrls = uploads.map((result) => {
         if (result.status === 'rejected') throw result.reason
         return result.value
@@ -141,11 +137,7 @@ export function SocialComposer(props: {
                 ? source
                 : undefined,
           })
-      setText('')
-      setMarkets([])
-      setImages([])
-      for (const url of localImages.current.keys()) URL.revokeObjectURL(url)
-      localImages.current.clear()
+      clear()
       toast.success(
         <span>
           {editing
@@ -163,11 +155,11 @@ export function SocialComposer(props: {
       )
       onPosted(post)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setField('error', e instanceof Error ? e.message : String(e))
     } finally {
       submitting.current = false
-      setUploading(false)
-      setSaving(false)
+      setField('uploading', false)
+      setField('saving', false)
     }
   }
   if (!user || !eligible)
@@ -211,7 +203,7 @@ export function SocialComposer(props: {
             className="bg-canvas-50 border-ink-300 placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-none rounded-2xl border p-3 text-base transition-colors focus:outline-none focus:ring-1"
             rows={2}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => setField('text', e.target.value)}
             ref={input}
             disabled={saving}
             onKeyDown={(e) => {
@@ -238,8 +230,11 @@ export function SocialComposer(props: {
                     disabled={saving || uploading}
                     onClick={() => {
                       URL.revokeObjectURL(url)
-                      localImages.current.delete(url)
-                      setImages(images.filter((_, i) => i !== index))
+                      localImages.delete(url)
+                      setField(
+                        'images',
+                        images.filter((_, i) => i !== index)
+                      )
                     }}
                     className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
                   >
@@ -273,7 +268,10 @@ export function SocialComposer(props: {
                     aria-label={`Remove ${m.question}`}
                     disabled={saving}
                     onClick={() =>
-                      setMarkets(markets.filter((c) => c.id !== m.id))
+                      setField(
+                        'markets',
+                        markets.filter((c) => c.id !== m.id)
+                      )
                     }
                   >
                     <XIcon className="h-4 w-4" />
@@ -339,7 +337,10 @@ export function SocialComposer(props: {
                   color="gray"
                   size="xs"
                   disabled={saving || uploading}
-                  onClick={onCancel}
+                  onClick={() => {
+                    clear()
+                    onCancel()
+                  }}
                 >
                   Cancel
                 </Button>
@@ -369,7 +370,7 @@ export function SocialComposer(props: {
             onCancel={() => setSelecting(false)}
             submitLabel={(n) => `Attach ${n} market${n === 1 ? '' : 's'}`}
             onSubmit={(selected) => {
-              setMarkets(selected)
+              setField('markets', selected)
               setSelecting(false)
             }}
           />

@@ -1,3 +1,4 @@
+import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
 import { SocialText } from 'web/components/yap/social-text'
 import { JSONContent } from '@tiptap/core'
 import { contractPath } from 'common/contract'
@@ -47,8 +48,15 @@ function ReportsContent() {
 
         {!pagination.isLoading &&
           reportsByContent.map((reports) => {
-            const { slug, text, owner, contentId, contentType, createdTime } =
-              reports[0]
+            const {
+              slug,
+              text,
+              imageUrls,
+              owner,
+              contentId,
+              contentType,
+              createdTime,
+            } = reports[0]
 
             return (
               <div key={contentId} className="my-4">
@@ -108,7 +116,15 @@ function ReportsContent() {
                 {contentType !== 'user' && (
                   <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
                     {contentType === 'social_post' ? (
-                      <SocialText text={String(text)} />
+                      <>
+                        <SocialText text={String(text)} />
+                        {!!imageUrls?.length && (
+                          <SocialImageCarousel
+                            key={imageUrls.join('|')}
+                            images={imageUrls}
+                          />
+                        )}
+                      </>
                     ) : (
                       <Content size="md" content={text} />
                     )}
@@ -194,6 +210,7 @@ export type LiteReport = {
   slug: string
   id: string
   text: string | JSONContent
+  imageUrls?: string[]
   owner: DisplayUser
   reporter: DisplayUser
   reasonsDescription: string | null
@@ -300,7 +317,7 @@ const convertReports = async (
       const reporter = usersById.get(userId)
       if (!owner || !reporter) return null
 
-      let content: { slug: string; text: JSONContent | string } | undefined
+      let content: Pick<LiteReport, 'slug' | 'text' | 'imageUrls'> | undefined
       if (contentType === 'contract') {
         const contract = marketsById.get(contentId)
         if (contract)
@@ -326,6 +343,7 @@ const convertReports = async (
           content = {
             slug: `/yap/${post.id}`,
             text: post.text || post.markets.map((m) => m.question).join(' · '),
+            imageUrls: post.imageUrls,
           }
       } else if (contentType === 'post') {
         const post = postsById.get(contentId)
