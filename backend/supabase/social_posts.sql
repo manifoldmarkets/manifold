@@ -8,6 +8,7 @@ create table social_posts (
   constraint social_posts_image_limit check (cardinality(image_urls) <= 4),
   parent_id text references social_posts(id),
   root_id text not null references social_posts(id),
+  source_post_id text references social_posts(id),
   source_contract_id text references contracts(id),
   source_comment_id text,
   source_bet_id text,

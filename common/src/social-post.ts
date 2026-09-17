@@ -31,7 +31,7 @@ export function isSocialImageUrl(value: string) {
   }
 }
 
-export const socialPostContentSchema = z
+export const socialPostDraftSchema = z
   .object({
     text: z
       .string()
@@ -54,22 +54,40 @@ export const socialPostContentSchema = z
       .optional(),
   })
   .strict()
-  .superRefine(({ text, marketIds, imageUrls }, ctx) => {
-    if (!text && !marketIds.length && !imageUrls?.length)
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Add text, a market, or an image',
-      })
+  .superRefine(({ marketIds }, ctx) => {
     if (new Set(marketIds).size !== marketIds.length)
       ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
   })
-export const socialPostSourceSchema = z
-  .object({
-    contractId: z.string().min(1).max(200),
-    commentId: z.string().min(1).max(200).optional(),
-    betId: z.string().min(1).max(200).optional(),
-  })
-  .strict()
+export const hasSocialPostContent = (
+  content: z.infer<typeof socialPostDraftSchema>
+) => !!(content.text || content.marketIds.length || content.imageUrls?.length)
+export const socialPostContentSchema = socialPostDraftSchema.refine(
+  hasSocialPostContent,
+  'Add text, a market, or an image'
+)
+export const socialPostSourceSchema = z.union([
+  z
+    .object({
+      contractId: z.string().min(1).max(200),
+      commentId: z.string().min(1).max(200).optional(),
+      betId: z.string().min(1).max(200).optional(),
+    })
+    .strict(),
+  z.object({ postId: z.string().min(1).max(200) }).strict(),
+])
+
+export type SocialQuote = {
+  kind: 'comment' | 'bet' | 'market' | 'post'
+  url: string
+  text: string
+  author?: DisplayUser
+  contractId?: string
+  imageUrls?: string[]
+  markets?: Contract[]
+  includesQuote?: boolean
+  unavailable?: boolean
+}
+
 export type SocialPostSource = z.infer<typeof socialPostSourceSchema>
 export type SocialPost = {
   id: string
@@ -86,11 +104,7 @@ export type SocialPost = {
   markets: Contract[]
   imageUrls?: string[]
   unavailableMarketCount: number
-  source: {
-    kind: 'comment' | 'bet' | 'market'
-    url: string
-    text: string
-  } | null
+  source: SocialQuote | null
   likeCount: number
   liked: boolean
   replyCount: number
@@ -125,3 +139,17 @@ export const socialTimestamp = (timestamp: string) =>
 // Display dates use milliseconds; cursor dates retain PostgreSQL precision.
 export const socialTimestampMillis = (timestamp: string) =>
   Date.parse(socialTimestamp(timestamp).replace(/(\.\d{3})\d+/, '$1'))
+
+// Quote one level of content. Reposts of reposts link back to the original
+// discussion rather than expanding an arbitrarily deep chain in the timeline.
+export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
+  kind: 'post',
+  url: socialPostPath(post.id),
+  text: post.removed ? '' : post.text,
+  author: post.removed ? undefined : post.author,
+  imageUrls: post.removed ? [] : post.imageUrls,
+  markets: post.removed ? [] : post.markets,
+  includesQuote:
+    !post.removed && !!post.source && post.source.kind !== 'market',
+  unavailable: !!post.removed,
+})

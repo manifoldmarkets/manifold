@@ -2,6 +2,9 @@ import {
   isSocialImageUrl,
   socialCursorSchema,
   socialPostContentSchema,
+  socialPostSourceSchema,
+  quoteSocialPost,
+  SocialPost,
   socialTimestamp,
   socialTimestampMillis,
 } from './social-post'
@@ -161,5 +164,67 @@ describe('social post validation', () => {
     const groups = combineReactionNotifications([a, b, c])
     expect(groups).toHaveLength(2)
     expect(groups[0].data?.relatedNotifications).toHaveLength(2)
+  })
+})
+
+test('a repost has exactly one kind of source', () => {
+  expect(socialPostSourceSchema.parse({ postId: 'reply' })).toEqual({
+    postId: 'reply',
+  })
+  expect(
+    socialPostSourceSchema.safeParse({ postId: 'reply', contractId: 'market' })
+      .success
+  ).toBe(false)
+  expect(socialPostSourceSchema.safeParse({ postId: '' }).success).toBe(false)
+  expect(
+    socialPostSourceSchema.safeParse({
+      contractId: 'market',
+      commentId: 'comment',
+    }).success
+  ).toBe(true)
+})
+
+test('post quotes preserve attribution and media without copying nested quotes or removed content', () => {
+  const post = {
+    id: 'original',
+    createdTime: '2026-09-16T00:00:00Z',
+    createdTimeMs: 0,
+    editedTime: null,
+    editedTimeMs: null,
+    parentAuthor: null,
+    parentId: null,
+    rootId: 'original',
+    unavailableMarketCount: 0,
+    likeCount: 0,
+    liked: false,
+    replyCount: 0,
+    canReply: true,
+    replyPreviews: [],
+    text: 'Original text',
+    author: {
+      id: 'author',
+      name: 'Author',
+      username: 'author',
+      avatarUrl: 'avatar',
+    },
+    markets: [],
+    imageUrls: [imageUrl('quote')],
+    source: { kind: 'post', url: '/yap/nested', text: 'Nested text' },
+    removed: null,
+  } as SocialPost
+  expect(quoteSocialPost(post)).toMatchObject({
+    author: post.author,
+    text: post.text,
+    imageUrls: post.imageUrls,
+    includesQuote: true,
+    url: '/yap/original',
+  })
+  expect(quoteSocialPost(post)).not.toHaveProperty('source')
+  expect(quoteSocialPost({ ...post, removed: 'blocked' })).toMatchObject({
+    text: '',
+    author: undefined,
+    imageUrls: [],
+    markets: [],
+    unavailable: true,
   })
 })

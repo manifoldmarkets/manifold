@@ -8,6 +8,7 @@ import { Notification } from 'common/notification'
 import {
   SocialPost,
   SocialPostSource,
+  quoteSocialPost,
   isSocialImageUrl,
   socialPostPath,
   socialTimestamp,
@@ -136,6 +137,11 @@ export async function validateSocialSource(
   viewer: SocialViewer
 ) {
   if (!source) return
+  if ('postId' in source) {
+    const post = await getSocialRow(pg, source.postId)
+    await assertSocialInteraction(pg, post, viewer)
+    return
+  }
   if (!marketIds.includes(source.contractId))
     throw new APIError(400, 'Keep the source market attached')
   if (source.commentId) {
@@ -175,7 +181,8 @@ export async function hydrateSocialPosts(
   pg: DB,
   rows: SocialRow[],
   viewer: SocialViewer,
-  previews = true
+  previews = true,
+  quotes = true
 ): Promise<SocialPost[]> {
   if (!rows.length) return []
   const ids = rows.map((r) => r.id)
@@ -188,6 +195,7 @@ export async function hydrateSocialPosts(
     sourceMarkets,
     comments,
     bets,
+    quotedRows,
   ] = await Promise.all([
     pg.manyOrNone(
       `select id, name, username, data from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
@@ -220,17 +228,39 @@ export async function hydrateSocialPosts(
       [rows.map((r) => r.source_contract_id).filter(Boolean)]
     ),
     pg.manyOrNone(
-      `select cc.comment_id, cc.user_id, cc.data from contract_comments cc
+      `select cc.comment_id, cc.user_id, cc.data,
+      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl','')) as author
+      from contract_comments cc join users u on u.id=cc.user_id
       left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
       where cc.comment_id = any($1::text[]) and coalesce((cc.data->>'hidden')::boolean,false) = false and coalesce((cc.data->>'deleted')::boolean,false) = false
       and coalesce((parent.data->>'hidden')::boolean,false) = false and coalesce((parent.data->>'deleted')::boolean,false) = false`,
       [rows.map((r) => r.source_comment_id).filter(Boolean)]
     ),
     pg.manyOrNone(
-      `select b.bet_id, b.user_id, b.data, u.name from contract_bets b join users u on u.id=b.user_id where b.bet_id = any($1::text[])`,
+      `select b.bet_id, b.user_id, b.data, u.name,
+      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl','')) as author
+      from contract_bets b join users u on u.id=b.user_id where b.bet_id = any($1::text[])`,
       [rows.map((r) => r.source_bet_id).filter(Boolean)]
     ),
+    quotes && rows.some((r) => r.source_post_id)
+      ? pg.manyOrNone<SocialRow>(
+          `select p.* from social_posts p join social_posts root on root.id=p.root_id
+          where p.id=any($1::text[]) and p.deleted_time is null
+          and not (p.user_id=any($2::text[])) and not (root.user_id=any($2::text[]))`,
+          [rows.map((r) => r.source_post_id).filter(Boolean), viewer.blocked]
+        )
+      : Promise.resolve([]),
   ])
+  const quotedPosts = await hydrateSocialPosts(
+    pg,
+    quotedRows,
+    viewer,
+    false,
+    false
+  )
+  const quotesById = new Map(
+    quotedPosts.map((post) => [post.id, quoteSocialPost(post)])
+  )
   const previewRows = previews
     ? await pg.manyOrNone<SocialRow>(
         `select preview.* from unnest($1::text[]) as requested(id)
@@ -277,6 +307,8 @@ export async function hydrateSocialPosts(
       const contract = convertContract(sourceMarket)
       source = {
         kind: comment ? 'comment' : bet ? 'bet' : 'market',
+        author: comment?.author ?? bet?.author,
+        contractId: contract.id,
         url:
           contractPath(contract) + (comment ? `#${row.source_comment_id}` : ''),
         text: comment
@@ -287,6 +319,14 @@ export async function hydrateSocialPosts(
               contract.token
             )} on ${bet.data.outcome}. View market`
           : 'View original market',
+      }
+    }
+    if (row.source_post_id) {
+      source = quotesById.get(row.source_post_id) ?? {
+        kind: 'post',
+        url: socialPostPath(row.source_post_id),
+        text: '',
+        unavailable: true,
       }
     }
     return {

@@ -1,4 +1,9 @@
-import { SocialPost, SocialPostPage, socialTimestamp } from 'common/social-post'
+import {
+  SocialPost,
+  SocialPostPage,
+  socialTimestamp,
+  hasSocialPostContent,
+} from 'common/social-post'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { APIHandler, APIError } from './helpers/endpoint'
@@ -45,18 +50,19 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         await validateSocialMarkets(tx, content.marketIds)
         await validateSocialSource(tx, source, content.marketIds, viewer)
         const row = await tx.one<SocialRow>(
-          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
+          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls, source_post_id)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *`,
           [
             id,
             auth.uid,
             content.text,
             parent?.id ?? null,
             parent?.root_id ?? id,
-            source?.contractId ?? null,
-            source?.commentId ?? null,
-            source?.betId ?? null,
+            source && 'contractId' in source ? source.contractId : null,
+            source && 'contractId' in source ? source.commentId ?? null : null,
+            source && 'contractId' in source ? source.betId ?? null : null,
             content.imageUrls ?? [],
+            source && 'postId' in source ? source.postId : null,
           ]
         )
         await writeSocialMarkets(tx, id, content.marketIds)
@@ -81,6 +87,8 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
         throw new APIError(403, 'Only the author can edit this post')
       if (post.deleted_time)
         throw new APIError(403, 'This post has been removed')
+      if (!hasSocialPostContent(content) && !post.source_post_id)
+        throw new APIError(400, 'Add text, a market, or an image')
       await limitSocialWrite(tx, auth.uid, 'edit', 30)
       await validateSocialMarkets(tx, content.marketIds)
       await writeSocialMarkets(tx, id, content.marketIds)
@@ -121,7 +129,7 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
     if (post.deleted_time) return
     await tx.none(
       `update social_posts set text='', image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
-      source_contract_id=null, source_comment_id=null, source_bet_id=null where id=$1`,
+      source_contract_id=null, source_comment_id=null, source_bet_id=null, source_post_id=null where id=$1`,
       [id, auth.uid, post.user_id !== auth.uid]
     )
     await tx.none('delete from social_post_markets where post_id=$1', [id])

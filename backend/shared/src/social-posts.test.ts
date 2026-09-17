@@ -201,3 +201,33 @@ test('social notifications suppress self, blocks, and opt-outs and use reply con
     expect.anything()
   )
 })
+
+test('Yap reposts reject missing, deleted, and blocked originals, including reply root blocks', async () => {
+  const original = { ...post, root_id: 'root' }
+  const root = { ...post, id: 'root', user_id: 'root-author' }
+  const pg = (target: SocialRow | null) =>
+    db({
+      oneOrNone: jest.fn((_sql, [id]) =>
+        Promise.resolve(id === 'reply' ? target : root)
+      ),
+    })
+  await expect(
+    validateSocialSource(pg(null), { postId: 'reply' }, [], { blocked: [] })
+  ).rejects.toMatchObject({ code: 404 })
+  await expect(
+    validateSocialSource(
+      pg({ ...original, deleted_time: 'now' }),
+      { postId: 'reply' },
+      [],
+      { blocked: [] }
+    )
+  ).rejects.toMatchObject({ code: 403 })
+  for (const blocked of [['parent-author'], ['root-author']]) {
+    await expect(
+      validateSocialSource(pg(original), { postId: 'reply' }, [], { blocked })
+    ).rejects.toMatchObject({ code: 403 })
+  }
+  await expect(
+    validateSocialSource(pg(original), { postId: 'reply' }, [], { blocked: [] })
+  ).resolves.toBeUndefined()
+})

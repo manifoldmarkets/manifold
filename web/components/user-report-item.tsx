@@ -1,3 +1,4 @@
+import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
 import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
 import { SocialText } from './yap/social-text'
 import Link from 'next/link'
@@ -24,6 +25,7 @@ export default function UserReportItem(props: {
     slug,
     text,
     imageUrls,
+    source,
     owner,
     reporter,
     contentType,
@@ -157,6 +159,9 @@ export default function UserReportItem(props: {
               {contentType === 'social_post' ? (
                 <>
                   <SocialText text={String(text)} />
+                  {source && source.kind !== 'market' && (
+                    <SocialQuoteCard quote={source} />
+                  )}
                   {!!imageUrls?.length && (
                     <SocialImageCarousel
                       key={imageUrls.join('|')}

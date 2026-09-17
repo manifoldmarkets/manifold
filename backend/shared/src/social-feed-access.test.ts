@@ -268,3 +268,30 @@ test('only admins and moderators can bypass personal blocks for report lookups',
   ])
     expect(API['get-social-posts'].props.safeParse(params).success).toBe(false)
 })
+
+test('only Yap reposts may be created with an empty comment and no attachments', () => {
+  const schema = API['create-social-post'].props
+  expect(schema.safeParse({ content: { text: '' } }).success).toBe(false)
+  expect(
+    schema.safeParse({
+      content: { text: '' },
+      source: { contractId: 'market' },
+    }).success
+  ).toBe(false)
+  expect(
+    schema.safeParse({ content: { text: '' }, source: { postId: 'reply' } })
+      .success
+  ).toBe(true)
+  expect(
+    schema.safeParse({
+      content: { text: 'My comment' },
+      source: { postId: 'reply' },
+    }).success
+  ).toBe(true)
+  expect(
+    schema.safeParse({
+      content: { text: 'x'.repeat(2001) },
+      source: { postId: 'reply' },
+    }).success
+  ).toBe(false)
+})

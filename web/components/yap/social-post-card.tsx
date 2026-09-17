@@ -1,3 +1,6 @@
+import { RepostModal } from '../comments/repost-modal'
+import { SocialQuoteCard } from './social-quote-card'
+import { BiRepost } from 'react-icons/bi'
 import {
   SocialReplyDraftProvider,
   useReplyDraftContext,
@@ -9,11 +12,7 @@ import DropdownMenu from '../widgets/dropdown-menu'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import {
-  ChatAltIcon,
-  HeartIcon,
-  ExternalLinkIcon,
-} from '@heroicons/react/outline'
+import { ChatAltIcon, HeartIcon } from '@heroicons/react/outline'
 import { HeartIcon as HeartSolid } from '@heroicons/react/solid'
 import { contractPath, getBinaryProbPercent } from 'common/contract'
 import {
@@ -84,6 +83,7 @@ function SocialPostCardContent({
           replyDraft.saving)
       )
   )
+  const [reposting, setReposting] = useState(false)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
@@ -293,20 +293,7 @@ function SocialPostCardContent({
               )}
               <SocialLinkPreview text={post.text} />
               {post.source && post.source.kind !== 'market' && (
-                <a
-                  className="border-ink-200 dark:border-ink-300 bg-canvas-50/60 hover:bg-canvas-50 mt-3 block rounded-2xl border p-4 transition-colors"
-                  href={post.source.url}
-                >
-                  <span className="text-ink-600 mb-2 flex items-center gap-2 text-xs">
-                    <ExternalLinkIcon className="h-3.5 w-3.5 shrink-0" />
-                    {post.source.kind === 'comment'
-                      ? 'Quoted comment'
-                      : 'Shared trade'}
-                  </span>
-                  <span className="border-primary-500/50 text-ink-800 line-clamp-3 border-l-2 pl-3 text-sm leading-relaxed">
-                    {post.source.text}
-                  </span>
-                </a>
+                <SocialQuoteCard quote={post.source} />
               )}
               <div className={post.markets.length ? 'mt-3 space-y-2' : ''}>
                 {post.markets
@@ -381,6 +368,14 @@ function SocialPostCardContent({
                     {replyCountButton}
                   </div>
                 )}
+                <button
+                  aria-label="Repost to Yap"
+                  title="Repost to Yap"
+                  className="hover:text-primary-700 hover:bg-primary-500/10 rounded-full p-2 transition-colors"
+                  onClick={() => setReposting(true)}
+                >
+                  <BiRepost className="h-5 w-5" />
+                </button>
                 <Tooltip
                   text={
                     likeCount > 0 ? (
@@ -475,6 +470,14 @@ function SocialPostCardContent({
             )}
           </div>
         )
+      )}
+      {reposting && (
+        <RepostModal
+          post={post}
+          open={reposting}
+          setOpen={setReposting}
+          onPosted={onChanged}
+        />
       )}
       <ReportModal
         isModalOpen={reporting}

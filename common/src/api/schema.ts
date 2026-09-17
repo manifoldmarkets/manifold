@@ -1,5 +1,6 @@
 import {
-  socialPostContentSchema,
+  socialPostDraftSchema,
+  hasSocialPostContent,
   socialPostSourceSchema,
   socialCursorSchema,
   SocialPost,
@@ -5007,11 +5008,16 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z
       .object({
-        content: socialPostContentSchema,
+        content: socialPostDraftSchema,
         parentId: z.string().optional(),
         source: socialPostSourceSchema.optional(),
       })
-      .strict(),
+      .strict()
+      .refine(
+        ({ content, source }) =>
+          hasSocialPostContent(content) || !!(source && 'postId' in source),
+        'Add text, a market, an image, or a quoted post'
+      ),
     returns: {} as SocialPost,
   },
   'edit-social-post': {
@@ -5019,7 +5025,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z
-      .object({ id: z.string(), content: socialPostContentSchema })
+      .object({ id: z.string(), content: socialPostDraftSchema })
       .strict(),
     returns: {} as SocialPost,
   },

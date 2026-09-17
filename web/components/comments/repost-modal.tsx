@@ -1,3 +1,4 @@
+import { quoteSocialPost, SocialPost, SocialQuote } from 'common/social-post'
 import { formatMoney } from 'common/util/format'
 import clsx from 'clsx'
 import { useState } from 'react'
@@ -44,7 +45,8 @@ export const RepostButton = (props: {
   )
 }
 export const RepostModal = (props: {
-  playContract: Contract
+  playContract?: Contract
+  post?: SocialPost
   bet?: Bet
   comment?: ContractComment
   initialText?: string
@@ -52,35 +54,51 @@ export const RepostModal = (props: {
   open: boolean
   setOpen: (open: boolean) => void
 }) => {
-  const { playContract, bet, comment, open, setOpen } = props
+  const { playContract, post, bet, comment, open, setOpen } = props
+  const quote: SocialQuote | undefined = post
+    ? quoteSocialPost(post)
+    : playContract && (comment || bet)
+    ? {
+        kind: comment ? 'comment' : 'bet',
+        contractId: playContract.id,
+        url: contractPath(playContract) + (comment ? '#' + comment.id : ''),
+        text: comment
+          ? richTextToString(comment.content).slice(0, 300)
+          : `Trade: ${formatMoney(
+              Math.abs(bet!.amount),
+              playContract.token
+            )} on ${bet!.outcome}. View market`,
+        author: comment
+          ? {
+              id: comment.userId,
+              name: comment.userName,
+              username: comment.userUsername,
+              avatarUrl: comment.userAvatarUrl ?? '',
+            }
+          : undefined,
+      }
+    : undefined
   return (
     <Modal open={open} setOpen={setOpen}>
       <div className="bg-canvas-0 rounded-xl">
         <h2 className="px-4 pt-4 text-lg font-semibold">Post to Yap</h2>
-        {(comment || bet) && (
-          <a
-            href={
-              contractPath(playContract) + (comment ? '#' + comment.id : '')
-            }
-            className="text-ink-500 mx-4 mt-3 block whitespace-pre-wrap rounded-lg border p-3 text-sm hover:underline"
-          >
-            {comment
-              ? richTextToString(comment.content).slice(0, 300)
-              : `Trade: ${formatMoney(
-                  Math.abs(bet!.amount),
-                  playContract.token
-                )} on ${bet!.outcome}. View market`}
-          </a>
-        )}
-        {playContract.visibility === 'public' && !playContract.deleted ? (
+        {(post && !post.removed) ||
+        (playContract?.visibility === 'public' && !playContract.deleted) ? (
           <SocialComposer
-            initialMarkets={[playContract]}
+            initialMarkets={playContract ? [playContract] : []}
+            quote={quote}
             initialText={props.initialText}
-            source={{
-              contractId: playContract.id,
-              betId: bet?.id,
-              commentId: comment?.id,
-            }}
+            source={
+              post
+                ? { postId: post.id }
+                : playContract
+                ? {
+                    contractId: playContract.id,
+                    betId: bet?.id,
+                    commentId: comment?.id,
+                  }
+                : undefined
+            }
             focusOnMount
             onCancel={() => setOpen(false)}
             onPosted={() => {
@@ -89,7 +107,11 @@ export const RepostModal = (props: {
             }}
           />
         ) : (
-          <p className="p-4">Only public markets can be shared on Yap.</p>
+          <p className="p-4">
+            {post
+              ? 'This post is unavailable.'
+              : 'Only public markets can be shared on Yap.'}
+          </p>
         )}
       </div>
     </Modal>

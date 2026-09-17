@@ -1,3 +1,4 @@
+import { SocialQuoteCard } from './social-quote-card'
 import { useSocialComposerDraft } from './social-reply-drafts'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -8,7 +9,8 @@ import { isSupporter } from 'common/supporter'
 import {
   SocialPost,
   SocialPostSource,
-  socialPostContentSchema,
+  SocialQuote,
+  socialPostDraftSchema,
   SOCIAL_POST_MAX_LENGTH,
   SOCIAL_POST_MAX_MARKETS,
   SOCIAL_POST_MAX_IMAGES,
@@ -35,6 +37,7 @@ export function SocialComposer(props: {
   initialMarkets?: Contract[]
   initialText?: string
   source?: SocialPostSource
+  quote?: SocialQuote
   onPosted: (post: SocialPost) => void
   onCancel?: () => void
   focusOnMount?: boolean
@@ -54,6 +57,14 @@ export function SocialComposer(props: {
   const { text, markets, images, uploading, saving, error, submitting } = draft
   const localImages = draft.localImages
   const [selecting, setSelecting] = useState(false)
+  const isPostRepost =
+    !!(source && 'postId' in source) || editing?.source?.kind === 'post'
+  const quote = props.quote ?? editing?.source
+  const shownQuote =
+    quote &&
+    (!quote.contractId || markets.some((m) => m.id === quote.contractId))
+      ? quote
+      : undefined
   const count = [...text.trim()].length
   const eligible = !!editing || isSupporter(user?.entitlements)
   useEffect(() => {
@@ -61,7 +72,7 @@ export function SocialComposer(props: {
   }, [props.focusOnMount, user?.id])
   const canSubmit =
     count <= SOCIAL_POST_MAX_LENGTH &&
-    !!(count || markets.length || images.length)
+    !!(count || markets.length || images.length || isPostRepost)
   function addImages(files: File[]) {
     if (!user || submitting.current || !files.length) return
     setField('error', undefined)
@@ -119,7 +130,7 @@ export function SocialComposer(props: {
         if (result.status === 'rejected') throw result.reason
         return result.value
       })
-      const content = socialPostContentSchema.parse({
+      const content = socialPostDraftSchema.parse({
         text,
         marketIds: markets.map((m) => m.id),
         imageUrls,
@@ -133,7 +144,9 @@ export function SocialComposer(props: {
             content,
             parentId,
             source:
-              source && markets.some((m) => m.id === source.contractId)
+              source &&
+              ('postId' in source ||
+                markets.some((m) => m.id === source.contractId))
                 ? source
                 : undefined,
           })
@@ -199,7 +212,13 @@ export function SocialComposer(props: {
                 ? 'Write a reply'
                 : 'Write a post'
             }
-            placeholder={parentId ? 'Write a reply…' : 'What’s on your mind?'}
+            placeholder={
+              parentId
+                ? 'Write a reply…'
+                : quote
+                ? 'Add a comment (optional)…'
+                : 'What’s on your mind?'
+            }
             className="bg-canvas-50 border-ink-300 placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-none rounded-2xl border p-3 text-base transition-colors focus:outline-none focus:ring-1"
             rows={2}
             value={text}
@@ -248,6 +267,9 @@ export function SocialComposer(props: {
             <p role="status" className="text-ink-600 mb-2 text-sm">
               Uploading images…
             </p>
+          )}
+          {shownQuote && shownQuote.kind !== 'market' && (
+            <SocialQuoteCard quote={shownQuote} />
           )}
           {!!markets.length && (
             <div className="my-3 space-y-2">

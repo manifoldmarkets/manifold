@@ -12,6 +12,10 @@ Apply these additive migrations in order before deploying the API and web change
    ordered market associations, database write counters, and social reaction indexes.
 2. `backend/supabase/migrations/2026091601_social_post_images.sql` adds image URLs
    and the four-image limit. Post creation requires this column even without images.
+3. `backend/supabase/migrations/2026091602_social_post_quotes.sql` adds
+   `source_post_id` and its foreign key for reposting Yap posts and replies.
+   Apply it before deploying the API: all post creation and deletion operations
+   reference this column, including posts without quotes.
 
 The initial migration does not backfill historical reposts. All social-table reads and writes go
 through the API; RLS grants no direct client access. Existing `user_reactions`

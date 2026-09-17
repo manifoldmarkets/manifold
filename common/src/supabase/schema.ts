@@ -24,6 +24,7 @@ export type Database = {
           edited_time: string | null
           parent_id: string | null
           root_id: string
+          source_post_id: string | null
           source_contract_id: string | null
           source_comment_id: string | null
           source_bet_id: string | null
@@ -40,6 +41,7 @@ export type Database = {
           edited_time?: string | null
           parent_id?: string | null
           root_id: string
+          source_post_id?: string | null
           source_contract_id?: string | null
           source_comment_id?: string | null
           source_bet_id?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           edited_time?: string | null
           parent_id?: string | null
           root_id?: string
+          source_post_id?: string | null
           source_contract_id?: string | null
           source_comment_id?: string | null
           source_bet_id?: string | null
@@ -64,6 +67,13 @@ export type Database = {
           removed_by_moderator?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: 'social_posts_source_post_id_fkey'
+            columns: ['source_post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'social_posts_user_id_fkey'
             columns: ['user_id']

@@ -1,3 +1,5 @@
+import { SocialQuote } from 'common/social-post'
+import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
 import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
 import { SocialText } from 'web/components/yap/social-text'
 import { JSONContent } from '@tiptap/core'
@@ -52,6 +54,7 @@ function ReportsContent() {
               slug,
               text,
               imageUrls,
+              source,
               owner,
               contentId,
               contentType,
@@ -118,6 +121,9 @@ function ReportsContent() {
                     {contentType === 'social_post' ? (
                       <>
                         <SocialText text={String(text)} />
+                        {source && source.kind !== 'market' && (
+                          <SocialQuoteCard quote={source} />
+                        )}
                         {!!imageUrls?.length && (
                           <SocialImageCarousel
                             key={imageUrls.join('|')}
@@ -211,6 +217,7 @@ export type LiteReport = {
   id: string
   text: string | JSONContent
   imageUrls?: string[]
+  source?: SocialQuote | null
   owner: DisplayUser
   reporter: DisplayUser
   reasonsDescription: string | null
@@ -317,7 +324,9 @@ const convertReports = async (
       const reporter = usersById.get(userId)
       if (!owner || !reporter) return null
 
-      let content: Pick<LiteReport, 'slug' | 'text' | 'imageUrls'> | undefined
+      let content:
+        | Pick<LiteReport, 'slug' | 'text' | 'imageUrls' | 'source'>
+        | undefined
       if (contentType === 'contract') {
         const contract = marketsById.get(contentId)
         if (contract)
@@ -344,6 +353,7 @@ const convertReports = async (
             slug: `/yap/${post.id}`,
             text: post.text || post.markets.map((m) => m.question).join(' · '),
             imageUrls: post.imageUrls,
+            source: post.source,
           }
       } else if (contentType === 'post') {
         const post = postsById.get(contentId)
