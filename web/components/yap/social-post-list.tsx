@@ -75,31 +75,28 @@ export function SocialPostList({
       setPage(initialPage)
       setLoading(false)
       setError(undefined)
-      // Static props are public. Fetch only reactions to hydrate the signed-in
-      // viewer's hearts, rather than fetching the entire feed again.
+      // Static props include public counts. Fetch only the viewer's liked IDs
+      // so personalization stays bounded even for popular posts.
       if (user) {
-        const contentIds = initialPage.posts.flatMap((post) => [
+        const postIds = initialPage.posts.flatMap((post) => [
           post.id,
           ...post.replyPreviews.map((reply) => reply.id),
         ])
-        if (!contentIds.length) setReactionViewer(user.id)
+        if (!postIds.length) setReactionViewer(user.id)
         else
-          void api(
-            'comment-reactions',
-            { contentType: 'social_post', contentIds },
-            { cache: 'no-store' }
-          )
-            .then((reactions) => {
+          void api('get-social-liked-posts', { postIds }, { cache: 'no-store' })
+            .then((likedPostIds) => {
               if (current !== generation.current) return
+              const likedIds = new Set(likedPostIds)
               const personalize = (post: SocialPost): SocialPost => {
-                const likes = reactions.filter(
-                  (r) => r.content_id === post.id && r.reaction_type === 'like'
-                )
+                const liked = !post.removed && likedIds.has(post.id)
                 return {
                   ...post,
-                  liked:
-                    !post.removed && likes.some((r) => r.user_id === user.id),
-                  likeCount: post.removed ? 0 : likes.length,
+                  liked,
+                  // A new like may not yet be included in the cached count.
+                  likeCount: post.removed
+                    ? 0
+                    : Math.max(post.likeCount, liked ? 1 : 0),
                   replyPreviews: post.replyPreviews.map(personalize),
                 }
               }

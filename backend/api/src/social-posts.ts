@@ -184,6 +184,21 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   return { post: posts[posts.length - 1], ancestors: posts.slice(0, -1) }
 }
 
+export const getSocialLikedPosts: APIHandler<'get-social-liked-posts'> = async (
+  { postIds },
+  auth
+) => {
+  if (!postIds.length) return []
+  const pg = createSupabaseDirectClient()
+  const rows = await pg.manyOrNone<{ content_id: string }>(
+    `select content_id from user_reactions
+    where user_id=$1 and content_id=any($2::text[])
+    and content_type='social_post' and reaction_type='like'`,
+    [auth.uid, postIds]
+  )
+  return rows.map((row) => row.content_id)
+}
+
 export const getSocialLikers: APIHandler<'get-social-likers'> = async ({
   id,
   cursor,

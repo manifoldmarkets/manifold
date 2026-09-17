@@ -29,6 +29,9 @@ import { ReportModal } from '../buttons/report-button'
 import { Modal } from '../layout/modal'
 import { SocialComposer } from './social-composer'
 import { SocialPostList } from './social-post-list'
+import { UserReactedItem } from '../contract/react-button'
+import { Tooltip } from '../widgets/tooltip'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function SocialPostCard({
   post,
@@ -352,7 +355,23 @@ export function SocialPostCard({
                     {replyCountButton}
                   </div>
                 )}
-                <div className="flex items-center">
+                <Tooltip
+                  text={
+                    likeCount > 0 ? (
+                      <SocialLikersPreview
+                        id={post.id}
+                        busy={busy}
+                        onShowAll={() => setLikersOpen(true)}
+                      />
+                    ) : (
+                      'Like'
+                    )
+                  }
+                  placement="bottom"
+                  noTap
+                  hasSafePolygon={likeCount > 0}
+                  className="flex items-center"
+                >
                   <button
                     aria-label={liked ? 'Unlike post' : 'Like post'}
                     aria-pressed={liked}
@@ -377,7 +396,7 @@ export function SocialPostCard({
                       {likeCount}
                     </button>
                   )}
-                </div>
+                </Tooltip>
               </div>
             </>
           )}
@@ -484,6 +503,62 @@ export function SocialPostCard({
     </article>
   )
 }
+function SocialLikersPreview({
+  id,
+  busy,
+  onShowAll,
+}: {
+  id: string
+  busy: boolean
+  onShowAll: () => void
+}) {
+  const [page, setPage] = useState<SocialLikerPage>()
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    setPage(undefined)
+    setError(false)
+    if (!busy)
+      void api('get-social-likers', { id, limit: 5 })
+        .then((page) => {
+          if (!cancelled) setPage(page)
+        })
+        .catch(() => {
+          if (!cancelled) setError(true)
+        })
+    return () => {
+      cancelled = true
+    }
+  }, [id, busy])
+  const shown = page
+    ? page.users.length <= 4
+      ? page.users
+      : page.users.slice(0, 3)
+    : []
+  return (
+    <div className="flex min-w-[6rem] flex-col items-start">
+      <div className="mb-1 font-bold">Like</div>
+      {!page && !error && (
+        <LoadingIndicator className="mx-auto my-2" size="sm" />
+      )}
+      {shown.map((user) => (
+        <UserReactedItem key={user.id} userInfo={user} />
+      ))}
+      {page && !page.users.length && <span>No likes yet.</span>}
+      {(error ||
+        page?.nextCursor ||
+        (page && page.users.length > shown.length)) && (
+        <button
+          className="text-primary-300 hover:text-primary-200 w-full text-left"
+          onClick={onShowAll}
+        >
+          {error ? 'View likes' : 'View all likes'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function SocialLikers({ id }: { id: string }) {
   const [page, setPage] = useState<SocialLikerPage>({
     users: [],

@@ -380,7 +380,7 @@ function UserReactedPopup(props: {
   )
 }
 
-function UserReactedItem(props: { userInfo: MultiUserLinkInfo }) {
+export function UserReactedItem(props: { userInfo: MultiUserLinkInfo }) {
   const { userInfo } = props
   return (
     <UserHovercard userId={userInfo.id}>

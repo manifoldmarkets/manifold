@@ -5052,6 +5052,14 @@ export const API = (_apiTypeCheck = {
     props: z.object({ id: z.string() }).strict(),
     returns: {} as SocialPostDetail,
   },
+  'get-social-liked-posts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z.object({ postIds: z.array(z.string()).max(100) }).strict(),
+    returns: [] as string[],
+  },
   'get-social-likers': {
     method: 'GET',
     visibility: 'undocumented',
