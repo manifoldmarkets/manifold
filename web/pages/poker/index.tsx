@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { PokerTableSummary, POKER_MINIMUM_MULTIPLIER } from 'common/poker/types'
+import { APIResponse } from 'common/api/schema'
 import { formatMoney } from 'common/util/format'
 import { Page } from 'web/components/layout/page'
 import { Button } from 'web/components/buttons/button'
@@ -39,6 +40,9 @@ function PokerLobbyContent() {
   const router = useRouter()
   const [tables, setTables] = useState<PokerTableSummary[]>()
   const [yourTable, setYourTable] = useState<string>()
+  const [hostedTables, setHostedTables] = useState<
+    APIResponse<'list-poker-tables'>['hostedTables']
+  >([])
   const [enabled, setEnabled] = useState(true)
   const [ante, setAnte] = useState('1')
   const [busy, setBusy] = useState(false)
@@ -53,6 +57,7 @@ function PokerLobbyContent() {
           if (live) {
             setTables(r.tables)
             setYourTable(r.yourTableId)
+            setHostedTables(r.hostedTables ?? [])
             setEnabled(r.newHandsEnabled)
           }
         })
@@ -281,6 +286,42 @@ function PokerLobbyContent() {
             )}
           </div>
         </section>
+        {hostedTables.length > 0 && (
+          <section aria-labelledby="hosted-tables-heading">
+            <h2
+              id="hosted-tables-heading"
+              className="mb-3 text-lg font-semibold"
+            >
+              Your private rooms
+            </h2>
+            <div
+              className={clsx(
+                styles.panel,
+                'divide-ink-200 divide-y overflow-hidden'
+              )}
+            >
+              {hostedTables.map((table) => (
+                <Link
+                  key={table.id}
+                  href={`/poker/${table.id}`}
+                  className="hover:bg-canvas-50 flex items-center justify-between gap-4 p-4"
+                >
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold">
+                      {table.name}
+                    </h3>
+                    <p className="text-ink-500 mt-1 text-xs">
+                      {formatMoney(table.ante)} ante · You’re the host
+                    </p>
+                  </div>
+                  <span className="text-primary-600 inline-flex shrink-0 items-center gap-2 text-sm font-medium">
+                    Open room <ArrowRightIcon className="h-4 w-4" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
         <section
           className={clsx(styles.panel, styles.privateRoom)}
           aria-labelledby="create-table-heading"

@@ -77,6 +77,7 @@ export const pokerAPI = {
     returns: {} as {
       tables: PokerTableSummary[]
       yourTableId?: string
+      hostedTables: { id: string; name: string; ante: number }[]
       newHandsEnabled: boolean
     },
   },

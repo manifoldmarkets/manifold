@@ -591,6 +591,12 @@ export async function listPokerTables(uid?: string) {
       )
     : null
   const newHandsEnabled = await pokerEnabled(pg)
+  const hostedTables = uid
+    ? await pg.manyOrNone<{ id: string; name: string; ante: number }>(
+        "select id,name,ante from poker_tables where creator_id=$1 and visibility='private' and not closed order by created_time desc, id",
+        [uid]
+      )
+    : []
   return {
     tables: tables.map((t) =>
       summary(
@@ -601,6 +607,7 @@ export async function listPokerTables(uid?: string) {
       )
     ),
     yourTableId: seat?.table_id,
+    hostedTables,
     newHandsEnabled,
   }
 }

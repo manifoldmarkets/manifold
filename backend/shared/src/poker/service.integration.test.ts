@@ -816,6 +816,41 @@ suite('poker database transactions', () => {
     expect(v.hand!.settlement).toBeDefined()
     expect(v.newHandsEnabled).toBe(false)
   })
+  it('lists every open private room for its creator, including unseated hosts', async () => {
+    const first = await make('private', 1)
+    const second = await make('private', 5)
+    const owner = await listPokerTables('u0')
+    expect(owner.yourTableId).toBeUndefined()
+    expect(owner.hostedTables).toHaveLength(2)
+    expect(owner.hostedTables.map((t) => t.id).sort()).toEqual(
+      [first.tableId, second.tableId].sort()
+    )
+    expect(owner.tables.map((t) => t.id)).toEqual(publicRooms.map((r) => r.id))
+    expect(
+      owner.hostedTables.every(
+        (t) => Object.keys(t).sort().join(',') === 'ante,id,name'
+      )
+    ).toBe(true)
+    expect((await listPokerTables('u1')).hostedTables).toEqual([])
+    expect((await listPokerTables()).hostedTables).toEqual([])
+
+    // A separate occupied seat must not hide any of the host's rooms.
+    const publicRoom = { tableId: publicRooms[0].id, accessToken: undefined }
+    await act(publicRoom, 'u0', { type: 'join' })
+    const seated = await listPokerTables('u0')
+    expect(seated.yourTableId).toBe(publicRoom.tableId)
+    expect(seated.hostedTables).toEqual(owner.hostedTables)
+
+    // The host can return with the saved invitation and close without sitting.
+    await act(first, 'u0', { type: 'close' })
+    expect((await listPokerTables('u0')).hostedTables.map((t) => t.id)).toEqual(
+      [second.tableId]
+    )
+    await expect(getPokerTable(second.tableId)).rejects.toMatchObject({
+      code: 404,
+    })
+  })
+
   it('lists exactly the two permanent rooms and rejects user-created public rooms', async () => {
     await make('private')
     await make('public')

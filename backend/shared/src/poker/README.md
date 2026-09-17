@@ -8,7 +8,10 @@ invite; this grants no access to private reads or other actions. Only the hash i
 The lobby/table pages skip our pageview event and do not initiate third-party
 analytics scripts. Umami excludes URL fragments globally. Creation passes tokens
 through browser storage or an in-memory fallback, never an SPA navigation URL.
-When storage is blocked, keep the invitation for access after a reload.
+When both storage APIs are blocked, the browser keeps the invitation fragment so
+reloads preserve access. The lobby lists all of the signed-in creator's open
+private rooms separately from their occupied seat; reopening still requires the
+saved invitation, and the listing exposes no access tokens.
 
 **Analytics follow-up:** scripts loaded on another page survive SPA navigation.
 The rich-text link renderer uses Next links for Manifold URLs, so an invitation

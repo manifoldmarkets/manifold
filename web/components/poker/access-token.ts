@@ -40,8 +40,10 @@ export function restorePokerToken(id: string) {
   }
   token ??= memoryTokens.get(id)
   // Also migrate invitations saved by the earlier session-only implementation.
-  if (token) savePokerToken(id, token)
-  if (fragment) {
+  const saved = token ? savePokerToken(id, token) : false
+  // Module memory survives SPA navigation, but not a reload. Keep a valid
+  // invitation in the URL until one of the browser storage APIs accepts it.
+  if (fragment && (saved || !validToken(fragment))) {
     window.history.replaceState(
       window.history.state,
       '',
