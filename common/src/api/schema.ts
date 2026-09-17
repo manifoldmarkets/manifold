@@ -5039,6 +5039,10 @@ export const API = (_apiTypeCheck = {
       .object({
         parentId: z.string().optional(),
         ids: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+        forModeration: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
         useCache: z
           .enum(['true', 'false'])
           .transform((value) => value === 'true')
@@ -5051,6 +5055,10 @@ export const API = (_apiTypeCheck = {
         ({ ids, parentId, cursor, useCache }) =>
           !ids || (!parentId && !cursor && !useCache),
         'ID lookups cannot be combined with timeline pagination or caching'
+      )
+      .refine(
+        ({ forModeration, ids }) => !forModeration || !!ids,
+        'Moderation lookups require post IDs'
       ),
     returns: {} as SocialPostPage,
   },

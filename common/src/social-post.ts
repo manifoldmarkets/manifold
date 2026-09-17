@@ -1,10 +1,36 @@
 import { z } from 'zod'
 import { Contract } from './contract'
 import { DisplayUser } from './api/user-types'
+import { FIREBASE_CONFIG } from './envs/constants'
 
 export const SOCIAL_POST_MAX_LENGTH = 2000
 export const SOCIAL_POST_MAX_MARKETS = 5
 export const SOCIAL_POST_MAX_IMAGES = 4
+
+// Match the download URLs returned by uploadPublicImage, including the bucket.
+// Trusting the Firebase hostname alone would allow attacker-owned buckets.
+export function isSocialImageUrl(value: string) {
+  try {
+    const url = new URL(value)
+    const prefix = `/v0/b/${FIREBASE_CONFIG.storageBucket}/o/`
+    if (
+      url.origin !== 'https://firebasestorage.googleapis.com' ||
+      url.username ||
+      url.password ||
+      !url.pathname.startsWith(prefix) ||
+      url.searchParams.get('alt') !== 'media'
+    )
+      return false
+    const object = url.pathname.slice(prefix.length)
+    return (
+      !object.includes('/') &&
+      /^user-images\/[^/]+\/.+$/.test(decodeURIComponent(object))
+    )
+  } catch {
+    return false
+  }
+}
+
 export const socialPostContentSchema = z
   .object({
     text: z
@@ -20,13 +46,9 @@ export const socialPostContentSchema = z
       .default([]),
     imageUrls: z
       .array(
-        z
-          .string()
-          .url()
-          .max(2048)
-          .refine((url) => url.startsWith('https://'), {
-            message: 'Images must use HTTPS URLs',
-          })
+        z.string().url().max(2048).refine(isSocialImageUrl, {
+          message: 'Images must be uploaded to Manifold storage',
+        })
       )
       .max(SOCIAL_POST_MAX_IMAGES)
       .optional(),

@@ -25,6 +25,7 @@ import {
 import { SupabaseDirectClient } from './supabase/init'
 import { User } from 'common/user'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
+import { FIREBASE_CONFIG } from 'common/envs/constants'
 
 const post = {
   id: 'reply',
@@ -36,7 +37,8 @@ const post = {
 const db = (methods: Record<string, unknown>) =>
   methods as unknown as SupabaseDirectClient
 beforeEach(() => jest.clearAllMocks())
-test('hydrates attached images and hides them on removed or blocked posts', async () => {
+test('hides untrusted, removed, and blocked post images', async () => {
+  const image = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/user-images%2Fauthor%2Fyap%2Fimage.png?alt=media&token=test-token`
   for (const state of ['visible', 'deleted', 'blocked'] as const) {
     const row = {
       ...post,
@@ -45,7 +47,7 @@ test('hydrates attached images and hides them on removed or blocked posts', asyn
       parent_id: null,
       created_time: '2026-09-16 00:00:00+00',
       deleted_time: state === 'deleted' ? '2026-09-16 01:00:00+00' : null,
-      image_urls: ['https://example.com/a.png', 'https://example.com/b.png'],
+      image_urls: [image, 'https://tracker.example/pixel.png'],
     } as SocialRow
     const pg = db({
       manyOrNone: jest
@@ -64,43 +66,38 @@ test('hydrates attached images and hides them on removed or blocked posts', asyn
       },
       false
     )
-    expect(result.imageUrls).toEqual(state === 'visible' ? row.image_urls : [])
+    expect(result.imageUrls).toEqual(state === 'visible' ? [image] : [])
+    expect(result.removed).toBe(
+      state === 'visible' ? null : state === 'blocked' ? 'blocked' : 'author'
+    )
   }
 })
 test('membership comes from authoritative entitlements, and expiry does not block author access', async () => {
-  jest
-    .mocked(getUser)
-    .mockResolvedValue({
-      id: 'u',
-      entitlements: [
-        { enabled: true, entitlementId: SUPPORTER_TIERS.basic.id },
-      ],
-    } as User)
+  jest.mocked(getUser).mockResolvedValue({
+    id: 'u',
+    entitlements: [{ enabled: true, entitlementId: SUPPORTER_TIERS.basic.id }],
+  } as User)
   jest.mocked(getActiveSupporterEntitlements).mockResolvedValue([])
   await expect(socialAuthor('u', true)).rejects.toMatchObject({ code: 403 })
   await expect(socialAuthor('u')).resolves.toMatchObject({ id: 'u' })
   for (const tier of ['basic', 'plus', 'premium'] as const) {
-    jest
-      .mocked(getActiveSupporterEntitlements)
-      .mockResolvedValue([
-        {
-          enabled: true,
-          entitlementId: SUPPORTER_TIERS[tier].id,
-          grantedTime: 1,
-          userId: 'u',
-          autoRenew: false,
-        },
-      ])
+    jest.mocked(getActiveSupporterEntitlements).mockResolvedValue([
+      {
+        enabled: true,
+        entitlementId: SUPPORTER_TIERS[tier].id,
+        grantedTime: 1,
+        userId: 'u',
+        autoRenew: false,
+      },
+    ])
     await expect(socialAuthor('u', true)).resolves.toMatchObject({ id: 'u' })
   }
 })
 test('blocks work in both directions and protect root authors from nested replies', async () => {
-  jest
-    .mocked(getPrivateUser)
-    .mockResolvedValue({
-      blockedUserIds: ['a'],
-      blockedByUserIds: ['b', 'a'],
-    } as never)
+  jest.mocked(getPrivateUser).mockResolvedValue({
+    blockedUserIds: ['a'],
+    blockedByUserIds: ['b', 'a'],
+  } as never)
   expect((await getSocialViewer('u')).blocked).toEqual(['a', 'b'])
   const pg = db({
     oneOrNone: jest
@@ -166,30 +163,24 @@ test('social notifications suppress self, blocks, and opt-outs and use reply con
   const actor = { id: 'actor', name: 'Actor', username: 'actor' } as User
   await notifySocial(db({}), { ...post, user_id: 'actor' }, actor, 'like')
   expect(insertNotificationToSupabase).not.toHaveBeenCalled()
-  jest
-    .mocked(getPrivateUser)
-    .mockResolvedValue({
-      blockedUserIds: ['actor'],
-      blockedByUserIds: [],
-    } as never)
+  jest.mocked(getPrivateUser).mockResolvedValue({
+    blockedUserIds: ['actor'],
+    blockedByUserIds: [],
+  } as never)
   await notifySocial(db({}), post, actor, 'like')
   expect(insertNotificationToSupabase).not.toHaveBeenCalled()
-  jest
-    .mocked(getPrivateUser)
-    .mockResolvedValue({
-      blockedUserIds: [],
-      blockedByUserIds: [],
-      notificationPreferences: { opt_out_all: [], social_replies: [] },
-    } as never)
+  jest.mocked(getPrivateUser).mockResolvedValue({
+    blockedUserIds: [],
+    blockedByUserIds: [],
+    notificationPreferences: { opt_out_all: [], social_replies: [] },
+  } as never)
   await notifySocial(db({}), post, actor, 'reply', 'new-reply')
   expect(insertNotificationToSupabase).not.toHaveBeenCalled()
-  jest
-    .mocked(getPrivateUser)
-    .mockResolvedValue({
-      blockedUserIds: [],
-      blockedByUserIds: [],
-      notificationPreferences: { opt_out_all: [], social_replies: ['browser'] },
-    } as never)
+  jest.mocked(getPrivateUser).mockResolvedValue({
+    blockedUserIds: [],
+    blockedByUserIds: [],
+    notificationPreferences: { opt_out_all: [], social_replies: ['browser'] },
+  } as never)
   await notifySocial(
     db({
       oneOrNone: jest

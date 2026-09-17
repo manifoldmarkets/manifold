@@ -32,7 +32,9 @@ is run by the application or by the development tests.
   only that viewer's liked IDs. Blocked-user feeds, refreshes, pagination, and
   discussion reads bypass the cache; HTTP responses use `no-store`.
 - Plain text, up to 2,000 Unicode code points, five distinct public markets, and
-  four images. Image previews stay local until the user submits the post.
+  four images. Attachments must use the configured Firebase upload bucket;
+  reads also hide legacy external image URLs. Image previews stay local until
+  the user submits the post.
   Posts and replies may contain only attachments. Closed/resolved markets work.
 - Active membership (including the existing renewal grace period) is required
   for creation. Authors retain edit/delete access after membership expires;
@@ -76,4 +78,6 @@ Browser checks use temporary fixtures and mocked API responses, never a live
 Manifold write endpoint.
 
 Report screens fetch up to 50 Yap posts by ID through `get-social-posts` in one
-request, without ancestors or reply previews. ID lookups bypass the feed cache.
+request, without ancestors or reply previews. These requests use `forModeration`,
+which requires admin/moderator privileges and ignores personal blocks so reports
+remain actionable. Deleted content is still omitted. ID lookups bypass the feed cache.

@@ -148,8 +148,14 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
   props,
   auth
 ) => {
+  if (props.forModeration && !isAdminId(auth.uid) && !isModId(auth.uid))
+    throw new APIError(403, 'Only moderators can request moderation content')
   const pg = createSupabaseDirectClient()
-  const viewer = await getSocialViewer(auth.uid)
+  // Personal blocks must not hide evidence in the moderation queue. This mode
+  // is limited to explicit ID lookups and never enters the shared feed cache.
+  const viewer = props.forModeration
+    ? { id: auth.uid, blocked: [] }
+    : await getSocialViewer(auth.uid)
   if (props.ids) {
     const rows = await pg.manyOrNone<SocialRow>(
       'select * from social_posts where id=any($1::text[])',

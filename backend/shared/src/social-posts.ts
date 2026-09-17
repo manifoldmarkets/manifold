@@ -8,6 +8,7 @@ import { Notification } from 'common/notification'
 import {
   SocialPost,
   SocialPostSource,
+  isSocialImageUrl,
   socialPostPath,
   socialTimestamp,
   socialTimestampMillis,
@@ -292,7 +293,7 @@ export async function hydrateSocialPosts(
       id: row.id,
       author: displayUser(users.find((u) => u.id === row.user_id)),
       text: removed ? '' : row.text,
-      imageUrls: removed ? [] : row.image_urls ?? [],
+      imageUrls: removed ? [] : (row.image_urls ?? []).filter(isSocialImageUrl),
       createdTime: socialTimestamp(row.created_time),
       createdTimeMs: socialTimestampMillis(row.created_time),
       editedTimeMs: row.edited_time

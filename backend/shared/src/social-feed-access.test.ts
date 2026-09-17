@@ -11,6 +11,7 @@ jest.mock('api/helpers/rate-limit', () => ({
 
 import { Request, Response } from 'express'
 import { API } from 'common/api/schema'
+import { ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
 import { SocialPost, SocialPostPage } from 'common/social-post'
 import { AuthedUser, typedEndpoint } from 'api/helpers/endpoint'
 import { getSocialPosts, getSocialLikers } from 'api/social-posts'
@@ -200,4 +201,70 @@ test('liker pagination applies viewer blocks before limiting results', async () 
   manyOrNone.mockClear()
   expect(await read()).toEqual({ users: [], nextCursor: null })
   expect(manyOrNone).not.toHaveBeenCalled()
+})
+
+test('only admins and moderators can bypass personal blocks for report lookups', async () => {
+  const props = API['get-social-posts'].props.parse({
+    ids: ['reported'],
+    forModeration: 'true',
+  })
+  const hydrate = jest.mocked(hydrateSocialPosts)
+  hydrate.mockClear()
+  await expect(
+    getSocialPosts(props, { uid: 'ordinary-user' } as AuthedUser, {} as Request)
+  ).rejects.toMatchObject({ code: 403 })
+  expect(hydrate).not.toHaveBeenCalled()
+  const rows = [{ id: 'reported', user_id: 'blocked-author' }] as SocialRow[]
+  const manyOrNone = jest.fn().mockResolvedValue(rows)
+  jest
+    .mocked(createSupabaseDirectClient)
+    .mockReturnValue({ manyOrNone } as unknown as ReturnType<
+      typeof createSupabaseDirectClient
+    >)
+  jest
+    .mocked(getSocialViewer)
+    .mockImplementation(async (id) => ({ id, blocked: ['blocked-author'] }))
+  // Exercise the exact viewer passed to hydration, including normal reads by
+  // the same moderator: only the explicit moderation request bypasses blocks.
+  hydrate.mockImplementation(
+    async (_pg, _rows, viewer) =>
+      [
+        {
+          id: 'reported',
+          text: viewer.blocked.includes('blocked-author')
+            ? ''
+            : 'reported content',
+          removed: viewer.blocked.includes('blocked-author') ? 'blocked' : null,
+        },
+      ] as SocialPost[]
+  )
+  for (const uid of [ENV_CONFIG.adminIds[0], MOD_IDS[0]]) {
+    const moderation = (await getSocialPosts(
+      props,
+      { uid } as AuthedUser,
+      {} as Request
+    )) as SocialPostPage
+    expect(moderation.posts[0]).toMatchObject({
+      text: 'reported content',
+      removed: null,
+    })
+    expect(hydrate).toHaveBeenLastCalledWith(
+      expect.anything(),
+      rows,
+      { id: uid, blocked: [] },
+      false
+    )
+    const normal = (await getSocialPosts(
+      API['get-social-posts'].props.parse({ ids: ['reported'] }),
+      { uid } as AuthedUser,
+      {} as Request
+    )) as SocialPostPage
+    expect(normal.posts[0]).toMatchObject({ text: '', removed: 'blocked' })
+  }
+  for (const params of [
+    { forModeration: 'true' },
+    { forModeration: 'true', ids: ['reported'], useCache: 'true' },
+    { forModeration: 'true', ids: ['reported'], parentId: 'thread' },
+  ])
+    expect(API['get-social-posts'].props.safeParse(params).success).toBe(false)
 })

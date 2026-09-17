@@ -267,9 +267,10 @@ const convertReports = async (
         ? run(db.from('old_posts').select().in('id', postIds))
         : Promise.resolve({ data: [] }),
       socialPostIds.length
-        ? api('get-social-posts', { ids: socialPostIds }).then(
-            (page) => page.posts
-          )
+        ? api('get-social-posts', {
+            ids: socialPostIds,
+            forModeration: 'true',
+          }).then((page) => page.posts)
         : Promise.resolve([]),
     ])
   const usersById = new Map(users.map((user) => [user.id, user]))

@@ -1,24 +1,30 @@
 import {
+  isSocialImageUrl,
   socialCursorSchema,
   socialPostContentSchema,
   socialTimestamp,
   socialTimestampMillis,
 } from './social-post'
 import { combineReactionNotifications, Notification } from './notification'
+import { FIREBASE_CONFIG } from './envs/constants'
+
+const imageUrl = (name: string) =>
+  `https://firebasestorage.googleapis.com/v0/b/${
+    FIREBASE_CONFIG.storageBucket
+  }/o/${encodeURIComponent(
+    `user-images/alice/yap/${name}.png`
+  )}?alt=media&token=test-token`
 
 describe('social post validation', () => {
-  test('accepts image-only posts with at most four HTTPS images', () => {
-    const imageUrls = Array.from(
-      { length: 4 },
-      (_, i) => `https://example.com/${i}.png`
-    )
+  test('accepts image-only posts with at most four managed uploads', () => {
+    const imageUrls = Array.from({ length: 4 }, (_, i) => imageUrl(String(i)))
     expect(
       socialPostContentSchema.parse({ text: '', imageUrls }).imageUrls
     ).toEqual(imageUrls)
     expect(
       socialPostContentSchema.safeParse({
         text: '',
-        imageUrls: [...imageUrls, 'https://example.com/5.png'],
+        imageUrls: [...imageUrls, imageUrl('5')],
       }).success
     ).toBe(false)
     for (const url of [
@@ -43,6 +49,43 @@ describe('social post validation', () => {
       socialPostContentSchema.parse({ text: 'remove images', imageUrls: [] })
         .imageUrls
     ).toEqual([])
+  })
+  test('rejects external hosts, foreign buckets, and forged Firebase URLs', () => {
+    const trusted = imageUrl('valid')
+    expect(isSocialImageUrl(trusted)).toBe(true)
+    const invalid = [
+      'https://tracker.example/pixel.png',
+      trusted.replace('https:', 'http:'),
+      trusted.replace(
+        'firebasestorage.googleapis.com',
+        'firebasestorage.googleapis.com.evil.example'
+      ),
+      trusted.replace(
+        'firebasestorage.googleapis.com',
+        'firebasestorage.googleapis.com@evil.example'
+      ),
+      trusted.replace('https://', 'https://attacker@'),
+      trusted.replace('googleapis.com/', 'googleapis.com:444/'),
+      trusted.replace(FIREBASE_CONFIG.storageBucket, 'attacker.appspot.com'),
+      trusted.replace(
+        FIREBASE_CONFIG.storageBucket,
+        FIREBASE_CONFIG.storageBucket + '.evil'
+      ),
+      trusted.replace('user-images%2Falice', 'private-images%2Falice'),
+      trusted.replace('user-images%2Falice%2Fyap%2Fvalid.png', '%XX'),
+      trusted.replace('alt=media', 'alt=json'),
+      trusted.replace(
+        'user-images%2Falice%2Fyap%2Fvalid.png',
+        'user-images%2F'
+      ),
+    ]
+    for (const url of invalid) {
+      expect(isSocialImageUrl(url)).toBe(false)
+      expect(
+        socialPostContentSchema.safeParse({ text: 'post', imageUrls: [url] })
+          .success
+      ).toBe(false)
+    }
   })
   test('accepts text or one to five distinct markets', () => {
     expect(
