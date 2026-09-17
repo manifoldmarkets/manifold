@@ -5,6 +5,7 @@ import { Avatar } from '../widgets/avatar'
 import { SocialImageCarousel } from './social-image-carousel'
 
 export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
+  if (quote.kind === 'market') return null
   if (quote.unavailable)
     return (
       <div className="border-ink-200 text-ink-600 mt-3 rounded-xl border p-3 text-sm">
@@ -16,18 +17,20 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
       ? 'Quoted comment'
       : quote.kind === 'bet'
       ? 'Shared trade'
-      : 'Quoted post'
+      : undefined
   return (
     <div
       data-social-quote
       className="border-ink-200 dark:border-ink-300 bg-canvas-50/60 mt-3 overflow-hidden rounded-xl border p-3"
     >
-      <Link
-        href={quote.url}
-        className="text-ink-600 mb-2 block text-xs hover:underline"
-      >
-        {label}
-      </Link>
+      {label && (
+        <Link
+          href={quote.url}
+          className="text-ink-600 mb-2 block text-xs hover:underline"
+        >
+          {label}
+        </Link>
+      )}
       {quote.author && (
         <Link
           href={`/${quote.author.username}`}

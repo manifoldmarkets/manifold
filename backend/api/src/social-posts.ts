@@ -49,6 +49,8 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         )
         await validateSocialMarkets(tx, content.marketIds)
         await validateSocialSource(tx, source, content.marketIds, viewer)
+        const marketSource =
+          source && 'contractId' in source ? source : undefined
         const row = await tx.one<SocialRow>(
           `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls, source_post_id)
       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *`,
@@ -58,9 +60,9 @@ export const createSocialPost: APIHandler<'create-social-post'> =
             content.text,
             parent?.id ?? null,
             parent?.root_id ?? id,
-            source && 'contractId' in source ? source.contractId : null,
-            source && 'contractId' in source ? source.commentId ?? null : null,
-            source && 'contractId' in source ? source.betId ?? null : null,
+            marketSource?.contractId ?? null,
+            marketSource?.commentId ?? null,
+            marketSource?.betId ?? null,
             content.imageUrls ?? [],
             source && 'postId' in source ? source.postId : null,
           ]

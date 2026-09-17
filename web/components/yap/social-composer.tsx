@@ -268,9 +268,7 @@ export function SocialComposer(props: {
               Uploading images…
             </p>
           )}
-          {shownQuote && shownQuote.kind !== 'market' && (
-            <SocialQuoteCard quote={shownQuote} />
-          )}
+          {shownQuote && <SocialQuoteCard quote={shownQuote} />}
           {!!markets.length && (
             <div className="my-3 space-y-2">
               {markets.map((m) => (

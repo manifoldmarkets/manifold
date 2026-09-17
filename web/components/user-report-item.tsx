@@ -159,9 +159,7 @@ export default function UserReportItem(props: {
               {contentType === 'social_post' ? (
                 <>
                   <SocialText text={String(text)} />
-                  {source && source.kind !== 'market' && (
-                    <SocialQuoteCard quote={source} />
-                  )}
+                  {source && <SocialQuoteCard quote={source} />}
                   {!!imageUrls?.length && (
                     <SocialImageCarousel
                       key={imageUrls.join('|')}

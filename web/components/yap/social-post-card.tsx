@@ -292,9 +292,7 @@ function SocialPostCardContent({
                 />
               )}
               <SocialLinkPreview text={post.text} />
-              {post.source && post.source.kind !== 'market' && (
-                <SocialQuoteCard quote={post.source} />
-              )}
+              {post.source && <SocialQuoteCard quote={post.source} />}
               <div className={post.markets.length ? 'mt-3 space-y-2' : ''}>
                 {post.markets
                   .slice(0, allMarkets ? SOCIAL_POST_MAX_MARKETS : 3)
