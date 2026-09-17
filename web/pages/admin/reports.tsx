@@ -266,16 +266,11 @@ const convertReports = async (
       postIds.length
         ? run(db.from('old_posts').select().in('id', postIds))
         : Promise.resolve({ data: [] }),
-      Promise.all(
-        socialPostIds.map(async (id) => {
-          try {
-            return (await api('get-social-post', { id })).post
-          } catch (e) {
-            if (e instanceof APIError && e.code === 404) return null
-            throw e
-          }
-        })
-      ),
+      socialPostIds.length
+        ? api('get-social-posts', { ids: socialPostIds }).then(
+            (page) => page.posts
+          )
+        : Promise.resolve([]),
     ])
   const usersById = new Map(users.map((user) => [user.id, user]))
   const marketsById = new Map(marketEntries)

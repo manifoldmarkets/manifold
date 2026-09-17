@@ -5038,6 +5038,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         parentId: z.string().optional(),
+        ids: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
         useCache: z
           .enum(['true', 'false'])
           .transform((value) => value === 'true')
@@ -5045,7 +5046,12 @@ export const API = (_apiTypeCheck = {
         cursor: socialCursorSchema.optional(),
         limit: z.coerce.number().int().min(1).max(30).default(20),
       })
-      .strict(),
+      .strict()
+      .refine(
+        ({ ids, parentId, cursor, useCache }) =>
+          !ids || (!parentId && !cursor && !useCache),
+        'ID lookups cannot be combined with timeline pagination or caching'
+      ),
     returns: {} as SocialPostPage,
   },
   'get-social-post': {
@@ -5055,14 +5061,6 @@ export const API = (_apiTypeCheck = {
     cache: 'no-store',
     props: z.object({ id: z.string() }).strict(),
     returns: {} as SocialPostDetail,
-  },
-  'get-social-liked-posts': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    cache: 'no-store',
-    props: z.object({ postIds: z.array(z.string()).max(100) }).strict(),
-    returns: [] as string[],
   },
   'get-social-likers': {
     method: 'GET',

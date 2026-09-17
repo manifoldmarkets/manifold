@@ -2,6 +2,7 @@ import {
   socialCursorSchema,
   socialPostContentSchema,
   socialTimestamp,
+  socialTimestampMillis,
 } from './social-post'
 import { combineReactionNotifications, Notification } from './notification'
 
@@ -94,6 +95,16 @@ describe('social post validation', () => {
     expect(
       socialCursorSchema.safeParse('2026-09-15T12:01:01.123Z|abc|extra').success
     ).toBe(false)
+  })
+  test('display timestamps truncate microseconds without changing cursor precision', () => {
+    const input = '2026-09-15 12:01:01.123456+00'
+    expect(socialTimestampMillis(input)).toBe(
+      Date.UTC(2026, 8, 15, 12, 1, 1, 123)
+    )
+    expect(socialTimestampMillis('2026-09-15 14:01:01.123456+02')).toBe(
+      socialTimestampMillis(input)
+    )
+    expect(socialTimestamp(input)).toContain('.123456')
   })
   test('groups likes by post identity even when text changes', () => {
     const a = {

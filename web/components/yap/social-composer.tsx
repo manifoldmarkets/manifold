@@ -42,7 +42,16 @@ export function SocialComposer(props: {
   const user = useUser()
   const input = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
-  const uploadInProgress = useRef(false)
+  const submitting = useRef(false)
+  const localImages = useRef(
+    new Map<string, { file: File; uploadedUrl?: string }>()
+  )
+  useEffect(
+    () => () => {
+      for (const url of localImages.current.keys()) URL.revokeObjectURL(url)
+    },
+    []
+  )
   const [text, setText] = useState(editing?.text ?? props.initialText ?? '')
   const [markets, setMarkets] = useState(
     editing?.markets ?? props.initialMarkets ?? []
@@ -57,13 +66,11 @@ export function SocialComposer(props: {
   useEffect(() => {
     if (props.focusOnMount) input.current?.focus()
   }, [props.focusOnMount, user?.id])
-  const parsed = socialPostContentSchema.safeParse({
-    text,
-    marketIds: markets.map((m) => m.id),
-    imageUrls: images,
-  })
-  async function addImages(files: File[]) {
-    if (!user || saving || uploadInProgress.current || !files.length) return
+  const canSubmit =
+    count <= SOCIAL_POST_MAX_LENGTH &&
+    !!(count || markets.length || images.length)
+  function addImages(files: File[]) {
+    if (!user || submitting.current || !files.length) return
     setError(undefined)
     if (images.length + files.length > SOCIAL_POST_MAX_IMAGES) {
       setError(`Attach up to ${SOCIAL_POST_MAX_IMAGES} images.`)
@@ -84,40 +91,50 @@ export function SocialComposer(props: {
       setError('Each image must be 20 MB or smaller.')
       return
     }
-    uploadInProgress.current = true
-    setUploading(true)
-    try {
-      const results = await Promise.allSettled(
-        files.map((file) => uploadPublicImage(user.username, file, 'yap'))
-      )
-      const uploaded = results.flatMap((result) =>
-        result.status === 'fulfilled' ? [result.value] : []
-      )
-      setImages((previous) => [...previous, ...uploaded])
-      const failure = results.find((result) => result.status === 'rejected')
-      if (failure?.status === 'rejected')
-        setError(
-          `Some images could not be uploaded: ${
-            failure.reason?.message ?? failure.reason
-          }. Please try again.`
-        )
-    } finally {
-      uploadInProgress.current = false
-      setUploading(false)
-    }
+    const urls = files.map((file) => {
+      const url = URL.createObjectURL(file)
+      localImages.current.set(url, { file })
+      return url
+    })
+    setImages((previous) => [...previous, ...urls])
   }
   async function submit() {
-    if (!parsed.success || saving || uploadInProgress.current) return
+    if (!canSubmit || !user || submitting.current) return
+    submitting.current = true
     setSaving(true)
     setError(undefined)
     try {
+      setUploading(images.some((url) => localImages.current.has(url)))
+      const uploads = await Promise.allSettled(
+        images.map(async (url) => {
+          const local = localImages.current.get(url)
+          if (!local) return url
+          // Reuse completed uploads if posting fails and the user retries.
+          local.uploadedUrl ??= await uploadPublicImage(
+            user.username,
+            local.file,
+            'yap'
+          )
+          return local.uploadedUrl
+        })
+      )
+      setUploading(false)
+      const imageUrls = uploads.map((result) => {
+        if (result.status === 'rejected') throw result.reason
+        return result.value
+      })
+      const content = socialPostContentSchema.parse({
+        text,
+        marketIds: markets.map((m) => m.id),
+        imageUrls,
+      })
       const post = editing
         ? await api('edit-social-post', {
             id: editing.id,
-            content: parsed.data,
+            content,
           })
         : await api('create-social-post', {
-            content: parsed.data,
+            content,
             parentId,
             source:
               source && markets.some((m) => m.id === source.contractId)
@@ -127,6 +144,8 @@ export function SocialComposer(props: {
       setText('')
       setMarkets([])
       setImages([])
+      for (const url of localImages.current.keys()) URL.revokeObjectURL(url)
+      localImages.current.clear()
       toast.success(
         <span>
           {editing
@@ -144,8 +163,10 @@ export function SocialComposer(props: {
       )
       onPosted(post)
     } catch (e) {
-      setError((e as Error).message)
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
+      submitting.current = false
+      setUploading(false)
       setSaving(false)
     }
   }
@@ -156,7 +177,7 @@ export function SocialComposer(props: {
         <div className="grow text-sm">
           <p className="text-ink-900 font-semibold">Join the conversation</p>
           <p className="text-ink-500">
-            Members can post and reply. Everyone can read and like.
+            Members can post and reply. All signed-in users can read and like.
           </p>
         </div>
         {user ? (
@@ -215,9 +236,11 @@ export function SocialComposer(props: {
                   <button
                     aria-label={`Remove image ${index + 1}`}
                     disabled={saving || uploading}
-                    onClick={() =>
+                    onClick={() => {
+                      URL.revokeObjectURL(url)
+                      localImages.current.delete(url)
                       setImages(images.filter((_, i) => i !== index))
-                    }
+                    }}
                     className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
                   >
                     <XIcon className="h-4 w-4" />
@@ -324,7 +347,7 @@ export function SocialComposer(props: {
               <Button
                 size="sm"
                 className="min-w-[76px] !rounded-full font-semibold"
-                disabled={!parsed.success || saving || uploading}
+                disabled={!canSubmit || saving || uploading}
                 loading={saving}
                 onClick={submit}
               >

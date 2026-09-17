@@ -50,11 +50,22 @@ export function SocialPostList({
               : 'false',
         })
         if (current !== generation.current) return
-        // Refresh every loaded reply page before updating so drafts on later
-        // replies stay mounted. A failed refresh leaves the whole list intact.
-        if (parentId && !cursor) {
-          const loadedCount = pageRef.current.posts.length
-          while (next.nextCursor && next.posts.length < loadedCount) {
+        // Publish the refreshed range atomically so later drafts stay mounted.
+        // Timeline inserts can push old posts past their previous page number.
+        if (!cursor) {
+          const loaded = pageRef.current.posts
+          const boundary = loaded[loaded.length - 1]
+          const needsMore = () => {
+            if (parentId) return next.posts.length < loaded.length
+            const last = next.posts[next.posts.length - 1]
+            return (
+              boundary &&
+              last &&
+              last.id !== boundary.id &&
+              last.createdTimeMs >= boundary.createdTimeMs
+            )
+          }
+          while (next.nextCursor && needsMore()) {
             const more = await api('get-social-posts', {
               parentId,
               cursor: next.nextCursor,

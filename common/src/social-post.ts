@@ -53,7 +53,9 @@ export type SocialPost = {
   id: string
   author: DisplayUser
   text: string
+  createdTimeMs: number
   createdTime: string
+  editedTimeMs: number | null
   editedTime: string | null
   parentAuthor: DisplayUser | null
   parentId: string | null
@@ -62,7 +64,11 @@ export type SocialPost = {
   markets: Contract[]
   imageUrls?: string[]
   unavailableMarketCount: number
-  source: { url: string; text: string } | null
+  source: {
+    kind: 'comment' | 'bet' | 'market'
+    url: string
+    text: string
+  } | null
   likeCount: number
   liked: boolean
   replyCount: number
@@ -93,3 +99,7 @@ export const socialPostPath = (id: string) => `/yap/${id}`
 // Preserve PostgreSQL microseconds while emitting browser-compatible ISO dates.
 export const socialTimestamp = (timestamp: string) =>
   timestamp.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00')
+
+// Display dates use milliseconds; cursor dates retain PostgreSQL precision.
+export const socialTimestampMillis = (timestamp: string) =>
+  Date.parse(socialTimestamp(timestamp).replace(/(\.\d{3})\d+/, '$1'))

@@ -183,7 +183,7 @@ export function SocialPostCard({
               href={socialPostPath(post.id)}
             >
               <RelativeTimestamp
-                time={Date.parse(post.createdTime)}
+                time={post.createdTimeMs}
                 shortened
                 useUseClient
                 className="text-ink-600"
@@ -191,7 +191,7 @@ export function SocialPostCard({
             </Link>
             {post.editedTime && !post.removed && (
               <span
-                title={new Date(post.editedTime).toLocaleString()}
+                title={new Date(post.editedTimeMs!).toLocaleString()}
                 className="text-ink-600 text-xs"
               >
                 edited
@@ -264,14 +264,14 @@ export function SocialPostCard({
                 />
               )}
               <SocialLinkPreview text={post.text} />
-              {post.source && post.source.text !== 'View original market' && (
+              {post.source && post.source.kind !== 'market' && (
                 <a
                   className="border-ink-200 dark:border-ink-300 bg-canvas-50/60 hover:bg-canvas-50 mt-3 block rounded-2xl border p-4 transition-colors"
                   href={post.source.url}
                 >
                   <span className="text-ink-600 mb-2 flex items-center gap-2 text-xs">
                     <ExternalLinkIcon className="h-3.5 w-3.5 shrink-0" />
-                    {post.source.url.includes('#')
+                    {post.source.kind === 'comment'
                       ? 'Quoted comment'
                       : 'Shared trade'}
                   </span>

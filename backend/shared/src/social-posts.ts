@@ -10,6 +10,7 @@ import {
   SocialPostSource,
   socialPostPath,
   socialTimestamp,
+  socialTimestampMillis,
 } from 'common/social-post'
 import { isSupporter } from 'common/supporter'
 import { convertContract } from 'common/supabase/contracts'
@@ -274,6 +275,7 @@ export async function hydrateSocialPosts(
     ) {
       const contract = convertContract(sourceMarket)
       source = {
+        kind: comment ? 'comment' : bet ? 'bet' : 'market',
         url:
           contractPath(contract) + (comment ? `#${row.source_comment_id}` : ''),
         text: comment
@@ -292,6 +294,10 @@ export async function hydrateSocialPosts(
       text: removed ? '' : row.text,
       imageUrls: removed ? [] : row.image_urls ?? [],
       createdTime: socialTimestamp(row.created_time),
+      createdTimeMs: socialTimestampMillis(row.created_time),
+      editedTimeMs: row.edited_time
+        ? socialTimestampMillis(row.edited_time)
+        : null,
       editedTime: row.edited_time ? socialTimestamp(row.edited_time) : null,
       parentAuthor: parent
         ? displayUser(users.find((u) => u.id === parent.user_id))

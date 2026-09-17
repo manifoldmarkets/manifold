@@ -150,6 +150,16 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const viewer = await getSocialViewer(auth.uid)
+  if (props.ids) {
+    const rows = await pg.manyOrNone<SocialRow>(
+      'select * from social_posts where id=any($1::text[])',
+      [props.ids]
+    )
+    return {
+      posts: await hydrateSocialPosts(pg, rows, viewer, false),
+      nextCursor: null,
+    }
+  }
   if (
     props.useCache &&
     !props.parentId &&
@@ -240,13 +250,6 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   return { post: posts[posts.length - 1], ancestors: posts.slice(0, -1) }
 }
 
-export const getSocialLikedPosts: APIHandler<'get-social-liked-posts'> = async (
-  { postIds },
-  auth
-) => {
-  return getSocialLikedPostIds(createSupabaseDirectClient(), auth.uid, postIds)
-}
-
 async function getSocialLikedPostIds(
   pg: SupabaseDirectClient,
   userId: string,
@@ -262,21 +265,23 @@ async function getSocialLikedPostIds(
   return rows.map((row) => row.content_id)
 }
 
-export const getSocialLikers: APIHandler<'get-social-likers'> = async ({
-  id,
-  cursor,
-  limit,
-}) => {
+export const getSocialLikers: APIHandler<'get-social-likers'> = async (
+  { id, cursor, limit },
+  auth
+) => {
   const pg = createSupabaseDirectClient()
   const post = await getSocialRow(pg, id)
-  if (post.deleted_time) return { users: [], nextCursor: null }
+  const viewer = await getSocialViewer(auth.uid)
+  if (post.deleted_time || viewer.blocked.includes(post.user_id))
+    return { users: [], nextCursor: null }
   const [time, userId] = cursor?.split('|') ?? []
   const rows = await pg.manyOrNone<DisplayUser & { created_time: string }>(
     `select u.id,u.name,u.username,coalesce(u.data->>'avatarUrl','') as "avatarUrl", r.created_time
     from user_reactions r join users u on u.id=r.user_id where r.content_id=$1 and r.content_type='social_post' and r.reaction_type='like'
     and ($2::timestamptz is null or (r.created_time,r.user_id)>($2::timestamptz,$3::text))
+    and not (r.user_id=any($5::text[]))
     order by r.created_time,r.user_id limit $4`,
-    [id, time ?? null, userId ?? null, limit + 1]
+    [id, time ?? null, userId ?? null, limit + 1, viewer.blocked]
   )
   const page = rows.slice(0, limit)
   const last = page[page.length - 1]

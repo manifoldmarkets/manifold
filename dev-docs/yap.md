@@ -6,10 +6,14 @@ at `/yap/[postId]`. It replaces the Explore navigation entry, while `/explore`,
 
 ## Deployment
 
-Apply `backend/supabase/migrations/2026091501_social_posts.sql` before deploying
-the API and web changes. This additive migration creates `social_posts`, its
-ordered market associations, database write counters, and social reaction indexes.
-It does not backfill historical reposts. All social-table reads and writes go
+Apply these additive migrations in order before deploying the API and web changes:
+
+1. `backend/supabase/migrations/2026091501_social_posts.sql` creates `social_posts`,
+   ordered market associations, database write counters, and social reaction indexes.
+2. `backend/supabase/migrations/2026091601_social_post_images.sql` adds image URLs
+   and the four-image limit. Post creation requires this column even without images.
+
+The initial migration does not backfill historical reposts. All social-table reads and writes go
 through the API; RLS grants no direct client access. Existing `user_reactions`
 and `reports` storage is reused.
 
@@ -20,13 +24,15 @@ is run by the application or by the development tests.
 ## Behavior
 
 - Reading the feed, discussions, and liker lists requires sign-in. Logged-out
-  page visitors use the site's existing signed-out redirect. Posts are never
+  page visitors use the site's existing signed-out redirect. The signed-out mobile
+  Yap tab opens sign-in. Posts are never
   embedded in public static page props.
 - The API keeps one viewer-neutral initial page (30 posts) in memory per instance
   for 30 seconds, combining concurrent cache misses. Authenticated requests add
   only that viewer's liked IDs. Blocked-user feeds, refreshes, pagination, and
   discussion reads bypass the cache; HTTP responses use `no-store`.
-- Plain text, up to 2,000 Unicode code points and five distinct public markets.
+- Plain text, up to 2,000 Unicode code points, five distinct public markets, and
+  four images. Image previews stay local until the user submits the post.
   Posts and replies may contain only attachments. Closed/resolved markets work.
 - Active membership (including the existing renewal grace period) is required
   for creation. Authors retain edit/delete access after membership expires;
@@ -68,3 +74,6 @@ PostgreSQL runtime also exercised the migration and actual API query paths for
 pagination, replies, likes, source visibility, expiry, deletion, and rate limits.
 Browser checks use temporary fixtures and mocked API responses, never a live
 Manifold write endpoint.
+
+Report screens fetch up to 50 Yap posts by ID through `get-social-posts` in one
+request, without ancestors or reply previews. ID lookups bypass the feed cache.

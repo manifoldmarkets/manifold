@@ -5,7 +5,6 @@ import {
   getSocialPosts,
   getSocialPost,
   getSocialLikers,
-  getSocialLikedPosts,
 } from './social-posts'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
@@ -573,7 +572,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-social-posts': getSocialPosts,
   'get-social-post': getSocialPost,
   'get-social-likers': getSocialLikers,
-  'get-social-liked-posts': getSocialLikedPosts,
   'create-post': createPost,
   'update-post': updatePost,
   'update-post-comment': updatePostComment,

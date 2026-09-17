@@ -122,7 +122,7 @@ const signedOutNavigation = (prizePoolLabel: string | undefined) => [
   },
   {
     name: 'Yap',
-    href: '/yap',
+    onClick: firebaseLogin,
     icon: ChatAlt2Icon,
     solidIcon: ChatAlt2IconSolid,
     iconClassName: yapIconClassName,

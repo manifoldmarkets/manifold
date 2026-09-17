@@ -22,16 +22,6 @@ export const queryHandlers: QueryHandlers = {
     )
     return reactionsData
   },
-  'social_post-reactions': async ({ ids }: BatchQueryParams) => {
-    const { data } = await run(
-      db
-        .from('user_reactions')
-        .select()
-        .eq('content_type', 'social_post')
-        .in('content_id', Array.from(ids))
-    )
-    return data
-  },
   'post-reactions': async ({ ids }: BatchQueryParams) => {
     const { data: reactionsData } = await run(
       db

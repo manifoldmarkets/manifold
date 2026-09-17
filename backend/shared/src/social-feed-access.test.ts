@@ -2,6 +2,7 @@ jest.mock('./utils', () => ({ LOCAL_ONLY: true, log: { warn: jest.fn() } }))
 jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('./social-posts', () => ({
   getSocialViewer: jest.fn(),
+  getSocialRow: jest.fn(),
   hydrateSocialPosts: jest.fn(),
 }))
 jest.mock('api/helpers/rate-limit', () => ({
@@ -12,16 +13,20 @@ import { Request, Response } from 'express'
 import { API } from 'common/api/schema'
 import { SocialPost, SocialPostPage } from 'common/social-post'
 import { AuthedUser, typedEndpoint } from 'api/helpers/endpoint'
-import { getSocialPosts } from 'api/social-posts'
+import { getSocialPosts, getSocialLikers } from 'api/social-posts'
 import { createSupabaseDirectClient } from './supabase/init'
-import { getSocialViewer, hydrateSocialPosts } from './social-posts'
+import {
+  getSocialViewer,
+  getSocialRow,
+  hydrateSocialPosts,
+  SocialRow,
+} from './social-posts'
 
 test('Yap read endpoints reject anonymous requests before invoking handlers', async () => {
   for (const name of [
     'get-social-posts',
     'get-social-post',
     'get-social-likers',
-    'get-social-liked-posts',
   ] as const) {
     const handler = jest.fn()
     const next = jest.fn()
@@ -108,4 +113,91 @@ test('shared feed cache isolates viewer likes, expires, and bypasses blocks and 
   } finally {
     jest.useRealTimers()
   }
+})
+
+test('report ID lookups bypass the shared timeline cache and ancestor hydration', async () => {
+  const rows = [{ id: 'reported', created_time: '2026-09-16T00:00:00Z' }]
+  const manyOrNone = jest.fn().mockResolvedValue(rows)
+  jest
+    .mocked(createSupabaseDirectClient)
+    .mockReturnValue({ manyOrNone } as unknown as ReturnType<
+      typeof createSupabaseDirectClient
+    >)
+  jest
+    .mocked(getSocialViewer)
+    .mockResolvedValue({ id: 'admin', blocked: ['blocked'] })
+  const posts = [{ id: 'reported' }] as SocialPost[]
+  const hydrate = jest.mocked(hydrateSocialPosts).mockResolvedValue(posts)
+  const result = await getSocialPosts(
+    API['get-social-posts'].props.parse({ ids: ['reported', 'missing'] }),
+    { uid: 'admin' } as AuthedUser,
+    {} as Request
+  )
+  expect(result).toEqual({ posts, nextCursor: null })
+  expect(manyOrNone).toHaveBeenCalledTimes(1)
+  expect(hydrate).toHaveBeenLastCalledWith(
+    expect.anything(),
+    rows,
+    { id: 'admin', blocked: ['blocked'] },
+    false
+  )
+  for (const other of [
+    { useCache: 'true' },
+    { parentId: 'thread' },
+    { cursor: '2026-09-16T00:00:00Z|id' },
+  ]) {
+    expect(
+      API['get-social-posts'].props.safeParse({ ids: ['reported'], ...other })
+        .success
+    ).toBe(false)
+  }
+})
+
+test('liker pagination applies viewer blocks before limiting results', async () => {
+  const manyOrNone = jest.fn().mockResolvedValue([
+    {
+      id: 'visible',
+      name: 'Visible',
+      username: 'visible',
+      created_time: '2026-09-16 00:00:00.123456+00',
+    },
+    {
+      id: 'next',
+      name: 'Next',
+      username: 'next',
+      created_time: '2026-09-16 00:00:01+00',
+    },
+  ])
+  jest
+    .mocked(createSupabaseDirectClient)
+    .mockReturnValue({ manyOrNone } as unknown as ReturnType<
+      typeof createSupabaseDirectClient
+    >)
+  jest
+    .mocked(getSocialViewer)
+    .mockResolvedValue({ id: 'viewer', blocked: ['blocked'] })
+  jest
+    .mocked(getSocialRow)
+    .mockResolvedValue({ user_id: 'author', deleted_time: null } as SocialRow)
+  const read = () =>
+    getSocialLikers(
+      { id: 'post', limit: 1 },
+      { uid: 'viewer' } as AuthedUser,
+      {} as Request
+    )
+  expect(await read()).toEqual({
+    users: [{ id: 'visible', name: 'Visible', username: 'visible' }],
+    nextCursor: '2026-09-16T00:00:00.123456+00:00|visible',
+  })
+  expect(getSocialViewer).toHaveBeenLastCalledWith('viewer')
+  expect(manyOrNone).toHaveBeenCalledWith(
+    expect.stringContaining('not (r.user_id=any($5::text[]))'),
+    ['post', null, null, 2, ['blocked']]
+  )
+  jest
+    .mocked(getSocialRow)
+    .mockResolvedValue({ user_id: 'blocked', deleted_time: null } as SocialRow)
+  manyOrNone.mockClear()
+  expect(await read()).toEqual({ users: [], nextCursor: null })
+  expect(manyOrNone).not.toHaveBeenCalled()
 })
