@@ -12,23 +12,17 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
         Original post unavailable.
       </div>
     )
-  const label =
-    quote.kind === 'comment'
-      ? 'Quoted comment'
-      : quote.kind === 'bet'
-      ? 'Shared trade'
-      : undefined
   return (
     <div
       data-social-quote
       className="border-ink-200 dark:border-ink-300 bg-canvas-50/60 mt-3 overflow-hidden rounded-xl border p-3"
     >
-      {label && (
+      {quote.kind === 'bet' && (
         <Link
           href={quote.url}
           className="text-ink-600 mb-2 block text-xs hover:underline"
         >
-          {label}
+          Shared trade
         </Link>
       )}
       {quote.author && (
