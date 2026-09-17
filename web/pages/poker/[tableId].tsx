@@ -87,8 +87,10 @@ export default function PokerTablePage() {
   const renderSeat = (index: number) => {
     const s = data?.seats.find((s) => s.seat === index)
     const previousPlayer = hand?.players.find((p) => p.seat === index)
+    // Settled hands remain available for results/history, but their former
+    // players must not occupy seats they have since left.
     const p =
-      !settled || !s || s.userId === previousPlayer?.userId
+      !settled || s?.userId === previousPlayer?.userId
         ? previousPlayer
         : undefined
     const isMe = p?.userId === user?.id || s?.userId === user?.id
@@ -119,7 +121,7 @@ export default function PokerTablePage() {
                 {p?.name ?? s?.name}
                 {isMe ? ' (you)' : ''}
               </span>
-              {hand?.dealer === index && (
+              {p && hand?.dealer === index && (
                 <span
                   className="bg-ink-100 rounded-full px-1 text-xs"
                   title="Dealer"
@@ -155,10 +157,11 @@ export default function PokerTablePage() {
                 ? 'Move locked'
                 : p && !settled
                 ? 'Choosing…'
-                : s?.leaving
-                ? 'Leaving'
                 : ''}
             </span>
+            {s?.leaving && (
+              <span className="text-ink-500 text-xs">Leaving after hand</span>
+            )}
             {last && (
               <span className="text-ink-400 text-xs">
                 Last: {last.move}
@@ -237,7 +240,9 @@ export default function PokerTablePage() {
               data.closing ||
               !data.newHandsEnabled) && (
               <p className="bg-canvas-0 border-ink-200 rounded-lg border p-3 text-sm">
-                {data.table.status === 'paused'
+                {data.table.status === 'closed'
+                  ? 'This table is closed.'
+                  : data.table.status === 'paused'
                   ? 'This table is paused for review. Committed mana remains in escrow.'
                   : data.closing
                   ? 'This table is closing. Any active hand will finish.'
@@ -464,7 +469,11 @@ export default function PokerTablePage() {
                             color="gray-outline"
                             onClick={() => act({ type: 'leave' })}
                           >
-                            {hand && !settled && me
+                            {host
+                              ? hand && !settled
+                                ? 'Leave and close after hand'
+                                : 'Leave and close table'
+                              : hand && !settled && me
                               ? 'Leave after hand'
                               : 'Leave seat'}
                           </Button>
@@ -475,7 +484,7 @@ export default function PokerTablePage() {
                           Your seat will be released after this hand.
                         </span>
                       )}
-                      {host && !data.table.started && (
+                      {host && !data.table.started && !data.closing && (
                         <Button
                           disabled={
                             busy || readyCount < 2 || !data.newHandsEnabled

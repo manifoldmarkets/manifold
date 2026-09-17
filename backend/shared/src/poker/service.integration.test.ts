@@ -427,7 +427,7 @@ suite('poker database transactions', () => {
       action: { type: 'leave' as const },
     }
     await expect(
-      getPokerTable(t.tableId, undefined, 'u0')
+      getPokerTable(t.tableId, undefined, 'u1')
     ).rejects.toMatchObject({ code: 404 })
     await expect(actPoker('u2', request)).rejects.toMatchObject({ code: 404 })
     for (const action of [
@@ -436,17 +436,17 @@ suite('poker database transactions', () => {
       { type: 'chat', text: 'hello' },
     ] as PokerAction[])
       await expect(
-        actPoker('u0', { ...request, action })
+        actPoker('u1', { ...request, action })
       ).rejects.toMatchObject({ code: 404 })
-    await actPoker('u0', request)
-    expect((await listPokerTables('u0')).yourTableId).toBeUndefined()
+    await actPoker('u1', request)
+    expect((await listPokerTables('u1')).yourTableId).toBeUndefined()
     const other = await make()
-    await act(other, 'u0', { type: 'join' })
-    await actPoker('u0', request)
-    expect((await listPokerTables('u0')).yourTableId).toBe(other.tableId)
+    await act(other, 'u1', { type: 'join' })
+    await actPoker('u1', request)
+    expect((await listPokerTables('u1')).yourTableId).toBe(other.tableId)
     expect(
       (await getPokerTable(t.tableId, t.accessToken)).seats.map((s) => s.userId)
-    ).toEqual(['u1'])
+    ).toEqual(['u0'])
   })
   it('queues invite-free departure until the current private hand settles', async () => {
     const t = await make('private')
@@ -461,6 +461,8 @@ suite('poker database transactions', () => {
     await actPoker('u0', request)
     const view = await getPokerTable(t.tableId, t.accessToken, 'u0')
     expect(view.hand?.yourMove).toBe('rock')
+    expect(view.closing).toBe(true)
+    expect(view.table.status).toBe('playing')
     expect(view.seats.find((s) => s.userId === 'u0')?.leaving).toBe(true)
     await move(t, 'u1', 'paper')
     expect(
@@ -469,8 +471,87 @@ suite('poker database transactions', () => {
     ).toBe(2)
     expect((await listPokerTables('u0')).yourTableId).toBeUndefined()
     await actPoker('u0', request)
+    const closed = await getPokerTable(t.tableId, t.accessToken)
+    expect(closed.table.status).toBe('closed')
+    expect(closed.seats).toEqual([])
+    expect(closed.nextDealAt).toBeNull()
     expect(await total()).toBe(10_000)
   })
+  it.each(['public', 'private'] as const)(
+    'closes a %s table when the host leaves before dealing',
+    async (visibility) => {
+      const t = await make(visibility)
+      await seat(t)
+      const request = {
+        ...t,
+        requestId: randomUUID(),
+        version: 0,
+        action: { type: 'leave' as const },
+      }
+      await actPoker('u0', request)
+      await actPoker('u0', request)
+      const view = await getPokerTable(t.tableId, t.accessToken)
+      expect(view.table.status).toBe('closed')
+      expect(view.seats).toEqual([])
+      expect(view.hand).toBeNull()
+      expect(view.nextDealAt).toBeNull()
+      expect((await listPokerTables()).tables).toEqual([])
+      expect((await listPokerTables('u1')).yourTableId).toBeUndefined()
+      await expect(act(t, 'u2', { type: 'join' })).rejects.toMatchObject({
+        code: 409,
+      })
+      await due(t)
+      expect((await getPokerTable(t.tableId, t.accessToken)).hand).toBeNull()
+      expect(await total()).toBe(10_000)
+    }
+  )
+
+  it('keeps departed non-hosts in settled results but removes their seats', async () => {
+    const t = await make()
+    await deal(t)
+    await move(t, 'u0', 'rock')
+    await move(t, 'u1', 'paper')
+    await act(t, 'u1', { type: 'leave' })
+    const view = await getPokerTable(t.tableId)
+    expect(view.seats.map((s) => s.userId)).toEqual(['u0'])
+    expect(view.hand?.players.map((p) => p.userId)).toEqual(['u0', 'u1'])
+    expect(view.hand?.settlement).toBeDefined()
+    expect(view.closing).toBe(false)
+    expect((await listPokerTables()).tables[0].seats).toBe(1)
+    await act(t, 'u2', { type: 'join' })
+    expect(
+      (await getPokerTable(t.tableId)).seats.find((s) => s.seat === 1)?.userId
+    ).toBe('u2')
+    await act(t, 'u0', { type: 'leave' })
+    const closed = await getPokerTable(t.tableId)
+    expect(closed.table.status).toBe('closed')
+    expect(closed.seats).toEqual([])
+    expect(closed.hand?.settlement).toEqual(view.hand?.settlement)
+    expect((await listPokerTables()).tables).toEqual([])
+  })
+
+  it('finishes the hand when a host who joined mid-hand leaves', async () => {
+    const t = await make()
+    await deal(t, ['u1', 'u2'])
+    await act(t, 'u0', { type: 'join' })
+    await act(t, 'u0', { type: 'leave' })
+    const closing = await getPokerTable(t.tableId)
+    expect(closing.closing).toBe(true)
+    expect(closing.table.status).toBe('playing')
+    expect(closing.hand?.settlement).toBeUndefined()
+    expect(closing.seats.map((s) => s.userId)).toEqual(['u1', 'u2'])
+    await expect(act(t, 'u3', { type: 'join' })).rejects.toMatchObject({
+      code: 403,
+    })
+    await move(t, 'u1', 'rock')
+    await move(t, 'u2', 'paper')
+    const closed = await getPokerTable(t.tableId)
+    expect(closed.table.status).toBe('closed')
+    expect(closed.seats).toEqual([])
+    expect(closed.hand?.settlement?.payouts.u1).toBe(2)
+    expect(await total()).toBe(10_000)
+  })
+
   it('finishes a banned player’s current hand but collects no subsequent ante', async () => {
     const t = await make()
     await deal(t, ['u0', 'u1', 'u2'])

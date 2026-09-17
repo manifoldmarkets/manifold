@@ -878,6 +878,10 @@ export async function actPoker(
             [uid, a.ready]
           )
         } else if (a.type === 'leave') {
+          // The creator owns moderation and the private game's first start.
+          // Close on explicit departure rather than leave an unattended table.
+          // advance()/settle() defer closure until the current hand is paid out.
+          if (table.creator_id === uid) table.closing = true
           if (hand?.players.some((p) => p.userId === uid))
             await tx.none(
               'update poker_seats set leaving=true,auto_paper=true,ready=false,needs_minimum=true where user_id=$1',

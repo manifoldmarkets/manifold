@@ -80,6 +80,10 @@ export function PokerRules() {
           players can keep playing below that balance. Fractional mana stays in
           your wallet.
         </p>
+        <p>
+          Leaving during a hand takes effect after settlement. If the host
+          leaves, the table closes after the current hand finishes.
+        </p>
         <a
           className="text-primary-600 underline"
           href="https://rps.poker/#rules"

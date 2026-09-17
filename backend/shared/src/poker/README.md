@@ -60,6 +60,10 @@ remain. Whole-mana arithmetic leaves fractional wallet balances untouched.
 Voluntary departure uses `auto_paper` for subsequent unsubmitted moves; a host ban
 only queues departure, allowing the player to finish choosing in their active hand.
 An already accepted move is never changed by departure or moderation.
+If the creator explicitly leaves, the table closes after the current hand settles
+(or immediately between hands), releases all seats, and disappears from the public
+lobby. Settled hand participants remain in results/history but only current seat
+occupants are shown around the table.
 
 ## Operations
 
