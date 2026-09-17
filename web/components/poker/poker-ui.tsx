@@ -133,7 +133,8 @@ export function PokerRules() {
         </p>
         <p>
           Leaving during a hand takes effect after settlement. If the host
-          leaves, the table closes after the current hand finishes.
+          leaves a private table, it closes after the current hand finishes.
+          Public rooms stay open when players leave.
         </p>
         <a
           className="text-primary-600 underline"

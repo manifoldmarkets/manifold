@@ -7,6 +7,11 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import * as pgPromise from 'pg-promise'
 import { PokerAction } from 'common/poker/types'
+import { pokerAPI } from 'common/poker/api'
+jest.mock('common/envs/constants', () => ({
+  ...jest.requireActual('common/envs/constants'),
+  isAdminId: (id: string) => id === 'u9',
+}))
 
 let mockDb: pgPromise.IDatabase<{}>
 jest.mock('shared/supabase/init', () => {
@@ -40,6 +45,14 @@ const suite = url ? describe : describe.skip
 suite('poker database transactions', () => {
   let admin: pgPromise.IDatabase<{}>
   const database = `poker_test_${process.pid}_${Date.now()}`
+  const roomMigration = readFileSync(
+    resolve(
+      __dirname,
+      '../../../supabase/migrations/2026091701_permanent_poker_rooms.sql'
+    ),
+    'utf8'
+  )
+  let publicRooms: { id: string; name: string; ante: number }[]
   beforeAll(async () => {
     const parsed = new URL(url!)
     if (!['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname))
@@ -68,6 +81,10 @@ suite('poker database transactions', () => {
         'utf8'
       )
     )
+    await mockDb.none(roomMigration)
+    publicRooms = await mockDb.many(
+      'select id,name,ante from poker_tables where creator_id is null order by ante'
+    )
   })
   afterAll(async () => {
     await mockDb?.$pool.end()
@@ -88,6 +105,11 @@ suite('poker database transactions', () => {
           JSON.stringify({ name: `Player ${i}`, username: `player${i}` }),
         ]
       )
+    for (const room of publicRooms)
+      await mockDb.none(
+        "insert into poker_tables(id,name,ante,creator_id,visibility,started) values($1,$2,$3,null,'public',true)",
+        [room.id, room.name, room.ante]
+      )
     jest.clearAllMocks()
   })
   const make = async (
@@ -95,12 +117,21 @@ suite('poker database transactions', () => {
     ante = 1
   ) => {
     const accessToken = visibility === 'private' ? 'a'.repeat(64) : undefined
-    const { tableId } = await createPokerTable('u0', {
-      requestId: randomUUID(),
-      ante,
-      visibility,
-      accessToken,
-    })
+    const tableId: string = randomUUID()
+    if (visibility === 'private') {
+      await createPokerTable('u0', {
+        requestId: tableId,
+        ante,
+        visibility,
+        accessToken,
+      })
+    } else {
+      // Legacy public tables exercise arbitrary antes and retirement behavior.
+      await mockDb.none(
+        "insert into poker_tables(id,creator_id,name,visibility,ante,started) values($1,'u0','Legacy table','public',$2,true)",
+        [tableId, ante]
+      )
+    }
     return { tableId, accessToken }
   }
   type Access = Awaited<ReturnType<typeof make>>
@@ -252,7 +283,9 @@ suite('poker database transactions', () => {
     expect(paused.newHandsEnabled).toBe(false)
     expect(paused.nextDealAt).toBeNull()
     expect(paused.table.status).toBe('waiting')
-    expect((await listPokerTables()).tables[0].status).toBe('waiting')
+    expect((await getPokerTable(t.tableId, t.accessToken)).table.status).toBe(
+      'waiting'
+    )
     expect(paused.hand).toBeNull()
     expect(broadcast).not.toHaveBeenCalled()
     expect(broadcastUserUpdates).not.toHaveBeenCalled()
@@ -388,7 +421,9 @@ suite('poker database transactions', () => {
   it('isolates private tables, moves, cards, database reads, and public transactions', async () => {
     const t = await make('private')
     await deal(t)
-    expect((await listPokerTables()).tables).toEqual([])
+    expect((await listPokerTables()).tables.map((t) => t.id)).toEqual(
+      publicRooms.map((r) => r.id)
+    )
     await expect(getPokerTable(t.tableId)).rejects.toMatchObject({ code: 404 })
     await expect(
       getPokerTable(t.tableId, 'b'.repeat(64))
@@ -495,7 +530,9 @@ suite('poker database transactions', () => {
       expect(view.seats).toEqual([])
       expect(view.hand).toBeNull()
       expect(view.nextDealAt).toBeNull()
-      expect((await listPokerTables()).tables).toEqual([])
+      expect((await listPokerTables()).tables.map((t) => t.id)).toEqual(
+        publicRooms.map((r) => r.id)
+      )
       expect((await listPokerTables('u1')).yourTableId).toBeUndefined()
       await expect(act(t, 'u2', { type: 'join' })).rejects.toMatchObject({
         code: 409,
@@ -517,7 +554,7 @@ suite('poker database transactions', () => {
     expect(view.hand?.players.map((p) => p.userId)).toEqual(['u0', 'u1'])
     expect(view.hand?.settlement).toBeDefined()
     expect(view.closing).toBe(false)
-    expect((await listPokerTables()).tables[0].seats).toBe(1)
+    expect((await getPokerTable(t.tableId)).table.seats).toBe(1)
     await act(t, 'u2', { type: 'join' })
     expect(
       (await getPokerTable(t.tableId)).seats.find((s) => s.seat === 1)?.userId
@@ -527,7 +564,9 @@ suite('poker database transactions', () => {
     expect(closed.table.status).toBe('closed')
     expect(closed.seats).toEqual([])
     expect(closed.hand?.settlement).toEqual(view.hand?.settlement)
-    expect((await listPokerTables()).tables).toEqual([])
+    expect((await listPokerTables()).tables.map((t) => t.id)).toEqual(
+      publicRooms.map((r) => r.id)
+    )
   })
 
   it('finishes the hand when a host who joined mid-hand leaves', async () => {
@@ -776,5 +815,133 @@ suite('poker database transactions', () => {
     expect(v.hand!.number).toBe(1)
     expect(v.hand!.settlement).toBeDefined()
     expect(v.newHandsEnabled).toBe(false)
+  })
+  it('lists exactly the two permanent rooms and rejects user-created public rooms', async () => {
+    await make('private')
+    await make('public')
+    const lists = await Promise.all(
+      Array.from({ length: 5 }, () => listPokerTables('u0'))
+    )
+    for (const list of lists) {
+      expect(
+        list.tables.map((t) => [
+          t.ante,
+          t.minimumBalance,
+          t.creatorId,
+          t.started,
+        ])
+      ).toEqual([
+        [1, 100, null, true],
+        [100, 10000, null, true],
+      ])
+    }
+    const props = {
+      requestId: randomUUID(),
+      ante: 1,
+      visibility: 'public' as const,
+    }
+    expect(pokerAPI['create-poker-table'].props.safeParse(props).success).toBe(
+      false
+    )
+    expect(
+      pokerAPI['create-poker-table'].props.safeParse({
+        ...props,
+        visibility: 'private',
+      }).success
+    ).toBe(false)
+    await expect(createPokerTable('u0', props)).rejects.toMatchObject({
+      code: 400,
+    })
+    const privateProps = {
+      ...props,
+      visibility: 'private' as const,
+      accessToken: 'c'.repeat(64),
+    }
+    expect(pokerAPI['create-poker-table'].props.parse(privateProps)).toEqual(
+      privateProps
+    )
+    await createPokerTable('u0', privateProps)
+    await createPokerTable('u0', privateProps)
+    expect(
+      (await getPokerTable(props.requestId, privateProps.accessToken)).table
+        .started
+    ).toBe(false)
+  })
+
+  it('keeps public rooms open across departures, settlement, and subsequent deals', async () => {
+    const t = { tableId: publicRooms[0].id, accessToken: undefined }
+    await deal(t)
+    await act(t, 'u0', { type: 'leave' })
+    await move(t, 'u1', 'rock')
+    await act(t, 'u1', { type: 'leave' })
+    const empty = await getPokerTable(t.tableId)
+    expect(empty.hand?.settlement).toBeDefined()
+    expect(empty.closing).toBe(false)
+    expect(empty.table.status).toBe('waiting')
+    expect(empty.seats).toEqual([])
+    const next = await deal(t, ['u2', 'u3'])
+    expect(next.number).toBe(2)
+    expect(await total()).toBe(10000)
+  })
+
+  it('enforces the M100 room entry requirement and allows admins to moderate but not close it', async () => {
+    const t = { tableId: publicRooms[1].id, accessToken: undefined }
+    await expect(act(t, 'u0', { type: 'join' })).rejects.toMatchObject({
+      code: 403,
+    })
+    await mockDb.none(
+      "update users set balance=10000,total_deposits=10000 where id='u0'"
+    )
+    await act(t, 'u0', { type: 'join' })
+    await expect(act(t, 'u0', { type: 'close' })).rejects.toMatchObject({
+      code: 403,
+    })
+    await expect(act(t, 'u9', { type: 'close' })).rejects.toMatchObject({
+      code: 403,
+    })
+    await expect(
+      act(t, 'u0', { type: 'mute', userId: 'u1', enabled: true })
+    ).rejects.toMatchObject({ code: 403 })
+    await act(t, 'u9', { type: 'mute', userId: 'u1', enabled: true })
+    expect((await getPokerTable(t.tableId, undefined, 'u1')).viewer.muted).toBe(
+      true
+    )
+    await act(t, 'u9', { type: 'ban', userId: 'u0', enabled: true })
+    expect((await getPokerTable(t.tableId, undefined, 'u9')).seats).toEqual([])
+    await expect(
+      mockDb.none('update poker_tables set closed=true where id=$1', [
+        t.tableId,
+      ])
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      mockDb.none(
+        "insert into poker_tables(id,name,visibility,ante,started) values($1,'Duplicate','public',100,true)",
+        [randomUUID()]
+      )
+    ).rejects.toMatchObject({ code: '23505' })
+  })
+
+  it('retires legacy public rooms without touching active escrow', async () => {
+    const t = await make()
+    await deal(t)
+    const before = await getPokerTable(t.tableId, undefined, 'u0')
+    await mockDb.none(
+      'delete from poker_tables where creator_id is null; alter table poker_tables drop constraint poker_permanent_room_config; drop index poker_one_permanent_room_per_ante'
+    )
+    await mockDb.none(roomMigration)
+    const retiring = await getPokerTable(t.tableId, undefined, 'u0')
+    expect(retiring.closing).toBe(true)
+    expect(retiring.hand).toEqual(before.hand)
+    expect(await total()).toBe(10000)
+    await move(t, 'u0', 'rock')
+    await move(t, 'u1', 'paper')
+    const closed = await getPokerTable(t.tableId)
+    expect(closed.table.status).toBe('closed')
+    expect(closed.hand?.settlement).toBeDefined()
+    expect(closed.seats).toEqual([])
+    expect((await listPokerTables()).tables.map((t) => t.ante)).toEqual([
+      1, 100,
+    ])
+    expect(await total()).toBe(10000)
   })
 })

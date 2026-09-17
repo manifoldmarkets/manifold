@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/outline'
 import styles from 'web/components/poker/poker.module.css'
 import { POKER_STREETS } from 'common/poker/types'
+import { isAdminId } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { Page } from 'web/components/layout/page'
 import { Button } from 'web/components/buttons/button'
@@ -79,10 +80,17 @@ function PokerTableContent() {
   const seat = data?.seats.find((s) => s.userId === user?.id)
   const me = hand?.players.find((p) => p.userId === user?.id)
   const host = data?.table.creatorId === user?.id
+  const moderator =
+    host || (data?.table.creatorId === null && !!user && isAdminId(user.id))
   const deadline = hand && !settled ? hand.deadline : data?.nextDealAt
   const seconds = deadline
     ? Math.max(0, Math.ceil((deadline - now - clockOffset) / 1000))
     : 0
+  const showCountdown =
+    !!deadline &&
+    data?.table.started &&
+    data.table.status !== 'closed' &&
+    data.table.status !== 'paused'
   const canMove =
     !!hand &&
     !settled &&
@@ -384,27 +392,35 @@ function PokerTableContent() {
                         {settled && <HandResult hand={hand} />}
                       </div>
                     )}
-                    <p className={styles.clock} role="status">
-                      {deadline && (
-                        <ClockIcon
-                          className="h-3.5 w-3.5 shrink-0"
-                          aria-hidden
-                        />
-                      )}
-                      {data.table.status === 'closed'
-                        ? 'Table closed'
-                        : data.table.status === 'paused'
-                        ? 'Hand paused'
-                        : !data.table.started
-                        ? 'The host will start when everyone is ready.'
-                        : deadline
-                        ? `${
-                            hand && !settled ? 'Choose within' : 'Next hand in'
-                          } ${seconds}s`
-                        : readyCount < 2
-                        ? 'Waiting for at least two ready players.'
-                        : 'Waiting to deal…'}
-                    </p>
+                    {showCountdown ? (
+                      <div
+                        className={styles.countdown}
+                        data-urgent={!!hand && !settled && seconds <= 5}
+                        role="timer"
+                        aria-live="off"
+                      >
+                        <ClockIcon className="h-5 w-5 shrink-0" aria-hidden />
+                        <span className={styles.countdownLabel}>
+                          {hand && !settled ? 'Reveal in' : 'Next hand in'}
+                        </span>
+                        <strong className={styles.countdownValue}>
+                          {seconds}
+                          <span>s</span>
+                        </strong>
+                      </div>
+                    ) : (
+                      <p className={styles.clock} role="status">
+                        {data.table.status === 'closed'
+                          ? 'Table closed'
+                          : data.table.status === 'paused'
+                          ? 'Hand paused'
+                          : !data.table.started
+                          ? 'The host will start when everyone is ready.'
+                          : readyCount < 2
+                          ? 'Waiting for at least two ready players.'
+                          : 'Waiting to deal…'}
+                      </p>
+                    )}
                   </div>
                 </section>
                 <section
@@ -743,10 +759,10 @@ function PokerTableContent() {
                     </Button>
                   </form>
                 </section>
-                {host && (
+                {moderator && (
                   <details className={clsx(styles.panel, 'p-4')}>
                     <summary className="cursor-pointer font-semibold">
-                      Host controls
+                      {host ? 'Host controls' : 'Moderation'}
                     </summary>
                     <div className="mt-3 space-y-3">
                       <label className="block text-sm">
@@ -794,16 +810,20 @@ function PokerTableContent() {
                         Players finish their active hand before removal. Muting
                         stops chat immediately.
                       </p>
-                      <Button
-                        size="sm"
-                        color="red-outline"
-                        disabled={
-                          busy || data.closing || data.table.status === 'closed'
-                        }
-                        onClick={() => act({ type: 'close' })}
-                      >
-                        Close after this hand
-                      </Button>
+                      {host && (
+                        <Button
+                          size="sm"
+                          color="red-outline"
+                          disabled={
+                            busy ||
+                            data.closing ||
+                            data.table.status === 'closed'
+                          }
+                          onClick={() => act({ type: 'close' })}
+                        >
+                          Close after this hand
+                        </Button>
+                      )}
                     </div>
                   </details>
                 )}

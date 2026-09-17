@@ -16,45 +16,36 @@
   border-radius: 18px;
   background: rgb(var(--color-canvas-0));
 }
+.lobby {
+  max-width: 1020px;
+  padding-top: 40px;
+}
 .hero {
   position: relative;
-  overflow: hidden;
-  min-height: 300px;
-  padding: 32px;
-  border-radius: 22px;
-  border: 1px solid rgb(var(--color-primary-300) / 0.4);
-  background: radial-gradient(
-      ellipse at 95% 10%,
-      rgb(var(--color-primary-400) / 0.18),
-      transparent 60%
-    ),
-    rgb(var(--color-canvas-50));
+  padding: 12px 0 28px;
+  border-bottom: 1px solid rgb(var(--color-ink-200) / 0.7);
 }
 .heroTitle {
-  position: relative;
-  z-index: 1;
-  margin-top: 16px;
-  font-size: clamp(36px, 4vw, 52px);
-  line-height: 1.05;
+  margin-top: 12px;
+  font-size: clamp(36px, 4vw, 48px);
+  line-height: 1.1;
   font-weight: 750;
   letter-spacing: -0.045em;
 }
 .heroCopy {
-  position: relative;
-  z-index: 1;
-  max-width: 280px;
-  margin-top: 16px;
+  max-width: 430px;
+  margin-top: 12px;
   color: rgb(var(--color-ink-600));
   font-size: 15px;
   line-height: 1.65;
 }
 .cardFan {
   position: absolute;
-  right: 30px;
-  bottom: 30px;
+  right: 32px;
+  top: 48px;
   display: flex;
-  transform: rotate(12deg);
-  filter: drop-shadow(0 12px 16px rgb(0 0 0 / 0.15));
+  transform: scale(1.2) rotate(12deg);
+  filter: drop-shadow(0 12px 16px rgb(0 0 0 / 0.12));
 }
 .cardFan > :first-child {
   transform: rotate(-22deg) translate(16px, 9px);
@@ -63,76 +54,122 @@
   transform: rotate(14deg) translate(-12px, 8px);
 }
 .heroFacts {
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 18px;
-  margin-top: 30px;
+  margin-top: 18px;
   font-size: 12px;
-  font-weight: 600;
-  color: rgb(var(--color-ink-600));
+  color: rgb(var(--color-ink-500));
 }
-.lobbyTop {
+.heroFacts span + span::before {
+  content: '·';
+  margin-right: 18px;
+  color: rgb(var(--color-ink-400));
+}
+.roomGrid {
   display: grid;
-  gap: 20px;
-}
-.create {
-  padding: 24px;
-}
-.visibility {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 10px;
-  background: rgb(var(--color-canvas-50));
-}
-.visibility button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 9px;
-  border-radius: 7px;
-  font-size: 13px;
-  color: rgb(var(--color-ink-600));
-}
-.visibility button[aria-pressed='true'] {
-  color: rgb(var(--color-primary-600));
-  background: rgb(var(--color-canvas-0));
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.09);
-}
-.tableRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  padding: 20px;
-  border-top: 1px solid rgb(var(--color-ink-200) / 0.6);
-  transition: background 150ms;
 }
-.tableRow:first-child {
-  border-top: 0;
+.roomGrid > p {
+  grid-column: 1 / -1;
 }
-.tableRow:hover {
-  background: rgb(var(--color-primary-500) / 0.04);
+.roomCard {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid rgb(var(--color-primary-300) / 0.4);
+  border-radius: 18px;
+  background: radial-gradient(
+      ellipse at 100% 0,
+      rgb(var(--color-primary-400) / 0.08),
+      transparent 70%
+    ),
+    rgb(var(--color-canvas-0));
+  transition: border-color 150ms, box-shadow 150ms;
 }
-.rowInfo {
+.roomCard:hover,
+.roomCard:focus-visible {
+  border-color: rgb(var(--color-primary-400));
+  box-shadow: 0 4px 20px rgb(var(--color-primary-500) / 0.1);
+  outline: 2px solid transparent;
+}
+.roomAnte {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0;
+  font-size: 40px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.roomAnte span {
+  color: rgb(var(--color-ink-500));
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.roomInfo {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 28px;
-  margin-top: 16px;
+  gap: 16px 32px;
 }
-.rowInfo dt {
+.roomInfo dt {
   color: rgb(var(--color-ink-500));
   font-size: 11px;
-  margin-bottom: 3px;
+  margin-bottom: 5px;
 }
-.rowInfo dd {
-  font-size: 13px;
+.roomInfo dd {
+  font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.roomAction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: rgb(var(--color-primary-500) / 0.1);
+  color: rgb(var(--color-primary-600));
+  font-size: 13px;
+  font-weight: 600;
+}
+.roomCard:hover .roomAction {
+  background: rgb(var(--color-primary-500) / 0.16);
+}
+.privateRoom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+}
+.privateIntro {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1 1 240px;
+}
+.privateIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgb(var(--color-canvas-50));
+  color: rgb(var(--color-ink-500));
+}
+.privateForm {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  gap: 14px;
 }
 .status {
   display: inline-flex;
@@ -155,16 +192,6 @@
   width: 5px;
   border-radius: 50%;
   background: currentColor;
-}
-.guideIcon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  color: rgb(var(--color-primary-600));
-  background: rgb(var(--color-primary-500) / 0.08);
 }
 .gameLayout {
   display: grid;
@@ -313,6 +340,40 @@
   font-size: 11px;
   line-height: 1.5;
 }
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 16px;
+  border: 1px solid rgb(var(--color-primary-400) / 0.5);
+  border-radius: 14px;
+  background: rgb(var(--color-canvas-0));
+  color: rgb(var(--color-primary-600));
+  box-shadow: 0 2px 12px rgb(var(--color-primary-500) / 0.12);
+}
+.countdownLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+.countdownValue {
+  min-width: 2.1ch;
+  font-size: 32px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.countdownValue span {
+  margin-left: 2px;
+  font-size: 16px;
+}
+.countdown[data-urgent='true'] {
+  border-color: rgb(239 68 68 / 0.6);
+  background: rgb(var(--color-canvas-0));
+  color: #ef4444;
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 0.12);
+}
 .controls {
   margin-top: 16px;
   padding: 18px;
@@ -406,9 +467,6 @@
   font-size: 17px;
 }
 @media (min-width: 1100px) {
-  .lobbyTop {
-    grid-template-columns: minmax(0, 1fr) 310px;
-  }
   .gameLayout {
     grid-template-columns: minmax(0, 1fr) 260px;
   }
@@ -447,41 +505,41 @@
   .page {
     padding: 20px 12px 88px;
   }
+  .lobby {
+    padding-top: 24px;
+  }
   .hero {
-    min-height: 265px;
-    padding: 24px;
+    padding: 4px 0 24px;
   }
   .heroCopy {
-    max-width: 210px;
+    max-width: 340px;
     font-size: 14px;
   }
   .cardFan {
-    right: 12px;
-    bottom: 65px;
-    opacity: 0.85;
-    transform: scale(0.8) rotate(12deg);
-    transform-origin: right;
+    display: none;
   }
-  .heroFacts {
-    font-size: 11px;
+  .roomGrid {
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
-  .create {
+  .roomCard {
     padding: 20px;
   }
-  .tableRow {
-    padding: 16px;
-    gap: 10px;
+  .roomAnte {
+    margin: 20px 0;
+    font-size: 36px;
+  }
+  .privateRoom {
+    padding: 20px;
+  }
+  .privateForm {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
   }
   .gameHeader {
     margin-bottom: 18px;
   }
   .chatBody {
     height: 220px;
-  }
-}
-@media (max-width: 360px) {
-  .cardFan {
-    display: none;
   }
 }

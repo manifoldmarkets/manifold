@@ -62,14 +62,10 @@ export const pokerAPI = {
           .min(1)
           .max(Math.floor(Number.MAX_SAFE_INTEGER / POKER_MINIMUM_MULTIPLIER))
           .default(1),
-        visibility: z.enum(['public', 'private']).default('public'),
-        accessToken: pokerAccess.accessToken,
+        visibility: z.literal('private').default('private'),
+        accessToken: pokerAccess.accessToken.unwrap(),
       })
-      .strict()
-      .refine(
-        (p) => (p.visibility === 'private' ? !!p.accessToken : !p.accessToken),
-        'Only private tables require an access token'
-      ),
+      .strict(),
     returns: {} as { tableId: string },
   },
   'list-poker-tables': {

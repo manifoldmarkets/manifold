@@ -1,5 +1,6 @@
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'node:crypto'
 import { APIError } from 'common/api/utils'
+import { isAdminId } from 'common/envs/constants'
 import {
   actingPlayers,
   canRock,
@@ -36,7 +37,7 @@ import { log } from 'shared/utils'
 
 type TableRow = {
   id: string
-  creator_id: string
+  creator_id: string | null
   name: string
   visibility: 'public' | 'private'
   ante: number
@@ -83,6 +84,8 @@ type HandRow = {
   settled: boolean
 }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
+const canModerate = (table: TableRow, uid: string) =>
+  table.creator_id === uid || (table.creator_id === null && isAdminId(uid))
 export function hasPokerAccess(
   table: Pick<TableRow, 'visibility' | 'access_hash'>,
   token?: string
@@ -523,6 +526,11 @@ export async function createPokerTable(
     accessToken?: string
   }
 ) {
+  if (props.visibility !== 'private' || !props.accessToken)
+    throw new APIError(
+      400,
+      'Only private rooms can be created. Choose a public room in the lobby.'
+    )
   const pg = createSupabaseDirectClient()
   await pg.tx({ tag: 'poker' }, async (tx) => {
     const wallets = await lockWallets(tx, [uid])
@@ -561,7 +569,7 @@ export async function createPokerTable(
         props.visibility,
         props.ante,
         accessHash,
-        props.visibility === 'public',
+        false,
       ]
     )
   })
@@ -575,7 +583,7 @@ export async function listPokerTables(uid?: string) {
   >(`select t.*, (select count(*)::int from poker_seats s where s.table_id=t.id) as seats,
     exists(select 1 from poker_hands h where h.table_id=t.id and not h.settled) as active,
     exists(select 1 from poker_hands h where h.table_id=t.id and h.settled) as settled
-    from poker_tables t where visibility='public' and not closed order by seats desc, created_time desc limit 100`)
+    from poker_tables t where visibility='public' and creator_id is null and not closed order by ante`)
   const seat = uid
     ? await pg.oneOrNone<{ table_id: string }>(
         'select table_id from poker_seats where user_id=$1',
@@ -635,7 +643,7 @@ export async function getPokerTable(
         )
       : null
     const moderation =
-      uid === table.creator_id
+      uid && canModerate(table, uid)
         ? await tx.manyOrNone<{
             userId: string
             name: string
@@ -784,8 +792,8 @@ export async function actPoker(
           if (!user || user.data.userDeleted)
             throw new APIError(403, 'Account unavailable')
           if (a.type === 'mute') {
-            if (table.creator_id !== uid)
-              throw new APIError(403, 'Only the table creator can do that')
+            if (!canModerate(table, uid))
+              throw new APIError(403, 'Only table moderators can do that')
             if (a.userId === uid)
               throw new APIError(400, 'You cannot moderate yourself')
             await tx.none(
@@ -919,8 +927,13 @@ export async function actPoker(
           // resolves the round in this same transaction.
           hand.moves[uid] = a.move
         } else {
-          if (table.creator_id !== uid)
-            throw new APIError(403, 'Only the table creator can do that')
+          if (!canModerate(table, uid))
+            throw new APIError(403, 'Only table moderators can do that')
+          if (
+            table.creator_id === null &&
+            (a.type === 'close' || a.type === 'start')
+          )
+            throw new APIError(403, 'Public rooms stay open automatically')
           if (a.type === 'start') {
             if (table.started) throw new APIError(409, 'Game already started')
             if (

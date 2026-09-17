@@ -77,7 +77,8 @@ export type PokerHandView = Omit<PokerHand, 'deck' | 'players' | 'moves'> & {
 export type PokerTableSummary = {
   id: string
   name: string
-  creatorId: string
+  // Permanent public rooms have no player host.
+  creatorId: string | null
   visibility: 'public' | 'private'
   ante: number
   minimumBalance: number

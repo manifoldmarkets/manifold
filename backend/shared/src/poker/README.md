@@ -1,6 +1,6 @@
 # RPS poker
 
-`/poker` is deliberately absent from navigation. Public tables are listed there;
+`/poker` is deliberately absent from navigation. The lobby always lists two permanent public rooms (M1 and M100 antes);
 private links carry a 256-bit access token in the URL fragment. The browser stores
 it in local storage (migrating older session storage) and removes the fragment; authorized POST reads carry it
 in the body. The lobby can release the signed-in account’s own seat without the
@@ -23,6 +23,10 @@ cannot enforce this. Never put a private link in tracking events.
 1. Apply `backend/supabase/migrations/2026091501_poker.sql` to the target database
    **before** deploying the API, scheduler, or mana-supply code. It adds tables;
    it does not change existing balances. Client roles have no direct access.
+   Then apply `2026091701_permanent_poker_rooms.sql` before deploying this version.
+   It seeds the two hostless public rooms, enforces one per ante, and queues legacy
+   public tables for closure after their active hands settle. Paused hands stay
+   paused for investigation. The API only allows users to create private rooms.
 2. Deploy common/shared, API, scheduler, and web together. The main scheduler
    job set includes `advance-poker`, which checks durable deadlines every second.
    Routine scheduler metadata/logging is sampled once per minute; failure reporting
@@ -30,7 +34,7 @@ cannot enforce this. Never put a private link in tracking events.
    Redis broadcasts are optional: two-second polling recovers missed notifications.
 3. Exercise public/private games on dev with separate accounts before production.
 
-Only the ante and visibility are configurable. The entry/resume requirement is
+Only private rooms can be created, with a configurable ante. Public antes are fixed at M1 and M100. The entry/resume requirement is
 always 100× ante. A seat's `needs_minimum` stays false across continuous hands and
 becomes true when sitting out or timing out. The balance is checked again at deal.
 The host starts a private table once; subsequent hands auto-deal. Active trading
@@ -60,7 +64,9 @@ remain. Whole-mana arithmetic leaves fractional wallet balances untouched.
 Voluntary departure uses `auto_paper` for subsequent unsubmitted moves; a host ban
 only queues departure, allowing the player to finish choosing in their active hand.
 An already accepted move is never changed by departure or moderation.
-If the creator explicitly leaves, the table closes after the current hand settles
+Public rooms have a null creator, stay open when emptied, and auto-deal whenever
+two eligible players are ready. Site admins can mute/ban there but cannot close them.
+If a private-table creator explicitly leaves, the table closes after the current hand settles
 (or immediately between hands), releases all seats, and disappears from the public
 lobby. Settled hand participants remain in results/history but only current seat
 occupants are shown around the table.
