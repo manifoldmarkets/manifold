@@ -13,6 +13,12 @@ export { type SupabaseClient } from 'common/supabase/utils'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
+    // Poker statements may contain a deck or access hash. Never log SQL,
+    // parameters, or driver error details from these transactions.
+    if (e?.ctx?.tag === 'poker' || /\bpoker_/.test(String(e?.query ?? ''))) {
+      log.error('Poker database operation failed', { code: err?.code })
+      return
+    }
     // Read more: https://node-postgres.com/apis/pool#error
     // Serialization failures (40001) are expected contention under the perp
     // engine's advisory-lock + SERIALIZABLE pattern and are retried by
