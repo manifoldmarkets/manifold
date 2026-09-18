@@ -1,3 +1,13 @@
+import {
+  socialPostDraftSchema,
+  hasSocialPostContent,
+  socialPostSourceSchema,
+  socialCursorSchema,
+  SocialPost,
+  SocialPostPage,
+  SocialPostDetail,
+  SocialLikerPage,
+} from '../social-post'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
@@ -2122,7 +2132,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentId: z.string(),
-        contentType: z.enum(['comment', 'contract', 'post']),
+        contentType: z.enum(['comment', 'contract', 'post', 'social_post']),
         commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
@@ -3391,7 +3401,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentIds: z.array(z.string()),
-        contentType: z.enum(['comment', 'contract']),
+        contentType: z.enum(['comment', 'contract', 'social_post']),
       })
       .strict(),
   },
@@ -5006,6 +5016,94 @@ export const API = (_apiTypeCheck = {
     },
   },
 
+  'create-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        content: socialPostDraftSchema,
+        parentId: z.string().optional(),
+        source: socialPostSourceSchema.optional(),
+      })
+      .strict()
+      .refine(
+        ({ content, source }) =>
+          hasSocialPostContent(content) || !!(source && 'postId' in source),
+        'Add text, a market, an image, or a quoted post'
+      ),
+    returns: {} as SocialPost,
+  },
+  'edit-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({ id: z.string(), content: socialPostDraftSchema })
+      .strict(),
+    returns: {} as SocialPost,
+  },
+  'delete-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as { success: true },
+  },
+  'get-social-posts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        parentId: z.string().optional(),
+        ids: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+        forModeration: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        useCache: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(30).default(20),
+      })
+      .strict()
+      .refine(
+        ({ ids, parentId, cursor, useCache }) =>
+          !ids || (!parentId && !cursor && !useCache),
+        'ID lookups cannot be combined with timeline pagination or caching'
+      )
+      .refine(
+        ({ forModeration, ids }) => !forModeration || !!ids,
+        'Moderation lookups require post IDs'
+      ),
+    returns: {} as SocialPostPage,
+  },
+  'get-social-post': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as SocialPostDetail,
+  },
+  'get-social-likers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        id: z.string(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(50).default(30),
+      })
+      .strict(),
+    returns: {} as SocialLikerPage,
+  },
   'admin-sports-resolve': {
     method: 'POST',
     visibility: 'undocumented',

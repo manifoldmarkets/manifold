@@ -14,6 +14,165 @@ export type Database = {
   }
   public: {
     Tables: {
+      social_posts: {
+        Row: {
+          id: string
+          user_id: string
+          text: string
+          image_urls: string[]
+          created_time: string
+          edited_time: string | null
+          parent_id: string | null
+          root_id: string
+          source_post_id: string | null
+          source_contract_id: string | null
+          source_comment_id: string | null
+          source_bet_id: string | null
+          deleted_time: string | null
+          deleted_by: string | null
+          removed_by_moderator: boolean
+        }
+        Insert: {
+          id: string
+          user_id: string
+          text: string
+          image_urls?: string[]
+          created_time?: string
+          edited_time?: string | null
+          parent_id?: string | null
+          root_id: string
+          source_post_id?: string | null
+          source_contract_id?: string | null
+          source_comment_id?: string | null
+          source_bet_id?: string | null
+          deleted_time?: string | null
+          deleted_by?: string | null
+          removed_by_moderator?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          text?: string
+          image_urls?: string[]
+          created_time?: string
+          edited_time?: string | null
+          parent_id?: string | null
+          root_id?: string
+          source_post_id?: string | null
+          source_contract_id?: string | null
+          source_comment_id?: string | null
+          source_bet_id?: string | null
+          deleted_time?: string | null
+          deleted_by?: string | null
+          removed_by_moderator?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_source_post_id_fkey'
+            columns: ['source_post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_root_id_fkey'
+            columns: ['root_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_source_contract_id_fkey'
+            columns: ['source_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_deleted_by_fkey'
+            columns: ['deleted_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_post_markets: {
+        Row: {
+          post_id: string
+          contract_id: string
+          position: number
+        }
+        Insert: {
+          post_id: string
+          contract_id: string
+          position: number
+        }
+        Update: {
+          post_id?: string
+          contract_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_post_markets_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_post_markets_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_write_limits: {
+        Row: {
+          user_id: string
+          action: string
+          window_start: string
+          count: number
+        }
+        Insert: {
+          user_id: string
+          action: string
+          window_start?: string
+          count?: number
+        }
+        Update: {
+          user_id?: string
+          action?: string
+          window_start?: string
+          count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_write_limits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       answers: {
         Row: {
           color: string | null

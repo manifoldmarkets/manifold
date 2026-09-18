@@ -308,7 +308,11 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'comment' || sourceType === 'love_comment') {
+  } else if (
+    sourceType === 'social_reply' ||
+    sourceType === 'comment' ||
+    sourceType === 'love_comment'
+  ) {
     return (
       <CommentNotification
         notification={notification}
@@ -1337,7 +1341,9 @@ function CommentNotification(props: {
   } = notification
 
   const reasonText =
-    reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
+    reason === 'social_replies' ||
+    reason === 'reply_to_users_answer' ||
+    reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
 
@@ -1375,7 +1381,7 @@ function CommentNotification(props: {
     >
       <div className="line-clamp-3">
         <NotificationUserLink
-          userId={sourceId}
+          userId={notification.data?.sourceUserId ?? sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
@@ -1627,7 +1633,9 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+        sourceType === 'social_post_like' ||
+        sourceType === 'comment_like' ||
+        sourceType === 'post_comment_like' ? (
           <Linkify text={sourceText} />
         ) : (
           <></>
@@ -1638,7 +1646,7 @@ function UserLikeNotification(props: {
       your
       {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
-        : sourceType === 'post_like'
+        : sourceType === 'post_like' || sourceType === 'social_post_like'
         ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}

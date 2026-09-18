@@ -36,6 +36,11 @@ module.exports = {
         'no-constant-condition': 'off',
       },
     },
+    {
+      files: ['**/*.test.ts'],
+      // Jest type-checks tests separately; they are excluded from the build.
+      parserOptions: { project: null },
+    },
   ],
   rules: {
     'linebreak-style': [
