@@ -1,4 +1,5 @@
 import { PerpSuggestion } from '../perps/suggestion'
+import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
 import { randomStringRegex } from 'common/util/random'
 import type { BrowsePersonalization } from 'common/browse-personalization'
@@ -2063,6 +2064,19 @@ export const API = (_apiTypeCheck = {
         openToContact: z.boolean(),
       })
       .strict(),
+  },
+  'get-mnx-invite-link': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z
+      .object({
+        feedId: z.string(),
+        location: z.enum(MNX_LINK_LOCATIONS),
+      })
+      .strict(),
+    returns: {} as { url: string },
   },
   'get-job-interest': {
     method: 'GET',

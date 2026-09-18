@@ -5,6 +5,7 @@ import {
   getMnxTradeTarget,
   mnxLinkContent,
   mnxLinkUrl,
+  mnxNavigationHref,
 } from './mnx-cta'
 
 it('offers every live MNX instrument a target, and nothing else', () => {
@@ -59,4 +60,92 @@ it('keeps the instrument page intact while tagging it', () => {
 
 it('never breaks a link it cannot parse', () => {
   expect(mnxLinkUrl('not a url', 'market page cta')).toBe('not a url')
+})
+
+it('encodes signed usernames without changing the destination or referral tags', () => {
+  const invite = {
+    username: 'a+b &雪',
+    token: '5cdf54ab0c52493c296c73a4b9259add',
+  }
+  const url = mnxLinkUrl(
+    'https://app.mnx.fi/trade/anthropic?theme=dark&u=old&t=old#book',
+    'market page cta',
+    invite
+  )
+  const parsed = new URL(url)
+  expect(parsed.searchParams.getAll('u')).toEqual([invite.username])
+  expect(parsed.searchParams.getAll('t')).toEqual([invite.token])
+  expect(parsed.searchParams.get('theme')).toBe('dark')
+  expect(parsed.searchParams.get('utm_source')).toBe('manifold')
+  expect(parsed.hash).toBe('#book')
+  expect(mnxLinkUrl(url, 'market page cta', invite)).toBe(url)
+})
+
+describe('MNX native navigation', () => {
+  const instrument = MNX_INSTRUMENTS[0]
+  const location = MNX_LINK_LOCATIONS[0]
+  const url = mnxLinkUrl(instrument.url, location)
+  const inviteUrl = mnxLinkUrl(instrument.url, location, {
+    username: 'Alice',
+    token: 'signed-token',
+  })
+  const props = {
+    url,
+    feedId: instrument.feedId,
+    location,
+    isNative: true,
+    authorized: true,
+    inviteUrl,
+  }
+
+  it('gives native onOpenWindow an external signed URL for every placement', () => {
+    for (const instrument of MNX_INSTRUMENTS) {
+      for (const location of MNX_LINK_LOCATIONS) {
+        const signed = mnxLinkUrl(instrument.url, location, {
+          username: 'Alice',
+          token: 'signed-token',
+        })
+        const href = mnxNavigationHref({
+          ...props,
+          feedId: instrument.feedId,
+          location,
+          inviteUrl: signed,
+        })
+        expect(href).toBe(signed)
+        expect(new URL(href!).origin).toBe('https://app.mnx.fi')
+      }
+    }
+  })
+
+  it('waits through a fresh WebView auth handoff before exposing the invite', () => {
+    const loading = { ...props, inviteUrl: undefined }
+    expect([
+      mnxNavigationHref({ ...loading, authorized: undefined }),
+      // Firebase initially reports no user before native transfers its session.
+      mnxNavigationHref({ ...loading, authorized: false }),
+      mnxNavigationHref({ ...loading, authorized: undefined }),
+      mnxNavigationHref({ ...loading, authorized: true }),
+      mnxNavigationHref(props),
+    ]).toEqual([undefined, undefined, undefined, undefined, inviteUrl])
+  })
+
+  it('withholds native links during auth or signing, including signing failures', () => {
+    expect(mnxNavigationHref({ ...props, authorized: false })).toBeUndefined()
+    expect(
+      mnxNavigationHref({ ...props, authorized: undefined })
+    ).toBeUndefined()
+    expect(
+      mnxNavigationHref({ ...props, inviteUrl: undefined })
+    ).toBeUndefined()
+  })
+
+  it('keeps the browser redirect and untracked links unchanged', () => {
+    const href = mnxNavigationHref({ ...props, isNative: false })
+    const redirect = new URL(href!, 'https://manifold.markets')
+    expect(redirect.pathname).toBe('/mnx')
+    expect(redirect.searchParams.get('feedId')).toBe(instrument.feedId)
+    expect(redirect.searchParams.get('location')).toBe(location)
+    expect(mnxNavigationHref({ ...props, location: undefined })).toBe(url)
+    expect(mnxNavigationHref({ ...props, feedId: 'btc-usd' })).toBe(url)
+  })
 })
