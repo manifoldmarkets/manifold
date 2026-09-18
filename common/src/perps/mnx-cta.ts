@@ -86,7 +86,7 @@ export const mnxLinkUrl = (
   }
 }
 
-/** Native's new-window handler only opens external URLs, never /mnx. */
+/** Signed-in users open their full invite directly, including in native. */
 export const mnxNavigationHref = (props: {
   url: string | undefined
   feedId: string | undefined
@@ -98,7 +98,7 @@ export const mnxNavigationHref = (props: {
   const { url, feedId, location, isNative, authorized, inviteUrl } = props
   const instrument = getMnxInstrument(feedId)
   if (!instrument || !location) return url
-  if (isNative) {
+  if (isNative || authorized) {
     // Native only displays the WebView for a signed-in user. Its initial false
     // auth state can precede the native session handoff, so it must also wait.
     // No href during auth/signing: tapping must never silently lose the invite

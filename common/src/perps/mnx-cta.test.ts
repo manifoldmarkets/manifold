@@ -81,7 +81,7 @@ it('encodes signed usernames without changing the destination or referral tags',
   expect(mnxLinkUrl(url, 'market page cta', invite)).toBe(url)
 })
 
-describe('MNX native navigation', () => {
+describe('MNX navigation', () => {
   const instrument = MNX_INSTRUMENTS[0]
   const location = MNX_LINK_LOCATIONS[0]
   const url = mnxLinkUrl(instrument.url, location)
@@ -98,24 +98,28 @@ describe('MNX native navigation', () => {
     inviteUrl,
   }
 
-  it('gives native onOpenWindow an external signed URL for every placement', () => {
-    for (const instrument of MNX_INSTRUMENTS) {
-      for (const location of MNX_LINK_LOCATIONS) {
-        const signed = mnxLinkUrl(instrument.url, location, {
-          username: 'Alice',
-          token: 'signed-token',
-        })
-        const href = mnxNavigationHref({
-          ...props,
-          feedId: instrument.feedId,
-          location,
-          inviteUrl: signed,
-        })
-        expect(href).toBe(signed)
-        expect(new URL(href!).origin).toBe('https://app.mnx.fi')
+  it.each([false, true])(
+    'gives signed-in users a direct invite URL (native: %s)',
+    (isNative) => {
+      for (const instrument of MNX_INSTRUMENTS) {
+        for (const location of MNX_LINK_LOCATIONS) {
+          const signed = mnxLinkUrl(instrument.url, location, {
+            username: 'Alice',
+            token: 'signed-token',
+          })
+          const href = mnxNavigationHref({
+            ...props,
+            isNative,
+            feedId: instrument.feedId,
+            location,
+            inviteUrl: signed,
+          })
+          expect(href).toBe(signed)
+          expect(new URL(href!).origin).toBe('https://app.mnx.fi')
+        }
       }
     }
-  })
+  )
 
   it('waits through a fresh WebView auth handoff before exposing the invite', () => {
     const loading = { ...props, inviteUrl: undefined }
@@ -139,8 +143,18 @@ describe('MNX native navigation', () => {
     ).toBeUndefined()
   })
 
-  it('keeps the browser redirect and untracked links unchanged', () => {
-    const href = mnxNavigationHref({ ...props, isNative: false })
+  it('withholds signed-in browser links until the invite is ready', () => {
+    expect(
+      mnxNavigationHref({ ...props, isNative: false, inviteUrl: undefined })
+    ).toBeUndefined()
+  })
+
+  it('keeps the signed-out browser redirect and untracked links unchanged', () => {
+    const href = mnxNavigationHref({
+      ...props,
+      isNative: false,
+      authorized: false,
+    })
     const redirect = new URL(href!, 'https://manifold.markets')
     expect(redirect.pathname).toBe('/mnx')
     expect(redirect.searchParams.get('feedId')).toBe(instrument.feedId)
