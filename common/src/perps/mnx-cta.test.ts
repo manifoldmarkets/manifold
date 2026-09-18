@@ -149,16 +149,25 @@ describe('MNX navigation', () => {
     ).toBeUndefined()
   })
 
-  it('keeps the signed-out browser redirect and untracked links unchanged', () => {
+  it('waits for browser auth before choosing a signed or unsigned URL', () => {
+    expect(
+      mnxNavigationHref({ ...props, isNative: false, authorized: undefined })
+    ).toBeUndefined()
+  })
+
+  it('gives signed-out browser visitors the direct tagged URL', () => {
     const href = mnxNavigationHref({
       ...props,
       isNative: false,
       authorized: false,
     })
-    const redirect = new URL(href!, 'https://manifold.markets')
-    expect(redirect.pathname).toBe('/mnx')
-    expect(redirect.searchParams.get('feedId')).toBe(instrument.feedId)
-    expect(redirect.searchParams.get('location')).toBe(location)
+    expect(href).toBe(url)
+    expect(new URL(href!).origin).toBe('https://app.mnx.fi')
+    expect(new URL(href!).searchParams.has('u')).toBe(false)
+    expect(new URL(href!).searchParams.has('t')).toBe(false)
+  })
+
+  it('keeps untracked links unchanged', () => {
     expect(mnxNavigationHref({ ...props, location: undefined })).toBe(url)
     expect(mnxNavigationHref({ ...props, feedId: 'btc-usd' })).toBe(url)
   })
