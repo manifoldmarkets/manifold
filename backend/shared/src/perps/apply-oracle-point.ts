@@ -3,6 +3,8 @@ import {
   shouldRefreshOracleHealth,
 } from 'common/perps/oracle-health'
 import { PerpContract } from 'common/contract'
+import { MINUTE_MS } from 'common/util/time'
+import { getMnxInstrument } from 'common/perps/mnx'
 import {
   decideOracleTransition,
   OraclePoint,
@@ -22,15 +24,30 @@ import { log } from 'shared/utils'
  * How far a contract's executable mark may fall behind the feed before a
  * failed apply is an incident rather than a skipped slot.
  *
- * Expressed as a fraction of the contract's own maxOraclePriceAgeMs so the
- * alert always lands BEFORE the market freezes at that threshold, whatever it
- * is set to. This is the signal nothing else provides: feed staleness reads
+ * Expressed as a fraction of the contract's own maxOraclePriceAgeMs so that
+ * on a long budget the alert lands BEFORE the market freezes at that
+ * threshold. This is the signal nothing else provides: feed staleness reads
  * oracle_prices, which the publisher has already written by the time apply
  * runs, and the stuck-feed detector reads inFlightSince, which is clear
  * because the poll itself completed. Both stay green while a single contract
  * silently stops tracking the price it executes against.
  */
 const APPLICATION_LAG_ALERT_FRACTION = 0.5
+/**
+ * MNX-only floor under the fraction above, so one skipped heartbeat does not
+ * page. Other feeds retain the fraction, including BTC's two-minute budget.
+ *
+ * At the moment an apply fails, the executable mark is at least one feed
+ * publication interval old — that is simply the age of the previous point.
+ * MNX publishes a heartbeat per instrument every ~150s against a 5-minute
+ * budget, so the 50% mark IS one interval: every dropped tick on those
+ * markets reported itself as "past the freshness budget" (anthropic paged 120
+ * times in three days of 2026-09 while never being more than one heartbeat
+ * behind). Five minutes means at least two consecutive MNX points failed to
+ * apply. On a budget this short the alert now coincides with the freeze
+ * rather than preceding it; that is the accepted trade-off.
+ */
+const MNX_APPLICATION_LAG_ALERT_MIN_MS = 5 * MINUTE_MS
 
 /**
  * Apply a newly published oracle point to every live market on its feed.
@@ -235,8 +252,12 @@ export const applyOraclePointToLivePerps = async (
         contract.oraclePriceTime == null
           ? Number.POSITIVE_INFINITY
           : Date.now() - contract.oraclePriceTime
-      const lagBudget =
-        contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION
+      const lagBudget = Math.max(
+        contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION,
+        getMnxInstrument(contract.oracleFeedId)
+          ? MNX_APPLICATION_LAG_ALERT_MIN_MS
+          : 0
+      )
 
       // A single bounded tick giving up its slot is the design working, and
       // the next tick is already due with a better price — that should not
@@ -248,8 +269,12 @@ export const applyOraclePointToLivePerps = async (
       if (bounds != null && isOracleTickTimeout(err) && markAge < lagBudget) {
         log.warn(message)
       } else if (markAge >= lagBudget) {
+        const consequence =
+          markAge >= contract.maxOraclePriceAgeMs
+            ? 'trading is paused on this market until an apply succeeds'
+            : 'this market will stop trading if it keeps failing'
         log.error(
-          `${message} — executable mark is ${markAge}ms old, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; this market will stop trading if it keeps failing`
+          `${message} — executable mark is ${markAge}ms old, past ${lagBudget}ms of its ${contract.maxOraclePriceAgeMs}ms freshness budget; ${consequence}`
         )
       } else {
         log.error(message)
