@@ -348,6 +348,18 @@ export const getAnswerProbsError = (props: {
   if (Math.abs(total - 100) > ANSWER_PROB_SUM_TOLERANCE)
     return `Starting probabilities must add up to 100%, but they add up to ${rounded}%.`
 
+  // Validate the probabilities the pools will actually use. Scaling a total
+  // above 100% can otherwise push a 1% answer below the trading floor. Allow
+  // only machine-precision noise when comparing against the bounds.
+  if (
+    getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOtherAnswer).some(
+      (prob) =>
+        prob < MIN_CPMM_PROB - Number.EPSILON ||
+        prob > MAX_CPMM_PROB + Number.EPSILON
+    )
+  )
+    return `After normalization, each starting probability must be between ${MIN_ANSWER_PROB}% and ${MAX_ANSWER_PROB}%.`
+
   return undefined
 }
 

@@ -115,6 +115,33 @@ describe('getAnswerProbsError', () => {
     ).toContain('110')
   })
 
+  it.each([{ answerProbs: [50, 49.5, 1] }, { answerProbs: [99, 1, 1] }])(
+    'rejects $answerProbs when normalization crosses the lower bound',
+    ({ answerProbs }) => {
+      expect(getAnswerProbsError({ ...sumToOne, answerProbs })).toContain(
+        'After normalization'
+      )
+    }
+  )
+
+  it.each([
+    { answerProbs: [33, 33, 33] },
+    { answerProbs: [34, 34, 33] },
+    { answerProbs: [99, 1] },
+    { answerProbs: [1, 15.1, 48.2, 35.7] },
+  ])(
+    'accepts $answerProbs when normalized probabilities stay in bounds',
+    ({ answerProbs }) => {
+      expect(
+        getAnswerProbsError({
+          ...sumToOne,
+          numAnswers: answerProbs.length,
+          answerProbs,
+        })
+      ).toBeUndefined()
+    }
+  )
+
   it('rejects a count that does not match the answers', () => {
     expect(
       getAnswerProbsError({ ...sumToOne, answerProbs: [50, 50] })
@@ -152,12 +179,36 @@ describe('getAnswerProbsError', () => {
     ).toContain('Other')
   })
 
+  it.each([{ answerProbs: [99] }, { answerProbs: [1] }])(
+    'accepts $answerProbs with Other taking the bounded remainder',
+    ({ answerProbs }) => {
+      expect(
+        getAnswerProbsError({
+          ...sumToOne,
+          numAnswers: answerProbs.length,
+          hasOtherAnswer: true,
+          answerProbs,
+        })
+      ).toBeUndefined()
+    }
+  )
+
   it('does not constrain the sum for independent answers', () => {
     expect(
       getAnswerProbsError({
         ...sumToOne,
         shouldAnswersSumToOne: false,
         answerProbs: [80, 70, 60],
+      })
+    ).toBeUndefined()
+  })
+
+  it('does not normalize independent probabilities at the bounds', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        shouldAnswersSumToOne: false,
+        answerProbs: [99, 1, 1],
       })
     ).toBeUndefined()
   })
