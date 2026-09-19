@@ -4,6 +4,8 @@ import { SupabaseDirectClient } from '../supabase/init'
 import { runOracleUpdate } from './engine'
 import { publishPerpQuote } from './publish-perp-quote'
 import { applyOraclePointToLivePerps } from './apply-oracle-point'
+import { FAST_TICK_ORACLE_BOUNDS } from './oracle-tick-bounds'
+import { log } from '../utils'
 jest.mock('../utils', () => ({
   log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
 }))
@@ -93,3 +95,75 @@ it.each([false, true])(
     )
   }
 )
+
+describe('a bounded tick that loses its slot', () => {
+  const serializationFailure = Object.assign(
+    new Error(
+      'could not serialize access due to read/write dependencies among transactions'
+    ),
+    { code: '40001' }
+  )
+  const newPoint = { ts: now + 1000, sourceTs: now + 1000, price: 2104 }
+  const database = (oraclePriceTime: number) =>
+    ({
+      oneOrNone: jest.fn(async () => ({
+        ts: new Date(newPoint.ts).toISOString(),
+        source_ts: new Date(newPoint.ts).toISOString(),
+        price: 2104,
+      })),
+      manyOrNone: jest.fn(async () => [
+        {
+          data: {
+            ...contract,
+            oraclePriceTime,
+            oracleSourceTime: oraclePriceTime,
+            maxOraclePriceAgeMs: 5 * MINUTE_MS,
+          },
+        },
+      ]),
+    } as unknown as SupabaseDirectClient)
+
+  it('warns, not pages, when the mark is one publication interval old', async () => {
+    // MNX heartbeats every ~150s on a 5-minute budget: the previous mark is
+    // always ~150s old at the moment a tick fails. That is one skipped slot,
+    // not a market falling behind.
+    jest.mocked(runOracleUpdate).mockRejectedValue(serializationFailure)
+    await applyOraclePointToLivePerps(
+      database(now + 2000 - 150_000),
+      contract.oracleFeedId,
+      newPoint,
+      FAST_TICK_ORACLE_BOUNDS,
+      health
+    )
+    expect(log.warn).toHaveBeenCalledTimes(1)
+    expect(log.error).not.toHaveBeenCalled()
+  })
+
+  it('pages once the mark has been behind for five minutes', async () => {
+    jest.mocked(runOracleUpdate).mockRejectedValue(serializationFailure)
+    await applyOraclePointToLivePerps(
+      database(now + 2000 - 5 * MINUTE_MS),
+      contract.oracleFeedId,
+      newPoint,
+      FAST_TICK_ORACLE_BOUNDS,
+      health
+    )
+    expect(log.warn).not.toHaveBeenCalled()
+    expect(log.error).toHaveBeenCalledTimes(1)
+    expect(jest.mocked(log.error).mock.calls[0][0]).toMatch(
+      /trading is paused on this market/
+    )
+  })
+
+  it('still pages an unbounded caller immediately', async () => {
+    jest.mocked(runOracleUpdate).mockRejectedValue(serializationFailure)
+    await applyOraclePointToLivePerps(
+      database(now + 2000 - 150_000),
+      contract.oracleFeedId,
+      newPoint,
+      undefined,
+      health
+    )
+    expect(log.error).toHaveBeenCalledTimes(1)
+  })
+})
