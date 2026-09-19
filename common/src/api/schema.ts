@@ -15,7 +15,12 @@ import {
   PostComment,
   type ContractComment,
 } from 'common/comment'
-import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
+import {
+  AIGeneratedMarket,
+  Contract,
+  CREATEABLE_OUTCOME_TYPES,
+  MarketContract,
+} from 'common/contract'
 import { Dashboard } from 'common/dashboard'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -3602,7 +3607,11 @@ export const API = (_apiTypeCheck = {
         data: z.object({
           question: z.string(),
           description: z.any().optional(),
-          outcomeType: z.string(),
+          // The creatable types, not a free string. A draft is a market in
+          // progress, so a type create-market can never accept (PERP) has no
+          // business being saved as one — storing it produced a draft that
+          // looked creatable in the form and then failed at submit.
+          outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
           answers: z.array(z.string()).optional(),
           closeDate: z.string().optional(),
           closeHoursMinutes: z.string().optional(),

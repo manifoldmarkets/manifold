@@ -425,6 +425,12 @@ type AnyOutcomeType =
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
+// Outcome types a user can create through create-market. PERP is deliberately
+// absent: perps are created only by create-perp, which is admin-only, further
+// restricted to the official Manifold account, and limited to feeds in the
+// oracle registry — a perp with no data feed has nothing to price it. Listing
+// it here made PERP a valid draft outcomeType even though createMarketProps
+// can never accept it, so such a draft could only ever fail at submit.
 export const CREATEABLE_OUTCOME_TYPES = [
   'BINARY',
   'MULTIPLE_CHOICE',
@@ -435,7 +441,6 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'NUMBER',
   'MULTI_NUMERIC',
   'DATE',
-  'PERP',
 ] as const
 
 export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
