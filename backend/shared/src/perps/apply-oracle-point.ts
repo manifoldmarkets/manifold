@@ -4,6 +4,7 @@ import {
 } from 'common/perps/oracle-health'
 import { PerpContract } from 'common/contract'
 import { MINUTE_MS } from 'common/util/time'
+import { getMnxInstrument } from 'common/perps/mnx'
 import {
   decideOracleTransition,
   OraclePoint,
@@ -33,7 +34,8 @@ import { log } from 'shared/utils'
  */
 const APPLICATION_LAG_ALERT_FRACTION = 0.5
 /**
- * Floor under the fraction above, so one skipped slot can never page.
+ * MNX-only floor under the fraction above, so one skipped heartbeat does not
+ * page. Other feeds retain the fraction, including BTC's two-minute budget.
  *
  * At the moment an apply fails, the executable mark is at least one feed
  * publication interval old — that is simply the age of the previous point.
@@ -45,7 +47,7 @@ const APPLICATION_LAG_ALERT_FRACTION = 0.5
  * apply. On a budget this short the alert now coincides with the freeze
  * rather than preceding it; that is the accepted trade-off.
  */
-const APPLICATION_LAG_ALERT_MIN_MS = 5 * MINUTE_MS
+const MNX_APPLICATION_LAG_ALERT_MIN_MS = 5 * MINUTE_MS
 
 /**
  * Apply a newly published oracle point to every live market on its feed.
@@ -252,7 +254,9 @@ export const applyOraclePointToLivePerps = async (
           : Date.now() - contract.oraclePriceTime
       const lagBudget = Math.max(
         contract.maxOraclePriceAgeMs * APPLICATION_LAG_ALERT_FRACTION,
-        APPLICATION_LAG_ALERT_MIN_MS
+        getMnxInstrument(contract.oracleFeedId)
+          ? MNX_APPLICATION_LAG_ALERT_MIN_MS
+          : 0
       )
 
       // A single bounded tick giving up its slot is the design working, and

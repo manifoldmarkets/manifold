@@ -104,7 +104,10 @@ describe('a bounded tick that loses its slot', () => {
     { code: '40001' }
   )
   const newPoint = { ts: now + 1000, sourceTs: now + 1000, price: 2104 }
-  const database = (oraclePriceTime: number) =>
+  const database = (
+    oraclePriceTime: number,
+    overrides: Partial<PerpContract> = {}
+  ) =>
     ({
       oneOrNone: jest.fn(async () => ({
         ts: new Date(newPoint.ts).toISOString(),
@@ -118,6 +121,7 @@ describe('a bounded tick that loses its slot', () => {
             oraclePriceTime,
             oracleSourceTime: oraclePriceTime,
             maxOraclePriceAgeMs: 5 * MINUTE_MS,
+            ...overrides,
           },
         },
       ]),
@@ -147,6 +151,63 @@ describe('a bounded tick that loses its slot', () => {
       newPoint,
       FAST_TICK_ORACLE_BOUNDS,
       health
+    )
+    expect(log.warn).not.toHaveBeenCalled()
+    expect(log.error).toHaveBeenCalledTimes(1)
+    expect(jest.mocked(log.error).mock.calls[0][0]).toMatch(
+      /trading is paused on this market/
+    )
+  })
+
+  it.each([
+    ['btc-usd', 2 * MINUTE_MS, MINUTE_MS],
+    ['spyx-usd', 5 * MINUTE_MS, 150_000],
+  ])(
+    'pages %s at half its freshness budget before trading freezes',
+    async (oracleFeedId, maxOraclePriceAgeMs, markAge) => {
+      jest.mocked(runOracleUpdate).mockRejectedValue(serializationFailure)
+      await applyOraclePointToLivePerps(
+        database(now + 2000 - markAge, {
+          oracleFeedId,
+          maxOraclePriceAgeMs,
+        }),
+        oracleFeedId,
+        newPoint,
+        FAST_TICK_ORACLE_BOUNDS
+      )
+      expect(log.warn).not.toHaveBeenCalled()
+      expect(log.error).toHaveBeenCalledTimes(1)
+      expect(jest.mocked(log.error).mock.calls[0][0]).toMatch(
+        /this market will stop trading if it keeps failing/
+      )
+    }
+  )
+
+  it('warns on a BTC failure below half its freshness budget', async () => {
+    jest.mocked(runOracleUpdate).mockRejectedValue(serializationFailure)
+    await applyOraclePointToLivePerps(
+      database(now + 2000 - 30_000, {
+        oracleFeedId: 'btc-usd',
+        maxOraclePriceAgeMs: 2 * MINUTE_MS,
+      }),
+      'btc-usd',
+      newPoint,
+      FAST_TICK_ORACLE_BOUNDS
+    )
+    expect(log.warn).toHaveBeenCalledTimes(1)
+    expect(log.error).not.toHaveBeenCalled()
+  })
+
+  it('pages a BTC failure once trading has already frozen', async () => {
+    jest.mocked(runOracleUpdate).mockRejectedValue(serializationFailure)
+    await applyOraclePointToLivePerps(
+      database(now + 2000 - 3 * MINUTE_MS, {
+        oracleFeedId: 'btc-usd',
+        maxOraclePriceAgeMs: 2 * MINUTE_MS,
+      }),
+      'btc-usd',
+      newPoint,
+      FAST_TICK_ORACLE_BOUNDS
     )
     expect(log.warn).not.toHaveBeenCalled()
     expect(log.error).toHaveBeenCalledTimes(1)
