@@ -41,6 +41,7 @@ export async function sendUnseenMarketMovementNotifications() {
           join users u on pu.id = u.id
           join contracts c on lcn.contract_id = c.id
         where c.resolution is null
+          and c.deleted = false
     )
     select * from user_unseen_notifications
     where importance_rank <= ${MOVEMENTS_TO_SEND}

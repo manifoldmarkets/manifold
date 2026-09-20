@@ -145,6 +145,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           allWeeklyMoversContracts.find((c) => c.id === contractId)
         )
     ).filter((contract) => {
+      if (contract.deleted) return false
       // Exclude markets that resolved more than 7 days ago
       if (contract.resolutionTime) {
         return Date.now() - contract.resolutionTime < 7 * DAY_MS

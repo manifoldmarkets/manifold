@@ -53,6 +53,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
     const contract = await getContract(pg, contractId)
     if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
     if (contract.creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
+    if (contract.deleted && !isAdminId(auth.uid))
+      throw new APIError(403, 'Deleted markets cannot be edited')
 
     const launchDefinition =
       contract.outcomeType === 'PERP'
