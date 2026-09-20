@@ -1,3 +1,4 @@
+import { pokerAPI } from 'common/poker/api'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
@@ -134,6 +135,7 @@ type APIGenericSchema = {
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
+  ...pokerAPI,
   'refresh-all-clients': {
     method: 'POST',
     visibility: 'public',

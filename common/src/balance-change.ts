@@ -77,8 +77,7 @@ export const isPerpChange = (
 
 export const isTxnChange = (
   change: AnyBalanceChangeType
-): change is TxnBalanceChange =>
-  !('bet' in change) && !isPerpChange(change)
+): change is TxnBalanceChange => !('bet' in change) && !isPerpChange(change)
 
 export const BALANCE_CHANGE_TYPE_LABELS: Record<
   | (typeof BET_BALANCE_CHANGE_TYPES)[number]
@@ -115,6 +114,9 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   QUEST_REWARD: 'Quest reward',
   // Perp types
   perp_liquidation: 'Perp position liquidated',
+  POKER_CONTRIBUTION: 'Poker contribution',
+  POKER_REFUND: 'Poker refund',
+  POKER_PAYOUT: 'Poker winnings',
   PERP_OPEN_MARGIN: 'Opened perp position',
   PERP_CLOSE_PAYOUT: 'Closed perp position',
   PERP_TAKER_FEE: 'Perp trading fee',

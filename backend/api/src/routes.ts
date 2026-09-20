@@ -1,3 +1,10 @@
+import {
+  createPoker,
+  listPoker,
+  getPoker,
+  pokerAction,
+  setPokerEnabled,
+} from './poker'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
 import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
@@ -323,6 +330,11 @@ import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
+  'create-poker-table': createPoker,
+  'list-poker-tables': listPoker,
+  'get-poker-table': getPoker,
+  'act-poker': pokerAction,
+  'set-poker-enabled': setPokerEnabled,
   'refresh-all-clients': refreshAllClients,
   'recover-user': adminRecoverUser,
   'get-user-info': adminGetUserInfo,

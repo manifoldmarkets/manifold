@@ -1,3 +1,4 @@
+import { tickPoker } from 'shared/poker/service'
 import { compact } from 'lodash'
 
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
@@ -29,7 +30,7 @@ import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
-import { createJob as createCronJob, JobContext } from './helpers'
+import { createJob as createCronJob, JobContext, JobOptions } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
@@ -119,12 +120,16 @@ export function createJobs(jobSet: SchedulerJobSet) {
   const createJob = (
     name: string,
     schedule: string | null,
-    fn: (ctx: JobContext) => Promise<void>
+    fn: (ctx: JobContext) => Promise<void>,
+    options?: JobOptions
   ) =>
     jobSet === 'all' || PERP_JOB_NAMES.has(name) === (jobSet === 'perps')
-      ? createCronJob(name, schedule, fn)
+      ? createCronJob(name, schedule, fn, options)
       : null
   const jobs = compact([
+    createJob('advance-poker', '* * * * * *', tickPoker, {
+      bookkeepingIntervalMs: 60_000,
+    }),
     createJob(
       'auto-leagues-cycle',
       '0 */10 * * * *', // every 10 minutes
