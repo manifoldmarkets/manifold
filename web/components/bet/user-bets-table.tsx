@@ -11,7 +11,10 @@ import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
-import { getContractBetNullMetrics } from 'common/calculate'
+import {
+  getContractBetNullMetrics,
+  getDisplayProbability,
+} from 'common/calculate'
 import {
   Contract,
   contractPath,
@@ -34,7 +37,7 @@ import {
 } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, mapValues, partition, sortBy, sum, uniqBy } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -79,6 +82,7 @@ type BetSort =
   | 'liquidity'
   | 'priceDiff'
   | 'loan'
+  | 'prob'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -277,6 +281,8 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
     { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
     { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
+    { label: 'High %', field: 'prob', direction: 'desc' },
+    { label: 'Low %', field: 'prob', direction: 'asc' },
     {
       label: 'Highest Loan',
       field: 'loan',
@@ -544,6 +550,11 @@ const availableColumns: { value: BetSort; label: string; tooltip?: string }[] =
     },
   ]
 
+// The market-wide probability shown in each row, for markets that have one
+// (binary, pseudo-numeric, stonk). Multi-choice and perp markets have none.
+const getMarketProb = (contract: MarketContract) =>
+  contract.mechanism === 'cpmm-1' ? getDisplayProbability(contract) : undefined
+
 function BetsTable(props: {
   contracts: MarketContract[]
   metricsByContractId: { [key: string]: ContractMetric }
@@ -605,6 +616,7 @@ function BetsTable(props: {
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
+    prob: (c) => -(getMarketProb(c) ?? 0),
     priceDiff: (c) => {
       const metric = metricsByContractId[c.id]
       const lastProb = metric.lastProb
@@ -633,10 +645,17 @@ function BetsTable(props: {
   }
 
   const sortFunction = SORTS[sortOption.field]
-  const contracts =
-    sortOption.direction === 'desc'
-      ? sortBy(allContracts, sortFunction)
-      : sortBy(allContracts, sortFunction).reverse()
+  // Markets without a single % (multi-choice, perps) can't be ranked by
+  // probability, so they go after the ranked ones in either direction.
+  const [rankable, unrankable] =
+    sortOption.field === 'prob'
+      ? partition(allContracts, (c) => getMarketProb(c) !== undefined)
+      : [allContracts, []]
+  const sorted = sortBy(rankable, sortFunction)
+  const contracts = [
+    ...(sortOption.direction === 'desc' ? sorted : sorted.reverse()),
+    ...unrankable,
+  ]
 
   const visibleContracts = contracts.slice(0, displayCount)
 
