@@ -7,19 +7,12 @@ const MAX_DEPTH = 12
 const MAX_NODES = 1000
 const MAX_JSON_BYTES = 64 * 1024
 const MAX_TEXT_LENGTH = 2000
-const blockTypes = new Set([
-  'paragraph',
-  'bulletList',
-  'orderedList',
-  'blockquote',
-])
 const inlineTypes = new Set([
   'text',
   'hardBreak',
   'mention',
   'contract-mention',
 ])
-const markTypes = new Set(['bold', 'italic', 'strike', 'code', 'link'])
 
 const fail = (message: string): never => {
   throw new Error(message)
@@ -33,25 +26,21 @@ const createSocialRichContentSchema = (limitText: boolean) =>
         !serialized ||
         new TextEncoder().encode(serialized).length > MAX_JSON_BYTES
       )
-        fail('Formatted posts must be smaller than 64 KB')
+        fail('Post content must be smaller than 64 KB')
       let count = 0
       const normalize = (input: unknown, depth: number): SocialRichContent => {
         if (depth > MAX_DEPTH || ++count > MAX_NODES)
-          fail('Formatted post is too complex')
+          fail('Post content is too complex')
         if (!input || typeof input !== 'object' || Array.isArray(input))
-          return fail('Invalid formatted post node')
+          return fail('Invalid post content node')
         const node = input as JSONContent
         const type = node.type
         if (
           !type ||
-          (!blockTypes.has(type) &&
-            !inlineTypes.has(type) &&
-            type !== 'doc' &&
-            type !== 'listItem')
+          (!inlineTypes.has(type) && type !== 'doc' && type !== 'paragraph')
         )
           return fail('Unsupported post formatting')
-        if ((depth === 0) !== (type === 'doc'))
-          fail('Invalid formatted post document')
+        if ((depth === 0) !== (type === 'doc')) fail('Invalid post document')
         const result: SocialRichContent = { type }
         if (type === 'text') {
           if (typeof node.text !== 'string' || !node.text.length)
@@ -70,74 +59,21 @@ const createSocialRichContentSchema = (limitText: boolean) =>
             fail('Invalid post mention')
           result.attrs = { id, label }
         }
-        if (type === 'orderedList') {
-          const start = node.attrs?.start ?? 1
-          if (!Number.isInteger(start) || start < 1 || start > 1_000_000)
-            fail('Invalid list start')
-          result.attrs = { start }
-        }
-        if (node.marks !== undefined) {
-          if (
-            !inlineTypes.has(type) ||
-            !Array.isArray(node.marks) ||
-            node.marks.length > markTypes.size
-          )
-            fail('Invalid post formatting marks')
-          const seen = new Set<string>()
-          result.marks = node.marks
-            .map((mark) => {
-              if (!mark || !markTypes.has(mark.type) || seen.has(mark.type))
-                fail('Unsupported post formatting mark')
-              seen.add(mark.type)
-              if (mark.type !== 'link') return { type: mark.type }
-              const href = mark.attrs?.href
-              if (
-                typeof href !== 'string' ||
-                href.length > 2048 ||
-                !/^https?:\/\//i.test(href)
-              )
-                fail('Invalid post link')
-              const url = new URL(href)
-              if (
-                !['http:', 'https:'].includes(url.protocol) ||
-                url.username ||
-                url.password
-              )
-                fail('Post links must use HTTP or HTTPS')
-              return { type: 'link', attrs: { href } }
-            })
-            .filter(
-              (mark) =>
-                mark.type !== 'link' ||
-                (type !== 'mention' && type !== 'contract-mention')
-            )
-        }
+        if (node.marks !== undefined)
+          fail('Post content does not support formatting marks')
         if (inlineTypes.has(type)) {
           if (node.content?.length)
             fail('Inline post nodes cannot contain children')
         } else {
           if (node.content !== undefined && !Array.isArray(node.content))
-            fail('Invalid formatted post content')
+            fail('Invalid post content')
           const content = (node.content ?? []).map((child) =>
             normalize(child, depth + 1)
           )
           const allowed =
-            type === 'paragraph'
-              ? inlineTypes
-              : type === 'bulletList' || type === 'orderedList'
-              ? new Set(['listItem'])
-              : blockTypes
+            type === 'paragraph' ? inlineTypes : new Set(['paragraph'])
           if (content.some((child) => !allowed.has(child.type!)))
-            fail('Invalid formatted post structure')
-          if (type === 'listItem' && content[0]?.type !== 'paragraph')
-            fail('List items must start with a paragraph')
-          if (
-            (type === 'bulletList' ||
-              type === 'orderedList' ||
-              type === 'blockquote') &&
-            !content.length
-          )
-            fail('Post lists and quotes cannot be empty')
+            fail('Invalid post structure')
           result.content = content
         }
         return result
@@ -157,7 +93,7 @@ const createSocialRichContentSchema = (limitText: boolean) =>
       ctx.addIssue({
         code: 'custom',
         message:
-          error instanceof Error ? error.message : 'Invalid formatted post',
+          error instanceof Error ? error.message : 'Invalid post content',
       })
       return z.NEVER
     }

@@ -26,7 +26,8 @@ import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { Avatar } from '../widgets/avatar'
+import { SocialAvatar } from './social-avatar'
+import { SocialUserLink } from './social-user-link'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Button } from '../buttons/button'
 import { ReportModal } from '../buttons/report-button'
@@ -181,11 +182,7 @@ function SocialPostCardContent({
               className="bg-ink-200 dark:bg-ink-300 absolute -top-3 left-4 h-3 w-px"
             />
           )}
-          <Avatar
-            size="sm"
-            avatarUrl={post.author.avatarUrl}
-            username={post.author.username}
-          />
+          <SocialAvatar size="sm" user={post.author} />
           {connectedBelow && (
             <span
               aria-hidden="true"
@@ -195,15 +192,15 @@ function SocialPostCardContent({
         </div>
         <div className="min-w-0">
           <div className="mb-1 flex min-w-0 items-center gap-1 text-sm">
-            <Link
+            <SocialUserLink
+              user={post.author}
               className="text-ink-900 min-w-0 truncate font-bold hover:underline"
-              href={`/${post.author.username}`}
-            >
-              {post.author.name}
-            </Link>
-            <span className="text-ink-600 min-w-0 truncate">
-              @{post.author.username}
-            </span>
+            />
+            <SocialUserLink
+              user={post.author}
+              label="handle"
+              className="text-ink-600 min-w-0 truncate"
+            />
             <span className="text-ink-600" aria-hidden="true">
               ·
             </span>
@@ -251,14 +248,21 @@ function SocialPostCardContent({
             )}
           </div>
           {post.parentId && (
-            <Link
-              className="text-ink-600 mb-2 block text-xs hover:underline"
-              href={socialPostPath(post.parentId)}
-            >
-              {post.parentAuthor
-                ? `Replying to @${post.parentAuthor.username}`
-                : 'View parent post'}
-            </Link>
+            <div className="text-ink-600 mb-2 flex min-w-0 items-center gap-1 text-xs">
+              <Link
+                className="shrink-0 hover:underline"
+                href={socialPostPath(post.parentId)}
+              >
+                {post.parentAuthor ? 'Replying to' : 'View parent post'}
+              </Link>
+              {post.parentAuthor && (
+                <SocialUserLink
+                  user={post.parentAuthor}
+                  label="handle"
+                  className="min-w-0 truncate"
+                />
+              )}
+            </div>
           )}
           {post.removed ? (
             <>
@@ -315,9 +319,12 @@ function SocialPostCardContent({
                           {market.question}
                         </span>
                         <span className="text-ink-600 mt-1.5 flex min-w-0 items-center gap-1.5 text-xs">
-                          <Avatar
-                            username={market.creatorUsername}
-                            avatarUrl={market.creatorAvatarUrl}
+                          <SocialAvatar
+                            user={{
+                              id: market.creatorId,
+                              username: market.creatorUsername,
+                              avatarUrl: market.creatorAvatarUrl,
+                            }}
                             size="2xs"
                             noLink
                           />
@@ -622,18 +629,10 @@ function SocialLikers({ id }: { id: string }) {
     <div className="bg-canvas-0 max-h-[70vh] overflow-auto rounded-xl p-5">
       <h2 className="mb-4 text-lg font-semibold">Liked by</h2>
       {page.users.map((user) => (
-        <Link
-          key={user.id}
-          href={`/${user.username}`}
-          className="mb-3 flex items-center gap-3"
-        >
-          <Avatar
-            size="sm"
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-          />
-          <span>{user.name}</span>
-        </Link>
+        <div key={user.id} className="mb-3 flex items-center gap-3">
+          <SocialAvatar size="sm" user={user} />
+          <SocialUserLink user={user} />
+        </div>
       ))}
       {!loading && !error && !page.users.length && (
         <p className="text-ink-500">No likes yet.</p>

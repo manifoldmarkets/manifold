@@ -19,7 +19,7 @@ import {
 import { Button } from '../buttons/button'
 import { SelectMarkets } from '../contract-select-modal'
 import { Modal } from '../layout/modal'
-import { Avatar } from '../widgets/avatar'
+import { SocialAvatar } from './social-avatar'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -209,7 +209,7 @@ export function SocialComposer(props: {
   return (
     <div className="bg-canvas-0 w-full px-4 py-3" data-social-composer>
       <div className="flex items-start gap-3">
-        <Avatar avatarUrl={user.avatarUrl} username={user.username} size="sm" />
+        <SocialAvatar user={user} size="sm" />
         <div className="min-w-0 flex-1">
           <SocialEditor
             ariaLabel={

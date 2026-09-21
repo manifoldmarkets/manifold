@@ -14,9 +14,9 @@ const doc = (...content: SocialRichContent[]): SocialRichContent => ({
   content: [{ type: 'paragraph', content }],
 })
 
-test('normalizes formatting and derives fallback text from rich content', () => {
+test('derives fallback text from plain text, emoji, URLs and mentions', () => {
   const rich = doc(
-    { type: 'text', text: 'Hello ', marks: [{ type: 'bold' }] },
+    { type: 'text', text: 'Hello 😀 ' },
     { type: 'mention', attrs: { id: 'alice-id', label: 'alice' } },
     { type: 'hardBreak' },
     {
@@ -25,82 +25,55 @@ test('normalizes formatting and derives fallback text from rich content', () => 
     },
     {
       type: 'text',
-      text: ' link',
-      marks: [
-        {
-          type: 'link',
-          attrs: {
-            href: 'https://example.com',
-            target: '_blank',
-            rel: 'ugc',
-            class: 'anything',
-          },
-        },
-      ],
+      text: ' https://example.com',
     }
   )
   const parsed = socialPostDraftSchema.parse({
     text: 'forged fallback',
     richContent: rich,
   })
-  expect(parsed.text).toBe('Hello @alice\n%/bob/question link')
-  expect(parsed.richContent?.content?.[0].content?.[4].marks).toEqual([
-    { type: 'link', attrs: { href: 'https://example.com' } },
-  ])
+  expect(parsed.text).toBe(
+    'Hello 😀 @alice\n%/bob/question https://example.com'
+  )
+  expect(parsed.richContent?.content?.[0].content?.[4].marks).toBeUndefined()
   expect(getSocialMentionIds(parsed.richContent)).toEqual(['alice-id'])
   expect(getSocialMarketMentionIds(parsed.richContent)).toEqual(['market'])
 })
 
-test('preserves plain multiline drafts and nested list and quote text', () => {
+test('preserves plain multiline drafts and legacy content', () => {
   expect(socialRichContentToText(textToSocialRichContent('one\n\ntwo'))).toBe(
     'one\n\ntwo'
   )
-  const rich = {
-    type: 'doc',
-    content: [
-      {
-        type: 'blockquote',
-        content: [
-          {
-            type: 'orderedList',
-            attrs: { start: 3 },
-            content: [
-              {
-                type: 'listItem',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: 'item' }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  }
-  expect(socialRichContentToText(socialRichContentSchema.parse(rich))).toBe(
-    'item'
-  )
+  expect(
+    socialRichContentSchema.parse(textToSocialRichContent('one\n\ntwo'))
+  ).toEqual(textToSocialRichContent('one\n\ntwo'))
   expect(
     socialPostDraftSchema.parse({ text: 'legacy' }).richContent
   ).toBeUndefined()
 })
 
-test('removes link marks from mentions so their own links cannot be nested', () => {
-  const parsed = socialRichContentSchema.parse(
-    doc({
-      type: 'mention',
-      attrs: { id: 'user', label: 'user' },
-      marks: [
-        { type: 'bold' },
-        { type: 'link', attrs: { href: 'https://example.com' } },
-      ],
-    })
-  )
-  expect(parsed.content?.[0].content?.[0].marks).toEqual([{ type: 'bold' }])
-})
+test.each(['bold', 'italic', 'strike', 'code', 'link', 'underline'])(
+  'rejects %s marks on text and mentions',
+  (type) => {
+    for (const node of [
+      { type: 'text', text: 'text' },
+      { type: 'mention', attrs: { id: 'user', label: 'user' } },
+      {
+        type: 'contract-mention',
+        attrs: { id: 'market', label: '/owner/market' },
+      },
+    ]) {
+      const content = doc({
+        ...node,
+        marks: [{ type, attrs: { href: 'https://example.com' } }],
+      })
+      expect(socialRichContentSchema.safeParse(content).success).toBe(false)
+      expect(socialRichContentDisplaySchema.safeParse(content).success).toBe(
+        false
+      )
+    }
+  }
+)
 
 test('display validation retains content expanded by current mention labels or redaction', () => {
   for (const suffix of [
@@ -117,16 +90,24 @@ test('display validation retains content expanded by current mention labels or r
   ).toBe(false)
 })
 
-test.each(['image', 'iframe', 'heading', 'codeBlock', 'html', 'tweet'])(
-  'rejects unsupported %s nodes',
-  (type) => {
-    expect(
-      socialRichContentSchema.safeParse(
-        doc({ type, attrs: { src: 'https://external.example/image' } })
-      ).success
-    ).toBe(false)
-  }
-)
+test.each([
+  'image',
+  'iframe',
+  'heading',
+  'codeBlock',
+  'html',
+  'tweet',
+  'bulletList',
+  'orderedList',
+  'listItem',
+  'blockquote',
+])('rejects unsupported %s nodes', (type) => {
+  expect(
+    socialRichContentSchema.safeParse(
+      doc({ type, attrs: { src: 'https://external.example/image' } })
+    ).success
+  ).toBe(false)
+})
 
 test.each([
   'javascript:alert(1)',
@@ -158,8 +139,7 @@ test('enforces text, nesting, node, payload and distinct mention limits', () => 
     ).success
   ).toBe(false)
   let nested: SocialRichContent = { type: 'paragraph' }
-  for (let i = 0; i < 14; i++)
-    nested = { type: 'blockquote', content: [nested] }
+  for (let i = 0; i < 14; i++) nested = { type: 'paragraph', content: [nested] }
   expect(
     socialRichContentSchema.safeParse({ type: 'doc', content: [nested] })
       .success

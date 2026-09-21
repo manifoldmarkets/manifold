@@ -39,12 +39,19 @@ is run by the application or by the development tests.
   for 30 seconds, combining concurrent cache misses. Authenticated requests add
   only that viewer's liked IDs. Blocked-user feeds, refreshes, pagination, and
   discussion reads bypass the cache; HTTP responses use `no-store`.
-- Posts support bold, italics, strikethrough, inline code, lists, quotes, and links.
+- Posts use plain text with automatic links for visible HTTP(S) URLs.
+  Typing an emoji shortcode such as `:laugh:` or `:heart:` inserts the emoji.
+  Quoting attaches an existing Yap post as a repost card; typed text has no
+  rich-text styles, lists, block quotes, or links on arbitrary words.
   Type `@` to select a person or `%` to select a public market. Each post can tag
   ten distinct people and reference five distinct markets inline. The server
   resolves mention IDs to current usernames and public market paths.
   The 2,000-Unicode-code-point limit includes the plain-text form of mentions.
   Existing plain-text posts remain readable and editable.
+- Avatars and badges show shop cosmetics using the shared `posts` display
+  settings and each avatar's native size. Usernames open profile hovercards only
+  over the text; surrounding header space opens the Yap discussion. Author and
+  liker responses include cosmetic entitlements in their existing queries.
 - Posts can attach five distinct public markets and four images.
   Attachments must use the configured Firebase upload bucket;
   reads also hide legacy external image URLs. Image previews stay local until
@@ -86,7 +93,7 @@ Social reports appear in the existing user-report queues and can be removed or
 dismissed by moderators.
 
 Create/edit content accepts optional `richContent`, a bounded Tiptap JSON document
-with only the formatting and mention nodes above. When present, the API derives
+containing plain paragraphs, line breaks, and mentions. When present, the API derives
 `text` from it for notifications and older clients. Reads include both fields and
 replace unavailable inline market references with a placeholder. Deletion clears
 both fields and removes the post's mention notifications.

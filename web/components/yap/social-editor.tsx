@@ -1,5 +1,4 @@
 import { mergeAttributes, type JSONContent } from '@tiptap/core'
-import TiptapLink from '@tiptap/extension-link'
 import Mention, {
   MentionPluginKey,
   type MentionOptions,
@@ -8,9 +7,8 @@ import Placeholder from '@tiptap/extension-placeholder'
 import { EditorContent, ReactRenderer, useEditor } from '@tiptap/react'
 import type { SuggestionKeyDownProps } from '@tiptap/suggestion'
 import StarterKit from '@tiptap/starter-kit'
-import clsx from 'clsx'
 import { PluginKey } from 'prosemirror-state'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import tippy, { type Instance } from 'tippy.js'
 import {
   socialRichContentToText,
@@ -23,10 +21,8 @@ import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import { MentionList as UserMentionList } from '../editor/user-mention/mention-list'
 import { mentionSuggestion } from '../editor/user-mention/mention-suggestion'
-import {
-  isSocialRichLink,
-  socialMarketMentionLabel,
-} from './social-rich-content'
+import { SocialEmoji } from './social-emoji'
+import { socialMarketMentionLabel } from './social-rich-content'
 
 // Keep popups within modal focus boundaries, without depending on Tippy's CSS.
 function makeSocialMentionRender(
@@ -132,26 +128,6 @@ const MarketMention = Mention.extend({
   },
 })
 
-const PostLink = TiptapLink.extend({
-  parseHTML: () => [
-    {
-      tag: 'a[href]',
-      getAttrs: (element) =>
-        isSocialRichLink((element as HTMLElement).getAttribute('href'))
-          ? null
-          : false,
-    },
-  ],
-}).configure({
-  openOnClick: false,
-  validate: isSocialRichLink,
-  HTMLAttributes: {
-    class: 'text-primary-700 hover:underline',
-    target: '_blank',
-    rel: 'noopener noreferrer ugc',
-  },
-})
-
 export function SocialEditor({
   value,
   text,
@@ -176,19 +152,24 @@ export function SocialEditor({
   const callbacks = useRef({ onChange, onImages, onSubmit, disabled })
   callbacks.current = { onChange, onImages, onSubmit, disabled }
   const initial = useRef(value ?? textToSocialRichContent(text))
-  const linkInput = useRef<HTMLInputElement>(null)
-  const [linkUrl, setLinkUrl] = useState<string | null>(null)
-  const [linkError, setLinkError] = useState<string>()
   const editor = useEditor({
     content: initial.current,
     editable: !disabled,
     extensions: [
       StarterKit.configure({
+        bold: false,
+        italic: false,
+        strike: false,
+        code: false,
         heading: false,
         horizontalRule: false,
         codeBlock: false,
+        blockquote: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
       }),
-      PostLink,
+      SocialEmoji,
       ...nodeViewMiddleware([UserMention, MarketMention]),
       Placeholder.configure({
         placeholder,
@@ -206,7 +187,7 @@ export function SocialEditor({
         'aria-label': ariaLabel,
         'aria-multiline': 'true',
         class:
-          'prose prose-sm dark:prose-invert text-ink-900 prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 min-h-[5.5rem] max-w-none break-words p-3 text-base outline-none [overflow-wrap:anywhere]',
+          'text-ink-900 [&_p]:my-0 min-h-[5.5rem] max-w-none break-words p-3 text-base outline-none [overflow-wrap:anywhere]',
       },
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []).filter(
@@ -242,16 +223,11 @@ export function SocialEditor({
 
   useEffect(() => {
     editor?.setEditable(!disabled)
-    if (disabled) setLinkUrl(null)
   }, [editor, disabled])
 
   useEffect(() => {
     if (editor && focusOnMount) editor.commands.focus('end')
   }, [editor, focusOnMount])
-
-  useEffect(() => {
-    if (linkUrl !== null) linkInput.current?.focus()
-  }, [linkUrl !== null])
 
   const insertTrigger = (trigger: '@' | '%') => {
     if (!editor) return
@@ -266,49 +242,15 @@ export function SocialEditor({
       .insertContent(prefix + trigger)
       .run()
   }
-  const saveLink = () => {
-    const href = linkUrl?.trim()
-    if (!isSocialRichLink(href)) {
-      setLinkError('Use an http:// or https:// link.')
-      return
-    }
-    if (!editor) return
-    if (editor.state.selection.empty && !editor.isActive('link')) {
-      editor
-        .chain()
-        .focus()
-        .insertContent([
-          {
-            type: 'text',
-            text: href,
-            marks: [{ type: 'link', attrs: { href } }],
-          },
-          { type: 'text', text: ' ' },
-        ])
-        .run()
-    } else
-      editor.chain().focus().extendMarkRange('link').setLink({ href }).run()
-    setLinkUrl(null)
-    setLinkError(undefined)
-  }
-  const tool = (
-    label: string,
-    children: ReactNode,
-    onClick: () => void,
-    active = false
-  ) => (
+  const tool = (label: string, children: ReactNode, onClick: () => void) => (
     <button
       type="button"
       aria-label={label}
       title={label}
-      aria-pressed={active}
       disabled={disabled || !editor}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={clsx(
-        'hover:bg-ink-100 flex h-8 min-w-[2rem] items-center justify-center rounded px-2 text-sm disabled:opacity-40',
-        active ? 'bg-primary-500/10 text-primary-700' : 'text-ink-600'
-      )}
+      className="text-ink-600 hover:bg-ink-100 flex h-8 min-w-[2rem] items-center justify-center rounded px-2 text-sm disabled:opacity-40"
     >
       {children}
     </button>
@@ -318,128 +260,14 @@ export function SocialEditor({
       <EditorContent editor={editor} />
       <div
         role="toolbar"
-        aria-label="Post formatting"
+        aria-label="Post tools"
         className="border-ink-200 flex flex-wrap items-center gap-0.5 border-t px-2 py-1"
       >
-        {tool(
-          'Bold',
-          <strong>B</strong>,
-          () => editor?.chain().focus().toggleBold().run(),
-          editor?.isActive('bold')
-        )}
-        {tool(
-          'Italic',
-          <em>I</em>,
-          () => editor?.chain().focus().toggleItalic().run(),
-          editor?.isActive('italic')
-        )}
-        {tool(
-          'Strikethrough',
-          <s>S</s>,
-          () => editor?.chain().focus().toggleStrike().run(),
-          editor?.isActive('strike')
-        )}
-        {tool(
-          'Inline code',
-          <span className="font-mono">{'<>'}</span>,
-          () => editor?.chain().focus().toggleCode().run(),
-          editor?.isActive('code')
-        )}
-        {tool(
-          'Bulleted list',
-          '• List',
-          () => editor?.chain().focus().toggleBulletList().run(),
-          editor?.isActive('bulletList')
-        )}
-        {tool(
-          'Numbered list',
-          '1. List',
-          () => editor?.chain().focus().toggleOrderedList().run(),
-          editor?.isActive('orderedList')
-        )}
-        {tool(
-          'Quote',
-          '❝',
-          () => editor?.chain().focus().toggleBlockquote().run(),
-          editor?.isActive('blockquote')
-        )}
-        {tool(
-          'Add or edit link',
-          'Link',
-          () => {
-            setLinkUrl(editor?.getAttributes('link').href ?? '')
-            setLinkError(undefined)
-          },
-          editor?.isActive('link')
-        )}
         {tool('Tag a person', '@', () => insertTrigger('@'))}
         {tool('Reference a market', '%', () => insertTrigger('%'))}
       </div>
-      {linkUrl !== null && (
-        <div className="border-ink-200 border-t p-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="url"
-              aria-label="Link URL"
-              placeholder="https://example.com"
-              value={linkUrl}
-              ref={linkInput}
-              className="bg-canvas-0 border-ink-300 min-w-0 flex-1 rounded border px-2 py-1 text-sm"
-              onChange={(event) => setLinkUrl(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  saveLink()
-                } else if (event.key === 'Escape') {
-                  setLinkUrl(null)
-                  editor?.commands.focus()
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="text-primary-700 text-sm"
-              onClick={saveLink}
-            >
-              Save link
-            </button>
-            {editor?.isActive('link') && (
-              <button
-                type="button"
-                className="text-ink-600 text-sm"
-                onClick={() => {
-                  editor
-                    .chain()
-                    .focus()
-                    .extendMarkRange('link')
-                    .unsetLink()
-                    .run()
-                  setLinkUrl(null)
-                }}
-              >
-                Remove link
-              </button>
-            )}
-            <button
-              type="button"
-              className="text-ink-600 text-sm"
-              onClick={() => {
-                setLinkUrl(null)
-                editor?.commands.focus()
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-          {linkError && (
-            <p role="alert" className="mt-1 text-sm text-red-600">
-              {linkError}
-            </p>
-          )}
-        </div>
-      )}
       <p className="text-ink-500 px-3 pb-2 text-xs">
-        Use @ to tag people and % to reference markets.
+        Use @ to tag people, % to reference markets, and :laugh: for 😆.
       </p>
     </div>
   )

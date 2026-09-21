@@ -15,6 +15,7 @@ import {
 } from 'shared/supabase/init'
 import { nanoid } from 'common/util/random'
 import { DisplayUser } from 'common/api/user-types'
+import { convertEntitlement } from 'common/shop/types'
 import { socialRichContentToText } from 'common/social-rich-content'
 import { notifySocialMentions } from 'shared/social-mentions'
 import {
@@ -309,8 +310,14 @@ export const getSocialLikers: APIHandler<'get-social-likers'> = async (
   if (post.deleted_time || viewer.blocked.includes(post.user_id))
     return { users: [], nextCursor: null }
   const [time, userId] = cursor?.split('|') ?? []
-  const rows = await pg.manyOrNone<DisplayUser & { created_time: string }>(
-    `select u.id,u.name,u.username,coalesce(u.data->>'avatarUrl','') as "avatarUrl", r.created_time
+  const rows = await pg.manyOrNone<
+    Omit<DisplayUser, 'entitlements'> & {
+      entitlements: Parameters<typeof convertEntitlement>[0][]
+      created_time: string
+    }
+  >(
+    `select u.id,u.name,u.username,coalesce(u.data->>'avatarUrl','') as "avatarUrl", r.created_time,
+    (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id) as entitlements
     from user_reactions r join users u on u.id=r.user_id where r.content_id=$1 and r.content_type='social_post' and r.reaction_type='like'
     and ($2::timestamptz is null or (r.created_time,r.user_id)>($2::timestamptz,$3::text))
     and not (r.user_id=any($5::text[]))
@@ -320,7 +327,12 @@ export const getSocialLikers: APIHandler<'get-social-likers'> = async (
   const page = rows.slice(0, limit)
   const last = page[page.length - 1]
   return {
-    users: page.map(({ created_time: _createdTime, ...user }) => user),
+    users: page.map(
+      ({ created_time: _createdTime, entitlements, ...user }) => ({
+        ...user,
+        entitlements: (entitlements ?? []).map(convertEntitlement),
+      })
+    ),
     nextCursor:
       rows.length > limit
         ? `${socialTimestamp(last.created_time)}|${last.id}`

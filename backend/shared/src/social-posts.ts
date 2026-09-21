@@ -18,6 +18,7 @@ import { isSupporter } from 'common/supporter'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { DisplayUser } from 'common/api/user-types'
+import { convertEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { richTextToString } from 'common/util/parse'
@@ -247,12 +248,15 @@ const displayUser = (u: {
   id: string
   name: string
   username: string
-  data: { avatarUrl?: string }
+  data?: { avatarUrl?: string }
+  avatarUrl?: string
+  entitlements?: Parameters<typeof convertEntitlement>[0][]
 }): DisplayUser => ({
   id: u.id,
   name: u.name,
   username: u.username,
-  avatarUrl: u.data.avatarUrl ?? '',
+  avatarUrl: u.avatarUrl ?? u.data?.avatarUrl ?? '',
+  entitlements: (u.entitlements ?? []).map(convertEntitlement),
 })
 
 export async function hydrateSocialPosts(
@@ -286,7 +290,9 @@ export async function hydrateSocialPosts(
     inlineMarkets,
   ] = await Promise.all([
     pg.manyOrNone(
-      `select id, name, username, data from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
+      `select id, name, username, data,
+      (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=users.id) as entitlements
+      from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
       [
         rows.flatMap((r) => [
           r.user_id,
@@ -323,7 +329,8 @@ export async function hydrateSocialPosts(
     ),
     pg.manyOrNone(
       `select cc.comment_id, cc.user_id, cc.data,
-      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl','')) as author
+      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
+        'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_comments cc join users u on u.id=cc.user_id
       left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
       where cc.comment_id = any($1::text[]) and coalesce((cc.data->>'hidden')::boolean,false) = false and coalesce((cc.data->>'deleted')::boolean,false) = false
@@ -332,7 +339,8 @@ export async function hydrateSocialPosts(
     ),
     pg.manyOrNone(
       `select b.bet_id, b.user_id, b.data, u.name,
-      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl','')) as author
+      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
+        'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_bets b join users u on u.id=b.user_id where b.bet_id = any($1::text[])`,
       [rows.map((r) => r.source_bet_id).filter(Boolean)]
     ),
@@ -437,7 +445,11 @@ export async function hydrateSocialPosts(
       const contract = convertContract(sourceMarket)
       source = {
         kind: comment ? 'comment' : bet ? 'bet' : 'market',
-        author: comment?.author ?? bet?.author,
+        author: comment
+          ? displayUser(comment.author)
+          : bet
+          ? displayUser(bet.author)
+          : undefined,
         contractId: contract.id,
         url:
           contractPath(contract) + (comment ? `#${row.source_comment_id}` : ''),

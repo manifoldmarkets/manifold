@@ -12,6 +12,7 @@ jest.mock('api/helpers/rate-limit', () => ({
 import { Request, Response } from 'express'
 import { API } from 'common/api/schema'
 import { ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
+import { convertEntitlement } from 'common/shop/types'
 import {
   SocialPost,
   SocialPostPage,
@@ -177,11 +178,21 @@ test('report ID lookups bypass the shared timeline cache and ancestor hydration'
 })
 
 test('liker pagination applies viewer blocks before limiting results', async () => {
+  const entitlement = {
+    user_id: 'visible',
+    entitlement_id: 'avatar-crown',
+    granted_time: '2026-09-01T00:00:00Z',
+    expires_time: null,
+    enabled: true,
+    auto_renew: false,
+    metadata: { position: 1 },
+  }
   const manyOrNone = jest.fn().mockResolvedValue([
     {
       id: 'visible',
       name: 'Visible',
       username: 'visible',
+      entitlements: [entitlement],
       created_time: '2026-09-16 00:00:00.123456+00',
     },
     {
@@ -209,10 +220,22 @@ test('liker pagination applies viewer blocks before limiting results', async () 
       {} as Request
     )
   expect(await read()).toEqual({
-    users: [{ id: 'visible', name: 'Visible', username: 'visible' }],
+    users: [
+      {
+        id: 'visible',
+        name: 'Visible',
+        username: 'visible',
+        entitlements: [convertEntitlement(entitlement)],
+      },
+    ],
     nextCursor: '2026-09-16T00:00:00.123456+00:00|visible',
   })
   expect(getSocialViewer).toHaveBeenLastCalledWith('viewer')
+  expect(manyOrNone).toHaveBeenCalledTimes(1)
+  expect(manyOrNone).toHaveBeenCalledWith(
+    expect.stringContaining('from user_entitlements e where e.user_id=u.id'),
+    expect.anything()
+  )
   expect(manyOrNone).toHaveBeenCalledWith(
     expect.stringContaining('not (r.user_id=any($5::text[]))'),
     ['post', null, null, 2, ['blocked']]

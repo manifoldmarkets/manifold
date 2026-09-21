@@ -28,6 +28,7 @@ import { User } from 'common/user'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
 import { SocialRichContent } from 'common/social-rich-content'
+import { convertEntitlement } from 'common/shop/types'
 
 const post = {
   id: 'reply',
@@ -39,6 +40,143 @@ const post = {
 const db = (methods: Record<string, unknown>) =>
   methods as unknown as SupabaseDirectClient
 beforeEach(() => jest.clearAllMocks())
+
+test('hydrates cosmetic entitlements for authors, parents, and quoted authors in existing queries', async () => {
+  const entitlement = (user_id: string) => ({
+    user_id,
+    entitlement_id: 'avatar-crown',
+    granted_time: '2026-09-01T00:00:00Z',
+    expires_time: null,
+    enabled: true,
+    auto_renew: false,
+    metadata: { position: 1 },
+  })
+  const user = (id: string) => ({
+    id,
+    name: id,
+    username: id,
+    data: { avatarUrl: `${id}.png` },
+    entitlements: [entitlement(id)],
+  })
+  const base = {
+    ...post,
+    created_time: '2026-09-21T00:00:00Z',
+    rich_content: null,
+  }
+  const quoted = {
+    ...base,
+    id: 'quoted',
+    user_id: 'quoted-author',
+    root_id: 'quoted',
+    parent_id: null,
+  } as SocialRow
+  const parent = {
+    ...base,
+    id: 'parent',
+    user_id: 'parent-author',
+    root_id: 'parent',
+    parent_id: null,
+  } as SocialRow
+  const reply = {
+    ...base,
+    id: 'reply',
+    user_id: 'reply-author',
+    root_id: 'parent',
+    parent_id: 'parent',
+    source_post_id: 'quoted',
+  } as SocialRow
+  const marketComment = {
+    ...base,
+    id: 'comment-share',
+    user_id: 'reply-author',
+    root_id: 'comment-share',
+    parent_id: null,
+    source_contract_id: 'market',
+    source_comment_id: 'comment',
+  } as SocialRow
+  const marketBet = {
+    ...base,
+    id: 'bet-share',
+    user_id: 'reply-author',
+    root_id: 'bet-share',
+    parent_id: null,
+    source_contract_id: 'market',
+    source_bet_id: 'bet',
+  } as SocialRow
+  const sourceAuthor = (id: string) => ({
+    id,
+    name: id,
+    username: id,
+    avatarUrl: `${id}.png`,
+    entitlements: [entitlement(id)],
+  })
+  const manyOrNone = jest.fn(async (sql: string) => {
+    if (sql.includes('select id, name, username, data'))
+      return ['quoted-author', 'parent-author', 'reply-author'].map(user)
+    if (sql.includes('select * from social_posts'))
+      return [quoted, parent, reply, marketComment, marketBet]
+    if (sql.includes('where p.id=any')) return [quoted]
+    if (sql.includes('from contract_comments cc'))
+      return [
+        {
+          comment_id: 'comment',
+          user_id: 'comment-author',
+          author: sourceAuthor('comment-author'),
+          data: {
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Comment' }],
+                },
+              ],
+            },
+          },
+        },
+      ]
+    if (sql.includes('from contract_bets b'))
+      return [
+        {
+          bet_id: 'bet',
+          user_id: 'bet-author',
+          name: 'Bettor',
+          author: sourceAuthor('bet-author'),
+          data: { amount: 10, outcome: 'YES' },
+        },
+      ]
+    if (sql.includes('select * from contracts')) return [mentionedMarket]
+    return []
+  })
+  const [hydrated, commentShare, betShare] = await hydrateSocialPosts(
+    db({ manyOrNone }),
+    [reply, marketComment, marketBet],
+    { blocked: [] },
+    false
+  )
+  expect(hydrated.author.entitlements).toEqual([
+    convertEntitlement(entitlement('reply-author')),
+  ])
+  expect(hydrated.parentAuthor?.entitlements).toEqual([
+    convertEntitlement(entitlement('parent-author')),
+  ])
+  expect(hydrated.source?.author?.entitlements).toEqual([
+    convertEntitlement(entitlement('quoted-author')),
+  ])
+  expect(commentShare.source?.author?.entitlements).toEqual([
+    convertEntitlement(entitlement('comment-author')),
+  ])
+  expect(betShare.source?.author?.entitlements).toEqual([
+    convertEntitlement(entitlement('bet-author')),
+  ])
+  expect(manyOrNone).toHaveBeenCalledTimes(17)
+  expect(manyOrNone).toHaveBeenCalledWith(
+    expect.stringContaining(
+      'from user_entitlements e where e.user_id=users.id'
+    ),
+    expect.anything()
+  )
+})
 
 const mentionedContent: SocialRichContent = {
   type: 'doc',
@@ -115,7 +253,7 @@ test('rich reads redact unavailable market references from both rich and fallbac
   } as SocialRow
   const pg = db({
     manyOrNone: jest.fn(async (sql: string) => {
-      if (sql.includes('select id, name, username, data from users'))
+      if (sql.includes('select id, name, username, data'))
         return [
           { id: row.user_id, name: 'Author', username: 'author', data: {} },
           {

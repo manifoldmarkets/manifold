@@ -3,16 +3,8 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment, ReactNode, useMemo } from 'react'
 import { socialRichContentDisplaySchema } from 'common/social-rich-content'
-
-export const isSocialRichLink = (href: unknown): href is string => {
-  if (typeof href !== 'string' || !/^https?:\/\//i.test(href)) return false
-  try {
-    const url = new URL(href)
-    return !url.username && !url.password
-  } catch {
-    return false
-  }
-}
+import { getSocialLinks, SocialText } from './social-text'
+import { SocialUserLink } from './social-user-link'
 
 export const socialMarketMentionLabel = (path: string) => {
   const slug = path.split('/').pop() ?? path
@@ -23,82 +15,64 @@ export const socialMarketMentionLabel = (path: string) => {
   }
 }
 
-function withMarks(node: JSONContent, children: ReactNode) {
-  return [...(node.marks ?? [])].reverse().reduce((result, mark) => {
-    if (mark.type === 'bold') return <strong>{result}</strong>
-    if (mark.type === 'italic') return <em>{result}</em>
-    if (mark.type === 'strike') return <s>{result}</s>
-    if (mark.type === 'code')
-      return (
-        <code className="bg-ink-100 rounded px-1 py-0.5 font-mono text-[0.9em]">
-          {result}
-        </code>
-      )
-    // Mentions already have their own link; a link mark must not nest anchors.
-    if (
-      mark.type === 'link' &&
-      node.type === 'text' &&
-      isSocialRichLink(mark.attrs?.href)
-    )
-      return (
-        <a
-          href={mark.attrs.href}
-          target="_blank"
-          rel="noopener noreferrer ugc"
-          className="text-primary-700 hover:underline"
-        >
-          {result}
-        </a>
-      )
-    return result
-  }, children)
+function renderText(text: string) {
+  const links = getSocialLinks(text)
+  return (
+    <>
+      {links.map((link, index) => (
+        <Fragment key={link.start}>
+          {text.slice(links[index - 1]?.end ?? 0, link.start)}
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer ugc"
+            className="text-primary-700 hover:underline"
+          >
+            {link.value}
+          </a>
+        </Fragment>
+      ))}
+      {text.slice(links[links.length - 1]?.end ?? 0)}
+    </>
+  )
+}
+
+function renderChildren(nodes: JSONContent[] = []) {
+  // A literal URL may span adjacent text nodes in pasted or API-created data.
+  const merged: JSONContent[] = []
+  for (const node of nodes) {
+    const previous = merged[merged.length - 1]
+    if (node.type === 'text' && previous?.type === 'text')
+      previous.text = (previous.text ?? '') + (node.text ?? '')
+    else merged.push({ ...node })
+  }
+  return merged.map((child, index) => (
+    <Fragment key={index}>{renderNode(child)}</Fragment>
+  ))
 }
 
 function renderNode(node: JSONContent): ReactNode {
-  const children = node.content?.map((child, index) => (
-    <Fragment key={index}>{renderNode(child)}</Fragment>
-  ))
   switch (node.type) {
     case 'doc':
-      return children
+      return renderChildren(node.content)
     case 'paragraph':
-      return <p className="min-h-[1.5em]">{children}</p>
+      return <p className="min-h-[1.5em]">{renderChildren(node.content)}</p>
     case 'text':
-      return withMarks(node, node.text)
+      return renderText(node.text ?? '')
     case 'hardBreak':
       return <br />
-    case 'bulletList':
-      return <ul className="my-2 list-disc pl-5">{children}</ul>
-    case 'orderedList':
-      return (
-        <ol start={node.attrs?.start} className="my-2 list-decimal pl-5">
-          {children}
-        </ol>
-      )
-    case 'listItem':
-      return <li>{children}</li>
-    case 'blockquote':
-      return (
-        <blockquote className="border-ink-300 text-ink-600 my-2 border-l-2 pl-3">
-          {children}
-        </blockquote>
-      )
     case 'mention':
-      return withMarks(
-        node,
-        <Link
-          href={`/${encodeURIComponent(node.attrs?.label ?? '')}`}
+      return (
+        <SocialUserLink
+          user={{ id: node.attrs!.id, username: node.attrs!.label }}
+          label="handle"
           className="text-primary-700 hover:underline"
-          prefetch={false}
-        >
-          @{node.attrs?.label}
-        </Link>
+        />
       )
     case 'contract-mention': {
       const path = node.attrs?.label as string
       if (!/^\/[^/?#\\\s]+\/[^/?#\\\s]+$/.test(path)) return null
-      return withMarks(
-        node,
+      return (
         <Link
           href={path}
           className="text-primary-700 hover:underline"
@@ -134,7 +108,11 @@ export function SocialRichContent({
         className
       )}
     >
-      {parsed.success ? renderNode(parsed.data) : fallbackText}
+      {parsed.success ? (
+        renderNode(parsed.data)
+      ) : (
+        <SocialText text={fallbackText ?? ''} />
+      )}
     </div>
   )
 }
