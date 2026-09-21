@@ -1,8 +1,8 @@
 import { SocialQuoteCard } from './social-quote-card'
 import { useSocialComposerDraft } from './social-reply-drafts'
-import { useEffect, useRef, useState } from 'react'
+import { SocialEditor } from './social-editor'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import Textarea from 'react-expanding-textarea'
 import { toast } from 'react-hot-toast'
 import { Contract } from 'common/contract'
 import { isSupporter } from 'common/supporter'
@@ -44,17 +44,26 @@ export function SocialComposer(props: {
 }) {
   const { parentId, editing, source, onPosted, onCancel } = props
   const user = useUser()
-  const input = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { draft, setField, clear } = useSocialComposerDraft(
     {
       text: editing?.text ?? props.initialText ?? '',
+      richContent: editing?.richContent,
       markets: editing?.markets ?? props.initialMarkets ?? [],
       images: editing?.imageUrls ?? [],
     },
     editing ? undefined : parentId
   )
-  const { text, markets, images, uploading, saving, error, submitting } = draft
+  const {
+    text,
+    richContent,
+    markets,
+    images,
+    uploading,
+    saving,
+    error,
+    submitting,
+  } = draft
   const localImages = draft.localImages
   const [selecting, setSelecting] = useState(false)
   const isPostRepost =
@@ -67,9 +76,6 @@ export function SocialComposer(props: {
       : undefined
   const count = [...text.trim()].length
   const eligible = !!editing || isSupporter(user?.entitlements)
-  useEffect(() => {
-    if (props.focusOnMount) input.current?.focus()
-  }, [props.focusOnMount, user?.id])
   const canSubmit =
     count <= SOCIAL_POST_MAX_LENGTH &&
     !!(count || markets.length || images.length || isPostRepost)
@@ -132,6 +138,7 @@ export function SocialComposer(props: {
       })
       const content = socialPostDraftSchema.parse({
         text,
+        richContent,
         marketIds: markets.map((m) => m.id),
         imageUrls,
       })
@@ -204,8 +211,8 @@ export function SocialComposer(props: {
       <div className="flex items-start gap-3">
         <Avatar avatarUrl={user.avatarUrl} username={user.username} size="sm" />
         <div className="min-w-0 flex-1">
-          <Textarea
-            aria-label={
+          <SocialEditor
+            ariaLabel={
               editing
                 ? 'Edit post'
                 : parentId
@@ -219,26 +226,16 @@ export function SocialComposer(props: {
                 ? 'Add a comment (optional)…'
                 : 'What’s on your mind?'
             }
-            className="bg-canvas-50 border-ink-300 placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-none rounded-2xl border p-3 text-base transition-colors focus:outline-none focus:ring-1"
-            rows={2}
-            value={text}
-            onChange={(e) => setField('text', e.target.value)}
-            onPaste={(e) => {
-              const files = Array.from(e.clipboardData.files).filter((file) =>
-                file.type.startsWith('image/')
-              )
-              if (!files.length) return
-              e.preventDefault()
-              addImages(files)
+            text={text}
+            value={richContent}
+            onChange={(content, plainText) => {
+              setField('richContent', content)
+              setField('text', plainText)
             }}
-            ref={input}
+            onImages={addImages}
+            onSubmit={() => void submit()}
+            focusOnMount={props.focusOnMount}
             disabled={saving}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault()
-                void submit()
-              }
-            }}
           />
           {!!images.length && (
             <div className="mb-3 flex flex-wrap gap-2">

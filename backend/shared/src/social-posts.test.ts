@@ -18,6 +18,7 @@ import {
   socialAuthor,
   SocialRow,
   validateSocialMarkets,
+  validateSocialRichContent,
   validateSocialSource,
   notifySocial,
   hydrateSocialPosts,
@@ -26,6 +27,7 @@ import { SupabaseDirectClient } from './supabase/init'
 import { User } from 'common/user'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
+import { SocialRichContent } from 'common/social-rich-content'
 
 const post = {
   id: 'reply',
@@ -37,6 +39,110 @@ const post = {
 const db = (methods: Record<string, unknown>) =>
   methods as unknown as SupabaseDirectClient
 beforeEach(() => jest.clearAllMocks())
+
+const mentionedContent: SocialRichContent = {
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [
+        { type: 'mention', attrs: { id: 'mentioned', label: 'forged-name' } },
+        { type: 'text', text: ' see ' },
+        {
+          type: 'contract-mention',
+          attrs: { id: 'market', label: 'javascript:forged' },
+        },
+      ],
+    },
+  ],
+}
+const mentionedMarket = {
+  id: 'market',
+  data: { id: 'market', creatorUsername: 'owner', slug: 'real-market' },
+}
+
+test('rich mention writes canonicalize labels and reject unavailable or blocked identities', async () => {
+  const pg = db({
+    manyOrNone: jest.fn((sql: string) =>
+      Promise.resolve(
+        sql.includes('from users')
+          ? [{ id: 'mentioned', username: 'real-user' }]
+          : [mentionedMarket]
+      )
+    ),
+  })
+  const canonical = await validateSocialRichContent(pg, mentionedContent, {
+    blocked: [],
+  })
+  expect(canonical?.content?.[0].content?.[0].attrs).toEqual({
+    id: 'mentioned',
+    label: 'real-user',
+  })
+  expect(canonical?.content?.[0].content?.[2].attrs).toEqual({
+    id: 'market',
+    label: '/owner/real-market',
+  })
+  await expect(
+    validateSocialRichContent(pg, mentionedContent, { blocked: ['mentioned'] })
+  ).rejects.toMatchObject({ code: 400 })
+  for (const missing of ['users', 'contracts']) {
+    const unavailable = db({
+      manyOrNone: jest.fn((sql: string) =>
+        Promise.resolve(
+          sql.includes(`from ${missing}`)
+            ? []
+            : sql.includes('from users')
+            ? [{ id: 'mentioned', username: 'real-user' }]
+            : [mentionedMarket]
+        )
+      ),
+    })
+    await expect(
+      validateSocialRichContent(unavailable, mentionedContent, { blocked: [] })
+    ).rejects.toMatchObject({ code: 400 })
+  }
+})
+
+test('rich reads redact unavailable market references from both rich and fallback text', async () => {
+  const row = {
+    ...post,
+    id: 'root',
+    root_id: 'root',
+    parent_id: null,
+    created_time: '2026-09-21 00:00:00+00',
+    rich_content: mentionedContent,
+    text: '@forged-name see %private-market',
+  } as SocialRow
+  const pg = db({
+    manyOrNone: jest.fn(async (sql: string) => {
+      if (sql.includes('select id, name, username, data from users'))
+        return [
+          { id: row.user_id, name: 'Author', username: 'author', data: {} },
+          {
+            id: 'mentioned',
+            name: 'Mentioned',
+            username: 'current-user',
+            data: {},
+          },
+        ]
+      if (sql.includes('select * from social_posts')) return [row]
+      return []
+    }),
+  })
+  const [result] = await hydrateSocialPosts(pg, [row], { blocked: [] }, false)
+  expect(result.text).toBe('@current-user see [Market unavailable]')
+  expect(JSON.stringify(result.richContent)).not.toMatch(
+    /market"|private-market|javascript:forged/
+  )
+  const [removed] = await hydrateSocialPosts(
+    pg,
+    [{ ...row, deleted_time: 'now' }],
+    { blocked: [] },
+    false
+  )
+  expect(removed.richContent).toBeNull()
+  expect(removed.text).toBe('')
+})
 test('hides untrusted, removed, and blocked post images', async () => {
   const image = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/user-images%2Fauthor%2Fyap%2Fimage.png?alt=media&token=test-token`
   for (const state of ['visible', 'deleted', 'blocked'] as const) {

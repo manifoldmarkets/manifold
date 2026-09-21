@@ -2,6 +2,11 @@ import { z } from 'zod'
 import { Contract } from './contract'
 import { DisplayUser } from './api/user-types'
 import { FIREBASE_CONFIG } from './envs/constants'
+import {
+  SocialRichContent,
+  socialRichContentSchema,
+  socialRichContentToText,
+} from './social-rich-content'
 
 export const SOCIAL_POST_MAX_LENGTH = 2000
 export const SOCIAL_POST_MAX_MARKETS = 5
@@ -34,13 +39,8 @@ export function isSocialImageUrl(value: string) {
 
 export const socialPostDraftSchema = z
   .object({
-    text: z
-      .string()
-      .trim()
-      .refine(
-        (s) => [...s].length <= SOCIAL_POST_MAX_LENGTH,
-        'Posts can contain up to 2,000 characters'
-      ),
+    text: z.string().trim(),
+    richContent: socialRichContentSchema.nullable().optional(),
     marketIds: z
       .array(z.string().min(1).max(200))
       .max(SOCIAL_POST_MAX_MARKETS)
@@ -55,7 +55,18 @@ export const socialPostDraftSchema = z
       .optional(),
   })
   .strict()
-  .superRefine(({ marketIds }, ctx) => {
+  .transform((content) => ({
+    ...content,
+    text: content.richContent
+      ? socialRichContentToText(content.richContent)
+      : content.text,
+  }))
+  .superRefine(({ text, marketIds }, ctx) => {
+    if ([...text].length > SOCIAL_POST_MAX_LENGTH)
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Posts can contain up to 2,000 characters',
+      })
     if (new Set(marketIds).size !== marketIds.length)
       ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
   })
@@ -81,6 +92,7 @@ export type SocialQuote = {
   kind: 'comment' | 'bet' | 'market' | 'post'
   url: string
   text: string
+  richContent?: SocialRichContent | null
   author?: DisplayUser
   contractId?: string
   imageUrls?: string[]
@@ -94,6 +106,7 @@ export type SocialPost = {
   id: string
   author: DisplayUser
   text: string
+  richContent?: SocialRichContent | null
   createdTimeMs: number
   createdTime: string
   editedTimeMs: number | null
@@ -147,6 +160,9 @@ export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
   kind: 'post',
   url: socialPostPath(post.id),
   text: post.removed ? '' : post.text,
+  ...(post.richContent
+    ? { richContent: post.removed ? null : post.richContent }
+    : {}),
   author: post.removed ? undefined : post.author,
   imageUrls: post.removed ? [] : post.imageUrls,
   markets: post.removed ? [] : post.markets,

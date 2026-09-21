@@ -16,6 +16,10 @@ Apply these additive migrations in order before deploying the API and web change
    `source_post_id` and its foreign key for reposting Yap posts and replies.
    Apply it before deploying the API: all post creation and deletion operations
    reference this column, including posts without quotes.
+4. `backend/supabase/migrations/2026092101_social_post_rich_content.sql` adds
+   optional rich-text content and clears stale formatting when older API workers
+   edit plain text or delete a post. Deploy this migration, then all API workers,
+   then the web UI; older API workers reject the new `richContent` request field.
 
 The initial migration does not backfill historical reposts. All social-table reads and writes go
 through the API; RLS grants no direct client access. Existing `user_reactions`
@@ -35,8 +39,14 @@ is run by the application or by the development tests.
   for 30 seconds, combining concurrent cache misses. Authenticated requests add
   only that viewer's liked IDs. Blocked-user feeds, refreshes, pagination, and
   discussion reads bypass the cache; HTTP responses use `no-store`.
-- Plain text, up to 2,000 Unicode code points, five distinct public markets, and
-  four images. Attachments must use the configured Firebase upload bucket;
+- Posts support bold, italics, strikethrough, inline code, lists, quotes, and links.
+  Type `@` to select a person or `%` to select a public market. Each post can tag
+  ten distinct people and reference five distinct markets inline. The server
+  resolves mention IDs to current usernames and public market paths.
+  The 2,000-Unicode-code-point limit includes the plain-text form of mentions.
+  Existing plain-text posts remain readable and editable.
+- Posts can attach five distinct public markets and four images.
+  Attachments must use the configured Firebase upload bucket;
   reads also hide legacy external image URLs. Image previews stay local until
   the user submits the post.
   Posts and replies may contain only attachments. Closed/resolved markets work.
@@ -58,9 +68,11 @@ is run by the application or by the development tests.
 - Sources and attachments are checked against current visibility on reads.
   Unavailable markets render a placeholder without exposing their details.
 - Replies notify the immediate parent author using the new Yap reply preference.
+  Person tags use the existing mention preference and notify on creation only;
+  a parent author who receives a reply notification does not also get a mention.
   Likes use the existing like preference and group by post ID. Notifications are
   in-app only, suppress self/blocked notifications, and do not notify on edits.
-- All web market/bet/comment repost actions open the plain-text Yap composer.
+- All web market/bet/comment repost actions open the Yap composer.
   New social posts do not create market comments or legacy repost rows. The legacy
   repost API remains available for compatibility with older clients.
 
@@ -72,6 +84,12 @@ The typed schema exposes `create-social-post`, `edit-social-post`,
 `report` accepts the same content type and validates the owner on the server.
 Social reports appear in the existing user-report queues and can be removed or
 dismissed by moderators.
+
+Create/edit content accepts optional `richContent`, a bounded Tiptap JSON document
+with only the formatting and mention nodes above. When present, the API derives
+`text` from it for notifications and older clients. Reads include both fields and
+replace unavailable inline market references with a placeholder. Deletion clears
+both fields and removes the post's mention notifications.
 
 ## Validation
 

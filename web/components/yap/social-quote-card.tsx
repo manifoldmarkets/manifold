@@ -3,6 +3,7 @@ import { SocialQuote } from 'common/social-post'
 import { contractPath, getBinaryProbPercent } from 'common/contract'
 import { Avatar } from '../widgets/avatar'
 import { SocialImageCarousel } from './social-image-carousel'
+import { SocialRichContent } from './social-rich-content'
 
 export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
   if (quote.kind === 'market') return null
@@ -44,13 +45,21 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
           </span>
         </Link>
       )}
-      {!!quote.text && (
-        <Link
-          href={quote.url}
-          className="text-ink-900 block whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]"
-        >
-          {quote.text}
-        </Link>
+      {quote.richContent ? (
+        <SocialRichContent
+          content={quote.richContent}
+          fallbackText={quote.text}
+          className="text-sm"
+        />
+      ) : (
+        !!quote.text && (
+          <Link
+            href={quote.url}
+            className="text-ink-900 block whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]"
+          >
+            {quote.text}
+          </Link>
+        )
       )}
       {!!quote.imageUrls?.length && (
         <SocialImageCarousel
@@ -76,7 +85,9 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
           ))}
         </div>
       )}
-      {(quote.includesQuote || (quote.kind === 'post' && !quote.text)) && (
+      {(quote.includesQuote ||
+        !!quote.richContent ||
+        (quote.kind === 'post' && !quote.text)) && (
         <Link
           href={quote.url}
           className="text-primary-700 mt-2 block text-xs hover:underline"

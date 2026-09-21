@@ -1511,11 +1511,13 @@ function TaggedUserNotification(props: {
     >
       <div className="line-clamp-3">
         <NotificationUserLink
-          userId={sourceId}
+          userId={notification.data?.sourceUserId ?? sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
-        tagged you{' '}
+        {notification.sourceType === 'social_mention'
+          ? 'mentioned you '
+          : 'tagged you '}
         {!isChildOfGroup && (
           <span>
             on <PrimaryNotificationLink text={sourceTitle} />

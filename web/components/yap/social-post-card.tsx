@@ -6,6 +6,7 @@ import {
   useReplyDraftContext,
 } from './social-reply-drafts'
 import { SocialText } from './social-text'
+import { SocialRichContent } from './social-rich-content'
 import { SocialLinkPreview } from './social-link-preview'
 import { SocialImageCarousel } from './social-image-carousel'
 import DropdownMenu from '../widgets/dropdown-menu'
@@ -284,7 +285,14 @@ function SocialPostCardContent({
             />
           ) : (
             <>
-              <SocialText text={post.text} />
+              {post.richContent ? (
+                <SocialRichContent
+                  content={post.richContent}
+                  fallbackText={post.text}
+                />
+              ) : (
+                <SocialText text={post.text} />
+              )}
               {!!post.imageUrls?.length && (
                 <SocialImageCarousel
                   key={post.imageUrls.join('|')}

@@ -21,12 +21,21 @@ import { DisplayUser } from 'common/api/user-types'
 import { User } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { richTextToString } from 'common/util/parse'
+import {
+  SocialRichContent,
+  getSocialMentionIds,
+  getSocialMarketMentionIds,
+  socialRichContentSchema,
+  socialRichContentToText,
+} from 'common/social-rich-content'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { insertNotificationToSupabase } from './supabase/notifications'
 import { getPrivateUser, getUser } from './utils'
 
 type DB = SupabaseDirectClient | SupabaseTransaction
-export type SocialRow = Row<'social_posts'>
+export type SocialRow = Omit<Row<'social_posts'>, 'rich_content'> & {
+  rich_content: SocialRichContent | null
+}
 export type SocialViewer = { id?: string; blocked: string[] }
 export async function getSocialViewer(id?: string): Promise<SocialViewer> {
   const user = id ? await getPrivateUser(id) : null
@@ -117,6 +126,75 @@ export async function validateSocialMarkets(pg: DB, marketIds: string[]) {
   if (rows.length !== marketIds.length)
     throw new APIError(400, 'Only available public markets can be attached')
 }
+function mapSocialMentions(
+  doc: SocialRichContent,
+  user: (node: SocialRichContent) => SocialRichContent,
+  market: (node: SocialRichContent) => SocialRichContent
+): SocialRichContent {
+  if (doc.type === 'mention') return user(doc)
+  if (doc.type === 'contract-mention') return market(doc)
+  return {
+    ...doc,
+    ...(doc.content
+      ? {
+          content: doc.content.map((child) =>
+            mapSocialMentions(child, user, market)
+          ),
+        }
+      : {}),
+  }
+}
+
+export async function validateSocialRichContent(
+  pg: DB,
+  content: SocialRichContent | null | undefined,
+  viewer: SocialViewer
+): Promise<SocialRichContent | null> {
+  if (!content) return null
+  const userIds = getSocialMentionIds(content)
+  const marketIds = getSocialMarketMentionIds(content)
+  const [users, markets] = await Promise.all([
+    userIds.length
+      ? pg.manyOrNone<{ id: string; username: string }>(
+          `select id, username from users where id=any($1::text[])
+          and coalesce((data->>'userDeleted')::boolean,false)=false`,
+          [userIds]
+        )
+      : Promise.resolve([]),
+    marketIds.length
+      ? pg.manyOrNone<Row<'contracts'>>(
+          `select * from contracts where id=any($1::text[]) and visibility='public'
+          and coalesce((data->>'deleted')::boolean,false)=false`,
+          [marketIds]
+        )
+      : Promise.resolve([]),
+  ])
+  if (
+    users.length !== userIds.length ||
+    userIds.some((id) => viewer.blocked.includes(id))
+  )
+    throw new APIError(400, 'Mentioned user is unavailable')
+  if (markets.length !== marketIds.length)
+    throw new APIError(400, 'Only available public markets can be referenced')
+  const usernames = new Map(users.map((user) => [user.id, user.username]))
+  const paths = new Map(
+    markets.map((market) => [market.id, contractPath(convertContract(market))])
+  )
+  const canonical = mapSocialMentions(
+    content,
+    (node) => ({
+      ...node,
+      attrs: { id: node.attrs!.id, label: usernames.get(node.attrs!.id)! },
+    }),
+    (node) => ({
+      ...node,
+      attrs: { id: node.attrs!.id, label: paths.get(node.attrs!.id)! },
+    })
+  )
+  const parsed = socialRichContentSchema.safeParse(canonical)
+  if (!parsed.success) throw new APIError(400, parsed.error.issues[0].message)
+  return parsed.data
+}
 export async function writeSocialMarkets(
   pg: DB,
   id: string,
@@ -186,6 +264,15 @@ export async function hydrateSocialPosts(
 ): Promise<SocialPost[]> {
   if (!rows.length) return []
   const ids = rows.map((r) => r.id)
+  const richDocs = new Map(
+    rows.map((row) => {
+      const parsed = socialRichContentSchema.safeParse(row.rich_content)
+      return [row.id, parsed.success ? parsed.data : null] as const
+    })
+  )
+  const mentionedMarketIds = [
+    ...new Set([...richDocs.values()].flatMap(getSocialMarketMentionIds)),
+  ]
   const [
     users,
     roots,
@@ -196,10 +283,17 @@ export async function hydrateSocialPosts(
     comments,
     bets,
     quotedRows,
+    inlineMarkets,
   ] = await Promise.all([
     pg.manyOrNone(
       `select id, name, username, data from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
-      [rows.map((r) => r.user_id), rows.map((r) => r.parent_id).filter(Boolean)]
+      [
+        rows.flatMap((r) => [
+          r.user_id,
+          ...getSocialMentionIds(richDocs.get(r.id)),
+        ]),
+        rows.map((r) => r.parent_id).filter(Boolean),
+      ]
     ),
     pg.manyOrNone<SocialRow>(
       `select * from social_posts where id = any($1::text[])`,
@@ -250,6 +344,13 @@ export async function hydrateSocialPosts(
           [rows.map((r) => r.source_post_id).filter(Boolean), viewer.blocked]
         )
       : Promise.resolve([]),
+    mentionedMarketIds.length
+      ? pg.manyOrNone<Row<'contracts'>>(
+          `select * from contracts where id=any($1::text[]) and visibility='public'
+          and coalesce((data->>'deleted')::boolean,false)=false`,
+          [mentionedMarketIds]
+        )
+      : Promise.resolve([]),
   ])
   const quotedPosts = await hydrateSocialPosts(
     pg,
@@ -284,6 +385,35 @@ export async function hydrateSocialPosts(
         ? 'moderator'
         : 'author'
       : null
+    const richDoc = richDocs.get(row.id)
+    const richContent =
+      !removed && richDoc
+        ? mapSocialMentions(
+            richDoc,
+            (node) => {
+              const user = users.find((user) => user.id === node.attrs!.id)
+              return user &&
+                !user.data.userDeleted &&
+                !viewer.blocked.includes(user.id)
+                ? { ...node, attrs: { id: user.id, label: user.username } }
+                : { type: 'text', text: '[User unavailable]' }
+            },
+            (node) => {
+              const market = inlineMarkets.find(
+                (market) => market.id === node.attrs!.id
+              )
+              return market
+                ? {
+                    ...node,
+                    attrs: {
+                      id: market.id,
+                      label: contractPath(convertContract(market)),
+                    },
+                  }
+                : { type: 'text', text: '[Market unavailable]' }
+            }
+          )
+        : null
     const attached = attachmentsByPost[row.id] ?? []
     const reaction = reactions.find((r) => r.content_id === row.id)
     const sourceMarket = sourceMarkets.find(
@@ -332,7 +462,12 @@ export async function hydrateSocialPosts(
     return {
       id: row.id,
       author: displayUser(users.find((u) => u.id === row.user_id)),
-      text: removed ? '' : row.text,
+      text: removed
+        ? ''
+        : richContent
+        ? socialRichContentToText(richContent)
+        : row.text,
+      richContent,
       imageUrls: removed ? [] : (row.image_urls ?? []).filter(isSocialImageUrl),
       createdTime: socialTimestamp(row.created_time),
       createdTimeMs: socialTimestampMillis(row.created_time),

@@ -84,6 +84,7 @@ export type notification_source_types =
   | 'new_message'
   | 'post'
   | 'social_reply'
+  | 'social_mention'
   | 'social_post_like'
   | 'post_like'
   | 'post_comment_like'

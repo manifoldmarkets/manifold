@@ -15,6 +15,8 @@ import {
 } from 'shared/supabase/init'
 import { nanoid } from 'common/util/random'
 import { DisplayUser } from 'common/api/user-types'
+import { socialRichContentToText } from 'common/social-rich-content'
+import { notifySocialMentions } from 'shared/social-mentions'
 import {
   assertSocialInteraction,
   getSocialRow,
@@ -27,6 +29,7 @@ import {
   SocialRow,
   SocialViewer,
   validateSocialMarkets,
+  validateSocialRichContent,
   validateSocialSource,
   writeSocialMarkets,
 } from 'shared/social-posts'
@@ -49,16 +52,21 @@ export const createSocialPost: APIHandler<'create-social-post'> =
           parent ? 60 : 10
         )
         await validateSocialMarkets(tx, content.marketIds)
+        const richContent = await validateSocialRichContent(
+          tx,
+          content.richContent,
+          viewer
+        )
         await validateSocialSource(tx, source, content.marketIds, viewer)
         const marketSource =
           source && 'contractId' in source ? source : undefined
         const row = await tx.one<SocialRow>(
-          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls, source_post_id)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *`,
+          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls, source_post_id, rich_content)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning *`,
           [
             id,
             auth.uid,
-            content.text,
+            richContent ? socialRichContentToText(richContent) : content.text,
             parent?.id ?? null,
             parent?.root_id ?? id,
             marketSource?.contractId ?? null,
@@ -66,6 +74,7 @@ export const createSocialPost: APIHandler<'create-social-post'> =
             marketSource?.betId ?? null,
             content.imageUrls ?? [],
             source && 'postId' in source ? source.postId : null,
+            richContent,
           ]
         )
         await writeSocialMarkets(tx, id, content.marketIds)
@@ -75,6 +84,7 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         result: (await hydrateSocialPosts(pg, [row], viewer))[0],
         continue: async () => {
           if (parent) await notifySocial(pg, parent, author, 'reply', id)
+          await notifySocialMentions(pg, row, author, parent?.user_id)
         },
       }
     }
@@ -84,6 +94,7 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
   onlyUsersWhoCanPerformAction('editComment', async ({ id, content }, auth) => {
     const pg = createSupabaseDirectClient()
     await socialAuthor(auth.uid)
+    const viewer = await getSocialViewer(auth.uid)
     const row = await pg.tx(async (tx) => {
       const post = await lockSocialThread(tx, id)
       if (post.user_id !== auth.uid)
@@ -94,25 +105,28 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
         throw new APIError(400, 'Add text, a market, or an image')
       await limitSocialWrite(tx, auth.uid, 'edit', 30)
       await validateSocialMarkets(tx, content.marketIds)
+      const richContent =
+        content.richContent === undefined && content.text === post.text
+          ? post.rich_content
+          : await validateSocialRichContent(tx, content.richContent, viewer)
       await writeSocialMarkets(tx, id, content.marketIds)
       // Removing the original attachment also removes the repost context.
       return tx.one<SocialRow>(
-        `update social_posts set text=$2, image_urls=$4, edited_time=clock_timestamp(),
+        `update social_posts set text=$2, image_urls=$4, rich_content=$5, edited_time=clock_timestamp(),
       source_contract_id=case when source_contract_id=any($3::text[]) then source_contract_id else null end,
       source_comment_id=case when source_contract_id=any($3::text[]) then source_comment_id else null end,
       source_bet_id=case when source_contract_id=any($3::text[]) then source_bet_id else null end
       where id=$1 returning *`,
         [
           id,
-          content.text,
+          richContent ? socialRichContentToText(richContent) : content.text,
           content.marketIds,
           content.imageUrls ?? post.image_urls,
+          richContent ?? null,
         ]
       )
     })
-    return (
-      await hydrateSocialPosts(pg, [row], await getSocialViewer(auth.uid))
-    )[0]
+    return (await hydrateSocialPosts(pg, [row], viewer))[0]
   })
 
 export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
@@ -131,7 +145,7 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
       )
     if (post.deleted_time) return
     await tx.none(
-      `update social_posts set text='', image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
+      `update social_posts set text='', rich_content=null, image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
       source_contract_id=null, source_comment_id=null, source_bet_id=null, source_post_id=null where id=$1`,
       [id, auth.uid, post.user_id !== auth.uid]
     )
@@ -147,6 +161,9 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
       and data->>'sourceType' in ('social_reply','social_post_like')`,
       [id, post.user_id, post.parent_id]
     )
+    await tx.none('delete from user_notifications where notification_id=$1', [
+      `social-mention-${id}`,
+    ])
   })
   return { success: true }
 }
