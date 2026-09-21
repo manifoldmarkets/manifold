@@ -76,12 +76,12 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
           ))}
         </div>
       )}
-      {quote.includesQuote && (
+      {(quote.includesQuote || (quote.kind === 'post' && !quote.text)) && (
         <Link
           href={quote.url}
           className="text-primary-700 mt-2 block text-xs hover:underline"
         >
-          View included quote
+          {quote.includesQuote ? 'View included quote' : 'View original post'}
         </Link>
       )}
     </div>
