@@ -223,6 +223,14 @@ export function SocialComposer(props: {
             rows={2}
             value={text}
             onChange={(e) => setField('text', e.target.value)}
+            onPaste={(e) => {
+              const files = Array.from(e.clipboardData.files).filter((file) =>
+                file.type.startsWith('image/')
+              )
+              if (!files.length) return
+              e.preventDefault()
+              addImages(files)
+            }}
             ref={input}
             disabled={saving}
             onKeyDown={(e) => {
