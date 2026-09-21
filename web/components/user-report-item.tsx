@@ -1,3 +1,6 @@
+import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
+import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
+import { SocialText } from './yap/social-text'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { UserHovercard } from 'web/components/user/user-hovercard'
@@ -21,6 +24,8 @@ export default function UserReportItem(props: {
   const {
     slug,
     text,
+    imageUrls,
+    source,
     owner,
     reporter,
     contentType,
@@ -90,7 +95,7 @@ export default function UserReportItem(props: {
                   was reported for this{' '}
                 </Tooltip>
                 <Link href={slug} className="text-primary-700 text-md my-1">
-                  {contentType}
+                  {contentType === 'social_post' ? 'post on Yap' : contentType}
                 </Link>
               </>
             )}
@@ -102,6 +107,29 @@ export default function UserReportItem(props: {
             onBan={() => onBan(owner.id)}
             disabled={isBanned}
           />
+          {isMod && contentType === 'social_post' && (
+            <Button
+              color="red-outline"
+              size="xs"
+              onClick={async () => {
+                try {
+                  await toast.promise(
+                    api('delete-social-post', { id: props.report.contentId }),
+                    {
+                      loading: 'Removing…',
+                      success: 'Post removed',
+                      error: 'Could not remove post',
+                    }
+                  )
+                  await handleDismiss()
+                } catch {
+                  /* toast displays the failure */
+                }
+              }}
+            >
+              Remove post
+            </Button>
+          )}
           {isMod && (
             <Button
               color="red-outline"
@@ -128,7 +156,20 @@ export default function UserReportItem(props: {
           )}
           {showContent && (
             <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
-              <Content size="md" content={text} />
+              {contentType === 'social_post' ? (
+                <>
+                  <SocialText text={String(text)} />
+                  {source && <SocialQuoteCard quote={source} />}
+                  {!!imageUrls?.length && (
+                    <SocialImageCarousel
+                      key={imageUrls.join('|')}
+                      images={imageUrls}
+                    />
+                  )}
+                </>
+              ) : (
+                <Content size="md" content={text} />
+              )}
             </div>
           )}
         </>
