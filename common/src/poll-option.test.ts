@@ -48,7 +48,13 @@ describe('sortPollOptions', () => {
   })
 
   it('restores the original order the creator listed', () => {
-    const shuffled = [options[3], options[0], options[4], options[2], options[1]]
+    const shuffled = [
+      options[3],
+      options[0],
+      options[4],
+      options[2],
+      options[1],
+    ]
     expect(ids(sortPollOptions({}, shuffled, 'original'))).toEqual([
       'a',
       'b',
