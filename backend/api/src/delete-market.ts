@@ -5,6 +5,7 @@ import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 const bodySchema = z
   .object({
@@ -13,13 +14,22 @@ const bodySchema = z
   .strict()
 
 export const deleteMarket = authEndpoint(async (req, auth) => {
-  const pg = createSupabaseDirectClient()
   const { contractId } = validate(bodySchema, req.body)
+  // Share the bets queue with unresolve so the resolved-N/A check below can't
+  // go stale between the read and the write.
+  return await betsQueue.enqueueFn(
+    () => deleteMarketMain(contractId, auth.uid),
+    [contractId]
+  )
+})
+
+const deleteMarketMain = async (contractId: string, userId: string) => {
+  const pg = createSupabaseDirectClient()
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
   const { creatorId } = contract
 
-  if (creatorId !== auth.uid && !isAdminId(auth.uid))
+  if (creatorId !== userId && !isAdminId(userId))
     throw new APIError(403, 'User is not creator of contract')
 
   const { resolution, uniqueBettorCount, siblingContractId } = contract
@@ -41,7 +51,7 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
 
   // duplicate checks for sibling contract
   if (siblingContractId) {
-    if (!isAdminId(auth.uid))
+    if (!isAdminId(userId))
       throw new APIError(403, 'Only Manifold admins can delete cash markets')
 
     const cashContract = await getContract(pg, siblingContractId)
@@ -69,4 +79,4 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
   log('contract ' + contractId + ' deleted')
 
   return { status: 'success' }
-})
+}
