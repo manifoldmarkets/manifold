@@ -1,4 +1,4 @@
-import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
+import { XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { MultiSort } from 'common/answer'
 import { MultiContract, SORTS } from 'common/contract'
@@ -9,37 +9,11 @@ import toast from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
-import DropdownMenu from '../widgets/dropdown-menu'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import { MoneyDisplay } from '../bet/money-display'
-
-function MultiSortDropdown(props: {
-  sort: MultiSort
-  setSort: (sort: MultiSort) => void
-}) {
-  const { sort, setSort } = props
-  return (
-    <DropdownMenu
-      closeOnClick
-      items={generateFilterDropdownItems(SORTS, setSort)}
-      buttonContent={
-        <Row className="text-ink-500 items-center gap-0.5">
-          <span className="whitespace-nowrap text-sm font-medium">
-            {SORTS.find((s) => s.value === sort)?.label}
-          </span>
-          <ChevronDownIcon className="h-4 w-4" />
-        </Row>
-      }
-      buttonClass={
-        'h-8 rounded-full bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400 py-1 text-sm px-3'
-      }
-    />
-  )
-}
+import { SetDefaultSortButton, SortDropdown } from './sort-dropdown'
 
 export function SearchCreateAnswerPanel(props: {
   contract: MultiContract
@@ -197,24 +171,15 @@ export function SearchCreateAnswerPanel(props: {
             shouldExpandSearch ? 'hidden sm:block' : 'block'
           )}
         >
-          <MultiSortDropdown sort={sort} setSort={setSort} />
+          <SortDropdown sorts={SORTS} sort={sort} setSort={setSort} />
         </div>
       </Row>
       {showDefaultSort && (
-        <Row className="text-primary-700 flex-grow items-center justify-end gap-0.5 text-xs font-semibold">
-          <button className="hover:underline" onClick={setDefaultSort}>
-            Set default
-          </button>
-          <div className="mb-1 flex items-center">
-            <InfoTooltip
-              size="sm"
-              text={`This sets the default sort order to ${
-                SORTS.find((s) => s.value === sort)?.label
-              } for all users`}
-              tooltipParams={{ placement: 'bottom' }}
-            />
-          </div>
-        </Row>
+        <SetDefaultSortButton
+          className="flex-grow justify-end"
+          sortLabel={SORTS.find((s) => s.value === sort)?.label}
+          onClick={setDefaultSort}
+        />
       )}
     </Col>
   )

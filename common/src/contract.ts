@@ -395,6 +395,7 @@ export type Poll = {
   voterVisibility?: PollVoterVisibility
   pollType?: PollType // Default: 'single' for backwards compatibility
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
+  sort?: PollOptionSort // Default order of options once results are shown. Default: 'votes-desc'
 }
 
 export type Sports = {
@@ -551,6 +552,16 @@ export const SORTS = [
 ] as const
 
 export type SortType = (typeof SORTS)[number]['value']
+
+// How poll options are ordered once results are visible.
+export const POLL_OPTION_SORTS = [
+  { label: 'Most votes', value: 'votes-desc' },
+  { label: 'Fewest votes', value: 'votes-asc' },
+  { label: 'Original order', value: 'original' },
+  { label: 'A-Z', value: 'alphabetical' },
+] as const
+
+export type PollOptionSort = (typeof POLL_OPTION_SORTS)[number]['value']
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 

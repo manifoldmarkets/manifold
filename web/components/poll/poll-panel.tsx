@@ -1,22 +1,32 @@
 import { ArrowRightIcon, CheckIcon, StarIcon } from '@heroicons/react/solid'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import {
+  POLL_OPTION_SORTS,
   PollContract,
+  PollOptionSort,
   PollType,
   PollVoterVisibility,
   contractPath,
 } from 'common/contract'
-import { PollOption } from 'common/poll-option'
+import { isAdminId, isModId } from 'common/envs/constants'
+import {
+  PollOption,
+  getDefaultPollSort,
+  sortPollOptions,
+} from 'common/poll-option'
 import { maybePluralize } from 'common/util/format'
-import { sortBy, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { castPollVote } from 'web/lib/api/api'
+import { castPollVote, updateMarket } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { getUserVote } from 'web/lib/supabase/polls'
 import { AnswerBar } from '../answers/answer-components'
+import { SetDefaultSortButton, SortDropdown } from '../answers/sort-dropdown'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -84,25 +94,32 @@ export function PollPanel(props: {
     return false
   }, [hasVoted, votingOpen, isCreator])
 
-  // Determine which score to show for ranking
-  const getDisplayScore = useCallback(
-    (option: PollOption) => {
-      if (pollType === 'ranked-choice') {
-        return option.rankedVoteScore ?? 0
-      }
-      return option.votes
-    },
-    [pollType]
+  // Like market answers: the poll's saved sort is the default, and each
+  // user's own pick is remembered while they browse.
+  const defaultSort = getDefaultPollSort(contract)
+  const [sort, setSort] = usePersistentInMemoryState<PollOptionSort>(
+    defaultSort,
+    'poll-sort' + contract.id
   )
 
-  // Sort options for display when showing results
+  // Options are shown in the creator's order until results are visible, so
+  // the vote counts aren't leaked through the ordering.
   const sortedOptions = useMemo(() => {
     if (!shouldShowResults) return options
-    if (pollType === 'ranked-choice') {
-      return sortBy(options, (o) => -(o.rankedVoteScore ?? 0))
-    }
-    return sortBy(options, (o) => -o.votes)
-  }, [options, shouldShowResults, pollType])
+    return sortPollOptions(contract, options, sort)
+  }, [options, shouldShowResults, pollType, sort])
+
+  // Compact previews (feed cards, embeds) get the default order but no controls.
+  const showSortControls = shouldShowResults && !maxOptions
+  const canSetDefaultSort =
+    !!user && (isCreator || isModId(user.id) || isAdminId(user.id))
+  const setDefaultSort = async () => {
+    await toast.promise(updateMarket({ contractId: contract.id, sort }), {
+      loading: 'Updating sort order...',
+      success: 'Sort order updated for all users',
+      error: 'Failed to update sort order',
+    })
+  }
 
   const castVote = async () => {
     if (!user) {
@@ -188,21 +205,39 @@ export function PollPanel(props: {
     (pollType === 'multi-select' && selectedIds.length > 0) ||
     (pollType === 'ranked-choice' && rankedIds.length > 0)
 
+  const pollTypeHint =
+    pollType === 'multi-select'
+      ? `Select up to ${effectiveMaxSelections} ${maybePluralize(
+          'option',
+          effectiveMaxSelections
+        )}`
+      : pollType === 'ranked-choice'
+      ? 'Rank options in order of preference'
+      : undefined
+
   return (
     <Col className="text-ink-1000 gap-2">
-      {/* Poll type indicator */}
-      {pollType !== 'single' && (
-        <div className="text-ink-500 mb-1 text-sm">
-          {pollType === 'multi-select' && (
-            <>
-              Select up to {effectiveMaxSelections}{' '}
-              {maybePluralize('option', effectiveMaxSelections)}
-            </>
+      {(pollTypeHint || showSortControls) && (
+        <Row className="mb-1 items-center justify-between gap-2">
+          <div className="text-ink-500 text-sm">{pollTypeHint}</div>
+          {showSortControls && (
+            <Row className="items-center gap-2">
+              {canSetDefaultSort && sort !== defaultSort && (
+                <SetDefaultSortButton
+                  sortLabel={
+                    POLL_OPTION_SORTS.find((s) => s.value === sort)?.label
+                  }
+                  onClick={setDefaultSort}
+                />
+              )}
+              <SortDropdown
+                sorts={POLL_OPTION_SORTS}
+                sort={sort}
+                setSort={setSort}
+              />
+            </Row>
           )}
-          {pollType === 'ranked-choice' && (
-            <>Rank options in order of preference</>
-          )}
-        </div>
+        </Row>
       )}
 
       {optionsToShow.map((option: PollOption) => {
