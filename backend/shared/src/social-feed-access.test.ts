@@ -12,7 +12,11 @@ jest.mock('api/helpers/rate-limit', () => ({
 import { Request, Response } from 'express'
 import { API } from 'common/api/schema'
 import { ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
-import { SocialPost, SocialPostPage } from 'common/social-post'
+import {
+  SocialPost,
+  SocialPostPage,
+  SOCIAL_FEED_PAGE_SIZE,
+} from 'common/social-post'
 import { AuthedUser, typedEndpoint } from 'api/helpers/endpoint'
 import { getSocialPosts, getSocialLikers } from 'api/social-posts'
 import { createSupabaseDirectClient } from './supabase/init'
@@ -42,7 +46,7 @@ test('Yap read endpoints reject anonymous requests before invoking handlers', as
   }
 })
 
-test('shared feed cache isolates viewer likes, expires, and bypasses blocks and refreshes', async () => {
+test('shared feed cache isolates viewer likes, expires, and bypasses other limits, blocks, and refreshes', async () => {
   jest.useFakeTimers()
   try {
     const reply = {
@@ -74,15 +78,23 @@ test('shared feed cache isolates viewer likes, expires, and bypasses blocks and 
       blocked: id === 'blocked' ? ['author'] : [],
     }))
     const hydrate = jest.mocked(hydrateSocialPosts).mockResolvedValue([post])
-    const read = (uid: string, useCache = 'true') =>
+    const read = (
+      uid: string,
+      useCache = 'true',
+      limit = SOCIAL_FEED_PAGE_SIZE
+    ) =>
       getSocialPosts(
-        API['get-social-posts'].props.parse({ limit: 30, useCache }),
+        API['get-social-posts'].props.parse({ limit, useCache }),
         { uid } as AuthedUser,
         {} as Request
       ) as Promise<SocialPostPage>
 
     const [alice, bob] = await Promise.all([read('alice'), read('bob')])
     expect(hydrate).toHaveBeenCalledTimes(1)
+    expect(manyOrNone).toHaveBeenCalledWith(
+      expect.stringContaining('select p.* from social_posts'),
+      [null, [], null, null, SOCIAL_FEED_PAGE_SIZE + 1]
+    )
     expect(hydrate.mock.calls[0][2]).toEqual({ blocked: [] })
     expect(alice.posts[0].liked).toBe(true)
     expect(alice.posts[0].replyPreviews[0].liked).toBe(true)
@@ -111,6 +123,16 @@ test('shared feed cache isolates viewer likes, expires, and bypasses blocks and 
     await expect(read('bob')).rejects.toThrow('temporary failure')
     await read('bob')
     expect(hydrate).toHaveBeenCalledTimes(6)
+
+    // A larger request must read its own page without replacing the feed cache.
+    await read('bob', 'true', 30)
+    expect(hydrate).toHaveBeenCalledTimes(7)
+    expect(manyOrNone).toHaveBeenLastCalledWith(
+      expect.stringContaining('select p.* from social_posts'),
+      [null, [], null, null, 31]
+    )
+    await read('bob')
+    expect(hydrate).toHaveBeenCalledTimes(7)
   } finally {
     jest.useRealTimers()
   }

@@ -31,7 +31,7 @@ is run by the application or by the development tests.
   page visitors use the site's existing signed-out redirect. The signed-out mobile
   Yap tab opens sign-in. Posts are never
   embedded in public static page props.
-- The API keeps one viewer-neutral initial page (30 posts) in memory per instance
+- The API keeps one viewer-neutral initial page (10 posts) in memory per instance
   for 30 seconds, combining concurrent cache misses. Authenticated requests add
   only that viewer's liked IDs. Blocked-user feeds, refreshes, pagination, and
   discussion reads bypass the cache; HTTP responses use `no-store`.
@@ -44,8 +44,9 @@ is run by the application or by the development tests.
   for creation. Authors retain edit/delete access after membership expires;
   posting bans still prevent creation/editing. Likes and reports need sign-in.
 - The timeline contains top-level posts newest first, with two recent direct
-  reply previews. Reply pages paginate direct children oldest first. Cursor
-  timestamps retain microsecond precision, with IDs breaking timestamp ties.
+  reply previews. It loads 10 posts initially and fetches another 10 as the reader
+  approaches the bottom. Reply pages paginate 30 direct children oldest first.
+  Cursor timestamps retain microsecond precision, with IDs breaking timestamp ties.
 - Hourly per-user write limits: 10 posts, 60 replies, 300 like/unlike actions,
   30 edits, and 20 reports. Database counters apply across API instances.
 - Block checks cover both immediate parent and root authors. Deleted content is

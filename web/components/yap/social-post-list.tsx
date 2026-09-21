@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SocialPostPage } from 'common/social-post'
+import { SOCIAL_FEED_PAGE_SIZE, SocialPostPage } from 'common/social-post'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
@@ -43,7 +43,7 @@ export function SocialPostList({
         let next = await api('get-social-posts', {
           parentId,
           cursor,
-          limit: 30,
+          limit: parentId ? 30 : SOCIAL_FEED_PAGE_SIZE,
           useCache:
             !parentId && !cursor && refreshKey === 0 && version === 0
               ? 'true'
@@ -69,7 +69,7 @@ export function SocialPostList({
             const more = await api('get-social-posts', {
               parentId,
               cursor: next.nextCursor,
-              limit: 30,
+              limit: parentId ? 30 : SOCIAL_FEED_PAGE_SIZE,
               useCache: 'false',
             })
             if (current !== generation.current) return
@@ -118,7 +118,7 @@ export function SocialPostList({
       ([entry]) => {
         if (entry.isIntersecting) void load(page.nextCursor!)
       },
-      { rootMargin: '400px' }
+      { rootMargin: '0px 0px 250px 0px' }
     )
     if (sentinel.current) observer.observe(sentinel.current)
     return () => observer.disconnect()

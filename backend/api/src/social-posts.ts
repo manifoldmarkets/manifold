@@ -3,6 +3,7 @@ import {
   SocialPostPage,
   socialTimestamp,
   hasSocialPostContent,
+  SOCIAL_FEED_PAGE_SIZE,
 } from 'common/social-post'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -180,7 +181,7 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
     props.useCache &&
     !props.parentId &&
     !props.cursor &&
-    props.limit === 30 &&
+    props.limit === SOCIAL_FEED_PAGE_SIZE &&
     !viewer.blocked.length
   ) {
     if (!initialFeed || initialFeed.expires <= Date.now()) {

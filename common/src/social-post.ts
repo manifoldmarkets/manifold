@@ -6,6 +6,7 @@ import { FIREBASE_CONFIG } from './envs/constants'
 export const SOCIAL_POST_MAX_LENGTH = 2000
 export const SOCIAL_POST_MAX_MARKETS = 5
 export const SOCIAL_POST_MAX_IMAGES = 4
+export const SOCIAL_FEED_PAGE_SIZE = 10
 
 // Match the download URLs returned by uploadPublicImage, including the bucket.
 // Trusting the Firebase hostname alone would allow attacker-owned buckets.
