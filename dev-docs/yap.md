@@ -52,6 +52,9 @@ is run by the application or by the development tests.
   settings and each avatar's native size. Usernames open profile hovercards only
   over the text; surrounding header space opens the Yap discussion. Author and
   liker responses include cosmetic entitlements in their existing queries.
+- Holding the heart button for half a second opens the liker list without
+  changing the like. Scrolling cancels the hold; regular taps and keyboard
+  activation still toggle the like. Clicking the like count also opens the list.
 - Posts can attach five distinct public markets and four images.
   Attachments must use the configured Firebase upload bucket;
   reads also hide legacy external image URLs. Image previews stay local until

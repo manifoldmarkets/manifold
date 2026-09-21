@@ -37,6 +37,7 @@ import { SocialPostList } from './social-post-list'
 import { UserReactedItem } from '../contract/react-button'
 import { Tooltip } from '../widgets/tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useSocialLikePress } from './use-social-like-press'
 
 export function SocialPostCard(
   props: Parameters<typeof SocialPostCardContent>[0]
@@ -131,6 +132,11 @@ function SocialPostCardContent({
     onChanged()
   }
   const own = user?.id === post.author.id
+  const likePress = useSocialLikePress(
+    () => void like(),
+    () => setLikersOpen(true),
+    busy
+  )
   const hasPreviews = previews && post.replyPreviews.length > 0
   const connectedBelow = continueThread || expanded || hasPreviews
   const replyCountButton = showReplyActions && post.replyCount > 0 && (
@@ -410,8 +416,8 @@ function SocialPostCardContent({
                     aria-label={liked ? 'Unlike post' : 'Like post'}
                     aria-pressed={liked}
                     disabled={busy}
-                    onClick={like}
-                    className={`rounded-full p-2 transition-colors hover:bg-rose-500/10 ${
+                    {...likePress}
+                    className={`touch-manipulation select-none rounded-full p-2 transition-colors hover:bg-rose-500/10 ${
                       liked ? 'text-rose-500' : 'hover:text-rose-500'
                     }`}
                   >
