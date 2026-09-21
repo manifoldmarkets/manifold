@@ -8,7 +8,7 @@ import { EditorContent, ReactRenderer, useEditor } from '@tiptap/react'
 import type { SuggestionKeyDownProps } from '@tiptap/suggestion'
 import StarterKit from '@tiptap/starter-kit'
 import { PluginKey } from 'prosemirror-state'
-import { ReactNode, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import tippy, { type Instance } from 'tippy.js'
 import {
   socialRichContentToText,
@@ -229,46 +229,9 @@ export function SocialEditor({
     if (editor && focusOnMount) editor.commands.focus('end')
   }, [editor, focusOnMount])
 
-  const insertTrigger = (trigger: '@' | '%') => {
-    if (!editor) return
-    const previous = editor.state.selection.$from.nodeBefore
-    const prefix =
-      previous && (!previous.isText || !/\s$/.test(previous.text ?? ''))
-        ? ' '
-        : ''
-    editor
-      .chain()
-      .focus()
-      .insertContent(prefix + trigger)
-      .run()
-  }
-  const tool = (label: string, children: ReactNode, onClick: () => void) => (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled || !editor}
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={onClick}
-      className="text-ink-600 hover:bg-ink-100 flex h-8 min-w-[2rem] items-center justify-center rounded px-2 text-sm disabled:opacity-40"
-    >
-      {children}
-    </button>
-  )
   return (
     <div className="bg-canvas-50 border-ink-300 focus-within:border-primary-500 focus-within:ring-primary-500 mb-3 rounded-2xl border focus-within:ring-1">
       <EditorContent editor={editor} />
-      <div
-        role="toolbar"
-        aria-label="Post tools"
-        className="border-ink-200 flex flex-wrap items-center gap-0.5 border-t px-2 py-1"
-      >
-        {tool('Tag a person', '@', () => insertTrigger('@'))}
-        {tool('Reference a market', '%', () => insertTrigger('%'))}
-      </div>
-      <p className="text-ink-500 px-3 pb-2 text-xs">
-        Use @ to tag people, % to reference markets, and :laugh: for 😆.
-      </p>
     </div>
   )
 }
