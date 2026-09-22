@@ -1,13 +1,14 @@
 import {
   getSocialMarketMentionIds,
   getSocialMentionIds,
+  hasUnavailableSocialMentions,
   SocialRichContent,
   socialRichContentSchema,
   socialRichContentDisplaySchema,
   socialRichContentToText,
   textToSocialRichContent,
 } from './social-rich-content'
-import { socialPostDraftSchema } from './social-post'
+import { socialPostDraftSchema, socialPostEditSchema } from './social-post'
 
 const doc = (...content: SocialRichContent[]): SocialRichContent => ({
   type: 'doc',
@@ -89,6 +90,107 @@ test('display validation retains content expanded by current mention labels or r
     socialRichContentDisplaySchema.safeParse(doc({ type: 'image' })).success
   ).toBe(false)
 })
+
+test.each([
+  ['mention', 'private-user-name', '[User unavailable]'],
+  [
+    'contract-mention',
+    '/private-owner/private-question',
+    '[Market unavailable]',
+  ],
+])(
+  'keeps unavailable %s identity for edits without exposing its label in plain text',
+  (type, label, placeholder) => {
+    const rich = doc(
+      { type: 'text', text: 'Before ' },
+      { type, attrs: { id: 'hidden-reference', label, unavailable: true } },
+      { type: 'text', text: ' after' }
+    )
+    for (const schema of [
+      socialRichContentSchema,
+      socialRichContentDisplaySchema,
+    ]) {
+      const parsed = schema.parse(rich)
+      expect(parsed.content?.[0].content?.[1].attrs).toEqual({
+        id: 'hidden-reference',
+        label,
+        unavailable: true,
+      })
+      expect(socialRichContentToText(parsed)).toBe(
+        `Before ${placeholder} after`
+      )
+      expect(socialRichContentToText(parsed)).not.toContain(label)
+      expect(hasUnavailableSocialMentions(parsed)).toBe(true)
+    }
+    expect(
+      hasUnavailableSocialMentions(
+        doc({ type, attrs: { id: 'visible-reference', label } })
+      )
+    ).toBe(false)
+    // Literal placeholder text has no reference for the server to restore.
+    expect(
+      hasUnavailableSocialMentions(textToSocialRichContent(placeholder))
+    ).toBe(false)
+  }
+)
+
+test.each(['mention', 'contract-mention'])(
+  'accepts expanded unavailable %s text only through the rich edit request boundary',
+  (type) => {
+    const rich = doc(
+      { type: 'text', text: 'x'.repeat(1990) },
+      {
+        type,
+        attrs: { id: 'retained-reference', label: '', unavailable: true },
+      }
+    )
+    const edited = socialPostEditSchema.parse({
+      text: 'untrusted client fallback',
+      richContent: rich,
+    })
+    expect([...edited.text].length).toBeGreaterThan(2000)
+    expect(edited.text).not.toContain('untrusted client fallback')
+    expect(hasUnavailableSocialMentions(edited.richContent)).toBe(true)
+    expect(
+      socialPostDraftSchema.safeParse({ text: '', richContent: rich }).success
+    ).toBe(false)
+    for (const richContent of [undefined, null]) {
+      expect(
+        socialPostEditSchema.safeParse({ text: edited.text, richContent })
+          .success
+      ).toBe(false)
+    }
+  }
+)
+
+test('plain-text edits still enforce the same Unicode length boundary as creation', () => {
+  for (const schema of [socialPostDraftSchema, socialPostEditSchema]) {
+    expect(schema.safeParse({ text: '😀'.repeat(2000) }).success).toBe(true)
+    expect(schema.safeParse({ text: '😀'.repeat(2001) }).success).toBe(false)
+  }
+})
+
+test.each([
+  ['mention', 10, getSocialMentionIds],
+  ['contract-mention', 5, getSocialMarketMentionIds],
+] as const)(
+  'preserves existing %s references beyond the current authoring limit',
+  (type, limit, getIds) => {
+    const rich = doc(
+      ...Array.from({ length: limit + 1 }, (_, i) => ({
+        type,
+        attrs: { id: `retained-${i}`, label: `label-${i}` },
+      }))
+    )
+    const displayed = socialRichContentDisplaySchema.parse(rich)
+    expect(getIds(displayed)).toHaveLength(limit + 1)
+    expect(socialRichContentToText(displayed)).toContain(`label-${limit}`)
+    expect(socialRichContentSchema.safeParse(rich).success).toBe(false)
+    expect(
+      socialPostDraftSchema.safeParse({ text: '', richContent: rich }).success
+    ).toBe(false)
+  }
+)
 
 test.each([
   'image',

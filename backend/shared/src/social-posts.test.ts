@@ -22,12 +22,17 @@ import {
   validateSocialSource,
   notifySocial,
   hydrateSocialPosts,
+  getSocialEditContent,
 } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { User } from 'common/user'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
-import { SocialRichContent } from 'common/social-rich-content'
+import {
+  SocialRichContent,
+  socialRichContentToText,
+  textToSocialRichContent,
+} from 'common/social-rich-content'
 import { convertEntitlement } from 'common/shop/types'
 
 const post = {
@@ -280,6 +285,230 @@ test('rich reads redact unavailable market references from both rich and fallbac
   )
   expect(removed.richContent).toBeNull()
   expect(removed.text).toBe('')
+})
+
+test('editing keeps unavailable reference identities without returning their stored labels', () => {
+  const stored = {
+    ...mentionedContent,
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          ...mentionedContent.content![0].content!,
+          { type: 'text', text: '[Market unavailable]' },
+        ],
+      },
+    ],
+  }
+  const displayed = {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: '[User unavailable]' },
+          { type: 'text', text: ' see ' },
+          { type: 'text', text: '[Market unavailable]' },
+          { type: 'text', text: '[Market unavailable]' },
+        ],
+      },
+    ],
+  }
+  const edit = getSocialEditContent(stored, displayed)
+  expect(edit?.content?.[0].content).toEqual([
+    {
+      type: 'mention',
+      attrs: {
+        id: 'mentioned',
+        label: '[User unavailable]',
+        unavailable: true,
+      },
+    },
+    { type: 'text', text: ' see ' },
+    {
+      type: 'contract-mention',
+      attrs: { id: 'market', label: '[Market unavailable]', unavailable: true },
+    },
+    { type: 'text', text: '[Market unavailable]' },
+  ])
+  expect(JSON.stringify(edit)).not.toMatch(/forged-name|javascript:forged/)
+  expect(getSocialEditContent(null, null)).toBeNull()
+})
+
+test('reads still redact structured references beyond current authoring limits', async () => {
+  const richContent = textToSocialRichContent('x'.repeat(2000))
+  richContent.content![0].content!.push(
+    ...Array.from({ length: 11 }, (_, i) => ({
+      type: 'mention',
+      attrs: { id: `old-user-${i}`, label: `old-user-${i}` },
+    })),
+    ...Array.from({ length: 6 }, (_, i) => ({
+      type: 'contract-mention',
+      attrs: { id: `old-market-${i}`, label: `/private/old-market-${i}` },
+    }))
+  )
+  const row = {
+    ...post,
+    id: 'root',
+    root_id: 'root',
+    parent_id: null,
+    created_time: '2026-09-21T00:00:00Z',
+    rich_content: richContent,
+    text: 'stale fallback /private/old-market',
+  } as SocialRow
+  const pg = db({
+    manyOrNone: jest.fn(async (sql: string) => {
+      if (sql.includes('select id, name, username, data'))
+        return [
+          { id: row.user_id, name: 'Author', username: 'author', data: {} },
+        ]
+      if (sql.includes('select * from social_posts')) return [row]
+      return []
+    }),
+  })
+  const [hydrated] = await hydrateSocialPosts(pg, [row], { blocked: [] }, false)
+  expect(hydrated.richContent).not.toBeNull()
+  expect(hydrated.text).toBe(
+    'x'.repeat(2000) +
+      '[User unavailable]'.repeat(11) +
+      '[Market unavailable]'.repeat(6)
+  )
+  expect(JSON.stringify(hydrated)).not.toMatch(
+    /private|old-user|old-market|stale fallback/
+  )
+  expect(hydrated).not.toHaveProperty('editContent')
+})
+
+test('edits preserve unavailable mentions, ignore forged labels, and allow their removal', async () => {
+  const pg = db({ manyOrNone: jest.fn().mockResolvedValue([]) })
+  const edits = getSocialEditContent(mentionedContent, {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: '[User unavailable]' },
+          { type: 'text', text: ' see ' },
+          { type: 'text', text: '[Market unavailable]' },
+        ],
+      },
+    ],
+  })!
+  edits.content![0].content!.push({ type: 'text', text: ' edited' })
+  edits.content![0].content![0].attrs!.label = 'forged replacement'
+  const saved = await validateSocialRichContent(
+    pg,
+    edits,
+    { blocked: [] },
+    mentionedContent
+  )
+  expect(saved?.content?.[0].content?.[0]).toEqual(
+    mentionedContent.content![0].content![0]
+  )
+  expect(saved?.content?.[0].content?.[2]).toEqual(
+    mentionedContent.content![0].content![2]
+  )
+  expect(JSON.stringify(saved)).not.toContain('unavailable')
+  expect(socialRichContentToText(saved!)).toBe(
+    '@forged-name see %javascript:forged edited'
+  )
+  const removed = textToSocialRichContent('Replaced the references')
+  await expect(
+    validateSocialRichContent(pg, removed, { blocked: [] }, mentionedContent)
+  ).resolves.toEqual(removed)
+})
+
+test.each(['mention', 'contract-mention'])(
+  'rejects new, forged and duplicated unavailable %s references',
+  async (type) => {
+    const existing = mentionedContent.content![0].content!.find(
+      (node) => node.type === type
+    )!
+    const doc = (...content: SocialRichContent[]): SocialRichContent => ({
+      type: 'doc',
+      content: [{ type: 'paragraph', content }],
+    })
+    const unavailable = {
+      ...existing,
+      attrs: { ...existing.attrs, label: 'unavailable', unavailable: true },
+    }
+    const pg = db({ manyOrNone: jest.fn().mockResolvedValue([]) })
+    await expect(
+      validateSocialRichContent(pg, doc(unavailable), { blocked: [] })
+    ).rejects.toMatchObject({ code: 400 })
+    for (const submitted of [
+      doc({
+        ...unavailable,
+        attrs: { ...unavailable.attrs, id: 'new-hidden' },
+      }),
+      doc(unavailable, unavailable),
+    ])
+      await expect(
+        validateSocialRichContent(
+          pg,
+          submitted,
+          { blocked: [] },
+          mentionedContent
+        )
+      ).rejects.toMatchObject({ code: 400 })
+  }
+)
+
+test('available mentions are canonicalized again and ignore unavailable flags', async () => {
+  const pg = db({
+    manyOrNone: jest.fn(async (sql: string) =>
+      sql.includes('from users')
+        ? [{ id: 'mentioned', username: 'renamed-user' }]
+        : [mentionedMarket]
+    ),
+  })
+  const incoming = JSON.parse(
+    JSON.stringify(mentionedContent)
+  ) as SocialRichContent
+  incoming.content![0].content![0].attrs!.unavailable = true
+  incoming.content![0].content![2].attrs!.unavailable = true
+  const saved = await validateSocialRichContent(pg, incoming, { blocked: [] })
+  expect(saved?.content?.[0].content?.[0].attrs).toEqual({
+    id: 'mentioned',
+    label: 'renamed-user',
+  })
+  expect(saved?.content?.[0].content?.[2].attrs).toEqual({
+    id: 'market',
+    label: '/owner/real-market',
+  })
+  const edit = getSocialEditContent(mentionedContent, saved)
+  expect(edit).toEqual(saved)
+})
+
+test('blocked mentions can only be retained from the same stored post', async () => {
+  const pg = db({
+    manyOrNone: jest.fn(async (sql: string) =>
+      sql.includes('from users')
+        ? [{ id: 'mentioned', username: 'new-name' }]
+        : [mentionedMarket]
+    ),
+  })
+  const saved = await validateSocialRichContent(
+    pg,
+    mentionedContent,
+    { blocked: ['mentioned'] },
+    mentionedContent
+  )
+  expect(saved?.content?.[0].content?.[0]).toEqual(
+    mentionedContent.content![0].content![0]
+  )
+})
+
+test('restored references still enforce the authored character limit', async () => {
+  const pg = db({ manyOrNone: jest.fn().mockResolvedValue([]) })
+  const incoming = textToSocialRichContent('x'.repeat(1990))
+  incoming.content![0].content!.push({
+    type: 'mention',
+    attrs: { id: 'mentioned', label: '', unavailable: true },
+  })
+  await expect(
+    validateSocialRichContent(pg, incoming, { blocked: [] }, mentionedContent)
+  ).rejects.toMatchObject({ code: 400 })
 })
 test('hides untrusted, removed, and blocked post images', async () => {
   const image = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/user-images%2Fauthor%2Fyap%2Fimage.png?alt=media&token=test-token`

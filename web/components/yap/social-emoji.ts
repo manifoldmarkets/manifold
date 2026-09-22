@@ -8,21 +8,30 @@ export function getSocialEmoji(shortcode: string): string | undefined {
   const encoded = shortcodes[alias as keyof typeof shortcodes]
   if (typeof encoded !== 'string') return undefined
   const points = encoded.split(' ').map((point) => Number.parseInt(point, 16))
-  // The shared map omits joiners. Flags, keycaps, and modifiers use direct
-  // sequences; compound people/objects use the picker’s zero-width joiners.
-  const joined =
-    points.length > 1 &&
-    !points.every((point) => point >= 0x1f1e6 && point <= 0x1f1ff) &&
-    !points.some(
-      (point) =>
-        point === 0x20e3 ||
-        (point >= 0xe0020 && point <= 0xe007f) ||
-        (point >= 0x1f3fb && point <= 0x1f3ff)
-    )
+  const isModifier = (point: number) => point >= 0x1f3fb && point <= 0x1f3ff
+  const isFlag = points.every((point) => point >= 0x1f1e6 && point <= 0x1f1ff)
+  // The shared map strips joiners and presentation selectors. Reconstruct
+  // fully qualified emoji while keeping flags, tags, keycaps, and skin tones
+  // together. https://unicode.org/reports/tr51/#Emoji_Implementation_Notes
   return String.fromCodePoint(
-    ...points.flatMap((point, index) =>
-      joined && index > 0 ? [0x200d, point] : [point]
-    )
+    ...points.flatMap((point, index) => {
+      const character = String.fromCodePoint(point)
+      const needsJoiner =
+        index > 0 &&
+        !isFlag &&
+        point !== 0x20e3 &&
+        !(point >= 0xe0020 && point <= 0xe007f) &&
+        !isModifier(point)
+      const needsEmojiPresentation =
+        /\p{Emoji}/u.test(character) &&
+        !/\p{Emoji_Presentation}/u.test(character) &&
+        !isModifier(points[index + 1])
+      return [
+        ...(needsJoiner ? [0x200d] : []),
+        point,
+        ...(needsEmojiPresentation ? [0xfe0f] : []),
+      ]
+    })
   )
 }
 

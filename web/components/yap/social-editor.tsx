@@ -12,6 +12,7 @@ import { useEffect, useRef } from 'react'
 import tippy, { type Instance } from 'tippy.js'
 import {
   socialRichContentToText,
+  socialUnavailableMentionText,
   textToSocialRichContent,
 } from 'common/social-rich-content'
 import { searchContracts } from 'web/lib/api/api'
@@ -19,6 +20,7 @@ import { contractMentionSuggestion } from '../editor/contract-mention/contract-m
 import { MentionList as MarketMentionList } from '../editor/contract-mention/contract-mention-list'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
+import { UserMention as UserMentionLabel } from '../editor/user-mention/user-mention'
 import { MentionList as UserMentionList } from '../editor/user-mention/mention-list'
 import { mentionSuggestion } from '../editor/user-mention/mention-suggestion'
 import { SocialEmoji } from './social-emoji'
@@ -81,7 +83,34 @@ function makeSocialMentionRender(
   }
 }
 
-const UserMention = DisplayMention.configure({
+const unavailableMentionAttribute = {
+  default: false,
+  parseHTML: (element: HTMLElement) =>
+    element.getAttribute('data-unavailable') === 'true',
+  renderHTML: (attrs: Record<string, unknown>) =>
+    attrs.unavailable ? { 'data-unavailable': 'true' } : {},
+}
+
+const UserMention = DisplayMention.extend({
+  addAttributes() {
+    return { ...this.parent?.(), unavailable: unavailableMentionAttribute }
+  },
+  renderHTML: ({ node, HTMLAttributes }) => [
+    'span',
+    mergeAttributes({ 'data-type': 'mention-component' }, HTMLAttributes),
+    node.attrs.unavailable
+      ? socialUnavailableMentionText('mention')
+      : '@' + (node.attrs.label ?? ''),
+  ],
+  renderReact: (attrs: { label: string; unavailable?: boolean }) =>
+    attrs.unavailable ? (
+      <span className="text-ink-500">
+        {socialUnavailableMentionText('mention')}
+      </span>
+    ) : (
+      <UserMentionLabel userName={attrs.label} />
+    ),
+}).configure({
   suggestion: {
     ...mentionSuggestion,
     render: makeSocialMentionRender(UserMentionList),
@@ -90,6 +119,9 @@ const UserMention = DisplayMention.configure({
 const marketSuggestionKey = new PluginKey('yap-contract-mention')
 const MarketMention = Mention.extend({
   name: 'contract-mention',
+  addAttributes() {
+    return { ...this.parent?.(), unavailable: unavailableMentionAttribute }
+  },
   parseHTML: () => [
     { tag: 'contract-mention-component' },
     { tag: '[data-type="contract-mention-component"]' },
@@ -100,13 +132,20 @@ const MarketMention = Mention.extend({
       { 'data-type': 'contract-mention-component' },
       HTMLAttributes
     ),
-    '%' + socialMarketMentionLabel(node.attrs.label ?? ''),
+    node.attrs.unavailable
+      ? socialUnavailableMentionText('contract-mention')
+      : '%' + socialMarketMentionLabel(node.attrs.label ?? ''),
   ],
-  renderReact: (attrs: { label?: string }) => (
-    <span className="text-primary-700">
-      %{socialMarketMentionLabel(attrs.label ?? '')}
-    </span>
-  ),
+  renderReact: (attrs: { label?: string; unavailable?: boolean }) =>
+    attrs.unavailable ? (
+      <span className="text-ink-500">
+        {socialUnavailableMentionText('contract-mention')}
+      </span>
+    ) : (
+      <span className="text-primary-700">
+        %{socialMarketMentionLabel(attrs.label ?? '')}
+      </span>
+    ),
 }).configure({
   suggestion: {
     ...contractMentionSuggestion,

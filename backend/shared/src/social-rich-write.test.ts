@@ -6,6 +6,8 @@ jest.mock('api/helpers/rate-limit', () => ({
 jest.mock('./social-posts', () => ({
   socialAuthor: jest.fn(),
   getSocialViewer: jest.fn(),
+  getSocialRow: jest.fn(),
+  getSocialEditContent: jest.fn(),
   lockSocialThread: jest.fn(),
   limitSocialWrite: jest.fn(),
   validateSocialMarkets: jest.fn(),
@@ -26,10 +28,13 @@ import {
   createSocialPost,
   deleteSocialPost,
   editSocialPost,
+  getSocialPost,
 } from 'api/social-posts'
 import { createSupabaseDirectClient } from './supabase/init'
 import {
   getSocialViewer,
+  getSocialRow,
+  getSocialEditContent,
   hydrateSocialPosts,
   lockSocialThread,
   SocialRow,
@@ -60,7 +65,12 @@ const row: SocialRow = {
 const actor = { id: 'author' } as User
 const auth = { uid: 'author' } as AuthedUser
 const req = {} as Request
-let pg: { tx: jest.Mock; one: jest.Mock; none: jest.Mock }
+let pg: {
+  tx: jest.Mock
+  one: jest.Mock
+  none: jest.Mock
+  manyOrNone: jest.Mock
+}
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -68,6 +78,7 @@ beforeEach(() => {
     tx: jest.fn(async (fn) => fn(pg)),
     one: jest.fn().mockResolvedValue(row),
     none: jest.fn().mockResolvedValue(null),
+    manyOrNone: jest.fn().mockResolvedValue([]),
   }
   jest
     .mocked(createSupabaseDirectClient)
@@ -77,6 +88,8 @@ beforeEach(() => {
   jest.mocked(getSocialViewer).mockResolvedValue({ id: 'author', blocked: [] })
   jest.mocked(socialAuthor).mockResolvedValue(actor)
   jest.mocked(lockSocialThread).mockResolvedValue(row)
+  jest.mocked(getSocialRow).mockResolvedValue(row)
+  jest.mocked(getSocialEditContent).mockReturnValue(rich)
   jest
     .mocked(hydrateSocialPosts)
     .mockResolvedValue([{ id: 'post' } as SocialPost])
@@ -134,3 +147,51 @@ test('deletion clears rich content and mentions across every recipient', async (
     ['social-mention-post']
   )
 })
+
+test('rich edits validate retained references against the locked stored document', async () => {
+  await editSocialPost(
+    API['edit-social-post'].props.parse({
+      id: 'post',
+      content: { text: 'Existing text', richContent: rich },
+    }),
+    auth,
+    req
+  )
+  expect(validateSocialRichContent).toHaveBeenCalledWith(
+    pg,
+    rich,
+    { id: 'author', blocked: [] },
+    row.rich_content
+  )
+})
+
+test.each([
+  ['author', null, true],
+  ['another-reader', null, false],
+  ['author', '2026-09-22T00:00:00Z', false],
+] as const)(
+  'detail includes a separate editing document only for the live author: %s, %s',
+  async (uid, deleted_time, includesEdit) => {
+    jest.mocked(getSocialRow).mockResolvedValue({ ...row, deleted_time })
+    const displayed = textToSocialRichContent('Public redacted text')
+    const publicPost = { id: 'post', richContent: displayed } as SocialPost
+    jest.mocked(hydrateSocialPosts).mockResolvedValue([publicPost])
+    const result = await getSocialPost(
+      { id: 'post' },
+      { uid } as AuthedUser,
+      req
+    )
+    expect(result).toEqual({
+      post: publicPost,
+      ancestors: [],
+      ...(includesEdit ? { editContent: rich } : {}),
+    })
+    if (includesEdit)
+      expect(getSocialEditContent).toHaveBeenCalledWith(
+        row.rich_content,
+        displayed
+      )
+    else expect(getSocialEditContent).not.toHaveBeenCalled()
+    expect(publicPost).not.toHaveProperty('editContent')
+  }
+)

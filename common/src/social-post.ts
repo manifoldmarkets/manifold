@@ -4,6 +4,7 @@ import { DisplayUser } from './api/user-types'
 import { FIREBASE_CONFIG } from './envs/constants'
 import {
   SocialRichContent,
+  socialRichContentDisplaySchema,
   socialRichContentSchema,
   socialRichContentToText,
 } from './social-rich-content'
@@ -37,39 +38,51 @@ export function isSocialImageUrl(value: string) {
   }
 }
 
-export const socialPostDraftSchema = z
-  .object({
-    text: z.string().trim(),
-    richContent: socialRichContentSchema.nullable().optional(),
-    marketIds: z
-      .array(z.string().min(1).max(200))
-      .max(SOCIAL_POST_MAX_MARKETS)
-      .default([]),
-    imageUrls: z
-      .array(
-        z.string().url().max(2048).refine(isSocialImageUrl, {
-          message: 'Images must be uploaded to Manifold storage',
-        })
+const createSocialPostDraftSchema = (forEditing: boolean) =>
+  z
+    .object({
+      text: z.string().trim(),
+      richContent: (forEditing
+        ? socialRichContentDisplaySchema
+        : socialRichContentSchema
       )
-      .max(SOCIAL_POST_MAX_IMAGES)
-      .optional(),
-  })
-  .strict()
-  .transform((content) => ({
-    ...content,
-    text: content.richContent
-      ? socialRichContentToText(content.richContent)
-      : content.text,
-  }))
-  .superRefine(({ text, marketIds }, ctx) => {
-    if ([...text].length > SOCIAL_POST_MAX_LENGTH)
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Posts can contain up to 2,000 characters',
-      })
-    if (new Set(marketIds).size !== marketIds.length)
-      ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
-  })
+        .nullable()
+        .optional(),
+      marketIds: z
+        .array(z.string().min(1).max(200))
+        .max(SOCIAL_POST_MAX_MARKETS)
+        .default([]),
+      imageUrls: z
+        .array(
+          z.string().url().max(2048).refine(isSocialImageUrl, {
+            message: 'Images must be uploaded to Manifold storage',
+          })
+        )
+        .max(SOCIAL_POST_MAX_IMAGES)
+        .optional(),
+    })
+    .strict()
+    .transform((content) => ({
+      ...content,
+      text: content.richContent
+        ? socialRichContentToText(content.richContent)
+        : content.text,
+    }))
+    .superRefine(({ text, richContent, marketIds }, ctx) => {
+      // Edits restore unavailable references before enforcing the stored length.
+      if (
+        (!forEditing || !richContent) &&
+        [...text].length > SOCIAL_POST_MAX_LENGTH
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Posts can contain up to 2,000 characters',
+        })
+      if (new Set(marketIds).size !== marketIds.length)
+        ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
+    })
+export const socialPostDraftSchema = createSocialPostDraftSchema(false)
+export const socialPostEditSchema = createSocialPostDraftSchema(true)
 export const hasSocialPostContent = (
   content: z.infer<typeof socialPostDraftSchema>
 ) => !!(content.text || content.marketIds.length || content.imageUrls?.length)
@@ -126,7 +139,12 @@ export type SocialPost = {
   replyPreviews: SocialPost[]
 }
 export type SocialPostPage = { posts: SocialPost[]; nextCursor: string | null }
-export type SocialPostDetail = { post: SocialPost; ancestors: SocialPost[] }
+export type SocialPostDetail = {
+  post: SocialPost
+  ancestors: SocialPost[]
+  // Only included for the author on an uncached, live post detail response.
+  editContent?: SocialRichContent | null
+}
 export type SocialLikerPage = {
   users: DisplayUser[]
   nextCursor: string | null

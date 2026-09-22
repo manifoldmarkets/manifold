@@ -101,6 +101,14 @@ containing plain paragraphs, line breaks, and mentions. When present, the API de
 replace unavailable inline market references with a placeholder. Deletion clears
 both fields and removes the post's mention notifications.
 
+The uncached `get-social-post` response includes a separate `editContent` document
+only for the live post's author. Unavailable mentions remain non-linking atoms
+with generic labels in the editor. Saving restores only references already in
+the locked stored document, then revalidates length and mention limits; removing
+an atom removes that reference. Public posts and shared feed caches never include
+this editing document. Mention notifications remain creation-time events after
+edits, consistent with comment notifications elsewhere on the site.
+
 ## Validation
 
 The common and shared Jest suites contain social validation, membership, block,

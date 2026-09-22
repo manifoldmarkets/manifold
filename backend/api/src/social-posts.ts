@@ -21,6 +21,7 @@ import { notifySocialMentions } from 'shared/social-mentions'
 import {
   assertSocialInteraction,
   getSocialRow,
+  getSocialEditContent,
   getSocialViewer,
   hydrateSocialPosts,
   limitSocialWrite,
@@ -109,7 +110,12 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
       const richContent =
         content.richContent === undefined && content.text === post.text
           ? post.rich_content
-          : await validateSocialRichContent(tx, content.richContent, viewer)
+          : await validateSocialRichContent(
+              tx,
+              content.richContent,
+              viewer,
+              post.rich_content
+            )
       await writeSocialMarkets(tx, id, content.marketIds)
       // Removing the original attachment also removes the repost context.
       return tx.one<SocialRow>(
@@ -282,7 +288,16 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   )
   const viewer = await getSocialViewer(auth.uid)
   const posts = await hydrateSocialPosts(pg, [...ancestors, row], viewer, false)
-  return { post: posts[posts.length - 1], ancestors: posts.slice(0, -1) }
+  const post = posts[posts.length - 1]
+  return {
+    post,
+    ancestors: posts.slice(0, -1),
+    ...(auth.uid === row.user_id && !row.deleted_time
+      ? {
+          editContent: getSocialEditContent(row.rich_content, post.richContent),
+        }
+      : {}),
+  }
 }
 
 async function getSocialLikedPostIds(

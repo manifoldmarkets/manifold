@@ -2,7 +2,10 @@ import type { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment, ReactNode, useMemo } from 'react'
-import { socialRichContentDisplaySchema } from 'common/social-rich-content'
+import {
+  socialRichContentDisplaySchema,
+  socialUnavailableMentionText,
+} from 'common/social-rich-content'
 import { getSocialLinks, SocialText } from './social-text'
 import { SocialUserLink } from './social-user-link'
 
@@ -52,6 +55,11 @@ function renderChildren(nodes: JSONContent[] = []) {
 }
 
 function renderNode(node: JSONContent): ReactNode {
+  if (
+    (node.type === 'mention' || node.type === 'contract-mention') &&
+    node.attrs?.unavailable
+  )
+    return socialUnavailableMentionText(node.type)
   switch (node.type) {
     case 'doc':
       return renderChildren(node.content)

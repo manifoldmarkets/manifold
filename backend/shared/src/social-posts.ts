@@ -27,7 +27,9 @@ import {
   getSocialMentionIds,
   getSocialMarketMentionIds,
   socialRichContentSchema,
+  socialRichContentDisplaySchema,
   socialRichContentToText,
+  socialUnavailableMentionText,
 } from 'common/social-rich-content'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { insertNotificationToSupabase } from './supabase/notifications'
@@ -149,7 +151,8 @@ function mapSocialMentions(
 export async function validateSocialRichContent(
   pg: DB,
   content: SocialRichContent | null | undefined,
-  viewer: SocialViewer
+  viewer: SocialViewer,
+  previous?: SocialRichContent | null
 ): Promise<SocialRichContent | null> {
   if (!content) return null
   const userIds = getSocialMentionIds(content)
@@ -170,31 +173,100 @@ export async function validateSocialRichContent(
         )
       : Promise.resolve([]),
   ])
-  if (
-    users.length !== userIds.length ||
-    userIds.some((id) => viewer.blocked.includes(id))
+  const usernames = new Map(
+    users
+      .filter((user) => !viewer.blocked.includes(user.id))
+      .map((user) => [user.id, user.username])
   )
-    throw new APIError(400, 'Mentioned user is unavailable')
-  if (markets.length !== marketIds.length)
-    throw new APIError(400, 'Only available public markets can be referenced')
-  const usernames = new Map(users.map((user) => [user.id, user.username]))
   const paths = new Map(
     markets.map((market) => [market.id, contractPath(convertContract(market))])
   )
+  // Only the locked stored document can authorize retaining an unavailable
+  // reference. Consume each occurrence so an edit cannot create extra copies.
+  const retained = new Map<string, SocialRichContent[]>()
+  const parsedPrevious = socialRichContentDisplaySchema.safeParse(previous)
+  if (parsedPrevious.success)
+    mapSocialMentions(
+      parsedPrevious.data,
+      (node) => {
+        const key = `user:${node.attrs!.id}`
+        retained.set(key, [...(retained.get(key) ?? []), node])
+        return node
+      },
+      (node) => {
+        const key = `market:${node.attrs!.id}`
+        retained.set(key, [...(retained.get(key) ?? []), node])
+        return node
+      }
+    )
+  const canonicalMention = (
+    node: SocialRichContent,
+    kind: 'user' | 'market',
+    label: string | undefined
+  ): SocialRichContent => {
+    if (label !== undefined)
+      return { type: node.type, attrs: { id: node.attrs!.id, label } }
+    const original = retained.get(`${kind}:${node.attrs!.id}`)?.shift()
+    if (!original)
+      throw new APIError(
+        400,
+        kind === 'user'
+          ? 'Mentioned user is unavailable'
+          : 'Only available public markets can be referenced'
+      )
+    return {
+      type: node.type,
+      attrs: { id: original.attrs!.id, label: original.attrs!.label },
+    }
+  }
   const canonical = mapSocialMentions(
     content,
-    (node) => ({
-      ...node,
-      attrs: { id: node.attrs!.id, label: usernames.get(node.attrs!.id)! },
-    }),
-    (node) => ({
-      ...node,
-      attrs: { id: node.attrs!.id, label: paths.get(node.attrs!.id)! },
-    })
+    (node) => canonicalMention(node, 'user', usernames.get(node.attrs!.id)),
+    (node) => canonicalMention(node, 'market', paths.get(node.attrs!.id))
   )
   const parsed = socialRichContentSchema.safeParse(canonical)
   if (!parsed.success) throw new APIError(400, parsed.error.issues[0].message)
   return parsed.data
+}
+
+// The owner-only edit response retains reference identities behind generic
+// placeholders. Match document positions, never placeholder text, so ordinary
+// text that happens to contain the same words remains ordinary text.
+export function getSocialEditContent(
+  stored: SocialRichContent | null | undefined,
+  displayed: SocialRichContent | null | undefined
+): SocialRichContent | null {
+  const original = socialRichContentDisplaySchema.safeParse(stored)
+  const visible = socialRichContentDisplaySchema.safeParse(displayed)
+  if (!original.success || !visible.success) return null
+  const visit = (
+    node: SocialRichContent,
+    display: SocialRichContent
+  ): SocialRichContent => {
+    if (node.type === 'mention' || node.type === 'contract-mention') {
+      if (display.type === node.type && display.attrs?.id === node.attrs!.id)
+        return display
+      return {
+        type: node.type,
+        attrs: {
+          id: node.attrs!.id,
+          label: socialUnavailableMentionText(node.type),
+          unavailable: true,
+        },
+      }
+    }
+    return {
+      ...display,
+      ...(node.content
+        ? {
+            content: node.content.map((child, index) =>
+              visit(child, display.content![index])
+            ),
+          }
+        : {}),
+    }
+  }
+  return visit(original.data, visible.data)
 }
 export async function writeSocialMarkets(
   pg: DB,
@@ -270,7 +342,7 @@ export async function hydrateSocialPosts(
   const ids = rows.map((r) => r.id)
   const richDocs = new Map(
     rows.map((row) => {
-      const parsed = socialRichContentSchema.safeParse(row.rich_content)
+      const parsed = socialRichContentDisplaySchema.safeParse(row.rich_content)
       return [row.id, parsed.success ? parsed.data : null] as const
     })
   )

@@ -11,11 +11,13 @@ import {
   SocialPostSource,
   SocialQuote,
   socialPostDraftSchema,
+  socialPostEditSchema,
   SOCIAL_POST_MAX_LENGTH,
   SOCIAL_POST_MAX_MARKETS,
   SOCIAL_POST_MAX_IMAGES,
   socialPostPath,
 } from 'common/social-post'
+import { hasUnavailableSocialMentions } from 'common/social-rich-content'
 import { Button } from '../buttons/button'
 import { SelectMarkets } from '../contract-select-modal'
 import { Modal } from '../layout/modal'
@@ -77,7 +79,8 @@ export function SocialComposer(props: {
   const count = [...text.trim()].length
   const eligible = !!editing || isSupporter(user?.entitlements)
   const canSubmit =
-    count <= SOCIAL_POST_MAX_LENGTH &&
+    (count <= SOCIAL_POST_MAX_LENGTH ||
+      (!!editing && hasUnavailableSocialMentions(richContent))) &&
     !!(count || markets.length || images.length || isPostRepost)
   function addImages(files: File[]) {
     if (!user || submitting.current || !files.length) return
@@ -136,7 +139,9 @@ export function SocialComposer(props: {
         if (result.status === 'rejected') throw result.reason
         return result.value
       })
-      const content = socialPostDraftSchema.parse({
+      const content = (
+        editing ? socialPostEditSchema : socialPostDraftSchema
+      ).parse({
         text,
         richContent,
         marketIds: markets.map((m) => m.id),

@@ -18,7 +18,7 @@ const fail = (message: string): never => {
   throw new Error(message)
 }
 
-const createSocialRichContentSchema = (limitText: boolean) =>
+const createSocialRichContentSchema = (limitAuthoring: boolean) =>
   z.unknown().transform((value, ctx) => {
     try {
       const serialized = JSON.stringify(value)
@@ -58,6 +58,7 @@ const createSocialRichContentSchema = (limitText: boolean) =>
           )
             fail('Invalid post mention')
           result.attrs = { id, label }
+          if (node.attrs?.unavailable === true) result.attrs.unavailable = true
         }
         if (node.marks !== undefined)
           fail('Post content does not support formatting marks')
@@ -80,13 +81,13 @@ const createSocialRichContentSchema = (limitText: boolean) =>
       }
       const doc = normalize(value, 0)
       if (
-        limitText &&
+        limitAuthoring &&
         [...socialRichContentToText(doc)].length > MAX_TEXT_LENGTH
       )
         fail('Posts can contain up to 2,000 characters')
-      if (getSocialMentionIds(doc).length > 10)
+      if (limitAuthoring && getSocialMentionIds(doc).length > 10)
         fail('Posts can mention up to 10 people')
-      if (getSocialMarketMentionIds(doc).length > 5)
+      if (limitAuthoring && getSocialMarketMentionIds(doc).length > 5)
         fail('Posts can reference up to 5 markets')
       return doc
     } catch (error) {
@@ -100,8 +101,8 @@ const createSocialRichContentSchema = (limitText: boolean) =>
   })
 
 export const socialRichContentSchema = createSocialRichContentSchema(true)
-// Current usernames and unavailable-reference placeholders can expand content
-// after a post was accepted. Rendering must retain that safe, complete content.
+// Authoring limits must not discard previously accepted content on reads.
+// Keep structural, depth, node and byte limits for safe rendering.
 export const socialRichContentDisplaySchema =
   createSocialRichContentSchema(false)
 
@@ -109,6 +110,11 @@ export function socialRichContentToText(doc: SocialRichContent): string {
   const visit = (node: SocialRichContent): string => {
     if (node.type === 'text') return node.text ?? ''
     if (node.type === 'hardBreak') return '\n'
+    if (
+      (node.type === 'mention' || node.type === 'contract-mention') &&
+      node.attrs?.unavailable
+    )
+      return socialUnavailableMentionText(node.type)
     if (node.type === 'mention') return `@${node.attrs?.label ?? ''}`
     if (node.type === 'contract-mention') return `%${node.attrs?.label ?? ''}`
     return (node.content ?? [])
@@ -116,6 +122,19 @@ export function socialRichContentToText(doc: SocialRichContent): string {
       .join(node.type === 'paragraph' ? '' : '\n')
   }
   return visit(doc).trim()
+}
+
+export const socialUnavailableMentionText = (type: string) =>
+  type === 'mention' ? '[User unavailable]' : '[Market unavailable]'
+
+export function hasUnavailableSocialMentions(
+  doc: SocialRichContent | null | undefined
+): boolean {
+  return !!(
+    ((doc?.type === 'mention' || doc?.type === 'contract-mention') &&
+      doc.attrs?.unavailable) ||
+    doc?.content?.some(hasUnavailableSocialMentions)
+  )
 }
 
 export function textToSocialRichContent(text: string): SocialRichContent {
