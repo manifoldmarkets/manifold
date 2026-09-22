@@ -48,6 +48,10 @@ is run by the application or by the development tests.
   resolves mention IDs to current usernames and public market paths.
   The 2,000-Unicode-code-point limit includes the plain-text form of mentions.
   Existing plain-text posts remain readable and editable.
+- Authors can edit posts and replies for 30 minutes after their original posting
+  time. Edits do not extend that window. The API enforces the deadline, the Edit
+  action disappears at expiry, and an open editor retains its draft with saving
+  disabled. Deletion remains available after the edit window ends.
 - Avatars and badges show shop cosmetics using the shared `posts` display
   settings and each avatar's native size. Usernames open profile hovercards only
   over the text; surrounding header space opens the Yap discussion. Author and
@@ -102,7 +106,7 @@ replace unavailable inline market references with a placeholder. Deletion clears
 both fields and removes the post's mention notifications.
 
 The uncached `get-social-post` response includes a separate `editContent` document
-only for the live post's author. Unavailable mentions remain non-linking atoms
+only for the live post's author during its edit window. Unavailable mentions remain non-linking atoms
 with generic labels in the editor. Saving restores only references already in
 the locked stored document, then revalidates length and mention limits; removing
 an atom removes that reference. Public posts and shared feed caches never include

@@ -13,6 +13,11 @@ export const SOCIAL_POST_MAX_LENGTH = 2000
 export const SOCIAL_POST_MAX_MARKETS = 5
 export const SOCIAL_POST_MAX_IMAGES = 4
 export const SOCIAL_FEED_PAGE_SIZE = 10
+export const SOCIAL_POST_EDIT_WINDOW_MS = 30 * 60 * 1000
+
+export const isSocialPostEditable = (createdTimeMs: number, now = Date.now()) =>
+  Number.isFinite(createdTimeMs) &&
+  now < createdTimeMs + SOCIAL_POST_EDIT_WINDOW_MS
 
 // Match the download URLs returned by uploadPublicImage, including the bucket.
 // Trusting the Firebase hostname alone would allow attacker-owned buckets.
@@ -142,7 +147,7 @@ export type SocialPostPage = { posts: SocialPost[]; nextCursor: string | null }
 export type SocialPostDetail = {
   post: SocialPost
   ancestors: SocialPost[]
-  // Only included for the author on an uncached, live post detail response.
+  // Only included for the author while the uncached live post is editable.
   editContent?: SocialRichContent | null
 }
 export type SocialLikerPage = {

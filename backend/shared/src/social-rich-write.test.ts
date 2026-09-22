@@ -21,7 +21,7 @@ jest.mock('./social-mentions', () => ({ notifySocialMentions: jest.fn() }))
 import { Request } from 'express'
 import { API } from 'common/api/schema'
 import { textToSocialRichContent } from 'common/social-rich-content'
-import { SocialPost } from 'common/social-post'
+import { SocialPost, SOCIAL_POST_EDIT_WINDOW_MS } from 'common/social-post'
 import { User } from 'common/user'
 import { AuthedUser } from 'api/helpers/endpoint'
 import {
@@ -40,6 +40,8 @@ import {
   SocialRow,
   socialAuthor,
   validateSocialRichContent,
+  writeSocialMarkets,
+  limitSocialWrite,
 } from './social-posts'
 import { notifySocialMentions } from './social-mentions'
 
@@ -65,6 +67,8 @@ const row: SocialRow = {
 const actor = { id: 'author' } as User
 const auth = { uid: 'author' } as AuthedUser
 const req = {} as Request
+const createdTime = Date.parse(row.created_time)
+const editDeadline = createdTime + SOCIAL_POST_EDIT_WINDOW_MS
 let pg: {
   tx: jest.Mock
   one: jest.Mock
@@ -74,6 +78,7 @@ let pg: {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  jest.spyOn(Date, 'now').mockReturnValue(createdTime + 60_000)
   pg = {
     tx: jest.fn(async (fn) => fn(pg)),
     one: jest.fn().mockResolvedValue(row),
@@ -95,6 +100,7 @@ beforeEach(() => {
     .mockResolvedValue([{ id: 'post' } as SocialPost])
   jest.mocked(validateSocialRichContent).mockResolvedValue(null)
 })
+afterEach(() => jest.restoreAllMocks())
 
 test('creation persists canonical rich content and derives its plain fallback', async () => {
   const canonical = textToSocialRichContent('Canonical server text')
@@ -137,6 +143,7 @@ test.each([
 )
 
 test('deletion clears rich content and mentions across every recipient', async () => {
+  jest.mocked(Date.now).mockReturnValue(editDeadline + 60_000)
   await deleteSocialPost({ id: 'post' }, auth, req)
   expect(pg.none).toHaveBeenCalledWith(
     expect.stringContaining('rich_content=null'),
@@ -147,6 +154,79 @@ test('deletion clears rich content and mentions across every recipient', async (
     ['social-mention-post']
   )
 })
+
+describe.each(['root', 'reply'] as const)('%s edit window', (kind) => {
+  test.each([-1, 0, 1])(
+    'accepts only requests before the deadline (%i ms from cutoff)',
+    async (offset) => {
+      jest.mocked(Date.now).mockReturnValue(editDeadline + offset)
+      jest.mocked(lockSocialThread).mockResolvedValue({
+        ...row,
+        parent_id: kind === 'reply' ? 'parent' : null,
+        root_id: kind === 'reply' ? 'parent' : row.id,
+        // A recent edit does not restart the original posting window.
+        edited_time: new Date(editDeadline - 1000).toISOString(),
+      })
+      const request = editSocialPost(
+        API['edit-social-post'].props.parse({
+          id: row.id,
+          content: { text: 'Changed text', marketIds: [], imageUrls: [] },
+        }),
+        auth,
+        req
+      )
+      if (offset < 0) {
+        await expect(request).resolves.toMatchObject({ id: row.id })
+        expect(pg.one).toHaveBeenCalled()
+        expect(writeSocialMarkets).toHaveBeenCalled()
+      } else {
+        await expect(request).rejects.toMatchObject({
+          code: 403,
+          message: 'Yap posts can only be edited within 30 minutes of posting.',
+        })
+        expect(pg.one).not.toHaveBeenCalled()
+        expect(pg.none).not.toHaveBeenCalled()
+        expect(writeSocialMarkets).not.toHaveBeenCalled()
+        expect(limitSocialWrite).not.toHaveBeenCalled()
+      }
+    }
+  )
+})
+
+test('an edit opened before expiry is rejected if its locked request reaches the cutoff', async () => {
+  jest.mocked(Date.now).mockReturnValue(editDeadline - 1)
+  const detail = await getSocialPost({ id: row.id }, auth, req)
+  expect(detail).toHaveProperty('editContent')
+  const submitted = API['edit-social-post'].props.parse({
+    id: row.id,
+    content: { text: row.text, marketIds: ['new-attachment'] },
+  })
+  jest.mocked(lockSocialThread).mockImplementation(async () => {
+    jest.mocked(Date.now).mockReturnValue(editDeadline)
+    return row
+  })
+  await expect(editSocialPost(submitted, auth, req)).rejects.toMatchObject({
+    code: 403,
+  })
+  expect(pg.one).not.toHaveBeenCalled()
+  expect(pg.none).not.toHaveBeenCalled()
+  expect(writeSocialMarkets).not.toHaveBeenCalled()
+})
+
+test.each([-1, 0, 1])(
+  'detail returns editContent only before the edit deadline (%i ms from cutoff)',
+  async (offset) => {
+    jest.mocked(Date.now).mockReturnValue(editDeadline + offset)
+    const detail = await getSocialPost({ id: row.id }, auth, req)
+    if (offset < 0) {
+      expect(detail).toHaveProperty('editContent', rich)
+      expect(getSocialEditContent).toHaveBeenCalled()
+    } else {
+      expect(detail).not.toHaveProperty('editContent')
+      expect(getSocialEditContent).not.toHaveBeenCalled()
+    }
+  }
+)
 
 test('rich edits validate retained references against the locked stored document', async () => {
   await editSocialPost(

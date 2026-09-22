@@ -2,7 +2,9 @@ import {
   SocialPost,
   SocialPostPage,
   socialTimestamp,
+  socialTimestampMillis,
   hasSocialPostContent,
+  isSocialPostEditable,
   SOCIAL_FEED_PAGE_SIZE,
 } from 'common/social-post'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -103,6 +105,11 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
         throw new APIError(403, 'Only the author can edit this post')
       if (post.deleted_time)
         throw new APIError(403, 'This post has been removed')
+      if (!isSocialPostEditable(socialTimestampMillis(post.created_time)))
+        throw new APIError(
+          403,
+          'Yap posts can only be edited within 30 minutes of posting.'
+        )
       if (!hasSocialPostContent(content) && !post.source_post_id)
         throw new APIError(400, 'Add text, a market, or an image')
       await limitSocialWrite(tx, auth.uid, 'edit', 30)
@@ -292,7 +299,9 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   return {
     post,
     ancestors: posts.slice(0, -1),
-    ...(auth.uid === row.user_id && !row.deleted_time
+    ...(auth.uid === row.user_id &&
+    !row.deleted_time &&
+    isSocialPostEditable(socialTimestampMillis(row.created_time))
       ? {
           editContent: getSocialEditContent(row.rich_content, post.richContent),
         }

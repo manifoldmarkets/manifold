@@ -21,6 +21,7 @@ import {
   SocialLikerPage,
   socialPostPath,
   SOCIAL_POST_MAX_MARKETS,
+  isSocialPostEditable,
 } from 'common/social-post'
 import { api } from 'web/lib/api/api'
 import { socialRichContentToText } from 'common/social-rich-content'
@@ -39,6 +40,7 @@ import { UserReactedItem } from '../contract/react-button'
 import { Tooltip } from '../widgets/tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useSocialLikePress } from './use-social-like-press'
+import { useSocialEditWindow } from './use-social-edit-window'
 
 export function SocialPostCard(
   props: Parameters<typeof SocialPostCardContent>[0]
@@ -134,14 +136,17 @@ function SocialPostCardContent({
     onChanged()
   }
   const own = user?.id === post.author.id
+  const canEdit = useSocialEditWindow(own ? post.createdTimeMs : undefined)
   async function beginEdit() {
-    if (loadingEdit) return
+    if (loadingEdit || !isSocialPostEditable(post.createdTimeMs)) return
     setLoadingEdit(true)
     setError(undefined)
     try {
       // Feed content is redacted for display. Fetch the author's editable
       // document so an unrelated edit cannot replace mentions with placeholders.
       const result = await api('get-social-post', { id: post.id })
+      if (!isSocialPostEditable(result.post.createdTimeMs))
+        throw new Error('The 30-minute editing window has ended.')
       if (result.post.removed || result.editContent === undefined)
         throw new Error(
           'This post is not available to edit. Please refresh and try again.'
@@ -261,7 +266,7 @@ function SocialPostCardContent({
                 <DropdownMenu
                   closeOnClick
                   items={[
-                    ...(own ? [{ name: 'Edit', onClick: beginEdit }] : []),
+                    ...(canEdit ? [{ name: 'Edit', onClick: beginEdit }] : []),
                     ...(own || mod
                       ? [
                           {
