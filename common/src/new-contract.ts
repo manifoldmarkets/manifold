@@ -1,5 +1,6 @@
+import { sum } from 'lodash'
 import { Answer } from './answer'
-import { getMultiCpmmLiquidity } from './calculate-cpmm'
+import { getInitialAnswerPools, getMultiCpmmLiquidity } from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import {
   Binary,
@@ -18,6 +19,8 @@ import {
   PseudoNumeric,
   Stonk,
   add_answers_mode,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
 } from './contract'
 import { PollOption } from './poll-option'
 import { User } from './user'
@@ -57,6 +60,8 @@ export function getNewContract(
     shouldAnswersSumToOne?: boolean | undefined
     answerShortTexts?: string[]
     answerImageUrls?: string[]
+    // Starting probability of each answer, as a percent. Defaults to an even split.
+    answerProbs?: number[]
 
     // Bountied
     isAutoBounty?: boolean | undefined
@@ -103,6 +108,7 @@ export function getNewContract(
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    answerProbs,
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
@@ -127,7 +133,8 @@ export function getNewContract(
         shouldAnswersSumToOne ?? true,
         ante,
         answerShortTexts,
-        answerImageUrls
+        answerImageUrls,
+        answerProbs
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -291,6 +298,89 @@ const getStonkCpmmProps = (initialProb: number, ante: number) => {
 
 export const VERSUS_COLORS = ['#4e46dc', '#e9a23b']
 
+// Bounds on a manually set starting probability, in percent. These match the
+// range bets are allowed to move an answer within, so a creator can't open a
+// market outside of where traders could ever put it.
+export const MIN_ANSWER_PROB = MIN_CPMM_PROB * 100
+export const MAX_ANSWER_PROB = MAX_CPMM_PROB * 100
+// How far off 100% a sum-to-one market's percentages may be before we reject
+// them rather than scaling them to fit. Lets creators type 33/33/33.
+export const ANSWER_PROB_SUM_TOLERANCE = 1
+
+// Checks manually set starting probabilities (percent, one per listed answer)
+// against the answers they'll be applied to. Returns a message explaining the
+// problem, or undefined if they're usable.
+export const getAnswerProbsError = (props: {
+  answerProbs: number[]
+  numAnswers: number
+  shouldAnswersSumToOne: boolean
+  hasOtherAnswer: boolean
+}) => {
+  const { answerProbs, numAnswers, shouldAnswersSumToOne, hasOtherAnswer } =
+    props
+
+  if (answerProbs.length !== numAnswers)
+    return `Expected ${numAnswers} starting probabilities, got ${answerProbs.length}.`
+
+  if (
+    answerProbs.some(
+      (prob) =>
+        !isFinite(prob) || prob < MIN_ANSWER_PROB || prob > MAX_ANSWER_PROB
+    )
+  )
+    return `Each starting probability must be between ${MIN_ANSWER_PROB}% and ${MAX_ANSWER_PROB}%.`
+
+  if (!shouldAnswersSumToOne) return undefined
+
+  const total = sum(answerProbs)
+  const rounded = Math.round(total * 10) / 10
+
+  if (hasOtherAnswer) {
+    // 'Other' takes whatever is left over, within the same bounds as any
+    // other answer.
+    if (total > 100 - MIN_ANSWER_PROB)
+      return `Starting probabilities add up to ${rounded}%, leaving less than ${MIN_ANSWER_PROB}% for the "Other" answer.`
+    if (total < 100 - MAX_ANSWER_PROB)
+      return `Starting probabilities add up to ${rounded}%, leaving more than ${MAX_ANSWER_PROB}% for the "Other" answer.`
+    return undefined
+  }
+
+  if (Math.abs(total - 100) > ANSWER_PROB_SUM_TOLERANCE)
+    return `Starting probabilities must add up to 100%, but they add up to ${rounded}%.`
+
+  // Validate the probabilities the pools will actually use. Scaling a total
+  // above 100% can otherwise push a 1% answer below the trading floor. Allow
+  // only machine-precision noise when comparing against the bounds.
+  if (
+    getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOtherAnswer).some(
+      (prob) =>
+        prob < MIN_CPMM_PROB - Number.EPSILON ||
+        prob > MAX_CPMM_PROB + Number.EPSILON
+    )
+  )
+    return `After normalization, each starting probability must be between ${MIN_ANSWER_PROB}% and ${MAX_ANSWER_PROB}%.`
+
+  return undefined
+}
+
+// Turns starting percentages into the fractions the answer pools are built
+// from, appending 'Other's share when the market has one. Assumes they already
+// passed getAnswerProbsError.
+const getInitialProbs = (
+  answerProbs: number[],
+  shouldAnswersSumToOne: boolean,
+  hasOtherAnswer: boolean
+) => {
+  if (!shouldAnswersSumToOne) return answerProbs.map((prob) => prob / 100)
+
+  const probs = hasOtherAnswer
+    ? [...answerProbs, 100 - sum(answerProbs)]
+    : answerProbs
+  // Scale out any rounding slop so the answers sum to exactly one.
+  const total = sum(probs)
+  return probs.map((prob) => prob / total)
+}
+
 const getMultipleChoiceProps = (
   contractId: string,
   userId: string,
@@ -299,16 +389,16 @@ const getMultipleChoiceProps = (
   shouldAnswersSumToOne: boolean,
   ante: number,
   shortTexts?: string[],
-  imageUrls?: string[]
+  imageUrls?: string[],
+  answerProbs?: number[]
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
     answers.length === 2 &&
     shouldAnswersSumToOne
 
-  const answersWithOther = answers.concat(
-    !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
-  )
+  const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
+  const answersWithOther = answers.concat(hasOther ? ['Other'] : [])
   const answerObjects = createAnswers(
     contractId,
     userId,
@@ -320,9 +410,12 @@ const getMultipleChoiceProps = (
       colors: isBinaryMulti ? VERSUS_COLORS : undefined,
       shortTexts,
       imageUrls,
+      probs: answerProbs
+        ? getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOther)
+        : undefined,
     })
   )
-  const system: CPMMMulti = {
+  const system: CPMMMulti = removeUndefinedProps({
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     addAnswersMode: addAnswersMode ?? 'DISABLED',
@@ -330,7 +423,12 @@ const getMultipleChoiceProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
-  }
+    // Answer probs move with every bet, so keep a record of where the creator
+    // opened them for the chart's starting point.
+    initialProbabilities: answerProbs
+      ? Object.fromEntries(answerObjects.map((a) => [a.id, a.prob]))
+      : undefined,
+  })
 
   return system
 }
@@ -440,10 +538,17 @@ function createAnswers(
     shortTexts?: string[]
     imageUrls?: string[]
     midpoints?: number[]
+    // Starting probability of each answer, as a fraction. Defaults to an even split.
+    probs?: number[]
   } = {}
 ) {
-  const { colors, shortTexts, imageUrls, midpoints } = options
+  const { colors, shortTexts, imageUrls, midpoints, probs } = options
   const ids = answers.map(() => randomString())
+
+  // Custom starting probabilities: spread the ante around them instead.
+  const customPools = probs
+    ? getInitialAnswerPools(probs, ante, shouldAnswersSumToOne)
+    : undefined
 
   let prob = 0.5
   let poolYes = ante / answers.length
@@ -471,6 +576,10 @@ function createAnswers(
 
   return answers.map((text, i) => {
     const id = ids[i]
+    const { YES: answerPoolYes, NO: answerPoolNo } = customPools?.[i] ?? {
+      YES: poolYes,
+      NO: poolNo,
+    }
     const answer: Answer = removeUndefinedProps({
       id,
       index: i,
@@ -482,10 +591,13 @@ function createAnswers(
       shortText: shortTexts?.[i],
       imageUrl: imageUrls?.[i],
 
-      poolYes,
-      poolNo,
-      prob,
-      totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
+      poolYes: answerPoolYes,
+      poolNo: answerPoolNo,
+      prob: probs?.[i] ?? prob,
+      totalLiquidity: getMultiCpmmLiquidity({
+        YES: answerPoolYes,
+        NO: answerPoolNo,
+      }),
       subsidyPool: 0,
       isOther:
         shouldAnswersSumToOne &&

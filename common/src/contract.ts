@@ -204,6 +204,10 @@ export type CPMMMulti = {
   // Weights sum to 100 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 100 for each answerId.
   resolutions?: { [answerId: string]: number }
 
+  // What each answer opened at, by answer id, where the creator set the
+  // starting probabilities. Absent for markets that opened at an even split.
+  initialProbabilities?: { [answerId: string]: number }
+
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
   sort?: SortType
