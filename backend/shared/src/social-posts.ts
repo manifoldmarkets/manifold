@@ -18,15 +18,27 @@ import { isSupporter } from 'common/supporter'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { DisplayUser } from 'common/api/user-types'
+import { convertEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { richTextToString } from 'common/util/parse'
+import {
+  SocialRichContent,
+  getSocialMentionIds,
+  getSocialMarketMentionIds,
+  socialRichContentSchema,
+  socialRichContentDisplaySchema,
+  socialRichContentToText,
+  socialUnavailableMentionText,
+} from 'common/social-rich-content'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { insertNotificationToSupabase } from './supabase/notifications'
 import { getPrivateUser, getUser } from './utils'
 
 type DB = SupabaseDirectClient | SupabaseTransaction
-export type SocialRow = Row<'social_posts'>
+export type SocialRow = Omit<Row<'social_posts'>, 'rich_content'> & {
+  rich_content: SocialRichContent | null
+}
 export type SocialViewer = { id?: string; blocked: string[] }
 export async function getSocialViewer(id?: string): Promise<SocialViewer> {
   const user = id ? await getPrivateUser(id) : null
@@ -117,6 +129,145 @@ export async function validateSocialMarkets(pg: DB, marketIds: string[]) {
   if (rows.length !== marketIds.length)
     throw new APIError(400, 'Only available public markets can be attached')
 }
+function mapSocialMentions(
+  doc: SocialRichContent,
+  user: (node: SocialRichContent) => SocialRichContent,
+  market: (node: SocialRichContent) => SocialRichContent
+): SocialRichContent {
+  if (doc.type === 'mention') return user(doc)
+  if (doc.type === 'contract-mention') return market(doc)
+  return {
+    ...doc,
+    ...(doc.content
+      ? {
+          content: doc.content.map((child) =>
+            mapSocialMentions(child, user, market)
+          ),
+        }
+      : {}),
+  }
+}
+
+export async function validateSocialRichContent(
+  pg: DB,
+  content: SocialRichContent | null | undefined,
+  viewer: SocialViewer,
+  previous?: SocialRichContent | null
+): Promise<SocialRichContent | null> {
+  if (!content) return null
+  const userIds = getSocialMentionIds(content)
+  const marketIds = getSocialMarketMentionIds(content)
+  const [users, markets] = await Promise.all([
+    userIds.length
+      ? pg.manyOrNone<{ id: string; username: string }>(
+          `select id, username from users where id=any($1::text[])
+          and coalesce((data->>'userDeleted')::boolean,false)=false`,
+          [userIds]
+        )
+      : Promise.resolve([]),
+    marketIds.length
+      ? pg.manyOrNone<Row<'contracts'>>(
+          `select * from contracts where id=any($1::text[]) and visibility='public'
+          and coalesce((data->>'deleted')::boolean,false)=false`,
+          [marketIds]
+        )
+      : Promise.resolve([]),
+  ])
+  const usernames = new Map(
+    users
+      .filter((user) => !viewer.blocked.includes(user.id))
+      .map((user) => [user.id, user.username])
+  )
+  const paths = new Map(
+    markets.map((market) => [market.id, contractPath(convertContract(market))])
+  )
+  // Only the locked stored document can authorize retaining an unavailable
+  // reference. Consume each occurrence so an edit cannot create extra copies.
+  const retained = new Map<string, SocialRichContent[]>()
+  const parsedPrevious = socialRichContentDisplaySchema.safeParse(previous)
+  if (parsedPrevious.success)
+    mapSocialMentions(
+      parsedPrevious.data,
+      (node) => {
+        const key = `user:${node.attrs!.id}`
+        retained.set(key, [...(retained.get(key) ?? []), node])
+        return node
+      },
+      (node) => {
+        const key = `market:${node.attrs!.id}`
+        retained.set(key, [...(retained.get(key) ?? []), node])
+        return node
+      }
+    )
+  const canonicalMention = (
+    node: SocialRichContent,
+    kind: 'user' | 'market',
+    label: string | undefined
+  ): SocialRichContent => {
+    if (label !== undefined)
+      return { type: node.type, attrs: { id: node.attrs!.id, label } }
+    const original = retained.get(`${kind}:${node.attrs!.id}`)?.shift()
+    if (!original)
+      throw new APIError(
+        400,
+        kind === 'user'
+          ? 'Mentioned user is unavailable'
+          : 'Only available public markets can be referenced'
+      )
+    return {
+      type: node.type,
+      attrs: { id: original.attrs!.id, label: original.attrs!.label },
+    }
+  }
+  const canonical = mapSocialMentions(
+    content,
+    (node) => canonicalMention(node, 'user', usernames.get(node.attrs!.id)),
+    (node) => canonicalMention(node, 'market', paths.get(node.attrs!.id))
+  )
+  const parsed = socialRichContentSchema.safeParse(canonical)
+  if (!parsed.success) throw new APIError(400, parsed.error.issues[0].message)
+  return parsed.data
+}
+
+// The owner-only edit response retains reference identities behind generic
+// placeholders. Match document positions, never placeholder text, so ordinary
+// text that happens to contain the same words remains ordinary text.
+export function getSocialEditContent(
+  stored: SocialRichContent | null | undefined,
+  displayed: SocialRichContent | null | undefined
+): SocialRichContent | null {
+  const original = socialRichContentDisplaySchema.safeParse(stored)
+  const visible = socialRichContentDisplaySchema.safeParse(displayed)
+  if (!original.success || !visible.success) return null
+  const visit = (
+    node: SocialRichContent,
+    display: SocialRichContent
+  ): SocialRichContent => {
+    if (node.type === 'mention' || node.type === 'contract-mention') {
+      if (display.type === node.type && display.attrs?.id === node.attrs!.id)
+        return display
+      return {
+        type: node.type,
+        attrs: {
+          id: node.attrs!.id,
+          label: socialUnavailableMentionText(node.type),
+          unavailable: true,
+        },
+      }
+    }
+    return {
+      ...display,
+      ...(node.content
+        ? {
+            content: node.content.map((child, index) =>
+              visit(child, display.content![index])
+            ),
+          }
+        : {}),
+    }
+  }
+  return visit(original.data, visible.data)
+}
 export async function writeSocialMarkets(
   pg: DB,
   id: string,
@@ -169,12 +320,15 @@ const displayUser = (u: {
   id: string
   name: string
   username: string
-  data: { avatarUrl?: string }
+  data?: { avatarUrl?: string }
+  avatarUrl?: string
+  entitlements?: Parameters<typeof convertEntitlement>[0][]
 }): DisplayUser => ({
   id: u.id,
   name: u.name,
   username: u.username,
-  avatarUrl: u.data.avatarUrl ?? '',
+  avatarUrl: u.avatarUrl ?? u.data?.avatarUrl ?? '',
+  entitlements: (u.entitlements ?? []).map(convertEntitlement),
 })
 
 export async function hydrateSocialPosts(
@@ -186,6 +340,15 @@ export async function hydrateSocialPosts(
 ): Promise<SocialPost[]> {
   if (!rows.length) return []
   const ids = rows.map((r) => r.id)
+  const richDocs = new Map(
+    rows.map((row) => {
+      const parsed = socialRichContentDisplaySchema.safeParse(row.rich_content)
+      return [row.id, parsed.success ? parsed.data : null] as const
+    })
+  )
+  const mentionedMarketIds = [
+    ...new Set([...richDocs.values()].flatMap(getSocialMarketMentionIds)),
+  ]
   const [
     users,
     roots,
@@ -196,10 +359,19 @@ export async function hydrateSocialPosts(
     comments,
     bets,
     quotedRows,
+    inlineMarkets,
   ] = await Promise.all([
     pg.manyOrNone(
-      `select id, name, username, data from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
-      [rows.map((r) => r.user_id), rows.map((r) => r.parent_id).filter(Boolean)]
+      `select id, name, username, data,
+      (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=users.id) as entitlements
+      from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
+      [
+        rows.flatMap((r) => [
+          r.user_id,
+          ...getSocialMentionIds(richDocs.get(r.id)),
+        ]),
+        rows.map((r) => r.parent_id).filter(Boolean),
+      ]
     ),
     pg.manyOrNone<SocialRow>(
       `select * from social_posts where id = any($1::text[])`,
@@ -229,7 +401,8 @@ export async function hydrateSocialPosts(
     ),
     pg.manyOrNone(
       `select cc.comment_id, cc.user_id, cc.data,
-      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl','')) as author
+      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
+        'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_comments cc join users u on u.id=cc.user_id
       left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
       where cc.comment_id = any($1::text[]) and coalesce((cc.data->>'hidden')::boolean,false) = false and coalesce((cc.data->>'deleted')::boolean,false) = false
@@ -238,7 +411,8 @@ export async function hydrateSocialPosts(
     ),
     pg.manyOrNone(
       `select b.bet_id, b.user_id, b.data, u.name,
-      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl','')) as author
+      json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
+        'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_bets b join users u on u.id=b.user_id where b.bet_id = any($1::text[])`,
       [rows.map((r) => r.source_bet_id).filter(Boolean)]
     ),
@@ -248,6 +422,13 @@ export async function hydrateSocialPosts(
           where p.id=any($1::text[]) and p.deleted_time is null
           and not (p.user_id=any($2::text[])) and not (root.user_id=any($2::text[]))`,
           [rows.map((r) => r.source_post_id).filter(Boolean), viewer.blocked]
+        )
+      : Promise.resolve([]),
+    mentionedMarketIds.length
+      ? pg.manyOrNone<Row<'contracts'>>(
+          `select * from contracts where id=any($1::text[]) and visibility='public'
+          and coalesce((data->>'deleted')::boolean,false)=false`,
+          [mentionedMarketIds]
         )
       : Promise.resolve([]),
   ])
@@ -284,6 +465,35 @@ export async function hydrateSocialPosts(
         ? 'moderator'
         : 'author'
       : null
+    const richDoc = richDocs.get(row.id)
+    const richContent =
+      !removed && richDoc
+        ? mapSocialMentions(
+            richDoc,
+            (node) => {
+              const user = users.find((user) => user.id === node.attrs!.id)
+              return user &&
+                !user.data.userDeleted &&
+                !viewer.blocked.includes(user.id)
+                ? { ...node, attrs: { id: user.id, label: user.username } }
+                : { type: 'text', text: '[User unavailable]' }
+            },
+            (node) => {
+              const market = inlineMarkets.find(
+                (market) => market.id === node.attrs!.id
+              )
+              return market
+                ? {
+                    ...node,
+                    attrs: {
+                      id: market.id,
+                      label: contractPath(convertContract(market)),
+                    },
+                  }
+                : { type: 'text', text: '[Market unavailable]' }
+            }
+          )
+        : null
     const attached = attachmentsByPost[row.id] ?? []
     const reaction = reactions.find((r) => r.content_id === row.id)
     const sourceMarket = sourceMarkets.find(
@@ -307,7 +517,11 @@ export async function hydrateSocialPosts(
       const contract = convertContract(sourceMarket)
       source = {
         kind: comment ? 'comment' : bet ? 'bet' : 'market',
-        author: comment?.author ?? bet?.author,
+        author: comment
+          ? displayUser(comment.author)
+          : bet
+          ? displayUser(bet.author)
+          : undefined,
         contractId: contract.id,
         url:
           contractPath(contract) + (comment ? `#${row.source_comment_id}` : ''),
@@ -332,7 +546,12 @@ export async function hydrateSocialPosts(
     return {
       id: row.id,
       author: displayUser(users.find((u) => u.id === row.user_id)),
-      text: removed ? '' : row.text,
+      text: removed
+        ? ''
+        : richContent
+        ? socialRichContentToText(richContent)
+        : row.text,
+      richContent,
       imageUrls: removed ? [] : (row.image_urls ?? []).filter(isSocialImageUrl),
       createdTime: socialTimestamp(row.created_time),
       createdTimeMs: socialTimestampMillis(row.created_time),

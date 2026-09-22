@@ -6,6 +6,7 @@ import {
   useReplyDraftContext,
 } from './social-reply-drafts'
 import { SocialText } from './social-text'
+import { SocialRichContent } from './social-rich-content'
 import { SocialLinkPreview } from './social-link-preview'
 import { SocialImageCarousel } from './social-image-carousel'
 import DropdownMenu from '../widgets/dropdown-menu'
@@ -20,12 +21,15 @@ import {
   SocialLikerPage,
   socialPostPath,
   SOCIAL_POST_MAX_MARKETS,
+  isSocialPostEditable,
 } from 'common/social-post'
 import { api } from 'web/lib/api/api'
+import { socialRichContentToText } from 'common/social-rich-content'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { Avatar } from '../widgets/avatar'
+import { SocialAvatar } from './social-avatar'
+import { SocialUserLink } from './social-user-link'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Button } from '../buttons/button'
 import { ReportModal } from '../buttons/report-button'
@@ -35,6 +39,8 @@ import { SocialPostList } from './social-post-list'
 import { UserReactedItem } from '../contract/react-button'
 import { Tooltip } from '../widgets/tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useSocialLikePress } from './use-social-like-press'
+import { useSocialEditWindow } from './use-social-edit-window'
 
 export function SocialPostCard(
   props: Parameters<typeof SocialPostCardContent>[0]
@@ -84,7 +90,8 @@ function SocialPostCardContent({
       )
   )
   const [reposting, setReposting] = useState(false)
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState<SocialPost>()
+  const [loadingEdit, setLoadingEdit] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -124,11 +131,44 @@ function SocialPostCardContent({
     }
   }
   const changed = () => {
-    setEditing(false)
+    setEditing(undefined)
     setReplying(false)
     onChanged()
   }
   const own = user?.id === post.author.id
+  const canEdit = useSocialEditWindow(own ? post.createdTimeMs : undefined)
+  async function beginEdit() {
+    if (loadingEdit || !isSocialPostEditable(post.createdTimeMs)) return
+    setLoadingEdit(true)
+    setError(undefined)
+    try {
+      // Feed content is redacted for display. Fetch the author's editable
+      // document so an unrelated edit cannot replace mentions with placeholders.
+      const result = await api('get-social-post', { id: post.id })
+      if (!isSocialPostEditable(result.post.createdTimeMs))
+        throw new Error('The 30-minute editing window has ended.')
+      if (result.post.removed || result.editContent === undefined)
+        throw new Error(
+          'This post is not available to edit. Please refresh and try again.'
+        )
+      setEditing({
+        ...result.post,
+        richContent: result.editContent,
+        text: result.editContent
+          ? socialRichContentToText(result.editContent)
+          : result.post.text,
+      })
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setLoadingEdit(false)
+    }
+  }
+  const likePress = useSocialLikePress(
+    () => void like(),
+    () => setLikersOpen(true),
+    busy
+  )
   const hasPreviews = previews && post.replyPreviews.length > 0
   const connectedBelow = continueThread || expanded || hasPreviews
   const replyCountButton = showReplyActions && post.replyCount > 0 && (
@@ -180,11 +220,7 @@ function SocialPostCardContent({
               className="bg-ink-200 dark:bg-ink-300 absolute -top-3 left-4 h-3 w-px"
             />
           )}
-          <Avatar
-            size="sm"
-            avatarUrl={post.author.avatarUrl}
-            username={post.author.username}
-          />
+          <SocialAvatar size="sm" user={post.author} />
           {connectedBelow && (
             <span
               aria-hidden="true"
@@ -194,15 +230,15 @@ function SocialPostCardContent({
         </div>
         <div className="min-w-0">
           <div className="mb-1 flex min-w-0 items-center gap-1 text-sm">
-            <Link
+            <SocialUserLink
+              user={post.author}
               className="text-ink-900 min-w-0 truncate font-bold hover:underline"
-              href={`/${post.author.username}`}
-            >
-              {post.author.name}
-            </Link>
-            <span className="text-ink-600 min-w-0 truncate">
-              @{post.author.username}
-            </span>
+            />
+            <SocialUserLink
+              user={post.author}
+              label="handle"
+              className="text-ink-600 min-w-0 truncate"
+            />
             <span className="text-ink-600" aria-hidden="true">
               ·
             </span>
@@ -230,9 +266,7 @@ function SocialPostCardContent({
                 <DropdownMenu
                   closeOnClick
                   items={[
-                    ...(own
-                      ? [{ name: 'Edit', onClick: () => setEditing(true) }]
-                      : []),
+                    ...(canEdit ? [{ name: 'Edit', onClick: beginEdit }] : []),
                     ...(own || mod
                       ? [
                           {
@@ -250,14 +284,21 @@ function SocialPostCardContent({
             )}
           </div>
           {post.parentId && (
-            <Link
-              className="text-ink-600 mb-2 block text-xs hover:underline"
-              href={socialPostPath(post.parentId)}
-            >
-              {post.parentAuthor
-                ? `Replying to @${post.parentAuthor.username}`
-                : 'View parent post'}
-            </Link>
+            <div className="text-ink-600 mb-2 flex min-w-0 items-center gap-1 text-xs">
+              <Link
+                className="shrink-0 hover:underline"
+                href={socialPostPath(post.parentId)}
+              >
+                {post.parentAuthor ? 'Replying to' : 'View parent post'}
+              </Link>
+              {post.parentAuthor && (
+                <SocialUserLink
+                  user={post.parentAuthor}
+                  label="handle"
+                  className="min-w-0 truncate"
+                />
+              )}
+            </div>
           )}
           {post.removed ? (
             <>
@@ -275,16 +316,25 @@ function SocialPostCardContent({
                 {replyCountButton}
               </div>
             </>
+          ) : loadingEdit ? (
+            <LoadingIndicator />
           ) : editing ? (
             <SocialComposer
-              editing={post}
+              editing={editing}
               onPosted={changed}
-              onCancel={() => setEditing(false)}
+              onCancel={() => setEditing(undefined)}
               focusOnMount
             />
           ) : (
             <>
-              <SocialText text={post.text} />
+              {post.richContent ? (
+                <SocialRichContent
+                  content={post.richContent}
+                  fallbackText={post.text}
+                />
+              ) : (
+                <SocialText text={post.text} />
+              )}
               {!!post.imageUrls?.length && (
                 <SocialImageCarousel
                   key={post.imageUrls.join('|')}
@@ -307,9 +357,12 @@ function SocialPostCardContent({
                           {market.question}
                         </span>
                         <span className="text-ink-600 mt-1.5 flex min-w-0 items-center gap-1.5 text-xs">
-                          <Avatar
-                            username={market.creatorUsername}
-                            avatarUrl={market.creatorAvatarUrl}
+                          <SocialAvatar
+                            user={{
+                              id: market.creatorId,
+                              username: market.creatorUsername,
+                              avatarUrl: market.creatorAvatarUrl,
+                            }}
                             size="2xs"
                             noLink
                           />
@@ -395,8 +448,8 @@ function SocialPostCardContent({
                     aria-label={liked ? 'Unlike post' : 'Like post'}
                     aria-pressed={liked}
                     disabled={busy}
-                    onClick={like}
-                    className={`rounded-full p-2 transition-colors hover:bg-rose-500/10 ${
+                    {...likePress}
+                    className={`touch-manipulation select-none rounded-full p-2 transition-colors hover:bg-rose-500/10 ${
                       liked ? 'text-rose-500' : 'hover:text-rose-500'
                     }`}
                   >
@@ -614,18 +667,10 @@ function SocialLikers({ id }: { id: string }) {
     <div className="bg-canvas-0 max-h-[70vh] overflow-auto rounded-xl p-5">
       <h2 className="mb-4 text-lg font-semibold">Liked by</h2>
       {page.users.map((user) => (
-        <Link
-          key={user.id}
-          href={`/${user.username}`}
-          className="mb-3 flex items-center gap-3"
-        >
-          <Avatar
-            size="sm"
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-          />
-          <span>{user.name}</span>
-        </Link>
+        <div key={user.id} className="mb-3 flex items-center gap-3">
+          <SocialAvatar size="sm" user={user} />
+          <SocialUserLink user={user} />
+        </div>
       ))}
       {!loading && !error && !page.users.length && (
         <p className="text-ink-500">No likes yet.</p>

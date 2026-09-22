@@ -1,6 +1,7 @@
 import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
 import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
 import { SocialText } from './yap/social-text'
+import { SocialRichContent } from './yap/social-rich-content'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { UserHovercard } from 'web/components/user/user-hovercard'
@@ -24,6 +25,7 @@ export default function UserReportItem(props: {
   const {
     slug,
     text,
+    richContent,
     imageUrls,
     source,
     owner,
@@ -158,7 +160,14 @@ export default function UserReportItem(props: {
             <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
               {contentType === 'social_post' ? (
                 <>
-                  <SocialText text={String(text)} />
+                  {richContent ? (
+                    <SocialRichContent
+                      content={richContent}
+                      fallbackText={String(text)}
+                    />
+                  ) : (
+                    <SocialText text={String(text)} />
+                  )}
                   {source && <SocialQuoteCard quote={source} />}
                   {!!imageUrls?.length && (
                     <SocialImageCarousel

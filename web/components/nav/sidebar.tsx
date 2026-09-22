@@ -27,6 +27,7 @@ import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
 import { LuGem } from 'react-icons/lu'
+import { IoCompassOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -351,11 +352,6 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-      {
-        name: 'Forum',
-        href: '/posts',
-        icon: ChatIcon,
-      },
       // Show shop when enabled OR for admins (testing)
       (SPEND_MANA_ENABLED || options.isAdminOrMod) && {
         name: 'Shop',
@@ -434,6 +430,7 @@ const getMobileNav = (
       ) : undefined,
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Explore', href: '/explore', icon: IoCompassOutline },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
     { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
@@ -479,6 +476,13 @@ const bottomNav = (
   isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
+    loggedIn &&
+      !isMobile && {
+        name: 'Explore',
+        href: '/explore',
+        icon: IoCompassOutline,
+      },
+    loggedIn && !isMobile && { name: 'Forum', href: '/posts', icon: ChatIcon },
     // Jobs only belongs in the bottom section on desktop (behind "More"). On
     // mobile it lives higher up in the main nav list (see getMobileNav).
     !isMobile && { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },

@@ -2,11 +2,22 @@ import { z } from 'zod'
 import { Contract } from './contract'
 import { DisplayUser } from './api/user-types'
 import { FIREBASE_CONFIG } from './envs/constants'
+import {
+  SocialRichContent,
+  socialRichContentDisplaySchema,
+  socialRichContentSchema,
+  socialRichContentToText,
+} from './social-rich-content'
 
 export const SOCIAL_POST_MAX_LENGTH = 2000
 export const SOCIAL_POST_MAX_MARKETS = 5
 export const SOCIAL_POST_MAX_IMAGES = 4
 export const SOCIAL_FEED_PAGE_SIZE = 10
+export const SOCIAL_POST_EDIT_WINDOW_MS = 30 * 60 * 1000
+
+export const isSocialPostEditable = (createdTimeMs: number, now = Date.now()) =>
+  Number.isFinite(createdTimeMs) &&
+  now < createdTimeMs + SOCIAL_POST_EDIT_WINDOW_MS
 
 // Match the download URLs returned by uploadPublicImage, including the bucket.
 // Trusting the Firebase hostname alone would allow attacker-owned buckets.
@@ -32,33 +43,51 @@ export function isSocialImageUrl(value: string) {
   }
 }
 
-export const socialPostDraftSchema = z
-  .object({
-    text: z
-      .string()
-      .trim()
-      .refine(
-        (s) => [...s].length <= SOCIAL_POST_MAX_LENGTH,
-        'Posts can contain up to 2,000 characters'
-      ),
-    marketIds: z
-      .array(z.string().min(1).max(200))
-      .max(SOCIAL_POST_MAX_MARKETS)
-      .default([]),
-    imageUrls: z
-      .array(
-        z.string().url().max(2048).refine(isSocialImageUrl, {
-          message: 'Images must be uploaded to Manifold storage',
-        })
+const createSocialPostDraftSchema = (forEditing: boolean) =>
+  z
+    .object({
+      text: z.string().trim(),
+      richContent: (forEditing
+        ? socialRichContentDisplaySchema
+        : socialRichContentSchema
       )
-      .max(SOCIAL_POST_MAX_IMAGES)
-      .optional(),
-  })
-  .strict()
-  .superRefine(({ marketIds }, ctx) => {
-    if (new Set(marketIds).size !== marketIds.length)
-      ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
-  })
+        .nullable()
+        .optional(),
+      marketIds: z
+        .array(z.string().min(1).max(200))
+        .max(SOCIAL_POST_MAX_MARKETS)
+        .default([]),
+      imageUrls: z
+        .array(
+          z.string().url().max(2048).refine(isSocialImageUrl, {
+            message: 'Images must be uploaded to Manifold storage',
+          })
+        )
+        .max(SOCIAL_POST_MAX_IMAGES)
+        .optional(),
+    })
+    .strict()
+    .transform((content) => ({
+      ...content,
+      text: content.richContent
+        ? socialRichContentToText(content.richContent)
+        : content.text,
+    }))
+    .superRefine(({ text, richContent, marketIds }, ctx) => {
+      // Edits restore unavailable references before enforcing the stored length.
+      if (
+        (!forEditing || !richContent) &&
+        [...text].length > SOCIAL_POST_MAX_LENGTH
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Posts can contain up to 2,000 characters',
+        })
+      if (new Set(marketIds).size !== marketIds.length)
+        ctx.addIssue({ code: 'custom', message: 'Markets must be unique' })
+    })
+export const socialPostDraftSchema = createSocialPostDraftSchema(false)
+export const socialPostEditSchema = createSocialPostDraftSchema(true)
 export const hasSocialPostContent = (
   content: z.infer<typeof socialPostDraftSchema>
 ) => !!(content.text || content.marketIds.length || content.imageUrls?.length)
@@ -81,6 +110,7 @@ export type SocialQuote = {
   kind: 'comment' | 'bet' | 'market' | 'post'
   url: string
   text: string
+  richContent?: SocialRichContent | null
   author?: DisplayUser
   contractId?: string
   imageUrls?: string[]
@@ -94,6 +124,7 @@ export type SocialPost = {
   id: string
   author: DisplayUser
   text: string
+  richContent?: SocialRichContent | null
   createdTimeMs: number
   createdTime: string
   editedTimeMs: number | null
@@ -113,7 +144,12 @@ export type SocialPost = {
   replyPreviews: SocialPost[]
 }
 export type SocialPostPage = { posts: SocialPost[]; nextCursor: string | null }
-export type SocialPostDetail = { post: SocialPost; ancestors: SocialPost[] }
+export type SocialPostDetail = {
+  post: SocialPost
+  ancestors: SocialPost[]
+  // Only included for the author while the uncached live post is editable.
+  editContent?: SocialRichContent | null
+}
 export type SocialLikerPage = {
   users: DisplayUser[]
   nextCursor: string | null
@@ -147,6 +183,9 @@ export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
   kind: 'post',
   url: socialPostPath(post.id),
   text: post.removed ? '' : post.text,
+  ...(post.richContent
+    ? { richContent: post.removed ? null : post.richContent }
+    : {}),
   author: post.removed ? undefined : post.author,
   imageUrls: post.removed ? [] : post.imageUrls,
   markets: post.removed ? [] : post.markets,

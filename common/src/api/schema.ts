@@ -1,5 +1,6 @@
 import {
   socialPostDraftSchema,
+  socialPostEditSchema,
   hasSocialPostContent,
   socialPostSourceSchema,
   socialCursorSchema,
@@ -5047,9 +5048,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z
-      .object({ id: z.string(), content: socialPostDraftSchema })
-      .strict(),
+    props: z.object({ id: z.string(), content: socialPostEditSchema }).strict(),
     returns: {} as SocialPost,
   },
   'delete-social-post': {

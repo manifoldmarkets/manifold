@@ -1,8 +1,9 @@
 import { SocialQuoteCard } from './social-quote-card'
 import { useSocialComposerDraft } from './social-reply-drafts'
-import { useEffect, useRef, useState } from 'react'
+import { SocialEditor } from './social-editor'
+import { useSocialEditWindow } from './use-social-edit-window'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import Textarea from 'react-expanding-textarea'
 import { toast } from 'react-hot-toast'
 import { Contract } from 'common/contract'
 import { isSupporter } from 'common/supporter'
@@ -11,15 +12,18 @@ import {
   SocialPostSource,
   SocialQuote,
   socialPostDraftSchema,
+  socialPostEditSchema,
   SOCIAL_POST_MAX_LENGTH,
   SOCIAL_POST_MAX_MARKETS,
   SOCIAL_POST_MAX_IMAGES,
   socialPostPath,
+  isSocialPostEditable,
 } from 'common/social-post'
+import { hasUnavailableSocialMentions } from 'common/social-rich-content'
 import { Button } from '../buttons/button'
 import { SelectMarkets } from '../contract-select-modal'
 import { Modal } from '../layout/modal'
-import { Avatar } from '../widgets/avatar'
+import { SocialAvatar } from './social-avatar'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -44,17 +48,26 @@ export function SocialComposer(props: {
 }) {
   const { parentId, editing, source, onPosted, onCancel } = props
   const user = useUser()
-  const input = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { draft, setField, clear } = useSocialComposerDraft(
     {
       text: editing?.text ?? props.initialText ?? '',
+      richContent: editing?.richContent,
       markets: editing?.markets ?? props.initialMarkets ?? [],
       images: editing?.imageUrls ?? [],
     },
     editing ? undefined : parentId
   )
-  const { text, markets, images, uploading, saving, error, submitting } = draft
+  const {
+    text,
+    richContent,
+    markets,
+    images,
+    uploading,
+    saving,
+    error,
+    submitting,
+  } = draft
   const localImages = draft.localImages
   const [selecting, setSelecting] = useState(false)
   const isPostRepost =
@@ -66,15 +79,16 @@ export function SocialComposer(props: {
       ? quote
       : undefined
   const count = [...text.trim()].length
+  const editWindowOpen = useSocialEditWindow(editing?.createdTimeMs)
+  const editExpired = !!editing && !editWindowOpen
   const eligible = !!editing || isSupporter(user?.entitlements)
-  useEffect(() => {
-    if (props.focusOnMount) input.current?.focus()
-  }, [props.focusOnMount, user?.id])
   const canSubmit =
-    count <= SOCIAL_POST_MAX_LENGTH &&
+    !editExpired &&
+    (count <= SOCIAL_POST_MAX_LENGTH ||
+      (!!editing && hasUnavailableSocialMentions(richContent))) &&
     !!(count || markets.length || images.length || isPostRepost)
   function addImages(files: File[]) {
-    if (!user || submitting.current || !files.length) return
+    if (!user || submitting.current || editExpired || !files.length) return
     setField('error', undefined)
     if (images.length + files.length > SOCIAL_POST_MAX_IMAGES) {
       setField('error', `Attach up to ${SOCIAL_POST_MAX_IMAGES} images.`)
@@ -104,6 +118,10 @@ export function SocialComposer(props: {
   }
   async function submit() {
     if (!canSubmit || !user || submitting.current) return
+    if (editing && !isSocialPostEditable(editing.createdTimeMs)) {
+      setField('error', 'The 30-minute editing window has ended.')
+      return
+    }
     submitting.current = true
     setField('saving', true)
     setField('error', undefined)
@@ -130,8 +148,13 @@ export function SocialComposer(props: {
         if (result.status === 'rejected') throw result.reason
         return result.value
       })
-      const content = socialPostDraftSchema.parse({
+      if (editing && !isSocialPostEditable(editing.createdTimeMs))
+        throw new Error('The 30-minute editing window has ended.')
+      const content = (
+        editing ? socialPostEditSchema : socialPostDraftSchema
+      ).parse({
         text,
+        richContent,
         marketIds: markets.map((m) => m.id),
         imageUrls,
       })
@@ -202,10 +225,10 @@ export function SocialComposer(props: {
   return (
     <div className="bg-canvas-0 w-full px-4 py-3" data-social-composer>
       <div className="flex items-start gap-3">
-        <Avatar avatarUrl={user.avatarUrl} username={user.username} size="sm" />
+        <SocialAvatar user={user} size="sm" />
         <div className="min-w-0 flex-1">
-          <Textarea
-            aria-label={
+          <SocialEditor
+            ariaLabel={
               editing
                 ? 'Edit post'
                 : parentId
@@ -219,26 +242,16 @@ export function SocialComposer(props: {
                 ? 'Add a comment (optional)…'
                 : 'What’s on your mind?'
             }
-            className="bg-canvas-50 border-ink-300 placeholder:text-ink-600 text-ink-900 focus:border-primary-500 focus:ring-primary-500 mb-3 w-full resize-none rounded-2xl border p-3 text-base transition-colors focus:outline-none focus:ring-1"
-            rows={2}
-            value={text}
-            onChange={(e) => setField('text', e.target.value)}
-            onPaste={(e) => {
-              const files = Array.from(e.clipboardData.files).filter((file) =>
-                file.type.startsWith('image/')
-              )
-              if (!files.length) return
-              e.preventDefault()
-              addImages(files)
+            text={text}
+            value={richContent}
+            onChange={(content, plainText) => {
+              setField('richContent', content)
+              setField('text', plainText)
             }}
-            ref={input}
-            disabled={saving}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault()
-                void submit()
-              }
-            }}
+            onImages={addImages}
+            onSubmit={() => void submit()}
+            focusOnMount={props.focusOnMount}
+            disabled={saving || editExpired}
           />
           {!!images.length && (
             <div className="mb-3 flex flex-wrap gap-2">
@@ -254,7 +267,7 @@ export function SocialComposer(props: {
                   />
                   <button
                     aria-label={`Remove image ${index + 1}`}
-                    disabled={saving || uploading}
+                    disabled={saving || uploading || editExpired}
                     onClick={() => {
                       URL.revokeObjectURL(url)
                       localImages.delete(url)
@@ -294,7 +307,7 @@ export function SocialComposer(props: {
                   </div>
                   <button
                     aria-label={`Remove ${m.question}`}
-                    disabled={saving}
+                    disabled={saving || editExpired}
                     onClick={() =>
                       setField(
                         'markets',
@@ -313,11 +326,20 @@ export function SocialComposer(props: {
               {error}
             </p>
           )}
+          {editExpired && !error && (
+            <p role="status" className="text-ink-500 mb-2 text-sm">
+              The 30-minute editing window has ended.
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1">
               <button
                 className="text-primary-700 hover:bg-primary-500/10 -ml-2 flex items-center gap-1 rounded-full px-2 py-2 text-sm transition-colors disabled:opacity-40"
-                disabled={saving || markets.length >= SOCIAL_POST_MAX_MARKETS}
+                disabled={
+                  saving ||
+                  editExpired ||
+                  markets.length >= SOCIAL_POST_MAX_MARKETS
+                }
                 onClick={() => setSelecting(true)}
               >
                 <PlusIcon className="h-4 w-4" /> Markets
@@ -329,6 +351,7 @@ export function SocialComposer(props: {
                 multiple
                 className="hidden"
                 aria-label="Upload images"
+                disabled={saving || uploading || editExpired}
                 onChange={(e) => {
                   const files = Array.from(e.target.files ?? [])
                   e.target.value = ''
@@ -339,7 +362,10 @@ export function SocialComposer(props: {
                 title={`Add up to ${SOCIAL_POST_MAX_IMAGES} images`}
                 className="text-primary-700 hover:bg-primary-500/10 flex items-center gap-1 rounded-full px-2 py-2 text-sm transition-colors disabled:opacity-40"
                 disabled={
-                  saving || uploading || images.length >= SOCIAL_POST_MAX_IMAGES
+                  saving ||
+                  uploading ||
+                  editExpired ||
+                  images.length >= SOCIAL_POST_MAX_IMAGES
                 }
                 onClick={() => fileInput.current?.click()}
               >
@@ -398,7 +424,7 @@ export function SocialComposer(props: {
             onCancel={() => setSelecting(false)}
             submitLabel={(n) => `Attach ${n} market${n === 1 ? '' : 's'}`}
             onSubmit={(selected) => {
-              setField('markets', selected)
+              if (!editExpired) setField('markets', selected)
               setSelecting(false)
             }}
           />

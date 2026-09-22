@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { SocialQuote } from 'common/social-post'
 import { contractPath, getBinaryProbPercent } from 'common/contract'
-import { Avatar } from '../widgets/avatar'
+import { SocialAvatar } from './social-avatar'
+import { SocialUserLink } from './social-user-link'
 import { SocialImageCarousel } from './social-image-carousel'
+import { SocialRichContent } from './social-rich-content'
 
 export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
   if (quote.kind === 'market') return null
@@ -26,31 +28,34 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
         </Link>
       )}
       {quote.author && (
-        <Link
-          href={`/${quote.author.username}`}
-          className="mb-2 flex min-w-0 items-center gap-2 text-sm hover:underline"
-        >
-          <Avatar
-            avatarUrl={quote.author.avatarUrl}
-            username={quote.author.username}
-            size="xs"
-            noLink
+        <div className="mb-2 flex min-w-0 items-center gap-2 text-sm">
+          <SocialAvatar user={quote.author} size="xs" />
+          <SocialUserLink
+            user={quote.author}
+            className="text-ink-900 min-w-0 truncate font-semibold"
           />
-          <span className="text-ink-900 truncate font-semibold">
-            {quote.author.name}
-          </span>
-          <span className="text-ink-600 truncate">
-            @{quote.author.username}
-          </span>
-        </Link>
+          <SocialUserLink
+            user={quote.author}
+            label="handle"
+            className="text-ink-600 min-w-0 truncate"
+          />
+        </div>
       )}
-      {!!quote.text && (
-        <Link
-          href={quote.url}
-          className="text-ink-900 block whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]"
-        >
-          {quote.text}
-        </Link>
+      {quote.richContent ? (
+        <SocialRichContent
+          content={quote.richContent}
+          fallbackText={quote.text}
+          className="text-sm"
+        />
+      ) : (
+        !!quote.text && (
+          <Link
+            href={quote.url}
+            className="text-ink-900 block whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]"
+          >
+            {quote.text}
+          </Link>
+        )
       )}
       {!!quote.imageUrls?.length && (
         <SocialImageCarousel
@@ -76,7 +81,9 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
           ))}
         </div>
       )}
-      {(quote.includesQuote || (quote.kind === 'post' && !quote.text)) && (
+      {(quote.includesQuote ||
+        !!quote.richContent ||
+        (quote.kind === 'post' && !quote.text)) && (
         <Link
           href={quote.url}
           className="text-primary-700 mt-2 block text-xs hover:underline"

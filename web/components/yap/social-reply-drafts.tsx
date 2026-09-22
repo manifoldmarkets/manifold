@@ -9,9 +9,11 @@ import {
   useState,
 } from 'react'
 import { Contract } from 'common/contract'
+import type { JSONContent } from '@tiptap/core'
 
 type Draft = {
   text: string
+  richContent?: JSONContent | null
   markets: Contract[]
   images: string[]
   localImages: Map<string, { file: File; uploadedUrl?: string }>
@@ -58,7 +60,7 @@ export function SocialReplyDraftProvider({
 export const useReplyDraftContext = () => useContext(ReplyDraftContext)
 
 export function useSocialComposerDraft(
-  initial: Pick<Draft, 'text' | 'markets' | 'images'>,
+  initial: Pick<Draft, 'text' | 'richContent' | 'markets' | 'images'>,
   parentId?: string
 ) {
   const context = useReplyDraftContext()
@@ -96,7 +98,14 @@ export function useSocialComposerDraft(
   }
   function clear() {
     releaseImages(draft)
-    setDraft({ ...local, text: '', markets: [], images: [], error: undefined })
+    setDraft({
+      ...local,
+      text: '',
+      richContent: null,
+      markets: [],
+      images: [],
+      error: undefined,
+    })
   }
   return { draft, setField, clear }
 }
