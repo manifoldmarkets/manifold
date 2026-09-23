@@ -60,6 +60,14 @@ export const placeMultiBetMain = async (
 
     const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
     if (!betOnAnswers) throw new APIError(404, 'Answers not found')
+    // cpmm-multi-2's basket solve takes about a second at 10 answers and six at
+    // 50, blocking the event loop for every other request while it runs.
+    // Single-answer bets don't use it.
+    if (contract.mechanism === 'cpmm-multi-2' && betOnAnswers.length > 1)
+      throw new APIError(
+        400,
+        "Buying several answers at once isn't available on this market yet."
+      )
     if ('resolution' in betOnAnswers && betOnAnswers.resolution)
       throw new APIError(403, 'Answer is resolved and cannot be bet on')
     if (shouldAnswersSumToOne && answers.length < 2)
