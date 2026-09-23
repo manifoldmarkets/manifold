@@ -16,23 +16,7 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { rowToPosition } from './queries'
-
-type PerpEventRow = {
-  id: number | string
-  contract_id: string
-  user_id: string
-  event_type: string
-  applied_ts: string
-  ts: string
-  oracle_price: number | string | null
-  size_delta: number | string
-  cost_basis_delta: number | string
-  original_cost_basis_delta: number | string
-  direction: string | null
-  leverage: number | string | null
-  data: Record<string, unknown> | null
-}
+import { PerpEventRow, rowToPerpEvent, rowToPosition } from './queries'
 
 type CutoffPriceRow = {
   period: string
@@ -150,21 +134,7 @@ const loadRecentEvents = async (
   for (const row of rows) {
     const key = metricKey(row.user_id, row.contract_id)
     if (!eventsByMetric[key]) eventsByMetric[key] = []
-    eventsByMetric[key].push({
-      id: Number(row.id),
-      contractId: row.contract_id,
-      userId: row.user_id,
-      eventType: row.event_type as PerpEvent['eventType'],
-      appliedTime: new Date(row.applied_ts).getTime(),
-      ts: new Date(row.ts).getTime(),
-      oraclePrice: Number(row.oracle_price ?? 0),
-      sizeDelta: Number(row.size_delta),
-      costBasisDelta: Number(row.cost_basis_delta),
-      originalCostBasisDelta: Number(row.original_cost_basis_delta),
-      direction: row.direction as PerpEvent['direction'],
-      leverage: row.leverage == null ? null : Number(row.leverage),
-      data: row.data ?? undefined,
-    })
+    eventsByMetric[key].push(rowToPerpEvent(row))
   }
   return eventsByMetric
 }

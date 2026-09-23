@@ -1,8 +1,13 @@
 import { Bet } from 'common/bet'
 import { getProfitMetrics } from 'common/calculate'
-import { excludeSelfTrades, filterBetsForLeagueScoring } from 'common/leagues'
+import {
+  excludeSelfTrades,
+  filterBetsForLeagueScoring,
+  seasonCountsPerpProfit,
+} from 'common/leagues'
 import { convertContract } from 'common/supabase/contracts'
-import { groupBy, keyBy, sum, zipObject } from 'lodash'
+import { groupBy, keyBy, sum, uniq, zipObject } from 'lodash'
+import { calculatePerpSeasonProfits } from 'shared/perps/season-profit'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -149,13 +154,16 @@ export async function updateLeague(
     category: 'UNIQUE_BETTOR_BONUS',
   }))
 
-  // Launch policy: PERP position profit and loss does not count toward league
-  // mana earned. Rolling day/week/month PERP metrics remain available for
-  // portfolios and user reporting, but league inclusion must be designed and
-  // enabled separately at a future season boundary.
+  // PERP profit and loss counts only from FIRST_SEASON_WITH_PERP_PROFIT on,
+  // so no season that began under the old rules is ever rescored.
+  const userPerpProfits = seasonCountsPerpProfit(season)
+    ? await getUserPerpProfits(pg, season, seasonStart, userIds)
+    : []
+
   const combined = [
     ...userProfit.map((u) => ({ ...u, amount: +u.amount })),
     ...userUniqueBonuses,
+    ...userPerpProfits,
   ]
 
   const amountByUserId = groupBy(combined, 'user_id')
@@ -178,6 +186,59 @@ export async function updateLeague(
 
   await bulkUpdate(pg, 'leagues', ['user_id', 'season'], manaEarnedUpdates)
   log('Done.')
+}
+
+// PERP positions have no bets, so they are scored apart from the loop above:
+// each position's profit and loss since the season started, including one
+// carried in from before it (shared/perps/season-profit).
+const getUserPerpProfits = async (
+  pg: SupabaseDirectClient,
+  season: number,
+  seasonStart: number,
+  userIds: string[]
+) => {
+  const { profits, failures } = await calculatePerpSeasonProfits(pg, {
+    userIds,
+    seasonStart,
+  })
+
+  const totals: Record<string, number> = {}
+  for (const { userId, profit } of profits) {
+    totals[userId] = (totals[userId] ?? 0) + profit
+  }
+
+  if (failures.length > 0) {
+    // Hold the last total written for anyone whose history could not be
+    // replayed rather than score them without that market: a rank that jumps
+    // because one replay failed is worse than one that is briefly stale.
+    const failedUserIds = uniq(failures.map((f) => f.userId))
+    const examples = failures
+      .slice(0, 5)
+      .map((f) => `${f.userId}/${f.contractId}: ${f.reasons.join('; ')}`)
+    log.error(
+      `Could not calculate season ${season} PERP profit for ${
+        failures.length
+      } user/contract pairs; holding the last totals of ${
+        failedUserIds.length
+      } users. ${examples.join(' | ')}`
+    )
+    const held = await pg.manyOrNone<{ user_id: string; amount: string }>(
+      `select user_id, mana_earned_breakdown->>'perp_profit' as amount
+         from leagues
+        where season = $1
+          and user_id = any($2)
+          and mana_earned_breakdown->>'perp_profit' is not null`,
+      [season, failedUserIds]
+    )
+    for (const userId of failedUserIds) delete totals[userId]
+    for (const { user_id, amount } of held) totals[user_id] = +amount
+  }
+
+  return Object.entries(totals).map(([user_id, amount]) => ({
+    user_id,
+    amount,
+    category: 'perp_profit' as const,
+  }))
 }
 
 const EXCLUDED_CONTRACT_SLUGS = new Set([

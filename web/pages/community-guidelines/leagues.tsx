@@ -98,6 +98,13 @@ export default function CommunityGuidelinesLeaguesPage() {
               count toward your score.
             </li>
             <li>
+              From the October 2026 season, profit and loss on perpetual markets
+              counts too. It's measured over the season itself: a position you
+              opened before the season began counts only for what it gains or
+              loses after the start, with funding and fees included, just as in
+              your portfolio.
+            </li>
+            <li>
               Bets on your own markets within the first hour of creation don't
               count toward your league score — this prevents creators from
               pump-and-dumping fresh markets for league points.

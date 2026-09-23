@@ -178,9 +178,10 @@ export function PerpExplainerContent(props: {
       )}
 
       <div className="border-primary-200 bg-primary-50 text-ink-700 dark:border-primary-800 dark:bg-primary-900/20 rounded-md border p-3 text-sm">
-        <span className="font-semibold">League scoring:</span> For now,
-        perpetual-market profit and loss appear in your portfolio but do not
-        count toward league standings.
+        <span className="font-semibold">League scoring:</span> From the October
+        2026 season, profit and loss on perpetual markets counts toward your
+        league score: whatever your positions gain or lose during a season,
+        including positions opened before it began.
       </div>
     </>
   )
