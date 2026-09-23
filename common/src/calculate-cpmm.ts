@@ -822,15 +822,21 @@ export const getPoolAtProb = (prob: number, amount: number) =>
     ? { YES: amount, NO: (prob / (1 - prob)) * amount }
     : { YES: ((1 - prob) / prob) * amount, NO: amount }
 
+// How deep, relative to the balanced split, getInitialAnswerPools lets any
+// answer's pool get in exchange for keeping more of the ante.
+export const MIN_SEED_DEPTH = 0.5
+
 // Seed pools for a brand new cpmm-multi-1 market whose answers start at `probs`,
 // backed by exactly `ante` mana.
 //
-// When exactly one answer resolves YES, `amount` mana mints `amount` YES shares
-// of *every* answer (a full set), and a NO share of one answer is a YES share of
-// each other answer. So we spread the ante over the answers, keep only the
-// shares that hold each answer at its target probability, and then recombine the
-// leftovers into full sets to add back — the same recycling
-// addCpmmMultiLiquidityAnswersSumToOne does when subsidising a live market.
+// A cpmm-multi-1 pool has p fixed at 0.5, so it can only hold an answer away from
+// 50% by leaving shares unused. When answers sum to one, the lossless split below
+// spends the whole ante anyway, but it exists only while every answer is under
+// 50%, and it thins out the other answers as one of them nears 50%. So we take as
+// much of it as keeps every answer at least MIN_SEED_DEPTH as deep as the
+// balanced split, and the balanced split for the rest. Both hold every answer at
+// its target, so any mix of them does too, and a mix pays out the same mix of
+// what they pay out, so no scenario pays more than the ante.
 export const getInitialAnswerPools = (
   probs: number[],
   ante: number,
@@ -841,6 +847,54 @@ export const getInitialAnswerPools = (
   if (!shouldAnswersSumToOne || n === 1)
     return probs.map((prob) => getPoolAtProb(prob, ante / n))
 
+  const balanced = getBalancedAnswerPools(probs, ante)
+  if (Math.max(...probs) >= 0.5) return balanced
+
+  const lossless = getLosslessAnswerPools(probs, ante)
+  // Both pools of an answer sit at the same probability, so the ratio of their
+  // YES shares is the ratio of their depths, and depth is linear in the mix.
+  const mix = Math.min(
+    1,
+    ...probs.map((_, i) => {
+      const depth = lossless[i].YES / balanced[i].YES
+      return depth >= MIN_SEED_DEPTH ? 1 : (1 - MIN_SEED_DEPTH) / (1 - depth)
+    })
+  )
+  return probs.map((_, i) => ({
+    YES: mix * lossless[i].YES + (1 - mix) * balanced[i].YES,
+    NO: mix * lossless[i].NO + (1 - mix) * balanced[i].NO,
+  }))
+}
+
+// Pools for answers that sum to one, each at its target probability, that pay
+// out exactly `ante` whichever answer wins, so none of it is thrown away.
+//
+// If answer k wins the pools pay YES_k + Σ_{j≠k} NO_j, and holding answer j at
+// q_j fixes NO_j = YES_j·q_j/(1−q_j). Paying the same whichever answer wins then
+// pins YES_k·(1−2q_k)/(1−q_k) to one shared value c for every k, which has a
+// solution with every pool positive exactly when every answer is under 50%. It's
+// unique: YES_k = c(1−q_k)/(1−2q_k), with c = ante / (1 + Σ q_j/(1−2q_j)). At an
+// even split it's the formula createAnswers uses.
+export const getLosslessAnswerPools = (probs: number[], ante: number) => {
+  const c = ante / (1 + sum(probs.map((prob) => prob / (1 - 2 * prob))))
+  return probs.map((prob) => ({
+    YES: (c * (1 - prob)) / (1 - 2 * prob),
+    NO: (c * prob) / (1 - 2 * prob),
+  }))
+}
+
+// Pools for answers that sum to one, each at its target probability, with the
+// ante spread evenly over them.
+//
+// When exactly one answer resolves YES, `amount` mana mints `amount` YES shares
+// of *every* answer (a full set), and a NO share of one answer is a YES share of
+// each other answer. So we spread the ante over the answers, keep only the
+// shares that hold each answer at its target probability, and then recombine the
+// leftovers into full sets to add back — the same recycling
+// addCpmmMultiLiquidityAnswersSumToOne does when subsidising a live market. What
+// can't be recombined is thrown away.
+export const getBalancedAnswerPools = (probs: number[], ante: number) => {
+  const n = probs.length
   const pools = probs.map(() => ({ YES: 0, NO: 0 }))
   let amountRemaining = ante
   // Each round recovers a fraction of the previous one, so this converges

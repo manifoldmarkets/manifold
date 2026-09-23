@@ -3,9 +3,17 @@ import {
   withAnswerProbRemoved,
   withAnswerProbSet,
 } from './answer-probs'
+import { Answer } from './answer'
 import { getInitialAnswerProbability } from './calculate'
-import { getInitialAnswerPools } from './calculate-cpmm'
+import {
+  getBalancedAnswerPools,
+  getInitialAnswerPools,
+  getLosslessAnswerPools,
+  MIN_SEED_DEPTH,
+} from './calculate-cpmm'
+import { calculateCpmmMultiArbitrageBet } from './calculate-cpmm-arbitrage'
 import { CPMMMultiContract } from './contract'
+import { noFees } from './fees'
 import {
   ANSWER_PROB_SUM_TOLERANCE,
   getAnswerProbsError,
@@ -87,6 +95,122 @@ describe('getInitialAnswerPools', () => {
     expect(probOf(pools[0])).toBeCloseTo(0.75, 6)
     expect(probOf(pools[1])).toBeCloseTo(0.5, 6)
     expect(probOf(pools[2])).toBeCloseTo(0.2, 6)
+  })
+
+  it.each([
+    { probs: [0.4, 0.3, 0.2, 0.1] },
+    { probs: [0.3, 0.3, 0.3, 0.1] },
+    { probs: [0.35, 0.35, 0.3] },
+    { probs: [0.2, 0.2, 0.2, 0.2, 0.1, 0.05, 0.05] },
+  ])('keeps the whole ante at $probs', ({ probs }) => {
+    const ante = 1000
+    const pools = getInitialAnswerPools(probs, ante, true)
+    pools.forEach((pool, i) => expect(probOf(pool)).toBeCloseTo(probs[i], 9))
+    pools.forEach((_, k) =>
+      expect(payoutIfAnswerWins(pools, k)).toBeCloseTo(ante, 6)
+    )
+  })
+
+  it('keeps every answer at least half as deep as the balanced split', () => {
+    // The lossless split alone would leave the 17% answers a few mana deep.
+    for (const probs of [
+      [0.49, 0.17, 0.17, 0.17],
+      [0.499, 0.25, 0.251],
+      [0.45, 0.45, 0.1],
+      [0.45, 0.11, 0.11, 0.11, 0.11, 0.11],
+    ]) {
+      const pools = getInitialAnswerPools(probs, 1000, true)
+      const balanced = getBalancedAnswerPools(probs, 1000)
+      pools.forEach((pool, i) =>
+        expect(pool.YES).toBeGreaterThanOrEqual(
+          MIN_SEED_DEPTH * balanced[i].YES - 1e-9
+        )
+      )
+    }
+  })
+
+  it('reduces the lossless split to the even-split formula', () => {
+    for (const n of [3, 4, 10]) {
+      const pools = getLosslessAnswerPools(Array(n).fill(1 / n), 1000)
+      for (const pool of pools) {
+        expect(pool.YES).toBeCloseTo(500, 6)
+        expect(pool.NO).toBeCloseTo(1000 / (2 * n - 2), 6)
+      }
+    }
+  })
+
+  it('holds its guarantees for any starting probabilities', () => {
+    // Deterministic pseudo-random probability vectors, including ones with an
+    // answer at or above 50%, where nothing can be lossless.
+    let seed = 1
+    const random = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    const ante = 1000
+    for (let trial = 0; trial < 500; trial++) {
+      const n = 2 + Math.floor(random() * 15)
+      const weights = Array.from({ length: n }, () => 0.02 + random() ** 3)
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => w / total)
+
+      const pools = getInitialAnswerPools(probs, ante, true)
+      const payouts = pools.map((_, k) => payoutIfAnswerWins(pools, k))
+      pools.forEach((pool, i) => {
+        expect(pool.YES).toBeGreaterThan(0)
+        expect(pool.NO).toBeGreaterThan(0)
+        expect(probOf(pool)).toBeCloseTo(probs[i], 9)
+      })
+      // Backed by exactly the ante: never more, and the full ante somewhere.
+      payouts.forEach((payout) =>
+        expect(payout).toBeLessThanOrEqual(ante + 1e-6)
+      )
+      expect(Math.max(...payouts)).toBeCloseTo(ante, 4)
+      // Never worth less, at the starting odds, than the balanced split.
+      const value = payouts.reduce((v, payout, k) => v + probs[k] * payout, 0)
+      const balanced = getBalancedAnswerPools(probs, ante)
+      const balancedValue = balanced.reduce(
+        (v, _, k) => v + probs[k] * payoutIfAnswerWins(balanced, k),
+        0
+      )
+      expect(value).toBeGreaterThanOrEqual(balancedValue - 1e-6)
+    }
+  })
+
+  it('trades normally from the pools it seeds', () => {
+    const probs = [0.49, 0.2, 0.2, 0.11]
+    const pools = getInitialAnswerPools(probs, 1000, true)
+    const answers = pools.map(
+      (pool, i) =>
+        ({
+          id: `answer${i}`,
+          contractId: 'contract',
+          poolYes: pool.YES,
+          poolNo: pool.NO,
+          prob: probOf(pool),
+        } as Answer)
+    )
+    for (const answer of answers) {
+      for (const outcome of ['YES', 'NO'] as const) {
+        const { newBetResult, otherBetResults } =
+          calculateCpmmMultiArbitrageBet(
+            answers,
+            answer,
+            outcome,
+            50,
+            undefined,
+            [],
+            {},
+            noFees
+          )
+        const newProbs = [newBetResult, ...otherBetResults].map((result) =>
+          probOf(result.cpmmState.pool as { YES: number; NO: number })
+        )
+        expect(newProbs.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6)
+        const moved = newProbs[0] - answer.prob
+        expect(outcome === 'YES' ? moved : -moved).toBeGreaterThan(0)
+      }
+    }
   })
 })
 
