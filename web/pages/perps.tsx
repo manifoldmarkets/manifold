@@ -45,7 +45,10 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { PerpExplainerContent } from 'web/components/perps/perp-market-explainer'
+import {
+  PerpExplainerContent,
+  PerpExplainerModal,
+} from 'web/components/perps/perp-market-explainer'
 import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
@@ -524,7 +527,7 @@ const pollWhileVisible = (load: () => Promise<unknown>, intervalMs: number) => {
 
 // Does this reader already know what a perp is? `undefined` means not yet
 // knowable — their own book is still in flight, and deciding before it lands
-// would flash the explainer open at someone holding three positions.
+// would flash the introduction at someone holding three positions.
 const knowsPerps = (
   user: ReturnType<typeof useUser>,
   positions: MyPosition[] | null
@@ -541,18 +544,15 @@ const knowsPerps = (
 
 const EXPLAINER_DISMISSED_KEY = 'perps-explainer-dismissed'
 
-// The explainer is a disclosure that opens itself for readers who look new to
-// perps, and keeps doing so until they put it away — a newcomer who scrolled
-// past it without reading gets another chance, and closing it once ends that
-// for good. The dismissal rides the user doc when there is one (a single row
-// update into the users JSONB, the same shape and cost as hasSeenLoanModal)
-// and localStorage otherwise, which is also what carries a signed-out reader.
-const useExplainerDisclosure = (
+// Newcomers get a short introduction in the page. The full reference opens
+// only on request, without moving the terminal or interrupting browsing.
+const usePerpsIntroduction = (
   user: ReturnType<typeof useUser>,
   positions: MyPosition[] | null
 ) => {
   const knows = knowsPerps(user, positions)
   const [open, setOpen] = useState(false)
+  const [showIntro, setShowIntro] = useState(false)
   const decided = useRef(false)
   useEffect(() => {
     // One decision per visit, taken as soon as `knows` settles. Reading the
@@ -562,21 +562,23 @@ const useExplainerDisclosure = (
     if (decided.current || knows === undefined) return
     decided.current = true
     if (!knows && !getPersistentLocalState(EXPLAINER_DISMISSED_KEY))
-      setOpen(true)
+      setShowIntro(true)
   }, [knows])
 
-  // Closing is the dismissal wherever it is closed from — the header link,
-  // either control on the panel itself.
-  const close = () => {
-    setOpen(false)
+  const dismissIntro = () => {
+    decided.current = true
+    setShowIntro(false)
     setPersistentLocalState(EXPLAINER_DISMISSED_KEY, true)
-    // Failing this write costs the reader one more auto-open later, so it is
-    // not worth surfacing.
+    // A failed account write should not interrupt browsing. Local dismissal
+    // still prevents another introduction in this browser.
     if (user && !user.hasSeenPerpsExplainer)
       api('me/update', { hasSeenPerpsExplainer: true }).catch(() => {})
   }
-  const toggle = () => (open ? close() : setOpen(true))
-  return { open, toggle, close }
+  const close = () => {
+    setOpen(false)
+    dismissIntro()
+  }
+  return { open, show: () => setOpen(true), close, showIntro, dismissIntro }
 }
 
 type MyPosition = APIResponse<'get-perp-positions'>[number]
@@ -718,10 +720,10 @@ type ChangeWindow = '24h' | '7d'
 const windowMs = (w: ChangeWindow) => (w === '24h' ? DAY_MS : 7 * DAY_MS)
 
 // Watchlist column template, shared by the header and every row so the
-// columns line up: ticker · sparkline · price · change · lean. The sparkline
-// column drops out below 360px.
+// columns line up: ticker · price · change · sparkline · lean. On phones,
+// keep the full price and drop the decorative sparkline.
 const WATCH_GRID =
-  'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.75rem] min-[360px]:grid-cols-[3.25rem_minmax(0,1fr)_3.25rem_3.5rem_3.75rem]'
+  'grid items-center gap-x-2 grid-cols-[3.25rem_minmax(0,1fr)_4rem_3.75rem] sm:grid-cols-[3.25rem_minmax(0,1fr)_4rem_2.5rem_3.75rem]'
 
 export default function PerpsPage(props: { perps: Contract[] }) {
   const initial = useMemo(() => props.perps.filter(isListed), [props.perps])
@@ -782,18 +784,28 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     ? PERP_RAIL_LAYOUT
     : 'stack'
   const railParam = router.query.rail !== undefined
+  const explainerTriggerRef = useRef<HTMLButtonElement>(null)
   const {
     open: explainerOpen,
-    toggle: toggleExplainer,
+    show: showExplainer,
     close: closeExplainer,
-  } = useExplainerDisclosure(user, myPositions)
-  // Ticker clicks can happen from anywhere on the page: select and bring
-  // the terminal into view (its scroll margin clears the pinned tape).
+    showIntro,
+    dismissIntro,
+  } = usePerpsIntroduction(user, myPositions)
+  // Every market selector has the same destination. Wait for React to mount
+  // the new terminal before scrolling and moving keyboard focus to it.
   const selectRow = (id: string) => {
     setSelectedId(id)
-    document
-      .getElementById('perp-terminal')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    requestAnimationFrame(() => {
+      const terminal = document.getElementById('perp-terminal')
+      terminal?.focus({ preventScroll: true })
+      terminal?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      })
+    })
   }
 
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
@@ -863,7 +875,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
         onSort={toggleSort}
         changeWindow={changeWindow}
         onChangeWindow={setChangeWindow}
-        onSelect={setSelectedId}
+        onSelect={selectRow}
         chrome={chrome}
       />
     ),
@@ -966,13 +978,14 @@ export default function PerpsPage(props: { perps: Contract[] }) {
             <div className="text-ink-600 text-sm sm:text-base">
               Go long or short on a live number, with leverage. No expiry date.{' '}
               <button
+                ref={explainerTriggerRef}
                 type="button"
-                onClick={toggleExplainer}
+                onClick={showExplainer}
+                aria-haspopup="dialog"
                 aria-expanded={explainerOpen}
-                aria-controls="perps-explainer"
-                className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
+                className="text-primary-600 hover:text-primary-500 dark:text-primary-400 underline decoration-dotted underline-offset-4"
               >
-                {explainerOpen ? 'Hide explainer ↑' : 'How perps work ↓'}
+                How perps work
               </button>
             </div>
           </Col>
@@ -995,9 +1008,17 @@ export default function PerpsPage(props: { perps: Contract[] }) {
           </div>
         </Row>
 
-        {/* Directly under the header the trigger sits in. Anywhere further
-            down and clicking "How perps work" appears to do nothing, because
-            what it opened is off the bottom of the screen. */}
+        {showIntro && (
+          <PerpsIntroduction
+            onLearn={() => {
+              // The introduction disappears after reading, so restore focus
+              // to the permanent trigger when the dialog closes.
+              explainerTriggerRef.current?.focus({ preventScroll: true })
+              showExplainer()
+            }}
+            onDismiss={dismissIntro}
+          />
+        )}
         <Explainer
           contract={selected}
           open={explainerOpen}
@@ -1605,9 +1626,11 @@ const TickerItem = (props: {
         {displayPrice(contract)}
       </span>
       {change !== undefined && (
-        <ChangeLabel change={change} className="text-xs" />
+        <span className="inline-flex items-baseline gap-1">
+          <ChangeLabel change={change} className="text-xs" />
+          <span className="text-ink-500 text-[10px]">7d</span>
+        </span>
       )}
-      {leanOf(contract) && <LeanBadge contract={contract} />}
     </button>
   )
 }
@@ -1884,8 +1907,11 @@ const Terminal = (props: {
     <Col
       id="perp-terminal"
       ref={cardRef}
+      tabIndex={-1}
+      role="region"
+      aria-label={`${getPerpTicker(contract)} market`}
       className={clsx(
-        'border-ink-200 dark:border-ink-300 bg-canvas-0 scroll-mt-12 gap-4 border p-4 transition-[margin,border-radius] duration-300 ease-out sm:p-5',
+        'border-ink-200 dark:border-ink-300 bg-canvas-0 scroll-mt-12 gap-4 border p-4 outline-none transition-[margin,border-radius] duration-300 ease-out sm:p-5',
         // rounded-xl sits after rounded-none in Tailwind's output, so the
         // two can't be stacked — pick one.
         bleed ? '-mx-3 rounded-none border-x-0' : 'rounded-xl'
@@ -2102,7 +2128,7 @@ const Watchlist = (props: {
         ref={listRef}
         role="region"
         aria-label="Perpetual markets"
-        className="max-h-[min(28rem,60vh)] overflow-y-auto overscroll-contain"
+        className="max-h-[min(22rem,45dvh)] overflow-y-auto overscroll-contain sm:max-h-[min(28rem,60vh)]"
       >
         <div
           className={clsx(
@@ -2153,7 +2179,7 @@ const Watchlist = (props: {
               className="text-right"
             />
           )}
-          <span className="hidden min-[360px]:block" />
+          <span className="hidden sm:block" />
           <SortHeader
             {...header}
             label="Lean"
@@ -2261,7 +2287,7 @@ const WatchRow = (props: {
       <MiniSpark
         series={series}
         change={change}
-        className="hidden h-6 w-14 min-[360px]:block"
+        className="hidden h-6 w-10 sm:block"
       />
       <span className="flex justify-end">
         <LeanBadge contract={contract} />
@@ -2765,27 +2791,35 @@ const Suggestions = () => {
   )
 }
 
-// The market page's own explainer (single source of truth, via
-// PerpExplainerContent) next to the selected market's actual parameters —
-// the abstract rules on the left, what they mean for THIS market on the
-// right.
-// Closing it is the dismissal, so it has to be obvious and it has to be near
-// wherever the reader gave up or finished — the panel is taller than a screen,
-// and the link that opened it is above all of it.
-const HideExplainer = (props: { onClose: () => void; className?: string }) => (
-  <button
-    type="button"
-    onClick={props.onClose}
-    aria-controls="perps-explainer"
-    aria-expanded
-    className={clsx(
-      'text-ink-600 hover:text-ink-900 hover:bg-canvas-50 border-ink-200 dark:border-ink-300 flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
-      props.className
-    )}
-  >
-    Hide
-    <XIcon className="h-3.5 w-3.5" />
-  </button>
+const PerpsIntroduction = (props: {
+  onLearn: () => void
+  onDismiss: () => void
+}) => (
+  <Row className="border-ink-200 dark:border-ink-300 bg-canvas-50 items-start gap-2 rounded-xl border p-3 sm:p-4">
+    <Col className="min-w-0 flex-1 gap-1">
+      <h2 className="text-ink-900 text-sm font-semibold">New to perps?</h2>
+      <p className="text-ink-600 text-sm">
+        Trade with play money. Leverage magnifies gains and losses, positions
+        can be liquidated, and the crowded side pays funding to the other side.
+      </p>
+      <button
+        type="button"
+        onClick={props.onLearn}
+        aria-haspopup="dialog"
+        className="text-primary-600 hover:text-primary-500 dark:text-primary-400 min-h-[44px] self-start text-sm font-medium hover:underline"
+      >
+        Learn how perps work →
+      </button>
+    </Col>
+    <button
+      type="button"
+      onClick={props.onDismiss}
+      aria-label="Dismiss introduction"
+      className="text-ink-500 hover:bg-canvas-100 hover:text-ink-900 focus-visible:ring-primary-500 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:ring-2"
+    >
+      <XIcon className="h-5 w-5" aria-hidden />
+    </button>
+  </Row>
 )
 
 const Explainer = (props: {
@@ -2795,32 +2829,18 @@ const Explainer = (props: {
 }) => {
   const { contract, open, onClose } = props
   return (
-    // Always mounted so the trigger's aria-controls has something to point at
-    // — it sits above the stats strip, too far up the DOM to be implied by
-    // position. `hidden` sorts after `flex` in Tailwind's display group, so
-    // this takes no room in the page's flex column when shut.
-    <Col id="perps-explainer" className={clsx('gap-3', !open && 'hidden')}>
-      {/* Pinned under the ticker tape for as long as the panel is on screen:
-          it runs well past a screen, so a Hide that only sat at one end would
-          leave the reader scrolling to put it away. Opaque and ruled, or the
-          prose would slide under an invisible band on its way past. */}
-      <Row className="border-ink-200 dark:border-ink-300 bg-canvas-0 sticky top-12 z-10 items-center justify-between gap-3 border-b py-2">
-        <SectionHeader title="What are perps?" />
-        <HideExplainer onClose={onClose} />
-      </Row>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
+    <PerpExplainerModal
+      open={open}
+      setOpen={(nextOpen) => !nextOpen && onClose()}
+      showHubLink={false}
+    >
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <Col className="gap-5">
           <PerpExplainerContent hideHeading />
         </Col>
         {contract && <MarketParameters contract={contract} />}
       </div>
-      {/* Says what Hide actually does, at the end of the read where someone
-          is deciding whether to use it. */}
-      <span className="text-ink-500 border-ink-200 dark:border-ink-300 border-t pt-3 text-xs">
-        Closing this keeps it closed. Reopen it any time from &ldquo;How perps
-        work&rdquo; under the page title.
-      </span>
-    </Col>
+    </PerpExplainerModal>
   )
 }
 
