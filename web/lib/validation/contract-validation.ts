@@ -147,6 +147,7 @@ export function validateContractForm(
           shouldAnswersSumToOne: state.shouldAnswersSumToOne ?? true,
           hasOtherAnswer:
             addAnswersModeEnabled && state.shouldAnswersSumToOne === true,
+          addAnswersMode: state.addAnswersMode ?? 'DISABLED',
         })
         if (answerProbsError) errors.answerProbs = answerProbsError
       }

@@ -923,6 +923,30 @@ export function cpmmMulti2SumToOneFeasible(q: number[]) {
   return cpmmMulti2SumToOnePools(q, 1).every(isSanePool)
 }
 
+// cpmm-multi-2: balanced creation pools. Every answer gets YES = NO = ante/n, with
+// its own p set to its target so it reads back prob_i = q_i. If exactly one answer
+// wins, the pools pay ante/n + (n − 1)·ante/n = ante whichever it is, and an
+// independent answer pays ante/n either way, so none of the ante is thrown away.
+// Unlike the √variance shape this exists for every probability vector: it's the
+// same equal-split, p-floated allocation addCpmmMultiLiquidityAnswersSumToOneV2
+// falls back to (GP19e), started from empty pools.
+export function cpmmMulti2BalancedPools(
+  q: number[],
+  ante: number
+): { poolYes: number; poolNo: number; p: number; prob: number }[] {
+  const amount = ante / q.length
+  return q.map((qi) => ({ poolYes: amount, poolNo: amount, p: qi, prob: qi }))
+}
+
+// cpmm-multi-2 creation pools for answers that sum to one: the √variance shape,
+// or the balanced pools where it doesn't exist (GP19a). Either way every answer
+// opens at its target and every winning scenario pays exactly the ante.
+export function cpmmMulti2SumToOneCreationPools(q: number[], ante: number) {
+  return cpmmMulti2SumToOneFeasible(q)
+    ? cpmmMulti2SumToOnePools(q, ante)
+    : cpmmMulti2BalancedPools(q, ante)
+}
+
 const isSanePoolYesNo = (pool: { YES: number; NO: number }, p: number) =>
   isSanePool({ poolYes: pool.YES, poolNo: pool.NO, p })
 

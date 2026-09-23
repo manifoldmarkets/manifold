@@ -30,12 +30,6 @@ export type FormState = {
   liquidityTier: number
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
-  // cpmm-multi-2: custom per-answer initial probabilities (MULTIPLE_CHOICE).
-  // useCustomInitialProbs toggles the feature; initialProbs holds raw
-  // percentages index-aligned to `answers` (missing entries default to equal).
-  useCustomInitialProbs?: boolean
-  // May contain undefined holes (a cleared input); consumers default per answer.
-  initialProbs?: (number | undefined)[]
   // Starting probability of each answer, in percent. Undefined means an even split.
   answerProbs?: number[]
   probability?: number

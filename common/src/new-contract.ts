@@ -1,8 +1,8 @@
 import { sum } from 'lodash'
 import { Answer } from './answer'
 import {
-  cpmmMulti2SumToOneFeasible,
-  cpmmMulti2SumToOnePools,
+  cpmmMulti2BalancedPools,
+  cpmmMulti2SumToOneCreationPools,
   getCpmmLiquidity,
   getInitialAnswerPools,
   getMultiCpmmLiquidity,
@@ -26,6 +26,7 @@ import {
   PseudoNumeric,
   Stonk,
   add_answers_mode,
+  CPMM_MULTI_2_CREATION_ENABLED,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
 } from './contract'
@@ -34,14 +35,14 @@ import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { randomString } from './util/random'
 
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
+
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
 export function getNewContract(
   props: Pick<
     Contract,
     | 'id'
-
-    // (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
     | 'slug'
     | 'question'
     | 'description'
@@ -69,12 +70,11 @@ export function getNewContract(
     shouldAnswersSumToOne?: boolean | undefined
     answerShortTexts?: string[]
     answerImageUrls?: string[]
-    // cpmm-multi-2: per-answer initial probabilities (percentages in (0,100)).
-    // Present ⇒ create a cpmm-multi-2 market with each answer's p set to its
-    // (normalized) target prob. Absent ⇒ uniform 1/n cpmm-multi-1 (unchanged).
-    initialProbs?: number[] | undefined
     // Starting probability of each answer, as a percent. Defaults to an even split.
     answerProbs?: number[]
+    // Whether starting probabilities open a cpmm-multi-2 market. Defaults to
+    // CPMM_MULTI_2_CREATION_ENABLED; tests set it to cover both mechanisms.
+    cpmmMulti2Enabled?: boolean
 
     // Bountied
     isAutoBounty?: boolean | undefined
@@ -121,8 +121,8 @@ export function getNewContract(
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
-    initialProbs,
     answerProbs,
+    cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
@@ -148,8 +148,8 @@ export function getNewContract(
         ante,
         answerShortTexts,
         answerImageUrls,
-        initialProbs,
-        answerProbs
+        answerProbs,
+        cpmmMulti2Enabled
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -322,6 +322,28 @@ export const MAX_ANSWER_PROB = MAX_CPMM_PROB * 100
 // them rather than scaling them to fit. Lets creators type 33/33/33.
 export const ANSWER_PROB_SUM_TOLERANCE = 1
 
+// Whether a market with manually set starting probabilities opens as
+// cpmm-multi-2. A cpmm-multi-1 pool has p fixed at 0.5, so it can only hold an
+// answer away from an even split by throwing away shares the ante bought;
+// giving each answer its own p lets it open anywhere without losing any.
+// Only markets whose answers are fixed at creation get it for now: that's the
+// shape cpmm-multi-2 was validated end to end on, and adding an answer to one
+// whose answers sum to one splits 'Other' by crediting the pool's shares to the
+// creator as bets, which isn't settled for markets with several liquidity
+// providers.
+export const opensAsCpmmMulti2 = (props: {
+  answerProbs: number[] | undefined
+  addAnswersMode: add_answers_mode
+  cpmmMulti2Enabled?: boolean
+}) => {
+  const {
+    answerProbs,
+    addAnswersMode,
+    cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
+  } = props
+  return !!answerProbs && cpmmMulti2Enabled && addAnswersMode === 'DISABLED'
+}
+
 // Checks manually set starting probabilities (percent, one per listed answer)
 // against the answers they'll be applied to. Returns a message explaining the
 // problem, or undefined if they're usable.
@@ -330,9 +352,23 @@ export const getAnswerProbsError = (props: {
   numAnswers: number
   shouldAnswersSumToOne: boolean
   hasOtherAnswer: boolean
+  addAnswersMode: add_answers_mode
+  cpmmMulti2Enabled?: boolean
 }) => {
-  const { answerProbs, numAnswers, shouldAnswersSumToOne, hasOtherAnswer } =
-    props
+  const {
+    answerProbs,
+    numAnswers,
+    shouldAnswersSumToOne,
+    hasOtherAnswer,
+    addAnswersMode,
+    cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
+  } = props
+
+  // With cpmm-multi-2 on, starting probabilities only open markets whose
+  // answers are fixed (see opensAsCpmmMulti2), rather than fall back to pools
+  // that would throw part of the ante away.
+  if (cpmmMulti2Enabled && addAnswersMode !== 'DISABLED')
+    return `Starting probabilities can't be set on a market where answers can be added later.`
 
   if (answerProbs.length !== numAnswers)
     return `Expected ${numAnswers} starting probabilities, got ${answerProbs.length}.`
@@ -405,18 +441,19 @@ const getMultipleChoiceProps = (
   ante: number,
   shortTexts?: string[],
   imageUrls?: string[],
-  initialProbs?: number[],
-  answerProbs?: number[]
+  answerProbs?: number[],
+  cpmmMulti2Enabled?: boolean
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
     answers.length === 2 &&
     shouldAnswersSumToOne
 
-  // cpmm-multi-2: per-answer initial probs ⇒ the v2 mechanism. The caller
-  // (create-market.ts) has already validated that initialProbs (when present)
-  // has one entry per answer, sums-to-one is on, and there is no "Other" answer.
-  const isV2 = !!initialProbs && initialProbs.length > 0
+  const isV2 = opensAsCpmmMulti2({
+    answerProbs,
+    addAnswersMode,
+    cpmmMulti2Enabled,
+  })
 
   const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
   const answersWithOther = answers.concat(hasOther ? ['Other'] : [])
@@ -431,11 +468,10 @@ const getMultipleChoiceProps = (
       colors: isBinaryMulti ? VERSUS_COLORS : undefined,
       shortTexts,
       imageUrls,
-      initialProbs,
-      probs:
-        !isV2 && answerProbs
-          ? getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOther)
-          : undefined,
+      probs: answerProbs
+        ? getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOther)
+        : undefined,
+      cpmmMulti2: isV2,
     })
   )
   const system: CPMMMulti = removeUndefinedProps({
@@ -568,12 +604,13 @@ function createAnswers(
     shortTexts?: string[]
     imageUrls?: string[]
     midpoints?: number[]
-    initialProbs?: number[]
     // Starting probability of each answer, as a fraction. Defaults to an even split.
     probs?: number[]
+    // Open the answers at `probs` with cpmm-multi-2 pools.
+    cpmmMulti2?: boolean
   } = {}
 ) {
-  const { colors, shortTexts, imageUrls, midpoints, initialProbs, probs } =
+  const { colors, shortTexts, imageUrls, midpoints, probs, cpmmMulti2 } =
     options
   const ids = answers.map(() => randomString())
   const now = Date.now()
@@ -610,25 +647,15 @@ function createAnswers(
   // Independent ("Set"): each answer is its own CPMM with no Σ=1 constraint and
   // its own max-loss budget max(Y,N); at fixed risk the liquidity optimum is the
   // balanced pool Y_i=N_i with p_i=q_i — exactly the binary-CPMM construction.
-  // Absolute probs (pct/100, no normalization).
-  if (initialProbs && initialProbs.length > 0) {
-    const n = answers.length
-    const sum = initialProbs.reduce((s, x) => s + x, 0)
-    const normalized = initialProbs.map((x) => x / sum)
-    // GP19a backstop (API layer already 400s): the √variance construction is not
-    // total; never persist an insane pool.
-    if (shouldAnswersSumToOne && !cpmmMulti2SumToOneFeasible(normalized)) {
-      throw new Error(
-        'Infeasible sum-to-one initialProbs (GP19a): no sane pool realization exists.'
-      )
-    }
+  //
+  // `probs` arrive already normalized to Σ = 1 for sum-to-one answers and as
+  // absolute probabilities for independent ones (getInitialProbs). Where the
+  // √variance shape doesn't exist (GP19a) sum-to-one answers take the balanced
+  // pools instead, which are just as lossless, so no starting odds are refused.
+  if (cpmmMulti2 && probs) {
     const pools = shouldAnswersSumToOne
-      ? cpmmMulti2SumToOnePools(normalized, ante)
-      : initialProbs.map((x) => {
-          const L = ante / n
-          const prob = x / 100
-          return { poolYes: L, poolNo: L, p: prob, prob }
-        })
+      ? cpmmMulti2SumToOneCreationPools(probs, ante)
+      : cpmmMulti2BalancedPools(probs, ante)
     return answers.map((text, i) => {
       const { poolYes, poolNo, p, prob } = pools[i]
       const answer: Answer = removeUndefinedProps({
@@ -647,7 +674,8 @@ function createAnswers(
     })
   }
 
-  // Custom starting probabilities: spread the ante around them instead.
+  // Custom starting probabilities on cpmm-multi-1: spread the ante around them
+  // instead, throwing away whatever shares p = 0.5 can't hold at those odds.
   const customPools = probs
     ? getInitialAnswerPools(probs, ante, shouldAnswersSumToOne)
     : undefined

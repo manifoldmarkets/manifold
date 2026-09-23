@@ -1,13 +1,16 @@
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
-import { getCpmmProbability } from './calculate-cpmm'
+import {
+  cpmmMulti2SumToOneFeasible,
+  getCpmmProbability,
+} from './calculate-cpmm'
 import { calculateCpmmMultiArbitrageYesBets } from './calculate-cpmm-arbitrage'
 import { CPMMMulti } from './contract'
 import { noFees } from './fees'
-import { getNewContract } from './new-contract'
+import { getAnswerProbsError, getNewContract } from './new-contract'
 import { User } from './user'
 
-// cpmm-multi-2 (PR2c) — creation path: per-answer `initialProbs` produce a
+// cpmm-multi-2 (PR2c) — creation path: per-answer `answerProbs` produce a
 // `cpmm-multi-2` market at the requested probabilities, with the same ante budget
 // v1 uses (no house risk). Sum-to-one markets use the √variance creation rule
 // (pool depth W_i ∝ √(q_i(1-q_i)); reduces to v1 exactly at uniform, balanced only
@@ -26,9 +29,11 @@ const creator = {
 
 const makeMC = (
   answers: string[],
-  initialProbs: number[] | undefined,
+  answerProbs: number[] | undefined,
   ante = 1000,
-  shouldAnswersSumToOne = true
+  shouldAnswersSumToOne = true,
+  addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE' = 'DISABLED',
+  cpmmMulti2Enabled = true
 ): CPMMMulti =>
   getNewContract({
     id: 'contract1',
@@ -46,9 +51,10 @@ const makeMC = (
     max: 0,
     isLogScale: false,
     answers,
-    addAnswersMode: 'DISABLED',
+    addAnswersMode,
     shouldAnswersSumToOne,
-    initialProbs,
+    answerProbs,
+    cpmmMulti2Enabled,
     token: 'MANA',
     coverImageUrl: undefined,
     siblingContractId: undefined,
@@ -63,7 +69,9 @@ const makeMC = (
   } as any) as CPMMMulti
 
 const sumProbs = (answers: Answer[]) =>
-  sumBy(answers, (a) => getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p))
+  sumBy(answers, (a) =>
+    getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+  )
 
 // Point liquidity a = dprob/dshares = q(1-q)/W, W = (1-p)Y + pN (GP13). Lower =
 // more liquid. W is the per-answer depth the √variance rule allocates.
@@ -73,7 +81,7 @@ const pointLiq = (a: Answer) => {
   return (q * (1 - q)) / depthW(a)
 }
 
-describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
+describe('cpmm-multi-2 creation — per-answer answerProbs', () => {
   it('cpmm-multi-2 mechanism; prob_i = normalized target; funds exactly (no house risk)', () => {
     const ante = 1200
     const contract = makeMC(['A', 'B', 'C'], [60, 30, 10], ante)
@@ -83,10 +91,9 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
     contract.answers.forEach((a, i) => {
       // The displayed prob is exact regardless of pool shape: p carries the
       // target, so getCpmmProbability(pool, p) == target even when Y != N.
-      expect(getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)).toBeCloseTo(
-        targets[i],
-        10
-      )
+      expect(
+        getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      ).toBeCloseTo(targets[i], 10)
       expect(a.prob).toBeCloseTo(targets[i], 10)
     })
 
@@ -106,7 +113,7 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
     })
   })
 
-  it('uniform sum-to-one initialProbs reduce to v1 pools exactly', () => {
+  it('uniform sum-to-one answerProbs reduce to v1 pools exactly', () => {
     // Equal targets ⇒ the √variance rule coincides with v1's construction.
     const ante = 1000
     const contract = makeMC(['A', 'B', 'C'], [1, 1, 1], ante)
@@ -116,10 +123,9 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
       expect(a.poolYes).toBeCloseTo(ante / 2, 6)
       expect(a.poolNo).toBeCloseTo(ante / (2 * n - 2), 6)
       expect(a.p).toBeCloseTo(0.5, 8)
-      expect(getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)).toBeCloseTo(
-        1 / n,
-        10
-      )
+      expect(
+        getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      ).toBeCloseTo(1 / n, 10)
     })
   })
 
@@ -159,7 +165,7 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
     })
   })
 
-  it('normalizes initialProbs that do not sum to 100', () => {
+  it('normalizes answerProbs that do not sum to 100', () => {
     const a = makeMC(['A', 'B', 'C'], [6, 3, 1]).answers
     const b = makeMC(['A', 'B', 'C'], [60, 30, 10]).answers
     a.forEach((ans, i) => expect(ans.p).toBeCloseTo(b[i].p, 12))
@@ -174,7 +180,7 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
     expect(sumProbs(contract.answers)).toBeCloseTo(1, 10)
   })
 
-  it('regression: no initialProbs ⇒ frozen v1 cpmm-multi-1, uniform 1/n', () => {
+  it('regression: no answerProbs ⇒ frozen v1 cpmm-multi-1, uniform 1/n', () => {
     const ante = 1000
     const contract = makeMC(['A', 'B', 'C', 'D'], undefined, ante)
     expect(contract.mechanism).toBe('cpmm-multi-1')
@@ -190,17 +196,14 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
 })
 
 // cpmm-multi-2 (Set / INDEPENDENT_MULTIPLE_CHOICE): each answer is its own CPMM,
-// so per-answer initialProbs are ABSOLUTE (no Σ=1 normalization). Same balanced
+// so per-answer answerProbs are ABSOLUTE (no Σ=1 normalization). Same balanced
 // deep pool + per-answer p representation as sum-to-one — required so the LP's
 // max loss = max(Y, N) = ante/n stays funded for any target prob (an asymmetric
 // p=0.5 pool would blow up max(Y,N) at the extremes ⇒ discard shares or house
 // risk; see tasks/cpmm_multi_2 math TODO).
 describe('cpmm-multi-2 creation — independent ("Set") absolute probs', () => {
-  const independent = (
-    answers: string[],
-    initialProbs: number[],
-    ante = 1000
-  ) => makeMC(answers, initialProbs, ante, false).answers
+  const independent = (answers: string[], answerProbs: number[], ante = 1000) =>
+    makeMC(answers, answerProbs, ante, false).answers
 
   it('sets per-answer p = absolute prob, NOT normalized', () => {
     const ante = 900
@@ -257,7 +260,7 @@ describe('cpmm-multi-2 creation — independent ("Set") absolute probs', () => {
     })
   })
 
-  it('regression: Set with no initialProbs ⇒ v1 cpmm-multi-1, each answer 50%', () => {
+  it('regression: Set with no answerProbs ⇒ v1 cpmm-multi-1, each answer 50%', () => {
     const ante = 1000
     const contract = makeMC(['A', 'B', 'C'], undefined, ante, false)
     expect(contract.mechanism).toBe('cpmm-multi-1')
@@ -276,7 +279,9 @@ describe('cpmm-multi-2 created market — trades under the v2 arb (Σp = 1 held)
     res: ReturnType<typeof calculateCpmmMultiArbitrageYesBets>
   ) => {
     const all = [...res.newBetResults, ...res.otherBetResults]
-    return sumBy(all, (r) => getCpmmProbability(r.cpmmState.pool, r.cpmmState.p))
+    return sumBy(all, (r) =>
+      getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
+    )
   }
 
   it('single-answer YES buy on a v2 market keeps Σp = 1', () => {
@@ -294,7 +299,9 @@ describe('cpmm-multi-2 created market — trades under the v2 arb (Σp = 1 held)
     expect(finalProbs(res)).toBeCloseTo(1, 8)
     // YES buy on answer A moves its price up.
     const a = res.newBetResults.find((r) => r.answer.id === answers[0].id)!
-    expect(getCpmmProbability(a.cpmmState.pool, a.cpmmState.p)).toBeGreaterThan(0.6)
+    expect(getCpmmProbability(a.cpmmState.pool, a.cpmmState.p)).toBeGreaterThan(
+      0.6
+    )
   })
 
   it('multi-answer basket YES buy on a v2 market keeps Σp = 1 and spends the budget', () => {
@@ -314,5 +321,96 @@ describe('cpmm-multi-2 created market — trades under the v2 arb (Σp = 1 held)
     // net taker spend across the basket equals the budget (no overshoot churn).
     const spent = sumBy(res.newBetResults, (r) => sumBy(r.takers, 'amount'))
     expect(spent).toBeCloseTo(bet, 4)
+  })
+})
+
+describe('cpmm-multi-2 creation — odds the √variance shape cannot hold', () => {
+  // 50 answers: a 45% favourite and a long tail near the 1% floor. The √variance
+  // construction has no sane pools here (GP19a), so creation falls back to the
+  // balanced pools rather than refusing the odds.
+  const answers = Array.from({ length: 50 }, (_, i) => `A${i}`)
+  const answerProbs = [45, ...Array(49).fill(55 / 49)]
+  const ante = 13000
+
+  it('uses a vector the √variance construction rejects', () => {
+    expect(cpmmMulti2SumToOneFeasible(answerProbs.map((x) => x / 100))).toBe(
+      false
+    )
+  })
+
+  it('still opens every answer at its target without losing any of the ante', () => {
+    const contract = makeMC(answers, answerProbs, ante)
+    expect(contract.mechanism).toBe('cpmm-multi-2')
+    contract.answers.forEach((a, i) => {
+      expect(a.poolYes).toBeGreaterThan(0)
+      expect(a.poolNo).toBeGreaterThan(0)
+      expect(a.p).toBeGreaterThan(0)
+      expect(a.p).toBeLessThan(1)
+      expect(
+        getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      ).toBeCloseTo(answerProbs[i] / 100, 10)
+    })
+    expect(sumProbs(contract.answers)).toBeCloseTo(1, 10)
+    contract.answers.forEach((a, i) => {
+      const payout =
+        a.poolYes +
+        sumBy(
+          contract.answers.filter((_, j) => j !== i),
+          (o) => o.poolNo
+        )
+      expect(payout).toBeCloseTo(ante, 6)
+    })
+  })
+})
+
+describe('which markets starting probabilities open as cpmm-multi-2', () => {
+  it('keeps markets that can gain answers on cpmm-multi-1', () => {
+    const contract = makeMC(['A', 'B'], [60, 30], 1000, true, 'ANYONE')
+    expect(contract.mechanism).toBe('cpmm-multi-1')
+  })
+
+  it('refuses starting probabilities on them while cpmm-multi-2 is on', () => {
+    const props = {
+      answerProbs: [60, 30],
+      numAnswers: 2,
+      shouldAnswersSumToOne: true,
+      hasOtherAnswer: true,
+      addAnswersMode: 'ANYONE' as const,
+    }
+    expect(
+      getAnswerProbsError({ ...props, cpmmMulti2Enabled: true })
+    ).toContain('added later')
+    // With it off they get cpmm-multi-1's lossy seeding, as before.
+    expect(
+      getAnswerProbsError({ ...props, cpmmMulti2Enabled: false })
+    ).toBeUndefined()
+  })
+
+  it('falls back to cpmm-multi-1 seeding when cpmm-multi-2 is off', () => {
+    const contract = makeMC(
+      ['A', 'B', 'C'],
+      [60, 30, 10],
+      1000,
+      true,
+      'DISABLED',
+      false
+    )
+    expect(contract.mechanism).toBe('cpmm-multi-1')
+    contract.answers.forEach((a) => expect(a.p).toBe(0.5))
+    contract.answers.forEach((a, i) =>
+      expect(a.prob).toBeCloseTo([0.6, 0.3, 0.1][i], 10)
+    )
+  })
+
+  it('records where each answer opened, for the chart', () => {
+    const contract = makeMC(['A', 'B', 'C'], [60, 30, 10]) as CPMMMulti & {
+      initialProbabilities?: { [answerId: string]: number }
+    }
+    contract.answers.forEach((a, i) =>
+      expect(contract.initialProbabilities?.[a.id]).toBeCloseTo(
+        [0.6, 0.3, 0.1][i],
+        10
+      )
+    )
   })
 })

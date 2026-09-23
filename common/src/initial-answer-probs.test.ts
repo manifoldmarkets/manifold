@@ -95,6 +95,7 @@ describe('getAnswerProbsError', () => {
     numAnswers: 3,
     shouldAnswersSumToOne: true,
     hasOtherAnswer: false,
+    addAnswersMode: 'DISABLED' as const,
   }
 
   it('accepts probabilities that add up to 100', () => {
@@ -165,7 +166,14 @@ describe('getAnswerProbsError', () => {
   })
 
   it('keeps the Other answer inside the same bounds', () => {
-    const withOther = { ...sumToOne, hasOtherAnswer: true }
+    // Markets with 'Other' can gain answers, so they only take starting
+    // probabilities on cpmm-multi-1.
+    const withOther = {
+      ...sumToOne,
+      hasOtherAnswer: true,
+      addAnswersMode: 'ANYONE' as const,
+      cpmmMulti2Enabled: false,
+    }
     expect(
       getAnswerProbsError({ ...withOther, answerProbs: [50, 20, 10] })
     ).toBeUndefined()
@@ -187,6 +195,8 @@ describe('getAnswerProbsError', () => {
           ...sumToOne,
           numAnswers: answerProbs.length,
           hasOtherAnswer: true,
+          addAnswersMode: 'ANYONE',
+          cpmmMulti2Enabled: false,
           answerProbs,
         })
       ).toBeUndefined()
@@ -246,6 +256,9 @@ describe('getNewContract with answerProbs', () => {
       isLogScale: false,
       answers: props.answers,
       answerProbs: props.answerProbs,
+      // These cover cpmm-multi-1's seeding; cpmm-multi-2-creation.test.ts
+      // covers the markets starting probabilities open as cpmm-multi-2.
+      cpmmMulti2Enabled: false,
       addAnswersMode: props.addAnswersMode ?? 'DISABLED',
       shouldAnswersSumToOne: true,
       unit: undefined,

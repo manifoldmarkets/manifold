@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { roundAnswerProbs } from 'common/answer-probs'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -99,17 +100,18 @@ export function duplicateContractHref(contract: Contract) {
     params.addAnswersMode = contract.addAnswersMode
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
     // cpmm-multi-2: carry the answers' CURRENT probabilities as the duplicate's
-    // custom initial probs (a duplicate should start where the original stands,
+    // starting probabilities (a duplicate should start where the original stands,
     // not reset to uniform). Only when every kept answer is carried (no Other,
-    // matching the answers list above) and probs are inside the creatable [1,99].
+    // matching the answers list above). Rounded to a tenth without changing the
+    // total, so answers that sum to one still add up to 100 however many there are.
     if (
       contract.mechanism === 'cpmm-multi-2' &&
       contract.outcomeType === 'MULTIPLE_CHOICE' &&
       contract.addAnswersMode === 'DISABLED'
     ) {
-      params.initialProbs = contract.answers
-        .filter((a) => !a.isOther)
-        .map((a) => Math.min(99, Math.max(1, Math.round(a.prob * 100))))
+      params.answerProbs = roundAnswerProbs(
+        contract.answers.filter((a) => !a.isOther).map((a) => a.prob * 100)
+      )
     }
   }
 

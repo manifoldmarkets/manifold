@@ -20,8 +20,6 @@ import {
   Contract,
   NO_CLOSE_TIME_TYPES,
   NUMBER_CREATION_ENABLED,
-  CPMM_MULTI_2_CREATION_ENABLED,
-  MIN_CPMM_PROB,
   OutcomeType,
   PollType,
   PollVoterVisibility,
@@ -42,8 +40,7 @@ import { Row } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { camelCase, first, sum } from 'lodash'
-import { cpmmMulti2SumToOneFeasible } from 'common/calculate-cpmm'
+import { camelCase, first } from 'lodash'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -76,8 +73,6 @@ import {
 import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
-
-// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
@@ -184,7 +179,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
-    initialProbs,
     answerProbs,
     takerAPIOrdersDisabled,
     liquidityTier,
@@ -302,7 +296,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answers: answers ?? [],
           answerShortTexts,
           answerImageUrls,
-          initialProbs,
           answerProbs,
           addAnswersMode,
           shouldAnswersSumToOne,
@@ -446,7 +439,6 @@ function validateMarketBody(body: Body) {
     answers: string[] | undefined,
     answerShortTexts: string[] | undefined,
     answerImageUrls: string[] | undefined,
-    initialProbs: number[] | undefined,
     answerProbs: number[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
@@ -547,7 +539,6 @@ function validateMarketBody(body: Body) {
       answers,
       answerShortTexts,
       answerImageUrls,
-      initialProbs,
       answerProbs,
       addAnswersMode,
       shouldAnswersSumToOne,
@@ -559,61 +550,13 @@ function validateMarketBody(body: Body) {
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
-
-    // cpmm-multi-2 (PR2c): per-answer initial probabilities. Supports both
-    // fixed sum-to-one ("Multiple Choice", Σp normalized to 1) and independent
-    // ("Set", each prob absolute, no Σ constraint) markets — in both, each prob
-    // maps 1:1 to a created answer. No "Other"/addable answers (their probs
-    // aren't covered by initialProbs); "Other" splitting is a later add-on, see
-    // pr2-plan.md "Other split". Both representations are balanced-pool + per-
-    // answer p (lossless): a skewed start is carried by p, never by discarding
-    // shares or oversizing one reserve past the funded ante.
-    if (initialProbs !== undefined) {
-      if (!CPMM_MULTI_2_CREATION_ENABLED)
-        throw new APIError(
-          403,
-          'Creating cpmm-multi-2 (custom initial probabilities) markets is not currently enabled.'
-        )
-      if (addAnswersMode !== 'DISABLED')
-        throw new APIError(
-          400,
-          'initialProbs is not supported with addable answers (no "Other" answer).'
-        )
-      if (initialProbs.length !== answers.length)
-        throw new APIError(
-          400,
-          'initialProbs must have exactly one probability per answer.'
-        )
-      // GP19a feasibility: the sum-to-one √variance construction is not total — a
-      // skewed many-answer vector (possible from n = 21 up; e.g. 30 answers with a 90%
-      // favorite) has no sane pool realization (poolYes < 0, p ∉ (0,1)). Reject with a
-      // clear 400 here; the construction in new-contract.ts also throws as a backstop.
-      if (shouldAnswersSumToOne) {
-        const total = sum(initialProbs)
-        const normalized = initialProbs.map((x) => x / total)
-        // The [1,99] schema bound is pre-normalization; a direct API call with a sum
-        // far from 100 could still normalize an answer below the market-order floor.
-        // Keep every created prob inside [MIN, MAX]_CPMM_PROB, like binary creation.
-        if (normalized.some((q) => q < MIN_CPMM_PROB - 1e-12))
-          throw new APIError(
-            400,
-            'initialProbs must normalize to at least 1% per answer for sum-to-one markets.'
-          )
-        if (!cpmmMulti2SumToOneFeasible(normalized))
-          throw new APIError(
-            400,
-            'initialProbs are too extreme for this many answers: no valid sum-to-one ' +
-              'pool exists for this probability vector. Moderate the most extreme ' +
-              'probabilities (or use fewer answers) and try again.'
-          )
-      }
-    }
     if (answerProbs) {
       const error = getAnswerProbsError({
         answerProbs,
         numAnswers: answers.length,
         shouldAnswersSumToOne,
         hasOtherAnswer,
+        addAnswersMode: addAnswersMode ?? 'DISABLED',
       })
       if (error) throw new APIError(400, error)
     }
@@ -685,7 +628,6 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
-    initialProbs,
     answerProbs,
     takerAPIOrdersDisabled,
     unit,
