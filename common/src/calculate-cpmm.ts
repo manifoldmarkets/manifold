@@ -2,7 +2,7 @@ import { groupBy, mapValues, minBy, omitBy, sortBy, sum, sumBy } from 'lodash'
 import { fill, LimitBet } from './bet'
 import { Fees, getFeesSplit, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
-import { binarySearch } from './util/algos'
+import { BINARY_SEARCH_NAN_ERROR, binarySearch } from './util/algos'
 import {
   EPSILON,
   floatingEqual,
@@ -20,6 +20,16 @@ import { addObjects } from 'common/util/object'
 // (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 export const CPMM_ARBITRAGE_ERROR_PREFIX =
   'calculateAmountToBuySharesFixedP only works for p = 0.5, got '
+
+// Whether an error came from pricing a degenerate pool state: a NaN p (the
+// prefix above, kept so existing log searches still match), or a NaN reaching a
+// binary search. Sells log the pool state for these, and the bet panel explains
+// them instead of showing the raw message.
+export const isCpmmDegenerateStateError = (e: unknown): e is Error =>
+  e instanceof Error &&
+  (e.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX) ||
+    e.message.startsWith(BINARY_SEARCH_NAN_ERROR))
+
 export type CpmmState = {
   pool: { [outcome: string]: number }
   p: number
@@ -200,6 +210,10 @@ export function calculateCpmmAmountToBuySharesFixedP(
       (shares - y - n + Math.sqrt(4 * y * shares + (y + n - shares) ** 2)) / 2
     )
   }
+
+  // A NaN p only comes from a degenerate pool. Fail the way this always has
+  // for it, rather than bisect on NaN.
+  if (!isFinite(state.p)) throw new Error(CPMM_ARBITRAGE_ERROR_PREFIX + state.p)
 
   // General p (cpmm-multi-2): shares -> cost has no closed form, so invert the
   // general-p forward map calculateCpmmShares by bisection. calculateCpmmShares is

@@ -7,13 +7,16 @@ import {
   calculateCpmmAmountToBuySharesFixedP,
   calculateCpmmPurchase,
   calculateCpmmShares,
+  CPMM_ARBITRAGE_ERROR_PREFIX,
   cpmmMulti2SumToOnePools,
   CpmmState,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
+  isCpmmDegenerateStateError,
   removeCpmmLiquidity,
 } from './calculate-cpmm'
 import { noFees } from './fees'
+import { binarySearch } from './util/algos'
 
 describe('CPMM Calculations', () => {
   describe('getCpmmProbability', () => {
@@ -206,10 +209,34 @@ describe('CPMM Calculations', () => {
     // calculateCpmmShares, and a check that the p=0.5 closed form is unchanged.
     it('matches the general-p Python oracle (amm_core.cost_for_shares)', () => {
       const cases = [
-        { pool: { YES: 100, NO: 50 }, p: 0.7, shares: 20, outcome: 'YES' as const, cost: 11.5061941179877 },
-        { pool: { YES: 100, NO: 50 }, p: 0.7, shares: 20, outcome: 'NO' as const, cost: 10.016299628032943 },
-        { pool: { YES: 80, NO: 120 }, p: 0.3, shares: 35, outcome: 'YES' as const, cost: 15.379495592014415 },
-        { pool: { YES: 200, NO: 100 }, p: 0.9, shares: 10, outcome: 'NO' as const, cost: 1.8886896107765505 },
+        {
+          pool: { YES: 100, NO: 50 },
+          p: 0.7,
+          shares: 20,
+          outcome: 'YES' as const,
+          cost: 11.5061941179877,
+        },
+        {
+          pool: { YES: 100, NO: 50 },
+          p: 0.7,
+          shares: 20,
+          outcome: 'NO' as const,
+          cost: 10.016299628032943,
+        },
+        {
+          pool: { YES: 80, NO: 120 },
+          p: 0.3,
+          shares: 35,
+          outcome: 'YES' as const,
+          cost: 15.379495592014415,
+        },
+        {
+          pool: { YES: 200, NO: 100 },
+          p: 0.9,
+          shares: 10,
+          outcome: 'NO' as const,
+          cost: 1.8886896107765505,
+        },
       ]
       for (const { pool, p, shares, outcome, cost } of cases) {
         const state: CpmmState = { pool, p, collectedFees: noFees }
@@ -247,7 +274,10 @@ describe('CPMM Calculations', () => {
       const shares = 25
       const state: CpmmState = { pool, p: 0.5, collectedFees: noFees }
       const closed =
-        (shares - 120 - 80 + Math.sqrt(4 * 80 * shares + (120 + 80 - shares) ** 2)) /
+        (shares -
+          120 -
+          80 +
+          Math.sqrt(4 * 80 * shares + (120 + 80 - shares) ** 2)) /
         2
       expect(
         calculateCpmmAmountToBuySharesFixedP(state, shares, 'YES')
@@ -265,7 +295,9 @@ describe('CPMM Calculations', () => {
 // skewed pool. At p = 0.5 v2 reduces to the v1 fixed-p add (the regression anchor).
 describe('cpmm-multi-2 lossless liquidity add (addCpmmMultiLiquidityAnswersSumToOneV2)', () => {
   const market = (ps: number[], L = 100) =>
-    Object.fromEntries(ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }]))
+    Object.fromEntries(
+      ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }])
+    )
 
   const probsOf = (byId: {
     [id: string]: { pool: { YES: number; NO: number }; p: number }
@@ -358,7 +390,10 @@ describe('cpmm-multi-2 lossless liquidity add (addCpmmMultiLiquidityAnswersSumTo
     const D = 500
     const base = cpmmMulti2SumToOnePools(q, A)
     const before = Object.fromEntries(
-      base.map((c, i) => [`a${i}`, { pool: { YES: c.poolYes, NO: c.poolNo }, p: c.p }])
+      base.map((c, i) => [
+        `a${i}`,
+        { pool: { YES: c.poolYes, NO: c.poolNo }, p: c.p },
+      ])
     )
     const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, D)
     const created = cpmmMulti2SumToOnePools(q, A + D)
@@ -372,7 +407,9 @@ describe('cpmm-multi-2 lossless liquidity add (addCpmmMultiLiquidityAnswersSumTo
 
 describe('cpmm-multi-2 lossless liquidity add — INDEPENDENT / "Set" (addCpmmMultiLiquidityToAnswersIndependentlyV2)', () => {
   const market = (ps: number[], L = 100) =>
-    Object.fromEntries(ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }]))
+    Object.fromEntries(
+      ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }])
+    )
 
   const probsOf = (byId: {
     [id: string]: { pool: { YES: number; NO: number }; p: number }
@@ -384,7 +421,10 @@ describe('cpmm-multi-2 lossless liquidity add — INDEPENDENT / "Set" (addCpmmMu
     // must preserve prob == p exactly.
     for (const p of [0.6, 0.75, 0.9, 0.1, 0.5]) {
       const before = { only: { pool: { YES: 100, NO: 100 }, p } }
-      const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 40).only
+      const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(
+        before,
+        40
+      ).only
       expect(getCpmmProbability(after.pool, after.p)).toBeCloseTo(p, 10)
       // both reserves deepened, k added, nothing discarded
       expect(after.pool.YES).toBeGreaterThan(100)
@@ -418,5 +458,44 @@ describe('cpmm-multi-2 lossless liquidity add — INDEPENDENT / "Set" (addCpmmMu
       expect(v1.sharesThrownAway.YES).toBeCloseTo(0, 10)
       expect(v1.sharesThrownAway.NO).toBeCloseTo(0, 10)
     }
+  })
+})
+
+describe('degenerate pool states', () => {
+  const state = (p: number) => ({
+    pool: { YES: 100, NO: 100 },
+    p,
+    collectedFees: noFees,
+  })
+
+  it('fails on a NaN p the way it always has, for the diagnostics keyed on it', () => {
+    expect(() =>
+      calculateCpmmAmountToBuySharesFixedP(state(NaN), 10, 'YES')
+    ).toThrow(CPMM_ARBITRAGE_ERROR_PREFIX + 'NaN')
+  })
+
+  it('still prices a finite general p', () => {
+    const amount = calculateCpmmAmountToBuySharesFixedP(state(0.3), 10, 'YES')
+    expect(amount).toBeGreaterThan(0)
+    expect(amount).toBeLessThan(10)
+  })
+
+  it('recognises both ways a degenerate state fails', () => {
+    let nanP: unknown
+    try {
+      calculateCpmmAmountToBuySharesFixedP(state(NaN), 10, 'YES')
+    } catch (e) {
+      nanP = e
+    }
+    let nanSearch: unknown
+    try {
+      binarySearch(0, 1, () => NaN)
+    } catch (e) {
+      nanSearch = e
+    }
+    expect(isCpmmDegenerateStateError(nanP)).toBe(true)
+    expect(isCpmmDegenerateStateError(nanSearch)).toBe(true)
+    expect(isCpmmDegenerateStateError(new Error('something else'))).toBe(false)
+    expect(isCpmmDegenerateStateError(undefined)).toBe(false)
   })
 })

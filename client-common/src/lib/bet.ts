@@ -1,6 +1,6 @@
 import {
-  CPMM_ARBITRAGE_ERROR_PREFIX,
   getCpmmProbability,
+  isCpmmDegenerateStateError,
 } from 'common/calculate-cpmm'
 import { LimitBet } from 'common/bet'
 import { Answer, answerP } from 'common/answer'
@@ -115,7 +115,7 @@ export const getLimitBetReturns = (
   } catch (err: any) {
     console.error('Error in getLimitBetReturns:', err)
     calculationError =
-      (err?.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX)
+      (isCpmmDegenerateStateError(err)
         ? `Error buying ${outcome} on this answer, buy ${
             outcome === 'YES' ? 'NO' : 'YES'
           } in other answers first.`

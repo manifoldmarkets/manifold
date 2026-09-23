@@ -10,7 +10,7 @@ import { LimitBet } from 'common/bet'
 import { MS_PER_DAY } from 'common/loans'
 import { MarketContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { CPMM_ARBITRAGE_ERROR_PREFIX } from 'common/calculate-cpmm'
+import { isCpmmDegenerateStateError } from 'common/calculate-cpmm'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingLesserEqual } from 'common/util/math'
 import { randomString } from 'common/util/random'
@@ -117,10 +117,7 @@ const calculateSellResult = (
     } catch (e) {
       // On a NaN-probability failure in the sum-to-one arbitrage, log the full
       // read-time pool state for diagnosis, then rethrow unchanged.
-      if (
-        e instanceof Error &&
-        e.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX)
-      ) {
+      if (isCpmmDegenerateStateError(e)) {
         log.error('Sell arbitrage failed on degenerate pool state', {
           contractId: contract.id,
           mechanism: contract.mechanism,

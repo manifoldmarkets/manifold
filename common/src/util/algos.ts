@@ -1,3 +1,6 @@
+// Prefix of the error binarySearch throws when its comparator returns NaN.
+export const BINARY_SEARCH_NAN_ERROR = 'binarySearch: comparator returned NaN'
+
 export function binarySearch(
   min: number,
   max: number,
@@ -18,8 +21,7 @@ export function binarySearch(
     // A NaN objective is always a caller bug: fail fast instead.
     if (isNaN(comparison)) {
       throw new Error(
-        'binarySearch: comparator returned NaN at ' +
-          JSON.stringify({ min, max, mid, i })
+        BINARY_SEARCH_NAN_ERROR + ' at ' + JSON.stringify({ min, max, mid, i })
       )
     }
     if (comparison === 0) break
