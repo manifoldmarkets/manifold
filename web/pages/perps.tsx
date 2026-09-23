@@ -565,19 +565,18 @@ const useExplainerDisclosure = (
       setOpen(true)
   }, [knows])
 
-  const toggle = () => {
-    setOpen((wasOpen) => {
-      if (wasOpen) {
-        setPersistentLocalState(EXPLAINER_DISMISSED_KEY, true)
-        // Failing this write costs the reader one more auto-open later, so it
-        // is not worth surfacing.
-        if (user && !user.hasSeenPerpsExplainer)
-          api('me/update', { hasSeenPerpsExplainer: true }).catch(() => {})
-      }
-      return !wasOpen
-    })
+  // Closing is the dismissal wherever it is closed from — the header link,
+  // either control on the panel itself.
+  const close = () => {
+    setOpen(false)
+    setPersistentLocalState(EXPLAINER_DISMISSED_KEY, true)
+    // Failing this write costs the reader one more auto-open later, so it is
+    // not worth surfacing.
+    if (user && !user.hasSeenPerpsExplainer)
+      api('me/update', { hasSeenPerpsExplainer: true }).catch(() => {})
   }
-  return [open, toggle] as const
+  const toggle = () => (open ? close() : setOpen(true))
+  return { open, toggle, close }
 }
 
 type MyPosition = APIResponse<'get-perp-positions'>[number]
@@ -783,10 +782,11 @@ export default function PerpsPage(props: { perps: Contract[] }) {
     ? PERP_RAIL_LAYOUT
     : 'stack'
   const railParam = router.query.rail !== undefined
-  const [explainerOpen, toggleExplainer] = useExplainerDisclosure(
-    user,
-    myPositions
-  )
+  const {
+    open: explainerOpen,
+    toggle: toggleExplainer,
+    close: closeExplainer,
+  } = useExplainerDisclosure(user, myPositions)
   // Ticker clicks can happen from anywhere on the page: select and bring
   // the terminal into view (its scroll margin clears the pinned tape).
   const selectRow = (id: string) => {
@@ -972,7 +972,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
                 aria-controls="perps-explainer"
                 className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
               >
-                How perps work {explainerOpen ? '↑' : '↓'}
+                {explainerOpen ? 'Hide explainer ↑' : 'How perps work ↓'}
               </button>
             </div>
           </Col>
@@ -998,7 +998,11 @@ export default function PerpsPage(props: { perps: Contract[] }) {
         {/* Directly under the header the trigger sits in. Anywhere further
             down and clicking "How perps work" appears to do nothing, because
             what it opened is off the bottom of the screen. */}
-        <Explainer contract={selected} open={explainerOpen} />
+        <Explainer
+          contract={selected}
+          open={explainerOpen}
+          onClose={closeExplainer}
+        />
 
         {selected ? (
           <Col className="gap-3">
@@ -2765,24 +2769,57 @@ const Suggestions = () => {
 // PerpExplainerContent) next to the selected market's actual parameters —
 // the abstract rules on the left, what they mean for THIS market on the
 // right.
+// Closing it is the dismissal, so it has to be obvious and it has to be near
+// wherever the reader gave up or finished — the panel is taller than a screen,
+// and the link that opened it is above all of it.
+const HideExplainer = (props: { onClose: () => void; className?: string }) => (
+  <button
+    type="button"
+    onClick={props.onClose}
+    aria-controls="perps-explainer"
+    aria-expanded
+    className={clsx(
+      'text-ink-600 hover:text-ink-900 hover:bg-canvas-50 border-ink-200 dark:border-ink-300 flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
+      props.className
+    )}
+  >
+    Hide
+    <XIcon className="h-3.5 w-3.5" />
+  </button>
+)
+
 const Explainer = (props: {
   contract: PerpContract | undefined
   open: boolean
+  onClose: () => void
 }) => {
-  const { contract, open } = props
+  const { contract, open, onClose } = props
   return (
     // Always mounted so the trigger's aria-controls has something to point at
     // — it sits above the stats strip, too far up the DOM to be implied by
     // position. `hidden` sorts after `flex` in Tailwind's display group, so
     // this takes no room in the page's flex column when shut.
     <Col id="perps-explainer" className={clsx('gap-3', !open && 'hidden')}>
-      <SectionHeader title="What are perps?" />
+      {/* Pinned under the ticker tape for as long as the panel is on screen:
+          it runs well past a screen, so a Hide that only sat at one end would
+          leave the reader scrolling to put it away. Opaque and ruled, or the
+          prose would slide under an invisible band on its way past. */}
+      <Row className="border-ink-200 dark:border-ink-300 bg-canvas-0 sticky top-12 z-10 items-center justify-between gap-3 border-b py-2">
+        <SectionHeader title="What are perps?" />
+        <HideExplainer onClose={onClose} />
+      </Row>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
         <Col className="border-ink-200 dark:border-ink-300 bg-canvas-0 gap-4 rounded-xl border p-4 sm:p-5">
           <PerpExplainerContent hideHeading />
         </Col>
         {contract && <MarketParameters contract={contract} />}
       </div>
+      {/* Says what Hide actually does, at the end of the read where someone
+          is deciding whether to use it. */}
+      <span className="text-ink-500 border-ink-200 dark:border-ink-300 border-t pt-3 text-xs">
+        Closing this keeps it closed. Reopen it any time from &ldquo;How perps
+        work&rdquo; under the page title.
+      </span>
     </Col>
   )
 }
