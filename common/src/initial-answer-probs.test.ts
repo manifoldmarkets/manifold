@@ -16,6 +16,7 @@ import { CPMMMultiContract } from './contract'
 import { noFees } from './fees'
 import {
   ANSWER_PROB_SUM_TOLERANCE,
+  getAnswerProbsCost,
   getAnswerProbsError,
   getNewContract,
   MAX_ANSWER_PROB,
@@ -211,6 +212,68 @@ describe('getInitialAnswerPools', () => {
         expect(outcome === 'YES' ? moved : -moved).toBeGreaterThan(0)
       }
     }
+  })
+})
+
+describe('getAnswerProbsCost', () => {
+  const sumToOne = { shouldAnswersSumToOne: true, hasOtherAnswer: false }
+
+  it('costs nothing at an even split or a mild skew', () => {
+    for (const answerProbs of [
+      [25, 25, 25, 25],
+      [40, 30, 20, 10],
+    ]) {
+      const { lost } = getAnswerProbsCost({
+        ...sumToOne,
+        answerProbs,
+        ante: 10000,
+      })
+      expect(lost).toBeCloseTo(0, 6)
+    }
+  })
+
+  it('shows what a favorite at or above 50% throws away', () => {
+    // What creators reported: a 70% favorite loses 46% of its value up front,
+    // and pays back Ṁ3,429 of Ṁ10,000 if it wins.
+    const cost = getAnswerProbsCost({
+      ...sumToOne,
+      answerProbs: [10, 10, 10, 70],
+      ante: 10000,
+    })
+    expect(cost.lost).toBeCloseTo(4600, -1)
+    expect(cost.lowestPayout).toBeCloseTo(3429, 0)
+    expect(cost.lowestPayoutIndex).toBe(3)
+
+    const extreme = getAnswerProbsCost({
+      ...sumToOne,
+      answerProbs: [98, 1, 1],
+      ante: 10000,
+    })
+    expect(extreme.lowestPayout).toBeCloseTo(202, 0)
+    expect(extreme.lowestPayoutIndex).toBe(0)
+  })
+
+  it('points at Other when that is the answer that pays least', () => {
+    const cost = getAnswerProbsCost({
+      shouldAnswersSumToOne: true,
+      hasOtherAnswer: true,
+      answerProbs: [20, 10],
+      ante: 1000,
+    })
+    expect(cost.lowestPayoutIndex).toBe(2)
+    expect(cost.lost).toBeGreaterThan(0)
+  })
+
+  it('charges independent answers for every one away from 50%', () => {
+    // Each is its own pool: at 10% it keeps 20% of its share of the ante.
+    const cost = getAnswerProbsCost({
+      shouldAnswersSumToOne: false,
+      hasOtherAnswer: false,
+      answerProbs: [50, 10],
+      ante: 1000,
+    })
+    expect(cost.lost).toBeCloseTo(400, 6)
+    expect(cost.lowestPayout).toBeUndefined()
   })
 })
 

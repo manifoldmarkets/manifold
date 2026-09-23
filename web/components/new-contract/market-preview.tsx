@@ -14,7 +14,8 @@ import {
   withAnswerProbRemoved,
   withAnswerProbSet,
 } from 'common/answer-probs'
-import { getAnswerProbsError } from 'common/new-contract'
+import { getAnte } from 'common/economy'
+import { getAnswerProbsCost, getAnswerProbsError } from 'common/new-contract'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
@@ -524,6 +525,35 @@ export function MarketPreview(props: {
         hasOtherAnswer: !!hasOtherAnswer,
       })
     : undefined
+  // Uneven starting odds can cost the creator part of their liquidity, so say
+  // how much, for the ante the market will actually be seeded with.
+  const answerProbsAnte = data.liquidityTier
+    ? getAnte(
+        'MULTIPLE_CHOICE',
+        namedAnswerCount + (hasOtherAnswer ? 1 : 0),
+        data.liquidityTier
+      )
+    : undefined
+  const answerProbsCost =
+    data.answerProbs && !answerProbsError && answerProbsAnte
+      ? getAnswerProbsCost({
+          answerProbs: namedAnswerProbs,
+          shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
+          hasOtherAnswer: !!hasOtherAnswer,
+          ante: answerProbsAnte,
+        })
+      : undefined
+  const answerProbsLostPercent =
+    answerProbsCost && answerProbsAnte
+      ? Math.round((answerProbsCost.lost / answerProbsAnte) * 100)
+      : 0
+  const lowestPayoutAnswer =
+    answerProbsCost?.lowestPayoutIndex !== undefined
+      ? answers.map((a) => a.text.trim()).filter((text) => text)[
+          answerProbsCost.lowestPayoutIndex
+        ] ?? 'Other'
+      : undefined
+  const evenOdds = shouldAnswersSumToOne ?? true ? 'an even split' : '50%'
 
   return (
     <Col
@@ -1257,7 +1287,7 @@ export function MarketPreview(props: {
                         <span className="text-ink-700 text-sm">
                           Set starting probabilities
                         </span>
-                        <InfoTooltip text="Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them." />
+                        <InfoTooltip text="Open the market at the odds you think are right instead of an even split. Odds far from even cost some of the liquidity you put up." />
                         {data.answerProbs && shouldAnswersSumToOne && (
                           <span
                             className={clsx(
@@ -1278,6 +1308,21 @@ export function MarketPreview(props: {
                       {answerProbsError && (
                         <span className="text-sm text-red-500">
                           {answerProbsError}
+                        </span>
+                      )}
+                      {answerProbsCost && answerProbsLostPercent > 0 && (
+                        <span className="text-sm text-amber-600 dark:text-amber-500">
+                          These odds cost about {answerProbsLostPercent}% of
+                          your liquidity ({formatMoney(answerProbsCost.lost)}):
+                          multiple choice pools can only hold uneven odds by
+                          throwing away some of the shares your liquidity buys.
+                          {answerProbsCost.lowestPayout !== undefined &&
+                            ` If nobody trades and "${lowestPayoutAnswer}" wins, you get back ${formatMoney(
+                              answerProbsCost.lowestPayout
+                            )} of ${formatMoney(answerProbsAnte ?? 0)}.`}{' '}
+                          Odds closer to {evenOdds} cost less. To keep all of
+                          it, start at {evenOdds} and bet the market to your
+                          odds instead.
                         </span>
                       )}
                     </Col>

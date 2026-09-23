@@ -381,6 +381,43 @@ const getInitialProbs = (
   return probs.map((prob) => prob / total)
 }
 
+// What opening at these starting probabilities costs the creator, for an ante
+// of `ante`. Pools can only hold uneven odds by throwing some of the shares the
+// ante buys away, so they're worth less than the ante at those same odds; `lost`
+// is the difference. For answers that sum to one, `lowestPayout` is the least
+// the pools pay back if nobody trades, and `lowestPayoutIndex` is the answer
+// that has to win for that (an index past the listed answers means 'Other').
+// Assumes the probabilities already passed getAnswerProbsError.
+export const getAnswerProbsCost = (props: {
+  answerProbs: number[]
+  shouldAnswersSumToOne: boolean
+  hasOtherAnswer: boolean
+  ante: number
+}) => {
+  const { answerProbs, shouldAnswersSumToOne, hasOtherAnswer, ante } = props
+  const probs = getInitialProbs(
+    answerProbs,
+    shouldAnswersSumToOne,
+    hasOtherAnswer
+  )
+  const pools = getInitialAnswerPools(probs, ante, shouldAnswersSumToOne)
+  const value = sum(
+    pools.map((pool, i) => probs[i] * pool.YES + (1 - probs[i]) * pool.NO)
+  )
+  const lost = Math.max(0, ante - value)
+
+  if (!shouldAnswersSumToOne) return { lost }
+
+  const totalNo = sum(pools.map((pool) => pool.NO))
+  const payouts = pools.map((pool) => pool.YES + totalNo - pool.NO)
+  const lowestPayout = Math.min(...payouts)
+  return {
+    lost,
+    lowestPayout,
+    lowestPayoutIndex: payouts.indexOf(lowestPayout),
+  }
+}
+
 const getMultipleChoiceProps = (
   contractId: string,
   userId: string,
