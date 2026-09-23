@@ -28,9 +28,10 @@ Both live in `common/src/contract.ts`.
 ## Deployment
 
 Apply `backend/supabase/migrations/2026092301_add_answers_p.sql` before
-deploying the API. It adds `answers.p` (`not null default 0.5`), which every
-answer write includes from then on, `cpmm-multi-1` answers too, so creating
-any multiple choice market or adding an answer fails until the column exists.
+deploying the API or the scheduler. It adds `answers.p` (`not null default
+0.5`), which every answer write includes from then on, `cpmm-multi-1` answers
+too, so until the column exists creating any multiple choice market or adding
+an answer fails, and so does the scheduler's daily sports-market creation.
 The migration is additive and idempotent: existing rows read `p = 0.5`, which
 is what `cpmm-multi-1` pricing already assumes, so nothing changes for them.
 
