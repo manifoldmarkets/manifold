@@ -1,6 +1,6 @@
 import { Answer } from './answer'
 import { Bet } from './bet'
-import { Contract, isBinaryMulti } from './contract'
+import { Contract, isBinaryMulti, isMultiCpmmMechanism } from './contract'
 import { ContractMetric } from './contract-metric'
 
 /**
@@ -37,7 +37,7 @@ export const getVersusAnswers = (
   contract: Pick<Contract, 'mechanism' | 'outcomeType'> & Partial<Contract>
 ): VersusAnswers | undefined => {
   if (
-    contract.mechanism !== 'cpmm-multi-1' ||
+    !isMultiCpmmMechanism(contract.mechanism) ||
     !isBinaryMulti(contract as Contract)
   )
     return undefined

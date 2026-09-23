@@ -122,7 +122,7 @@ export const staleSeenMarketsSql = (
         -- Only CPMM markets have a normalized daily probability-change
         -- metric. Perps, polls, and bounties can be active while probChanges
         -- is absent, so never classify them as quiet from missing data.
-        and contracts.mechanism in ('cpmm-1', 'cpmm-multi-1')
+        and contracts.mechanism in ('cpmm-1', 'cpmm-multi-1', 'cpmm-multi-2')
         and abs(coalesce((contracts.data->'probChanges'->>'day')::numeric, 0))
             <= ${SEEN_PROB_MOVE_THRESHOLD}
         -- Multi-answer markets store movement on answers, not contracts. A
