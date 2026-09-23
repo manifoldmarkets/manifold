@@ -32,3 +32,35 @@ export const withAnswerProbSet = (
 // For answers that sum to one: drops a slot, handing its share back to the rest.
 export const withAnswerProbRemoved = (probs: number[], index: number) =>
   withAnswerProbSet(probs, index, 0).filter((_, i) => i !== index)
+
+// Fits odds read off a live market inside [min, max] so they can seed a new
+// one: arbitrage can push a long shot under the floor bets can trade at.
+// Independent answers are each clamped. Answers that sum to one keep their
+// total of 100: whatever it takes to raise the ones under the floor comes out
+// of the ones above it, in proportion to how far above it they are, so none of
+// those drop under it either. Undefined if they can't all fit.
+export const fitAnswerProbs = (
+  probs: number[],
+  shouldAnswersSumToOne: boolean,
+  min: number,
+  max: number
+) => {
+  if (!shouldAnswersSumToOne)
+    return probs.map(
+      (prob) => Math.round(Math.min(max, Math.max(min, prob)) * 10) / 10
+    )
+
+  const total = sum(probs)
+  if (!(total > 0) || probs.length * min > 100) return undefined
+  const scaled = probs.map((prob) => (prob / total) * 100)
+  const shortfall = sum(scaled.map((prob) => Math.max(0, min - prob)))
+  const room = sum(scaled.map((prob) => Math.max(0, prob - min)))
+  const fitted =
+    shortfall > 0
+      ? scaled.map((prob) =>
+          prob <= min ? min : prob - (shortfall * (prob - min)) / room
+        )
+      : scaled
+  if (fitted.some((prob) => prob > max)) return undefined
+  return roundAnswerProbs(fitted)
+}

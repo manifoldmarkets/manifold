@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { roundAnswerProbs } from 'common/answer-probs'
+import { fitAnswerProbs } from 'common/answer-probs'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/contract-types'
 import { getLinkTarget } from 'web/components/widgets/linkify'
 import { getPrecision } from 'common/src/number'
+import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
 import { randomString } from 'common/util/random'
 import { useNativeInfo } from 'web/components/native-message-provider'
 
@@ -102,15 +103,20 @@ export function duplicateContractHref(contract: Contract) {
     // cpmm-multi-2: carry the answers' CURRENT probabilities as the duplicate's
     // starting probabilities (a duplicate should start where the original stands,
     // not reset to uniform). Only when every kept answer is carried (no Other,
-    // matching the answers list above). Rounded to a tenth without changing the
-    // total, so answers that sum to one still add up to 100 however many there are.
+    // matching the answers list above), and not once resolved, when prob holds
+    // the resolution instead. Fitted into the range bets trade in, since a long
+    // shot can sit under it, keeping answers that sum to one at 100.
     if (
       contract.mechanism === 'cpmm-multi-2' &&
       contract.outcomeType === 'MULTIPLE_CHOICE' &&
-      contract.addAnswersMode === 'DISABLED'
+      contract.addAnswersMode === 'DISABLED' &&
+      !contract.isResolved
     ) {
-      params.answerProbs = roundAnswerProbs(
-        contract.answers.filter((a) => !a.isOther).map((a) => a.prob * 100)
+      params.answerProbs = fitAnswerProbs(
+        contract.answers.filter((a) => !a.isOther).map((a) => a.prob * 100),
+        contract.shouldAnswersSumToOne,
+        MIN_ANSWER_PROB,
+        MAX_ANSWER_PROB
       )
     }
   }

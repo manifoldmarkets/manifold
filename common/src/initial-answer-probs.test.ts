@@ -1,4 +1,5 @@
 import {
+  fitAnswerProbs,
   roundAnswerProbs,
   withAnswerProbRemoved,
   withAnswerProbSet,
@@ -369,5 +370,53 @@ describe('editing starting probabilities in the create form', () => {
     // 80% across the named answers, 20% left for Other.
     const probs = withAnswerProbSet([40, 40, 0], 2, 80 / 3)
     expect(probs.reduce((a, b) => a + b, 0)).toBeCloseTo(80, 10)
+  })
+})
+
+describe('fitting live odds to seed a duplicate market', () => {
+  const passes = (answerProbs: number[], shouldAnswersSumToOne = true) =>
+    getAnswerProbsError({
+      answerProbs,
+      numAnswers: answerProbs.length,
+      shouldAnswersSumToOne,
+      hasOtherAnswer: false,
+      addAnswersMode: 'DISABLED',
+    }) === undefined
+
+  it('raises long shots to the floor without breaking the total', () => {
+    const fitted = fitAnswerProbs([99.5, 0.3, 0.2], true, 1, 99)!
+    expect(fitted).toEqual([98, 1, 1])
+    expect(passes(fitted)).toBe(true)
+  })
+
+  it('takes the difference from the answers above the floor, in proportion', () => {
+    const fitted = fitAnswerProbs([60, 39.5, 0.5], true, 1, 99)!
+    // 0.5 raised to 1 costs 0.5, split 59:38.5 between the other two.
+    expect(fitted[2]).toBe(1)
+    expect(fitted[0]).toBeCloseTo(60 - (0.5 * 59) / 97.5, 1)
+    expect(fitted.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10)
+    expect(passes(fitted)).toBe(true)
+  })
+
+  it('fits a long tail of many answers under the floor', () => {
+    const probs = [60, ...Array(49).fill(40 / 49 - 0.01), 0.49]
+    const fitted = fitAnswerProbs(probs, true, 1, 99)!
+    expect(fitted.every((prob) => prob >= 1)).toBe(true)
+    expect(fitted.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10)
+    expect(passes(fitted)).toBe(true)
+  })
+
+  it('leaves odds already in range where they are', () => {
+    expect(fitAnswerProbs([50, 30, 20], true, 1, 99)).toEqual([50, 30, 20])
+  })
+
+  it('clamps independent answers one by one', () => {
+    const fitted = fitAnswerProbs([0.4, 99.8, 50], false, 1, 99)!
+    expect(fitted).toEqual([1, 99, 50])
+    expect(passes(fitted, false)).toBe(true)
+  })
+
+  it('gives up when the answers can’t all fit', () => {
+    expect(fitAnswerProbs(Array(101).fill(1), true, 1, 99)).toBeUndefined()
   })
 })
