@@ -106,11 +106,30 @@ const HUB_FEATURES = {
 }
 
 // How the cards under the chart (positions, markets, related, activity) are
-// arranged. The four titles stay on screen and one section is open at a time,
-// so nothing is more than a tap away — the stacked column it replaced put the
-// last card a screen and a half below the fold on a phone. The alternatives
-// live in perp-rail.tsx and any visitor can try one with ?rail=<layout>.
+// arranged BELOW xl, where they are a full-width column under the chart and
+// the stack put the last card a screen and a half below the fold. The
+// accordion keeps all four titles on screen with one section open.
+//
+// At xl they are a 380px rail beside a chart twice their height, so there is
+// room for every card at once and collapsing them only leaves the rail empty
+// — that stays the stack. The alternatives live in perp-rail.tsx and
+// ?rail=<layout> forces one at any width.
 const PERP_RAIL_LAYOUT: PerpRailLayout = 'accordion'
+
+// Tailwind's xl, watched rather than guessed at: the two arrangements are
+// different markup, not different CSS. Starts narrow so a phone paints the
+// arrangement it keeps; a desktop settles into the stack a frame later.
+const useBelowXl = () => {
+  const [below, setBelow] = useState(true)
+  useEffect(() => {
+    const xl = window.matchMedia('(min-width: 1280px)')
+    const update = () => setBelow(!xl.matches)
+    update()
+    xl.addEventListener('change', update)
+    return () => xl.removeEventListener('change', update)
+  }, [])
+  return below
+}
 
 // A section inside a PerpRail shell would otherwise be a card in a card: in
 // `bare` the shell owns the border and the title, and the section renders the
@@ -755,10 +774,14 @@ export default function PerpsPage(props: { perps: Contract[] }) {
   const related = useRelatedMarkets(selected?.id)
   usePrefetchCharts(open, selected?.id)
   // `?rail=<layout>` overrides the shipped arrangement of the cards under the
-  // chart, and reveals the switcher for flipping between the rest.
+  // chart at every width, and reveals the switcher for flipping between the
+  // rest.
+  const belowXl = useBelowXl()
   const railLayout = isPerpRailLayout(router.query.rail)
     ? router.query.rail
-    : PERP_RAIL_LAYOUT
+    : belowXl
+    ? PERP_RAIL_LAYOUT
+    : 'stack'
   const railParam = router.query.rail !== undefined
   const [explainerOpen, toggleExplainer] = useExplainerDisclosure(
     user,
@@ -972,6 +995,11 @@ export default function PerpsPage(props: { perps: Contract[] }) {
           </div>
         </Row>
 
+        {/* Directly under the header the trigger sits in. Anywhere further
+            down and clicking "How perps work" appears to do nothing, because
+            what it opened is off the bottom of the screen. */}
+        <Explainer contract={selected} open={explainerOpen} />
+
         {selected ? (
           <Col className="gap-3">
             {railParam && <RailLayoutSwitcher current={railLayout} />}
@@ -979,19 +1007,13 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               {/* Fixed-width rail: a third of the grid was only ~330px at the
                   xl breakpoint, not enough for a ticker, sparkline, price,
                   change and lean side by side. */}
-              <Col className="min-w-0 gap-4">
+              <div className="min-w-0">
                 <Terminal
                   key={selected.id}
                   contract={selected}
                   week={week[selected.id]}
                 />
-                {/* Opens here rather than under its trigger in the header: at
-                    phone width the explainer runs about 1,200px, and a reader
-                    it opens itself for would otherwise meet the manual before
-                    they had seen a single market. Under the chart they have
-                    the thing in front of them while they read about it. */}
-                <Explainer contract={selected} open={explainerOpen} />
-              </Col>
+              </div>
               {railLayout === 'stack' ? (
                 <>
                   <Col className="min-w-0 gap-4 xl:row-span-2">
@@ -1014,14 +1036,9 @@ export default function PerpsPage(props: { perps: Contract[] }) {
             </div>
           </Col>
         ) : (
-          <Col className="gap-4">
-            <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
-              No open perpetual markets right now.
-            </div>
-            {/* Nothing to sit under, but the header's toggle still has to open
-                something. */}
-            <Explainer contract={undefined} open={explainerOpen} />
-          </Col>
+          <div className="text-ink-500 border-ink-200 dark:border-ink-300 rounded-xl border border-dashed p-6 text-sm">
+            No open perpetual markets right now.
+          </div>
         )}
 
         <Suggestions />
