@@ -436,8 +436,10 @@ automatic. Then:
 6. Run the period-metric job after an add, funding event, flip, liquidation,
    ADL, and resolution; reconcile `from.day`/`from.week` with the event cash
    flows and confirm automated transitions did not change `lastBetTime`.
-7. Run the league updater and confirm PERP gains/losses do not change
-   `leagues.mana_earned` and do not create a `perp_profit` breakdown entry.
+7. Run the league updater and confirm gains/losses on these unlisted PERPs do
+   not change `leagues.mana_earned` and do not create a `perp_profit`
+   breakdown entry. Only public, ranked PERPs score, and only from
+   `FIRST_SEASON_WITH_PERP_PROFIT`.
 8. In a signed-in browser, confirm search, topic pages, browse, Explore
    activity, related markets, `%[market]`, pasted-link mentions, and
    `/embed/...` all render the PERP price/type/backing correctly on desktop and

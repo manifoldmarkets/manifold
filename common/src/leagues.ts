@@ -8,6 +8,16 @@ import { HOUR_MS } from './util/time'
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
 /**
+ * October 2026: the first season whose score includes profit and loss on
+ * PERP positions. Gated on the season number rather than on when the code
+ * ships, so a season that started under the old rules is never rescored.
+ */
+export const FIRST_SEASON_WITH_PERP_PROFIT = 42
+
+export const seasonCountsPerpProfit = (season: number) =>
+  season >= FIRST_SEASON_WITH_PERP_PROFIT
+
+/**
  * Filters bets to only include those that count for league scoring.
  * For a user's own markets, only bets placed 1+ hour after market creation are counted.
  * For other users' markets, all bets count.
