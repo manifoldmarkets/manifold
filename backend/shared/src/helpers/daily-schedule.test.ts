@@ -54,8 +54,9 @@ describe('scheduleDailyAtUtcHour', () => {
   })
 
   it('keeps the schedule after a failed run and logs the failure', async () => {
+    const error = new Error('db down')
     const fn = jest.fn(async () => {
-      throw new Error('db down')
+      throw error
     })
     scheduleDailyAtUtcHour(8, 'test job', fn)
 
@@ -63,9 +64,7 @@ describe('scheduleDailyAtUtcHour', () => {
     // Let the rejected promise's catch handler run.
     await Promise.resolve()
     await Promise.resolve()
-    expect(log.error).toHaveBeenCalledWith('test job failed', {
-      error: 'db down',
-    })
+    expect(log.error).toHaveBeenCalledWith('test job failed', { error })
 
     jest.advanceTimersByTime(DAY_MS)
     expect(fn).toHaveBeenCalledTimes(2)

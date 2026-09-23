@@ -21,11 +21,7 @@ export const scheduleDailyAtUtcHour = (
     const target = from + msUntilNextUtcHour(hourUtc, from)
     const timer = setTimeout(() => {
       scheduleAfter(target)
-      fn().catch((error) =>
-        log.error(`${name} failed`, {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      )
+      fn().catch((error) => log.error(`${name} failed`, { error }))
     }, target - Date.now())
     // Never hold the process open on this timer alone.
     timer.unref?.()
