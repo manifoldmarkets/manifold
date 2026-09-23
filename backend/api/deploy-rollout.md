@@ -6,11 +6,12 @@ while caches warm. That check cannot authorize deletion of the old VM. The
 external Application Load Balancer returns 503 when no backend is ready.
 
 The helper checks that every backend attached to the group uses `/healthz/ready`,
-pauses the autoscaler if present, sets the update policy to opportunistic, and adds a second VM using the new
-template. It retains the old VM until the replacement is running and HEALTHY in
-every attached backend service, including the three read ports and websockets.
-Only then does it delete the old VM by name, verify readiness again, and restore
-the proactive update policy and the original autoscaling mode. It does not change the autohealing health check.
+sets the update policy to opportunistic, pauses the autoscaler if present, and
+adds a second VM using the new template. It retains the old VM until the
+replacement is running and HEALTHY in every attached backend service, including
+the three read ports and websockets. Only then does it delete the old VM by
+name, verify readiness again, and restore the original autoscaling mode and then
+the proactive update policy. It does not change the autohealing health check.
 
 The helper requires a single-VM MIG with either no autoscaler or an autoscaler
 pinned to min=max=1 (the current production configuration). If that
@@ -26,7 +27,10 @@ can therefore leave two VMs, an opportunistic update policy, and autoscaling OFF
 
 Inspect the instance group and logs, resolve the startup failure, then retry the
 helper with the **same template and original autoscaling mode** from the recovery
-command printed before any infrastructure changes. For production this is:
+command printed before any infrastructure changes. The autoscaler is only paused
+while the update policy is opportunistic, and the helper refuses to continue an
+opportunistic group without that mode, since the live mode may be its own pause.
+For production this is:
 
 ```sh
 node deploy-rollout.cjs mantic-markets us-east4-a api-group-east TEMPLATE ON

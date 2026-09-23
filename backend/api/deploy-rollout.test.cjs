@@ -183,20 +183,48 @@ test('rejects an autoscaler that is not pinned to one VM', async () => {
   assert.equal(f.info.updatePolicy.type, 'PROACTIVE')
 })
 
-test('pauses and restores the production autoscaler around replacement', async () => {
+test('pauses the production autoscaler only while the group is opportunistic', async () => {
   const f = fixture()
   f.info.autoscaler = {
     autoscalingPolicy: { mode: 'ON', minNumReplicas: 1, maxNumReplicas: 1 },
   }
   await rollout(options, f.dependencies)
-  const pauseIndex = f.calls.findIndex(
-    ({ args }) =>
-      args[3] === 'update-autoscaling' && args.includes('--mode=off')
+  const order = [
+    ['update', '--update-policy-type=opportunistic'],
+    ['update-autoscaling', '--mode=off'],
+    ['resize', '--size=2'],
+    ['update-autoscaling', '--mode=on'],
+    ['update', '--update-policy-type=proactive'],
+  ].map(([action, flag]) =>
+    f.calls.findIndex(({ args }) => args[3] === action && args.includes(flag))
   )
-  const resizeIndex = f.calls.findIndex(({ args }) => args[3] === 'resize')
-  assert(pauseIndex >= 0 && pauseIndex < resizeIndex)
+  assert(
+    order.every((index, i) => index >= 0 && (i === 0 || index > order[i - 1]))
+  )
   assert.equal(f.info.autoscaler.autoscalingPolicy.mode, 'ON')
-  assert(f.calls[f.calls.length - 1].args.includes('--mode=on'))
+  assert.equal(f.info.updatePolicy.type, 'PROACTIVE')
+})
+
+test('requires the original mode after a run stops with the autoscaler paused', async () => {
+  let failResize = true
+  const f = fixture({
+    commandError: (args) => failResize && args[3] === 'resize',
+  })
+  f.info.autoscaler = {
+    autoscalingPolicy: { mode: 'ON', minNumReplicas: 1, maxNumReplicas: 1 },
+  }
+  await assert.rejects(rollout(options, f.dependencies), /gcloud failed/)
+  assert.equal(f.info.autoscaler.autoscalingPolicy.mode, 'OFF')
+  failResize = false
+  // The live OFF is the stopped run's pause, not the mode to restore.
+  await assert.rejects(
+    rollout(options, f.dependencies),
+    /original autoscaling mode/
+  )
+  await rollout({ ...options, restoreAutoscalingMode: 'ON' }, f.dependencies)
+  assert.equal(f.info.autoscaler.autoscalingPolicy.mode, 'ON')
+  assert.equal(f.info.updatePolicy.type, 'PROACTIVE')
+  assert.equal(deletions(f).length, 1)
 })
 
 test('leaves autoscaling off when the replacement cannot become ready', async () => {

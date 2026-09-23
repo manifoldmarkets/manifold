@@ -77,17 +77,26 @@ async function rollout(
       autoscaling.minNumReplicas === 1 && autoscaling.maxNumReplicas === 1,
       'This rollout supports only an autoscaler pinned to one VM'
     )
+    // A rollout pauses the autoscaler only while the group is opportunistic,
+    // so an opportunistic group's live mode may be an interrupted run's pause
+    // rather than the mode to restore.
+    assert(
+      info.updatePolicy?.type !== 'OPPORTUNISTIC' || restoreAutoscalingMode,
+      'Resume with the original autoscaling mode from the recovery command printed by the deploy'
+    )
   } else {
     assert(!restoreAutoscalingMode, 'There is no autoscaler to restore')
   }
+  // Restore the autoscaler while the group is still opportunistic, so an
+  // interruption between these steps also requires the original mode.
   const restorePolicies = () => {
-    managed('update', '--update-policy-type=proactive')
     if (autoscaling) {
       managed(
         'update-autoscaling',
         `--mode=${autoscalingMode.toLowerCase().replaceAll('_', '-')}`
       )
     }
+    managed('update', '--update-policy-type=proactive')
   }
 
   // Discover every backend using this group, including the write server,
@@ -162,10 +171,6 @@ async function rollout(
     resuming || (info.targetSize === 1 && info.status?.isStable),
     'Expected a stable single-VM MIG, or an interrupted rollout of this template'
   )
-  assert(
-    !resuming || !autoscaling || restoreAutoscalingMode,
-    'Resume with the original autoscaling mode from the recovery command printed by the deploy'
-  )
   log(
     `Recovery command: node deploy-rollout.cjs ${project} ${zone} ${group} ${template}${
       autoscalingMode ? ` ${autoscalingMode}` : ''
@@ -203,18 +208,19 @@ async function rollout(
   const oldInstance = oldInstances[0].instance
 
   if (!resuming) {
-    // The production autoscaler is ON with min=max=1. Pause it before adding
-    // a VM so it cannot scale down the replacement while readiness is pending.
-    if (autoscaling && autoscaling.mode !== 'OFF') {
-      managed('update-autoscaling', '--mode=off')
-    }
     // Set policy and template together: the updater must not replace the old
-    // VM just because the new one starts answering /healthz/live.
+    // VM just because the new one starts answering /healthz/live. This comes
+    // first so the autoscaler is never paused under a proactive policy.
     managed(
       'update',
       '--update-policy-type=opportunistic',
       `--template=${template}`
     )
+    // The production autoscaler is ON with min=max=1. Pause it before adding
+    // a VM so it cannot scale down the replacement while readiness is pending.
+    if (autoscaling && autoscaling.mode !== 'OFF') {
+      managed('update-autoscaling', '--mode=off')
+    }
     managed('resize', '--size=2')
   }
   const replacement = await waitFor(
