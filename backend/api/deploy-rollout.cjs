@@ -223,26 +223,30 @@ async function rollout(
     }
     managed('resize', '--size=2')
   }
+  // Until the old VM is deleted, the group must stay exactly as this rollout
+  // set it up; anything else means another deploy or an operator changed it.
+  const assertRolloutUnchanged = (current) => {
+    assert.equal(current.targetSize, 2, 'MIG size changed during rollout')
+    assert.equal(
+      current.updatePolicy?.type,
+      'OPPORTUNISTIC',
+      'MIG update policy changed during rollout'
+    )
+    assert.equal(
+      desiredTemplate(current),
+      template,
+      'MIG template changed during rollout'
+    )
+    assert(
+      !current.autoscaler ||
+        current.autoscaler.autoscalingPolicy.mode === 'OFF',
+      'Autoscaling was enabled during rollout'
+    )
+  }
   const replacement = await waitFor(
     'Waiting for replacement readiness in every backend',
     () => {
-      const current = describe()
-      assert.equal(current.targetSize, 2, 'MIG size changed during rollout')
-      assert.equal(
-        current.updatePolicy?.type,
-        'OPPORTUNISTIC',
-        'MIG update policy changed during rollout'
-      )
-      assert.equal(
-        desiredTemplate(current),
-        template,
-        'MIG template changed during rollout'
-      )
-      assert(
-        !current.autoscaler ||
-          current.autoscaler.autoscalingPolicy.mode === 'OFF',
-        'Autoscaling was enabled during rollout'
-      )
+      assertRolloutUnchanged(describe())
       const vms = instances()
       assert(
         vms.some((vm) => vm.instance === oldInstance),
@@ -263,23 +267,7 @@ async function rollout(
 
   // Health queries can take time. Recheck the group immediately before the
   // destructive step so another deploy cannot change which version survives.
-  const beforeRemoval = describe()
-  assert.equal(beforeRemoval.targetSize, 2, 'MIG size changed during rollout')
-  assert.equal(
-    beforeRemoval.updatePolicy?.type,
-    'OPPORTUNISTIC',
-    'MIG update policy changed during rollout'
-  )
-  assert.equal(
-    desiredTemplate(beforeRemoval),
-    template,
-    'MIG template changed during rollout'
-  )
-  assert(
-    !beforeRemoval.autoscaler ||
-      beforeRemoval.autoscaler.autoscalingPolicy.mode === 'OFF',
-    'Autoscaling was enabled during rollout'
-  )
+  assertRolloutUnchanged(describe())
   const beforeRemovalVms = instances()
   assert(
     beforeRemovalVms.length === 2 &&
