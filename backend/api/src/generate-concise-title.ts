@@ -49,8 +49,9 @@ Example transformations:
 Your concise version, without any other text or commentary:`
 
       const response = await promptAI(prompt, {
-        model: aiModels.sonnet3,
+        model: aiModels.flashLite,
         system,
+        thinkingLevel: 'low',
       })
 
       let trimmedResponse = response.trim()

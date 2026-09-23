@@ -1,3 +1,4 @@
+import { CheckCircleIcon, SparklesIcon } from '@heroicons/react/outline'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -40,7 +41,6 @@ export function JobInterestCard() {
   const registered = !!interest && interest.openToContact
 
   const [open, setOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(true)
   const [skills, setSkills] = useState<JobSkill[]>([])
   const [interests, setInterests] = useState<JobInterest[]>([])
   const [region, setRegion] = useState<JobRegion | null>(null)
@@ -66,7 +66,6 @@ export function JobInterestCard() {
       })
       await refresh()
       setOpen(false)
-      setCollapsed(false) // show their saved tags as confirmation
       toast.success(registered ? 'Preferences updated' : "You're on the list!")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Something went wrong')
@@ -115,86 +114,91 @@ export function JobInterestCard() {
       ]
     : []
 
-  // Registered and not editing → a collapsible summary panel.
+  // Registered and not editing → show the saved preferences.
   if (registered && !open) {
     return (
-      <div className="border-primary-200 bg-canvas-0 rounded-lg border p-5">
+      <div className="border-primary-200 bg-primary-50/50 rounded-2xl border p-5 dark:border-indigo-400/30 dark:bg-indigo-500/10">
         <Col className="gap-3">
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="flex items-center justify-between gap-3 text-left"
-            aria-expanded={!collapsed}
-          >
-            <h3 className="text-ink-1000 text-lg font-semibold">
-              You're on the list for new roles
-            </h3>
-            <span className="text-primary-600 shrink-0 font-mono text-sm font-medium">
-              {collapsed ? 'Show ↓' : 'Hide ↑'}
-            </span>
-          </button>
+          <CheckCircleIcon
+            className="text-primary-600 h-6 w-6 dark:text-indigo-300"
+            aria-hidden
+          />
+          <h2 className="text-ink-1000 text-base font-semibold dark:text-slate-100">
+            You're on the list
+          </h2>
 
-          {!collapsed && (
-            <Col className="gap-3">
-              <Row className="flex-wrap gap-1.5">
-                {chips.map((label) => (
-                  <span
-                    key={label}
-                    className="bg-ink-100 text-ink-700 rounded-full px-2.5 py-0.5 text-xs"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </Row>
-              <Row className="items-center gap-4">
-                <button
-                  onClick={() => setOpen(true)}
-                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+          <Col className="gap-3">
+            <p className="text-ink-600 text-sm leading-relaxed dark:text-slate-300">
+              We may reach out when a relevant opportunity comes along.
+            </p>
+            <Row className="flex-wrap gap-1.5">
+              {chips.map((label) => (
+                <span
+                  key={label}
+                  className="bg-ink-100 text-ink-700 rounded-full px-2.5 py-0.5 text-xs dark:bg-slate-700/50 dark:text-slate-300"
                 >
-                  Update preferences
-                </button>
-                <button
-                  onClick={remove}
-                  disabled={saving}
-                  className="text-ink-500 hover:text-ink-700 text-sm disabled:opacity-50"
-                >
-                  Remove me
-                </button>
-              </Row>
-            </Col>
-          )}
+                  {label}
+                </span>
+              ))}
+            </Row>
+            <Row className="flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 rounded text-sm font-medium focus:outline-none focus-visible:ring-2 dark:text-indigo-300 dark:hover:text-indigo-200"
+              >
+                Update preferences
+              </button>
+              <button
+                type="button"
+                onClick={remove}
+                disabled={saving}
+                className="text-ink-500 hover:text-ink-700 focus-visible:ring-primary-500 rounded text-sm focus:outline-none focus-visible:ring-2 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Remove me
+              </button>
+            </Row>
+          </Col>
         </Col>
       </div>
     )
   }
 
   return (
-    <div className="border-primary-200 bg-canvas-0 rounded-lg border p-5">
-      <Col className="gap-1">
-        <h3 className="text-ink-1000 text-lg font-semibold">
-          Looking for a role? Let employers reach you
-        </h3>
-        <p className="text-ink-600 max-w-xl text-sm leading-relaxed">
-          Tag your strengths and what you're after. We'll aim to connect you
-          with employers hiring from the community, and may notify you of
-          relevant postings.
+    <div className="border-primary-200 bg-primary-50/50 rounded-2xl border p-5 dark:border-indigo-400/30 dark:bg-indigo-500/10">
+      <div className="bg-canvas-0 text-primary-600 mb-4 flex h-10 w-10 items-center justify-center rounded-xl dark:bg-slate-800/60 dark:text-indigo-300">
+        <SparklesIcon className="h-5 w-5" aria-hidden />
+      </div>
+      <Col className="gap-2">
+        <h2 className="text-ink-1000 text-base font-semibold dark:text-slate-100">
+          Let your next role find you
+        </h2>
+        <p className="text-ink-600 text-sm leading-relaxed dark:text-slate-300">
+          Share your strengths and interests. We'll aim to connect you with
+          employers in the community and may notify you of relevant roles.
         </p>
       </Col>
 
       {!user ? (
-        <Button className="mt-4" color="indigo" onClick={() => firebaseLogin()}>
-          Sign in to register interest
+        <Button
+          className="mt-5 w-full dark:bg-indigo-600 dark:hover:bg-indigo-700"
+          color="indigo"
+          onClick={() => firebaseLogin()}
+        >
+          Sign in to get started
         </Button>
       ) : !open ? (
-        <button
+        <Button
+          color="indigo"
+          className="mt-5 w-full dark:bg-indigo-600 dark:hover:bg-indigo-700"
           onClick={() => setOpen(true)}
-          className="text-primary-600 hover:text-primary-700 mt-3 self-start text-sm font-medium"
         >
-          Register interest →
-        </button>
+          Register interest
+        </Button>
       ) : (
-        <Col className="mt-4 gap-4">
+        <Col className="border-primary-100 mt-4 gap-5 border-t pt-4 dark:border-indigo-400/20">
           <Col className="gap-2">
-            <span className="text-ink-500 font-mono text-xs uppercase tracking-widest">
+            <span className="text-ink-500 text-xs font-semibold uppercase tracking-wide dark:text-slate-400">
               Your strengths
             </span>
             <Row className="flex-wrap gap-2">
@@ -203,6 +207,7 @@ export function JobInterestCard() {
                   key={s}
                   selected={skills.includes(s)}
                   onSelect={() => setSkills((a) => toggle(a, s))}
+                  className="h-8 px-3"
                 >
                   {JOB_SKILL_LABELS[s]}
                 </PillButton>
@@ -211,7 +216,7 @@ export function JobInterestCard() {
           </Col>
 
           <Col className="gap-2">
-            <span className="text-ink-500 font-mono text-xs uppercase tracking-widest">
+            <span className="text-ink-500 text-xs font-semibold uppercase tracking-wide dark:text-slate-400">
               Interested in
             </span>
             <Row className="flex-wrap gap-2">
@@ -220,6 +225,7 @@ export function JobInterestCard() {
                   key={i}
                   selected={interests.includes(i)}
                   onSelect={() => setInterests((a) => toggle(a, i))}
+                  className="h-8 px-3"
                 >
                   {JOB_INTEREST_LABELS[i]}
                 </PillButton>
@@ -228,7 +234,7 @@ export function JobInterestCard() {
           </Col>
 
           <Col className="gap-2">
-            <span className="text-ink-500 font-mono text-xs uppercase tracking-widest">
+            <span className="text-ink-500 text-xs font-semibold uppercase tracking-wide dark:text-slate-400">
               Based in (optional)
             </span>
             <Row className="flex-wrap gap-2">
@@ -237,6 +243,7 @@ export function JobInterestCard() {
                   key={r}
                   selected={region === r}
                   onSelect={() => setRegion((cur) => (cur === r ? null : r))}
+                  className="h-8 px-3"
                 >
                   {JOB_REGION_LABELS[r]}
                 </PillButton>
@@ -244,9 +251,10 @@ export function JobInterestCard() {
             </Row>
           </Col>
 
-          <Row className="items-center gap-4">
+          <Row className="flex-wrap items-center gap-4">
             <Button
               color="indigo"
+              className="dark:enabled:bg-indigo-600 dark:enabled:hover:bg-indigo-700"
               loading={saving}
               disabled={!canSave}
               onClick={save}
@@ -254,8 +262,9 @@ export function JobInterestCard() {
               {registered ? 'Save changes' : "I'm interested"}
             </Button>
             <button
+              type="button"
               onClick={cancel}
-              className="text-ink-500 hover:text-ink-700 text-sm"
+              className="text-ink-500 hover:text-ink-700 focus-visible:ring-primary-500 rounded text-sm focus:outline-none focus-visible:ring-2 dark:text-slate-400 dark:hover:text-slate-200"
             >
               Cancel
             </button>

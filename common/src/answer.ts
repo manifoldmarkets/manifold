@@ -57,6 +57,7 @@ export const OTHER_TOOLTIP_TEXT =
 
 export type MultiSort =
   | 'prob-desc'
+  | 'prob-mid'
   | 'prob-asc'
   | 'old'
   | 'new'
@@ -107,6 +108,9 @@ export const sortAnswers = <T extends Answer>(
         return answer.prob
       } else if (sort === 'prob-desc') {
         return -1 * answer.prob
+      } else if (sort === 'prob-mid') {
+        // Closest to 50% first
+        return Math.abs(answer.prob - 0.5)
       } else if (sort === 'liquidity') {
         return -1 * answer.volume
       } else if (sort === 'alphabetical') {
@@ -137,6 +141,8 @@ export function getSortedAnswers(
         return answer.prob < 0.99
       } else if (sort === 'prob-desc') {
         return answer.prob > 0.01
+      } else if (sort === 'prob-mid') {
+        return answer.prob > 0.01 && answer.prob < 0.99
       } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
         return !answer.resolution
       }

@@ -1,6 +1,7 @@
 import {
   BriefcaseIcon,
   ChatIcon,
+  ChatAlt2Icon,
   DeviceMobileIcon,
   DotsHorizontalIcon,
   GiftIcon,
@@ -335,9 +336,9 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Explore',
-        href: '/explore',
-        icon: IoCompassOutline,
+        name: 'Yap',
+        href: '/yap',
+        icon: ChatAlt2Icon,
         iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
       isLiveTV && {
@@ -351,11 +352,6 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-      {
-        name: 'Forum',
-        href: '/posts',
-        icon: ChatIcon,
-      },
       // Show shop when enabled OR for admins (testing)
       (SPEND_MANA_ENABLED || options.isAdminOrMod) && {
         name: 'Shop',
@@ -434,6 +430,7 @@ const getMobileNav = (
       ) : undefined,
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Explore', href: '/explore', icon: IoCompassOutline },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
     { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
@@ -479,6 +476,13 @@ const bottomNav = (
   isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
+    loggedIn &&
+      !isMobile && {
+        name: 'Explore',
+        href: '/explore',
+        icon: IoCompassOutline,
+      },
+    loggedIn && !isMobile && { name: 'Forum', href: '/posts', icon: ChatIcon },
     // Jobs only belongs in the bottom section on desktop (behind "More"). On
     // mobile it lives higher up in the main nav list (see getMobileNav).
     !isMobile && { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },

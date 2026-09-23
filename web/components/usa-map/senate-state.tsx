@@ -104,8 +104,17 @@ export function SenateCurrentOrContract(props: {
   targetState?: string | null
   hoveredState?: string | null
   setTargetState: (state?: string) => void
+  /** Disambiguates the click event; without it these logged as
+   * "click state card undefined". */
+  trackingPostfix?: string
 }) {
-  const { targetContract, targetState, setTargetState, hoveredState } = props
+  const {
+    targetContract,
+    targetState,
+    setTargetState,
+    hoveredState,
+    trackingPostfix,
+  } = props
   if (!targetContract) {
     return (
       <SenateCurrentCard
@@ -127,6 +136,7 @@ export function SenateCurrentOrContract(props: {
           targetContract.question
         }
         titleSize="lg"
+        trackingPostfix={trackingPostfix}
         targetState={targetState}
         setTargetState={setTargetState}
       />

@@ -36,6 +36,8 @@ export type FormState = {
   useCustomInitialProbs?: boolean
   // May contain undefined holes (a cleared input); consumers default per answer.
   initialProbs?: (number | undefined)[]
+  // Starting probability of each answer, in percent. Undefined means an even split.
+  answerProbs?: number[]
   probability?: number
   min?: number
   max?: number

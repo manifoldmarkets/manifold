@@ -7,6 +7,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import { Avatar } from 'web/components/widgets/avatar'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -25,6 +26,10 @@ export default function AdminUpdateUserPage() {
     name: '',
     username: '',
     avatarUrl: '',
+    bio: '',
+    website: '',
+    twitterHandle: '',
+    discordHandle: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -51,6 +56,10 @@ export default function AdminUpdateUserPage() {
         name: selectedUser.name || '',
         username: selectedUser.username || '',
         avatarUrl: selectedUser.avatarUrl || '',
+        bio: selectedUser.bio || '',
+        website: selectedUser.website || '',
+        twitterHandle: selectedUser.twitterHandle || '',
+        discordHandle: selectedUser.discordHandle || '',
       })
     }
   }, [selectedUser])
@@ -80,6 +89,18 @@ export default function AdminUpdateUserPage() {
       }
       if (formData.avatarUrl !== selectedUser.avatarUrl) {
         updates.avatarUrl = formData.avatarUrl
+      }
+      if (formData.bio !== (selectedUser.bio || '')) {
+        updates.bio = formData.bio
+      }
+      if (formData.website !== (selectedUser.website || '')) {
+        updates.website = formData.website
+      }
+      if (formData.twitterHandle !== (selectedUser.twitterHandle || '')) {
+        updates.twitterHandle = formData.twitterHandle
+      }
+      if (formData.discordHandle !== (selectedUser.discordHandle || '')) {
+        updates.discordHandle = formData.discordHandle
       }
 
       const result = await api('me/update', updates)
@@ -242,6 +263,79 @@ export default function AdminUpdateUserPage() {
                       Generate New
                     </Button>
                   </Row>
+                </div>
+
+                <div>
+                  <label className="text-ink-700 mb-2 block text-sm font-medium">
+                    Bio
+                  </label>
+                  <ExpandingInput
+                    value={formData.bio}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, bio: e.target.value }))
+                    }
+                    placeholder="e.g. Account moved to @NewHandle"
+                    rows={3}
+                    className="w-full max-w-md"
+                  />
+                  <div className="text-ink-500 mt-1 text-xs">
+                    @mentions and https:// links become clickable on the
+                    profile.
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-ink-700 mb-2 block text-sm font-medium">
+                    Website
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.website}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        website: e.target.value,
+                      }))
+                    }
+                    placeholder="example.com"
+                    className="w-full max-w-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-ink-700 mb-2 block text-sm font-medium">
+                    Twitter / X handle
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.twitterHandle}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        twitterHandle: e.target.value,
+                      }))
+                    }
+                    placeholder="username (no @)"
+                    className="w-full max-w-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-ink-700 mb-2 block text-sm font-medium">
+                    Discord handle
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.discordHandle}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        discordHandle: e.target.value,
+                      }))
+                    }
+                    placeholder="username"
+                    className="w-full max-w-md"
+                  />
                 </div>
 
                 <Row className="gap-4">

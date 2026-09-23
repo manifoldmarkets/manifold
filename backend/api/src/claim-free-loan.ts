@@ -1,7 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
-import { hasFullBonusAccess } from 'common/user'
 import { isMultiCpmm } from 'common/contract'
 import {
   calculateMaxGeneralLoanAmount,
@@ -9,9 +8,14 @@ import {
   calculateMarketLoanMax,
   calculatePositionFreeLoan,
   canClaimDailyFreeLoan,
+  canTakeLoans,
+  filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
 } from 'common/loans'
+import { Contract } from 'common/contract'
+import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
+import { UserBan } from 'common/user'
 import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
@@ -43,12 +47,37 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     throw new APIError(404, `User ${userId} not found`)
   }
 
-  // Daily free loans are a full-bonus perk: identity-verified/grandfathered
-  // users and purchase/admin-granted users can claim them.
-  if (!hasFullBonusAccess(user)) {
+  // Daily free loans are open to everyone, verified or not — they're borrowed
+  // against the user's own positions, and the membership page has always
+  // advertised the 1% daily free loan to unverified users. Accounts under an
+  // admin hold ('requires_verification') or explicitly blocked ('ineligible',
+  // which includes superbans and expired/denied verification) are held back.
+  if (!canTakeLoans(user)) {
     throw new APIError(
       403,
-      'Complete identity verification to access daily free loans'
+      'Your account is not eligible for daily free loans. Complete identity verification, or contact info@manifold.markets if you think this is a mistake.'
+    )
+  }
+
+  // Bans are tracked in user_bans, NOT in bonusEligibility, so this check is
+  // independent of the one above rather than redundant with it: a trading ban
+  // can exist on an account whose bonusEligibility looks fine, and borrowing is
+  // a trading action. Same active-ban predicate used by the bet path.
+  const userBans = await pg.manyOrNone<UserBan>(
+    `select *
+     from user_bans
+     where user_id = $1
+       and ended_at is null
+       and (end_time is null or end_time > now())`,
+    [userId]
+  )
+  if (isUserBanned(userBans, 'trading')) {
+    const banMessage = getUserBanMessage(userBans, 'trading')
+    throw new APIError(
+      403,
+      banMessage
+        ? `You are banned from trading. Reason: ${banMessage}`
+        : 'You are banned from trading'
     )
   }
 
@@ -85,10 +114,11 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate portfolio value (net of loans) and loan totals
+  // Calculate portfolio value (net of loans) and loan totals.
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
 
@@ -119,6 +149,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     if (!contract) return false
     if (contract.token !== 'MANA') return false
     if (contract.isResolved) return false
+    if ((contract as Contract).mechanism === 'perp') return false // perps excluded from loans
     if ((m.payout ?? 0) <= 0 && (m.invested ?? 0) <= 0) return false
 
     // Check market eligibility

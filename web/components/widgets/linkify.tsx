@@ -7,6 +7,7 @@ import { linkClass, LinkFavicon } from './site-link'
 // Return a JSX span, linkifying @username, and https://...
 export function Linkify(props: { text: string; className?: string }) {
   const { text, className } = props
+  const { isNative } = useNativeInfo()
   // Replace "m1234" with "ϻ1234"
   // const mRegex = /(\W|^)m(\d+)/g
   // text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
@@ -24,7 +25,7 @@ export function Linkify(props: { text: string; className?: string }) {
       {
         '@': `/${tag}`,
       }[symbol] ?? match.trim()
-    const target = getLinkTarget(href)
+    const target = getLinkTarget(href, false, isNative)
     const className = clsx(linkClass, 'text-primary-700')
 
     return (
@@ -78,9 +79,12 @@ const isManifoldHost = (href: string) => {
   }
 }
 
-export const getLinkTarget = (href: string, newTab?: boolean) => {
+export const getLinkTarget = (
+  href: string,
+  newTab: boolean,
+  isNative: boolean
+) => {
   if (href.startsWith('http') && !isManifoldHost(href)) return '_blank'
-  const { isNative } = useNativeInfo()
   // Native will open 'a new tab' when target = '_blank' in the system browser rather than in the app
   if (isNative) return '_self'
   return newTab ? '_blank' : '_self'

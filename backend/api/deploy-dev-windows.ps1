@@ -9,6 +9,14 @@ Write-Host "Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
 $REDIS_URL = ""
 $DISABLE_REDIS_CACHE = "true"
+$PERP_TRADING_MODE = if ($env:PERP_TRADING_MODE) {
+    $env:PERP_TRADING_MODE
+} else {
+    "enabled"
+}
+if ($PERP_TRADING_MODE -notin @("enabled", "reduce-only", "halted")) {
+    throw "Invalid PERP_TRADING_MODE; expected enabled, reduce-only, or halted."
+}
 
 # Check Docker is running
 $dockerStatus = docker info 2>&1
@@ -86,7 +94,7 @@ gcloud compute instance-templates create-with-container $TEMPLATE_NAME `
     --container-image=$IMAGE_URL `
     --machine-type=e2-small `
     --boot-disk-size=100GB `
-    --container-env="NEXT_PUBLIC_FIREBASE_ENV=DEV,GOOGLE_CLOUD_PROJECT=dev-mantic-markets,REDIS_URL=$REDIS_URL,DISABLE_REDIS_CACHE=$DISABLE_REDIS_CACHE" `
+    --container-env="NEXT_PUBLIC_FIREBASE_ENV=DEV,GOOGLE_CLOUD_PROJECT=dev-mantic-markets,REDIS_URL=$REDIS_URL,DISABLE_REDIS_CACHE=$DISABLE_REDIS_CACHE,PERP_TRADING_MODE=$PERP_TRADING_MODE" `
     --no-user-output-enabled `
     --scopes="default,cloud-platform" `
     --tags=lb-health-check

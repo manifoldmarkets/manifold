@@ -20,7 +20,11 @@ export function sortContracts(
   }
   const sorted = [...contracts]
   if (sort === 'date')
-    sorted.sort((a, b) => (a.closeTime ?? 0) - (b.closeTime ?? 0))
+    sorted.sort((a, b) => {
+      if (a.closeTime == null) return b.closeTime == null ? 0 : 1
+      if (b.closeTime == null) return -1
+      return a.closeTime - b.closeTime
+    })
   else if (sort === 'volume')
     sorted.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
   else if (sort === 'title')

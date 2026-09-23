@@ -251,14 +251,17 @@ export function UserSettingButton(props: { user: User }) {
             />
           </div>
         </Col>
-      </Modal>
 
-      <BanModal
-        user={user}
-        bans={bans}
-        isOpen={showBanModal}
-        onClose={() => setShowBanModal(false)}
-      />
+        {/* Must be rendered inside the settings Modal: sibling dialogs break
+            touch scrolling on iOS (headlessui scroll lock treats a sibling
+            dialog's portal as outside the open dialog and cancels touchmove) */}
+        <BanModal
+          user={user}
+          bans={bans}
+          isOpen={showBanModal}
+          onClose={() => setShowBanModal(false)}
+        />
+      </Modal>
     </>
   )
 }

@@ -13,12 +13,12 @@ import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
   createBetReplyToCommentNotification,
-  createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
   createLimitBetCanceledNotification,
   createNewBettorNotification,
   createReferralNotification,
 } from 'shared/create-notification'
+import { payBettingStreak } from 'shared/betting-streak-bonus'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -29,18 +29,12 @@ import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
-  BETTING_STREAK_BONUS_AMOUNT,
-  BETTING_STREAK_BONUS_MAX,
   MAX_TRADERS_FOR_BIG_BONUS,
   REFERRAL_BET_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
-import {
-  BettingStreakBonusTxn,
-  ReferralTxn,
-  UniqueBettorBonusTxn,
-} from 'common/txn'
+import { ReferralTxn, UniqueBettorBonusTxn } from 'common/txn'
 import {
   getEffectiveBonusMultiplier,
   resolveEffectiveTier,
@@ -206,7 +200,12 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       originalBettor.referredByUserId &&
       (await payReferralBetBonus(originalBettor)),
     streakIncremented &&
-      (await payBettingStreak(originalBettor, earliestBet, contract)),
+      (await payBettingStreak(
+        originalBettor,
+        contract,
+        `/${contract.creatorUsername}/${contract.slug}/bets/${earliestBet.id}`,
+        earliestBet.id
+      )),
     replyBet &&
       (await handleBetReplyToComment(replyBet, contract, originalBettor, pg)),
     creatorBonusTxn &&
@@ -226,7 +225,7 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
 // Pays the referrer the first-bet portion (REFERRAL_BET_BONUS) when the
 // referred user places their very first bet. The remaining verify portion
 // is paid in idenfy/callback.ts when the user completes ID verification.
-const payReferralBetBonus = async (referredUser: User) => {
+export const payReferralBetBonus = async (referredUser: User) => {
   const referrerId = referredUser.referredByUserId
   if (!referrerId) return
   if (referrerId === referredUser.id) {
@@ -369,85 +368,6 @@ const handleBetReplyToComment = async (
     bettor,
     comment,
     pg
-  )
-}
-
-const payBettingStreak = async (
-  oldUser: User,
-  bet: Bet,
-  contract: Contract
-) => {
-  const pg = createSupabaseDirectClient()
-  const result = await pg.tx(async (tx) => {
-    const newBettingStreak = (oldUser.currentBettingStreak ?? 0) + 1
-
-    // Fetch user's supporter entitlements for bonus multiplier
-    const entitlements = await getActiveSupporterEntitlements(tx, oldUser.id)
-
-    // Effective tier (verification + subscription) drives the streak multiplier.
-    // Unverified users get 0.2x — the existing 5×streak / 25 cap naturally
-    // becomes 1, 2, 3, 4, 5 / capped at 5 mana per day.
-    const effectiveTier = resolveEffectiveTier({
-      entitlements,
-      bonusEligibility: oldUser.bonusEligibility,
-    })
-    const streakMultiplier = getEffectiveBonusMultiplier(
-      effectiveTier,
-      'streak'
-    )
-
-    // Send them the bonus times their streak, with effective-tier multiplier
-    const baseBonus = Math.min(
-      BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
-      BETTING_STREAK_BONUS_MAX
-    )
-    const bonusAmount = roundTierBonus(baseBonus * streakMultiplier)
-
-    if (bonusAmount <= 0) {
-      return {
-        bonusAmount: 0,
-        sweepsBonusAmount: 0,
-        newBettingStreak,
-        txn: { id: bet.id },
-        sweepsTxn: null,
-        effectiveTier,
-      }
-    }
-
-    const bonusTxnDetails = {
-      currentBettingStreak: newBettingStreak,
-      contractId: contract.id,
-      effectiveTier,
-      streakMultiplier,
-      supporterBonus: streakMultiplier > 1,
-    }
-
-    const bonusTxn: Omit<
-      BettingStreakBonusTxn,
-      'id' | 'createdTime' | 'fromId'
-    > = {
-      fromType: 'BANK',
-      toId: oldUser.id,
-      toType: 'USER',
-      amount: bonusAmount,
-      token: 'M$',
-      category: 'BETTING_STREAK_BONUS',
-      data: bonusTxnDetails,
-    }
-
-    const txn = await runTxnFromBank(tx, bonusTxn)
-
-    return { txn, bonusAmount, newBettingStreak, effectiveTier }
-  })
-
-  await createBettingStreakBonusNotification(
-    oldUser,
-    result.txn.id,
-    bet,
-    contract,
-    result.bonusAmount,
-    result.newBettingStreak,
-    result.effectiveTier
   )
 }
 

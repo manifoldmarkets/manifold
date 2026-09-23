@@ -7,6 +7,7 @@ import {
   computeContractScores,
   getContractTraders,
   getContractVoters,
+  getPerpDailyPriceChanges,
   getTodayComments,
 } from 'shared/importance-score'
 import { getContract } from 'shared/utils'
@@ -54,6 +55,7 @@ export const removeBoost: APIHandler<'remove-boost'> = async (props, auth) => {
     hourAgoContractVoters,
     thisWeekContractTraders,
     thisWeekContractVoters,
+    perpDailyPriceChanges,
   ] = await Promise.all([
     getTodayComments(pg),
     getRecentContractLikes(pg, dayAgo),
@@ -64,6 +66,7 @@ export const removeBoost: APIHandler<'remove-boost'> = async (props, auth) => {
     getContractVoters(pg, hourAgo, contractIds),
     getContractTraders(pg, weekAgo, contractIds),
     getContractVoters(pg, weekAgo, contractIds),
+    getPerpDailyPriceChanges(pg, [contract], dayAgo),
   ])
 
   const todayTradersByContract = {
@@ -88,7 +91,8 @@ export const removeBoost: APIHandler<'remove-boost'> = async (props, auth) => {
     todayTradersByContract[contractId] ?? 0,
     hourAgoTradersByContract[contractId] ?? 0,
     thisWeekTradersByContract[contractId] ?? 0,
-    false
+    false,
+    perpDailyPriceChanges[contractId] ?? 0
   )
 
   await updateContractNativeColumns(pg, contractId, {

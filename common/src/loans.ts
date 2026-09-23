@@ -1,6 +1,7 @@
 import { sumBy } from 'lodash'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
+import { Contract, ContractToken } from './contract'
 
 export type LoanTrackingRow = {
   id?: number
@@ -153,6 +154,82 @@ export const calculateEquity = (
 ): number => {
   return Math.max(0, portfolioValue - loanTotal)
 }
+
+/**
+ * Metrics that count as collateral for loan limits. Perp positions are
+ * excluded: they are internally leveraged, can be liquidated to zero before
+ * any loan is recovered, and never carry loans themselves — so counting their
+ * oracle-marked value in equity would let users re-leverage perp exposure
+ * into borrowing capacity against unrelated positions.
+ */
+export const filterLoanEquityMetrics = <M extends { contractId: string }>(
+  metrics: M[],
+  contractsById: Record<string, Pick<Contract, 'mechanism'> | undefined>
+): M[] => {
+  return metrics.filter(
+    (m) => contractsById[m.contractId]?.mechanism !== 'perp'
+  )
+}
+
+/**
+ * The position value that `filterLoanEquityMetrics` removes from the equity
+ * base, for the given token. Purely informational: the loan endpoints return
+ * it so the UI can explain why the portfolio value it shows is lower than the
+ * one shown everywhere else on the site.
+ */
+export const sumExcludedPerpEquity = (
+  metrics: { contractId: string; payout?: number }[],
+  contractsById: Record<
+    string,
+    Pick<Contract, 'mechanism' | 'token'> | undefined
+  >,
+  token: ContractToken = 'MANA'
+): number => {
+  const total = sumBy(metrics, (m) => {
+    const contract = contractsById[m.contractId]
+    if (contract?.mechanism !== 'perp' || contract.token !== token) return 0
+    const payout = m.payout ?? 0
+    return Number.isFinite(payout) ? payout : 0
+  })
+  return Math.max(0, total)
+}
+
+/**
+ * Whether a user's bonusEligibility state permits taking loans (daily free
+ * loans, and margin loans subject to their subscription entitlements).
+ *
+ * Loans are deliberately NOT on the full-bonus axis. They're borrowed against
+ * the user's own positions rather than granted, so *unverified* users aren't
+ * excluded — and the membership benefits table has always advertised the 1%
+ * daily free loan to them (the `freeLoan` row defines no `unverifiedValue`, so
+ * the unverified column falls through to baseValue '1%'). Gating on
+ * hasFullBonusAccess contradicted what that page promises. Default-unverified
+ * users (bonusEligibility undefined) are the case this opens up.
+ *
+ * Both explicit deny states stay denied, because bonusEligibility is overloaded
+ * and they are the field's only load-bearing authorization signals:
+ *
+ *   'requires_verification' — admin/system flag for suspected alts and accounts
+ *       under manual review; frozen pending that review.
+ *   'ineligible' — NOT merely "KYC failed". Three paths land here, two of them
+ *       enforcement: the iDenfy callback writes it on denied/suspected AND on
+ *       EXPIRED/DELETED sessions (mapIdenfyStatus folds those into 'denied'),
+ *       and superBanUserCore writes it alongside permanent bans. Allowing it
+ *       would let a flagged account launder a 'requires_verification' hold into
+ *       loan access by simply letting its verification session expire, and
+ *       would restore borrowing to superbanned users.
+ *
+ * This predicate is necessary but not sufficient: bonusEligibility is not a ban
+ * record, so callers must ALSO check user_bans independently (see
+ * claim-free-loan). Don't let this function grow into the ban check.
+ *
+ * Takes just the one field it reads, so this module needs no User import.
+ */
+export const canTakeLoans = (user: {
+  bonusEligibility?: string | undefined
+}): boolean =>
+  user.bonusEligibility !== 'requires_verification' &&
+  user.bonusEligibility !== 'ineligible'
 
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
   const { investmentValue, loanTotal } = portfolio

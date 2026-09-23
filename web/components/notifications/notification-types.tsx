@@ -31,7 +31,12 @@ import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { BsBank } from 'react-icons/bs'
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import {
+  FaArrowTrendDown,
+  FaArrowTrendUp,
+  FaBolt,
+  FaScaleUnbalanced,
+} from 'react-icons/fa6'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -303,7 +308,11 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'comment' || sourceType === 'love_comment') {
+  } else if (
+    sourceType === 'social_reply' ||
+    sourceType === 'comment' ||
+    sourceType === 'love_comment'
+  ) {
     return (
       <CommentNotification
         notification={notification}
@@ -361,6 +370,18 @@ export function NotificationItem(props: {
         highlighted={highlighted}
         setHighlighted={setHighlighted}
         isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+    // Must come before the contract/updated suppressor below — perp engine
+    // notifications carry sourceType 'contract' + sourceUpdateType 'updated'
+    // and were being swallowed into blank rows.
+    return (
+      <PerpEngineNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (
@@ -1320,7 +1341,9 @@ function CommentNotification(props: {
   } = notification
 
   const reasonText =
-    reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
+    reason === 'social_replies' ||
+    reason === 'reply_to_users_answer' ||
+    reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
 
@@ -1358,7 +1381,7 @@ function CommentNotification(props: {
     >
       <div className="line-clamp-3">
         <NotificationUserLink
-          userId={sourceId}
+          userId={notification.data?.sourceUserId ?? sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
@@ -1488,11 +1511,13 @@ function TaggedUserNotification(props: {
     >
       <div className="line-clamp-3">
         <NotificationUserLink
-          userId={sourceId}
+          userId={notification.data?.sourceUserId ?? sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
-        tagged you{' '}
+        {notification.sourceType === 'social_mention'
+          ? 'mentioned you '
+          : 'tagged you '}
         {!isChildOfGroup && (
           <span>
             on <PrimaryNotificationLink text={sourceTitle} />
@@ -1548,10 +1573,19 @@ export function MultipleAvatarIcons(props: {
   return (
     <div
       data-stop-notification-click
+      role="button"
+      tabIndex={relatedNotifications.length > 1 ? 0 : -1}
       onClick={(event) => {
         if (relatedNotifications.length === 1) return
         event.preventDefault()
         setOpen(true)
+      }}
+      onKeyDown={(event) => {
+        if (relatedNotifications.length === 1) return
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          setOpen(true)
+        }
       }}
     >
       {relatedNotifications.length > 1 ? (
@@ -1601,7 +1635,9 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+        sourceType === 'social_post_like' ||
+        sourceType === 'comment_like' ||
+        sourceType === 'post_comment_like' ? (
           <Linkify text={sourceText} />
         ) : (
           <></>
@@ -1612,7 +1648,7 @@ function UserLikeNotification(props: {
       your
       {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
-        : sourceType === 'post_like'
+        : sourceType === 'post_like' || sourceType === 'social_post_like'
         ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
@@ -2516,6 +2552,40 @@ function MarketMovementNotification(props: {
       link={getSourceUrl(notification)}
     >
       {content}
+    </NotificationFrame>
+  )
+}
+
+// Liquidation and ADL events from the perp engine. The backend composes the
+// full sentence in sourceText (margin lost / before→after notional); render
+// it verbatim so copy iterations stay a backend-only change.
+function PerpEngineNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceText, reason } = notification
+  const isLiquidation = reason === 'perp_liquidation'
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <div className="flex h-full w-full items-center justify-center">
+          {isLiquidation ? (
+            <FaBolt className="text-scarlet-500 h-6 w-6" />
+          ) : (
+            <FaScaleUnbalanced className="h-6 w-6 text-amber-500" />
+          )}
+        </div>
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-4">{sourceText}</div>
     </NotificationFrame>
   )
 }

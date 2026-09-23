@@ -1,6 +1,7 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
 import { Node, mergeAttributes } from '@tiptap/core'
+import { getMarketUrlFromManifoldEmbedUrl } from './manifold-url'
 
 export interface IframeOptions {
   HTMLAttributes: {
@@ -50,6 +51,9 @@ export default Node.create<IframeOptions>({
       src: {
         default: null,
       },
+      title: {
+        default: 'Embedded content',
+      },
       frameBorder: {
         default: 0,
       },
@@ -73,6 +77,7 @@ export default Node.create<IframeOptions>({
       'class',
       'width',
       'height',
+      'title',
       'sandbox',
       'style',
       'allowfullscreen',
@@ -93,7 +98,8 @@ export default Node.create<IframeOptions>({
 
     // This is a hack to prevent native from opening the iframe in an in-app browser
     // and mobile in another tab. In native, links with target='_blank' open in the in-app browser.
-    if (src.includes('manifold.markets/embed/')) {
+    const manifoldMarketUrl = getMarketUrlFromManifoldEmbedUrl(src)
+    if (manifoldMarketUrl) {
       return [
         'div',
         {
@@ -105,7 +111,7 @@ export default Node.create<IframeOptions>({
         [
           'a',
           {
-            href: src.replace('embed/', ''),
+            href: manifoldMarketUrl,
             target: '_self',
             style: {
               position: 'absolute',

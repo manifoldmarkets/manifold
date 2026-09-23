@@ -68,6 +68,7 @@ function getServer(): Server {
                 'NUMBER',
                 'MULTI_NUMERIC',
                 'DATE',
+                'PERP',
               ],
               description:
                 'Market/question type filter (default: ALL). Use contractType, not outcomeType.',

@@ -13,6 +13,8 @@ export type notification_preferences = {
   poll_close_on_watched_markets: notification_destination_types[]
   all_comments_on_followed_posts: notification_destination_types[]
 
+  social_replies: notification_destination_types[]
+
   // Comments
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
   all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
@@ -56,6 +58,10 @@ export type notification_preferences = {
 
   // Leagues
   league_changed: notification_destination_types[]
+
+  // Perps
+  perp_liquidation: notification_destination_types[]
+  perp_adl: notification_destination_types[]
 
   // Manifold.love
   new_match: notification_destination_types[]
@@ -144,6 +150,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     poll_close_on_watched_markets: constructPref(true, false, false),
     market_movements: constructPref(true, true, true),
 
+    social_replies: constructPref(true, false, false),
+
     // Balance Changes
     loan_income: constructPref(true, false, false),
     betting_streaks: constructPref(true, false, true),
@@ -161,6 +169,10 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 
     // Leagues
     league_changed: constructPref(true, false, false),
+
+    // Perps
+    perp_liquidation: constructPref(true, true, true),
+    perp_adl: constructPref(true, false, false),
 
     // Manifold.love
     new_match: constructPref(true, true, true),

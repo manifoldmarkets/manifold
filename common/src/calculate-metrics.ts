@@ -601,6 +601,10 @@ export const calculateUpdatedMetricsForContracts = (
           )
 
           return [...updatedAnswerMetrics, summaryMetric]
+        } else if (contract.mechanism === 'perp') {
+          // Perp metrics are authoritative from the engine's rebuild path; pass
+          // them through unchanged.
+          return userMetrics
         }
         return []
       }

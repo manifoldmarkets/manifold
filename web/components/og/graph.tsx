@@ -116,30 +116,62 @@ export function Sparkline(props: {
   )
 }
 
+// Smallest probability range the graph spans, so small wiggles don't look
+// like large swings while real moves still fill the strip
+const MIN_PROB_SPAN = 0.2
+
+/** y-domain for the graph: the data's range, widened to MIN_PROB_SPAN for
+ * probabilities (kept within 0..1), or as-is for other series like prices */
+export function getProbGraphDomain(data: Point[]): [number, number] {
+  const minY = Math.min(...data.map((p) => p.y))
+  const maxY = Math.max(...data.map((p) => p.y))
+  const isProbability = minY >= 0 && maxY <= 1
+  if (!isProbability) return [minY, maxY === minY ? maxY + 1 : maxY]
+
+  const span = Math.max(maxY - minY, MIN_PROB_SPAN)
+  const mid = (minY + maxY) / 2
+  let lo = mid - span / 2
+  let hi = mid + span / 2
+  if (lo < 0) {
+    hi -= lo
+    lo = 0
+  }
+  if (hi > 1) {
+    lo -= hi - 1
+    hi = 1
+  }
+  return [Math.max(lo, 0), hi]
+}
+
 export function ProbGraph(props: {
   data: Point[]
   height: number
   /** scaled width / height */
   aspectRatio?: number
   color?: string
+  /** Space at the bottom of the strip that the outcome row overlays */
+  bottomInset?: number
 }) {
-  const { data, height, color = '#14b866', aspectRatio = 1 } = props
+  const {
+    data,
+    height,
+    color = '#14b866',
+    aspectRatio = 1,
+    bottomInset = 0,
+  } = props
   const w = height * aspectRatio
   const h = height
   const visibleRange = [data[0].x, data[data.length - 1].x]
-  const minY = Math.min(...data.map((p) => p.y))
-  const maxY = Math.max(...data.map((p) => p.y))
   const curve = curveLinear
-  const fillStretchFactor = 5
   const xScale = scaleTime(visibleRange, [0, w])
-  const yScale = scaleLinear([minY, maxY + 0.01], [h / 3, 0])
+  // Keep the line clear of the top edge and of the overlaid outcome row
+  const yScale = scaleLinear(getProbGraphDomain(data), [h - bottomInset - 2, 3])
   const px = (p: Point) => xScale(p.x)
-  const adjustedPy0 = yScale(minY) * fillStretchFactor
   const py1 = (p: Point) => yScale(p.y)
   // const clipId = ':rnm:'
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const da = area(px, adjustedPy0, py1).curve(curve)(data)!
+  const da = area(px, h, py1).curve(curve)(data)!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!
 

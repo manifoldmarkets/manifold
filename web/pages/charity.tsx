@@ -52,8 +52,11 @@ function formatEntries(entries: number): string {
   }
 }
 
-// Horse charities to exclude from the giveaway
+// Charities to exclude from the giveaway: the horse charities, plus any fund
+// that has shut down and can no longer receive the prize.
 const EXCLUDED_CHARITY_IDS = [
+  // Closed by EA Funds; succeeded by the Transformative AI Fund.
+  'long-term-future-fund',
   'new-vocations',
   'stable-recovery',
   'thoroughbred-retirement-foundation',

@@ -1,4 +1,6 @@
+import type { OracleFeedHealth } from './perps/oracle-health'
 import { JSONContent } from '@tiptap/core'
+import type { OgCardProps } from './contract-seo'
 import { getDisplayProbability } from 'common/calculate'
 import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -47,6 +49,7 @@ type AnyContractType =
   | CPMMNumber
   | MultiNumeric
   | MultiDate
+  | (PerpMechanism & Perp)
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -179,6 +182,7 @@ export type NonBet = {
 export const NON_BETTING_OUTCOMES: OutcomeType[] = ['BOUNTIED_QUESTION', 'POLL']
 export const NO_CLOSE_TIME_TYPES: OutcomeType[] = NON_BETTING_OUTCOMES.concat([
   'STONK',
+  'PERP',
 ])
 
 /**
@@ -211,6 +215,10 @@ export type CPMMMulti = {
   // Answers chosen on resolution, with the weights of each answer.
   // Weights sum to 100 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 100 for each answerId.
   resolutions?: { [answerId: string]: number }
+
+  // What each answer opened at, by answer id, where the creator set the
+  // starting probabilities. Absent for markets that opened at an even split.
+  initialProbabilities?: { [answerId: string]: number }
 
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
@@ -305,6 +313,83 @@ export type Stonk = {
   initialProbability: number
 }
 
+// Perpetual futures (ManiPerp AMM). Dual liquidity pools, oracle-pegged.
+// See backend/shared/src/perps/README.md and common/src/perps/ for details.
+export type Perp = {
+  outcomeType: 'PERP'
+  maxLeverage: number // ℓ_max
+  maxFundingRate: number // f_max per period
+  fundingSensitivity: number // k
+  maxOraclePriceAgeMs: number // block trades if feed stale
+  // Taker fee in basis points of NOTIONAL, charged when opening or adding
+  // (closing is free) and paid into the trader's side backing pool. Missing
+  // on pre-fee contracts = PERP_TAKER_FEE_BPS_DEFAULT. Read via
+  // getPerpTakerFeeBps (common/perps/fees), never directly.
+  takerFeeBps?: number
+  // Size-impact coefficient of the taker fee: the marginal rate at
+  // pool-share s is takerFeeBps + takerFeeImpact·s² bps, integrated over the
+  // added notional (see calcPerpSizeFee). Missing or 0 = flat base fee only.
+  // NOT named k: the paper's k is fundingSensitivity above. Read via
+  // getPerpTakerFeeImpact (common/perps/fees), never directly.
+  takerFeeImpact?: number
+  // Base taker fee for API-key opens, in bps of notional. Applied as
+  // max(takerFeeBps, takerFeeApiBps) so it can only raise the API channel's
+  // rate, never discount it. Missing = API pays the same base as the web.
+  // Read via getPerpEffectiveTakerFeeBps (common/perps/fees), never directly.
+  takerFeeApiBps?: number
+  // ms between funding events: max(1h, feed updatePeriodMs), derived at
+  // create time and frozen so later feed-registry changes can't rewrite the
+  // economics of open positions. Missing on pre-period contracts = hourly.
+  // Read via getFundingPeriodMs (common/perps/funding), never directly.
+  fundingPeriodMs?: number
+  // Short on-site identifier ("BTC", "TRUMP") shown in front of the title in
+  // place of the market type, used as the row label on /perps, and matched
+  // by search — which is why it is stored here rather than only mapped in
+  // client code. Canonical per feed in PERP_FEED_TICKERS (common/perps/
+  // ticker); stamped by create-perp, and absent on markets created before it
+  // existed until backfill-perp-tickers.ts runs. Read via getPerpTicker
+  // (common/perps/ticker), never directly, so those rows still get a label.
+  ticker?: string
+  resolution?: 'MKT' | 'CANCEL'
+}
+
+export type PerpMechanism = {
+  mechanism: 'perp'
+  poolLong: number // L
+  poolShort: number // S
+  initialSubsidy: number
+  // Frozen creation-time allocation. Legacy prototypes only stored the total,
+  // which cannot prove that launch backing was not structurally one-sided
+  // after the live pools have moved.
+  initialPoolLong?: number
+  initialPoolShort?: number
+  // Aggregate open notional per side, refreshed by every engine transition
+  // that can change position size (open, close, funding, liquidation/ADL,
+  // resolution). Denormalized purely so read paths can show the funding rate
+  // without loading positions — the engine always recomputes from the
+  // positions it holds under the lock and never trusts these. Absent on
+  // contracts untouched since the field was added; treat as unknown, not
+  // zero exposure (see getPerpFundingRate).
+  openInterestLong?: number
+  openInterestShort?: number
+  oracleFeedId: string // free-text; matches oracle_prices.feed_id
+  oraclePrice: number // last applied P
+  oraclePriceTime?: number // ts of last applied P
+  oracleSourceTime?: number | null // provider-declared source data as-of
+  oracleFeedHealth?: OracleFeedHealth
+  lastFundingTime?: number
+  fundingRate?: number // last applied rate; +ve = longs pay
+  resolvedOraclePrice?: number
+  // Set when an oracle tick's post-transition state could not be made solvent
+  // even after ADL and the cross-side deficit transfer. The tick still commits
+  // the new price (a frozen mark is its own exploit surface), so the freshness
+  // gate no longer protects the book — this halts trading explicitly instead.
+  // Cleared by the first tick that applies cleanly, e.g. after add-perp-subsidy.
+  solvencyHaltTime?: number | null
+  solvencyHaltReason?: string | null
+}
+export type PerpContract = Contract & Perp & PerpMechanism
+
 export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
   totalBounty: number
@@ -351,10 +436,17 @@ type AnyOutcomeType =
   | PseudoNumeric
   | MultiNumeric
   | MultiDate
+  | Perp
 
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
+// Outcome types a user can create through create-market. PERP is deliberately
+// absent: perps are created only by create-perp, which is admin-only, further
+// restricted to the official Manifold account, and limited to feeds in the
+// oracle registry — a perp with no data feed has nothing to price it. Listing
+// it here made PERP a valid draft outcomeType even though createMarketProps
+// can never accept it, so such a draft could only ever fail at submit.
 export const CREATEABLE_OUTCOME_TYPES = [
   'BINARY',
   'MULTIPLE_CHOICE',
@@ -437,11 +529,20 @@ export const isSportsContract = (
   contract: Contract
 ): contract is SportsContract => 'sportsEventId' in contract
 
+/**
+ * The main (first) answer of a versus market, which the UI treats as the YES
+ * side. Bets can be stored against either answer; use `versusSide` in
+ * common/versus to work out which side a bet, order or position backs.
+ */
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && isMultiCpmm(contract)
     ? contract.answers[0]
     : undefined
 
+/**
+ * Probability of the side a bet backs, given a price quoted for the answer
+ * the bet was placed on. Same as `versusSideProb` in common/versus.
+ */
 export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
   outcome === 'YES' ? prob : 1 - prob
 
@@ -474,6 +575,7 @@ export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
+  { label: 'Mid %', value: 'prob-mid' },
   { label: 'Low %', value: 'prob-asc' },
   { label: 'Oldest', value: 'old' },
   { label: 'Newest', value: 'new' },
@@ -505,6 +607,8 @@ export type ContractParams = {
   contract: Contract
   lastBetTime?: number
   pointsString?: string
+  /** Social preview card props, built before answers are truncated for the page */
+  ogCardProps?: OgCardProps
   multiPointsString?: MultiBase64Points
   comments: ContractComment[]
   totalComments: number

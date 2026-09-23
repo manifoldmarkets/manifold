@@ -96,6 +96,14 @@ export function getInitialAnswerProbability(
   contract: MultiContract,
   answer: Answer
 ) {
+  // A creator who set the starting probabilities has them on record;
+  // everything below assumes the market opened at an even split.
+  const initialProbability =
+    'initialProbabilities' in contract
+      ? contract.initialProbabilities?.[answer.id]
+      : undefined
+  if (initialProbability !== undefined) return initialProbability
+
   if (!contract.shouldAnswersSumToOne) {
     return 0.5
   } else {
@@ -211,6 +219,16 @@ export function calculateTotalSpentAndShares(
       const averagePrice = floatingEqual(position, 0) ? 0 : spent / position
       totalShares[outcome] = position + shares
       totalSpent[outcome] = spent + averagePrice * shares
+    }
+  }
+
+  // Arb/round-trip fills leave nano-share residue (e.g. -4.44e-16) that never
+  // clears; a later "sell all" then feeds a non-positive amount into the arb and
+  // throws. Snap sub-EPSILON positions to exactly zero, matching how the rest of
+  // the metrics treat them as no holding.
+  for (const outcome of Object.keys(totalShares)) {
+    if (floatingEqual(totalShares[outcome] ?? 0, 0)) {
+      totalShares[outcome] = 0
     }
   }
 

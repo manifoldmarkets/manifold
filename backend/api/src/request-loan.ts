@@ -5,11 +5,13 @@ import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
   distributeLoanProportionally,
+  filterLoanEquityMetrics,
   isUserEligibleForGeneralLoan,
   isMarketEligibleForLoan,
   getMidnightPacific,
   MS_PER_DAY,
 } from 'common/loans'
+import { Contract } from 'common/contract'
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
@@ -104,9 +106,10 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { contracts, metrics } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
 
@@ -174,6 +177,8 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     if (!contract || contract.isResolved || contract.token !== 'MANA') {
       return false
     }
+    // Perps are inherently leveraged — exclude from the loans system.
+    if ((contract as Contract).mechanism === 'perp') return false
     // Apply market eligibility criteria for new loans
     return isMarketEligibleForLoan({
       visibility: contract.visibility,

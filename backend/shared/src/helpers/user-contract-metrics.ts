@@ -60,7 +60,8 @@ export async function bulkUpdateContractMetrics(
   )
 }
 export function bulkUpdateContractMetricsQuery(
-  metrics: Omit<ContractMetric, 'id'>[]
+  metrics: Omit<ContractMetric, 'id'>[],
+  options?: { preserveFrom?: boolean }
 ) {
   if (metrics.length === 0) {
     return 'select 1 where false'
@@ -80,7 +81,19 @@ export function bulkUpdateContractMetricsQuery(
     'user_contract_metrics',
     [],
     getColumnsFromMetrics(deduped),
-    `CONFLICT (user_id, contract_id, coalesce(answer_id, ''))`
+    `CONFLICT (user_id, contract_id, coalesce(answer_id, ''))`,
+    options?.preserveFrom
+      ? {
+          data: `case
+            when excluded.data ? 'from' then excluded.data
+            when user_contract_metrics.data ? 'from'
+              then excluded.data || jsonb_build_object(
+                'from', user_contract_metrics.data->'from'
+              )
+            else excluded.data
+          end`,
+        }
+      : undefined
   )
 }
 

@@ -1,5 +1,6 @@
 import { Contract } from 'common/contract'
-import { HOUR_MS } from 'common/util/time'
+import { isEligibleRelatedMarket } from 'common/related-markets'
+import { MINUTE_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
@@ -21,9 +22,15 @@ type cacheType = {
 // shared across processes and survives redeploys; both store only the related
 // contract ids — the contracts themselves are refetched fresh on every hit.
 const cachedRelatedMarkets = new Map<string, cacheType>()
-const RELATED_MARKETS_CACHE_TTL_S = 6 * 60 * 60
+// Related membership changes when a market is published, unlisted, closed,
+// resolved, or deleted. Keep the expensive embedding lookup cached briefly;
+// every materialization still rechecks current contract eligibility.
+const RELATED_MARKETS_CACHE_TTL_MS = 10 * MINUTE_MS
+const RELATED_MARKETS_CACHE_TTL_S = RELATED_MARKETS_CACHE_TTL_MS / 1000
 const relatedMarketsCacheKey = (contractId: string, limit: number) =>
-  `related-markets:${contractId}:limit:${limit}`
+  // Version the key so deployment immediately abandons six-hour entries
+  // written by the previous cache policy.
+  `related-markets:v2:${contractId}:limit:${limit}`
 
 const orderByNonStonks = (c: Contract) =>
   c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
@@ -37,21 +44,25 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
   const pg = createSupabaseDirectClient()
   const cacheKey = relatedMarketsCacheKey(contractId, limit)
   const cachedResults = cachedRelatedMarkets.get(cacheKey)
-  if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
+  if (
+    cachedResults &&
+    cachedResults.lastUpdated > Date.now() - RELATED_MARKETS_CACHE_TTL_MS
+  ) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
 
   // L1 miss/stale: try the shared Redis cache before recomputing the (expensive)
   // embeddings search + Gemini filter.
-  const cachedIds = await cacheGetJson<string[]>(cacheKey)
-  if (cachedIds !== undefined) {
+  const cachedEntry = await cacheGetJson<cacheType>(cacheKey)
+  if (
+    cachedEntry != null &&
+    Array.isArray(cachedEntry.marketIdsFromEmbeddings) &&
+    Number.isFinite(cachedEntry.lastUpdated) &&
+    cachedEntry.lastUpdated > Date.now() - RELATED_MARKETS_CACHE_TTL_MS
+  ) {
     metrics.inc('cache/hits', { cache: 'related-markets' })
-    const entry: cacheType = {
-      marketIdsFromEmbeddings: cachedIds,
-      lastUpdated: Date.now(),
-    }
-    cachedRelatedMarkets.set(cacheKey, entry)
-    return refreshedRelatedMarkets(contractId, entry, pg)
+    cachedRelatedMarkets.set(cacheKey, cachedEntry)
+    return refreshedRelatedMarkets(contractId, cachedEntry, pg)
   }
   metrics.inc('cache/misses', { cache: 'related-markets' })
 
@@ -66,7 +77,9 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
     (row) => row.data as Contract
   )
 
-  let marketsFromEmbeddings = unfilteredMarketsFromEmbeddings
+  let marketsFromEmbeddings = unfilteredMarketsFromEmbeddings.filter(
+    (contract) => isEligibleRelatedMarket(contract)
+  )
 
   if (
     (uniqueBettorCount ?? 0) > 50 &&
@@ -114,11 +127,12 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
   marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)
 
   const marketIds = marketsFromEmbeddings.map((c) => c.id)
-  cachedRelatedMarkets.set(cacheKey, {
+  const cacheEntry = {
     marketIdsFromEmbeddings: marketIds,
     lastUpdated: Date.now(),
-  })
-  await cacheSetJson(cacheKey, marketIds, RELATED_MARKETS_CACHE_TTL_S)
+  }
+  cachedRelatedMarkets.set(cacheKey, cacheEntry)
+  await cacheSetJson(cacheKey, cacheEntry, RELATED_MARKETS_CACHE_TTL_S)
 
   return {
     marketsFromEmbeddings: orderBy(
@@ -153,7 +167,7 @@ const refreshedRelatedMarkets = async (
   const contractsById = new Map(refreshedContracts.map((c) => [c.id, c]))
   const orderedContracts = cachedResults.marketIdsFromEmbeddings
     .map((id) => contractsById.get(id))
-    .filter((c): c is Contract => c != null)
+    .filter((c): c is Contract => c != null && isEligibleRelatedMarket(c))
 
   return {
     marketsFromEmbeddings: orderBy(

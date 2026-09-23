@@ -1,10 +1,12 @@
 import { XIcon } from '@heroicons/react/outline'
+import { getPerpTicker } from 'common/perps/ticker'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { memo, useEffect, useState } from 'react'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
+import { PerpTickerBadge } from 'web/components/perps/perp-market-badge'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { withTracking } from 'web/lib/service/analytics'
@@ -76,6 +78,16 @@ export const UserLikedContractsButton = memo(
                       href={`/market/${contract.slug}`}
                       className={'text-primary-700 line-clamp-2 text-sm'}
                     >
+                      {contract.outcome_type === 'PERP' && (
+                        <PerpTickerBadge
+                          ticker={getPerpTicker({
+                            ticker: contract.ticker ?? undefined,
+                            oracleFeedId: contract.oracle_feed_id ?? undefined,
+                            slug: contract.slug ?? undefined,
+                          })}
+                          className="mr-1"
+                        />
+                      )}
                       {contract.question}
                     </Link>
                   </Col>

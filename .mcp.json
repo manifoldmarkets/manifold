@@ -7,6 +7,10 @@
     "postgres-prod": {
       "command": "node",
       "args": ["./scripts/mcp-postgres.js", "mantic-markets", "mcp-postgres-conn"]
+    },
+    "grafana": {
+      "command": "node",
+      "args": ["./scripts/mcp-grafana.js", "mantic-markets", "GRAFANA_MCP_VIEWER_SERVICE_ACCOUNT_TOKEN"]
     }
   }
 }

@@ -60,6 +60,14 @@ export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
     const contract = await getContract(tx, contractId)
     if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
 
+    if (contract.outcomeType === 'PERP')
+      throw new APIError(400, 'Perp markets cannot be unresolved')
+
+    // A deleted market's page is unreachable, so unresolving one strands it
+    // closed-and-unresolved with no way for the creator to resolve it again.
+    if (contract.deleted)
+      throw new APIError(403, 'Deleted markets cannot be unresolved')
+
     await verifyUserCanUnresolve(tx, contract, auth.uid, answerId)
 
     const undoResult = await undoResolution(tx, contract, auth.uid, answerId)

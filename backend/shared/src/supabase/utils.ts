@@ -155,7 +155,13 @@ export function bulkUpsertQuery<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert'],
   Col extends Column<T>
->(table: T, idField: Col | Col[], values: ColumnValues[], onConflict?: string) {
+>(
+  table: T,
+  idField: Col | Col[],
+  values: ColumnValues[],
+  onConflict?: string,
+  updateColumnExpressions?: Partial<Record<Column<T>, string>>
+) {
   if (!values.length) return 'select 1 where false'
 
   const columnNames = Object.keys(values[0])
@@ -165,7 +171,22 @@ export function bulkUpsertQuery<
   const baseQueryReplaced = baseQuery.replace(/::(\w*)'/g, "'::$1")
 
   const primaryKey = Array.isArray(idField) ? idField.join(', ') : idField
-  const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
+  const upsertAssigns = updateColumnExpressions
+    ? columnNames
+        .filter((column) =>
+          Array.isArray(idField)
+            ? !idField.includes(column as Col)
+            : column !== idField
+        )
+        .map((column) => {
+          const escapedColumn = pgp.as.name(column)
+          const expression =
+            updateColumnExpressions[column as Column<T>] ??
+            `excluded.${escapedColumn}`
+          return `${escapedColumn}=${expression}`
+        })
+        .join(',')
+    : cs.assignColumns({ from: 'excluded', skip: idField })
   return (
     `${baseQueryReplaced} on ` +
     (onConflict ? onConflict : `conflict(${primaryKey})`) +

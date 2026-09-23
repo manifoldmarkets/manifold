@@ -1,3 +1,8 @@
+import { SocialQuote } from 'common/social-post'
+import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
+import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
+import { SocialText } from 'web/components/yap/social-text'
+import { SocialRichContent } from 'web/components/yap/social-rich-content'
 import { JSONContent } from '@tiptap/core'
 import { contractPath } from 'common/contract'
 import { Row, millisToTs, run, tsToMillis } from 'common/supabase/utils'
@@ -16,35 +21,26 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { usePagination } from 'web/hooks/use-pagination'
-import { api } from 'web/lib/api/api'
-import { getComment } from 'web/lib/supabase/comments'
+import { APIError, api } from 'web/lib/api/api'
+import { convertContractComment } from 'common/supabase/comments'
 import { db } from 'web/lib/supabase/db'
-import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import { DisplayUser, getDisplayUsers } from 'web/lib/supabase/users'
 import { convertPost } from 'common/top-level-post'
 
 const PAGE_SIZE = 20
 
-export async function getStaticProps() {
-  try {
-    const reports = await getReports({ limit: PAGE_SIZE })
-    return { props: { reports }, revalidate: 60 }
-  } catch (e) {
-    console.error(e)
-    return { props: { reports: [] }, revalidate: 60 }
-  }
+export default function Reports() {
+  const isAdmin = useAdmin()
+  return isAdmin ? <ReportsContent /> : <></>
 }
 
-export default function Reports(props: { reports: LiteReport[] }) {
+function ReportsContent() {
   const pagination = usePagination<LiteReport>({
     pageSize: PAGE_SIZE,
     q: getReports,
-    prefix: props.reports,
   })
 
   const reportsByContent = Object.values(groupBy(pagination.items, 'contentId'))
-
-  const isAdmin = useAdmin()
-  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={false} className="px-2">
@@ -55,8 +51,17 @@ export default function Reports(props: { reports: LiteReport[] }) {
 
         {!pagination.isLoading &&
           reportsByContent.map((reports) => {
-            const { slug, text, owner, contentId, contentType, createdTime } =
-              reports[0]
+            const {
+              slug,
+              text,
+              richContent,
+              imageUrls,
+              source,
+              owner,
+              contentId,
+              contentType,
+              createdTime,
+            } = reports[0]
 
             return (
               <div key={contentId} className="my-4">
@@ -102,7 +107,9 @@ export default function Reports(props: { reports: LiteReport[] }) {
                             href={slug}
                             className="text-primary-700 text-md my-1"
                           >
-                            {contentType}
+                            {contentType === 'social_post'
+                              ? 'post on Yap'
+                              : contentType}
                           </Link>
                         </>
                       )}
@@ -113,7 +120,27 @@ export default function Reports(props: { reports: LiteReport[] }) {
 
                 {contentType !== 'user' && (
                   <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
-                    <Content size="md" content={text} />
+                    {contentType === 'social_post' ? (
+                      <>
+                        {richContent ? (
+                          <SocialRichContent
+                            content={richContent}
+                            fallbackText={String(text)}
+                          />
+                        ) : (
+                          <SocialText text={String(text)} />
+                        )}
+                        {source && <SocialQuoteCard quote={source} />}
+                        {!!imageUrls?.length && (
+                          <SocialImageCarousel
+                            key={imageUrls.join('|')}
+                            images={imageUrls}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <Content size="md" content={text} />
+                    )}
                   </div>
                 )}
 
@@ -137,135 +164,226 @@ export default function Reports(props: { reports: LiteReport[] }) {
   )
 }
 
-export const getReports = async (p: {
+export type ReportCursor = {
+  createdTime?: number
+  createdTimeIso?: string
+  id?: string
+}
+
+export const getReportBatch = async (p: {
   limit: number
   offset?: number
-  after?: { createdTime?: number | undefined }
+  after?: ReportCursor
+  ascending?: boolean
 }) => {
+  const ascending = p.ascending ?? false
   const q = db
     .from('reports')
     .select()
     .is('dismissed_by_user_id', null)
-    .order('created_time', { ascending: false })
+    .order('created_time', { ascending })
+    .order('id', { ascending })
 
-  if (p.offset) {
-    q.range(p.offset, p.limit + p.offset)
-  } else {
+  const cursorTime =
+    p.after?.createdTimeIso ??
+    (p.after?.createdTime != null ? millisToTs(p.after.createdTime) : undefined)
+  if (cursorTime) {
+    const op = ascending ? 'gt' : 'lt'
+    if (p.after?.id) {
+      q.or(
+        `created_time.${op}.${cursorTime},and(created_time.eq.${cursorTime},id.${op}.${JSON.stringify(
+          p.after.id
+        )})`
+      )
+    } else if (ascending) q.gt('created_time', cursorTime)
+    else q.lt('created_time', cursorTime)
     q.limit(p.limit)
-  }
-
-  if (p.after?.createdTime) {
-    q.lt('created_time', millisToTs(p.after.createdTime))
+  } else {
+    const offset = p.offset ?? 0
+    q.range(offset, offset + p.limit - 1)
   }
 
   const { data } = await run(q)
-  return await convertReports(data)
+  const last = data.at(-1)
+  return {
+    reports: await convertReports(data),
+    // Advance using raw rows, including reports whose content has been deleted.
+    // Preserve timestamp precision and use the ID to break timestamp ties.
+    nextCursor:
+      data.length === p.limit && last?.created_time
+        ? { createdTimeIso: last.created_time, id: last.id }
+        : undefined,
+  }
 }
 
-// adapted from api/v0/reports
+export const getReports = async (p: Parameters<typeof getReportBatch>[0]) =>
+  (await getReportBatch(p)).reports
 
 export type LiteReport = {
   slug: string
   id: string
   text: string | JSONContent
+  richContent?: JSONContent | null
+  imageUrls?: string[]
+  source?: SocialQuote | null
   owner: DisplayUser
   reporter: DisplayUser
   reasonsDescription: string | null
   contentId: string
   contentType: string
   createdTime?: number
+  createdTimeIso?: string
 }
 
 const convertReports = async (
   rows: Row<'reports'>[]
 ): Promise<LiteReport[]> => {
-  return filterDefined(
-    await Promise.all(
-      rows.map(async (report) => {
-        const {
-          content_id: contentId,
-          content_type: contentType,
-          content_owner_id: contentOwnerId,
-          parent_type: parentType,
-          parent_id: parentId,
-          user_id: userId,
-          created_time: createdTime,
-          id,
-          description,
-        } = report
-
-        let partialReport: { slug: string; text: JSONContent | string } | null =
-          null
-        // Reported contract
-        if (contentType === 'contract') {
-          const contract = await api('market/:id', {
-            id: contentId,
-            lite: true,
-          })
-          partialReport = contract
-            ? {
-                slug: contractPath(contract),
-                text: contract.question,
-              }
+  if (rows.length === 0) return []
+  const userIds = [
+    ...new Set(
+      rows.flatMap((r) => [
+        r.content_owner_id,
+        r.user_id,
+        ...(r.content_type === 'user' ? [r.content_id] : []),
+      ])
+    ),
+  ]
+  const marketIds = [
+    ...new Set(
+      filterDefined(
+        rows.map((r) =>
+          r.content_type === 'contract'
+            ? r.content_id
+            : r.content_type === 'comment' && r.parent_type === 'contract'
+            ? r.parent_id
             : null
-          // Reported comment on a contract
-        } else if (
-          contentType === 'comment' &&
-          parentType === 'contract' &&
-          parentId
-        ) {
-          const contract = await api('market/:id', { id: parentId, lite: true })
-          if (contract) {
-            const comment = await getComment(contentId)
-            partialReport = comment && {
-              slug: contractPath(contract) + '#' + comment.id,
-              text: comment.content,
-            }
-          }
-        } else if (contentType === 'user') {
-          const reportedUser = await getUserById(contentId)
-          partialReport = {
-            slug: `/${reportedUser?.username}`,
-            text: reportedUser?.name ?? '',
-          }
-        } else if (contentType === 'post') {
-          const { data: postRow, error: postError } = await db
-            .from('old_posts')
-            .select('*')
-            .eq('id', contentId)
-            .single()
+        )
+      )
+    ),
+  ]
+  const commentIds = rows
+    .filter((r) => r.content_type === 'comment' && r.parent_type === 'contract')
+    .map((r) => r.content_id)
+  const postIds = rows
+    .filter((r) => r.content_type === 'post')
+    .map((r) => r.content_id)
+  const socialPostIds = [
+    ...new Set(
+      rows
+        .filter((r) => r.content_type === 'social_post')
+        .map((r) => r.content_id)
+    ),
+  ]
 
-          if (postError || !postRow) {
-            console.error(
-              `Error fetching post ${contentId} for report:`,
-              postError
-            )
-            partialReport = null
-          } else {
-            const post = convertPost(postRow)
-            partialReport = {
-              slug: `/post/${post.slug}`,
-              text: post.content,
-            }
+  // Fetch each entity once per batch, with independent lookups in parallel.
+  const [users, marketEntries, comments, posts, socialPosts] =
+    await Promise.all([
+      getDisplayUsers(userIds),
+      Promise.all(
+        marketIds.map(async (id) => {
+          try {
+            return [id, await api('market/:id', { id, lite: true })] as const
+          } catch (error) {
+            if (error instanceof APIError && error.code === 404)
+              return [id, null] as const
+            throw error
           }
-        }
+        })
+      ),
+      commentIds.length
+        ? run(
+            db.from('contract_comments').select().in('comment_id', commentIds)
+          )
+        : Promise.resolve({ data: [] }),
+      postIds.length
+        ? run(db.from('old_posts').select().in('id', postIds))
+        : Promise.resolve({ data: [] }),
+      socialPostIds.length
+        ? api('get-social-posts', {
+            ids: socialPostIds,
+            forModeration: 'true',
+          }).then((page) => page.posts)
+        : Promise.resolve([]),
+    ])
+  const usersById = new Map(users.map((user) => [user.id, user]))
+  const marketsById = new Map(marketEntries)
+  const commentsById = new Map(
+    comments.data.map((r) => [r.comment_id, convertContractComment(r)])
+  )
+  const postsById = new Map(posts.data.map((r) => [r.id, convertPost(r)]))
+  const socialPostsById = new Map(
+    filterDefined(socialPosts).map((post) => [post.id, post])
+  )
 
-        const owner = await getUserById(contentOwnerId)
-        const reporter = await getUserById(userId)
+  return filterDefined(
+    rows.map((report) => {
+      const {
+        content_id: contentId,
+        content_type: contentType,
+        content_owner_id: contentOwnerId,
+        parent_type: parentType,
+        parent_id: parentId,
+        user_id: userId,
+        created_time: createdTime,
+        id,
+        description,
+      } = report
+      const owner = usersById.get(contentOwnerId)
+      const reporter = usersById.get(userId)
+      if (!owner || !reporter) return null
 
-        return partialReport && owner
-          ? {
-              ...partialReport,
-              reasonsDescription: description,
-              owner,
-              reporter,
-              contentType,
-              contentId,
-              id,
-              createdTime: tsToMillis(createdTime as any),
-            }
-          : null
-      })
-    )
+      let content:
+        | Pick<
+            LiteReport,
+            'slug' | 'text' | 'richContent' | 'imageUrls' | 'source'
+          >
+        | undefined
+      if (contentType === 'contract') {
+        const contract = marketsById.get(contentId)
+        if (contract)
+          content = { slug: contractPath(contract), text: contract.question }
+      } else if (
+        contentType === 'comment' &&
+        parentType === 'contract' &&
+        parentId
+      ) {
+        const contract = marketsById.get(parentId)
+        const comment = commentsById.get(contentId)
+        if (contract && comment)
+          content = {
+            slug: contractPath(contract) + '#' + comment.id,
+            text: comment.content,
+          }
+      } else if (contentType === 'user') {
+        const user = usersById.get(contentId)
+        if (user) content = { slug: `/${user.username}`, text: user.name }
+      } else if (contentType === 'social_post') {
+        const post = socialPostsById.get(contentId)
+        if (post && !post.removed)
+          content = {
+            slug: `/yap/${post.id}`,
+            text: post.text || post.markets.map((m) => m.question).join(' · '),
+            richContent: post.richContent,
+            imageUrls: post.imageUrls,
+            source: post.source,
+          }
+      } else if (contentType === 'post') {
+        const post = postsById.get(contentId)
+        if (post) content = { slug: `/post/${post.slug}`, text: post.content }
+      }
+      return content
+        ? {
+            ...content,
+            reasonsDescription: description,
+            owner,
+            reporter,
+            contentType,
+            contentId,
+            id,
+            createdTime: tsToMillis(createdTime),
+            createdTimeIso: createdTime ?? undefined,
+          }
+        : null
+    })
   )
 }

@@ -345,9 +345,9 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
 
   try {
     const clarification = await promptAI<ClarificationResponse>(prompt, {
-      model: aiModels.sonnet45,
+      model: aiModels.flash,
       parseAsJson: true,
-      reasoning: { effort: 'high' },
+      thinkingLevel: 'high',
     })
     log('Clarification response:', {
       question: contract.question,

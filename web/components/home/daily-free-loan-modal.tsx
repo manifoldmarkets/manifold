@@ -44,6 +44,10 @@ export function DailyFreeLoanModal(props: {
     freeLoanData.totalLoan >= freeLoanData.maxLoan && freeLoanData.maxLoan > 0
   const noEligiblePositions =
     !alreadyClaimedToday && !atMaxLoanLimit && freeLoanAvailable < 1
+  // Perps don't back loans, so a perp-only portfolio reads as "no positions".
+  // Say why instead of telling them to invest when they already have.
+  const perpValueExcluded = freeLoanData.perpValueExcluded ?? 0
+  const onlyPerpPositions = noEligiblePositions && perpValueExcluded >= 1
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
@@ -162,6 +166,22 @@ export function DailyFreeLoanModal(props: {
                 <>
                   🔒 Max loan ({formatMoney(freeLoanData.maxLoan)}) reached.
                   Repay some to unlock more.
+                </>
+              ) : onlyPerpPositions ? (
+                <>
+                  📊 Your {formatMoney(perpValueExcluded)} in{' '}
+                  <Tooltip text="Perps are already leveraged and can be liquidated to zero, so they don't earn or back loans.">
+                    <span className="cursor-help underline decoration-dotted">
+                      perps
+                    </span>
+                  </Tooltip>{' '}
+                  doesn't earn daily loans. Trade an{' '}
+                  <Tooltip text="Listed, ranked markets with 10+ traders that are 24+ hours old">
+                    <span className="cursor-help underline decoration-dotted">
+                      eligible market
+                    </span>
+                  </Tooltip>{' '}
+                  to start earning!
                 </>
               ) : noEligiblePositions ? (
                 <>

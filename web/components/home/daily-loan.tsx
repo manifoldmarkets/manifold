@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
-import { hasFullBonusAccess, User } from 'common/user'
+import { User } from 'common/user'
+import { canTakeLoans } from 'common/loans'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -37,8 +38,10 @@ export function DailyLoan(props: {
   const [isClaiming, setIsClaiming] = useState(false)
   const [justClaimed, setJustClaimed] = useState(false)
 
-  // Daily free loans are a full-bonus perk.
-  const userCanReceiveBonuses = hasFullBonusAccess(user)
+  // Loans are open to unverified users too. Only admin-flagged accounts
+  // ('requires_verification') are held back, and for those the verification
+  // modal's isFlagged copy is the right prompt.
+  const userCanTakeLoans = canTakeLoans(user)
 
   // Get free loan availability
   const {
@@ -87,8 +90,8 @@ export function DailyLoan(props: {
   }, [canClaimFreeLoan, isClaiming, refreshFreeLoan, refreshPortfolio])
 
   const handleChestClick = useCallback(() => {
-    // Check if user needs verification first
-    if (!userCanReceiveBonuses) {
+    // Flagged accounts must clear review before borrowing.
+    if (!userCanTakeLoans) {
       setShowVerificationModal(true)
       return
     }
@@ -100,7 +103,7 @@ export function DailyLoan(props: {
       // Brown chest - open daily free loan modal
       setShowFreeLoanModal(true)
     }
-  }, [canClaimFreeLoan, isClaiming, handleClaimFreeLoan, userCanReceiveBonuses])
+  }, [canClaimFreeLoan, isClaiming, handleClaimFreeLoan, userCanTakeLoans])
 
   const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
   if (createdRecently) {
@@ -115,11 +118,16 @@ export function DailyLoan(props: {
     freeLoanData.maxLoan > 0
   const hasNoEligiblePositions =
     freeLoanData && !alreadyClaimedToday && !atMaxLoanLimit && !canClaimFreeLoan
+  // Perps don't back loans, so a perp-only portfolio reads as "no positions".
+  const onlyPerpPositions =
+    hasNoEligiblePositions && (freeLoanData?.perpValueExcluded ?? 0) >= 1
 
   // Ineligible = at max limit OR no eligible positions (but NOT if already claimed)
   const isIneligible = atMaxLoanLimit || hasNoEligiblePositions
-  // Disabled = no eligible positions (can't even repay if nothing invested)
-  const isButtonDisabled = hasNoEligiblePositions
+  // Disabled = no eligible positions (can't even repay if nothing invested).
+  // Perp-only holders stay clickable so the modal can explain why perps don't
+  // count — the tooltip alone isn't shown on mobile.
+  const isButtonDisabled = hasNoEligiblePositions && !onlyPerpPositions
 
   const getTooltipText = () => {
     if (isLoading) return 'Loading...'
@@ -131,6 +139,9 @@ export function DailyLoan(props: {
     }
     if (atMaxLoanLimit) {
       return 'At maximum loan limit'
+    }
+    if (onlyPerpPositions) {
+      return "Perps don't earn daily loans — trade a market to start earning"
     }
     if (hasNoEligiblePositions) {
       return 'Invest more to earn daily loan'

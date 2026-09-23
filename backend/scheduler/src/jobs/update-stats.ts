@@ -6,7 +6,6 @@ dayjs.extend(timezone)
 
 import {
   uniq,
-  sum,
   countBy,
   mapValues,
   intersection,
@@ -33,13 +32,21 @@ import { getFeedConversionScores } from 'shared/feed-analytics'
 import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
 import { recalculateAllUserPortfolios } from 'shared/mana-supply'
+import { MANIFOLD_DAU_FEED_ID, insertOraclePrices } from 'shared/oracle'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 interface StatEvent {
   id: string
   userId: string
   ts: number
 }
-type StatBet = StatEvent & { amount: number; token: 'MANA' | 'CASH' }
+type DailyBetStats = {
+  day: string
+  betCount: number
+  manaAmount: number
+  totalAmount: number
+  userCounts: { userId: string; betCount: number }[]
+}
 type StatUser = StatEvent & {
   d1BetCount: number
   freeQuestionsCreated: number | undefined
@@ -130,28 +137,69 @@ async function getDailyBets(
   end: string,
   token?: 'CASH'
 ) {
+  // Aggregated in SQL: shipping every bet via json_agg (~2.6M rows / ~320MB
+  // of JSON over the 68-day buffer window) outgrew the 1-hour client
+  // query_timeout as bet volume rose, which killed this job — and every
+  // daily_stats/txn/mana-supply write after it — nightly from 2026-08-04.
+  // The stats only need per-day totals and per-user bet counts.
   const bets = await pg.manyOrNone(
-    `select
-    date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
-    json_agg(json_build_object(
-      'ts', ts_to_millis(b.created_time),
-      'userId', user_id,
-      'token', c.token,
-      'amount', amount,
-      'id', bet_id
-    )) as values
-    from contract_bets b join contracts c on b.contract_id = c.id
-    where
-      b.created_time >= date_to_midnight_pt($1)
-      and b.created_time < date_to_midnight_pt($2)
-      and is_redemption = false
-      and ($3 is null or c.token = $3)
+    `with per_user as (
+      select
+        date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
+        b.user_id,
+        count(*) as bet_count,
+        sum(b.amount) filter (where c.token = 'MANA') as mana_amount,
+        sum(b.amount) as total_amount
+      from contract_bets b join contracts c on b.contract_id = c.id
+      where
+        b.created_time >= date_to_midnight_pt($1)
+        and b.created_time < date_to_midnight_pt($2)
+        and is_redemption = false
+        and ($3 is null or c.token = $3)
+      group by 1, 2
+    )
+    select
+      day,
+      sum(bet_count)::int as "betCount",
+      coalesce(sum(mana_amount), 0)::double precision as "manaAmount",
+      coalesce(sum(total_amount), 0)::double precision as "totalAmount",
+      json_agg(json_build_object('userId', user_id, 'betCount', bet_count)) as "userCounts"
+    from per_user
     group by day
     order by day asc`,
     [start, end, token]
   )
 
-  return bets as { day: string; values: StatBet[] }[]
+  return bets as DailyBetStats[]
+}
+
+async function getDailyPerpTrades(
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) {
+  const trades = await pg.manyOrNone(
+    `select
+      date_trunc('day', e.ts at time zone 'america/los_angeles')::date as day,
+      json_agg(json_build_object(
+        'ts', ts_to_millis(e.ts),
+        'userId', e.user_id,
+        'id', 'perp-' || e.id
+      )) as values
+    from contract_perp_events e
+    where
+      e.ts >= date_to_midnight_pt($1)
+      and e.ts < date_to_midnight_pt($2)
+      and e.user_id is not null
+      and e.event_type in ('open', 'add', 'close')
+      and e.data->>'reason' is distinct from 'flip'
+      and e.data->>'reason' is distinct from 'resolve-market'
+    group by day
+    order by day asc`,
+    [start, end]
+  )
+
+  return trades as { day: string; values: StatEvent[] }[]
 }
 
 async function getDailyViewers(
@@ -246,7 +294,17 @@ async function getDailyNewUsers(
         u.id,
         (u.data->>'bio') as bio,
         (u.data->'freeQuestionsCreated')::int as free_questions_created,
-        count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count_within_24h,
+        count(cb.bet_id) filter (where cb.bet_id is not null)
+          + (
+            select count(*)
+            from contract_perp_events e
+            where e.user_id = u.id
+              and e.ts >= u.created_time
+              and e.ts <= u.created_time + interval '24 hours'
+              and e.event_type in ('open', 'add', 'close')
+              and e.data->>'reason' is distinct from 'flip'
+              and e.data->>'reason' is distinct from 'resolve-market'
+          ) as bet_count_within_24h,
         count(d.id) filter (where d.id is not null) as dashboard_count,
         u.data->>'referredByUserId' as referrer_id
       from users u
@@ -293,13 +351,19 @@ export const updateActivityStats = async (
     .format('YYYY-MM-DD')
 
   log(`Fetching data for activity stats between ${startWithBuffer} and ${end}`)
-  const [dailyBets, dailyContracts, dailyComments, dailyViewers] =
-    await Promise.all([
-      getDailyBets(pg, startWithBuffer, end),
-      getDailyContracts(pg, startWithBuffer, end),
-      getDailyComments(pg, startWithBuffer, end),
-      getDailyViewers(pg, startWithBuffer, end),
-    ])
+  const [
+    dailyBets,
+    dailyPerpTrades,
+    dailyContracts,
+    dailyComments,
+    dailyViewers,
+  ] = await Promise.all([
+    getDailyBets(pg, startWithBuffer, end),
+    getDailyPerpTrades(pg, startWithBuffer, end),
+    getDailyContracts(pg, startWithBuffer, end),
+    getDailyComments(pg, startWithBuffer, end),
+    getDailyViewers(pg, startWithBuffer, end),
+  ])
   logMemory()
 
   log('upsert viewer counts')
@@ -315,16 +379,55 @@ export const updateActivityStats = async (
     }))
   )
 
+  // Mirror daily DAV into the `manifold-dau` oracle feed. Each point is
+  // keyed at midnight America/Los_Angeles for its day (matching daily_stats
+  // semantics). Idempotent insert so the rolling bufferDays window can
+  // safely re-emit old days.
+  log('upsert manifold-dau oracle points')
+  // Best-effort: this mirror is an internal metric series, not part of the
+  // stats pipeline's contract. oracle_prices is append-only and the insert
+  // is on-conflict-do-nothing, so a re-run that recomputes a different
+  // viewer count for an already-stored day makes applyOraclePointToLivePerps
+  // throw on the mismatch — deterministically, for the rest of the day.
+  // Unwrapped, that aborted the run before every remaining daily_stats write
+  // (bets, DAU/WAU/MAU, retention, new-user), none of which have anything to
+  // do with perps.
+  try {
+    await insertOraclePrices(
+      pg,
+      MANIFOLD_DAU_FEED_ID,
+      dailyViewers.map((viewers) => ({
+        ts: dayjs
+          .tz(viewers.day, 'America/Los_Angeles')
+          .startOf('day')
+          .valueOf(),
+        price: viewers.viewer_count,
+      }))
+    )
+    const latestDau = dailyViewers[dailyViewers.length - 1]
+    if (latestDau) {
+      await applyOraclePointToLivePerps(pg, MANIFOLD_DAU_FEED_ID, {
+        ts: dayjs
+          .tz(latestDau.day, 'America/Los_Angeles')
+          .startOf('day')
+          .valueOf(),
+        price: latestDau.viewer_count,
+      })
+    }
+  } catch (error) {
+    log.error(
+      '[update-stats] manifold-dau oracle mirror failed; continuing with daily stats',
+      { error }
+    )
+  }
+
   log('upsert bets counts and totals')
   await bulkUpsertStats(
     pg,
     dailyBets.map((bets) => ({
       start_date: bets.day,
-      bet_count: bets.values.length,
-      bet_amount:
-        sum(
-          bets.values.filter((b) => b.token === 'MANA').map((b) => b.amount)
-        ) / 100,
+      bet_count: bets.betCount,
+      bet_amount: bets.manaAmount / 100,
     }))
   )
 
@@ -346,15 +449,29 @@ export const updateActivityStats = async (
     }))
   )
 
-  // unique ids across contract, bet, and comment actions
+  // Unique ids across contract creation, ordinary bets, perp trades, and
+  // comments. Automated perp transitions are excluded in getDailyPerpTrades.
   const contractUsersByDay = Object.fromEntries(
     dailyContracts.map((contracts) => [
       contracts.day,
       contracts.values.map((c) => c.userId),
     ])
   )
+  // One entry per bet, not per user: the countBy in the median-actions calc
+  // below needs the multiset, and uniq covers the DAU-style consumers.
   const betUsersByDay = Object.fromEntries(
-    dailyBets.map((bets) => [bets.day, bets.values.map((b) => b.userId)])
+    dailyBets.map((bets) => [
+      bets.day,
+      bets.userCounts.flatMap((u) =>
+        Array.from({ length: u.betCount }, () => u.userId)
+      ),
+    ])
+  )
+  const perpTradeUsersByDay = Object.fromEntries(
+    dailyPerpTrades.map((trades) => [
+      trades.day,
+      trades.values.map((trade) => trade.userId),
+    ])
   )
   const commentUsersByDay = Object.fromEntries(
     dailyComments.map((comments) => [
@@ -368,6 +485,7 @@ export const updateActivityStats = async (
     const allIds = mergeWith(
       contractUsersByDay,
       betUsersByDay,
+      perpTradeUsersByDay,
       commentUsersByDay,
       (a, b) => (a && b ? a.concat(b) : a || b)
     )
@@ -388,8 +506,9 @@ export const updateActivityStats = async (
     )
   }
 
-  const contractBetOrCommentUniqueUsersByDay = mergeWith(
+  const activeUsersByDay = mergeWith(
     betUsersByDay,
+    perpTradeUsersByDay,
     contractUsersByDay,
     commentUsersByDay,
     (a, b) => {
@@ -400,9 +519,9 @@ export const updateActivityStats = async (
     }
   )
 
-  // stats using weird stricter dau calculation that only includes contracts, comments, users
+  // Stricter DAU includes market creation, comments, and user-initiated trades.
 
-  const dailyUserIds = Object.entries(contractBetOrCommentUniqueUsersByDay)
+  const dailyUserIds = Object.entries(activeUsersByDay)
     .map(([day, values]) => ({ day, values }))
     .sort((a, b) => a.day.localeCompare(b.day))
 
@@ -670,6 +789,19 @@ async function calculateTopicDaus(
       where b.created_time >= date_to_midnight_pt($1)
         and b.created_time < date_to_midnight_pt($2)
       union
+      select
+        date_trunc('day', e.ts at time zone 'america/los_angeles')::date as day,
+        e.user_id,
+        gc.group_id
+      from contract_perp_events e
+      join group_contracts gc on e.contract_id = gc.contract_id
+      where e.ts >= date_to_midnight_pt($1)
+        and e.ts < date_to_midnight_pt($2)
+        and e.user_id is not null
+        and e.event_type in ('open', 'add', 'close')
+        and e.data->>'reason' is distinct from 'flip'
+        and e.data->>'reason' is distinct from 'resolve-market'
+      union
       select 
         date_trunc('day', cc.created_time at time zone 'america/los_angeles')::date as day,
         user_id,
@@ -737,8 +869,8 @@ export const updateCashActivityStats = async (
     pg,
     dailyBets.map((bets) => ({
       start_date: bets.day,
-      cash_bet_count: bets.values.length,
-      cash_bet_amount: sum(bets.values.map((b) => b.amount)),
+      cash_bet_count: bets.betCount,
+      cash_bet_amount: bets.totalAmount,
     }))
   )
 
@@ -767,8 +899,15 @@ export const updateCashActivityStats = async (
       contracts.values.map((c) => c.userId),
     ])
   )
+  // One entry per bet, not per user: the countBy in the median-actions calc
+  // below needs the multiset, and uniq covers the DAU-style consumers.
   const betUsersByDay = Object.fromEntries(
-    dailyBets.map((bets) => [bets.day, bets.values.map((b) => b.userId)])
+    dailyBets.map((bets) => [
+      bets.day,
+      bets.userCounts.flatMap((u) =>
+        Array.from({ length: u.betCount }, () => u.userId)
+      ),
+    ])
   )
   const commentUsersByDay = Object.fromEntries(
     dailyComments.map((comments) => [

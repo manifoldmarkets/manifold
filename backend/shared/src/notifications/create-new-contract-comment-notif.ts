@@ -49,6 +49,11 @@ export const createCommentOnContractNotification = async (
   taggedUserIds: string[],
   requiresResponse: boolean
 ) => {
+  // Bots deliver silently. Temporary blanket mute until the per-user bot
+  // notification level ships; see PR #4001. isBot is the users.is_bot column
+  // (convertUser maps it), so mod changes via set-bot-status apply at once.
+  if (sourceUser.isBot) return
+
   const pg = createSupabaseDirectClient()
 
   const usersToReceivedNotifications: Record<
@@ -253,6 +258,9 @@ export const createCommentOnPostNotification = async (
   repliedUserId: string | undefined,
   mentionedUserIds: string[]
 ) => {
+  // Same blanket mute as the contract-comment path above.
+  if (commentCreator.isBot) return
+
   const usersToNotify: { userId: string; reason: NotificationReason }[] = []
 
   // Fetch post followers

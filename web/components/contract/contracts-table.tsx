@@ -15,6 +15,10 @@ import {
 } from 'common/envs/constants'
 import { getFormattedExpectedDate } from 'common/multi-date'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Answer } from 'common/src/answer'
 import { getFormattedNumberExpectedValue } from 'common/src/number'
@@ -32,6 +36,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 import { UserHovercard } from '../user/user-hovercard'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
@@ -53,6 +58,10 @@ export function ContractsTable(props: {
   hideAvatar?: boolean
   contractAnswers?: { [contractId: string]: Answer[] }
   showPosition?: boolean
+  /** Names the surface these rows sit on, so `click browse contract` events
+   * can be attributed to a section instead of being indistinguishable from
+   * every other ContractsTable on the site. */
+  trackingPostfix?: string
 }) {
   const {
     contracts,
@@ -68,6 +77,7 @@ export function ContractsTable(props: {
     hideAvatar,
     contractAnswers,
     showPosition,
+    trackingPostfix,
   } = props
 
   const user = useUser()
@@ -125,6 +135,7 @@ export function ContractsTable(props: {
           }
           answers={contractAnswers?.[contract.id]}
           showPosition={showPosition}
+          trackingPostfix={trackingPostfix}
         />
       ))}
     </Col>
@@ -189,6 +200,8 @@ export function ContractRow(props: {
   hideAvatar?: boolean
   answers?: Answer[]
   showPosition?: boolean
+  onTrackClick?: () => void
+  trackingPostfix?: string
 }) {
   const contract = useLiveContract(props.contract)
   const isPoll = contract.outcomeType === 'POLL'
@@ -201,6 +214,8 @@ export function ContractRow(props: {
     onClick,
     answers,
     showPosition,
+    onTrackClick,
+    trackingPostfix,
   } = props
 
   const savedMetric = useSavedContractMetrics(contract)
@@ -223,11 +238,13 @@ export function ContractRow(props: {
       <Link
         href={contractPath(contract)}
         onClick={(e) => {
+          onTrackClick?.()
           if (!onClick) {
             track('click browse contract', {
               slug: contract.slug,
               contractId: contract.id,
               boosted: contract.boosted,
+              section: trackingPostfix,
             })
             return
           }
@@ -497,6 +514,19 @@ export function ContractStatusLabel(props: {
     case 'POLL': {
       return <span className="text-fuchsia-500/70">POLL</span>
     }
+    case 'PERP': {
+      const price = Number(contract.oraclePrice)
+      // Endpoints that slim contracts may omit oraclePrice; show a dash
+      // rather than a fake "0.0000".
+      if (!Number.isFinite(price)) {
+        return <span className={clsx('text-ink-400', className)}>—</span>
+      }
+      return (
+        <span className={clsx(probTextColor, className)}>
+          {formatPerpPrice(price, inferPerpPriceDecimals([price]))}
+        </span>
+      )
+    }
     default:
       return <span>-</span>
   }
@@ -546,6 +576,9 @@ function ContractQuestion(props: {
           </span>
         )}
         <VisibilityIcon className="mr-1" contract={contract} />
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge contract={contract} className="mr-1" />
+        )}
         {removeEmojis(contract.question)}
       </span>
     </Row>

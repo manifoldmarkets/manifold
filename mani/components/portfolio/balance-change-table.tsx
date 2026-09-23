@@ -10,15 +10,15 @@ import { Colors } from 'constants/colors'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
+  isPerpChange,
   TxnBalanceChange,
+  PerpBalanceChange,
   isBetChange,
   isTxnChange,
-  txnTitle,
-  txnTypeToDescription,
+  BALANCE_CHANGE_TYPE_LABELS,
 } from 'common/balance-change'
 import { formatJustDateShort, formatJustTime } from 'client-common/lib/time'
 import { useRouter } from 'expo-router'
-import { contractPathWithoutContract } from 'common/contract'
 import dayjs from 'dayjs'
 import { DAY_MS } from 'common/util/time'
 import { TokenNumber } from 'components/token/token-number'
@@ -55,7 +55,7 @@ function RenderBalanceChanges(props: {
 
   return (
     <>
-      {balanceChanges.map((change, i) => {
+      {balanceChanges.map((change) => {
         if (isBetChange(change)) {
           return (
             <BetBalanceChangeRow
@@ -64,13 +64,10 @@ function RenderBalanceChanges(props: {
               token={change.contract.token}
             />
           )
+        } else if (isPerpChange(change)) {
+          return <PerpBalanceChangeRow key={change.key} change={change} />
         } else if (isTxnChange(change)) {
-          return (
-            <TxnBalanceChangeRow
-              key={change.key}
-              change={change as TxnBalanceChange}
-            />
-          )
+          return <TxnBalanceChangeRow key={change.key} change={change} />
         }
       })}
     </>
@@ -103,7 +100,7 @@ const BetBalanceChangeRow = (props: {
 
   const onPress = () => {
     if (slug) {
-      router.push(contractPathWithoutContract(creatorUsername, slug) as any)
+      router.push(`/${creatorUsername}/${slug}`)
     }
   }
 
@@ -134,6 +131,39 @@ const BetBalanceChangeRow = (props: {
   )
 }
 
+const PerpBalanceChangeRow = (props: { change: PerpBalanceChange }) => {
+  const { change } = props
+  const { contract, description } = change
+  const router = useRouter()
+
+  const onPress = () => {
+    if (contract.slug) {
+      router.push(`/${contract.creatorUsername}/${contract.slug}`)
+    }
+  }
+
+  return (
+    <Pressable onPress={onPress}>
+      <Row style={styles.changeRow}>
+        <ThemedText color={Colors.error} size="sm" weight="bold">
+          Liquidated
+        </ThemedText>
+        <Col style={{ flex: 1 }}>
+          <ThemedText size="sm" numberOfLines={2}>
+            {contract.question}
+          </ThemedText>
+          <ThemedText color={Colors.textTertiary} numberOfLines={3} size="xs">
+            {description}
+          </ThemedText>
+        </Col>
+        <ThemedText size="xs" color={Colors.textTertiary}>
+          {customFormatTime(change.createdTime)}
+        </ThemedText>
+      </Row>
+    </Pressable>
+  )
+}
+
 const customFormatTime = (time: number) => {
   if (time > Date.now() - DAY_MS) {
     return formatJustTime(time)
@@ -148,18 +178,19 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
 
   const onPress = () => {
     if (contract?.slug) {
-      router.push(
-        contractPathWithoutContract(
-          contract.creatorUsername,
-          contract.slug
-        ) as any
-      )
+      router.push(`/${contract.creatorUsername}/${contract.slug}`)
     } else if (user?.username) {
-      router.push(('/' + user.username) as any)
+      router.push(`/${user.username}`)
     } else if (charity?.slug) {
-      router.push(('/old-charity/' + charity.slug) as any)
+      router.push(`/old-charity/${charity.slug}`)
     }
   }
+  const displayToken = token === 'CASH' ? 'CASH' : 'MANA'
+  const title =
+    contract?.question ??
+    user?.name ??
+    charity?.name ??
+    BALANCE_CHANGE_TYPE_LABELS[type]
 
   return (
     <Pressable onPress={onPress}>
@@ -167,17 +198,17 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
         <ThemedText size="sm">{amount > 0 ? '+' : '-'}</ThemedText>
         <TokenNumber
           amount={Math.abs(amount)}
-          token={token as any}
+          token={displayToken}
           style={{
             color: amount > 0 ? Colors.profitText : Colors.textTertiary,
           }}
         />
         <Col style={{ flex: 1 }}>
           <ThemedText size="sm" numberOfLines={2}>
-            {txnTitle(change)}
+            {title}
           </ThemedText>
           <ThemedText size="xs" color={Colors.textTertiary}>
-            {txnTypeToDescription(type) ?? description ?? type}
+            {description ?? BALANCE_CHANGE_TYPE_LABELS[type]}
           </ThemedText>
         </Col>
         <ThemedText size="xs" color={Colors.textTertiary}>

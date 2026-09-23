@@ -6,7 +6,11 @@ import { getUser, log, getContractSupabase } from 'shared/utils'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { STARTING_BALANCE, REFERRAL_VERIFY_BONUS } from 'common/economy'
+import {
+  STARTING_BALANCE,
+  REFERRAL_VERIFY_BONUS,
+  VERIFIED_SIGNUP_BONUS_DESCRIPTION,
+} from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
 import { isUnderageDenial } from 'common/idenfy-helpers'
 import { createReferralNotification } from 'shared/create-notification'
@@ -315,11 +319,15 @@ export const idenfyCallback = async (req: Request, res: Response) => {
               : {}),
           })
 
-          // Pay signup bonus if not already paid
+          // Pay signup bonus if not already paid. Match on description, not
+          // category alone: the next-day signup bonus shares the SIGNUP_BONUS
+          // category, and a category-only check skipped this payment for any
+          // user whose next-day bonus landed before iDenfy approval.
           const existingSignupTxn = await tx.oneOrNone(
             `SELECT 1 FROM txns WHERE to_id = $1
-           AND category = 'SIGNUP_BONUS'`,
-            [userId]
+           AND category = 'SIGNUP_BONUS'
+           AND data->>'description' = $2`,
+            [userId, VERIFIED_SIGNUP_BONUS_DESCRIPTION]
           )
           if (!alreadyPaidBonus && !existingSignupTxn) {
             const signupBonusTxn: Omit<
@@ -332,7 +340,7 @@ export const idenfyCallback = async (req: Request, res: Response) => {
               amount: STARTING_BALANCE,
               token: 'M$',
               category: 'SIGNUP_BONUS',
-              description: 'Signup bonus (identity verified)',
+              description: VERIFIED_SIGNUP_BONUS_DESCRIPTION,
             }
             await runTxnFromBank(tx, signupBonusTxn)
             await updateUser(tx, userId, { signupBonusPaid: STARTING_BALANCE })

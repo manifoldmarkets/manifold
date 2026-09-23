@@ -4,9 +4,13 @@ import { Bet } from 'common/bet'
 import { orderBy } from 'lodash'
 import {
   BetBalanceChange,
+  PerpBalanceChange,
   TxnBalanceChange,
   BET_BALANCE_CHANGE_TYPES,
 } from 'common/balance-change'
+import { inferPriceDecimals } from 'common/perps/format'
+import { formatOraclePrice } from 'common/perps/oracle-display'
+import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
@@ -27,8 +31,9 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   const fetchBets = !changeType || isBetType
   const fetchTxns = !changeType || !isBetType
   const fetchLiquidity = !changeType || changeType === 'ADD_SUBSIDY'
+  const fetchPerp = !changeType || changeType === 'perp_liquidation'
 
-  const [betBalanceChanges, txnBalanceChanges, liquidityChanges] =
+  const [betBalanceChanges, txnBalanceChanges, liquidityChanges, perpChanges] =
     await Promise.all([
       fetchBets ? getBetBalanceChanges(before, after, userId) : [],
       fetchTxns
@@ -40,10 +45,16 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
           )
         : [],
       fetchLiquidity ? getLiquidityBalanceChanges(before, after, userId) : [],
+      fetchPerp ? getPerpBalanceChanges(before, after, userId) : [],
     ])
 
   let allChanges = orderBy(
-    [...betBalanceChanges, ...txnBalanceChanges, ...liquidityChanges],
+    [
+      ...betBalanceChanges,
+      ...txnBalanceChanges,
+      ...liquidityChanges,
+      ...perpChanges,
+    ],
     (change) => change.createdTime,
     'desc'
   )
@@ -51,6 +62,109 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
     allChanges = allChanges.filter((c) => c.type === changeType)
   }
   return allChanges.slice(offset, offset + limit)
+}
+
+// Balance-log subtitle for perp txns, synthesized from the typed txn data so
+// the row reads like the bet rows ("Opened 5× long — Ṁ100 margin at 62,001").
+const perpTxnDescription = (
+  txn: Txn,
+  oracleFeedId?: string
+): string | undefined => {
+  const d = txn.data as any
+  if (!d) return undefined
+  const px = (v: number) =>
+    formatOraclePrice(oracleFeedId, v, inferPriceDecimals([v]))
+  if (txn.category === 'PERP_OPEN_MARGIN') {
+    const lev = Math.round(d.leverage) >= 2 ? `${Math.round(d.leverage)}× ` : ''
+    return `Opened ${lev}${d.direction} — ${formatMoney(
+      txn.amount
+    )} margin at ${px(d.entryPrice)}`
+  }
+  if (txn.category === 'PERP_CLOSE_PAYOUT') {
+    const pnlNumber = Number(d.pnl ?? 0)
+    const pnl = Number.isFinite(pnlNumber) ? pnlNumber : 0
+    // Realised PnL and settlement payouts are fractional; formatMoney would
+    // floor a +M$0.60 close to "+M$0" while the position history shows it.
+    const pnlText = `${pnl >= 0 ? '+' : ''}${formatMoneyPrecise(pnl)}`
+    if (d.reason === 'adl') {
+      return `Auto-deleveraged ${d.direction} at ${px(
+        d.closePrice
+      )} — ${formatMoneyPrecise(txn.amount)} margin returned, profit ${pnlText}`
+    }
+    const verb =
+      d.reason === 'flip'
+        ? 'Flipped out of'
+        : d.reason === 'resolve'
+        ? 'Settled'
+        : d.reason === 'partial-close'
+        ? 'Partly closed'
+        : 'Closed'
+    return `${verb} ${d.direction} at ${px(d.closePrice)} — profit ${pnlText}`
+  }
+  if (txn.category === 'PERP_TAKER_FEE') {
+    const bps = Number(d.feeBps)
+    const pct = Number.isFinite(bps) ? ` (${(bps / 100).toFixed(2)}%)` : ''
+    return `Opening fee${pct} on ${formatMoney(Number(d.sizeDelta) || 0)} ${
+      d.direction
+    } notional — paid into the market's backing pool`
+  }
+  if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
+    return `Residual pools returned to creator (settled at ${px(d.finalPrice)})`
+  }
+  return undefined
+}
+
+// Ledger annotations for perp liquidations. No mana moves at liquidation
+// (margin left the balance at open), so amount is 0 — the row makes the loss
+// visible in the ledger on the day it became permanent.
+const getPerpBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
+  const pg = createSupabaseDirectClient()
+  return await pg.map(
+    `select e.id, e.ts, e.direction, e.size_delta, e.original_cost_basis_delta,
+            e.oracle_price,
+            c.question, c.slug, c.visibility, c.token,
+            c.data->>'oracleFeedId' as oracle_feed_id,
+            c.data->>'creatorUsername' as creator_username
+     from contract_perp_events e
+     join contracts c on c.id = e.contract_id
+     where e.user_id = $3
+       and e.event_type = 'liquidation'
+       and ($1 is null or e.ts < millis_to_ts($1))
+       and e.ts >= millis_to_ts($2)
+     order by e.ts desc`,
+    [before, after, userId],
+    (r): PerpBalanceChange => {
+      const margin = Math.abs(Number(r.original_cost_basis_delta))
+      const size = Math.abs(Number(r.size_delta))
+      const price = Number(r.oracle_price)
+      const leverage = margin > 0 ? Math.round(size / margin) : 0
+      const isPublic = r.visibility === 'public'
+      return {
+        key: `perp-liquidation-${r.id}`,
+        type: 'perp_liquidation',
+        amount: 0,
+        createdTime: new Date(r.ts).getTime(),
+        description: `${leverage >= 2 ? `${leverage}× ` : ''}${
+          r.direction
+        } liquidated at ${formatOraclePrice(
+          r.oracle_feed_id,
+          price,
+          inferPriceDecimals([price])
+        )} — ${formatMoney(margin)} margin forfeited to the pool`,
+        contract: {
+          question: isPublic ? r.question : '[unlisted question]',
+          visibility: r.visibility,
+          slug: isPublic ? r.slug : '',
+          creatorUsername: r.creator_username,
+          token: r.token,
+        },
+      }
+    }
+  )
 }
 
 const getTxnBalanceChanges = async (
@@ -98,7 +212,12 @@ const getTxnBalanceChanges = async (
       token: txn.token,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
-      description: txn.description,
+      description:
+        txn.description ??
+        perpTxnDescription(
+          txn,
+          contract?.mechanism === 'perp' ? contract.oracleFeedId : undefined
+        ),
       contract: contract
         ? {
             question:

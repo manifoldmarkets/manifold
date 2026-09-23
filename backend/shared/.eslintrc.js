@@ -4,6 +4,11 @@ module.exports = {
   ignorePatterns: ['dist', 'lib'],
   env: {
     node: true,
+    // Without this, .js files (jest.config.js) fall back to the ES5 parser
+    // and `const` is a syntax error. common/.eslintrc.js sets it for the same
+    // reason; .ts files are unaffected either way, since the override below
+    // gives them the TypeScript parser.
+    es6: true,
   },
   overrides: [
     {
@@ -30,6 +35,11 @@ module.exports = {
         'unused-imports/no-unused-imports': 'warn',
         'no-constant-condition': 'off',
       },
+    },
+    {
+      files: ['**/*.test.ts'],
+      // Jest type-checks tests separately; they are excluded from the build.
+      parserOptions: { project: null },
     },
   ],
   rules: {

@@ -1,3 +1,5 @@
+import { compact } from 'lodash'
+
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
 import { calculateConversionScore } from 'shared/conversion-score'
@@ -27,7 +29,7 @@ import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
-import { createJob } from './helpers'
+import { createJob as createCronJob, JobContext } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
@@ -58,15 +60,71 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { updatePerps } from './update-perps'
+import {
+  ORACLE_TICK_PERIOD_MS,
+  updateOracleFeeds,
+  validateOracleFeedPollPeriods,
+} from './update-oracle-feeds'
+import { updateOpenRouterShare } from './update-openrouter-share'
+import { updateClassificationAudit } from './update-classification-audit'
+import { updateModelClassifications } from './update-model-classifications'
+import { updateTrumpApproval } from './update-trump-approval'
+import { updateVoteHubAverages } from './update-votehub-averages'
+import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
 
-export function createJobs() {
+// Which subset of jobs this process runs. The 2s oracle tick (and the other
+// PERP jobs that apply funding and liquidations) must not share an event loop
+// with batch jobs like update-user-portfolio-histories, which block it for
+// minutes at prod scale and freeze the feed mid-liquidation. DEV and PROD deploy the
+// scheduler as a 'main' + 'perps' instance pair; 'all' is the single-instance
+// mode for local development only.
+export type SchedulerJobSet = 'all' | 'main' | 'perps'
+
+const PERP_JOB_NAMES = new Set([
+  'update-perps',
+  'update-oracle-feeds',
+  'update-openrouter-share',
+  'update-trump-approval',
+  'update-votehub-averages',
+  'update-fear-greed',
+])
+
+export function getSchedulerJobSet(): SchedulerJobSet {
+  const raw = process.env.SCHEDULER_JOBS ?? 'all'
+  if (raw === 'all' || raw === 'main' || raw === 'perps') return raw
+  // An unrecognized value must fail the process, not fall back to 'all': two
+  // instances both running the PERP jobs would double-apply funding transfers
+  // and liquidations.
+  throw new Error(
+    `Invalid SCHEDULER_JOBS '${raw}'; expected 'all', 'main', or 'perps'.`
+  )
+}
+
+export function createJobs(jobSet: SchedulerJobSet) {
+  // Report any feed whose pollPeriodMs the tick cannot actually honour. Here
+  // rather than at module scope so it runs once per boot, with logging up.
+  validateOracleFeedPollPeriods()
+
   // Schedules are 6-field croner expressions (seconds first) evaluated in
   // America/Los_Angeles (DEFAULT_OPTS in ./helpers.ts) — NOT UTC. A run that
   // is still going when its next firing comes due is skipped ("protect").
-  return [
+  //
+  // A job excluded from this set must never be constructed: a Cron starts
+  // ticking the moment `new Cron` runs, so filtering the returned array
+  // would leave excluded jobs live.
+  const createJob = (
+    name: string,
+    schedule: string | null,
+    fn: (ctx: JobContext) => Promise<void>
+  ) =>
+    jobSet === 'all' || PERP_JOB_NAMES.has(name) === (jobSet === 'perps')
+      ? createCronJob(name, schedule, fn)
+      : null
+  const jobs = compact([
     createJob(
       'auto-leagues-cycle',
       '0 */10 * * * *', // every 10 minutes
@@ -174,7 +232,63 @@ export function createJobs() {
       '0 */5 * * * *', // every 5 minutes
       applyPendingClarifications
     ),
+    createJob(
+      'update-perps',
+      '0 0 * * * *', // every hour on the hour
+      updatePerps
+    ),
+    createJob(
+      'update-oracle-feeds',
+      // The FLOOR for how often any fast feed can be polled; each feed's own
+      // pollPeriodMs throttles it down from here, so raising this rate does
+      // not by itself increase load on any particular source. Derived from
+      // ORACLE_TICK_PERIOD_MS so the schedule and the throttle that rounds to
+      // it cannot drift apart.
+      `*/${ORACLE_TICK_PERIOD_MS / 1000} * * * * *`,
+      updateOracleFeeds
+    ),
+    createJob(
+      'update-openrouter-share',
+      // Hourly, not daily: each run appends a fresh-timestamped point for the
+      // trailing 7-day window (see the file header). At :50 so update-perps
+      // on the hour funds against a price minutes old rather than an hour.
+      // 24 calls/day against OpenRouter's 500/day account limit.
+      '0 50 * * * *',
+      updateOpenRouterShare
+    ),
+    createJob(
+      'update-model-classifications',
+      // Every 6 hours. Deliberately NOT a perp job: it makes a few hundred
+      // outbound HuggingFace calls, and the perps instance exists to keep the
+      // 2s oracle tick on an unshared event loop. It only writes a table the
+      // perps instance reads, so the split costs nothing.
+      // LA hours, like every schedule in this file. Chosen to miss both the
+      // 08:00 UTC API restart window and the ~10:00-11:30 UTC scheduler memory
+      // pressure window in BOTH DST offsets: 05/11/17/23 LA is 12/18/00/06 UTC
+      // in PDT and 13/19/01/07 UTC in PST. Those windows land on 00:00-04:30 LA
+      // across the two offsets, which makes this the only 6-hourly cycle that
+      // clears them year-round — do not shift it by an hour without redoing
+      // that arithmetic.
+      '0 15 5,11,17,23 * * *',
+      updateModelClassifications
+    ),
     // Daily jobs:
+    createJob(
+      'classification-audit',
+      // 06:40 LA. NOT 03:40, which an earlier revision picked while claiming it
+      // sat in the "same quiet window" as the schedule above — it is the exact
+      // opposite. That comment defines the window to AVOID as 00:00-04:30 LA
+      // (the 08:00 UTC API restart and the ~10:00-11:30 UTC scheduler memory
+      // pressure, mapped through both DST offsets), which 03:40 is inside.
+      //
+      // 06:40 clears it in PDT and PST alike, and sits between the 05:15 and
+      // 11:15 firings of the classifier above so the two never contend for the
+      // HuggingFace rate limit. Daily rather than hourly because it re-verifies
+      // every published classification against a third-party API and nothing it
+      // looks for changes on an hourly timescale.
+      '0 40 6 * * *',
+      updateClassificationAudit
+    ),
     createJob(
       'process-membership-renewals',
       '0 0 8 * * *', // daily at 8:00 AM LA
@@ -286,6 +400,37 @@ export function createJobs() {
       () => updateStatsCore(7)
     ),
     createJob(
+      'update-trump-approval',
+      // Every 5 minutes, which is VoteHub's OWN freshness bound: their
+      // averages endpoint serves `Cache-Control: max-age=300`, so polling
+      // faster returns cached bytes rather than a newer number — and it
+      // bounds what any other observer can see too, since they read through
+      // the same cache. Hourly left a 59-minute window in which a move was
+      // publicly visible while the market still traded on the old mark.
+      '0 */5 * * * *',
+      updateTrumpApproval
+    ),
+    createJob(
+      'update-votehub-averages',
+      // The other VoteHub averages (2026 generic ballot, Vance favorability).
+      // Same 5-minute cadence and the same max-age=300 reasoning as the Trump
+      // job above, offset by two minutes so the two never hit VoteHub in the
+      // same instant. A separate job because the Trump job's name and
+      // `[trump-approval]` prefix are what the alert policies key on; these
+      // feeds alert under `[votehub]`.
+      '0 2-59/5 * * * *',
+      updateVoteHubAverages
+    ),
+    createJob(
+      'update-fear-greed',
+      // Alternative.me's Crypto Fear & Greed index steps once a day around
+      // 00:00 UTC; polling every 5 minutes bounds how long the new daily
+      // value is public before it is the market's mark. Offset from the two
+      // VoteHub jobs so the three slow-feed publishers never fire together.
+      '0 3-59/5 * * * *',
+      updateFearGreed
+    ),
+    createJob(
       'onboarding-notification',
       '0 0 11 * * *', // daily at 11:00 AM LA
       sendOnboardingNotificationsInternal
@@ -357,5 +502,10 @@ export function createJobs() {
       '*/10 * * * * *', // every 10 seconds
       pollSportsLiveScores
     ),
-  ]
+  ])
+  if (jobSet === 'perps' && jobs.length !== PERP_JOB_NAMES.size)
+    throw new Error(
+      `PERP job set mismatch: expected ${PERP_JOB_NAMES.size} jobs but created ${jobs.length} — PERP_JOB_NAMES is out of sync with the job list.`
+    )
+  return jobs
 }

@@ -1,8 +1,10 @@
+import { sum } from 'lodash'
 import { Answer } from './answer'
 import {
   cpmmMulti2SumToOneFeasible,
   cpmmMulti2SumToOnePools,
   getCpmmLiquidity,
+  getInitialAnswerPools,
   getMultiCpmmLiquidity,
 } from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
@@ -24,6 +26,8 @@ import {
   PseudoNumeric,
   Stonk,
   add_answers_mode,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
 } from './contract'
 import { PollOption } from './poll-option'
 import { User } from './user'
@@ -37,7 +41,7 @@ export function getNewContract(
     Contract,
     | 'id'
 
-// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
+    // (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
     | 'slug'
     | 'question'
     | 'description'
@@ -69,6 +73,8 @@ export function getNewContract(
     // Present ⇒ create a cpmm-multi-2 market with each answer's p set to its
     // (normalized) target prob. Absent ⇒ uniform 1/n cpmm-multi-1 (unchanged).
     initialProbs?: number[] | undefined
+    // Starting probability of each answer, as a percent. Defaults to an even split.
+    answerProbs?: number[]
 
     // Bountied
     isAutoBounty?: boolean | undefined
@@ -116,6 +122,7 @@ export function getNewContract(
     answerShortTexts,
     answerImageUrls,
     initialProbs,
+    answerProbs,
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
@@ -141,7 +148,8 @@ export function getNewContract(
         ante,
         answerShortTexts,
         answerImageUrls,
-        initialProbs
+        initialProbs,
+        answerProbs
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -167,6 +175,14 @@ export function getNewContract(
         shouldAnswersSumToOne ?? true,
         timezone ?? ''
       ),
+    // Perp markets are created through a dedicated /create-perp endpoint with
+    // its own required fields (oracleFeedId, maxLeverage, funding params, etc.)
+    // so they do not flow through the generic createContract factory.
+    PERP: (): never => {
+      throw new Error(
+        'Perp markets must be created via the /create-perp endpoint'
+      )
+    },
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -297,6 +313,89 @@ const getStonkCpmmProps = (initialProb: number, ante: number) => {
 
 export const VERSUS_COLORS = ['#4e46dc', '#e9a23b']
 
+// Bounds on a manually set starting probability, in percent. These match the
+// range bets are allowed to move an answer within, so a creator can't open a
+// market outside of where traders could ever put it.
+export const MIN_ANSWER_PROB = MIN_CPMM_PROB * 100
+export const MAX_ANSWER_PROB = MAX_CPMM_PROB * 100
+// How far off 100% a sum-to-one market's percentages may be before we reject
+// them rather than scaling them to fit. Lets creators type 33/33/33.
+export const ANSWER_PROB_SUM_TOLERANCE = 1
+
+// Checks manually set starting probabilities (percent, one per listed answer)
+// against the answers they'll be applied to. Returns a message explaining the
+// problem, or undefined if they're usable.
+export const getAnswerProbsError = (props: {
+  answerProbs: number[]
+  numAnswers: number
+  shouldAnswersSumToOne: boolean
+  hasOtherAnswer: boolean
+}) => {
+  const { answerProbs, numAnswers, shouldAnswersSumToOne, hasOtherAnswer } =
+    props
+
+  if (answerProbs.length !== numAnswers)
+    return `Expected ${numAnswers} starting probabilities, got ${answerProbs.length}.`
+
+  if (
+    answerProbs.some(
+      (prob) =>
+        !isFinite(prob) || prob < MIN_ANSWER_PROB || prob > MAX_ANSWER_PROB
+    )
+  )
+    return `Each starting probability must be between ${MIN_ANSWER_PROB}% and ${MAX_ANSWER_PROB}%.`
+
+  if (!shouldAnswersSumToOne) return undefined
+
+  const total = sum(answerProbs)
+  const rounded = Math.round(total * 10) / 10
+
+  if (hasOtherAnswer) {
+    // 'Other' takes whatever is left over, within the same bounds as any
+    // other answer.
+    if (total > 100 - MIN_ANSWER_PROB)
+      return `Starting probabilities add up to ${rounded}%, leaving less than ${MIN_ANSWER_PROB}% for the "Other" answer.`
+    if (total < 100 - MAX_ANSWER_PROB)
+      return `Starting probabilities add up to ${rounded}%, leaving more than ${MAX_ANSWER_PROB}% for the "Other" answer.`
+    return undefined
+  }
+
+  if (Math.abs(total - 100) > ANSWER_PROB_SUM_TOLERANCE)
+    return `Starting probabilities must add up to 100%, but they add up to ${rounded}%.`
+
+  // Validate the probabilities the pools will actually use. Scaling a total
+  // above 100% can otherwise push a 1% answer below the trading floor. Allow
+  // only machine-precision noise when comparing against the bounds.
+  if (
+    getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOtherAnswer).some(
+      (prob) =>
+        prob < MIN_CPMM_PROB - Number.EPSILON ||
+        prob > MAX_CPMM_PROB + Number.EPSILON
+    )
+  )
+    return `After normalization, each starting probability must be between ${MIN_ANSWER_PROB}% and ${MAX_ANSWER_PROB}%.`
+
+  return undefined
+}
+
+// Turns starting percentages into the fractions the answer pools are built
+// from, appending 'Other's share when the market has one. Assumes they already
+// passed getAnswerProbsError.
+const getInitialProbs = (
+  answerProbs: number[],
+  shouldAnswersSumToOne: boolean,
+  hasOtherAnswer: boolean
+) => {
+  if (!shouldAnswersSumToOne) return answerProbs.map((prob) => prob / 100)
+
+  const probs = hasOtherAnswer
+    ? [...answerProbs, 100 - sum(answerProbs)]
+    : answerProbs
+  // Scale out any rounding slop so the answers sum to exactly one.
+  const total = sum(probs)
+  return probs.map((prob) => prob / total)
+}
+
 const getMultipleChoiceProps = (
   contractId: string,
   userId: string,
@@ -306,7 +405,8 @@ const getMultipleChoiceProps = (
   ante: number,
   shortTexts?: string[],
   imageUrls?: string[],
-  initialProbs?: number[]
+  initialProbs?: number[],
+  answerProbs?: number[]
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
@@ -318,9 +418,8 @@ const getMultipleChoiceProps = (
   // has one entry per answer, sums-to-one is on, and there is no "Other" answer.
   const isV2 = !!initialProbs && initialProbs.length > 0
 
-  const answersWithOther = answers.concat(
-    !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
-  )
+  const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
+  const answersWithOther = answers.concat(hasOther ? ['Other'] : [])
   const answerObjects = createAnswers(
     contractId,
     userId,
@@ -333,9 +432,13 @@ const getMultipleChoiceProps = (
       shortTexts,
       imageUrls,
       initialProbs,
+      probs:
+        !isV2 && answerProbs
+          ? getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOther)
+          : undefined,
     })
   )
-  const system: CPMMMulti = {
+  const system: CPMMMulti = removeUndefinedProps({
     mechanism: isV2 ? 'cpmm-multi-2' : 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     addAnswersMode: addAnswersMode ?? 'DISABLED',
@@ -343,7 +446,12 @@ const getMultipleChoiceProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
-  }
+    // Answer probs move with every bet, so keep a record of where the creator
+    // opened them for the chart's starting point.
+    initialProbabilities: answerProbs
+      ? Object.fromEntries(answerObjects.map((a) => [a.id, a.prob]))
+      : undefined,
+  })
 
   return system
 }
@@ -461,9 +569,12 @@ function createAnswers(
     imageUrls?: string[]
     midpoints?: number[]
     initialProbs?: number[]
+    // Starting probability of each answer, as a fraction. Defaults to an even split.
+    probs?: number[]
   } = {}
 ) {
-  const { colors, shortTexts, imageUrls, midpoints, initialProbs } = options
+  const { colors, shortTexts, imageUrls, midpoints, initialProbs, probs } =
+    options
   const ids = answers.map(() => randomString())
   const now = Date.now()
 
@@ -536,6 +647,11 @@ function createAnswers(
     })
   }
 
+  // Custom starting probabilities: spread the ante around them instead.
+  const customPools = probs
+    ? getInitialAnswerPools(probs, ante, shouldAnswersSumToOne)
+    : undefined
+
   let prob = 0.5
   let poolYes = ante / answers.length
   let poolNo = ante / answers.length
@@ -559,13 +675,20 @@ function createAnswers(
   }
 
   return answers.map((text, i) => {
+    const { YES: answerPoolYes, NO: answerPoolNo } = customPools?.[i] ?? {
+      YES: poolYes,
+      NO: poolNo,
+    }
     const answer: Answer = removeUndefinedProps({
       ...baseAnswer(i, text),
-      poolYes,
-      poolNo,
+      poolYes: answerPoolYes,
+      poolNo: answerPoolNo,
       p: 0.5, // cpmm-multi-1 / cpmm-multi-2-at-uniform-init; per-answer p set on v2 creation (PR2c)
-      prob,
-      totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
+      prob: probs?.[i] ?? prob,
+      totalLiquidity: getMultiCpmmLiquidity({
+        YES: answerPoolYes,
+        NO: answerPoolNo,
+      }),
       isOther:
         shouldAnswersSumToOne &&
         addAnswersMode !== 'DISABLED' &&
@@ -620,5 +743,5 @@ const getPollProps = (
 
 export const DEFAULT_CONVERSION_SCORE_NUMERATOR = 2
 export const DEFAULT_CONVERSION_SCORE_DENOMINATOR = 15
-const DEFAULT_CONVERSION_SCORE =
+export const DEFAULT_CONVERSION_SCORE =
   DEFAULT_CONVERSION_SCORE_NUMERATOR / DEFAULT_CONVERSION_SCORE_DENOMINATOR

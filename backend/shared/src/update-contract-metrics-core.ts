@@ -195,12 +195,29 @@ const getVolumeAndCountSince = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, sum(abs(amount)) as volume,
-      count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day
-      from contract_bets
-      where created_time >= millis_to_ts($1)
-      and not is_redemption
-      and contract_id = any($2)
+      `with user_trades as (
+         select contract_id, user_id, created_time,
+                abs(amount)::numeric as volume
+         from contract_bets
+         where created_time >= millis_to_ts($1)
+           and not is_redemption
+           and contract_id = any($2)
+
+         union all
+
+         select contract_id, user_id, ts as created_time,
+                abs(original_cost_basis_delta)::numeric as volume
+         from contract_perp_events
+         where ts >= millis_to_ts($1)
+           and event_type in ('open', 'add', 'close')
+           and data->>'reason' is distinct from 'resolve-market'
+           and contract_id = any($2)
+       )
+       select contract_id, sum(volume) as volume,
+              count(distinct case
+                when created_time > now() - interval '1 day' then user_id
+              end)::numeric as count_day
+       from user_trades
        group by contract_id`,
       [since, contractIds],
       (r) => [

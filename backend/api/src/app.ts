@@ -29,6 +29,7 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 const ignoredEndpoints = [
+  '/internal-perp-broadcast',
   '/get-channel-messages',
   '/v0/user/by-id/',
   '/get-channel-memberships',
@@ -79,6 +80,17 @@ const getBaseName = (path: string) => {
   return base
 }
 
+// Postgres error codes for transactions that were aborted and rolled back under
+// contention. Both are already treated as retryable inside runTransactionWithRetries;
+// these are the ones that escape after its retry budget is exhausted.
+const RETRYABLE_PG_ERROR_CODES = new Set([
+  '40001', // serialization_failure
+  '40P01', // deadlock_detected
+])
+
+const isRetryablePgError = (error: any) =>
+  typeof error?.code === 'string' && RETRYABLE_PG_ERROR_CODES.has(error.code)
+
 export const apiErrorHandler: ErrorRequestHandler = (
   error,
   _req,
@@ -94,10 +106,26 @@ export const apiErrorHandler: ErrorRequestHandler = (
       }
       res.status(error.code).json(output)
     }
+  } else if (isRetryablePgError(error)) {
+    // The transaction was aborted and rolled back — nothing was committed, and a
+    // retry is expected to succeed. That is a 503, not a 500, and it must not leak
+    // a stack trace to the client.
+    log.info(`Transaction conflict (${error.code}); returning 503.`)
+    if (!res.headersSent) {
+      res
+        .status(503)
+        .json({ message: 'Transaction conflict. Please try again.' })
+    }
   } else {
+    // The full error (with stack) goes to the server log only. Returning the
+    // stack in the response body leaked internal file paths and gave users an
+    // indecipherable wall of text in place of an error message.
     log.error(error)
     if (!res.headersSent) {
-      res.status(500).json({ message: error.stack, error })
+      res.status(500).json({
+        message:
+          'An unexpected error occurred. Please try again, and report it if it persists.',
+      })
     }
   }
 }

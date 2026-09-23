@@ -134,6 +134,40 @@ export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
+/** Below this, a non-zero amount is float dust (no fee or payout is that
+ * small: the smallest possible fee is M$0.001). formatMoneyPrecise reads it
+ * as zero rather than as JavaScript's exponent notation, and callers that
+ * word a sign ("Paying …") should treat it as nothing rather than as a
+ * direction with a zero amount. */
+export const MONEY_PRECISE_DUST = 1e-6
+
+/**
+ * Mana formatting for exact fractional financial values such as perp fees,
+ * PnL, payouts and per-period funding. Values of at least 0.01 use cents;
+ * smaller non-zero values use two significant digits so a real debit never
+ * collapses to zero. Both go through formatNumber, so grouping and the
+ * decimal separator follow the viewer's locale like formatMoney. The sign
+ * goes before the moniker; non-finite input reads as zero.
+ */
+export function formatMoneyPrecise(amount: number) {
+  if (!Number.isFinite(amount)) return ENV_CONFIG.moneyMoniker + '0'
+  const absoluteAmount = Math.abs(amount)
+  if (absoluteAmount < MONEY_PRECISE_DUST) return ENV_CONFIG.moneyMoniker + '0'
+
+  const fractionDigits =
+    absoluteAmount >= 0.01
+      ? 2
+      : // Two significant digits: count the decimals they occupy. The value
+        // is ≥ 1e-6, so its string form is never in exponent notation.
+        (String(Number(absoluteAmount.toPrecision(2))).split('.')[1] ?? '')
+          .length
+  const numberText = formatNumber(absoluteAmount, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })
+  return `${amount < 0 ? '-' : ''}${ENV_CONFIG.moneyMoniker}${numberText}`
+}
+
 // Like formatMoney, but avoids collapsing tiny non-zero spends to "Ṁ0".
 // Any positive amount below 1 is shown as Ṁ1 (and any negative amount above
 // -1 as -Ṁ1) so the UI always reflects that mana was actually spent.

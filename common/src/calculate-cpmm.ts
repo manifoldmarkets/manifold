@@ -220,8 +220,10 @@ export function calculateCpmmAmountToBuySharesFixedP(
   }
   // calculateCpmmShares is monotone increasing in the amount, so the signed shares
   // error is a monotone comparator (binarySearch also fail-fasts on NaN).
-  return binarySearch(low, high, (mid) =>
-    calculateCpmmShares(state.pool, state.p, mid, outcome) - shares
+  return binarySearch(
+    low,
+    high,
+    (mid) => calculateCpmmShares(state.pool, state.p, mid, outcome) - shares
   )
 }
 
@@ -528,7 +530,12 @@ export function calculateCpmmMultiSumsToOneSale(
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) {
-  if (Math.round(shares) < 0) {
+  // Snap floating-point dust (e.g. -4.44e-16) to an exact zero no-op so it
+  // can't invert the arbitrage binary search into NaN. Zero must stay legal:
+  // the sell panel previews with 0 shares while its input is empty.
+  if (floatingEqual(shares, 0)) {
+    shares = 0
+  } else if (shares < 0) {
     throw new Error('Cannot sell non-positive shares')
   }
 
@@ -633,7 +640,10 @@ export function calculateCpmmAmountToBuyShares(
   // cpmm-multi-2 answers carry a general (non-0.5) p, so they take the same
   // general-p inverse as cpmm-1 (the startCpmmState above already supplies
   // answer.p). cpmm-multi-1 stays on the p=0.5 FixedP path (byte-identical).
-  if (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-2') {
+  if (
+    contract.mechanism === 'cpmm-1' ||
+    contract.mechanism === 'cpmm-multi-2'
+  ) {
     return calculateAmountToBuyShares(
       startCpmmState,
       shares,
@@ -661,7 +671,12 @@ export function calculateCpmmSale(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
-  if (Math.round(shares) < 0) {
+  // Snap floating-point dust (e.g. -4.44e-16) to an exact zero no-op so it
+  // can't invert the arbitrage binary search into NaN. Zero must stay legal:
+  // the sell panel previews with 0 shares while its input is empty.
+  if (floatingEqual(shares, 0)) {
+    shares = 0
+  } else if (shares < 0) {
     throw new Error('Cannot sell non-positive shares')
   }
 
@@ -893,10 +908,7 @@ export function cpmmMulti2SumToOnePools(
 // creation, the whole-market add re-price, and the "Other" split. If p ever needs
 // clamping away from {0,1} (float64 representability, GP19b caveat), this is the
 // single home for it.
-export function pForProbability(
-  pool: { YES: number; NO: number },
-  q: number
-) {
+export function pForProbability(pool: { YES: number; NO: number }, q: number) {
   return (q * pool.YES) / (q * pool.YES + (1 - q) * pool.NO)
 }
 
@@ -1018,9 +1030,66 @@ export function addCpmmMultiLiquidityToAnswersIndependentlyV2(
 ) {
   const amountPerAnswer = amount / Object.keys(poolsByAnswer).length
   return mapValues(poolsByAnswer, ({ pool, p }) => {
-    const { newPool, liquidity, newP } = addCpmmLiquidity(pool, p, amountPerAnswer)
+    const { newPool, liquidity, newP } = addCpmmLiquidity(
+      pool,
+      p,
+      amountPerAnswer
+    )
     return { pool: newPool, p: newP, liquidity }
   })
+}
+
+// The pool for a single answer at `prob`, minted out of `amount` mana worth of
+// shares. 1 mana mints one YES and one NO share, but holding both sides equally
+// would put the answer at 50%, so the excess on the cheap side is thrown away.
+export const getPoolAtProb = (prob: number, amount: number) =>
+  prob < 0.5
+    ? { YES: amount, NO: (prob / (1 - prob)) * amount }
+    : { YES: ((1 - prob) / prob) * amount, NO: amount }
+
+// Seed pools for a brand new cpmm-multi-1 market whose answers start at `probs`,
+// backed by exactly `ante` mana.
+//
+// When exactly one answer resolves YES, `amount` mana mints `amount` YES shares
+// of *every* answer (a full set), and a NO share of one answer is a YES share of
+// each other answer. So we spread the ante over the answers, keep only the
+// shares that hold each answer at its target probability, and then recombine the
+// leftovers into full sets to add back — the same recycling
+// addCpmmMultiLiquidityAnswersSumToOne does when subsidising a live market.
+export const getInitialAnswerPools = (
+  probs: number[],
+  ante: number,
+  shouldAnswersSumToOne: boolean
+) => {
+  const n = probs.length
+  // Independent answers are each their own binary market with their own ante.
+  if (!shouldAnswersSumToOne || n === 1)
+    return probs.map((prob) => getPoolAtProb(prob, ante / n))
+
+  const pools = probs.map(() => ({ YES: 0, NO: 0 }))
+  let amountRemaining = ante
+  // Each round recovers a fraction of the previous one, so this converges
+  // geometrically; the cap is just a guard against a pathological ratio.
+  for (let round = 0; round < 1000 && amountRemaining > EPSILON; round++) {
+    const amount = amountRemaining / n
+    // Shares minted this round that the target probability left unused.
+    const unusedYes = probs.map(() => 0)
+    const unusedNo = probs.map(() => 0)
+    probs.forEach((prob, i) => {
+      const pool = getPoolAtProb(prob, amount)
+      pools[i].YES += pool.YES
+      pools[i].NO += pool.NO
+      unusedYes[i] = amount - pool.YES
+      unusedNo[i] = amount - pool.NO
+    })
+    // An unused NO share of one answer is a YES share of every other answer, so
+    // we can rebuild (and re-spend) as many full sets as the scarcest answer has.
+    const totalUnusedNo = sum(unusedNo)
+    amountRemaining = Math.min(
+      ...probs.map((_, i) => unusedYes[i] + totalUnusedNo - unusedNo[i])
+    )
+  }
+  return pools
 }
 
 // Must be at least this many yes and no shares

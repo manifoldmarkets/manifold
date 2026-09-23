@@ -6,6 +6,7 @@ import * as pgPromise from 'pg-promise'
 import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { getMonitoringContext } from 'shared/monitoring/context'
+import { FAST_TICK_TX_TAG } from 'shared/perps/oracle-tick-bounds'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 import { LOCAL_ONLY, isProd, log, metrics } from '../utils'
 export { type SupabaseClient } from 'common/supabase/utils'
@@ -13,6 +14,30 @@ export { type SupabaseClient } from 'common/supabase/utils'
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
     // Read more: https://node-postgres.com/apis/pool#error
+    // Serialization failures (40001) are expected contention under the perp
+    // engine's advisory-lock + SERIALIZABLE pattern and are retried by
+    // transactWithRetries. Log one line instead of the full client/event
+    // dump (the entire pg client state), and keep them below the ERROR
+    // severity that GCP log-based alerts page on.
+    if (err?.code === '40001') {
+      log.warn(`pg serialization failure (retried): ${err.message}`)
+      return
+    }
+    // The fast oracle tick sets its own lock/statement timeouts and treats
+    // hitting them as a skipped slot, not a fault. This handler runs before
+    // any caller-level downgrade, so without scoping it here that deliberate
+    // behaviour still lands in ERROR telemetry on every contended tick.
+    // Narrow on the tag: the same codes from any other caller stay ERROR,
+    // because nobody else asked for them.
+    if (
+      e?.ctx?.tag === FAST_TICK_TX_TAG &&
+      (err?.code === '55P03' || err?.code === '57014')
+    ) {
+      log.warn(
+        `perp oracle tick gave up its slot (${err.code}): ${err.message}`
+      )
+      return
+    }
     log.error('pgPromise background error', {
       error: err,
       event: e,
@@ -198,5 +223,11 @@ export function createSupabaseDirectClient(opts?: {
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({
   tiLevel: pgp.txMode.isolationLevel.serializable,
   readOnly: false,
+  deferrable: false,
+})
+
+export const READ_ONLY_REPEATABLE_MODE = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+  readOnly: true,
   deferrable: false,
 })

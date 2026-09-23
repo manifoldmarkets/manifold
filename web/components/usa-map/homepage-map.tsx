@@ -9,6 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { useHasHover } from 'web/hooks/use-has-hover'
 import {
   EmptyStateContract,
   StateContract,
@@ -21,10 +22,25 @@ import { GovernorState } from './governor-state'
 import { HouseMapSection } from './house-map'
 import { FeedContractCard } from '../contract/feed-contract-card'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
+import { isCandidateLabelledAnswer } from './state-election-map'
 
 // 2026 midterms: no presidential race. The Senate/Governor races map onto
 // states; the House is decided by district, so it's a table rather than a map.
 type MapMode = 'senate' | 'house' | 'governor'
+
+/**
+ * Whether the state's party market already names the candidates — e.g. its
+ * answers read "Josh Turek (D)" rather than "Democratic party".
+ *
+ * When it does, the separate "who's running" card is pure duplication: the
+ * same two names a few pixels apart, and at slightly different prices, since
+ * they are two independent markets. Show it only where the party panel still
+ * says nothing about who is on the ballot.
+ */
+const partyMarketNamesCandidates = (contract: Contract | null | undefined) =>
+  !!contract &&
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.answers.some((a) => isCandidateLabelledAnswer(a.text))
 
 export function HomepageMap(props: {
   rawSenateStateContracts: MapContractsDictionary
@@ -68,6 +84,14 @@ export function HomepageMap(props: {
     undefined
   )
 
+  // On touch devices (iOS especially), hover is emulated on tap: the first tap
+  // fires mouseenter and gets swallowed as a hover-reveal, so the detail panel
+  // appears off hoveredState without a click ever pinning targetState. A follow
+  // -up tap then fires mouseleave, collapsing the panel just as the user tries
+  // to hit a bet button. Ignore hover on no-hover devices so taps drive
+  // selection through targetState alone, which fires reliably.
+  const hasHover = useHasHover()
+
   function handleClick(newTargetState: string | undefined) {
     if (targetState && newTargetState == targetState) {
       setTargetState(undefined)
@@ -77,11 +101,11 @@ export function HomepageMap(props: {
   }
 
   function onMouseEnter(hoverState: string) {
-    setHoveredState(hoverState)
+    if (hasHover) setHoveredState(hoverState)
   }
 
   function onMouseLeave() {
-    setHoveredState(undefined)
+    if (hasHover) setHoveredState(undefined)
   }
 
   // The state whose detail (and candidate card) is shown: hover takes priority,
@@ -117,17 +141,22 @@ export function HomepageMap(props: {
               targetState={targetState}
               setTargetState={setTargetState}
               customTitleFunction={extractBeforeGovernorsRace}
+              trackingPostfix="election map governor"
             />
           ) : (
             <EmptyStateContract />
           )}
-          {selectedState && rawGovernorCandidateContracts[selectedState] && (
-            <CandidateRaceCard
-              contract={
-                rawGovernorCandidateContracts[selectedState] as Contract
-              }
-            />
-          )}
+          {selectedState &&
+            rawGovernorCandidateContracts[selectedState] &&
+            !partyMarketNamesCandidates(
+              governorContractsDictionary[selectedState]
+            ) && (
+              <CandidateRaceCard
+                contract={
+                  rawGovernorCandidateContracts[selectedState] as Contract
+                }
+              />
+            )}
         </>
       ) : mode === 'house' ? (
         <>
@@ -184,15 +213,22 @@ export function HomepageMap(props: {
               targetState={targetState}
               hoveredState={hoveredState}
               setTargetState={setTargetState}
+              trackingPostfix="election map senate"
             />
           ) : (
             <EmptyStateContract />
           )}
-          {selectedState && rawSenateCandidateContracts[selectedState] && (
-            <CandidateRaceCard
-              contract={rawSenateCandidateContracts[selectedState] as Contract}
-            />
-          )}
+          {selectedState &&
+            rawSenateCandidateContracts[selectedState] &&
+            !partyMarketNamesCandidates(
+              senateContractsDictionary[selectedState]
+            ) && (
+              <CandidateRaceCard
+                contract={
+                  rawSenateCandidateContracts[selectedState] as Contract
+                }
+              />
+            )}
         </>
       )}
     </Col>

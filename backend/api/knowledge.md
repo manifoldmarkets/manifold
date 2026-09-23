@@ -318,8 +318,8 @@ create table
     created_at timestamptz not null default now (),
     created_by text references users (id),
     end_time timestamptz, -- null = permanent ban
-    ended_by text references users (id),
-    ended_at timestamptz -- set when ban is manually lifted
+    ended_by text, -- mod user id, the user themself (modAlert dismissal), or 'system' (auto-expiry); deliberately no FK
+    ended_at timestamptz -- set when ban is lifted, manually or by the hourly unban-users job
   );
 ```
 

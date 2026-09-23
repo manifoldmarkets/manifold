@@ -28,21 +28,36 @@ const PREVENT_ZOOM_SET_NATIVE = `(function() {
 const isIOS = Platform.OS === 'ios'
 
 export const CustomWebview = (props: {
+  // Changing this remounts the WebView. recreateWebView bumps it, because a
+  // renderer-killed WebView cannot be revived with .reload().
+  webviewKey: number
   urlToLoad: string
   webview: RefObject<WebView>
-  resetWebView: () => void
+  // A load error: reload the live instance, keeping the back stack.
+  reloadWebView: () => void
+  // The OS killed the renderer / content process: only a fresh instance helps.
+  recreateWebView: () => void
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
+  // Reports where the WebView is going ('start') and what actually committed
+  // ('commit'), so the app can avoid posting credentials into third-party pages
+  // such as iDenfy. The start URL matters: clearing trust for EVERY navigation
+  // start strands us when a navigation is abandoned (the user leaving for the
+  // OAuth flow), because onLoad then never fires to restore it.
+  onNavigate: (url: string | null, phase: 'start' | 'commit') => void
   display: boolean
 }) => {
   const {
+    webviewKey,
     urlToLoad,
     webview,
-    resetWebView,
+    reloadWebView,
+    recreateWebView,
     setHasLoadedWebView,
     handleMessageFromWebview,
     handleExternalLink,
+    onNavigate,
     display,
   } = props
 
@@ -80,8 +95,20 @@ export const CustomWebview = (props: {
           }
         >
           <WebView
+            key={webviewKey}
             {...sharedWebViewProps}
             style={styles.webView}
+            onLoadStart={(e) => onNavigate(e.nativeEvent.url, 'start')}
+            // Restore trust from a committed load. onNavigationStateChange is
+            // not usable here: it also fires for the provisional navigation
+            // START (on iOS with loading still false), which would mark a
+            // Manifold URL trusted while an external document is still active.
+            // Note onLoad is not strictly success-only — Android's
+            // onReceivedError deliberately emits the finish event before the
+            // error (RNCWebViewClient.java) — so 'commit' can carry a URL that
+            // failed to load. Harmless: this gate is a first cut, and the
+            // enforcing origin check runs inside the receiving document.
+            onLoad={(e) => onNavigate(e.nativeEvent.url, 'commit')}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -89,12 +116,12 @@ export const CustomWebview = (props: {
             }}
             source={{ uri: urlToLoad }}
             ref={webview}
-            onError={(e) => handleWebviewError(e, resetWebView)}
+            onError={(e) => handleWebviewError(e, reloadWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
+            onRenderProcessGone={(e) => handleWebviewKilled(e, recreateWebView)}
             onContentProcessDidTerminate={(e) =>
-              handleWebviewKilled(e, resetWebView)
+              handleWebviewKilled(e, recreateWebView)
             }
             onScroll={handleScroll}
             onMessage={async (m) => {
@@ -109,8 +136,20 @@ export const CustomWebview = (props: {
       ) : (
         <View style={[styles.container, { position: 'relative' }]}>
           <WebView
+            key={webviewKey}
             {...sharedWebViewProps}
             style={styles.webView}
+            onLoadStart={(e) => onNavigate(e.nativeEvent.url, 'start')}
+            // Restore trust from a committed load. onNavigationStateChange is
+            // not usable here: it also fires for the provisional navigation
+            // START (on iOS with loading still false), which would mark a
+            // Manifold URL trusted while an external document is still active.
+            // Note onLoad is not strictly success-only — Android's
+            // onReceivedError deliberately emits the finish event before the
+            // error (RNCWebViewClient.java) — so 'commit' can carry a URL that
+            // failed to load. Harmless: this gate is a first cut, and the
+            // enforcing origin check runs inside the receiving document.
+            onLoad={(e) => onNavigate(e.nativeEvent.url, 'commit')}
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
@@ -118,12 +157,12 @@ export const CustomWebview = (props: {
             }}
             source={{ uri: urlToLoad }}
             ref={webview}
-            onError={(e) => handleWebviewError(e, resetWebView)}
+            onError={(e) => handleWebviewError(e, reloadWebView)}
             renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
+            onRenderProcessGone={(e) => handleWebviewKilled(e, recreateWebView)}
             onContentProcessDidTerminate={(e) =>
-              handleWebviewKilled(e, resetWebView)
+              handleWebviewKilled(e, recreateWebView)
             }
             onMessage={async (m) => {
               try {

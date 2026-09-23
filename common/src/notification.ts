@@ -83,6 +83,9 @@ export type notification_source_types =
   | 'bet_reply'
   | 'new_message'
   | 'post'
+  | 'social_reply'
+  | 'social_mention'
+  | 'social_post_like'
   | 'post_like'
   | 'post_comment_like'
   | love_notification_source_types
@@ -162,6 +165,11 @@ type notification_descriptions = {
   }
 }
 export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
+  social_replies: {
+    simple: 'Replies on Yap',
+    detailed: 'Someone replied to your post on Yap',
+    verb: 'replied to your post',
+  },
   all_answers_on_my_markets: {
     simple: 'Answers on your questions',
     detailed: 'Answers on your own questions',
@@ -396,6 +404,15 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All new comments on posts you follow',
     verb: 'commented',
   },
+  perp_liquidation: {
+    simple: 'Perp liquidations',
+    detailed: 'When one of your perpetual futures positions is liquidated',
+  },
+  perp_adl: {
+    simple: 'Perp auto-deleveraging',
+    detailed:
+      'When your perpetual futures position is auto-deleveraged (ADL) because the opposing pool is insolvent',
+  },
 }
 
 export type BettingStreakData = {
@@ -608,6 +625,7 @@ export function getSourceUrl(notification: Notification) {
 export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
+  'social_post_like',
   'post_like',
   'post_comment_like',
 ]
@@ -632,13 +650,12 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
 export const DELETE_PUSH_TOKEN = 'delete'
 
 export function combineReactionNotifications(notifications: Notification[]) {
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) =>
-      `${n.sourceType}-${
-        n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
-      }-${n.sourceText}`
-  )
+  const groupedNotificationsBySourceType = groupBy(notifications, (n) => {
+    if (n.sourceType === 'social_post_like')
+      return `${n.sourceType}-${n.sourceId}`
+    const title = n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
+    return `${n.sourceType}-${title}-${n.sourceText}`
+  })
 
   const newNotifications = Object.values(groupedNotificationsBySourceType).map(
     (notifications) => {

@@ -19,6 +19,14 @@ export type MetricDescriptor = {
 export type MetricLabels = Record<string, string>
 
 export const CUSTOM_METRICS = {
+  'perps/mnx_backoff_remaining_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/mnx_backoff_suppressed_reads': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'ws/open_connections': {
     metricKind: 'GAUGE',
     valueKind: 'int64Value',
@@ -32,6 +40,17 @@ export const CUSTOM_METRICS = {
     valueKind: 'int64Value',
   },
   'ws/broadcasts_sent': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  // Oracle-tick pushes handed from the scheduler to the API for broadcast.
+  // A sustained gap between these two is the signal that perp pages have
+  // silently fallen back to polling, i.e. that displayed prices are lagging.
+  'perps/quote_pushes_sent': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'perps/quote_push_failures': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },

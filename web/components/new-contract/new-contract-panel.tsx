@@ -331,7 +331,7 @@ export function NewContractPanel(props: {
       try {
         const contracts = await searchContracts({
           term: question,
-          contractType: formState.outcomeType || undefined,
+          contractType: formState.outcomeType ?? undefined,
           filter: 'open',
           limit: 10,
           sort: 'most-popular',
@@ -416,6 +416,7 @@ export function NewContractPanel(props: {
         description: draft.data.description,
         outcomeType: draft.data.outcomeType as any,
         answers: draft.data.answers,
+        answerProbs: undefined,
         closeDate: draft.data.closeDate,
         closeHoursMinutes: draft.data.closeHoursMinutes,
         visibility: draft.data.visibility,
@@ -595,6 +596,8 @@ export function NewContractPanel(props: {
       if (result?.answers && result.answers.length > 0) {
         // Append new answers to existing ones
         updateField('answers', [...formState.answers, ...result.answers])
+        // New answers arrive without probabilities, so fall back to an even split.
+        updateField('answerProbs', undefined)
         // Clear answers error when generating answers
         clearError('answers')
       }
@@ -785,6 +788,9 @@ export function NewContractPanel(props: {
       ...prev,
       outcomeType: newType,
       shouldAnswersSumToOne: defaultShouldAnswersSumToOne,
+      // The answer list is rebuilt below, so any starting probabilities the
+      // creator set no longer line up with it.
+      answerProbs: undefined,
       // Clear all market-specific data for discussion posts
       answers:
         newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
@@ -858,7 +864,12 @@ export function NewContractPanel(props: {
       if (newMode === 'DISABLED' && prev.answers.length < 2) {
         const slotsNeeded = 2 - prev.answers.length
         const newAnswers = [...prev.answers, ...Array(slotsNeeded).fill('')]
-        return { ...prev, addAnswersMode: newMode, answers: newAnswers }
+        return {
+          ...prev,
+          addAnswersMode: newMode,
+          answers: newAnswers,
+          answerProbs: undefined,
+        }
       }
       return { ...prev, addAnswersMode: newMode }
     })
@@ -959,6 +970,10 @@ export function NewContractPanel(props: {
               formState.initialProbs?.[originalIndex] ?? defaultPct
           )
         }
+        if (formState.answerProbs)
+          payload.answerProbs = mcAnswerRows.map(
+            ({ originalIndex }) => formState.answerProbs?.[originalIndex] ?? 0
+          )
       } else if (formState.outcomeType === 'POLL') {
         const pollAnswers = formState.answers.filter((a) => a.trim().length > 0)
         // Add "See results" option if enabled
@@ -1081,6 +1096,7 @@ export function NewContractPanel(props: {
     unit: formState.unit,
     shouldAnswersSumToOne: formState.shouldAnswersSumToOne,
     addAnswersMode: formState.addAnswersMode,
+    answerProbs: formState.answerProbs,
     includeSeeResults: formState.includeSeeResults,
     pollType: formState.pollType,
   }
@@ -1205,6 +1221,9 @@ export function NewContractPanel(props: {
                 formState.visibility === 'public' ? 'unlisted' : 'public'
               )
             }}
+            onEditAnswerProbs={(answerProbs) =>
+              updateFieldWithErrorClear('answerProbs', answerProbs)
+            }
             onEditAnswers={(answers) => {
               updateFieldWithErrorClear('answers', answers)
               // For DATE markets, regenerate midpoints after editing
@@ -1439,6 +1458,7 @@ export function NewContractPanel(props: {
                   (answer) => answer.toLowerCase().trim() !== 'other'
                 )
                 updateField('answers', filteredAnswers)
+                updateField('answerProbs', undefined)
               }
             }}
             similarContracts={similarContracts}

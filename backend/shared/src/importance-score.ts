@@ -2,7 +2,9 @@ import {
   BountiedQuestionContract,
   Contract,
   isMarketRanked,
+  PerpContract,
 } from 'common/contract'
+import { getOracleLogPriceChange } from 'common/perps/oracle'
 import { floatingEqual, logit } from 'common/util/math'
 import {
   DAY_MS,
@@ -12,14 +14,13 @@ import {
   WEEK_MS,
   YEAR_MS,
 } from 'common/util/time'
-import { clamp, sortBy } from 'lodash'
+import { clamp, sortBy, uniq } from 'lodash'
 import {
   SupabaseDirectClient,
   SupabaseDirectClientTimeout,
 } from 'shared/supabase/init'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { log, prefixedContractColumnsToSelect } from 'shared/utils'
-
 
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
@@ -28,6 +29,38 @@ import { bulkUpdate } from 'shared/supabase/utils'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
+
+// The batch score write races with other multi-row contracts writers (perp
+// oracle ticks, metrics updates) and deadlocks a few times a day (40P01).
+// Take the row locks in id order up front so two id-ordered writers can never
+// cycle; the plain bulkUpdate acquires them in join order instead.
+const updateContractScores = async (
+  pg: SupabaseDirectClientTimeout,
+  updates: {
+    id: string
+    boosted: boolean
+    importance_score: number
+    freshness_score: number
+    daily_score: number
+  }[]
+) => {
+  if (!updates.length) return
+  await pg.tx(async (tx) => {
+    // .any, NOT .none: the lock select returns one row per contract, and
+    // pg-promise's none() rejects on any returned row ("No return data was
+    // expected"), which aborted the transaction before the score write.
+    await tx.any(
+      `select 1 from contracts where id in ($1:csv) order by id for update`,
+      [updates.map((u) => u.id)]
+    )
+    await bulkUpdate(tx, 'contracts', ['id'], updates)
+  })
+}
+
+const isDeadlock = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: unknown }).code === '40P01'
 
 export async function calculateImportanceScore(
   pg: SupabaseDirectClientTimeout,
@@ -78,6 +111,11 @@ export async function calculateImportanceScore(
 
   const contracts = activeContracts.concat(previouslyActiveContractsFiltered)
   const contractIds = contracts.map((c) => c.id)
+  const perpDailyPriceChanges = await getPerpDailyPriceChanges(
+    pg,
+    contracts,
+    dayAgo
+  )
 
   log(
     `Found ${contracts.length} contracts to score`,
@@ -127,7 +165,8 @@ export async function calculateImportanceScore(
       todayTradersByContract[contract.id] ?? 0,
       hourAgoTradersByContract[contract.id] ?? 0,
       thisWeekTradersByContract[contract.id] ?? 0,
-      boosted
+      boosted,
+      perpDailyPriceChanges[contract.id] ?? 0
     )
 
     if (isNaN(dailyScore)) {
@@ -247,17 +286,13 @@ export async function calculateImportanceScore(
   }
 
   if (!readOnly) {
-    log('Updating', contractsWithUpdates.length, 'contracts')
-    await bulkUpdate(
-      pg,
-      'contracts',
-      ['id'],
+    const updates = sortBy(
       contractsWithUpdates
         .filter(
           (c) =>
-            !isNaN(c.importanceScore) &&
-            !isNaN(c.freshnessScore) &&
-            !isNaN(c.dailyScore)
+            Number.isFinite(c.importanceScore) &&
+            Number.isFinite(c.freshnessScore) &&
+            Number.isFinite(c.dailyScore)
         )
         .map((contract) => ({
           id: contract.id,
@@ -265,8 +300,23 @@ export async function calculateImportanceScore(
           importance_score: contract.importanceScore,
           freshness_score: contract.freshnessScore,
           daily_score: contract.dailyScore,
-        }))
+        })),
+      'id'
     )
+    log('Updating', updates.length, 'contracts')
+    try {
+      await updateContractScores(pg, updates)
+    } catch (error) {
+      if (!isDeadlock(error)) throw error
+      // A writer with a different lock order beat us; back off with jitter so
+      // we don't re-collide in lockstep, and let a second loss crash the job
+      // (that is a real signal, not a race).
+      log.warn('contract score update lost a deadlock race, retrying once')
+      await new Promise((resolve) =>
+        setTimeout(resolve, 250 + Math.random() * 500)
+      )
+      await updateContractScores(pg, updates)
+    }
   }
 }
 
@@ -285,13 +335,26 @@ export const getContractTraders = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select cb.contract_id, count(distinct cb.user_id)::int as n
-       from contract_bets cb
-                join users u on cb.user_id = u.id
-       where cb.created_time >= millis_to_ts($1)
-         and u.is_bot = false
-          and cb.contract_id = ANY(ARRAY[$2])
-       group by cb.contract_id`,
+      `with user_trades as (
+         select contract_id, user_id
+         from contract_bets
+         where created_time >= millis_to_ts($1)
+           and contract_id = any($2)
+
+         union all
+
+         select contract_id, user_id
+         from contract_perp_events
+         where ts >= millis_to_ts($1)
+           and event_type in ('open', 'add', 'close')
+           and data->>'reason' is distinct from 'resolve-market'
+           and contract_id = any($2)
+       )
+       select ut.contract_id, count(distinct ut.user_id)::int as n
+       from user_trades ut
+       join users u on ut.user_id = u.id
+       where u.is_bot = false
+       group by ut.contract_id`,
       [since, inContractIds],
       (r) => [r.contract_id as string, r.n as number]
     )
@@ -318,6 +381,43 @@ export const getContractVoters = async (
   )
 }
 
+export const getPerpDailyPriceChanges = async (
+  pg: SupabaseDirectClientTimeout,
+  contracts: Contract[],
+  cutoff: number
+) => {
+  const perps = contracts.filter(
+    (contract): contract is PerpContract => contract.mechanism === 'perp'
+  )
+  const feedIds = uniq(perps.map((contract) => contract.oracleFeedId))
+  if (feedIds.length === 0) return {} as Record<string, number>
+
+  const rows = await pg.manyOrNone<{
+    feed_id: string
+    price: number | string
+  }>(
+    `select distinct on (feed_id) feed_id, price
+     from oracle_prices
+     where feed_id = any($1)
+       and ts <= millis_to_ts($2)
+     order by feed_id, ts desc`,
+    [feedIds, cutoff]
+  )
+  const previousPriceByFeed = Object.fromEntries(
+    rows.map((row) => [row.feed_id, Number(row.price)])
+  )
+
+  return Object.fromEntries(
+    perps.map((contract) => [
+      contract.id,
+      getOracleLogPriceChange(
+        contract.oraclePrice,
+        previousPriceByFeed[contract.oracleFeedId]
+      ),
+    ])
+  )
+}
+
 export const computeContractScores = (
   now: number,
   contract: Contract,
@@ -327,12 +427,16 @@ export const computeContractScores = (
   tradersToday: number,
   traderHour: number,
   tradersWeek: number,
-  isBoosted: boolean
+  isBoosted: boolean,
+  perpDailyPriceChange = 0
 ) => {
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
   const wasCreatedToday = contract.createdTime > now - DAY_MS
-  const homePageScoreAdjustment = getActiveHomePageScoreAdjustment(contract, now)
+  const homePageScoreAdjustment = getActiveHomePageScoreAdjustment(
+    contract,
+    now
+  )
 
   const { createdTime, closeTime, isResolved, outcomeType, resolutionTime } =
     contract
@@ -372,6 +476,17 @@ export const computeContractScores = (
     const yesterdayProb = clamp(prob - probChanges.day, 0.01, 0.99)
     const todayProb = clamp(prob, 0.01, 0.99)
     logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
+    dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
+  } else if (contract.mechanism === 'perp' && !wasCreatedToday) {
+    // Numeric feeds have incomparable units, so use their scale-independent
+    // 24-hour endpoint log return. Funding imbalance is intentionally not a
+    // movement proxy: it can persist while the oracle is completely flat.
+    logOddsChange = Math.min(
+      Number.isFinite(perpDailyPriceChange)
+        ? Math.max(perpDailyPriceChange, 0)
+        : 0,
+      4
+    )
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   }
 
@@ -511,10 +626,7 @@ export const computeContractScores = (
   }
 }
 
-const getActiveHomePageScoreAdjustment = (
-  contract: Contract,
-  now: number
-) => {
+const getActiveHomePageScoreAdjustment = (contract: Contract, now: number) => {
   const { homePageScoreAdjustment, homePageScoreAdjustmentExpiresAt } = contract
   if (homePageScoreAdjustment === undefined) return 0
   if (

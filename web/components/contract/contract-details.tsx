@@ -85,6 +85,8 @@ export function CloseOrResolveTime(props: {
   const { contract, editable, className } = props
   const { resolutionTime, closeTime, isResolved } = contract
   if (contract.outcomeType === 'STONK') return null
+  // Perps have no scheduled close; "Never closes" text is noise in the header.
+  if (contract.outcomeType === 'PERP') return null
 
   return (
     <Row className={clsx('select-none items-center', className)}>

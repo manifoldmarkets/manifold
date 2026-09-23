@@ -5,6 +5,7 @@ import {
   calculateMarketLoanMax,
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
+  filterLoanEquityMetrics,
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
   MS_PER_DAY,
   isMarketEligibleForLoan,
@@ -45,6 +46,10 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     throw new APIError(400, 'Contract must be a market contract')
   }
 
+  if (contract.mechanism === 'perp') {
+    throw new APIError(400, 'Perp markets are not eligible for loans')
+  }
+
   // Check market eligibility for new loans
   const eligibility = isMarketEligibleForLoan({
     visibility: contract.visibility,
@@ -69,9 +74,10 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
 

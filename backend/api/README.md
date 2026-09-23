@@ -27,6 +27,12 @@ yarn dev:local
 
 Run `./deploy-api.sh [dev|prod]` in this directory
 
+The deploy scripts pass `PERP_TRADING_MODE` through to the API container. DEV
+defaults to `enabled`; PROD requires an explicit `enabled`, `reduce-only`, or
+`halted` value so a routine deploy cannot accidentally clear an incident mode.
+The controls are documented in `backend/shared/src/perps/README.md`; invalid
+values abort deployment.
+
 ## Secrets management
 
 Secrets are strings that shouldn't be checked into Git (eg API keys, passwords).

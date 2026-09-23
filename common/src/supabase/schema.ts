@@ -14,6 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      social_posts: {
+        Row: {
+          id: string
+          user_id: string
+          text: string
+          rich_content: Json | null
+          image_urls: string[]
+          created_time: string
+          edited_time: string | null
+          parent_id: string | null
+          root_id: string
+          source_post_id: string | null
+          source_contract_id: string | null
+          source_comment_id: string | null
+          source_bet_id: string | null
+          deleted_time: string | null
+          deleted_by: string | null
+          removed_by_moderator: boolean
+        }
+        Insert: {
+          id: string
+          user_id: string
+          text: string
+          rich_content?: Json | null
+          image_urls?: string[]
+          created_time?: string
+          edited_time?: string | null
+          parent_id?: string | null
+          root_id: string
+          source_post_id?: string | null
+          source_contract_id?: string | null
+          source_comment_id?: string | null
+          source_bet_id?: string | null
+          deleted_time?: string | null
+          deleted_by?: string | null
+          removed_by_moderator?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          text?: string
+          rich_content?: Json | null
+          image_urls?: string[]
+          created_time?: string
+          edited_time?: string | null
+          parent_id?: string | null
+          root_id?: string
+          source_post_id?: string | null
+          source_contract_id?: string | null
+          source_comment_id?: string | null
+          source_bet_id?: string | null
+          deleted_time?: string | null
+          deleted_by?: string | null
+          removed_by_moderator?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_source_post_id_fkey'
+            columns: ['source_post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_root_id_fkey'
+            columns: ['root_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_source_contract_id_fkey'
+            columns: ['source_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_deleted_by_fkey'
+            columns: ['deleted_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_post_markets: {
+        Row: {
+          post_id: string
+          contract_id: string
+          position: number
+        }
+        Insert: {
+          post_id: string
+          contract_id: string
+          position: number
+        }
+        Update: {
+          post_id?: string
+          contract_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_post_markets_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_post_markets_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_write_limits: {
+        Row: {
+          user_id: string
+          action: string
+          window_start: string
+          count: number
+        }
+        Insert: {
+          user_id: string
+          action: string
+          window_start?: string
+          count?: number
+        }
+        Update: {
+          user_id?: string
+          action?: string
+          window_start?: string
+          count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_write_limits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       answers: {
         Row: {
           color: string | null
@@ -592,6 +754,165 @@ export type Database = {
           data?: Json
           liquidity_id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      contract_perp_events: {
+        Row: {
+          applied_ts: string
+          contract_id: string
+          cost_basis_delta: number
+          data: Json | null
+          direction: string | null
+          event_type: string
+          id: number
+          leverage: number | null
+          oracle_price: number | null
+          original_cost_basis_delta: number
+          size_delta: number
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          applied_ts?: string
+          contract_id: string
+          cost_basis_delta?: number
+          data?: Json | null
+          direction?: string | null
+          event_type: string
+          id?: number
+          leverage?: number | null
+          oracle_price?: number | null
+          original_cost_basis_delta?: number
+          size_delta?: number
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          applied_ts?: string
+          contract_id?: string
+          cost_basis_delta?: number
+          data?: Json | null
+          direction?: string | null
+          event_type?: string
+          id?: number
+          leverage?: number | null
+          oracle_price?: number | null
+          original_cost_basis_delta?: number
+          size_delta?: number
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      contract_perp_funding_events: {
+        Row: {
+          adl_factor_long: number
+          adl_factor_short: number
+          contract_id: string
+          funding_rate: number
+          num_liquidations: number
+          oracle_price: number
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+          ts: string
+        }
+        Insert: {
+          adl_factor_long?: number
+          adl_factor_short?: number
+          contract_id: string
+          funding_rate: number
+          num_liquidations?: number
+          oracle_price: number
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+          ts: string
+        }
+        Update: {
+          adl_factor_long?: number
+          adl_factor_short?: number
+          contract_id?: string
+          funding_rate?: number
+          num_liquidations?: number
+          oracle_price?: number
+          pool_long_after?: number
+          pool_long_before?: number
+          pool_short_after?: number
+          pool_short_before?: number
+          ts?: string
+        }
+        Relationships: []
+      }
+      contract_perp_positions: {
+        Row: {
+          contract_id: string
+          cost_basis: number
+          direction: string
+          entry_price: number
+          leverage: number
+          liquidation_price: number
+          opened_time: string
+          original_cost_basis: number
+          size: number
+          taker_fee_cost_basis: number
+          updated_time: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          cost_basis: number
+          direction: string
+          entry_price: number
+          leverage: number
+          liquidation_price: number
+          opened_time?: string
+          original_cost_basis: number
+          size: number
+          taker_fee_cost_basis?: number
+          updated_time?: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          cost_basis?: number
+          direction?: string
+          entry_price?: number
+          leverage?: number
+          liquidation_price?: number
+          opened_time?: string
+          original_cost_basis?: number
+          size?: number
+          taker_fee_cost_basis?: number
+          updated_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oracle_prices: {
+        Row: {
+          feed_id: string
+          price: number
+          published_at: string
+          source_ts: string | null
+          ts: string
+        }
+        Insert: {
+          feed_id: string
+          price: number
+          published_at?: string
+          source_ts?: string | null
+          ts: string
+        }
+        Update: {
+          feed_id?: string
+          price?: number
+          published_at?: string
+          source_ts?: string | null
+          ts?: string
         }
         Relationships: []
       }

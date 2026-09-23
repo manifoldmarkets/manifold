@@ -1,12 +1,20 @@
+import {
+  getSocialRow,
+  limitSocialWrite,
+  socialAuthor,
+} from 'shared/social-posts'
 import { z } from 'zod'
 import type { ReportProps } from 'common/src/report'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 
 const schema: z.ZodSchema<ReportProps> = z
   .object({
     contentOwnerId: z.string(),
-    contentType: z.enum(['user', 'comment', 'contract', 'post']),
+    contentType: z.enum(['user', 'comment', 'contract', 'post', 'social_post']),
     contentId: z.string(),
     description: z.string().optional(),
     parentId: z.string().optional(),
@@ -25,6 +33,24 @@ export const report = authEndpoint(async (req, auth) => {
     parentId,
     parentType,
   } = validate(schema, req.body)
+
+  if (contentType === 'social_post') {
+    await socialAuthor(auth.uid)
+    const pg = createSupabaseDirectClient()
+    await pg.tx(async (tx) => {
+      const post = await getSocialRow(tx, contentId)
+      if (post.deleted_time) throw new APIError(404, 'Post has been removed')
+      if (post.user_id === auth.uid)
+        throw new APIError(400, 'You cannot report your own post')
+      await limitSocialWrite(tx, auth.uid, 'report', 20)
+      await tx.none(
+        `insert into reports(user_id, content_owner_id, content_type, content_id, description)
+        values ($1,$2,'social_post',$3,$4)`,
+        [auth.uid, post.user_id, contentId, description ?? null]
+      )
+    })
+    return { success: true }
+  }
 
   const db = createSupabaseClient()
 

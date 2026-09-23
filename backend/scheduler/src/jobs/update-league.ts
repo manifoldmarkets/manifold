@@ -56,6 +56,7 @@ export async function updateLeague(
       and cb.created_time < millis_to_ts($3)
       and contracts.token = 'MANA'
       and contracts.visibility = 'public'
+      and contracts.mechanism is distinct from 'perp'
       and coalesce((contracts.data->'isRanked')::boolean, true) = true;`,
     [season, seasonStart, seasonEnd]
   )
@@ -85,6 +86,7 @@ export async function updateLeague(
         contract &&
         contract.token === 'MANA' &&
         contract.visibility === 'public' &&
+        contract.mechanism !== 'perp' &&
         contract.isRanked !== false &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
       ) {
@@ -147,6 +149,10 @@ export async function updateLeague(
     category: 'UNIQUE_BETTOR_BONUS',
   }))
 
+  // Launch policy: PERP position profit and loss does not count toward league
+  // mana earned. Rolling day/week/month PERP metrics remain available for
+  // portfolios and user reporting, but league inclusion must be designed and
+  // enabled separately at a future season boundary.
   const combined = [
     ...userProfit.map((u) => ({ ...u, amount: +u.amount })),
     ...userUniqueBonuses,

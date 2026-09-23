@@ -223,6 +223,11 @@ export const fetchContractBetDataAndValidate = async (
   if (!contract) throw new APIError(404, 'Contract not found.')
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
+  if (contract.mechanism === 'perp')
+    throw new APIError(
+      400,
+      'Perp markets use the /place-perp-trade endpoint instead.'
+    )
 
   if (isMultiCpmm(contract))
     contract.answers = sortBy(
@@ -231,6 +236,7 @@ export const fetchContractBetDataAndValidate = async (
     )
 
   const { closeTime, isResolved } = contract
+  if (contract.deleted) throw new APIError(403, 'Market is deleted.')
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed.')
   if (isResolved) throw new APIError(403, 'Market is resolved.')

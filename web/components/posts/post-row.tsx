@@ -15,12 +15,14 @@ export function PostRow(props: {
   highlighted?: boolean
   faded?: boolean
   hideAvatar?: boolean
+  onTrackClick?: () => void
   // Add any other props similar to ContractRow if needed for styling/functionality
 }) {
-  const { post, highlighted, faded, hideAvatar } = props
+  const { post, highlighted, faded, hideAvatar, onTrackClick } = props
 
   // Example handler, similar to ContractRow's onClick
   const onClick = () => {
+    onTrackClick?.()
     track('click browse post', {
       slug: post.slug,
       postId: post.id,

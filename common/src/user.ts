@@ -26,8 +26,9 @@ export type UserBan = {
   created_by: string | null // mod user ID
   // Scheduled expiry for temp bans (null = permanent)
   end_time: string | null
-  ended_by: string | null // mod user ID who ended the ban
-  // When manually lifted by mod (null = still active or expired naturally)
+  // Mod user ID, the user themself (modAlert dismissal), or 'system' (auto-expired temp ban)
+  ended_by: string | null
+  // When the ban was lifted, by a mod or by auto-expiry (null = still active)
   ended_at: string | null
 }
 
