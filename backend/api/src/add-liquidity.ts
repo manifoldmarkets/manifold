@@ -66,6 +66,19 @@ export const addContractLiquidity = async (
           403,
           'answerId is only supported for multiple-choice CPMM markets'
         )
+      // A cpmm-multi-2 answer takes the subsidy losslessly by floating its own p.
+      // A cpmm-multi-1 answer is pinned at p = 0.5, so the drizzle would throw
+      // most of a subsidy away on an answer far from 50% (80% of its value at
+      // 10%). Only allow it where it's lossless: cpmm-multi-2 markets, or ones
+      // this add converts to cpmm-multi-2.
+      if (
+        contract.mechanism !== 'cpmm-multi-2' &&
+        !CPMM_MULTI_2_CONVERSION_ENABLED
+      )
+        throw new APIError(
+          403,
+          'Liquidity can only be added to a single answer on markets created with starting probabilities.'
+        )
       const answer = await getAnswer(tx, answerId)
       if (!answer || answer.contractId !== contractId)
         throw new APIError(404, 'Answer not found on this contract')

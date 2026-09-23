@@ -26,6 +26,7 @@ import { getAnswerProbability } from 'common/calculate'
 // For now we rely on the legacy isBannedFromPosting field for UI checks
 import {
   CPMMMultiContract,
+  CPMM_MULTI_2_CONVERSION_ENABLED,
   Contract,
   MarketContract,
   MultiContract,
@@ -596,9 +597,13 @@ export function AnswerComponent(props: {
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
   const [addLiquidityOpen, setAddLiquidityOpen] = useState(false)
 
-  // Per-answer subsidy: deepen this answer's own binary CPMM (cpmm-multi only, open market).
+  // Per-answer subsidy: deepen this answer's own binary CPMM (open market). Only
+  // where it's lossless, as add-liquidity enforces: cpmm-multi-2 markets, or
+  // cpmm-multi-1 ones the add would convert.
   const canSubsidizeAnswer =
     isMultiCpmm(contract) &&
+    (contract.mechanism === 'cpmm-multi-2' ||
+      CPMM_MULTI_2_CONVERSION_ENABLED) &&
     !contract.isResolved &&
     (contract.closeTime ?? Infinity) > Date.now() &&
     answer.poolYes != undefined

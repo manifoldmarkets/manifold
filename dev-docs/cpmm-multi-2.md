@@ -43,3 +43,7 @@ is what `cpmm-multi-1` pricing already assumes, so nothing changes for them.
   while `cpmm-multi-2` creation is on. Adding an answer to a sum-to-one
   `cpmm-multi-2` market credits the pool's NO shares in `Other` to the creator
   as bets, which isn't settled for markets with several liquidity providers.
+- Adding liquidity to a single answer is only offered on `cpmm-multi-2`
+  markets, or `cpmm-multi-1` ones the add would convert. A `cpmm-multi-1`
+  answer is pinned at `p = 0.5`, so it would throw most of the subsidy away on
+  an answer far from 50%.
