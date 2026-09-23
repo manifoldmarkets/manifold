@@ -105,3 +105,9 @@ export type maker = {
 }
 
 export const getNewBetId = () => nanoid(12)
+
+// A limit order can still be matched against only while it has unfilled amount
+// left, hasn't been cancelled, and hasn't expired. Cancelling and filling are
+// both terminal: an order that fails this can never become open again.
+export const isOpenLimitOrder = (bet: LimitBet, now = Date.now()) =>
+  !bet.isFilled && !bet.isCancelled && (!bet.expiresAt || bet.expiresAt > now)

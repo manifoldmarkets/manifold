@@ -1,4 +1,5 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { applyLimitOrderUpdates } from 'client-common/hooks/use-bets'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { getCountdownString } from 'client-common/lib/time'
 import clsx from 'clsx'
@@ -22,6 +23,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
 import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
@@ -148,12 +150,25 @@ export function OrderTable(props: {
   const [isCancelling, setIsCancelling] = useState(false)
   const onCancel = async () => {
     setIsCancelling(true)
-    await Promise.all(
-      limitBets
-        .filter((b) => !b.isCancelled)
-        .map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
-    )
-    setIsCancelling(false)
+    try {
+      const results = await Promise.allSettled(
+        limitBets
+          .filter((b) => !b.isCancelled)
+          .map(async (bet) => {
+            const cancelled = await api('bet/cancel/:betId', { betId: bet.id })
+            applyLimitOrderUpdates([cancelled])
+          })
+      )
+      const failures = results.filter((r) => r.status === 'rejected').length
+      if (failures)
+        toast.error(
+          `Could not cancel ${failures} order${
+            failures === 1 ? '' : 's'
+          }. Please retry.`
+        )
+    } finally {
+      setIsCancelling(false)
+    }
   }
 
   // If showAnswers is true and we have answers, group bets by answerId
@@ -295,8 +310,19 @@ function OrderRow(props: {
 
   const onCancel = async () => {
     setIsCancelling(true)
-    await api('bet/cancel/:betId', { betId: bet.id })
-    setIsCancelling(false)
+    try {
+      // Drop the order from the shared order book right away so the bet and
+      // sell panels stop pricing against it, rather than waiting on the
+      // websocket to tell us what we already know.
+      applyLimitOrderUpdates([
+        await api('bet/cancel/:betId', { betId: bet.id }),
+      ])
+    } catch (e) {
+      console.error('Failed to cancel order', e)
+      toast.error('Could not cancel this order. Please retry.')
+    } finally {
+      setIsCancelling(false)
+    }
   }
   const isCashContract = contract.token === 'CASH'
   const expired = bet.expiresAt && bet.expiresAt < Date.now()
