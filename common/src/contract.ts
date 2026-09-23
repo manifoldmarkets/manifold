@@ -569,6 +569,11 @@ export const NUMBER_CREATION_ENABLED = false
 // per-answer initial probabilities. Reads are always safe (p ?? 0.5), so only
 // the creation path is flagged. Flip last, for staged rollout.
 export const CPMM_MULTI_2_CREATION_ENABLED = false
+// Separately gates converting an existing cpmm-multi-1 market to cpmm-multi-2
+// the first time a user adds liquidity to it. Unlike creation, that changes how
+// a live market trades (limit-order fills, liquidity adds) under positions and
+// orders placed against v1, so it stays off until v2 has run on new markets.
+export const CPMM_MULTI_2_CONVERSION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const

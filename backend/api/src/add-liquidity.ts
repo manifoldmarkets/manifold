@@ -8,7 +8,7 @@ import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { CPMM_MULTI_2_CREATION_ENABLED, isMultiCpmm } from 'common/contract'
+import { CPMM_MULTI_2_CONVERSION_ENABLED, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import {
@@ -112,10 +112,10 @@ export const addContractLiquidity = async (
     // market IS a cpmm-multi-2 market with every answer p = 0.5, so flipping the mechanism string is
     // the whole migration. p is nullable-defaulting-0.5 on read, and the first v2 drizzle deepen
     // persists each answer's concrete floated p. The mechanism flip is the API-visible version event
-    // that switches reads/bets/drizzle to the v2 (lossless + reversible-fill) path. Gated behind the
-    // same staged-rollout kill-switch as v2 creation, so it stays inert until deliberately enabled.
+    // that switches reads/bets/drizzle to the v2 (lossless + reversible-fill) path. Gated behind its
+    // own kill switch, separate from v2 creation, so it stays inert until deliberately enabled.
     const shouldConvertToV2 =
-      CPMM_MULTI_2_CREATION_ENABLED && contract.mechanism === 'cpmm-multi-1'
+      CPMM_MULTI_2_CONVERSION_ENABLED && contract.mechanism === 'cpmm-multi-1'
 
     if (answerId !== undefined) {
       // Per-answer: the subsidy lands in THAT answer's subsidyPool (drizzleAnswer deepens it
