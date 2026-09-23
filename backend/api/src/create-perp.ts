@@ -273,24 +273,19 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   )
 
   // Fetch live provider readiness before opening a transaction. Candles alone
-  // cannot authorize creation, and provider-margin failures affect launches only.
+  // cannot authorize creation, and provider-margin failures affect launches
+  // only. MNX's own leverage is not a ceiling on this market's maxLeverage.
   let oracleFeedHealth: OracleFeedHealth | undefined
   if (getMnxInstrument(oracleFeedId)) {
     const snapshot = await fetchMnxSnapshot()
-    let ready
     try {
-      ready = requireMnxReady(snapshot, oracleFeedId)
+      requireMnxReady(snapshot, oracleFeedId)
     } catch (error) {
       throw new APIError(
         400,
         error instanceof Error ? error.message : String(error)
       )
     }
-    if (maxLeverage > ready.supportedLeverage!)
-      throw new APIError(
-        400,
-        `MNX launch leverage must be at most MNX’s supported ${ready.supportedLeverage}×`
-      )
     if (Date.now() - oraclePoint.ts > maxOraclePriceAgeMs)
       throw new APIError(
         400,
