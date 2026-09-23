@@ -95,6 +95,17 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             </li>
             <li>It isn't predicting anything</li>
             <li>It can never be resolved or could only ever resolve one way</li>
+            <li>
+              It's a{' '}
+              <a
+                href="#duplicate-markets"
+                className="text-primary-500 underline"
+              >
+                duplicate
+              </a>{' '}
+              of an existing market with no meaningful difference in resolution
+              criteria
+            </li>
           </ul>
           <p className="text-ink-600 mt-3 text-sm">
             If you're not sure why your market is unranked, ask in{' '}
@@ -144,6 +155,15 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
             </li>
             <li>Low-quality non-predictive markets</li>
             <li>
+              Duplicate markets, especially created repeatedly or at scale — see{' '}
+              <a
+                href="#duplicate-markets"
+                className="text-primary-500 underline"
+              >
+                Duplicate markets
+              </a>
+            </li>
+            <li>
               Markets designed to harvest or redistribute Manifold bonuses
             </li>
             <li>
@@ -176,6 +196,72 @@ export default function CommunityGuidelinesMarketPoliciesPage() {
               service
             </li>
           </ul>
+        </div>
+
+        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
+          <h2
+            id="duplicate-markets"
+            className="text-ink-1000 text-xl font-semibold"
+          >
+            Duplicate markets
+          </h2>
+          <p className="text-ink-700 mt-3">
+            Duplicate markets split the liquidity across two markets, making
+            both of them thinner, worse priced, and easier for bots to pick off.
+            It's better for arbitrage bots and worse for everyone else.
+          </p>
+          <p className="text-ink-700 mt-3">
+            Only create a market that already exists if there's a real reason
+            to. Reasons include:
+          </p>
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>Materially different resolution criteria</li>
+            <li>A different timeframe</li>
+            <li>A different resolution source</li>
+            <li>A well-founded concern about who's resolving the original</li>
+          </ul>
+          <p className="text-ink-700 mt-4">
+            Who is resolving can itself be a legitimate reason. If a market
+            leaves real room for interpretation:
+          </p>
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>Insufficient criteria</li>
+            <li>A judgement call</li>
+            <li>A creator holding a position</li>
+            <li>A creator has a track record of resolutions in their favour</li>
+            <li>A creator is unresponsive</li>
+          </ul>
+          <p className="text-ink-700 mt-4">
+            This policy is primarily to discourage the mass creation of
+            duplicate markets. A one line explanation in the description is
+            usually sufficient to show that the duplicate was deliberate and had
+            a reason behind it.
+          </p>
+          <p className="text-ink-700 mt-3">What happens to duplicates:</p>
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>
+              A duplicate with no meaningful difference from an existing market
+              may be unranked, so it no longer counts toward{' '}
+              <Link
+                href="/community-guidelines/leagues"
+                className="text-primary-500 underline"
+              >
+                Leagues
+              </Link>
+              , significantly deboosted so that it stops surfacing in browse or
+              feeds, unlisted, or resolved N/A.
+            </li>
+            <li>
+              Creating duplicates repeatedly, or after being warned, may result
+              in a fine or a market creation ban.
+            </li>
+          </ul>
+          <p className="text-ink-700 mt-4">
+            If you feel that your own market no longer reflects the original
+            intention, we actually encourage you to create a new market instead
+            of materially updating the criteria on the original. This is not a
+            duplicate.
+          </p>
         </div>
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
