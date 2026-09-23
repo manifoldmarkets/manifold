@@ -108,6 +108,11 @@ export type User = {
   lastStreakFreezeTime?: number // timestamp when a streak freeze was last used
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
+  // Set when a reader closes the /perps explainer. Until then the page opens
+  // it for them on arrival unless they hold a perp position — the one signal
+  // the hub already has for "has done this before" — so a newcomer meets the
+  // mechanism and nobody else is nagged.
+  hasSeenPerpsExplainer?: boolean
   seenStreakModal?: boolean
   lastShopVisitTime?: number // timestamp of user's most recent /shop visit; drives the NEW badge dismissal
   /** @deprecated Use user_bans table instead */
