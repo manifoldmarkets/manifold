@@ -44,7 +44,12 @@ export const initCaches = async () => {
     'Active user ids to cache interests: ',
     activeUserIdsToCacheInterests.length
   )
-  await buildUserInterestsCache(activeUserIdsToCacheInterests)
+  // The db has answered, so this process can serve. A failed build (say, one
+  // user's query timing out under db pressure) must not crash-loop startup:
+  // readers rebuild any missing user on demand.
+  await buildUserInterestsCache(activeUserIdsToCacheInterests).catch((error) =>
+    log.error('Startup user interests cache build failed', { error })
+  )
 }
 
 // Once cached, a user's topic-interest scores are never recomputed and the map

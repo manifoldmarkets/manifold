@@ -4,6 +4,7 @@ import {
 } from './topic-interests'
 import { createSupabaseDirectClient } from './supabase/init'
 import { scheduleDailyAtUtcHour } from './helpers/daily-schedule'
+import { log } from 'shared/utils'
 
 jest.mock('./topic-interests', () => ({
   buildUserInterestsCache: jest.fn(),
@@ -13,7 +14,9 @@ jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('./helpers/daily-schedule', () => ({
   scheduleDailyAtUtcHour: jest.fn(),
 }))
-jest.mock('shared/utils', () => ({ log: jest.fn() }))
+jest.mock('shared/utils', () => ({
+  log: Object.assign(jest.fn(), { error: jest.fn() }),
+}))
 
 const deferred = () => {
   let resolve!: () => void
@@ -68,11 +71,14 @@ describe('cache initialization', () => {
     expect(ready).toBe(true)
   })
 
-  it('propagates build failure to the startup error handler', async () => {
-    jest
-      .mocked(buildUserInterestsCache)
-      .mockRejectedValue(new Error('build failed'))
-    await expect(initCaches()).rejects.toThrow('build failed')
+  it('logs a failed build and still resolves startup', async () => {
+    const error = new Error('build failed')
+    jest.mocked(buildUserInterestsCache).mockRejectedValue(error)
+    await expect(initCaches()).resolves.toBeUndefined()
+    expect(log.error).toHaveBeenCalledWith(
+      'Startup user interests cache build failed',
+      { error }
+    )
     expect(jest.getTimerCount()).toBe(0)
   })
 
