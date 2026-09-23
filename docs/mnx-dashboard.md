@@ -29,9 +29,11 @@ Select live markets, or use **Manage** on one market:
   leverage cap, funding cap/sensitivity, or the maximum oracle mark age. Blank
   fields stay unchanged. Funding is entered as an annualized percentage and
   converted using each market's own funding period. API base fees cannot go
-  below the web base. Lower leverage caps affect new opens/adds, and increases
-  on MNX feeds require current provider support. Oracle age also gates closes
-  and cannot be reduced below the feed's cadence floor.
+  below the web base. Lower leverage caps affect new opens/adds. The leverage
+  cap is Manifold's own setting: it can be raised above the leverage MNX offers
+  on the instrument, up to the platform maximum of 100×, and changing it does
+  not depend on MNX being reachable. Oracle age also gates closes and cannot be
+  reduced below the feed's cadence floor.
 - **Visibility:** choose Unlisted or Public in the bottom management panel,
   review each selected market's before/after visibility, then apply. Markets
   already at the chosen visibility are skipped. Public markets appear in search

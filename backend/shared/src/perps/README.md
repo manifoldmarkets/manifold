@@ -631,8 +631,10 @@ advertise the creator option for every feed and agree on the owner, and it
 checks each created market's `creatorId`, because an older API silently
 strips the field. New markets start paused until their first atomic live
 tick.
-The 3× recommendation is advisory; creation permits lower leverage and enforces
-MNX's supported leverage as a ceiling. Provider margin changes never freeze an
+The 3× recommendation is advisory. MNX's supported leverage only lowers the
+creation script's default; it is not a ceiling, so `create-perp` and
+`update-perp-config` accept any leverage in the platform's (1, 100] range,
+including more than MNX offers. Provider margin changes never freeze an
 existing feed. MNX derivatives are the defined price target: valuation futures
 are quoted in USD billions and do not assert an externally verified company
 valuation; equity marks need not equal the underlying share or the venue oracle.
