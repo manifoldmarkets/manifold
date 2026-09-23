@@ -650,8 +650,9 @@ function createAnswers(
   //
   // `probs` arrive already normalized to Σ = 1 for sum-to-one answers and as
   // absolute probabilities for independent ones (getInitialProbs). Where the
-  // √variance shape doesn't exist (GP19a) sum-to-one answers take the balanced
-  // pools instead, which are just as lossless, so no starting odds are refused.
+  // √variance shape doesn't exist (GP19a) or would starve the long shots,
+  // sum-to-one answers take the even-split pools instead, which are just as
+  // lossless (cpmmMulti2SumToOneCreationPools), so no starting odds are refused.
   if (cpmmMulti2 && probs) {
     const pools = shouldAnswersSumToOne
       ? cpmmMulti2SumToOneCreationPools(probs, ante)

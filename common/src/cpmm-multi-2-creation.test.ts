@@ -1,10 +1,16 @@
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
+  cpmmMulti2EvenSplitPools,
+  cpmmMulti2SumToOneCreationPools,
   cpmmMulti2SumToOneFeasible,
+  cpmmMulti2SumToOnePools,
   getCpmmProbability,
 } from './calculate-cpmm'
-import { calculateCpmmMultiArbitrageYesBets } from './calculate-cpmm-arbitrage'
+import {
+  calculateCpmmMultiArbitrageBet,
+  calculateCpmmMultiArbitrageYesBets,
+} from './calculate-cpmm-arbitrage'
 import { CPMMMulti } from './contract'
 import { noFees } from './fees'
 import { getAnswerProbsError, getNewContract } from './new-contract'
@@ -327,7 +333,7 @@ describe('cpmm-multi-2 created market — trades under the v2 arb (Σp = 1 held)
 describe('cpmm-multi-2 creation — odds the √variance shape cannot hold', () => {
   // 50 answers: a 45% favourite and a long tail near the 1% floor. The √variance
   // construction has no sane pools here (GP19a), so creation falls back to the
-  // balanced pools rather than refusing the odds.
+  // even-split pools rather than refusing the odds.
   const answers = Array.from({ length: 50 }, (_, i) => `A${i}`)
   const answerProbs = [45, ...Array(49).fill(55 / 49)]
   const ante = 13000
@@ -412,5 +418,120 @@ describe('which markets starting probabilities open as cpmm-multi-2', () => {
         10
       )
     )
+  })
+})
+
+describe('cpmm-multi-2 creation — long shots near the √variance edge', () => {
+  // 30 answers with a 58.5% favourite: the √variance pools still exist, but
+  // leave each 1.43% answer a fraction of a percent of the depth they aim for.
+  const n = 30
+  const q = [0.585, ...Array(n - 1).fill(0.415 / (n - 1))]
+  const ante = 1000
+  const depth = (x: { poolYes: number; poolNo: number; p: number }) =>
+    (1 - x.p) * x.poolYes + x.p * x.poolNo
+
+  it('falls back to the even-split pools there', () => {
+    expect(cpmmMulti2SumToOneFeasible(q)).toBe(true)
+    const starved = cpmmMulti2SumToOnePools(q, ante)
+    expect(depth(starved[1])).toBeLessThan((ante / n) * 0.05)
+    expect(cpmmMulti2SumToOneCreationPools(q, ante)).toEqual(
+      cpmmMulti2EvenSplitPools(q, ante)
+    )
+  })
+
+  it("so Ṁ1 can't move a long shot far", () => {
+    const answers = cpmmMulti2SumToOneCreationPools(q, ante).map(
+      (x, i) =>
+        ({
+          id: `a${i}`,
+          contractId: 'c',
+          poolYes: x.poolYes,
+          poolNo: x.poolNo,
+          p: x.p,
+          prob: x.prob,
+        } as Answer)
+    )
+    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[1],
+      'YES',
+      1,
+      undefined,
+      [],
+      {},
+      noFees
+    )
+    const after = getCpmmProbability(
+      newBetResult.cpmmState.pool,
+      newBetResult.cpmmState.p
+    )
+    // Evan's pools here move it from 1.4% to 36%.
+    expect(after).toBeLessThan(0.025)
+  })
+
+  it('keeps the √variance pools where they deliver the depth they aim for', () => {
+    for (const probs of [
+      [0.6, 0.25, 0.15],
+      [0.9, 0.05, 0.03, 0.02],
+      [0.3, ...Array(19).fill(0.7 / 19)],
+    ]) {
+      expect(cpmmMulti2SumToOneCreationPools(probs, ante)).toEqual(
+        cpmmMulti2SumToOnePools(probs, ante)
+      )
+    }
+  })
+
+  it('falls back for two front-runners and a few long shots, too', () => {
+    // No √variance pools exist at all for this 7-answer market, and the
+    // 6-answer one leaves its 1% answers about 5% of their target depth.
+    const seven = [0.502, 0.435, 0.02, 0.013, 0.01, 0.01, 0.01]
+    expect(cpmmMulti2SumToOneFeasible(seven)).toBe(false)
+    expect(cpmmMulti2SumToOneCreationPools(seven, ante)).toEqual(
+      cpmmMulti2EvenSplitPools(seven, ante)
+    )
+    const six = [0.492, 0.468, 0.01, 0.01, 0.01, 0.01]
+    expect(cpmmMulti2SumToOneFeasible(six)).toBe(true)
+    expect(cpmmMulti2SumToOneCreationPools(six, ante)).toEqual(
+      cpmmMulti2EvenSplitPools(six, ante)
+    )
+  })
+
+  it('reduces the even-split pools to v1 at uniform odds', () => {
+    for (const m of [2, 3, 10]) {
+      cpmmMulti2EvenSplitPools(Array(m).fill(1 / m), ante).forEach((x) => {
+        expect(x.poolYes).toBeCloseTo(ante / 2, 8)
+        expect(x.poolNo).toBeCloseTo(ante / (2 * m - 2), 8)
+        expect(x.p).toBeCloseTo(0.5, 12)
+      })
+    }
+  })
+
+  it('always opens sane, exact and lossless, whichever pools it picks', () => {
+    let seed = 7
+    const random = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let trial = 0; trial < 300; trial++) {
+      const m = 2 + Math.floor(random() * 60)
+      const weights = Array.from({ length: m }, () => random() ** 4)
+      const total = weights.reduce((a, b) => a + b, 0)
+      // Keep every answer at 1% or more, as validation does.
+      const floor = 0.01
+      if (m * floor > 1) continue
+      const probs = weights.map((w) => floor + (w / total) * (1 - m * floor))
+      const pools = cpmmMulti2SumToOneCreationPools(probs, ante)
+      const totalNo = pools.reduce((a, x) => a + x.poolNo, 0)
+      pools.forEach((x, i) => {
+        expect(x.poolYes).toBeGreaterThan(0)
+        expect(x.poolNo).toBeGreaterThan(0)
+        expect(x.p).toBeGreaterThan(0.001)
+        expect(x.p).toBeLessThan(0.999)
+        expect(
+          getCpmmProbability({ YES: x.poolYes, NO: x.poolNo }, x.p)
+        ).toBeCloseTo(probs[i], 9)
+        expect(x.poolYes + totalNo - x.poolNo).toBeCloseTo(ante, 6)
+      })
+    }
   })
 })
