@@ -44,9 +44,10 @@ is what `cpmm-multi-1` pricing already assumes, so nothing changes for them.
 
 With both switches off nothing prices differently: `cpmm-multi-1` and `cpmm-1`
 bets, sells, limit fills, basket buys, liquidity and payouts come out exactly
-as before, errors included. The one exception is a binary trade that drains
-its pool at an extreme `p`, which placeBet refuses either way: its preview
-now shows 0% or 100% instead of NaN.
+as before, errors included. Two binary-market exceptions, both where main
+produces NaN: a trade that drains its pool at an extreme `p`, which placeBet
+refuses either way, now previews as 0% or 100%; and, away from p = 0.5, a fill
+too small for the pool to register now pays no fee instead of a NaN one.
 
 Turning creation on changes what `answerProbs` does in the public API, so
 update `docs/docs/api.md` in the same deploy: starting probabilities open a
@@ -63,10 +64,15 @@ remainder.
   answers, 40ms at 30, 70ms at 50 and 140ms at 100, against 6, 11, 19 and
   33ms.
 - An answer's `p` can sit as far from 0.5 as a binary market's, so, as on a
-  binary market, a big enough trade can drain one side of its pool. Those
-  trades are refused with "Trade too large for current liquidity pool". In
-  random lifecycles that was about 0.4% of trades of up to half the market's
-  liquidity, and 1.4% of trades of up to three times it.
+  binary market, a big enough trade can drain one side of its pool outright.
+  Those trades are refused with "Trade too large for current liquidity pool".
+  Small pool sides are fine: a long shot's NO side opens at about 0.001 of the
+  ante. In random lifecycles no trade of up to half the market's liquidity was
+  refused, and about 0.2% of trades of up to three times it were.
+- The per-answer drizzle leaves a subsidy pending on an answer within a
+  millionth of 0% or 100%, where floating `p` to hold the probability would
+  leave the pool math too little precision. Resolution pays pending subsidy
+  out.
 - Markets where answers can be added later can't take starting probabilities
   while `cpmm-multi-2` creation is on. Adding an answer to a sum-to-one
   `cpmm-multi-2` market credits the pool's NO shares in `Other` to the creator

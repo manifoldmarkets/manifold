@@ -9,6 +9,7 @@ import {
   addCpmmMultiLiquidityToAnswersIndependently,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
   getCpmmProbability,
+  isDeepenableProb,
 } from 'common/calculate-cpmm'
 import { Answer } from 'common/answer'
 import { formatMoneyWithDecimals } from 'common/util/format'
@@ -190,6 +191,7 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
       [answer.contractId]
     )
     const isV2 = row?.mechanism === 'cpmm-multi-2'
+    if (isV2 && !isDeepenableProb(getCpmmProbability(pool, answer.p))) return
 
     const { newPool, newP } = isV2
       ? addCpmmLiquidity(pool, answer.p, amount)

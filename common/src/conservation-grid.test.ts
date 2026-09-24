@@ -16,7 +16,7 @@
 // (partial / sell-all round-trip), whole-market AND per-answer add-liquidity, resolve.
 // Remaining gaps live in the instance harness (validate_lifecycle.py), not here: real
 // API/DB plumbing, drizzle scheduling, and the v1->v2 conversion lifecycle.
-import { sumBy } from 'lodash'
+import { sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
@@ -28,6 +28,8 @@ import {
   computeFills,
   cpmmMulti2SumToOnePools,
   getCpmmProbability,
+  isDeepenableProb,
+  isDrainedPool,
 } from './calculate-cpmm'
 import {
   calculateCpmmMultiArbitrageBet,
@@ -41,12 +43,7 @@ import {
 } from './payouts-fixed'
 import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
-import {
-  CPMM_MIN_POOL_QTY,
-  CPMMMulti,
-  MAX_CPMM_PROB,
-  MIN_CPMM_PROB,
-} from './contract'
+import { CPMMMulti, MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
 import { fitAnswerProbs } from './answer-probs'
 import {
   getNewContract,
@@ -57,6 +54,9 @@ import {
 // --- creation pools: the REAL production construction (was a local replica; a drifted
 // copy would validate the copy, not the shipping code) ------------------------------
 const sumToOnePools = cpmmMulti2SumToOnePools
+
+// What placeBet answers a cpmm-multi-2 trade that drains a pool (isDrainedPool).
+const DRAINED_POOL_REFUSAL = 'Trade too large for current liquidity pool.'
 
 function setPools(q: number[], ante: number) {
   const L = ante / q.length
@@ -102,20 +102,15 @@ class Sim {
   // the cap when balanceByUserId lacks the user, so we pass {} for balances and the real
   // unfilled book here.
   unfilled: LimitBet[] = []
-  // placeBet refuses a cpmm-multi-2 trade that would leave a pool side under
-  // CPMM_MIN_POOL_QTY. Off by default: the rows below never get near it.
+  // placeBet refuses a cpmm-multi-2 trade that drains a pool side outright
+  // (isDrainedPool). Off by default: the rows below never get near it.
   refuseDrainedPools = false
   private lpId = 0
   private limitId = 0
 
   private guardPools(pools: { [outcome: string]: number }[]) {
-    if (
-      this.refuseDrainedPools &&
-      pools.some(
-        (pool) => !(Math.min(...Object.values(pool)) >= CPMM_MIN_POOL_QTY)
-      )
-    )
-      throw new Error('Trade too large for current liquidity pool.')
+    if (this.refuseDrainedPools && pools.some(isDrainedPool))
+      throw new Error(DRAINED_POOL_REFUSAL)
   }
 
   // `answers` opens the market on answers built elsewhere (getNewContract) instead of a
@@ -471,6 +466,26 @@ class Sim {
   addLiquidity(user: string, amount: number, answerIndex?: number) {
     if (answerIndex !== undefined) {
       const a = this.answers[answerIndex]
+      if (
+        !isDeepenableProb(
+          getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+        )
+      ) {
+        // The drizzle leaves this subsidy pending; resolution pays it out.
+        this.answers = this.answers.map((x, i) =>
+          i === answerIndex ? { ...x, subsidyPool: x.subsidyPool + amount } : x
+        )
+        this.spend(user, amount)
+        this.liquidities.push({
+          id: `lp${this.lpId++}`,
+          userId: user,
+          contractId: 'c',
+          createdTime: this.lpId,
+          amount,
+          answerId: a.id,
+        })
+        return
+      }
       const { newPool, newP } = addCpmmLiquidity(
         { YES: a.poolYes, NO: a.poolNo },
         a.p,
@@ -596,8 +611,35 @@ class Sim {
     for (const { userId, payout } of [...traderPayouts, ...liquidityPayouts])
       this.credit(userId, payout)
     const netSum = Object.values(this.balances).reduce((s, x) => s + x, 0)
-    // Sum of all user balance deltas + fees must be exactly 0.
-    expect(netSum + this.fees).toBeCloseTo(0, 4)
+    // The payout code drops liquidity payouts under Ṁ0.001 as dust, so count
+    // what the pools owed their providers, not only what was paid.
+    const owed =
+      mode === 'cancel'
+        ? sumBy(this.liquidities, (l) => l.amount)
+        : sum(
+            this.answers.map((a, i) => {
+              const yes =
+                mode === 'set_yesno'
+                  ? arg!.setOutcomes![i] === 'YES'
+                    ? 1
+                    : 0
+                  : mode === 'one'
+                  ? i === arg!.winner!
+                    ? 1
+                    : 0
+                  : i < 2
+                  ? arg!.split![i]
+                  : 0
+              return yes * a.poolYes + (1 - yes) * a.poolNo + a.subsidyPool
+            })
+          )
+    const dust = owed - sumBy(liquidityPayouts, (x) => x.payout)
+    const providers = new Set(this.liquidities.map((l) => l.userId)).size
+    const payoutsPerProvider = mode === 'set_yesno' ? this.answers.length : 1
+    expect(dust).toBeGreaterThan(-1e-6)
+    expect(dust).toBeLessThan(1e-3 * providers * payoutsPerProvider + 1e-6)
+    // Sum of all user balance deltas + fees + dropped dust must be exactly 0.
+    expect(netSum + this.fees + dust).toBeCloseTo(0, 4)
   }
 
   // The param is a call-site label only (readable invariant-check tags); keep it named.
@@ -1209,13 +1251,14 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     return answers
   }
 
-  // A refusal is any non-assertion error: the calc rejecting the trade.
+  // Only placeBet's drained-pool refusal counts as the API refusing a trade;
+  // any other error is a bug and fails the test.
   const attempt = (fn: () => void) => {
     try {
       fn()
       return true
     } catch (e) {
-      if ((e as any)?.matcherResult) throw e
+      if ((e as Error)?.message !== DRAINED_POOL_REFUSAL) throw e
       return false
     }
   }
@@ -1302,5 +1345,46 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     // Ordinary trades on fresh markets go through; refusals are the drained-pool edge.
     expect(trades).toBeGreaterThan(100)
     expect(refused / trades).toBeLessThan(0.05)
+  })
+
+  // Long shots' NO sides open at about 0.001 of the ante, so an ordinary trade on
+  // a small market can leave one well under cpmm-1's 0.01 pool floor. The market
+  // is fine there; only a side drained outright is refused.
+  it('takes ordinary trades on small markets', () => {
+    const probs = [25.7, 22.5, 29, 18.8, 1, 1, 1, 1]
+    const s = new Sim(
+      { n: probs.length, probs: 'balanced', type: 'mc_sumone' },
+      'creator',
+      200,
+      open(probs, true, 200)
+    )
+    s.refuseDrainedPools = true
+    s.buy('alice', 2, 'YES', 140)
+    expect(s.answers[2].prob).toBeGreaterThan(0.75)
+    expect(Math.min(...s.answers.map((a) => a.poolNo))).toBeLessThan(0.01)
+    s.resolve('one', { winner: 2 })
+
+    const pair = new Sim(
+      { n: 2, probs: 'balanced', type: 'mc_sumone' },
+      'creator',
+      100,
+      open([99, 1], true, 100)
+    )
+    pair.refuseDrainedPools = true
+    pair.buy('alice', 0, 'NO', 10)
+    pair.resolve('one', { winner: 1 })
+  })
+
+  it('sells a 99% independent answer down to the 1% bound', () => {
+    const s = new Sim(
+      { n: 4, probs: 'balanced', type: 'set_indep' },
+      'creator',
+      100,
+      open([99, 50, 50, 50], false, 100)
+    )
+    s.refuseDrainedPools = true
+    s.buy('alice', 0, 'NO', 5)
+    expect(s.answers[0].prob).toBeCloseTo(0.01, 6)
+    s.resolve('set_yesno', { setOutcomes: ['NO', 'YES', 'NO', 'YES'] })
   })
 })

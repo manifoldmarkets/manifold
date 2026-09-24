@@ -13,6 +13,7 @@ import {
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
   isCpmmDegenerateStateError,
+  isDrainedPool,
   removeCpmmLiquidity,
 } from './calculate-cpmm'
 import { noFees } from './fees'
@@ -472,6 +473,15 @@ describe('degenerate pool states', () => {
     expect(() =>
       calculateCpmmAmountToBuySharesFixedP(state(NaN), 10, 'YES')
     ).toThrow(CPMM_ARBITRAGE_ERROR_PREFIX + 'NaN')
+  })
+
+  it('calls a pool drained only when a side is gone or not a number', () => {
+    expect(isDrainedPool({ YES: 100, NO: 0 })).toBe(true)
+    expect(isDrainedPool({ YES: -1e-12, NO: 100 })).toBe(true)
+    expect(isDrainedPool({ YES: NaN, NO: 100 })).toBe(true)
+    expect(isDrainedPool({ YES: Infinity, NO: 100 })).toBe(true)
+    // A cpmm-multi-2 long shot's NO side can be tiny and still fine.
+    expect(isDrainedPool({ YES: 5000, NO: 0.0028 })).toBe(false)
   })
 
   it('keeps p on a drained pool only off p = 0.5', () => {

@@ -30,6 +30,20 @@ export const isCpmmDegenerateStateError = (e: unknown): e is Error =>
   (e.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX) ||
     e.message.startsWith(BINARY_SEARCH_NAN_ERROR))
 
+// Whether a trade left a pool with a side that isn't a positive, finite number:
+// drained outright, as its residual underflows at a p far from 0.5. The answers
+// table refuses to store these. A small side alone is fine: a cpmm-multi-2 long
+// shot's NO side opens at about 0.001 of the ante.
+export const isDrainedPool = (pool: { [outcome: string]: number }) =>
+  Object.values(pool).some((side) => !(side > 0 && isFinite(side)))
+
+// Whether a lossless add can deepen a cpmm-multi-2 answer at this probability.
+// Floating p to hold the probability pulls p toward it as the pool fills, so
+// within a millionth of 0% or 100% the add would leave p extreme enough for the
+// pool math to lose precision. The per-answer drizzle leaves such an answer's
+// subsidy pending; resolution pays undrizzled subsidy out.
+export const isDeepenableProb = (prob: number) => prob > 1e-6 && prob < 1 - 1e-6
+
 export type CpmmState = {
   pool: { [outcome: string]: number }
   p: number
@@ -108,7 +122,14 @@ export function getCpmmFees(
       outcome
     )
     const averageProb = betAmountAfterFee / shares
-    fee = getTakerFee(shares, averageProb)
+    // A bet too small for the pool's floating point to register buys exactly 0
+    // shares, at an average price of x/0. Charge it no fee rather than a NaN
+    // one, except at p = 0.5: there the NaN is one of the ways cpmm-multi-1's
+    // arbitrage reports a degenerate pool, which its sell diagnostics look for.
+    fee =
+      isFinite(averageProb) || floatingEqual(state.p, 0.5)
+        ? getTakerFee(shares, averageProb)
+        : 0
   }
 
   const totalFees = betAmount === 0 ? 0 : fee
@@ -216,29 +237,29 @@ export function calculateCpmmAmountToBuySharesFixedP(
   if (!isFinite(state.p)) throw new Error(CPMM_ARBITRAGE_ERROR_PREFIX + state.p)
 
   // General p (cpmm-multi-2): shares -> cost has no closed form, so invert the
-  // general-p forward map calculateCpmmShares by bisection. calculateCpmmShares is
-  // monotone increasing in the bet amount, and a buy of `shares` costs < `shares`
-  // mana, so [0, shares*10] brackets a buy; a sell (shares < 0) is bounded below by
-  // draining the opposite pool side. Mirrors the proven Python oracle
-  // amm_core.cost_for_shares (GP3); 50 iterations reach double precision.
+  // general-p forward map calculateCpmmShares by bisection (the proven Python
+  // oracle amm_core.cost_for_shares, GP3). The bisection runs on the log of the
+  // cost: at an extreme price the cost is a sliver of any linear bracket, whose
+  // precision would then buy or sell a visibly different number of shares than
+  // asked (0.25% more at a price of 4e-12). A trade of `shares` costs, or pays,
+  // less than `shares` mana, and a sale can't take more than the opposite pool.
   if (shares === 0) return 0
-  let low: number
-  let high: number
-  if (shares > 0) {
-    low = 0
-    high = shares * 10
-  } else {
-    const otherPool = outcome === 'YES' ? n : y
-    low = -otherPool * (1 - 1e-9)
-    high = 0
-  }
-  // calculateCpmmShares is monotone increasing in the amount, so the signed shares
-  // error is a monotone comparator (binarySearch also fail-fasts on NaN).
-  return binarySearch(
-    low,
-    high,
-    (mid) => calculateCpmmShares(state.pool, state.p, mid, outcome) - shares
+  const sign = Math.sign(shares)
+  const target = Math.abs(shares)
+  // Shares traded for `amount` mana, both counted positive; rises with amount.
+  const sharesFor = (amount: number) =>
+    sign * calculateCpmmShares(state.pool, state.p, sign * amount, outcome)
+  const otherPool = outcome === 'YES' ? n : y
+  const high = shares > 0 ? target : Math.min(target, otherPool * (1 - 1e-9))
+  let low = high / 1e3
+  for (let i = 0; i < 100 && sharesFor(low) > target; i++) low /= 1e3
+  // binarySearch fail-fasts on a NaN comparator.
+  const logCost = binarySearch(
+    Math.log(low),
+    Math.log(high),
+    (logAmount) => sharesFor(Math.exp(logAmount)) - target
   )
+  return sign * Math.exp(logCost)
 }
 
 export const computeFills = (
