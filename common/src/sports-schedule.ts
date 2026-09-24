@@ -38,6 +38,11 @@ export interface SportCategory {
   leagues: string[]
   /** Whether a game can end in a draw (adds a third "Draw" price chip). */
   hasDraw?: boolean
+  /**
+   * No chip on the rail (no automated coverage yet), but still used to file
+   * and count markets, so a college basketball market isn't read as NBA.
+   */
+  hidden?: boolean
 }
 
 // Prod topic ids. Dev has a single catch-all sports topic (see SPORTS_DEFAULT_GROUP_ID).
@@ -82,6 +87,19 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     leagues: ['MLB'],
   },
   {
+    key: 'nhl',
+    label: 'NHL',
+    longLabel: 'NHL',
+    emoji: '🏒',
+    groupIds: [
+      'lccgApXa1l7O5ZH3XfhH', // nhl
+      'tYP9jmPPjoX29KfzE4l5', // hockey
+    ],
+    slug: 'nhl',
+    leagues: ['NHL'],
+    hidden: true,
+  },
+  {
     key: 'soccer',
     label: 'Soccer',
     longLabel: 'Soccer',
@@ -114,7 +132,64 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     groupIds: ['ky1VPTuxrLXMnHyajZFp'], // college football
     leagues: ['NCAAF', 'NCAA Football', 'College Football'],
   },
+  {
+    key: 'ncaab',
+    label: 'NCAAB',
+    longLabel: 'College basketball',
+    emoji: '🏫',
+    groupIds: ['beeb69e0-b36f-451a-80e1-e059df456bb1'], // college basketball
+    leagues: ['NCAAB', 'NCAA Basketball'],
+    hidden: true,
+  },
+  {
+    key: 'tennis',
+    label: 'Tennis',
+    longLabel: 'Tennis',
+    emoji: '🎾',
+    groupIds: ['1mvN9vIVIopcWiAsXhzp'],
+    leagues: ['ATP', 'WTA', 'Tennis'],
+    hidden: true,
+  },
+  {
+    key: 'f1',
+    label: 'F1',
+    longLabel: 'Formula 1',
+    emoji: '🏎️',
+    groupIds: ['OyHBKJOz9YaGkDctpwuY'],
+    leagues: ['Formula 1', 'F1'],
+    hidden: true,
+  },
+  {
+    key: 'mma',
+    label: 'MMA',
+    longLabel: 'MMA & boxing',
+    emoji: '🥊',
+    groupIds: [],
+    leagues: ['UFC', 'MMA', 'Boxing'],
+    hidden: true,
+  },
+  {
+    key: 'golf',
+    label: 'Golf',
+    longLabel: 'Golf',
+    emoji: '⛳',
+    groupIds: [],
+    leagues: ['PGA', 'Golf'],
+    hidden: true,
+  },
+  {
+    key: 'cricket',
+    label: 'Cricket',
+    longLabel: 'Cricket',
+    emoji: '🏏',
+    groupIds: ['LcPYoqxSRdeQMms4lR3g'],
+    leagues: ['Cricket', 'IPL'],
+    hidden: true,
+  },
 ]
+
+/** The sports that get a chip on the /sports rail. */
+export const RAIL_SPORT_CATEGORIES = SPORT_CATEGORIES.filter((s) => !s.hidden)
 
 export const SPORT_BY_KEY: Record<string, SportCategory> = Object.fromEntries(
   SPORT_CATEGORIES.map((s) => [s.key, s])

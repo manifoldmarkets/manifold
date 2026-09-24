@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import {
+  RAIL_SPORT_CATEGORIES,
   SPORT_BY_KEY,
-  SPORT_CATEGORIES,
   SportKey,
 } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
@@ -119,7 +119,7 @@ export default function SportsPage() {
     <Page trackPageView="/sports" className="!col-span-10">
       <SEO
         title="Sports"
-        description="Bet on every game: live odds, upcoming schedules, props and futures across NFL, NBA, MLB, NHL, soccer and more."
+        description="Bet on every game: live odds, upcoming schedules, props and futures across the NFL, NBA, MLB, soccer and more."
         url="/sports"
       />
       <Col className="mx-auto w-full max-w-6xl gap-3 px-2 pt-3 sm:px-4">
@@ -191,7 +191,10 @@ export default function SportsPage() {
 
 function EmptyWeek(props: { selected: SportSelection; label: string }) {
   const { selected, label } = props
-  const others = SPORT_CATEGORIES.filter((s) => s.key !== selected).slice(0, 4)
+  const others = RAIL_SPORT_CATEGORIES.filter((s) => s.key !== selected).slice(
+    0,
+    4
+  )
   return (
     <Col className="border-ink-200 bg-canvas-0 gap-1.5 rounded-lg border px-4 py-4">
       <span className="text-ink-900 text-sm font-semibold">

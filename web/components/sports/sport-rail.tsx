@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { SportKey, SPORT_CATEGORIES } from 'common/sports-schedule'
+import { RAIL_SPORT_CATEGORIES, SportKey } from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
@@ -21,8 +21,10 @@ export function SportRail(props: {
 }) {
   const { selected, onSelect, counts, liveCount, className } = props
 
-  const withGames = SPORT_CATEGORIES.filter((s) => (counts[s.key] ?? 0) > 0)
-  const withoutGames = SPORT_CATEGORIES.filter(
+  const withGames = RAIL_SPORT_CATEGORIES.filter(
+    (s) => (counts[s.key] ?? 0) > 0
+  )
+  const withoutGames = RAIL_SPORT_CATEGORIES.filter(
     (s) => !(counts[s.key] ?? 0) && s.key !== 'other'
   )
   const totalGames = Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)
@@ -60,28 +62,28 @@ export function SportRail(props: {
         fadeEdges
         showArrowsOnHover
       >
-      {withGames.map((s) => (
-        <SportChip
-          key={s.key}
-          active={selected === s.key}
-          onClick={() => select(s.key)}
-          emoji={s.emoji}
-          label={s.label}
-          count={counts[s.key]}
-        />
-      ))}
-      {withGames.length > 0 && withoutGames.length > 0 && (
-        <div className="bg-ink-200 mx-1 my-auto h-5 w-px shrink-0" />
-      )}
-      {withoutGames.map((s) => (
-        <SportChip
-          key={s.key}
-          active={selected === s.key}
-          onClick={() => select(s.key)}
-          emoji={s.emoji}
-          label={s.label}
-        />
-      ))}
+        {withGames.map((s) => (
+          <SportChip
+            key={s.key}
+            active={selected === s.key}
+            onClick={() => select(s.key)}
+            emoji={s.emoji}
+            label={s.label}
+            count={counts[s.key]}
+          />
+        ))}
+        {withGames.length > 0 && withoutGames.length > 0 && (
+          <div className="bg-ink-200 mx-1 my-auto h-5 w-px shrink-0" />
+        )}
+        {withoutGames.map((s) => (
+          <SportChip
+            key={s.key}
+            active={selected === s.key}
+            onClick={() => select(s.key)}
+            emoji={s.emoji}
+            label={s.label}
+          />
+        ))}
       </Carousel>
     </Row>
   )
