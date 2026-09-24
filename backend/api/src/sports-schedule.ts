@@ -1,7 +1,7 @@
 import { groupBy, sortBy, uniq } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { contractColumnsToSelect } from 'shared/utils'
+import { contractColumnsToSelect, log } from 'shared/utils'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
@@ -188,6 +188,11 @@ async function getOfficialGames(
      limit ${MAX_OFFICIAL_GAMES}`,
     [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
   )
+  // Rows come soonest first, so hitting the cap drops the latest games.
+  if (rows.length === MAX_OFFICIAL_GAMES)
+    log.warn(
+      `[sports-schedule] ${MAX_OFFICIAL_GAMES} official games in the window; later games are cut off`
+    )
   const contracts = rows.map((r) => convertContract(r))
   const ids = contracts.map((c) => c.id)
   const [answersByContract, groupIdsByContract] = await Promise.all([
