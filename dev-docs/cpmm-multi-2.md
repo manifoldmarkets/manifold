@@ -13,6 +13,13 @@ probabilities (`answerProbs`) and no way to add answers later open as
 trades exactly as before. The mechanism, pool math, proofs
 and benchmarks come from Evan's PR, #3934, and https://github.com/evand/manifold-math.
 
+Answers that sum to one open with depth in proportion to √(q(1 − q)), and
+every outcome pays the creator back exactly the ante. Evan's closed form
+builds those pools wherever it gives every answer at least half the depth it
+aims for; elsewhere, or where it has no solution, `cpmmMulti2MaxDepthPools`
+solves the same shape exactly. Whole-market liquidity adds, and the drizzle,
+merge in whatever creation would open at the current odds.
+
 ## Switches
 
 Both live in `common/src/contract.ts`.
@@ -35,11 +42,31 @@ an answer fails, and so does the scheduler's daily sports-market creation.
 The migration is additive and idempotent: existing rows read `p = 0.5`, which
 is what `cpmm-multi-1` pricing already assumes, so nothing changes for them.
 
+With both switches off nothing prices differently: `cpmm-multi-1` and `cpmm-1`
+bets, sells, limit fills, basket buys, liquidity and payouts come out exactly
+as before, errors included. The one exception is a binary trade that drains
+its pool at an extreme `p`, which placeBet refuses either way: its preview
+now shows 0% or 100% instead of NaN.
+
+Turning creation on changes what `answerProbs` does in the public API, so
+update `docs/docs/api.md` in the same deploy: starting probabilities open a
+`cpmm-multi-2` market, and are refused on markets where answers can be added
+later instead of seeding a lossy `cpmm-multi-1` market with an "Other"
+remainder.
+
 ## Known limits
 
 - Buying several answers at once (`multi-bet`) is refused on `cpmm-multi-2`
   markets. Its solve takes about 1s at 10 answers and 6s at 50, blocking the
-  API's event loop. Single-answer bets run at about 2.5x `cpmm-multi-1`.
+  API's event loop.
+- Single-answer bets and sells cost 2–4x `cpmm-multi-1`: about 13ms at 10
+  answers, 40ms at 30, 70ms at 50 and 140ms at 100, against 6, 11, 19 and
+  33ms.
+- An answer's `p` can sit as far from 0.5 as a binary market's, so, as on a
+  binary market, a big enough trade can drain one side of its pool. Those
+  trades are refused with "Trade too large for current liquidity pool". In
+  random lifecycles that was about 0.4% of trades of up to half the market's
+  liquidity, and 1.4% of trades of up to three times it.
 - Markets where answers can be added later can't take starting probabilities
   while `cpmm-multi-2` creation is on. Adding an answer to a sum-to-one
   `cpmm-multi-2` market credits the pool's NO shares in `Other` to the creator
