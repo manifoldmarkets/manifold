@@ -32,11 +32,12 @@ import {
 } from 'common/sports-calendar'
 import {
   buildOddsMarketParams,
-  DRAW_ANSWER,
+  gameResolution,
   OddsApiScore,
+  OddsMarketParams,
   parseOddsEventId,
-  resolveWinner,
   teamScores,
+  winningSide,
 } from 'common/odds-markets'
 import { sportTagIds } from 'common/sports-schedule'
 import { CPMMMultiContract, MarketContract } from 'common/contract'
@@ -122,12 +123,19 @@ export async function createOddsMarketsForCompetition(
       question = params.question
       const existing = await findSportsMoneyline(pg, params.sportsEventId)
       if (existing) {
+        const moved = await resyncKickoff(pg, existing.id, params, {
+          dryRun: opts.dryRun,
+        })
         result.skipped++
         result.log.push({
           eventId: event.id,
           question: params.question,
           status: 'skipped',
-          reason: `market ${existing.id} already exists`,
+          reason: moved
+            ? `market ${existing.id} already exists; ${
+                opts.dryRun ? 'would move' : 'moved'
+              } its kickoff to ${params.sportsStartTimestamp}`
+            : `market ${existing.id} already exists`,
         })
         continue
       }
@@ -136,10 +144,11 @@ export async function createOddsMarketsForCompetition(
           eventId: event.id,
           question: params.question,
           status: 'dry-run',
-          reason:
-            params.outcomeType === 'BINARY'
-              ? `would open at ${params.initialProb}% for ${params.sportsHomeTeam}`
-              : 'would open three-way (home, away, Draw)',
+          reason: params.answerProbs
+            ? `would open at ${params.answers
+                .map((a, i) => `${a} ${Math.round(params.answerProbs![i])}%`)
+                .join(', ')}`
+            : 'would open level: no moneyline yet',
         })
         continue
       }
@@ -168,10 +177,11 @@ export async function createOddsMarketsForCompetition(
           description:
             anythingToRichText({ markdown: params.description }) ??
             anythingToRichText({ raw: '' })!,
-          initialProb: params.initialProb,
           closeTime: params.closeTime,
           liquidityTier: LIQUIDITY_TIER,
           answers: params.answers,
+          answerProbs: params.answerProbs,
+          answerShortTexts: params.answerShortTexts,
           sportsStartTimestamp: params.sportsStartTimestamp,
           sportsEventId: params.sportsEventId,
           sportsLeague: params.sportsLeague,
@@ -202,6 +212,47 @@ export async function createOddsMarketsForCompetition(
     }
   }
   return result
+}
+
+/**
+ * A game the provider has moved keeps its market, with the new kickoff and
+ * close time written onto it, so trading closes, the live window opens and
+ * the resolver polls at the real time. True if the kickoff changed.
+ */
+async function resyncKickoff(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  params: OddsMarketParams,
+  opts: { dryRun?: boolean }
+): Promise<boolean> {
+  const row = await pg.oneOrNone<{
+    start: string | null
+    resolution: string | null
+  }>(
+    `select data->>'sportsStartTimestamp' as start, resolution
+     from contracts where id = $1`,
+    [contractId]
+  )
+  if (!row || row.resolution) return false
+  if (Date.parse(row.start ?? '') === Date.parse(params.sportsStartTimestamp))
+    return false
+  if (!opts.dryRun) {
+    await pg.none(
+      `update contracts set data = data || $1::jsonb
+       where id = $2 and resolution is null`,
+      [
+        JSON.stringify({
+          sportsStartTimestamp: params.sportsStartTimestamp,
+          closeTime: params.closeTime,
+        }),
+        contractId,
+      ]
+    )
+    log(
+      `[sports-odds-create] ${contractId}: kickoff moved from ${row.start} to ${params.sportsStartTimestamp}`
+    )
+  }
+  return true
 }
 
 /** The daily job. */
@@ -351,11 +402,9 @@ async function finishGame(
 ) {
   const { contract } = game
   const d = contract as any
-  const homeTeam: string = d.sportsHomeTeam ?? score.home_team
-  const awayTeam: string = d.sportsAwayTeam ?? score.away_team
-  const winner = resolveWinner(score) // null: tie, or no usable score
+  const side = winningSide(score)
   const { home, away } = teamScores(score)
-  if (home == null || away == null) {
+  if (side === null || home == null || away == null) {
     throw new Error(`completed game ${game.eventId} has no scores`)
   }
 
@@ -375,41 +424,31 @@ async function finishGame(
   await publishSportsLiveScore(contract.id, patch)
 
   if (contract.mechanism === 'cpmm-1') {
-    // YES is the home team, NO the away team, a tie pays out at 50%.
+    // Binary game markets (before the switch to versus markets): YES is the
+    // home team, NO the away team, and a tie pays out at 50%.
     const args =
-      winner === null
-        ? { outcome: 'MKT', probabilityInt: 50 }
-        : winner === homeTeam
+      side === 'home'
         ? { outcome: 'YES' }
-        : winner === awayTeam
+        : side === 'away'
         ? { outcome: 'NO' }
-        : null
-    if (!args) {
-      throw new Error(
-        `winner "${winner}" matches neither ${homeTeam} nor ${awayTeam}`
-      )
-    }
+        : { outcome: 'MKT', probabilityInt: 50 }
     await resolveMarketHelper(contract, creator, creator, args)
     return
   }
 
-  {
-    const answers = (
-      await pg.manyOrNone(`select * from answers where contract_id = $1`, [
-        contract.id,
-      ])
-    ).map(convertAnswer)
-    const wanted = winner ?? DRAW_ANSWER
-    const winning = answers.find(
-      (a) => a.text.trim().toLowerCase() === wanted.trim().toLowerCase()
+  const answers = (
+    await pg.manyOrNone(`select * from answers where contract_id = $1`, [
+      contract.id,
+    ])
+  ).map(convertAnswer)
+  const args = gameResolution(answers, side, d.sportsHomeTeam, d.sportsAwayTeam)
+  if (!args) {
+    throw new Error(
+      `answers on ${contract.id} don't look like a game: ${answers
+        .map((a) => a.text)
+        .join(', ')}`
     )
-    if (!winning) {
-      throw new Error(`no answer named "${wanted}" on ${contract.id}`)
-    }
-    const multi = { ...(contract as CPMMMultiContract), answers }
-    await resolveMarketHelper(multi, creator, creator, {
-      outcome: winning.id,
-      resolutions: { [winning.id]: 100 },
-    })
   }
+  const multi = { ...(contract as CPMMMultiContract), answers }
+  await resolveMarketHelper(multi, creator, creator, args)
 }

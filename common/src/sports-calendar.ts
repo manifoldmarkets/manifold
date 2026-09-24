@@ -251,7 +251,8 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Knockout Phase',
     startDate: '2027-02-11',
     endDate: '2027-05-30',
-    autoCreate: true,
+    // Same extra time and penalties question as the MLS Cup Playoffs.
+    autoCreate: false,
     autoResolve: true,
   },
 
@@ -274,8 +275,13 @@ const ENTRIES: CalendarInput[] = [
     phase: 'MLS Cup Playoffs',
     startDate: '2026-10-22',
     endDate: '2026-11-28',
-    autoCreate: true,
+    // Off until knockout rules are decided. Playoff games go to extra time
+    // and penalties, and the resolver only sees goals, so a shootout would
+    // resolve as a Draw. Decide between the 90-minute result and who
+    // advances, and check what /scores reports, before switching this on.
+    autoCreate: false,
     autoResolve: true,
+    notes: 'Knockout games: off until the extra time and penalties rule is decided',
   },
   {
     sport: 'soccer',

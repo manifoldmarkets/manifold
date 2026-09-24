@@ -37,7 +37,7 @@ import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { User } from 'common/user'
 import { JSONContent } from '@tiptap/core'
-import { getNewContract } from 'common/new-contract'
+import { getAnswerProbsError, getNewContract } from 'common/new-contract'
 import { getAnte } from 'common/economy'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
@@ -1092,12 +1092,14 @@ export interface SportsContractParams {
   question: string
   outcomeType: 'BINARY' | 'MULTIPLE_CHOICE'
   description: JSONContent
-  /** Binary: the opening probability (1-99). Multiple choice: ignored. */
-  initialProb: number
+  /** Binary: the opening probability (1-99), 50 if omitted. Multiple choice: ignored. */
+  initialProb?: number
   closeTime: number
   liquidityTier: LiquidityTierValue
   /** Multiple choice only; answers sum to one and nobody can add more. */
   answers?: string[]
+  /** Multiple choice: opening probability of each answer as a percent. Level if omitted. */
+  answerProbs?: number[]
   answerShortTexts?: string[]
   answerImageUrls?: string[]
   sportsStartTimestamp: string
@@ -1144,6 +1146,16 @@ export async function createSportsContract(
   opts: { notifyFollowers?: boolean; deduplicateMoneyline?: boolean } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
+  if (params.answerProbs) {
+    // createMarketHelper runs this check for the API; a job has to run it too.
+    const error = getAnswerProbsError({
+      answerProbs: params.answerProbs,
+      numAnswers: answers.length,
+      shouldAnswersSumToOne: true,
+      hasOtherAnswer: false,
+    })
+    if (error) throw new Error(`${params.question}: ${error}`)
+  }
   const ante = getAnte(params.outcomeType, answers.length, params.liquidityTier)
   const proposedSlug = slugify(params.question)
   const slugExists = await pg.oneOrNone<{ id: string }>(
@@ -1159,7 +1171,7 @@ export async function createSportsContract(
     question: params.question,
     outcomeType: params.outcomeType,
     description: params.description,
-    initialProb: params.initialProb,
+    initialProb: params.initialProb ?? 50,
     ante,
     closeTime: params.closeTime,
     visibility: 'public',
@@ -1176,6 +1188,7 @@ export async function createSportsContract(
     shouldAnswersSumToOne: true,
     answerShortTexts: params.answerShortTexts,
     answerImageUrls: params.answerImageUrls,
+    answerProbs: params.answerProbs,
     sportsStartTimestamp: params.sportsStartTimestamp,
     sportsEventId: params.sportsEventId,
     sportsLeague: params.sportsLeague,

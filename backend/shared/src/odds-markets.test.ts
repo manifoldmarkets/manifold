@@ -69,6 +69,10 @@ import {
   pollOddsScoresAndResolve,
 } from './odds-markets'
 
+// Pipeline code filters on Date.now(); pin it inside the NFL regular season,
+// before the fixture's kickoff, so the fixtures never go stale.
+const NOW = Date.parse('2026-09-10T12:00:00Z')
+
 const creator = {
   id: 'sports-user',
   username: 'ManifoldSports',
@@ -91,7 +95,7 @@ function database() {
   const contracts: Contract[] = []
   const writes: string[] = []
   let tail = Promise.resolve()
-  const oneOrNone = jest.fn(async (sql: string) => {
+  const oneOrNone = jest.fn(async (sql: string): Promise<unknown> => {
     if (sql.includes("data->>'sportsEventId'")) return contracts[0] ?? null
     if (sql.includes('from groups'))
       return { id: 'official', slug: 'official', privacy_status: 'curated' }
@@ -121,6 +125,13 @@ function database() {
           const { values } = JSON.parse(encoded) as { values: [string, string] }
           inserted.push(JSON.parse(values[1]) as Contract)
         },
+        // Multiple-choice markets insert the contract and its answers together.
+        multi: async (query: string) => {
+          const encoded = query.slice(0, query.lastIndexOf('; insert answers'))
+          const { values } = JSON.parse(encoded) as { values: [string, string] }
+          inserted.push(JSON.parse(values[1]) as Contract)
+          return [[], []]
+        },
       } as unknown as SupabaseDirectClient
       try {
         const result = await run(tx)
@@ -141,11 +152,16 @@ function database() {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  jest.spyOn(Date, 'now').mockReturnValue(NOW)
   jest.mocked(getUser).mockResolvedValue(creator)
   jest.mocked(getUpcomingOdds).mockResolvedValue([event])
 })
 
-it('concurrent create runs insert one binary market and charge one ante', async () => {
+afterAll(() => {
+  jest.restoreAllMocks()
+})
+
+it('concurrent create runs insert one versus market and charge one ante', async () => {
   const db = database()
   const results = await Promise.all([
     createOddsMarketsForCompetition(db.client, 'nfl-regular-2026', { creator }),
@@ -155,12 +171,55 @@ it('concurrent create runs insert one binary market and charge one ante', async 
   expect(results.reduce((n, r) => n + r.skipped, 0)).toBe(1)
   expect(db.contracts).toHaveLength(1)
   expect(db.contracts[0]).toMatchObject({
-    outcomeType: 'BINARY',
-    mechanism: 'cpmm-1',
-    prob: 0.5,
+    outcomeType: 'MULTIPLE_CHOICE',
+    mechanism: 'cpmm-multi-1',
+    shouldAnswersSumToOne: true,
+    addAnswersMode: 'DISABLED',
+    sportsHomeTeam: 'Home',
+    sportsAwayTeam: 'Away',
   })
   expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
   expect(generateAntes).toHaveBeenCalledTimes(1)
+})
+
+it('opens the answers at the devigged moneyline', async () => {
+  jest.mocked(getUpcomingOdds).mockResolvedValue([
+    {
+      ...event,
+      bookmakers: [
+        {
+          key: 'book',
+          title: 'Book',
+          last_update: '',
+          markets: [
+            {
+              key: 'h2h',
+              last_update: '',
+              outcomes: [
+                { name: 'Home', price: -300 },
+                { name: 'Away', price: 250 },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ])
+  const db = database()
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    'nfl-regular-2026',
+    { creator }
+  )
+  expect(result.created).toBe(1)
+  const answers = (db.contracts[0] as any).answers as {
+    text: string
+    prob: number
+  }[]
+  expect(answers.map((a) => a.text)).toEqual(['Home', 'Away'])
+  // -300 / +250 devigs to about 72.4% / 27.6%.
+  expect(answers[0].prob).toBeCloseTo(0.724, 2)
+  expect(answers[1].prob).toBeCloseTo(0.276, 2)
 })
 
 it('preview has no database writes, creator lookup, ante, or group lookup', async () => {
@@ -192,14 +251,70 @@ it('keeps a final-day US evening kickoff after midnight UTC', async () => {
   expect(result.log).toHaveLength(1)
 })
 
-it('does not call the provider for CFP while no fixture filter exists', async () => {
+it('creates college post-season games but not regular-season ones', async () => {
+  jest.mocked(getUpcomingOdds).mockResolvedValue([
+    { ...event, id: 'october', commence_time: '2026-10-17T19:30:00Z' },
+    { ...event, id: 'bowl', commence_time: '2026-12-27T20:00:00Z' },
+  ])
   const result = await createOddsMarketsForCompetition(
     database().client,
-    'cfb-cfp-2027',
+    'cfb-regular-2026',
     { dryRun: true }
   )
+  expect(result.log.map((r) => r.eventId)).toEqual(['bowl'])
+})
+
+it("moves an existing market to the provider's new kickoff", async () => {
+  const db = database()
+  db.contracts.push({ id: 'existing' } as Contract)
+  db.pg.oneOrNone.mockImplementation(async (sql: string) => {
+    if (sql.includes("data->>'sportsStartTimestamp' as start"))
+      return { start: '2026-09-14T00:20:00Z', resolution: null }
+    if (sql.includes("data->>'sportsEventId'")) return { id: 'existing' }
+    return null
+  })
+  const preview = await createOddsMarketsForCompetition(
+    db.client,
+    'nfl-regular-2026',
+    { dryRun: true }
+  )
+  expect(preview.log[0].reason).toContain('would move its kickoff')
+  expect(db.writes).toEqual([])
+
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    'nfl-regular-2026',
+    { creator }
+  )
   expect(result.created).toBe(0)
-  expect(getUpcomingOdds).not.toHaveBeenCalled()
+  expect(result.log[0].reason).toContain('moved its kickoff')
+  expect(db.pg.none).toHaveBeenCalledWith(
+    expect.stringContaining('update contracts'),
+    [
+      JSON.stringify({
+        sportsStartTimestamp: event.commence_time,
+        closeTime: Date.parse(event.commence_time) + 4 * 60 * 60 * 1000,
+      }),
+      'existing',
+    ]
+  )
+})
+
+it('leaves a market alone when the kickoff has not moved', async () => {
+  const db = database()
+  db.pg.oneOrNone.mockImplementation(async (sql: string) => {
+    if (sql.includes("data->>'sportsStartTimestamp' as start"))
+      return { start: event.commence_time, resolution: null }
+    if (sql.includes("data->>'sportsEventId'")) return { id: 'existing' }
+    return null
+  })
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    'nfl-regular-2026',
+    { creator }
+  )
+  expect(result.log[0].reason).toBe('market existing already exists')
+  expect(db.writes).toEqual([])
 })
 
 it('contains a per-event lookup failure and continues to the next game', async () => {
@@ -265,6 +380,60 @@ it.each([
     expect(publishSportsLiveScore).toHaveBeenCalledWith(
       'game',
       expect.objectContaining({ sportsLiveStatus: 'FINISHED' })
+    )
+  }
+)
+
+it.each([
+  [24, 17, { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }],
+  [17, 24, { outcome: 'away-answer', resolutions: { 'away-answer': 100 } }],
+  [
+    20,
+    20,
+    {
+      outcome: 'CHOOSE_MULTIPLE',
+      resolutions: { 'home-answer': 50, 'away-answer': 50 },
+    },
+  ],
+])(
+  'resolves a versus final %s–%s, splitting a tie 50/50',
+  async (home, away, resolution) => {
+    const db = database()
+    db.pg.manyOrNone
+      .mockResolvedValueOnce([
+        {
+          data: {
+            id: 'game',
+            mechanism: 'cpmm-multi-1',
+            outcomeType: 'MULTIPLE_CHOICE',
+            sportsHomeTeam: 'Home',
+            sportsAwayTeam: 'Away',
+            sportsEventId: 'odds:americanfootball_nfl:event',
+            sportsStartTimestamp: new Date(Date.now() - 1000).toISOString(),
+          },
+        },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'away-answer', text: 'Away', index: 1, contract_id: 'game' },
+        { id: 'home-answer', text: 'Home', index: 0, contract_id: 'game' },
+      ])
+    jest.mocked(getScores).mockResolvedValue([
+      {
+        ...event,
+        completed: true,
+        scores: [
+          { name: 'Away', score: String(away) },
+          { name: 'Home', score: String(home) },
+        ],
+        last_update: null,
+      },
+    ])
+    expect((await pollOddsScoresAndResolve(db.client)).resolved).toBe(1)
+    expect(resolveMarketHelper).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'game' }),
+      creator,
+      creator,
+      resolution
     )
   }
 )
