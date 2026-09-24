@@ -147,14 +147,14 @@ See [MNX oracle methodology](https://docs.mnx.fi/contracts/oracle-methodology),
 [market specifications](https://docs.mnx.fi/contracts/market-specs) and
 [API reference](https://docs.mnx.fi/openapi-public.json).
 
-Launch at the manifest's 3× recommendation (or lower if MNX's margin ceiling
-requires it), M25,000 per side, funding sensitivity 1 and a nominal annual
+Launch at the manifest's 3× recommendation (or MNX's margin ceiling, if
+lower), M25,000 per side, funding sensitivity 1 and a nominal annual
 funding cap of 1. Funding runs hourly for all sixteen. The normal 10bps web
 opening fee and API-effective `max(web, configured API)` fee apply; there is
 no fee waiver. Thinness and public marks still permit latency arbitrage even
 at a 2s tick, so retain the existing fee and exposure controls. Preflight warns
-above the recommendation. Creation rejects leverage above MNX's actual ceiling,
-without forcing operators to use the recommended maximum.
+above the recommendation, and MNX's ceiling is not a limit: creation and later
+rule changes (e.g. in `/admin/mnx`) accept leverage above it, up to 100×.
 
 One shared request per 2s means approximately 30 requests/minute per scheduler
 process, briefly 60 during deployment overlap, plus API and script calls.

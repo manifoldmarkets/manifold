@@ -1891,6 +1891,7 @@ export const API = (_apiTypeCheck = {
       shouldShowWelcome: z.boolean().optional(),
       hasSeenContractFollowModal: z.boolean().optional(),
       hasSeenLoanModal: z.boolean().optional(),
+      hasSeenPerpsExplainer: z.boolean().optional(),
       lastShopVisitTime: z.number().optional(),
     }),
     returns: {} as FullUser,

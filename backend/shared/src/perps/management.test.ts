@@ -97,14 +97,11 @@ beforeEach(() => {
   jest
     .mocked(runTransactionWithRetries)
     .mockImplementation(async (fn) => fn(tx))
-  jest
-    .mocked(fetchMnxSnapshot)
-    .mockResolvedValue({ fetchedAt: Date.now(), feeds: {}, markets: [] })
-  jest
-    .mocked(requireMnxReady)
-    .mockReturnValue({ supportedLeverage: 4 } as ReturnType<
-      typeof requireMnxReady
-    >)
+  // Rule edits never consult MNX, so every test runs with the provider down.
+  jest.mocked(fetchMnxSnapshot).mockRejectedValue(new Error('provider offline'))
+  jest.mocked(requireMnxReady).mockImplementation(() => {
+    throw new Error('MNX has no validated live observation or launch margin')
+  })
   jest.mocked(tx.any).mockResolvedValue([])
   jest.mocked(tx.one).mockImplementation(async (query: any) => {
     if (typeof query === 'string' && query.startsWith('lock:')) {
@@ -373,18 +370,38 @@ it('refuses a stale preview without overwriting another operator', async () => {
   expect(tx.none).not.toHaveBeenCalled()
 })
 
-it('preserves provider limits and refuses freshness settings below the cadence floor', async () => {
-  await expect(
-    setPerpConfig({ contractId: 'c1', maxLeverage: 5 }, mnx)
-  ).rejects.toThrow('at most 4x')
+it('refuses freshness settings below the cadence floor', async () => {
   await expect(
     setPerpConfig({ contractId: 'c1', maxOraclePriceAgeMs: 1000 }, mnx)
   ).rejects.toThrow('at least 120')
   expect(tx.none).not.toHaveBeenCalled()
 })
 
+it.each([mnx, ENV_CONFIG.adminIds[0]])(
+  'lets %s raise MNX leverage above what MNX offers, without consulting MNX',
+  async (managerId) => {
+    await expect(
+      setPerpConfig(
+        {
+          contractId: 'c1',
+          maxLeverage: 10,
+          expectedConfig: getPerpConfig(contract),
+          expectedManagerId: managerId,
+        },
+        managerId
+      )
+    ).resolves.toMatchObject({ maxLeverage: 10 })
+    expect(contract.maxLeverage).toBe(10)
+    expect(tx.none).toHaveBeenCalledWith(
+      expect.stringContaining('insert into contract_edits'),
+      expect.arrayContaining(['c1', managerId, ['maxLeverage']])
+    )
+    expect(fetchMnxSnapshot).not.toHaveBeenCalled()
+    expect(requireMnxReady).not.toHaveBeenCalled()
+  }
+)
+
 it('can reduce leverage during an MNX outage and keeps admin access to other perps', async () => {
-  jest.mocked(fetchMnxSnapshot).mockRejectedValue(new Error('provider offline'))
   await expect(
     setPerpConfig({ contractId: 'c1', maxLeverage: 2 }, mnx)
   ).resolves.toMatchObject({ maxLeverage: 2 })
