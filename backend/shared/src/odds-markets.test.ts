@@ -86,7 +86,23 @@ const event: OddsApiEvent = {
   commence_time: '2026-09-13T17:00:00Z',
   home_team: 'Home',
   away_team: 'Away',
-  bookmakers: [],
+  bookmakers: [
+    {
+      key: 'book',
+      title: 'Book',
+      last_update: '',
+      markets: [
+        {
+          key: 'h2h',
+          last_update: '',
+          outcomes: [
+            { name: 'Home', price: -150 },
+            { name: 'Away', price: 130 },
+          ],
+        },
+      ],
+    },
+  ],
 }
 
 /** Minimal transactional store: inserts are invisible until commit; the
@@ -180,6 +196,23 @@ it('concurrent create runs insert one versus market and charge one ante', async 
   })
   expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
   expect(generateAntes).toHaveBeenCalledTimes(1)
+})
+
+it('waits for a moneyline before creating a game', async () => {
+  jest.mocked(getUpcomingOdds).mockResolvedValue([{ ...event, bookmakers: [] }])
+  const db = database()
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    'nfl-regular-2026',
+    { creator }
+  )
+  expect(result.created).toBe(0)
+  expect(result.log[0]).toMatchObject({
+    status: 'skipped',
+    reason: expect.stringContaining('no moneyline yet'),
+  })
+  expect(db.contracts).toHaveLength(0)
+  expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
 })
 
 it('opens the answers at the devigged moneyline', async () => {

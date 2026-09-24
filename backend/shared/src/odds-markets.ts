@@ -139,16 +139,27 @@ export async function createOddsMarketsForCompetition(
         })
         continue
       }
+      const answerProbs = params.answerProbs
+      if (!answerProbs) {
+        // A game with no line would open level with the full ante behind it.
+        // The daily run looks again tomorrow, well inside the window.
+        result.skipped++
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'skipped',
+          reason: 'no moneyline yet; the next daily run will try again',
+        })
+        continue
+      }
       if (opts.dryRun) {
         result.log.push({
           eventId: event.id,
           question: params.question,
           status: 'dry-run',
-          reason: params.answerProbs
-            ? `would open at ${params.answers
-                .map((a, i) => `${a} ${Math.round(params.answerProbs![i])}%`)
-                .join(', ')}`
-            : 'would open level: no moneyline yet',
+          reason: `would open at ${params.answers
+            .map((a, i) => `${a} ${Math.round(answerProbs[i])}%`)
+            .join(', ')}`,
         })
         continue
       }

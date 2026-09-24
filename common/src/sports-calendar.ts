@@ -163,7 +163,9 @@ const ENTRIES: CalendarInput[] = [
     competition: 'NCAA Football 2026',
     competitionId: 'cfb-regular-2026',
     phase: 'Bowl Season',
-    startDate: '2026-12-20',
+    // From the first bowl (12 Dec) so the early bowls and Army–Navy, the one
+    // regular-season game left that week, get markets too.
+    startDate: '2026-12-12',
     endDate: '2027-01-01',
     autoCreate: true,
     autoResolve: true,
@@ -173,8 +175,10 @@ const ENTRIES: CalendarInput[] = [
     competition: 'College Football Playoff 2026–27',
     competitionId: 'cfb-cfp-2027',
     phase: 'CFP (12-team)',
-    startDate: '2026-12-20',
-    endDate: '2027-01-19',
+    // First round 18–19 Dec, quarterfinals 30 Dec and 1 Jan, semifinals
+    // 14–15 Jan, national championship Monday 25 Jan in Las Vegas.
+    startDate: '2026-12-18',
+    endDate: '2027-01-25',
     autoCreate: true,
     autoResolve: true,
     notes:

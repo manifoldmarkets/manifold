@@ -95,6 +95,9 @@ describe('2026–27 calendar eligibility', () => {
     ['nfl-playoffs-2027', '2027-01-25T01:00:00Z'],
     ['nfl-playoffs-2027', '2027-01-31T23:30:00Z'],
     ['nfl-playoffs-2027', '2027-02-14T23:30:00Z'],
+    // CFP first round (8pm ET 18 Dec) and the title game (4:30pm PT 25 Jan).
+    ['cfb-cfp-2027', '2026-12-19T01:00:00Z'],
+    ['cfb-cfp-2027', '2027-01-26T00:30:00Z'],
   ])(
     'includes %s games on their final US calendar day: %s',
     (competition, kickoff) => {
