@@ -42,11 +42,23 @@ import {
 import { sportTagIds } from 'common/sports-schedule'
 import { CPMMMultiContract, MarketContract } from 'common/contract'
 import { User } from 'common/user'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 const ROLLING_WINDOW_DAYS = 14
 /** The most the Odds API will look back for completed games. */
 const LOOKBACK_DAYS = 3
 const LIQUIDITY_TIER = 1000
+/**
+ * New markets per competition per run, soonest games first. Caps the ante a
+ * single run or admin click commits and how many markets land in the feed at
+ * once; a longer backlog, like a season's first two weeks, fills in over the
+ * next daily runs.
+ */
+export const MAX_NEW_MARKETS_PER_RUN = 25
+/** An unresolved game this long after close gets an error log. */
+const ATTENTION_AFTER_MS = 3 * HOUR_MS
+/** The resolve job's cadence in backend/scheduler/src/jobs/index.ts. */
+const RESOLVE_TICK_MS = 5 * MINUTE_MS
 
 // ─── Creating markets ─────────────────────────────────────────────────────────
 
@@ -103,13 +115,14 @@ export async function createOddsMarketsForCompetition(
   // Only games that have not started: the odds endpoint also returns games
   // in play, and a market opened from a live line is not a market.
   const now = Date.now()
-  const events = (
-    await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS)
-  ).filter((e) => {
-    const t = new Date(e.commence_time).getTime()
-    return t > now && windows.some((w) => t >= w.from && t <= w.to)
-  })
+  const events = (await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS))
+    .filter((e) => {
+      const t = new Date(e.commence_time).getTime()
+      return t > now && windows.some((w) => t >= w.from && t <= w.to)
+    })
+    .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time))
   if (events.length === 0) return result
+  let planned = 0
 
   // A preview only reads provider events and existing markets. Delay group
   // creation/privacy changes and the creator lookup until a real insertion.
@@ -152,6 +165,17 @@ export async function createOddsMarketsForCompetition(
         })
         continue
       }
+      if (planned >= MAX_NEW_MARKETS_PER_RUN) {
+        result.skipped++
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'skipped',
+          reason: `${MAX_NEW_MARKETS_PER_RUN} new markets is the most one run creates; the next run continues`,
+        })
+        continue
+      }
+      planned++
       if (opts.dryRun) {
         result.log.push({
           eventId: event.id,
@@ -348,6 +372,7 @@ export async function pollOddsScoresAndResolve(
 
   const creator = await sportsCreator()
   const bySport = groupBy(pending, (p) => p.sportKey)
+  const resolved = new Set<string>()
   for (const [sportKey, games] of Object.entries(bySport)) {
     let scores: OddsApiScore[]
     try {
@@ -367,6 +392,7 @@ export async function pollOddsScoresAndResolve(
       try {
         if (score.completed) {
           await finishGame(pg, game, score, creator)
+          resolved.add(game.contract.id)
           stats.resolved++
         } else if (score.scores && score.scores.length > 0) {
           await writeLiveScore(pg, game, score, now)
@@ -380,7 +406,28 @@ export async function pollOddsScoresAndResolve(
       }
     }
   }
+  for (const game of pending) {
+    if (!resolved.has(game.contract.id)) alertIfOverdue(game, now)
+  }
   return stats
+}
+
+/**
+ * An error log, once an hour, for a game still unresolved three hours after
+ * close: a postponement, a provider outage, an exhausted quota or a name
+ * mismatch. The resolver stops looking three days after close, so these need
+ * a person.
+ */
+function alertIfOverdue(game: PendingGame, now: number) {
+  const { closeTime, id, question } = game.contract
+  if (!closeTime) return
+  const overdue = now - closeTime - ATTENTION_AFTER_MS
+  if (overdue < 0 || overdue % HOUR_MS >= RESOLVE_TICK_MS) return
+  log.error(
+    `[sports-odds-resolve] ${id} ("${question}") is unresolved ${Math.floor(
+      (now - closeTime) / HOUR_MS
+    )}h after close; the resolver gives up ${LOOKBACK_DAYS} days after close. Resolve it by hand if the game was postponed or cancelled.`
+  )
 }
 
 async function writeLiveScore(

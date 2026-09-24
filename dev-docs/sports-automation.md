@@ -17,9 +17,11 @@ The Odds API pipeline (`backend/shared/src/odds-markets.ts`, jobs `sports-odds-c
 | `sports-odds-resolve` | every 5 min                          | For every unresolved game that has started: one `/scores` call per sport, write the live score onto the market while it is on, resolve from the final. No call while nothing is in play. Scores reach browsers through the API's `internal-sports-broadcast` endpoint, since only the API process holds websocket clients. |
 | `/sports`             | `backend/api/src/sports-schedule.ts` | Reads the markets below into game rows, attaches props, lists the rest of the week by close time.                                                                                                                                                                                                                          |
 
-The key: both jobs and the admin endpoint read `THE_ODDS_API_KEY` from the environment, which `loadSecretsToEnv` fills from Google Secret Manager using the list in `common/src/secrets.ts`. Create a secret with that name in the prod project (and the dev project to test there); nothing else needs configuring, and without it both jobs log a line and exit.
+The key: both jobs and the admin endpoint read `THE_ODDS_API_KEY` from the environment, which `loadSecretsToEnv` fills from Google Secret Manager using the list in `common/src/secrets.ts`. Create a secret with that name in the prod project (and the dev project to test there); nothing else needs configuring. It is listed as optional in `common/src/secrets.ts`, so a project without it still starts: both jobs log a line and exit, and the admin endpoint reports the missing key.
 
 Quota: `/scores` with `daysFrom` costs 2 credits, so a sport in play costs about 24 credits an hour at the 5-minute cadence. MLB and the NBA in season are the expensive ones; the 20k-credit plan covers a couple of sports at once, and the cadence in `backend/scheduler/src/jobs/index.ts` is the dial.
+
+Guardrails: one run creates at most `MAX_NEW_MARKETS_PER_RUN` (25) markets per competition, soonest games first, so a season's first two weeks fill in over a few days rather than landing in the feed at once. A game still unresolved three hours after close gets an error log once an hour until someone resolves it (the resolver stops looking three days after close), and the Odds API client warns below 2,000 remaining credits and errors below 200.
 
 ### The market a game becomes
 

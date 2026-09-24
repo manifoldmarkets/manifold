@@ -268,9 +268,12 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Regular Season',
     startDate: '2026-08-01',
     endDate: '2026-10-19',
-    autoCreate: true,
+    // Off for launch: three weeks left and about 15 games a week. The launch
+    // set is NFL, EPL, the MLB postseason, the WNBA playoffs and the college
+    // football post-season.
+    autoCreate: false,
     autoResolve: true,
-    notes: 'Season wrapping up; rolling window already running',
+    notes: 'Off for launch (low interest, high volume); season ends 19 Oct',
   },
   {
     sport: 'soccer',
@@ -285,7 +288,8 @@ const ENTRIES: CalendarInput[] = [
     // advances, and check what /scores reports, before switching this on.
     autoCreate: false,
     autoResolve: true,
-    notes: 'Knockout games: off until the extra time and penalties rule is decided',
+    notes:
+      'Knockout games: off until the extra time and penalties rule is decided',
   },
   {
     sport: 'soccer',
@@ -384,7 +388,10 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Regular Season',
     startDate: '2026-10-21',
     endDate: '2027-04-12',
-    autoCreate: true,
+    // Off until the launch leagues have run cleanly: about 1,230 games, each
+    // with a 1,000-mana ante and a seeding cost on lopsided lines. Switch on
+    // by 7 Oct to have opening night (21 Oct) created two weeks out.
+    autoCreate: false,
     autoResolve: true,
     notes:
       'Resolution-only live mode: final score triggers auto-resolve. Mid-game odds move via human traders only — no automated probability nudging during play.',

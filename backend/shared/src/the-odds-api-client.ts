@@ -24,11 +24,16 @@ function apiKey(): string {
 }
 
 function warnOnLowQuota(res: Response) {
-  const remaining = res.headers.get('x-requests-remaining')
-  if (remaining !== null && parseInt(remaining) < 200) {
-    log(
-      `[the-odds-api] WARNING: only ${remaining} requests remaining this month`
-    )
+  const header = res.headers.get('x-requests-remaining')
+  if (header === null) return
+  const remaining = parseInt(header)
+  // In season 2,000 credits is a few days of headroom (a sport in play costs
+  // about 24 an hour, and a stuck game keeps its sport polling); at 200,
+  // creation and resolution are about to stop.
+  if (remaining < 200) {
+    log.error(`[the-odds-api] only ${remaining} credits left this month`)
+  } else if (remaining < 2000) {
+    log.warn(`[the-odds-api] ${remaining} credits left this month`)
   }
 }
 

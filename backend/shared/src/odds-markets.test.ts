@@ -57,7 +57,7 @@ jest.mock('shared/publish-sports-live-score', () => ({
 import { Contract } from 'common/contract'
 import { OddsApiEvent, OddsApiScore } from 'common/odds-markets'
 import { User } from 'common/user'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { generateAntes } from 'shared/create-contract-helpers'
@@ -66,6 +66,7 @@ import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import {
   createOddsMarketsForCompetition,
+  MAX_NEW_MARKETS_PER_RUN,
   pollOddsScoresAndResolve,
 } from './odds-markets'
 
@@ -364,6 +365,66 @@ it('contains a per-event lookup failure and continues to the next game', async (
   expect(result.errors).toBe(1)
   expect(result.log.map((r) => r.status)).toEqual(['error', 'dry-run'])
 })
+
+it('creates at most the per-run cap, soonest games first', async () => {
+  const kickoff = (i: number) =>
+    new Date(Date.parse('2026-09-13T17:00:00Z') + i * 60 * 60 * 1000)
+      .toISOString()
+      .replace('.000', '')
+  const events = Array.from(
+    { length: MAX_NEW_MARKETS_PER_RUN + 3 },
+    (_, i) => ({
+      ...event,
+      id: `game-${i}`,
+      commence_time: kickoff(i),
+    })
+  )
+  jest.mocked(getUpcomingOdds).mockResolvedValue([...events].reverse())
+  const result = await createOddsMarketsForCompetition(
+    database().client,
+    'nfl-regular-2026',
+    { dryRun: true }
+  )
+  const planned = result.log.filter((r) => r.status === 'dry-run')
+  expect(planned).toHaveLength(MAX_NEW_MARKETS_PER_RUN)
+  expect(planned[0].eventId).toBe('game-0')
+  expect(result.skipped).toBe(3)
+  expect(result.log.at(-1)).toMatchObject({
+    eventId: `game-${MAX_NEW_MARKETS_PER_RUN + 2}`,
+    status: 'skipped',
+    reason: expect.stringContaining('the next run continues'),
+  })
+})
+
+it.each([
+  [60 * 1000, 1],
+  [10 * 60 * 1000, 0],
+  [-60 * 1000, 0],
+])(
+  'alerts about a game still unresolved 3 hours after close (offset %s ms)',
+  async (offset, alerts) => {
+    const db = database()
+    db.pg.manyOrNone.mockResolvedValueOnce([
+      {
+        data: {
+          id: 'stuck',
+          question: 'Away at Home',
+          mechanism: 'cpmm-multi-1',
+          outcomeType: 'MULTIPLE_CHOICE',
+          closeTime: NOW - 3 * 60 * 60 * 1000 - offset,
+          sportsEventId: 'odds:americanfootball_nfl:event',
+          sportsStartTimestamp: new Date(
+            NOW - 8 * 60 * 60 * 1000
+          ).toISOString(),
+        },
+      },
+    ])
+    jest.mocked(getScores).mockResolvedValue([])
+    const result = await pollOddsScoresAndResolve(db.client)
+    expect(result.pending).toBe(1)
+    expect(log.error).toHaveBeenCalledTimes(alerts)
+  }
+)
 
 it('does not request scores when there are no in-play markets', async () => {
   await pollOddsScoresAndResolve(database().client)
