@@ -41,7 +41,7 @@ export const clearLocalStoragePreservingNativeInfo = () => {
   const preserved = NATIVE_INFO_LOCAL_KEYS.map(
     (key) => [key, safeLocalStorage?.getItem(key) ?? null] as const
   )
-  localStorage.clear()
+  safeLocalStorage?.clear()
   if (isNative) setIsNativeOld(true, platform ?? '')
   preserved.forEach(([key, value]) => {
     if (value !== null) safeLocalStorage?.setItem(key, value)
