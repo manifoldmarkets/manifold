@@ -32,6 +32,9 @@ export const AccountSettings = (props: {
 
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
+  const [hideApiTrades, setHideApiTrades] = useState(
+    !!user.hideApiTradesByDefault
+  )
   const [appUrl, setAppUrl] = useState('https://' + ENV_CONFIG.domain)
   const isAdmin = isAdminId(user.id)
   const { isNative } = useNativeInfo()
@@ -66,6 +69,22 @@ export const AccountSettings = (props: {
           setOn={(enabled) => {
             setBetWarnings(enabled)
             api('me/update', { optOutBetWarnings: !enabled })
+          }}
+        />
+      </div>
+      <div>
+        <label className="mb-1 block">
+          Hide API trades by default{' '}
+          <InfoTooltip text='Start with the "Hide API trades" filter on in market trade lists and the live feed, so trades placed through the API (e.g. by bots) are hidden. You can still turn the filter off on any page.' />
+        </label>
+        <ShortToggle
+          on={hideApiTrades}
+          setOn={(enabled) => {
+            setHideApiTrades(enabled)
+            api('me/update', { hideApiTradesByDefault: enabled }).catch(() => {
+              setHideApiTrades(!enabled)
+              toast.error('Failed to update setting')
+            })
           }}
         />
       </div>
