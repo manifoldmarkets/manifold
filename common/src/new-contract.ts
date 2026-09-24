@@ -62,6 +62,9 @@ export function getNewContract(
     answerImageUrls?: string[]
     // Starting probability of each answer, as a percent. Defaults to an even split.
     answerProbs?: number[]
+    // Colour of each answer. Defaults to the versus pair for a two-answer
+    // versus market, otherwise the chart palette.
+    answerColors?: string[]
 
     // Bountied
     isAutoBounty?: boolean | undefined
@@ -115,6 +118,7 @@ export function getNewContract(
     answerShortTexts,
     answerImageUrls,
     answerProbs,
+    answerColors,
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
@@ -140,7 +144,8 @@ export function getNewContract(
         ante,
         answerShortTexts,
         answerImageUrls,
-        answerProbs
+        answerProbs,
+        answerColors
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -399,7 +404,8 @@ const getMultipleChoiceProps = (
   ante: number,
   shortTexts?: string[],
   imageUrls?: string[],
-  answerProbs?: number[]
+  answerProbs?: number[],
+  answerColors?: string[]
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
@@ -416,7 +422,7 @@ const getMultipleChoiceProps = (
     ante,
     answersWithOther,
     removeUndefinedProps({
-      colors: isBinaryMulti ? VERSUS_COLORS : undefined,
+      colors: answerColors ?? (isBinaryMulti ? VERSUS_COLORS : undefined),
       shortTexts,
       imageUrls,
       probs: answerProbs
