@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useEvent } from './use-event'
@@ -42,9 +42,14 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     key
   )
 
+  // Every call gets a generation number. A response that lands after a newer
+  // call (different props, or a refresh) is dropped: the setter always writes
+  // to the latest key, so applying it would show stale data under new props.
+  const generation = useRef(0)
   const getAndSetData = useEvent(async () => {
     if (!props || !enabled) return
     setError(undefined)
+    const mine = ++generation.current
 
     let promise = promiseCache[key]
     if (!promise) {
@@ -55,9 +60,8 @@ export const useAPIGetterWithCall = <P extends APIPath>(
       promiseCache[key] = promise
     }
 
-    const k = key
     const result = await promise
-    if (k === key) setData(result)
+    if (mine === generation.current) setData(result)
   })
 
   useEffect(() => {

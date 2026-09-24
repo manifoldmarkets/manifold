@@ -1,4 +1,5 @@
 import { Contract, isSportsContract } from './contract'
+import { parseSportsStart } from './sports-schedule'
 import { HOUR_MS } from './util/time'
 
 export interface TeamMetadata {
@@ -32,7 +33,8 @@ export const getIsLive = (contract: Contract) => {
   const sportsStartTimestamp = isSportsContract(contract)
     ? contract.sportsStartTimestamp
     : undefined
-  if (!sportsStartTimestamp) return false
-  const start = new Date(sportsStartTimestamp + 'Z').getTime()
+  // Older pipelines store naive UTC timestamps, The Odds API full ISO ones.
+  const start = parseSportsStart(sportsStartTimestamp)
+  if (start === null) return false
   return now >= start && now < (contract.closeTime ?? start + 3 * HOUR_MS)
 }

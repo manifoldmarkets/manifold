@@ -18,9 +18,20 @@ import { APIResponse } from 'common/api/schema'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { slugify } from 'common/util/slugify'
-import { TOURNAMENT_CONFIGS, TournamentConfig } from 'common/sports'
+import {
+  TOURNAMENT_CONFIGS,
+  TournamentConfig,
+  WORLD_CUP_2026,
+  CHAMPIONS_LEAGUE_2026,
+  PREMIER_LEAGUE_2526,
+} from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
 import clsx from 'clsx'
+import {
+  SPORT_LEAGUE_LABEL,
+  SPORTS_CALENDAR,
+  SportId,
+} from 'common/sports-calendar'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,6 +42,90 @@ type CreateResult =
 type ResolveLogEntry = APIResponse<'admin-sports-resolve'>['log'][number]
 
 const TOURNAMENTS = Object.values(TOURNAMENT_CONFIGS)
+
+// ─── Sport / competition registry ────────────────────────────────────────────
+
+type ActiveCompetition = {
+  type: 'active'
+  label: string
+  config: TournamentConfig
+}
+type PendingCompetition = { type: 'pending'; label: string }
+type OddsApiCompetition = {
+  type: 'odds-api'
+  label: string
+  competitionId: string
+  sportsLeague: string
+}
+type CompetitionOption =
+  | ActiveCompetition
+  | PendingCompetition
+  | OddsApiCompetition
+
+type SportCategory = {
+  id: string
+  label: string
+  competitions: CompetitionOption[]
+}
+
+// Soccer competitions wired to football-data keep their TournamentConfig; every
+// other competition comes from the sports calendar (common/sports-calendar.ts):
+// with an Odds API key it can be created from here, without one it is pending.
+const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
+  { id: 'nfl', label: 'NFL' },
+  { id: 'cfb', label: 'College Football' },
+  { id: 'f1', label: 'F1' },
+  { id: 'tdf', label: 'Tour de France' },
+  { id: 'mlb', label: 'MLB' },
+  { id: 'nba', label: 'NBA' },
+  { id: 'wnba', label: 'WNBA' },
+]
+
+function calendarCompetitions(sport: SportId): CompetitionOption[] {
+  const seen = new Set<string>()
+  const out: CompetitionOption[] = []
+  for (const e of SPORTS_CALENDAR) {
+    if (e.sport !== sport || seen.has(e.competitionId)) continue
+    seen.add(e.competitionId)
+    out.push(
+      e.oddsKey
+        ? {
+            type: 'odds-api',
+            label: e.competition,
+            competitionId: e.competitionId,
+            sportsLeague: SPORT_LEAGUE_LABEL[e.sport],
+          }
+        : { type: 'pending', label: e.competition }
+    )
+  }
+  return out
+}
+
+const SPORT_CATEGORIES: SportCategory[] = [
+  {
+    id: 'soccer',
+    label: 'Soccer',
+    competitions: [
+      { type: 'active', label: 'World Cup 2026', config: WORLD_CUP_2026 },
+      {
+        type: 'active',
+        label: 'Champions League 2026',
+        config: CHAMPIONS_LEAGUE_2026,
+      },
+      {
+        type: 'active',
+        label: 'Premier League 2025/26',
+        config: PREMIER_LEAGUE_2526,
+      },
+      ...calendarCompetitions('soccer'),
+    ],
+  },
+  ...CALENDAR_SPORTS.map(({ id, label }) => ({
+    id,
+    label,
+    competitions: calendarCompetitions(id),
+  })),
+]
 
 const STAGE_LABELS: Record<string, string> = {
   REGULAR_SEASON: 'Regular Season',
@@ -89,6 +184,16 @@ export default function SportsAdminPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin() || useDev()
 
+  const [selectedSportId, setSelectedSportId] = useState<string>('soccer')
+  const [selectedCompetition, setSelectedCompetition] =
+    useState<CompetitionOption>(SPORT_CATEGORIES[0].competitions[0])
+
+  const selectedSport = SPORT_CATEGORIES.find((s) => s.id === selectedSportId)!
+  // Active competitions have a wired TournamentConfig; pending ones don't yet.
+  const isApiConnected = selectedCompetition.type === 'active'
+  const isOddsApi = selectedCompetition.type === 'odds-api'
+  // Keep a non-null tournament reference for existing logic — falls back to WC
+  // when a pending competition is selected so the rest of the page doesn't crash.
   const [tournament, setTournament] = useState<TournamentConfig>(TOURNAMENTS[0])
 
   // Tournament settings (persist to localStorage)
@@ -297,6 +402,19 @@ export default function SportsAdminPage() {
   const [resolving, setResolving] = useState(false)
   const [lastResolved, setLastResolved] = useState<string | null>(null)
 
+  // Odds API creation state (NFL, CFB, MLB, NBA, WNBA)
+  const [oddsApiDryRun, setOddsApiDryRun] = useState(true)
+  const [oddsApiCreating, setOddsApiCreating] = useState(false)
+  const [oddsApiRan, setOddsApiRan] = useState(false)
+  const [oddsApiResults, setOddsApiResults] = useState<
+    Array<{
+      eventId: string
+      question: string
+      status: string
+      reason: string | null
+    }>
+  >([])
+
   // Alerts: markets needing attention
   const alertMarkets = markets.filter((m) => m.needsAttention)
   const [handledAlerts, setHandledAlerts] = useState<Set<string>>(new Set())
@@ -337,8 +455,12 @@ export default function SportsAdminPage() {
   async function fetchMarkets() {
     setMarketsLoading(true)
     try {
+      const leagueLabel =
+        selectedCompetition.type === 'odds-api'
+          ? selectedCompetition.sportsLeague
+          : tournament.sportsLeague
       const data = await api('sports-markets', {
-        sportsLeague: tournament.sportsLeague,
+        sportsLeague: leagueLabel,
       })
       setMarkets(data.markets)
     } catch {}
@@ -379,6 +501,7 @@ export default function SportsAdminPage() {
   }
 
   async function runResolve() {
+    if (!isApiConnected) return
     setResolving(true)
     try {
       const data = await api('admin-sports-resolve', {
@@ -393,6 +516,24 @@ export default function SportsAdminPage() {
       )
     } finally {
       setResolving(false)
+    }
+  }
+
+  async function runOddsApiCreate() {
+    if (selectedCompetition.type !== 'odds-api') return
+    setOddsApiCreating(true)
+    setOddsApiResults([])
+    try {
+      const data = await api('admin-sports-create-odds-markets', {
+        competitionId: selectedCompetition.competitionId,
+        dryRun: oddsApiDryRun,
+      })
+      setOddsApiResults(data.results)
+      setOddsApiRan(true)
+    } catch (e: unknown) {
+      alert(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`)
+    } finally {
+      setOddsApiCreating(false)
     }
   }
 
@@ -539,257 +680,467 @@ export default function SportsAdminPage() {
           </ul>
         </div>
 
-        {/* ── 1. Tournament Selector ── */}
-        <Section title="1. Tournament" defaultOpen>
+        {/* ── 1. Sport + Competition Selector ── */}
+        <Section title="1. Sport &amp; Competition" defaultOpen>
           <Row className="flex-wrap items-end gap-4">
+            {/* Sport */}
             <Col className="gap-1">
-              <label className="text-ink-600 text-xs font-medium">
-                Tournament
-              </label>
+              <label className="text-ink-600 text-xs font-medium">Sport</label>
               <div className="relative">
                 <select
-                  value={tournament.footballDataCode}
+                  value={selectedSportId}
                   onChange={(e) => {
-                    const t = TOURNAMENTS.find(
-                      (t) => t.footballDataCode === e.target.value
-                    )
-                    if (t) {
-                      setTournament(t)
-                      setGroupSlug(t.officialGroupSlug)
-                      setDashboardUrl(`${ENV_CONFIG.domain}${t.dashboardPath}`)
+                    const sport = SPORT_CATEGORIES.find(
+                      (s) => s.id === e.target.value
+                    )!
+                    setSelectedSportId(sport.id)
+                    const first = sport.competitions[0]
+                    setSelectedCompetition(first)
+                    if (first.type === 'active') {
+                      setTournament(first.config)
+                      setGroupSlug(first.config.officialGroupSlug)
+                      setDashboardUrl(
+                        `${ENV_CONFIG.domain}${first.config.dashboardPath}`
+                      )
                       setStageTiers(
-                        t.stageLiquidityTiers as Record<string, number>
+                        first.config.stageLiquidityTiers as Record<
+                          string,
+                          number
+                        >
                       )
                       setCustomNote('')
                       setExtraTags([])
-                      setFixtures([])
-                      setMarkets([])
-                      setCreateResults([])
                     }
+                    setFixtures([])
+                    setMarkets([])
+                    setCreateResults([])
                   }}
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-full appearance-none rounded border px-3 py-2 pr-8 text-sm"
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-36 appearance-none rounded border px-3 py-2 pr-8 text-sm"
                 >
-                  {TOURNAMENTS.map((t) => (
-                    <option key={t.footballDataCode} value={t.footballDataCode}>
-                      {t.name}
+                  {SPORT_CATEGORIES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
                     </option>
                   ))}
                 </select>
                 <ChevronDownIcon className="text-ink-400 pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2" />
               </div>
             </Col>
-            <Col className="text-ink-500 gap-0.5 text-xs">
-              <span>
-                {tournament.startDate} → {tournament.endDate}
-              </span>
-              <span className="font-mono">{tournament.footballDataCode}</span>
+
+            {/* Competition */}
+            <Col className="gap-1">
+              <label className="text-ink-600 text-xs font-medium">
+                Competition
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedCompetition.label}
+                  onChange={(e) => {
+                    const comp = selectedSport.competitions.find(
+                      (c) => c.label === e.target.value
+                    )!
+                    setSelectedCompetition(comp)
+                    if (comp.type === 'active') {
+                      setTournament(comp.config)
+                      setGroupSlug(comp.config.officialGroupSlug)
+                      setDashboardUrl(
+                        `${ENV_CONFIG.domain}${comp.config.dashboardPath}`
+                      )
+                      setStageTiers(
+                        comp.config.stageLiquidityTiers as Record<
+                          string,
+                          number
+                        >
+                      )
+                      setCustomNote('')
+                      setExtraTags([])
+                    }
+                    setFixtures([])
+                    setMarkets([])
+                    setCreateResults([])
+                  }}
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-56 appearance-none rounded border px-3 py-2 pr-8 text-sm"
+                >
+                  {selectedSport.competitions.map((c) => (
+                    <option key={c.label} value={c.label}>
+                      {c.label}
+                      {c.type === 'pending' ? ' (API pending)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="text-ink-400 pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2" />
+              </div>
             </Col>
+
+            {/* Active competition metadata / pending notice */}
+            {isApiConnected ? (
+              <Col className="text-ink-500 gap-0.5 text-xs">
+                <span>
+                  {tournament.startDate} → {tournament.endDate}
+                </span>
+                <span className="font-mono">{tournament.footballDataCode}</span>
+              </Col>
+            ) : isOddsApi ? (
+              <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                <span className="font-semibold">The Odds API</span> — market
+                creation available below
+              </div>
+            ) : (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <span className="font-semibold">API not yet connected</span> —
+                this competition is in the calendar but market creation and
+                resolution aren't available until the data provider is wired up.
+              </div>
+            )}
           </Row>
         </Section>
 
         {/* ── 2. Tournament Settings ── */}
-        <Section title="2. Tournament Settings">
-          <Col className="gap-5">
-            {/* Tag + group status */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Official group tag
-              </label>
-              <Row className="gap-2">
+        {!isOddsApi && (
+          <Section
+            title={`2. Competition Settings${
+              !isApiConnected ? ' — unavailable' : ''
+            }`}
+          >
+            {!isApiConnected ? (
+              <p className="text-ink-400 text-sm">
+                Select an active competition above to configure settings.
+              </p>
+            ) : null}
+            <Col
+              className="gap-5"
+              style={
+                !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+              }
+            >
+              {/* Tag + group status */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Official group tag
+                </label>
+                <Row className="gap-2">
+                  <input
+                    type="text"
+                    value={groupSlug}
+                    onChange={(e) => setGroupSlug(e.target.value)}
+                    placeholder="ms-official-wc2026"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                  />
+                </Row>
+                <p className="text-ink-400 text-xs">
+                  Convention: <code>ms-official-[tournament]-[year]</code>.
+                  Group is auto-created as curated (admin-restricted) on first
+                  creation run.
+                </p>
+                {groupStatus && (
+                  <span
+                    className={clsx(
+                      'mt-1 text-xs font-medium',
+                      groupStatus.restricted
+                        ? 'text-green-600'
+                        : 'text-yellow-600'
+                    )}
+                  >
+                    {groupStatus.created
+                      ? `✅ Group created (${groupStatus.id}) — admin-restricted`
+                      : groupStatus.restricted
+                      ? `✅ Group exists and restricted (${groupStatus.id})`
+                      : `⚠️ Group exists but will be restricted on next run`}
+                  </span>
+                )}
+              </Col>
+
+              {/* Dashboard URL */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Dashboard URL
+                </label>
                 <input
                   type="text"
-                  value={groupSlug}
-                  onChange={(e) => setGroupSlug(e.target.value)}
-                  placeholder="ms-official-wc2026"
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                  value={dashboardUrl}
+                  onChange={(e) => setDashboardUrl(e.target.value)}
+                  placeholder="manifold.markets/dashboard/ms-official-wc2026"
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-full max-w-lg rounded border px-3 py-1.5 text-sm"
                 />
-              </Row>
-              <p className="text-ink-400 text-xs">
-                Convention: <code>ms-official-[tournament]-[year]</code>. Group
-                is auto-created as curated (admin-restricted) on first creation
-                run.
-              </p>
-              {groupStatus && (
-                <span
-                  className={clsx(
-                    'mt-1 text-xs font-medium',
-                    groupStatus.restricted
-                      ? 'text-green-600'
-                      : 'text-yellow-600'
-                  )}
-                >
-                  {groupStatus.created
-                    ? `✅ Group created (${groupStatus.id}) — admin-restricted`
-                    : groupStatus.restricted
-                    ? `✅ Group exists and restricted (${groupStatus.id})`
-                    : `⚠️ Group exists but will be restricted on next run`}
-                </span>
-              )}
-            </Col>
+                <p className="text-ink-400 text-xs">
+                  Auto-appended to every market description.
+                </p>
+              </Col>
 
-            {/* Dashboard URL */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Dashboard URL
-              </label>
-              <input
-                type="text"
-                value={dashboardUrl}
-                onChange={(e) => setDashboardUrl(e.target.value)}
-                placeholder="manifold.markets/dashboard/ms-official-wc2026"
-                className="border-ink-300 bg-canvas-0 text-ink-900 w-full max-w-lg rounded border px-3 py-1.5 text-sm"
-              />
-              <p className="text-ink-400 text-xs">
-                Auto-appended to every market description.
-              </p>
-            </Col>
+              {/* Custom note */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Custom tournament note
+                </label>
+                <p className="text-ink-400 text-xs">
+                  Tokens available:{' '}
+                  <code className="bg-ink-100 rounded px-1 text-xs">
+                    {'{team1}'} {'{team2}'} {'{kickoff}'} {'{stage}'}{' '}
+                    {'{dashboard_url}'}
+                  </code>
+                  . Written once, appears in all market descriptions.
+                </p>
+                <textarea
+                  value={customNote}
+                  onChange={(e) => setCustomNote(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. 48 teams, 104 matches, 3 host nations (USA, Canada, Mexico). This is the first ever World Cup with a 48-team format."
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-3 py-2 text-sm"
+                />
+              </Col>
 
-            {/* Custom note */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Custom tournament note
-              </label>
-              <p className="text-ink-400 text-xs">
-                Tokens available:{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">
-                  {'{team1}'} {'{team2}'} {'{kickoff}'} {'{stage}'}{' '}
-                  {'{dashboard_url}'}
-                </code>
-                . Written once, appears in all market descriptions.
-              </p>
-              <textarea
-                value={customNote}
-                onChange={(e) => setCustomNote(e.target.value)}
-                rows={3}
-                placeholder="e.g. 48 teams, 104 matches, 3 host nations (USA, Canada, Mexico). This is the first ever World Cup with a 48-team format."
-                className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-3 py-2 text-sm"
-              />
-            </Col>
+              {/* Description preview */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Description preview
+                </label>
+                <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
+                  {sampleDesc}
+                </pre>
+              </Col>
 
-            {/* Description preview */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Description preview
-              </label>
-              <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
-                {sampleDesc}
-              </pre>
-            </Col>
-
-            {/* Extra topic tags */}
-            <Col className="gap-1.5">
-              <label className="text-ink-700 text-sm font-medium">
-                Extra topic tags ({extraTags.length}/{maxExtraTags})
-              </label>
-              <p className="text-ink-400 text-xs">
-                Markets are always tagged with the official group{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">
-                  {tournament.officialGroupSlug}
-                </code>
-                . Add extra topic slugs here (e.g.{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>)
-                to surface them in those feeds too. Unknown slugs are ignored.
-                Markets allow {MAX_GROUPS_PER_MARKET} topics total, and{' '}
-                {baseGroupCount} are used by the official/configured groups, so
-                up to <strong>{maxExtraTags}</strong> extra tag(s) fit.
-              </p>
-              <Row className="flex-wrap items-center gap-2">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
+              {/* Extra topic tags */}
+              <Col className="gap-1.5">
+                <label className="text-ink-700 text-sm font-medium">
+                  Extra topic tags ({extraTags.length}/{maxExtraTags})
+                </label>
+                <p className="text-ink-400 text-xs">
+                  Markets are always tagged with the official group{' '}
+                  <code className="bg-ink-100 rounded px-1 text-xs">
+                    {tournament.officialGroupSlug}
+                  </code>
+                  . Add extra topic slugs here (e.g.{' '}
+                  <code className="bg-ink-100 rounded px-1 text-xs">
+                    soccer
+                  </code>
+                  ) to surface them in those feeds too. Unknown slugs are
+                  ignored. Markets allow {MAX_GROUPS_PER_MARKET} topics total,
+                  and {baseGroupCount} are used by the official/configured
+                  groups, so up to <strong>{maxExtraTags}</strong> extra tag(s)
+                  fit.
+                </p>
+                <Row className="flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addTag(tagInput)
+                        setTagInput('')
+                      }
+                    }}
+                    placeholder="add a topic slug…"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    color="gray-outline"
+                    disabled={extraTags.length >= maxExtraTags}
+                    onClick={() => {
                       addTag(tagInput)
                       setTagInput('')
-                    }
-                  }}
-                  placeholder="add a topic slug…"
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 font-mono text-sm"
-                />
-                <Button
-                  size="sm"
-                  color="gray-outline"
-                  disabled={extraTags.length >= maxExtraTags}
-                  onClick={() => {
-                    addTag(tagInput)
-                    setTagInput('')
-                  }}
-                >
-                  Add
-                </Button>
-                <Button
-                  size="sm"
-                  color="indigo"
-                  onClick={suggestTags}
-                  disabled={suggesting || extraTags.length >= maxExtraTags}
-                >
-                  {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="indigo"
+                    onClick={suggestTags}
+                    disabled={suggesting || extraTags.length >= maxExtraTags}
+                  >
+                    {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
+                  </Button>
+                </Row>
+                {extraTags.length > 0 && (
+                  <Row className="flex-wrap gap-1.5">
+                    {extraTags.map((slug) => (
+                      <span
+                        key={slug}
+                        className="bg-ink-100 text-ink-700 flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-xs"
+                      >
+                        {slug}
+                        <button
+                          onClick={() =>
+                            setExtraTags((t) => t.filter((x) => x !== slug))
+                          }
+                          className="text-ink-400 font-bold leading-none hover:text-red-600"
+                          title="Remove tag"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </Row>
+                )}
+              </Col>
+
+              {/* Liquidity tiers per stage */}
+              <Col className="gap-2">
+                <label className="text-ink-700 text-sm font-medium">
+                  Liquidity tiers (mana)
+                </label>
+                <p className="text-ink-400 text-xs">
+                  Valid Manifold tiers: 100 · 1,000 · 10,000 · 100,000
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {Object.entries(STAGE_LABELS).map(([code, label]) => (
+                    <Col key={code} className="gap-1">
+                      <label className="text-ink-500 text-xs">{label}</label>
+                      <input
+                        type="number"
+                        value={stageTiers[code] ?? 1000}
+                        onChange={(e) =>
+                          setStageTiers((t) => ({
+                            ...t,
+                            [code]: parseInt(e.target.value) || 1000,
+                          }))
+                        }
+                        className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-2 py-1 text-sm"
+                      />
+                    </Col>
+                  ))}
+                </div>
+              </Col>
+
+              <Row>
+                <Button size="sm" onClick={saveSettings}>
+                  Save settings
                 </Button>
               </Row>
-              {extraTags.length > 0 && (
-                <Row className="flex-wrap gap-1.5">
-                  {extraTags.map((slug) => (
-                    <span
-                      key={slug}
-                      className="bg-ink-100 text-ink-700 flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-xs"
-                    >
-                      {slug}
-                      <button
-                        onClick={() =>
-                          setExtraTags((t) => t.filter((x) => x !== slug))
-                        }
-                        className="text-ink-400 font-bold leading-none hover:text-red-600"
-                        title="Remove tag"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </Row>
+            </Col>
+          </Section>
+        )}
+
+        {/* ── 3b. Odds API Market Creation (NFL, CFB, MLB, NBA, WNBA) ── */}
+        {isOddsApi && (
+          <Section title="3. Create Markets via The Odds API" defaultOpen>
+            <Col className="gap-4">
+              <p className="text-ink-500 text-sm">
+                Fetches upcoming <strong>{selectedCompetition.label}</strong>{' '}
+                games from The Odds API (14-day window) and creates binary
+                YES/NO markets, seeded from Vegas moneyline odds. Games that
+                already have a market are skipped automatically.
+              </p>
+              <Row className="items-center gap-3">
+                <span className="text-ink-600 text-xs">Dry run</span>
+                <ShortToggle on={oddsApiDryRun} setOn={setOddsApiDryRun} />
+                {oddsApiDryRun && (
+                  <span className="text-xs font-medium text-blue-600">ON</span>
+                )}
+              </Row>
+              <Row className="items-center gap-3">
+                <Button
+                  color={oddsApiDryRun ? 'blue' : 'green'}
+                  onClick={runOddsApiCreate}
+                  disabled={oddsApiCreating}
+                >
+                  {oddsApiCreating ? (
+                    <Row className="gap-2">
+                      <LoadingIndicator size="sm" /> Creating…
+                    </Row>
+                  ) : oddsApiDryRun ? (
+                    'Preview upcoming games (dry run)'
+                  ) : (
+                    'Create markets'
+                  )}
+                </Button>
+                {!oddsApiDryRun && (
+                  <span className="text-xs font-medium text-amber-600">
+                    Live mode — this will create real markets.
+                  </span>
+                )}
+              </Row>
+              {oddsApiRan && oddsApiResults.length === 0 && (
+                <p className="text-ink-500 text-sm">
+                  No games to create: nothing in an auto-create phase of this
+                  competition starts in the next 14 days. Phases are set in
+                  common/sports-calendar.ts.
+                </p>
+              )}
+              {oddsApiResults.length > 0 && (
+                <Col className="gap-1">
+                  <p className="text-ink-600 text-sm font-medium">
+                    {oddsApiDryRun ? 'Dry run preview' : 'Creation log'} (
+                    {
+                      oddsApiResults.filter(
+                        (r) => r.status === 'created' || r.status === 'dry-run'
+                      ).length
+                    }{' '}
+                    games,{' '}
+                    {
+                      oddsApiResults.filter((r) => r.status === 'skipped')
+                        .length
+                    }{' '}
+                    skipped,{' '}
+                    {oddsApiResults.filter((r) => r.status === 'error').length}{' '}
+                    errors)
+                  </p>
+                  <div className="bg-ink-50 border-ink-200 max-h-64 overflow-y-auto rounded border p-3">
+                    {oddsApiResults.map((r, i) => (
+                      <Row key={i} className="gap-2 py-0.5 text-xs">
+                        <span
+                          className={clsx(
+                            'w-16 shrink-0 font-medium',
+                            STATUS_COLORS[r.status] ?? 'text-ink-500'
+                          )}
+                        >
+                          {r.status}
+                        </span>
+                        <span className="text-ink-700 flex-1 truncate">
+                          {r.question}
+                        </span>
+                        {r.reason && (
+                          <span className="text-ink-400 shrink-0">
+                            — {r.reason}
+                          </span>
+                        )}
+                      </Row>
+                    ))}
+                  </div>
+                  {oddsApiDryRun &&
+                    oddsApiResults.some((r) => r.status === 'dry-run') && (
+                      <Row className="mt-2 items-center gap-2">
+                        <Button
+                          size="sm"
+                          color="green"
+                          onClick={() => setOddsApiDryRun(false)}
+                        >
+                          Looks good — switch to live mode
+                        </Button>
+                        <span className="text-ink-400 text-xs">
+                          Toggle dry run off and click Create markets to
+                          proceed.
+                        </span>
+                      </Row>
+                    )}
+                </Col>
               )}
             </Col>
-
-            {/* Liquidity tiers per stage */}
-            <Col className="gap-2">
-              <label className="text-ink-700 text-sm font-medium">
-                Liquidity tiers (mana)
-              </label>
-              <p className="text-ink-400 text-xs">
-                Valid Manifold tiers: 100 · 1,000 · 10,000 · 100,000
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {Object.entries(STAGE_LABELS).map(([code, label]) => (
-                  <Col key={code} className="gap-1">
-                    <label className="text-ink-500 text-xs">{label}</label>
-                    <input
-                      type="number"
-                      value={stageTiers[code] ?? 1000}
-                      onChange={(e) =>
-                        setStageTiers((t) => ({
-                          ...t,
-                          [code]: parseInt(e.target.value) || 1000,
-                        }))
-                      }
-                      className="border-ink-300 bg-canvas-0 text-ink-900 w-full rounded border px-2 py-1 text-sm"
-                    />
-                  </Col>
-                ))}
-              </div>
-            </Col>
-
-            <Row>
-              <Button size="sm" onClick={saveSettings}>
-                Save settings
-              </Button>
-            </Row>
-          </Col>
-        </Section>
+          </Section>
+        )}
 
         {/* ── 3. Match Preview Panel ── */}
-        <Section title="3. Match Preview &amp; Creation" defaultOpen>
-          <Col className="gap-4">
+        <Section
+          title={`3. Match Preview & Creation${
+            !isApiConnected ? ' — unavailable' : ''
+          }`}
+          defaultOpen
+        >
+          {!isApiConnected && (
+            <p className="text-ink-400 text-sm">
+              Market creation requires an active competition with a connected
+              data provider.
+            </p>
+          )}
+          <Col
+            className="gap-4"
+            style={
+              !isApiConnected ? { opacity: 0.4, pointerEvents: 'none' } : {}
+            }
+          >
             {/* Controls */}
             <Row className="flex-wrap items-end gap-4">
               <Col className="gap-1">
@@ -1153,8 +1504,19 @@ export default function SportsAdminPage() {
         </Section>
 
         {/* ── 5. Resolution Monitor ── */}
-        <Section title="5. Resolution Monitor">
-          <Col className="gap-4">
+        <Section
+          title={`5. Resolution Monitor${
+            !isApiConnected && !isOddsApi ? ' — unavailable' : ''
+          }`}
+        >
+          <Col
+            className="gap-4"
+            style={
+              !isApiConnected && !isOddsApi
+                ? { opacity: 0.4, pointerEvents: 'none' }
+                : {}
+            }
+          >
             <Row className="flex-wrap items-center gap-4 text-sm">
               <Col className="gap-0.5">
                 <span className="text-ink-500 text-xs">
@@ -1165,20 +1527,32 @@ export default function SportsAdminPage() {
               <Col className="gap-0.5">
                 <span className="text-ink-500 text-xs">Auto-resolution</span>
                 <span className="font-medium">
-                  ~10s after full time (live poller) · 15-min backstop cron
+                  {isOddsApi
+                    ? 'Every 5 minutes (Odds API scores job)'
+                    : '~10s after full time (live poller) · 15-min backstop cron'}
                 </span>
               </Col>
             </Row>
 
             <span className="text-ink-400 text-xs">
-              Markets resolve automatically: the live poller resolves a match
-              within ~10s of the final whistle, and the{' '}
-              <code>sports-resolve</code> cron sweeps every 15 min as a
-              backstop. Use the button below only to force a sweep now.
+              {isOddsApi ? (
+                'The Odds API scores job updates scores and resolves completed games every 5 minutes. Manual resolution is available on each market; this football-data.org sweep does not apply.'
+              ) : (
+                <>
+                  Markets resolve automatically: the live poller resolves a
+                  match within ~10s of the final whistle, and the{' '}
+                  <code>sports-resolve</code> cron sweeps every 15 min as a
+                  backstop. Use the button below only to force a sweep now.
+                </>
+              )}
             </span>
 
             <Row className="items-center gap-3">
-              <Button color="indigo" onClick={runResolve} disabled={resolving}>
+              <Button
+                color="indigo"
+                onClick={runResolve}
+                disabled={resolving || !isApiConnected}
+              >
                 {resolving ? (
                   <Row className="gap-2">
                     <LoadingIndicator size="sm" /> Resolving…

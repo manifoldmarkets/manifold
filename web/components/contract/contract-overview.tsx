@@ -26,6 +26,7 @@ import {
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { Period, periodDurations } from 'common/period'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getIsLive } from 'common/sports-info'
 import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -1177,10 +1178,33 @@ export function BinaryBetPanel(props: {
   contract: BinaryOrPseudoNumericContract
 }) {
   const { contract } = props
+  const anyC = contract as any
+  // Official binary game markets name the teams on the buttons. Anyone can set
+  // the team fields on create, so only the sports account's markets do this.
+  const pseudonym =
+    MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId) &&
+    anyC.sportsHomeTeam &&
+    anyC.sportsAwayTeam
+      ? {
+          YES: {
+            pseudonymName: anyC.sportsHomeTeam as string,
+            pseudonymColor: 'green' as const,
+          },
+          NO: {
+            pseudonymName: anyC.sportsAwayTeam as string,
+            pseudonymColor: 'red' as const,
+          },
+        }
+      : undefined
 
   return (
     <Col className="mt-2 w-full">
-      <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
+      <BuyPanel
+        inModal={false}
+        contract={contract}
+        className="bg-canvas-50"
+        pseudonym={pseudonym}
+      />
     </Col>
   )
 }
