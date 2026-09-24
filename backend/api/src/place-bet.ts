@@ -365,6 +365,17 @@ export const executeNewBetResult = async (
   ) {
     throw new APIError(403, 'Trade too large for current liquidity pool.')
   }
+  // A cpmm-multi-2 answer's p can sit as far from 0.5 as a binary market's, and a
+  // big enough trade drains a pool side the same way. Refuse it the same way,
+  // rather than let the answer write guard fail it with a 500.
+  if (
+    mechanism === 'cpmm-multi-2' &&
+    [newPool, ...(otherBetResults ?? []).map((r) => r.cpmmState.pool)].some(
+      (pool) => pool && !(Math.min(...Object.values(pool)) >= CPMM_MIN_POOL_QTY)
+    )
+  ) {
+    throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
 
   if (
     !isFinite(newBet.amount) ||

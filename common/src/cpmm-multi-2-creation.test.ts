@@ -1,7 +1,7 @@
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
-  cpmmMulti2EvenSplitPools,
+  cpmmMulti2MaxDepthPools,
   cpmmMulti2SumToOneCreationPools,
   cpmmMulti2SumToOneFeasible,
   cpmmMulti2SumToOnePools,
@@ -332,8 +332,8 @@ describe('cpmm-multi-2 created market — trades under the v2 arb (Σp = 1 held)
 
 describe('cpmm-multi-2 creation — odds the √variance shape cannot hold', () => {
   // 50 answers: a 45% favourite and a long tail near the 1% floor. The √variance
-  // construction has no sane pools here (GP19a), so creation falls back to the
-  // even-split pools rather than refusing the odds.
+  // closed form has no sane pools here (GP19a), so creation solves the same shape
+  // exactly instead of refusing the odds.
   const answers = Array.from({ length: 50 }, (_, i) => `A${i}`)
   const answerProbs = [45, ...Array(49).fill(55 / 49)]
   const ante = 13000
@@ -430,12 +430,12 @@ describe('cpmm-multi-2 creation — long shots near the √variance edge', () =>
   const depth = (x: { poolYes: number; poolNo: number; p: number }) =>
     (1 - x.p) * x.poolYes + x.p * x.poolNo
 
-  it('falls back to the even-split pools there', () => {
+  it('solves the √variance shape exactly there instead', () => {
     expect(cpmmMulti2SumToOneFeasible(q)).toBe(true)
     const starved = cpmmMulti2SumToOnePools(q, ante)
     expect(depth(starved[1])).toBeLessThan((ante / n) * 0.05)
     expect(cpmmMulti2SumToOneCreationPools(q, ante)).toEqual(
-      cpmmMulti2EvenSplitPools(q, ante)
+      cpmmMulti2MaxDepthPools(q, ante)
     )
   })
 
@@ -487,22 +487,75 @@ describe('cpmm-multi-2 creation — long shots near the √variance edge', () =>
     const seven = [0.502, 0.435, 0.02, 0.013, 0.01, 0.01, 0.01]
     expect(cpmmMulti2SumToOneFeasible(seven)).toBe(false)
     expect(cpmmMulti2SumToOneCreationPools(seven, ante)).toEqual(
-      cpmmMulti2EvenSplitPools(seven, ante)
+      cpmmMulti2MaxDepthPools(seven, ante)
     )
     const six = [0.492, 0.468, 0.01, 0.01, 0.01, 0.01]
     expect(cpmmMulti2SumToOneFeasible(six)).toBe(true)
     expect(cpmmMulti2SumToOneCreationPools(six, ante)).toEqual(
-      cpmmMulti2EvenSplitPools(six, ante)
+      cpmmMulti2MaxDepthPools(six, ante)
     )
   })
 
-  it('reduces the even-split pools to v1 at uniform odds', () => {
+  it('reduces the exact pools to v1 at uniform odds', () => {
     for (const m of [2, 3, 10]) {
-      cpmmMulti2EvenSplitPools(Array(m).fill(1 / m), ante).forEach((x) => {
-        expect(x.poolYes).toBeCloseTo(ante / 2, 8)
-        expect(x.poolNo).toBeCloseTo(ante / (2 * m - 2), 8)
-        expect(x.p).toBeCloseTo(0.5, 12)
+      cpmmMulti2MaxDepthPools(Array(m).fill(1 / m), ante).forEach((x) => {
+        expect(x.poolYes).toBeCloseTo(ante / 2, 3)
+        expect(x.poolNo).toBeCloseTo(ante / (2 * m - 2), 3)
+        expect(x.p).toBeCloseTo(0.5, 6)
       })
+    }
+  })
+
+  it('gives every answer depth in proportion to √(q(1 − q)), at least as deep as balanced pools', () => {
+    for (const probs of [
+      q,
+      [0.502, 0.435, 0.02, 0.013, 0.01, 0.01, 0.01],
+      [0.776, ...Array(19).fill(0.224 / 19)],
+    ]) {
+      const shape = probs.map((x) => Math.sqrt(x * (1 - x)))
+      const scale = cpmmMulti2MaxDepthPools(probs, ante).map(
+        (x, i) => depth(x) / shape[i]
+      )
+      scale.forEach((c) => expect(c).toBeCloseTo(scale[0], 8))
+      // Balanced pools (D = 0) always fund; the search can only deepen them.
+      expect(scale[0]).toBeGreaterThanOrEqual(
+        ante / sumBy(shape, (x) => x) - 1e-9
+      )
+    }
+  })
+
+  it('keeps a favourite deep enough to trade against its long shots', () => {
+    // A 77.6% favourite with 19 long shots: pricing the closed form's starved
+    // pools a different way gave the favourite p = 0.985 and a twentieth of a
+    // long shot's depth, so a big enough bet on a long shot drained it to 0%.
+    const probs = [0.776, ...Array(19).fill(0.224 / 19)]
+    const pools = cpmmMulti2SumToOneCreationPools(probs, 10_000)
+    expect(pools[0].p).toBeLessThan(0.9)
+    expect(depth(pools[0])).toBeGreaterThan(depth(pools[1]))
+    const answers = pools.map(
+      (x, i) =>
+        ({
+          id: `a${i}`,
+          contractId: 'c',
+          poolYes: x.poolYes,
+          poolNo: x.poolNo,
+          p: x.p,
+          prob: x.prob,
+        } as Answer)
+    )
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[1],
+      'YES',
+      4358,
+      undefined,
+      [],
+      {},
+      noFees
+    )
+    for (const r of [newBetResult, ...otherBetResults]) {
+      expect(r.cpmmState.pool.YES).toBeGreaterThan(1)
+      expect(r.cpmmState.pool.NO).toBeGreaterThan(1)
     }
   })
 

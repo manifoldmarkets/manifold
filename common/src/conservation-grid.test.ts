@@ -24,8 +24,8 @@ import {
   addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
   calculateCpmmMultiSumsToOneSale,
-  calculateCpmmPurchase,
   calculateCpmmSale,
+  computeFills,
   cpmmMulti2SumToOnePools,
   getCpmmProbability,
 } from './calculate-cpmm'
@@ -41,6 +41,18 @@ import {
 } from './payouts-fixed'
 import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
+import {
+  CPMM_MIN_POOL_QTY,
+  CPMMMulti,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
+} from './contract'
+import { fitAnswerProbs } from './answer-probs'
+import {
+  getNewContract,
+  MAX_ANSWER_PROB,
+  MIN_ANSWER_PROB,
+} from './new-contract'
 
 // --- creation pools: the REAL production construction (was a local replica; a drifted
 // copy would validate the copy, not the shipping code) ------------------------------
@@ -59,8 +71,16 @@ type Cfg = {
 
 const PROB_SETS: Record<string, Record<number, number[]>> = {
   balanced: { 2: [0.5, 0.5], 3: [1 / 3, 1 / 3, 1 / 3], 5: Array(5).fill(0.2) },
-  skewed: { 2: [0.7, 0.3], 3: [0.55, 0.3, 0.15], 5: [0.4, 0.25, 0.18, 0.1, 0.07] },
-  extreme: { 2: [0.92, 0.08], 3: [0.85, 0.1, 0.05], 5: [0.8, 0.1, 0.05, 0.03, 0.02] },
+  skewed: {
+    2: [0.7, 0.3],
+    3: [0.55, 0.3, 0.15],
+    5: [0.4, 0.25, 0.18, 0.1, 0.07],
+  },
+  extreme: {
+    2: [0.92, 0.08],
+    3: [0.85, 0.1, 0.05],
+    5: [0.8, 0.1, 0.05, 0.03, 0.02],
+  },
 }
 
 // --- the conservation harness ---------------------------------------------------------------
@@ -72,25 +92,50 @@ class Sim {
   fees = 0
   liquidities: LiquidityProvision[] = []
   // trader positions: key `${user}|${answerId}` -> {YES, NO, invested, sold}
-  pos = new Map<string, { YES: number; NO: number; invested: number; sold: number }>()
+  pos = new Map<
+    string,
+    { YES: number; NO: number; invested: number; sold: number }
+  >()
   // resting limit orders (makers). Threaded into every calc; the `makers` the calc returns
   // are applied to maker users here. Makers are NOT balance-capped — vendor's own multi-bet/
   // sell simulation assumes infinite maker balance (sell-shares.ts), and computeFills skips
   // the cap when balanceByUserId lacks the user, so we pass {} for balances and the real
   // unfilled book here.
   unfilled: LimitBet[] = []
+  // placeBet refuses a cpmm-multi-2 trade that would leave a pool side under
+  // CPMM_MIN_POOL_QTY. Off by default: the rows below never get near it.
+  refuseDrainedPools = false
   private lpId = 0
   private limitId = 0
 
-  constructor(cfg: Cfg, creator = 'creator', ante = 1000) {
+  private guardPools(pools: { [outcome: string]: number }[]) {
+    if (
+      this.refuseDrainedPools &&
+      pools.some(
+        (pool) => !(Math.min(...Object.values(pool)) >= CPMM_MIN_POOL_QTY)
+      )
+    )
+      throw new Error('Trade too large for current liquidity pool.')
+  }
+
+  // `answers` opens the market on answers built elsewhere (getNewContract) instead of a
+  // PROB_SETS row; `ante` must then be what they were funded with.
+  constructor(cfg: Cfg, creator = 'creator', ante = 1000, answers?: Answer[]) {
     this.type = cfg.type
     this.ante = ante
-    const q =
-      cfg.type === 'mc_sumone'
-        ? normalize(PROB_SETS[cfg.probs][cfg.n])
-        : PROB_SETS[cfg.probs][cfg.n]
-    const pools = cfg.type === 'mc_sumone' ? sumToOnePools(q, ante) : setPools(q, ante)
-    this.answers = pools.map((pl, i) => mkAnswer(i, pl.poolYes, pl.poolNo, pl.p))
+    if (answers) {
+      this.answers = answers
+    } else {
+      const q =
+        cfg.type === 'mc_sumone'
+          ? normalize(PROB_SETS[cfg.probs][cfg.n])
+          : PROB_SETS[cfg.probs][cfg.n]
+      const pools =
+        cfg.type === 'mc_sumone' ? sumToOnePools(q, ante) : setPools(q, ante)
+      this.answers = pools.map((pl, i) =>
+        mkAnswer(i, pl.poolYes, pl.poolNo, pl.p)
+      )
+    }
     this.spend(creator, ante)
     this.liquidities.push({
       id: `lp${this.lpId++}`,
@@ -111,7 +156,8 @@ class Sim {
   }
   private posOf(user: string, answerId: string) {
     const k = `${user}|${answerId}`
-    if (!this.pos.has(k)) this.pos.set(k, { YES: 0, NO: 0, invested: 0, sold: 0 })
+    if (!this.pos.has(k))
+      this.pos.set(k, { YES: 0, NO: 0, invested: 0, sold: 0 })
     return this.pos.get(k)!
   }
 
@@ -160,10 +206,17 @@ class Sim {
       const book = this.unfilled.find((b) => b.id === m.bet.id)
       if (!book) continue
       this.spend(m.bet.userId, m.amount) // maker pays mana
-      this.posOf(m.bet.userId, m.bet.answerId!)[m.bet.outcome as 'YES' | 'NO'] += m.shares
+      const pos = this.posOf(m.bet.userId, m.bet.answerId!)
+      pos[m.bet.outcome as 'YES' | 'NO'] += m.shares
+      pos.invested += m.amount // a CANCEL refunds it, as it does a taker's
       book.amount += m.amount
       book.shares += m.shares
-      book.fills.push({ matchedBetId: null, amount: m.amount, shares: m.shares, timestamp: 0 })
+      book.fills.push({
+        matchedBetId: null,
+        amount: m.amount,
+        shares: m.shares,
+        timestamp: 0,
+      })
       if (Math.abs(book.amount) >= book.orderAmount - 1e-6) book.isFilled = true
     }
     for (const o of ordersToCancel) {
@@ -189,26 +242,50 @@ class Sim {
     this.spend(user, amt) // negative amt (redemption/sell) credits back
   }
 
-  buy(user: string, answerIndex: number, outcome: 'YES' | 'NO', amount: number) {
+  buy(
+    user: string,
+    answerIndex: number,
+    outcome: 'YES' | 'NO',
+    amount: number
+  ) {
     if (this.type === 'set_indep') {
       // an independent answer is its own binary CPMM — single trade, NO cross-answer arb.
       const a = this.answers[answerIndex]
-      const { shares, newPool, newP } = calculateCpmmPurchase(
-        { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p, collectedFees: noFees },
-        amount,
+      // As placeBet does (computeCpmmBet): a market order stops at the 1%/99% price
+      // bounds, so a big enough one only spends part of `amount`.
+      const { takers, cpmmState } = computeFills(
+        {
+          pool: { YES: a.poolYes, NO: a.poolNo },
+          p: a.p,
+          collectedFees: noFees,
+        },
         outcome,
+        amount,
+        undefined,
+        [],
+        {},
+        { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB },
         true
       )
+      const { pool: newPool, p: newP } = cpmmState
+      this.guardPools([newPool])
+      const spent = sumBy(takers, (t) => t.amount)
+      const shares = sumBy(takers, (t) => t.shares)
       this.answers = this.answers.map((x, i) =>
         i === answerIndex
-          ? { ...x, poolYes: newPool.YES, poolNo: newPool.NO, p: newP,
-              prob: getCpmmProbability(newPool, newP) }
+          ? {
+              ...x,
+              poolYes: newPool.YES,
+              poolNo: newPool.NO,
+              p: newP,
+              prob: getCpmmProbability(newPool, newP),
+            }
           : x
       )
       const p = this.posOf(user, a.id)
       p[outcome] += shares
-      p.invested += amount
-      this.spend(user, amount)
+      p.invested += spent
+      this.spend(user, spent)
       this.check(`set buy ${outcome} a${answerIndex} M$${amount} by ${user}`)
       return
     }
@@ -222,14 +299,24 @@ class Sim {
       {},
       noFees
     )
+    this.guardPools([
+      res.newBetResult.cpmmState.pool,
+      ...res.otherBetResults.map((o) => o.cpmmState.pool),
+    ])
     // single-bet path returns no updatedAnswers — rebuild pools from each leg's cpmmState.
     const poolById = new Map<string, { [o: string]: number }>()
     poolById.set(res.newBetResult.answer.id, res.newBetResult.cpmmState.pool)
-    for (const o of res.otherBetResults) poolById.set(o.answer.id, o.cpmmState.pool)
+    for (const o of res.otherBetResults)
+      poolById.set(o.answer.id, o.cpmmState.pool)
     this.answers = this.answers.map((a) => {
       const pl = poolById.get(a.id)
       return pl
-        ? { ...a, poolYes: pl.YES, poolNo: pl.NO, prob: getCpmmProbability(pl as any, a.p) }
+        ? {
+            ...a,
+            poolYes: pl.YES,
+            poolNo: pl.NO,
+            prob: getCpmmProbability(pl as any, a.p),
+          }
         : a
     })
     // newBetResult is the traded answer (`outcome`); otherBetResults are the arbed legs.
@@ -237,8 +324,12 @@ class Sim {
     for (const o of res.otherBetResults)
       this.applyResult(user, o as any, outcome === 'YES' ? 'NO' : 'YES')
     this.applyMakers(
-      [res.newBetResult, ...res.otherBetResults].flatMap((r: any) => r.makers ?? []),
-      [res.newBetResult, ...res.otherBetResults].flatMap((r: any) => r.ordersToCancel ?? [])
+      [res.newBetResult, ...res.otherBetResults].flatMap(
+        (r: any) => r.makers ?? []
+      ),
+      [res.newBetResult, ...res.otherBetResults].flatMap(
+        (r: any) => r.ordersToCancel ?? []
+      )
     )
     this.fees += getFeeTotal(res.newBetResult.totalFees)
     this.check(`buy ${outcome} a${answerIndex} M$${amount} by ${user}`)
@@ -259,8 +350,12 @@ class Sim {
     for (const r of res.newBetResults) this.applyResult(user, r as any, 'YES')
     for (const r of res.otherBetResults) this.applyResult(user, r as any, 'NO')
     this.applyMakers(
-      [...res.newBetResults, ...res.otherBetResults].flatMap((r: any) => r.makers ?? []),
-      [...res.newBetResults, ...res.otherBetResults].flatMap((r: any) => r.ordersToCancel ?? [])
+      [...res.newBetResults, ...res.otherBetResults].flatMap(
+        (r: any) => r.makers ?? []
+      ),
+      [...res.newBetResults, ...res.otherBetResults].flatMap(
+        (r: any) => r.ordersToCancel ?? []
+      )
     )
     this.check(`multibet {${basketIdx}} M$${amount} by ${user}`)
   }
@@ -277,7 +372,12 @@ class Sim {
   // gains no other-answer position, and the cost of moving those pools is already folded into
   // `saleValue` via the sold answer's arb taker. (Self-checked: dropping any of the three
   // updates, or the otherBetResults pool moves, breaks the conservation oracle below.)
-  sell(user: string, answerIndex: number, outcome: 'YES' | 'NO', shares: number) {
+  sell(
+    user: string,
+    answerIndex: number,
+    outcome: 'YES' | 'NO',
+    shares: number
+  ) {
     const answerToSell = this.answers[answerIndex]
     if (this.type === 'set_indep') {
       const { cpmmState, saleValue, fees, makers } = calculateCpmmSale(
@@ -291,10 +391,16 @@ class Sim {
         this.unfilled.filter((b) => b.answerId === answerToSell.id),
         {}
       )
+      this.guardPools([cpmmState.pool])
       this.answers = this.answers.map((x, i) =>
         i === answerIndex
-          ? { ...x, poolYes: cpmmState.pool.YES, poolNo: cpmmState.pool.NO, p: cpmmState.p,
-              prob: getCpmmProbability(cpmmState.pool, cpmmState.p) }
+          ? {
+              ...x,
+              poolYes: cpmmState.pool.YES,
+              poolNo: cpmmState.pool.NO,
+              p: cpmmState.p,
+              prob: getCpmmProbability(cpmmState.pool, cpmmState.p),
+            }
           : x
       )
       const p = this.posOf(user, answerToSell.id)
@@ -306,16 +412,21 @@ class Sim {
       this.check(`set sell ${outcome} ${shares}sh a${answerIndex} by ${user}`)
       return
     }
-    const { saleValue, newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
-      this.answers,
-      answerToSell,
-      shares,
-      outcome,
-      undefined,
-      this.unfilled,
-      {},
-      noFees
-    )
+    const { saleValue, newBetResult, otherBetResults } =
+      calculateCpmmMultiSumsToOneSale(
+        this.answers,
+        answerToSell,
+        shares,
+        outcome,
+        undefined,
+        this.unfilled,
+        {},
+        noFees
+      )
+    this.guardPools([
+      newBetResult.cpmmState.pool,
+      ...otherBetResults.map((o) => o.cpmmState.pool),
+    ])
     // sold answer pool by known id (newBetResult carries no `answer`); arb legs by their id.
     const poolById = new Map<string, { [o: string]: number }>()
     poolById.set(answerToSell.id, newBetResult.cpmmState.pool)
@@ -323,7 +434,12 @@ class Sim {
     this.answers = this.answers.map((a) => {
       const pl = poolById.get(a.id)
       return pl
-        ? { ...a, poolYes: pl.YES, poolNo: pl.NO, prob: getCpmmProbability(pl as any, a.p) }
+        ? {
+            ...a,
+            poolYes: pl.YES,
+            poolNo: pl.NO,
+            prob: getCpmmProbability(pl as any, a.p),
+          }
         : a
     })
     const pos = this.posOf(user, answerToSell.id)
@@ -332,7 +448,9 @@ class Sim {
     this.credit(user, saleValue)
     this.applyMakers(
       [newBetResult, ...otherBetResults].flatMap((r: any) => r.makers ?? []),
-      [newBetResult, ...otherBetResults].flatMap((r: any) => r.ordersToCancel ?? [])
+      [newBetResult, ...otherBetResults].flatMap(
+        (r: any) => r.ordersToCancel ?? []
+      )
     )
     this.fees +=
       getFeeTotal(newBetResult.totalFees) +
@@ -353,11 +471,20 @@ class Sim {
   addLiquidity(user: string, amount: number, answerIndex?: number) {
     if (answerIndex !== undefined) {
       const a = this.answers[answerIndex]
-      const { newPool, newP } = addCpmmLiquidity({ YES: a.poolYes, NO: a.poolNo }, a.p, amount)
+      const { newPool, newP } = addCpmmLiquidity(
+        { YES: a.poolYes, NO: a.poolNo },
+        a.p,
+        amount
+      )
       this.answers = this.answers.map((x, i) =>
         i === answerIndex
-          ? { ...x, poolYes: newPool.YES, poolNo: newPool.NO, p: newP,
-              prob: getCpmmProbability(newPool, newP) }
+          ? {
+              ...x,
+              poolYes: newPool.YES,
+              poolNo: newPool.NO,
+              p: newP,
+              prob: getCpmmProbability(newPool, newP),
+            }
           : x
       )
       this.spend(user, amount)
@@ -369,11 +496,16 @@ class Sim {
         amount,
         answerId: a.id,
       })
-      this.check(`per-answer addLiquidity a${answerIndex} M$${amount} by ${user}`)
+      this.check(
+        `per-answer addLiquidity a${answerIndex} M$${amount} by ${user}`
+      )
       return
     }
     const map = Object.fromEntries(
-      this.answers.map((a) => [a.id, { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p }])
+      this.answers.map((a) => [
+        a.id,
+        { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
+      ])
     )
     const updated =
       this.type === 'mc_sumone'
@@ -381,7 +513,13 @@ class Sim {
         : addCpmmMultiLiquidityToAnswersIndependentlyV2(map, amount)
     this.answers = this.answers.map((a) => {
       const u = updated[a.id]
-      return { ...a, poolYes: u.pool.YES, poolNo: u.pool.NO, p: u.p, prob: getCpmmProbability(u.pool, u.p) }
+      return {
+        ...a,
+        poolYes: u.pool.YES,
+        poolNo: u.pool.NO,
+        p: u.p,
+        prob: getCpmmProbability(u.pool, u.p),
+      }
     })
     this.spend(user, amount)
     this.liquidities.push({
@@ -412,17 +550,30 @@ class Sim {
   // resolve and assert global conservation
   resolve(
     mode: 'one' | 'multiple' | 'cancel' | 'set_yesno',
-    arg?: { winner?: number; split?: [number, number]; setOutcomes?: ('YES' | 'NO')[] }
+    arg?: {
+      winner?: number
+      split?: [number, number]
+      setOutcomes?: ('YES' | 'NO')[]
+    }
   ) {
     const ms = this.metrics()
     let traderPayouts: { userId: string; payout: number }[] = []
     let liquidityPayouts: { userId: string; payout: number }[] = []
     if (mode === 'cancel') {
-      ;({ traderPayouts, liquidityPayouts } = getFixedCancelPayouts(ms, this.liquidities))
+      ;({ traderPayouts, liquidityPayouts } = getFixedCancelPayouts(
+        ms,
+        this.liquidities
+      ))
     } else if (mode === 'set_yesno') {
       const outs = arg!.setOutcomes!
       this.answers.forEach((a, i) => {
-        const r = getIndependentMultiYesNoPayouts(a, outs[i], ms, this.liquidities, 0)
+        const r = getIndependentMultiYesNoPayouts(
+          a,
+          outs[i],
+          ms,
+          this.liquidities,
+          0
+        )
         traderPayouts.push(...r.traderPayouts)
         liquidityPayouts.push(...r.liquidityPayouts)
       })
@@ -469,7 +620,12 @@ function normalize(q: number[]) {
   const s = q.reduce((a, b) => a + b, 0)
   return q.map((x) => x / s)
 }
-function mkAnswer(i: number, poolYes: number, poolNo: number, p: number): Answer {
+function mkAnswer(
+  i: number,
+  poolYes: number,
+  poolNo: number,
+  p: number
+): Answer {
   return {
     id: `a${i}`,
     contractId: 'c',
@@ -705,7 +861,13 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
     for (const n of [2, 3, 5]) {
       // buy crosses a NO maker resting just above answer-0's current prob
       const s = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
-      const mkBuy = s.placeLimit('mk', 0, 'NO', Math.min(s.answers[0].prob + 0.02, CAP_HI), 300)
+      const mkBuy = s.placeLimit(
+        'mk',
+        0,
+        'NO',
+        Math.min(s.answers[0].prob + 0.02, CAP_HI),
+        300
+      )
       s.buy('alice', 0, 'YES', 200)
       expect(mkBuy.amount).toBeGreaterThan(0) // positive control: it interacted
       s.resolve('one', { winner: 0 }) // conservation across alice + mk + creator
@@ -713,7 +875,13 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
       // sell crosses a YES maker resting just below answer-0's current prob
       const s2 = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
       s2.buy('alice', 0, 'YES', 250) // give alice a position to sell
-      const mkSell = s2.placeLimit('mk', 0, 'YES', Math.max(s2.answers[0].prob - 0.02, CAP_LO), 300)
+      const mkSell = s2.placeLimit(
+        'mk',
+        0,
+        'YES',
+        Math.max(s2.answers[0].prob - 0.02, CAP_LO),
+        300
+      )
       s2.sell('alice', 0, 'YES', s2.sharesOf('alice', 0, 'YES'))
       expect(mkSell.amount).toBeGreaterThan(0)
       s2.resolve('one', { winner: 0 })
@@ -732,7 +900,13 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
           { bet: s.placeLimit('mk', ai, 'YES', CAP_LO, 100), ai },
         ])
         // in-band positive control on answer 0 (just above init0): must be touched.
-        const control = s.placeLimit('mk', 0, 'NO', Math.min(init[0] + 0.02, CAP_HI), 80)
+        const control = s.placeLimit(
+          'mk',
+          0,
+          'NO',
+          Math.min(init[0] + 0.02, CAP_HI),
+          80
+        )
         s.buy('alice', 0, 'YES', 120)
         const checked = assertOutsideUntouched(s, placed, init)
         expect(checked).toBeGreaterThan(0) // not vacuous
@@ -771,8 +945,26 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
       const placed = s.answers.map((_, ai) => {
         const up = finals[ai] >= init[ai]
         return up
-          ? { bet: s.placeLimit('mk', ai, 'NO', Math.min(finals[ai] + 0.01, CAP_HI), 200), ai }
-          : { bet: s.placeLimit('mk', ai, 'YES', Math.max(finals[ai] - 0.01, CAP_LO), 200), ai }
+          ? {
+              bet: s.placeLimit(
+                'mk',
+                ai,
+                'NO',
+                Math.min(finals[ai] + 0.01, CAP_HI),
+                200
+              ),
+              ai,
+            }
+          : {
+              bet: s.placeLimit(
+                'mk',
+                ai,
+                'YES',
+                Math.max(finals[ai] - 0.01, CAP_LO),
+                200
+              ),
+              ai,
+            }
       })
       s.multibet('alice', [0, 1], 160)
       // every just-past-final maker must be untouched => v2 did not overshoot.
@@ -786,7 +978,13 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
       // mid-band on answer 0 MUST be crossed by the same multibet — proves the trade reaches
       // into the band, so the untouched just-past-final result is a genuine no-overshoot.
       const pc = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
-      const control = pc.placeLimit('mk', 0, 'NO', (init[0] + finals[0]) / 2, 50)
+      const control = pc.placeLimit(
+        'mk',
+        0,
+        'NO',
+        (init[0] + finals[0]) / 2,
+        50
+      )
       pc.multibet('alice', [0, 1], 160)
       expect(control.amount).toBeGreaterThan(0)
       pc.resolve('one', { winner: 0 })
@@ -812,16 +1010,27 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
           setup: (s: Sim) => void
           op: (s: Sim) => void
         }[] = [
-          { label: 'buy', setup: () => {}, op: (s) => s.buy('alice', 0, 'YES', 90) },
+          {
+            label: 'buy',
+            setup: () => {},
+            op: (s) => s.buy('alice', 0, 'YES', 90),
+          },
           {
             label: 'sell',
             setup: (s) => s.buy('alice', 0, 'YES', 200), // build position FIRST, no maker yet
-            op: (s) => s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES') * 0.5),
+            op: (s) =>
+              s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES') * 0.5),
           },
           // n=5 multibet overshoot is covered by the dedicated §8 prize test; keep the broad
           // sweep's multibet at n=3 to bound cost.
           ...(n === 3
-            ? [{ label: 'multibet', setup: () => {}, op: (s: Sim) => s.multibet('alice', [0, 1], 140) }]
+            ? [
+                {
+                  label: 'multibet',
+                  setup: () => {},
+                  op: (s: Sim) => s.multibet('alice', [0, 1], 140),
+                },
+              ]
             : []),
         ]
         for (const c of cases) {
@@ -850,12 +1059,24 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
                 c.op(s)
                 if (Math.abs(bet.amount) > 1e-6 || bet.isCancelled) {
                   // eslint-disable-next-line no-console
-                  console.log('VIOLATION', JSON.stringify({
-                    probs, n, op: c.label, ai, m, outcome: pl.outcome,
-                    init: +init[ai].toFixed(5), final: +finals[ai].toFixed(5),
-                    lo: +lo.toFixed(5), hi: +hi.toFixed(5), L: +pl.L.toFixed(5),
-                    fill: +bet.amount.toFixed(5), finalNow: +s.answers[ai].prob.toFixed(5),
-                  }))
+                  console.log(
+                    'VIOLATION',
+                    JSON.stringify({
+                      probs,
+                      n,
+                      op: c.label,
+                      ai,
+                      m,
+                      outcome: pl.outcome,
+                      init: +init[ai].toFixed(5),
+                      final: +finals[ai].toFixed(5),
+                      lo: +lo.toFixed(5),
+                      hi: +hi.toFixed(5),
+                      L: +pl.L.toFixed(5),
+                      fill: +bet.amount.toFixed(5),
+                      finalNow: +s.answers[ai].prob.toFixed(5),
+                    })
+                  )
                 }
                 expect(bet.amount).toBeCloseTo(0, 6)
                 expect(bet.isCancelled).toBe(false)
@@ -872,7 +1093,13 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
     for (const n of [2, 3]) {
       const s = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
       const before = s.answers.map((a) => ({ y: a.poolYes, no: a.poolNo }))
-      const maker = s.placeLimit('mk', 0, 'NO', Math.min(s.answers[0].prob + 0.02, CAP_HI), 150)
+      const maker = s.placeLimit(
+        'mk',
+        0,
+        'NO',
+        Math.min(s.answers[0].prob + 0.02, CAP_HI),
+        150
+      )
       s.buy('alice', 0, 'YES', 200)
       expect(maker.amount).toBeGreaterThan(0) // a maker was permanently engaged
       s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES')) // alice unwinds fully
@@ -886,5 +1113,194 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
       // but global conservation STILL closes across alice + maker + creator.
       s.resolve('one', { winner: 0 })
     }
+  })
+})
+
+// --- lifecycle fuzz on markets from the real creation path ---------------------------------
+// The rows above open on the raw √variance pools. getNewContract opens many real shapes on
+// the exact solution of that shape instead (cpmmMulti2SumToOneCreationPools falls back to it
+// when the closed form starves an answer or has no solution), up to 30 answers. Drive the
+// markets it actually opens, sum-to-one and independent, through random lifecycles: buys,
+// sells of held shares, resting limit orders, whole-market and per-answer liquidity, then a
+// random resolution.
+// A trade the calc refuses (throws on) is one the API would refuse: it leaves the market
+// untouched and the fuzz moves on. Everything else must hold Sim's invariants at every step
+// and close conservation at resolution.
+describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
+  const seeded = (seed: number) => () => {
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  const rng = seeded(20260924)
+  const pick = <T>(xs: T[]) => xs[Math.floor(rng() * xs.length)]
+  const logUniform = (lo: number, hi: number) =>
+    Math.exp(Math.log(lo) + rng() * (Math.log(hi) - Math.log(lo)))
+
+  const startingProbs = (n: number, sumsToOne: boolean) => {
+    if (!sumsToOne)
+      return Array.from(
+        { length: n },
+        () => Math.round((MIN_ANSWER_PROB + rng() * 98) * 10) / 10
+      )
+    const shape = pick(['front-runners', 'favourite', 'even', 'random'])
+    const weights = Array.from({ length: n }, (_, i) =>
+      shape === 'front-runners'
+        ? i < 2
+          ? 30 + rng() * 15
+          : 0.5 + rng()
+        : shape === 'favourite'
+        ? i === 0
+          ? 60 + rng() * 35
+          : 0.2 + rng()
+        : shape === 'even'
+        ? 1
+        : Math.exp(rng() * 4)
+    )
+    const total = sumBy(weights)
+    return fitAnswerProbs(
+      weights.map((w) => (w / total) * 100),
+      true,
+      MIN_ANSWER_PROB,
+      MAX_ANSWER_PROB
+    )!
+  }
+
+  const open = (answerProbs: number[], sumsToOne: boolean, ante: number) => {
+    const contract = getNewContract({
+      id: 'c',
+      slug: 'c',
+      creator: { id: 'creator', name: 'C', username: 'c', avatarUrl: '' },
+      question: 'Q?',
+      outcomeType: 'MULTIPLE_CHOICE',
+      description: '',
+      initialProb: 50,
+      ante,
+      closeTime: 0,
+      visibility: 'public',
+      min: 0,
+      max: 0,
+      isLogScale: false,
+      answers: answerProbs.map((_, i) => `A${i}`),
+      addAnswersMode: 'DISABLED',
+      shouldAnswersSumToOne: sumsToOne,
+      answerProbs,
+      cpmmMulti2Enabled: true,
+      token: 'MANA',
+      unit: '',
+    } as any) as CPMMMulti
+    expect(contract.mechanism).toBe('cpmm-multi-2')
+    const answers = contract.answers.map((a, i) => ({ ...a, id: `a${i}` }))
+    answers.forEach((a, i) =>
+      expect(
+        getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      ).toBeCloseTo(answerProbs[i] / 100, 9)
+    )
+    // Lossless: the creator's pools pay back the whole ante however it resolves.
+    if (sumsToOne) {
+      const noTotal = sumBy(answers, (a) => a.poolNo)
+      for (const a of answers)
+        expect(a.poolYes - a.poolNo + noTotal).toBeCloseTo(ante, 6)
+    } else {
+      expect(sumBy(answers, (a) => a.poolYes)).toBeCloseTo(ante, 6)
+      expect(sumBy(answers, (a) => a.poolNo)).toBeCloseTo(ante, 6)
+    }
+    return answers
+  }
+
+  // A refusal is any non-assertion error: the calc rejecting the trade.
+  const attempt = (fn: () => void) => {
+    try {
+      fn()
+      return true
+    } catch (e) {
+      if ((e as any)?.matcherResult) throw e
+      return false
+    }
+  }
+
+  it('random lifecycles conserve mana and keep every invariant', () => {
+    const traders = ['alice', 'bob', 'carol']
+    let trades = 0
+    let refused = 0
+    for (let market = 0; market < 30; market++) {
+      const sumsToOne = rng() < 0.75
+      const n = sumsToOne
+        ? pick([2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 20, 30])
+        : pick([1, 2, 3, 5, 8])
+      const ante = pick([100, 1000, 10_000])
+      const answers = open(startingProbs(n, sumsToOne), sumsToOne, ante)
+      const type = sumsToOne ? 'mc_sumone' : 'set_indep'
+      const s = new Sim(
+        { n, probs: 'balanced', type },
+        'creator',
+        ante,
+        answers
+      )
+      s.refuseDrainedPools = true
+
+      const ops = 6 + Math.floor(rng() * 9)
+      for (let op = 0; op < ops; op++) {
+        const roll = rng()
+        const i = Math.floor(rng() * n)
+        if (roll < 0.4) {
+          trades++
+          const outcome = pick(['YES', 'NO'] as const)
+          const amount = logUniform(1, ante / 2)
+          if (!attempt(() => s.buy(pick(traders), i, outcome, amount)))
+            refused++
+        } else if (roll < 0.6) {
+          const held = traders.flatMap((user) =>
+            s.answers.flatMap((_, j) =>
+              (['YES', 'NO'] as const)
+                .filter((o) => s.sharesOf(user, j, o) > 1e-6)
+                .map((o) => ({ user, j, o }))
+            )
+          )
+          if (!held.length) continue
+          const { user, j, o } = pick(held)
+          trades++
+          const shares = s.sharesOf(user, j, o) * pick([0.25, 0.5, 1])
+          if (!attempt(() => s.sell(user, j, o, shares))) refused++
+        } else if (roll < 0.75 && sumsToOne) {
+          const prob = s.answers[i].prob
+          const outcome = pick(['YES', 'NO'] as const)
+          const limit =
+            outcome === 'YES'
+              ? prob * (0.5 + rng() * 0.45)
+              : prob + (1 - prob) * (0.05 + rng() * 0.45)
+          const limitProb =
+            Math.round(Math.min(0.99, Math.max(0.01, limit)) * 100) / 100
+          s.placeLimit(
+            `maker${op}`,
+            i,
+            outcome,
+            limitProb,
+            logUniform(5, ante / 4)
+          )
+        } else if (roll < 0.88) {
+          s.addLiquidity('lp', logUniform(10, ante))
+        } else {
+          s.addLiquidity('lp2', logUniform(10, ante / 2), i)
+        }
+      }
+
+      if (sumsToOne) {
+        const mode = pick(['one', 'one', 'one', 'multiple', 'cancel'] as const)
+        if (mode === 'one') s.resolve('one', { winner: Math.floor(rng() * n) })
+        else if (mode === 'multiple' && n >= 2) {
+          const w = Math.round(rng() * 100) / 100
+          s.resolve('multiple', { split: [w, 1 - w] })
+        } else s.resolve('cancel')
+      } else if (rng() < 0.75) {
+        s.resolve('set_yesno', {
+          setOutcomes: s.answers.map(() => pick(['YES', 'NO'] as const)),
+        })
+      } else s.resolve('cancel')
+    }
+    // Ordinary trades on fresh markets go through; refusals are the drained-pool edge.
+    expect(trades).toBeGreaterThan(100)
+    expect(refused / trades).toBeLessThan(0.05)
   })
 })

@@ -965,39 +965,74 @@ export function cpmmMulti2BalancedPools(
   return q.map((qi) => ({ poolYes: amount, poolNo: amount, p: qi, prob: qi }))
 }
 
-// cpmm-multi-2: the pools an even-split cpmm-multi-1 market opens with (YES =
-// ante/2, NO = ante/(2n − 2), as in createAnswers), with each answer's own p set
-// so it reads back prob_i = q_i. If exactly one answer wins they pay
-// ante/2 + (n − 1)·ante/(2n − 2) = ante whichever it is, so none of the ante is
-// thrown away, and each answer is as deep as it is on a market opened at an
-// even split today. They exist for every probability vector. p comes out as
-// q(n − 1)/(1 + q(n − 2)): never below q_i, and with every answer at 1% or
-// more, never above 99%. At uniform q they are v1's pools with p = 0.5.
-export function cpmmMulti2EvenSplitPools(
+// cpmm-multi-2: the √variance shape solved exactly, for odds the closed form above
+// can't open (cpmmMulti2SumToOneCreationPools). Every answer gets depth
+// c·√(q_i(1 − q_i)), every winning scenario pays back exactly the ante, and c is
+// the largest any shared D = Y_i − N_i allows. D = 0 (balanced pools, N_i = W_i)
+// funds any q, so there is always a solution; searching D only deepens it. At
+// uniform q the best D is D0, which makes these v1's pools.
+export function cpmmMulti2MaxDepthPools(
   q: number[],
   ante: number
 ): { poolYes: number; poolNo: number; p: number; prob: number }[] {
   const n = q.length
   if (n < 2) return cpmmMulti2BalancedPools(q, ante)
-  const pool = { YES: ante / 2, NO: ante / (2 * n - 2) }
-  return q.map((qi) => ({
-    poolYes: pool.YES,
-    poolNo: pool.NO,
-    p: pForProbability(pool, qi),
-    prob: qi,
-  }))
+  const shape = q.map((qi) => Math.sqrt(qi * (1 - qi)))
+  // The N giving depth W at shared D: the positive root of N² + (D − W)N − WqD = 0,
+  // written to avoid cancellation when D ≫ W.
+  const noAt = (W: number, qi: number, D: number) => {
+    const b = D - W
+    const r = Math.sqrt(b * b + 4 * W * qi * D)
+    return b > 0 ? (2 * W * qi * D) / (b + r) : (r - b) / 2
+  }
+  const fundingAt = (c: number, D: number) =>
+    D + sum(q.map((qi, i) => noAt(c * shape[i], qi, D)))
+  // Funding rises with c, so bisect for the c that spends exactly the ante.
+  const scaleAt = (D: number) => {
+    let hi = ante / sum(shape)
+    while (fundingAt(hi, D) < ante) hi *= 2
+    return binarySearch(0, hi, (c) => fundingAt(c, D) - ante)
+  }
+  // c rises with D while the shared D deepens answers more cheaply than their
+  // own N, then falls to 0 at D = ante. Find the peak on a grid, then refine it.
+  const grid = Array.from({ length: 32 }, (_, k) => (ante * k) / 32)
+  const scales = grid.map(scaleAt)
+  const best = scales.indexOf(Math.max(...scales))
+  let left = grid[Math.max(0, best - 1)]
+  let right = grid[Math.min(grid.length - 1, best + 1)]
+  const golden = (Math.sqrt(5) - 1) / 2
+  for (let i = 0; i < 60; i++) {
+    const a = right - golden * (right - left)
+    const b = left + golden * (right - left)
+    if (scaleAt(a) < scaleAt(b)) left = a
+    else right = b
+  }
+  const D = (left + right) / 2
+  const c = scaleAt(D)
+  const N = q.map((qi, i) => noAt(c * shape[i], qi, D))
+  // Fund exactly: every winning scenario pays shared + ΣN = ante.
+  const shared = Math.max(0, ante - sum(N))
+  return q.map((qi, i) => {
+    const pool = { YES: N[i] + shared, NO: N[i] }
+    return {
+      poolYes: pool.YES,
+      poolNo: pool.NO,
+      p: pForProbability(pool, qi),
+      prob: qi,
+    }
+  })
 }
 
-// cpmm-multi-2 creation pools for answers that sum to one. The √variance shape where it gives
-// every answer at least half the depth it aims for (cpmmMulti2SumToOneTargetDepths; point
-// liquidity is q(1 − q)/W, GP13), and the even-split pools otherwise, including where the
-// √variance shape doesn't exist at all (GP19a). Exact funding starves the long shots well before
-// any pool goes negative: at 30 answers with a 58.5% favourite each 1.4% answer gets 0.2% of its
-// target depth, and Ṁ1 moves it to 36% on a Ṁ1,000 market, against 1.7% on the even-split pools.
-// It isn't only a many-answer problem: two front-runners near 50% with a few 1% long shots
-// already leave those long shots about 5% of their target at 6 answers, and can have no
-// √variance pools at all at 7. Either way every answer opens at its target and every winning
-// scenario pays exactly the ante.
+// cpmm-multi-2 creation pools for answers that sum to one. The √variance closed form
+// where it gives every answer at least half the depth it aims for
+// (cpmmMulti2SumToOneTargetDepths; point liquidity is q(1 − q)/W, GP13), and the exact
+// solution of the same shape otherwise, including where the closed form doesn't exist
+// at all (GP19a). Its exact funding starves the long shots well before any pool goes
+// negative: at 30 answers with a 58.5% favourite each 1.4% answer gets 0.2% of its
+// target depth, and Ṁ1 moves it to 36% on a Ṁ1,000 market. Two front-runners near 50%
+// with a few 1% long shots already leave those long shots about 5% of their target at 6
+// answers, and can have no closed-form pools at all at 7. Either way every answer opens
+// at its target and every winning scenario pays exactly the ante.
 export function cpmmMulti2SumToOneCreationPools(q: number[], ante: number) {
   const n = q.length
   if (n >= 2 && cpmmMulti2SumToOneFeasible(q)) {
@@ -1007,7 +1042,7 @@ export function cpmmMulti2SumToOneCreationPools(q: number[], ante: number) {
       (1 - x.p) * x.poolYes + x.p * x.poolNo
     if (pools.every((x, i) => depth(x) >= target[i] / 2)) return pools
   }
-  return cpmmMulti2EvenSplitPools(q, ante)
+  return cpmmMulti2MaxDepthPools(q, ante)
 }
 
 const isSanePoolYesNo = (pool: { YES: number; NO: number }, p: number) =>
