@@ -525,9 +525,10 @@ describe('cpmm-multi-2 creation — long shots near the √variance edge', () =>
   })
 
   it('keeps a favourite deep enough to trade against its long shots', () => {
-    // A 77.6% favourite with 19 long shots: pricing the closed form's starved
-    // pools a different way gave the favourite p = 0.985 and a twentieth of a
-    // long shot's depth, so a big enough bet on a long shot drained it to 0%.
+    // A 77.6% favourite with 19 long shots, where the closed form starves the
+    // long shots. Pools that price the favourite at p near 1 leave it a
+    // fraction of a long shot's depth (a twelfth, at p = 0.985), and a big
+    // enough bet on a long shot then drains it to 0%.
     const probs = [0.776, ...Array(19).fill(0.224 / 19)]
     const pools = cpmmMulti2SumToOneCreationPools(probs, 10_000)
     expect(pools[0].p).toBeLessThan(0.9)
