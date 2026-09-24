@@ -634,9 +634,12 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             onClose={() => setBetOutcome(null)}
           />
         ) : match.hasDraw === false ? (
-          // Knockout soccer/WC markets — 2-answer CPMM-multi, no draw.
+          // Versus markets (a game with no Draw answer): opens on the team clicked.
           <SportsVersusBetDialog
             contractId={match.contractId}
+            initialAnswerId={
+              betOutcome === 'teamB' ? match.teamBAnswerId : match.teamAAnswerId
+            }
             onClose={() => setBetOutcome(null)}
           />
         ) : (

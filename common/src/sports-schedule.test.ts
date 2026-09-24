@@ -4,11 +4,13 @@ import {
   GameForMatching,
   matchRelatedMarket,
   mentionsTeam,
+  NBA_TOPIC_ID,
   parseSportsStart,
   RelatedCandidate,
   relatedGroupFor,
   splitFlag,
   sportForMarket,
+  sportTagIds,
   teamAliases,
   teamDisplayName,
 } from './sports-schedule'
@@ -425,6 +427,13 @@ describe('pipeline handoff fields', () => {
       'mma'
     )
     expect(sportForMarket({ sportsLeague: 'boxing_boxing' })).toBe('other')
+  })
+  it('tags WNBA games with basketball but not the NBA topic', () => {
+    const nba = sportTagIds('nba', 'NBA')
+    const wnba = sportTagIds('nba', 'WNBA')
+    expect(nba).toContain(NBA_TOPIC_ID)
+    expect(wnba).toEqual(nba.filter((id) => id !== NBA_TOPIC_ID))
+    expect(wnba.length).toBeGreaterThan(1)
   })
   it('files a market by its stamped sportsMarketType before guessing', () => {
     expect(

@@ -46,6 +46,9 @@ export interface SportCategory {
 }
 
 // Prod topic ids. Dev has a single catch-all sports topic (see SPORTS_DEFAULT_GROUP_ID).
+/** The NBA topic. WNBA games share the NBA chip but not this topic. */
+export const NBA_TOPIC_ID = 'i0v3cXwuxmO9fpcInVYb'
+
 export const SPORTS_DEFAULT_GROUP_ID =
   ENV === 'PROD' ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
 
@@ -68,7 +71,7 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'NBA',
     emoji: '🏀',
     groupIds: [
-      'i0v3cXwuxmO9fpcInVYb', // nba
+      NBA_TOPIC_ID,
       'NjkFkdkvRvBHoeMDQ5NB', // basketball
     ],
     archivedGroupIds: ['0ac78428-c1bc-4549-aa30-416fa1df36e2'], // nba-20242025-season
@@ -273,9 +276,12 @@ export function sportGroupIds(sport: SportKey | 'all'): string[] {
 }
 
 /** Topic ids to put on a market a pipeline creates for a sport: the current topics only, plus Sports. */
-export function sportTagIds(sport: SportKey): string[] {
+export function sportTagIds(sport: SportKey, league?: string): string[] {
   if (ENV !== 'PROD') return [SPORTS_DEFAULT_GROUP_ID]
-  const ids = SPORT_BY_KEY[sport]?.groupIds ?? []
+  // WNBA games sit under the NBA chip but stay out of the NBA topic.
+  const ids = (SPORT_BY_KEY[sport]?.groupIds ?? []).filter(
+    (id) => !(league === 'WNBA' && id === NBA_TOPIC_ID)
+  )
   return [SPORTS_DEFAULT_GROUP_ID, ...ids]
 }
 
