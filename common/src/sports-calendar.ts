@@ -175,10 +175,10 @@ const ENTRIES: CalendarInput[] = [
     phase: 'CFP (12-team)',
     startDate: '2026-12-20',
     endDate: '2027-01-19',
-    autoCreate: true,
+    autoCreate: false,
     autoResolve: true,
     notes:
-      'The NCAAF feed includes all bowls during this window; the CFP games are identifiable by team rank once the bracket is set.',
+      'The NCAAF feed includes all bowls during this window; CFP games are only identifiable by team rank once the bracket is set. Keep autoCreate off until we can filter by bracket or restrict to Jan 2+ (post-bowl-season) for semifinals/championship.',
   },
 
   // ── F1 ──────────────────────────────────────────────────────────────────────

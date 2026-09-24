@@ -21,8 +21,9 @@ export function SportRail(props: {
 }) {
   const { selected, onSelect, counts, liveCount, className } = props
 
-  const withGames = SPORT_CATEGORIES.filter((s) => (counts[s.key] ?? 0) > 0)
-  const withoutGames = SPORT_CATEGORIES.filter(
+  const visibleCategories = SPORT_CATEGORIES.filter((s) => !s.hiddenFromRail)
+  const withGames = visibleCategories.filter((s) => (counts[s.key] ?? 0) > 0)
+  const withoutGames = visibleCategories.filter(
     (s) => !(counts[s.key] ?? 0) && s.key !== 'other'
   )
   const totalGames = Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)

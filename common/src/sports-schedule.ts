@@ -38,6 +38,8 @@ export interface SportCategory {
   leagues: string[]
   /** Whether a game can end in a draw (adds a third "Draw" price chip). */
   hasDraw?: boolean
+  /** True for sports without Odds API coverage — kept for market classification but not shown in the rail. */
+  hiddenFromRail?: boolean
 }
 
 // Prod topic ids. Dev has a single catch-all sports topic (see SPORTS_DEFAULT_GROUP_ID).
@@ -113,6 +115,72 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     emoji: '🎓',
     groupIds: ['ky1VPTuxrLXMnHyajZFp'], // college football
     leagues: ['NCAAF', 'NCAA Football', 'College Football'],
+  },
+  // Sports below have no Odds API coverage yet — hidden from the rail but kept
+  // here so sportForMarket() can still classify existing user-created markets.
+  {
+    key: 'nhl',
+    label: 'NHL',
+    longLabel: 'NHL',
+    emoji: '🏒',
+    groupIds: ['lccgApXa1l7O5ZH3XfhH', 'tYP9jmPPjoX29KfzE4l5'], // nhl, hockey
+    slug: 'nhl',
+    leagues: ['NHL'],
+    hiddenFromRail: true,
+  },
+  {
+    key: 'ncaab',
+    label: 'NCAAB',
+    longLabel: 'College basketball',
+    emoji: '🏫',
+    groupIds: ['beeb69e0-b36f-451a-80e1-e059df456bb1'], // college basketball
+    leagues: ['NCAAB', 'NCAA Basketball'],
+    hiddenFromRail: true,
+  },
+  {
+    key: 'tennis',
+    label: 'Tennis',
+    longLabel: 'Tennis',
+    emoji: '🎾',
+    groupIds: ['1mvN9vIVIopcWiAsXhzp'],
+    leagues: ['ATP', 'WTA', 'Tennis'],
+    hiddenFromRail: true,
+  },
+  {
+    key: 'f1',
+    label: 'F1',
+    longLabel: 'Formula 1',
+    emoji: '🏎️',
+    groupIds: ['OyHBKJOz9YaGkDctpwuY'],
+    leagues: ['Formula 1', 'F1'],
+    hiddenFromRail: true,
+  },
+  {
+    key: 'mma',
+    label: 'MMA',
+    longLabel: 'MMA & boxing',
+    emoji: '🥊',
+    groupIds: [],
+    leagues: ['UFC', 'MMA', 'Boxing'],
+    hiddenFromRail: true,
+  },
+  {
+    key: 'golf',
+    label: 'Golf',
+    longLabel: 'Golf',
+    emoji: '⛳',
+    groupIds: [],
+    leagues: ['PGA', 'Golf'],
+    hiddenFromRail: true,
+  },
+  {
+    key: 'cricket',
+    label: 'Cricket',
+    longLabel: 'Cricket',
+    emoji: '🏏',
+    groupIds: ['LcPYoqxSRdeQMms4lR3g'],
+    leagues: ['Cricket', 'IPL'],
+    hiddenFromRail: true,
   },
 ]
 
