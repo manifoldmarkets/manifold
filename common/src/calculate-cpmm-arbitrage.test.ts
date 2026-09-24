@@ -1152,3 +1152,46 @@ describe('calculateCpmmMultiArbitrageBet — degenerate cpmm-multi-1 pools', () 
     expect(isCpmmDegenerateStateError(caught)).toBe(true)
   })
 })
+
+describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting limit order', () => {
+  it("sells through a NO order resting at the other answer's price", () => {
+    // A two-answer market at 60/40 with a NO limit order resting on the 40%
+    // answer at 40%. The arbitrage routes the sale through the order, probing
+    // share counts too small for the pools to register, whose fee used to come
+    // out NaN and fail the sale.
+    const answer = (
+      index: number,
+      poolYes: number,
+      poolNo: number,
+      p: number
+    ) =>
+      ({
+        ...getAnswerWithP(index, p),
+        poolYes,
+        poolNo,
+        prob: getCpmmProbability({ YES: poolYes, NO: poolNo }, p),
+      } as Answer)
+    const answers = [
+      answer(0, 545.8248322106313, 465.0238064903997, 0.6377645164188687),
+      answer(1, 465.02380649039964, 545.824832210631, 0.3622354835811313),
+    ]
+    const resting = {
+      ...getLimitBet('resting', answers[1], 'NO', 'maker', 188.684, 0.4),
+      amount: 21.427,
+      shares: 21.427 / 0.4,
+    }
+    const { saleValue, newBetResult } = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      6.522611723549393,
+      'YES',
+      undefined,
+      [resting],
+      {},
+      noFees
+    )
+    expect(saleValue).toBeGreaterThan(0)
+    expect(saleValue).toBeLessThan(6.522611723549393 * 0.61)
+    expect(newBetResult.makers.length + saleValue).toBeGreaterThan(0)
+  })
+})

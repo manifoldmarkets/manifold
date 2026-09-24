@@ -13,6 +13,7 @@ import {
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
   isCpmmDegenerateStateError,
+  isDeepenableProb,
   isDrainedPool,
   removeCpmmLiquidity,
 } from './calculate-cpmm'
@@ -203,6 +204,25 @@ describe('CPMM Calculations', () => {
   })
 
   describe('calculateCpmmAmountToBuySharesFixedP (general p, cpmm-multi-2)', () => {
+    it('buys and sells the shares asked for at an extreme price', () => {
+      // A favourite knocked down to about 4e-12: a share costs about that much,
+      // a sliver of any linear bracket around the cost.
+      const pool = { YES: 22892, NO: 2.6362e-9 }
+      const p = 0.9705
+      for (const shares of [2, 500, -1e-3]) {
+        const amount = calculateCpmmAmountToBuySharesFixedP(
+          { pool, p, collectedFees: noFees },
+          shares,
+          'YES'
+        )
+        const traded = calculateCpmmShares(pool, p, amount, 'YES')
+        // Down to the forward map's own float resolution on a 22,892 side.
+        expect(Math.abs(traded - shares)).toBeLessThan(
+          1e-9 * Math.abs(shares) + 1e-11
+        )
+      }
+    })
+
     // The shares -> cost direction is transcendental for p != 0.5; the function
     // inverts the (general-p) forward map calculateCpmmShares by bisection. These
     // tests pin that inverse: cross-language anchors from the Python oracle
@@ -473,6 +493,14 @@ describe('degenerate pool states', () => {
     expect(() =>
       calculateCpmmAmountToBuySharesFixedP(state(NaN), 10, 'YES')
     ).toThrow(CPMM_ARBITRAGE_ERROR_PREFIX + 'NaN')
+  })
+
+  it('deepens an answer only away from 0% and 100%', () => {
+    expect(isDeepenableProb(0.5)).toBe(true)
+    expect(isDeepenableProb(0.004)).toBe(true)
+    expect(isDeepenableProb(1e-7)).toBe(false)
+    expect(isDeepenableProb(1 - 1e-7)).toBe(false)
+    expect(isDeepenableProb(NaN)).toBe(false)
   })
 
   it('calls a pool drained only when a side is gone or not a number', () => {
