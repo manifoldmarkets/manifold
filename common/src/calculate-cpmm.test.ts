@@ -474,6 +474,13 @@ describe('degenerate pool states', () => {
     ).toThrow(CPMM_ARBITRAGE_ERROR_PREFIX + 'NaN')
   })
 
+  it('keeps p on a drained pool only off p = 0.5', () => {
+    const drained = { YES: 0, NO: 100 }
+    expect(addCpmmLiquidity(drained, 0.8, 0).newP).toBe(0.8)
+    // cpmm-multi-1's arbitrage reports the drained pool through this NaN.
+    expect(addCpmmLiquidity(drained, 0.5, 0).newP).toBeNaN()
+  })
+
   it('still prices a finite general p', () => {
     const amount = calculateCpmmAmountToBuySharesFixedP(state(0.3), 10, 'YES')
     expect(amount).toBeGreaterThan(0)

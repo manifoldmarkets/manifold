@@ -4,6 +4,7 @@ import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmMultiSumsToOneSale,
   getCpmmProbability,
+  isCpmmDegenerateStateError,
 } from './calculate-cpmm'
 import {
   calculateCpmmMultiArbitrageBet,
@@ -880,13 +881,17 @@ describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 no transient-overs
     )
     const finalById: Record<string, number> = {}
     for (const a of res.updatedAnswers)
-      finalById[a.id] = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      finalById[a.id] = getCpmmProbability(
+        { YES: a.poolYes, NO: a.poolNo },
+        a.p
+      )
     const makers = [
       ...res.newBetResults.flatMap((r) => r.makers),
       ...res.otherBetResults.flatMap((r) => r.makers),
     ]
     const filledById = groupBy(makers, (mk) => mk.bet.id)
-    const filled = (id: string) => sumBy(filledById[id] ?? [], (mk) => mk.amount)
+    const filled = (id: string) =>
+      sumBy(filledById[id] ?? [], (mk) => mk.amount)
     const cost =
       sumBy(res.newBetResults, (r) => sumBy(r.takers, 'amount')) +
       sumBy(res.otherBetResults, (r) => sumBy(r.takers, 'amount'))
@@ -898,7 +903,10 @@ describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 no transient-overs
 
   it('no-limit: Σp = 1, cost = betAmount, traded answer rises (~0.399)', () => {
     const r = runV2([])
-    expect(sumBy(r.res.updatedAnswers, (a) => r.finalById[a.id])).toBeCloseTo(1, 6)
+    expect(sumBy(r.res.updatedAnswers, (a) => r.finalById[a.id])).toBeCloseTo(
+      1,
+      6
+    )
     expect(r.cost).toBeCloseTo(BET, 3)
     expect(a0Final).toBeGreaterThan(0.2)
     expect(a0Final).toBeCloseTo(0.39942, 2)
@@ -1053,7 +1061,9 @@ describe('verifyCpmmMulti2BetResult — cpmm-multi-2 post-hoc verification', () 
     const orders = [getLimitBet('L1', a2[0], 'NO', 'mk', 600, 0.3)]
     const res2 = runV2(a2, [0, 1], 60, orders)
     // positive control: the maker actually filled, so check (d) is exercised, not vacuous
-    expect(res2.newBetResults.flatMap((r) => r.makers).length).toBeGreaterThan(0)
+    expect(res2.newBetResults.flatMap((r) => r.makers).length).toBeGreaterThan(
+      0
+    )
     expect(() => verify(60, res2, orders)).not.toThrow()
 
     // general p (outside GP12a's proven scope — exactly why the verifier exists)
@@ -1112,5 +1122,33 @@ describe('verifyCpmmMulti2BetResult — cpmm-multi-2 post-hoc verification', () 
       caught = e
     }
     expect(caught).toBeInstanceOf(CpmmMulti2InvariantError)
+  })
+})
+
+describe('calculateCpmmMultiArbitrageBet — degenerate cpmm-multi-1 pools', () => {
+  // cpmm-multi-1 answers whose probabilities sum past one, the kind of state
+  // behind the degenerate-pool sell failures. The bet can't be priced; it has
+  // to fail the way the sell diagnostics and the bet panel recognize, not with
+  // a generic invalid-amount error.
+  it('fails recognizably rather than with a generic error', () => {
+    const answers = [0.5192, 0.4588, 0.012, 0.012, 0.012].map((prob, i) =>
+      getAnswer(i, prob)
+    )
+    let caught: unknown
+    try {
+      calculateCpmmMultiArbitrageBet(
+        answers,
+        answers[2],
+        'YES',
+        10,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+    } catch (e) {
+      caught = e
+    }
+    expect(isCpmmDegenerateStateError(caught)).toBe(true)
   })
 })

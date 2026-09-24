@@ -14,6 +14,14 @@ import { addObjects } from './util/object'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
+// An answer's probability after a fill, at the answer's own p. computeFills
+// re-derives p from the pool after every step, which can leave it a few ulps off;
+// a trade never changes an answer's p, so the answer's is the exact one (0.5 on
+// cpmm-multi-1, which keeps these sums bit-for-bit what they were before p).
+const probAfterFill = (r: {
+  cpmmState: { pool: { [outcome: string]: number } }
+  answer: Answer
+}) => getCpmmProbability(r.cpmmState.pool, r.answer.p)
 const noFillsReturn = (
   outcome: string,
   answer: Answer,
@@ -118,7 +126,7 @@ export function calculateCpmmMultiArbitrageYesBets(
         result.newBetResults.map((r) => r.takers),
         'amount'
 
-// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
+        // (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
       ),
       0
     )
@@ -367,9 +375,10 @@ function calculateCpmmMultiArbitrageBetsYesV2(
   // Sum prob == 1. Returns undefined when g is infeasible (basket alone already sums >= 1).
   const evalG = (g: number) => {
     // Fresh working snapshots so each g-probe is independent (no maker capacity bleed across probes).
-    const workingUnfilledBetsByAnswer = mapValues(unfilledBetsByAnswer, (bets) => [
-      ...bets,
-    ])
+    const workingUnfilledBetsByAnswer = mapValues(
+      unfilledBetsByAnswer,
+      (bets) => [...bets]
+    )
     const workingBalanceByUserId = { ...balanceByUserId }
 
     // --- basket: buy g YES shares in each basket answer (single rising sweep, limit-aware) ---
@@ -404,9 +413,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
       basketCost += sumBy(result.takers, 'amount')
       return result
     })
-    const basketSum = sumBy(yesBetResults, (r) =>
-      getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-    )
+    const basketSum = sumBy(yesBetResults, probAfterFill)
     const target = 1 - basketSum // required Sum over the non-basket answers
     if (target <= 1e-9) {
       return undefined // basket alone sums to >= 1: this g is infeasible
@@ -436,7 +443,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
           undefined,
           true
         )
-        return getCpmmProbability(cpmmState.pool, cpmmState.p)
+        return getCpmmProbability(cpmmState.pool, answer.p)
       })
 
     let eta = 0
@@ -950,11 +957,7 @@ function calculateCpmmMultiArbitrageBetYes(
       return 1
     }
     const newStates = [...result.noBetResults, result.yesBetResult]
-    const diff =
-      1 -
-      sumBy(newStates, (r) =>
-        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-      )
+    const diff = 1 - sumBy(newStates, probAfterFill)
     return diff
   })
 
@@ -1154,10 +1157,7 @@ function calculateCpmmMultiArbitrageBetNo(
     if (!result) return 1
     const { yesBetResults, noBetResult } = result
     const newStates = [...yesBetResults, noBetResult]
-    const diff =
-      sumBy(newStates, (r) =>
-        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-      ) - 1
+    const diff = sumBy(newStates, probAfterFill) - 1
     return diff
   })
 
@@ -1339,9 +1339,7 @@ export const buyNoSharesUntilAnswersSumToOne = (
       answerIdsWithFees,
       false // don't mutate orders during binary search
     )
-    const probSum = sumBy(result.noBetResults, (r) =>
-      getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-    )
+    const probSum = sumBy(result.noBetResults, probAfterFill)
     if (probSum < 1) break
     maxNoShares *= 10
   } while (true)
@@ -1356,11 +1354,7 @@ export const buyNoSharesUntilAnswersSumToOne = (
       answerIdsWithFees,
       false // don't mutate orders during binary search
     )
-    const diff =
-      1 -
-      sumBy(result.noBetResults, (r) =>
-        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-      )
+    const diff = 1 - sumBy(result.noBetResults, probAfterFill)
     return diff
   })
 
@@ -1488,14 +1482,17 @@ export function calculateCpmmMultiArbitrageSellNo(
         )
     )
 
-    const yesResult = computeFills(
-      { pool, p: answerToSell.p, collectedFees },
-      'YES',
-      yesAmount,
-      limitProb,
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
+    const yesResult = {
+      ...computeFills(
+        { pool, p: answerToSell.p, collectedFees },
+        'YES',
+        yesAmount,
+        limitProb,
+        unfilledBetsByAnswer[id] ?? [],
+        balanceByUserId
+      ),
+      answer: answerToSell,
+    }
     const noResults = answersWithoutAnswerToSell.map((answer, i) => {
       const noAmount = noAmounts[i]
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
@@ -1515,10 +1512,7 @@ export function calculateCpmmMultiArbitrageSellNo(
     })
 
     const newStates = [yesResult, ...noResults]
-    const diff =
-      sumBy(newStates, (r) =>
-        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-      ) - 1
+    const diff = sumBy(newStates, probAfterFill) - 1
     return diff
   })
 
@@ -1684,14 +1678,17 @@ export function calculateCpmmMultiArbitrageSellYes(
         )
     )
 
-    const noResult = computeFills(
-      { pool, p: answerToSell.p, collectedFees },
-      'NO',
-      noAmount,
-      limitProb,
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
+    const noResult = {
+      ...computeFills(
+        { pool, p: answerToSell.p, collectedFees },
+        'NO',
+        noAmount,
+        limitProb,
+        unfilledBetsByAnswer[id] ?? [],
+        balanceByUserId
+      ),
+      answer: answerToSell,
+    }
     const yesResults = answersWithoutAnswerToSell.map((answer, i) => {
       const yesAmount = yesAmounts[i]
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
@@ -1711,11 +1708,7 @@ export function calculateCpmmMultiArbitrageSellYes(
     })
 
     const newStates = [noResult, ...yesResults]
-    const diff =
-      1 -
-      sumBy(newStates, (r) =>
-        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
-      )
+    const diff = 1 - sumBy(newStates, probAfterFill)
     return diff
   })
 

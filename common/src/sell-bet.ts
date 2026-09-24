@@ -129,7 +129,7 @@ export const getCpmmMultiSellBetInfo = (
   const { cpmmState, makers, takers, ordersToCancel, totalFees } = newBetResult!
 
   const probBefore = answerToSell.prob
-  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probAfter = getCpmmProbability(cpmmState.pool, answerToSell.p)
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')

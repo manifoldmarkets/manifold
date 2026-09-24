@@ -429,8 +429,7 @@ export const executeNewBetResult = async (
     volume: number
   }[] = []
 
-  const sumsToOne =
-    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
+  const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   let bonusTxnQuery = 'select 1 where false'
   if (
     (!isMultiBet || firstBetInMultiBet) &&
@@ -474,7 +473,7 @@ export const executeNewBetResult = async (
         const { YES: poolYes, NO: poolNo } = cpmmState.pool
         // Use the answer's own p (cpmm-multi-2) so the denormalized `prob`
         // matches the read-path `probability`; p=0.5 ⇒ byte-identical for v1.
-        const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
+        const prob = getCpmmProbability(cpmmState.pool, answer.p)
         answerUpdates.push({
           id: answer.id,
           poolYes,
