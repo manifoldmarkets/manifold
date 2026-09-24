@@ -217,6 +217,7 @@ export async function createOddsMarketsForCompetition(
           answers: params.answers,
           answerProbs: params.answerProbs,
           answerShortTexts: params.answerShortTexts,
+          answerColors: params.answerColors,
           sportsStartTimestamp: params.sportsStartTimestamp,
           sportsEventId: params.sportsEventId,
           sportsLeague: params.sportsLeague,

@@ -56,6 +56,8 @@ jest.mock('shared/publish-sports-live-score', () => ({
 
 import { Contract } from 'common/contract'
 import { OddsApiEvent, OddsApiScore } from 'common/odds-markets'
+import { VERSUS_COLORS } from 'common/new-contract'
+import { gameAnswerColors } from 'common/sports-team-colors'
 import { User } from 'common/user'
 import { getUser, log } from 'shared/utils'
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
@@ -254,6 +256,48 @@ it('opens the answers at the devigged moneyline', async () => {
   // -300 / +250 devigs to about 72.4% / 27.6%.
   expect(answers[0].prob).toBeCloseTo(0.724, 2)
   expect(answers[1].prob).toBeCloseTo(0.276, 2)
+})
+
+it('colours the answers by team, and keeps the versus pair otherwise', async () => {
+  const chiefs = 'Kansas City Chiefs'
+  const bills = 'Buffalo Bills'
+  const named: OddsApiEvent = {
+    ...event,
+    home_team: chiefs,
+    away_team: bills,
+    bookmakers: [
+      {
+        key: 'book',
+        title: 'Book',
+        last_update: '',
+        markets: [
+          {
+            key: 'h2h',
+            last_update: '',
+            outcomes: [
+              { name: chiefs, price: -150 },
+              { name: bills, price: 130 },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const colorsFor = async (game: OddsApiEvent) => {
+    jest.mocked(getUpcomingOdds).mockResolvedValue([game])
+    const db = database()
+    await createOddsMarketsForCompetition(db.client, 'nfl-regular-2026', {
+      creator,
+    })
+    expect(db.contracts).toHaveLength(1)
+    return (db.contracts[0] as any).answers.map(
+      (a: { color?: string }) => a.color
+    )
+  }
+  expect(await colorsFor(named)).toEqual(
+    gameAnswerColors('nfl', chiefs, bills, false)
+  )
+  expect(await colorsFor(event)).toEqual(VERSUS_COLORS)
 })
 
 it('preview has no database writes, creator lookup, ante, or group lookup', async () => {

@@ -329,6 +329,7 @@ function binaryTeam(
     shortName: short || plain,
     flag,
     imageUrl: null,
+    color: null,
     prob,
   }
 }
@@ -342,6 +343,7 @@ function toTeam(answer: Answer): ScheduleTeam {
     shortName: short || name,
     flag,
     imageUrl: answer.imageUrl ?? null,
+    color: answer.color ?? null,
     prob: answer.prob,
   }
 }

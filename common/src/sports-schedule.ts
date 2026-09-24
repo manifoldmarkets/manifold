@@ -706,6 +706,8 @@ export interface ScheduleTeam {
   shortName: string
   flag: string
   imageUrl: string | null
+  /** The answer's colour, when the market set one (team colours). */
+  color: string | null
   prob: number
 }
 

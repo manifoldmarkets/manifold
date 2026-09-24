@@ -9,6 +9,7 @@ import {
   SPORT_BY_KEY,
   teamDisplayName,
 } from 'common/sports-schedule'
+import { readableTextColor } from 'common/sports-team-colors'
 import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -396,8 +397,19 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
       </span>
     )
   }
+  const { color } = team
   return (
-    <span className="bg-ink-100 text-ink-600 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+    <span
+      className={clsx(
+        'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
+        !color && 'bg-ink-100 text-ink-600'
+      )}
+      style={
+        color
+          ? { backgroundColor: color, color: readableTextColor(color) }
+          : undefined
+      }
+    >
       {team.shortName.slice(0, 3).toUpperCase()}
     </span>
   )

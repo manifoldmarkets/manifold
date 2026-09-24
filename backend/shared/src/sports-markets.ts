@@ -1102,6 +1102,8 @@ export interface SportsContractParams {
   answerProbs?: number[]
   answerShortTexts?: string[]
   answerImageUrls?: string[]
+  /** Multiple choice: colour of each answer. Defaults as for any market. */
+  answerColors?: string[]
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string
@@ -1189,6 +1191,7 @@ export async function createSportsContract(
     answerShortTexts: params.answerShortTexts,
     answerImageUrls: params.answerImageUrls,
     answerProbs: params.answerProbs,
+    answerColors: params.answerColors,
     sportsStartTimestamp: params.sportsStartTimestamp,
     sportsEventId: params.sportsEventId,
     sportsLeague: params.sportsLeague,

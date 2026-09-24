@@ -27,6 +27,7 @@ const game: ScheduleGame = {
     shortName: 'H',
     flag: '',
     imageUrl: null,
+    color: null,
     prob: 0.4,
   },
   away: {
@@ -35,6 +36,7 @@ const game: ScheduleGame = {
     shortName: 'A',
     flag: '',
     imageUrl: null,
+    color: null,
     prob: 0.6,
   },
   draw: null,
