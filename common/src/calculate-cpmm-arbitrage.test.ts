@@ -1194,4 +1194,41 @@ describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting lim
     expect(saleValue).toBeLessThan(6.522611723549393 * 0.61)
     expect(newBetResult.makers.length + saleValue).toBeGreaterThan(0)
   })
+
+  it("sells a dust amount into a YES order resting at the answer's price", () => {
+    // A 0.02% long shot whose drizzles took p to 1e-4: probing share counts far
+    // below one ulp of its pool returns rounding noise, which used to walk the
+    // inverse's search floor down to 0 and fail the sale.
+    const noAt = (poolYes: number, p: number, prob: number) =>
+      (prob * (1 - p) * poolYes) / (p * (1 - prob))
+    const answer = (
+      index: number,
+      poolYes: number,
+      poolNo: number,
+      p: number
+    ) =>
+      ({
+        ...getAnswerWithP(index, p),
+        poolYes,
+        poolNo,
+        prob: getCpmmProbability({ YES: poolYes, NO: poolNo }, p),
+      } as Answer)
+    const favourite = answer(0, 400, noAt(400, 0.62, 0.69), 0.62)
+    const longShot = answer(1, 3434.500000000031, 6869.687037407544, 1e-4)
+    const rest = answer(2, 500, noAt(500, 0.3, 0.31 - longShot.prob), 0.3)
+    const resting = getLimitBet('resting', favourite, 'YES', 'maker', 100, 0.69)
+    for (const shares of [1e-5, 2e-6, 1e-7]) {
+      const { saleValue } = calculateCpmmMultiSumsToOneSale(
+        [favourite, longShot, rest],
+        favourite,
+        shares,
+        'YES',
+        undefined,
+        [resting],
+        {},
+        noFees
+      )
+      expect(saleValue / shares).toBeCloseTo(0.69, 6)
+    }
+  })
 })

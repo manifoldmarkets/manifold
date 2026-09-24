@@ -252,7 +252,13 @@ export function calculateCpmmAmountToBuySharesFixedP(
   const otherPool = outcome === 'YES' ? n : y
   const high = shares > 0 ? target : Math.min(target, otherPool * (1 - 1e-9))
   let low = high / 1e3
-  for (let i = 0; i < 100 && sharesFor(low) > target; i++) low /= 1e3
+  // A target this small, or a sale against an empty side, costs nothing the
+  // pool can represent.
+  if (low === 0) return 0
+  // Below one ulp of the pool, sharesFor returns rounding noise that can sit
+  // above a tiny target; stop before low underflows to 0, whose log is -Infinity.
+  for (let i = 0; i < 100 && low / 1e3 > 0 && sharesFor(low) > target; i++)
+    low /= 1e3
   // binarySearch fail-fasts on a NaN comparator.
   const logCost = binarySearch(
     Math.log(low),

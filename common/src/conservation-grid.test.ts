@@ -1175,7 +1175,10 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
-  const rng = seeded(20260924)
+  let rng = seeded(20260924)
+  // How lopsided a favourite opens, and how big a trade can get against the ante.
+  let favourite = { from: 60, spread: 35 }
+  let maxTradeOfAnte = 0.5
   const pick = <T>(xs: T[]) => xs[Math.floor(rng() * xs.length)]
   const logUniform = (lo: number, hi: number) =>
     Math.exp(Math.log(lo) + rng() * (Math.log(hi) - Math.log(lo)))
@@ -1194,7 +1197,7 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
           : 0.5 + rng()
         : shape === 'favourite'
         ? i === 0
-          ? 60 + rng() * 35
+          ? favourite.from + rng() * favourite.spread
           : 0.2 + rng()
         : shape === 'even'
         ? 1
@@ -1263,7 +1266,7 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     }
   }
 
-  it('random lifecycles conserve mana and keep every invariant', () => {
+  const lifecycles = () => {
     const traders = ['alice', 'bob', 'carol']
     let trades = 0
     let refused = 0
@@ -1290,7 +1293,7 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
         if (roll < 0.4) {
           trades++
           const outcome = pick(['YES', 'NO'] as const)
-          const amount = logUniform(1, ante / 2)
+          const amount = logUniform(1, ante * maxTradeOfAnte)
           if (!attempt(() => s.buy(pick(traders), i, outcome, amount)))
             refused++
         } else if (roll < 0.6) {
@@ -1342,9 +1345,25 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
         })
       } else s.resolve('cancel')
     }
-    // Ordinary trades on fresh markets go through; refusals are the drained-pool edge.
+    return { trades, refused }
+  }
+
+  it('random lifecycles conserve mana and keep every invariant', () => {
+    const { trades, refused } = lifecycles()
     expect(trades).toBeGreaterThan(100)
-    expect(refused / trades).toBeLessThan(0.05)
+    // No ordinary trade drains a pool outright.
+    expect(refused).toBe(0)
+  })
+
+  it('so do trades of up to three times the ante against big favourites', () => {
+    rng = seeded(11)
+    favourite = { from: 90, spread: 8 }
+    maxTradeOfAnte = 3
+    const { trades, refused } = lifecycles()
+    expect(trades).toBeGreaterThan(100)
+    // A few of these drain a pool outright, and are refused as a binary
+    // market's would be.
+    expect(refused / trades).toBeLessThan(0.01)
   })
 
   // Long shots' NO sides open at about 0.001 of the ante, so an ordinary trade on

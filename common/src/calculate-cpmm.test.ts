@@ -204,6 +204,25 @@ describe('CPMM Calculations', () => {
   })
 
   describe('calculateCpmmAmountToBuySharesFixedP (general p, cpmm-multi-2)', () => {
+    it("prices a share count below the pool's float resolution at 0", () => {
+      const state = {
+        pool: { YES: 3434.500000000031, NO: 6869.687037407544 },
+        p: 1e-4,
+        collectedFees: noFees,
+      }
+      for (const shares of [1e-22, 1e-322]) {
+        const amount = calculateCpmmAmountToBuySharesFixedP(
+          state,
+          shares,
+          'YES'
+        )
+        expect(amount).toBeGreaterThanOrEqual(0)
+        expect(amount).toBeLessThan(1e-12)
+      }
+      const drained = { ...state, pool: { YES: 100, NO: 0 } }
+      expect(calculateCpmmAmountToBuySharesFixedP(drained, -1, 'YES')).toBe(0)
+    })
+
     it('buys and sells the shares asked for at an extreme price', () => {
       // A favourite knocked down to about 4e-12: a share costs about that much,
       // a sliver of any linear bracket around the cost.
