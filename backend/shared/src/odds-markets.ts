@@ -29,6 +29,7 @@ import {
   calendarEntriesOverlapping,
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
+  SPORT_LEAGUE_LABEL,
 } from 'common/sports-calendar'
 import {
   buildOddsMarketParams,
@@ -200,7 +201,10 @@ export async function createOddsMarketsForCompetition(
         )
         groupIds = uniq([
           group.id,
-          ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
+          ...sportTagIds(
+            SPORT_ID_TO_SPORT_KEY[entry.sport],
+            SPORT_LEAGUE_LABEL[entry.sport]
+          ),
         ])
       }
       const contract = await createSportsContract(

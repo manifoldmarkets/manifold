@@ -1,7 +1,10 @@
 jest.mock('shared/supabase/init', () => ({
   createSupabaseDirectClient: jest.fn(),
 }))
-jest.mock('shared/utils', () => ({ contractColumnsToSelect: 'data' }))
+jest.mock('shared/utils', () => ({
+  contractColumnsToSelect: 'data',
+  log: Object.assign(jest.fn(), { warn: jest.fn() }),
+}))
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SPORT_CATEGORIES } from 'common/sports-schedule'
