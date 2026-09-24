@@ -1,6 +1,7 @@
 import { range } from 'lodash'
 import {
   addCpmmMultiLiquidityAnswersSumToOneV2,
+  cpmmMulti2SumToOneCreationPools,
   cpmmMulti2SumToOneFeasible,
   cpmmMulti2SumToOnePools,
   getCpmmProbability,
@@ -88,16 +89,10 @@ describe('addCpmmMultiLiquidityAnswersSumToOneV2 guard (GP19c)', () => {
   // (balanced pools at p = q read prob = q for any q — sane for every vector).
   const stateAt = (q: number[], scale = 100) =>
     Object.fromEntries(
-      q.map((qi, i) => [
-        `a${i}`,
-        { pool: { YES: scale, NO: scale }, p: qi },
-      ])
+      q.map((qi, i) => [`a${i}`, { pool: { YES: scale, NO: scale }, p: qi }])
     )
 
-  const checkSaneAndProbPreserving = (
-    q: number[],
-    amount: number
-  ) => {
+  const checkSaneAndProbPreserving = (q: number[], amount: number) => {
     const pools = stateAt(q)
     const result = addCpmmMultiLiquidityAnswersSumToOneV2(pools, amount)
     const ids = Object.keys(pools)
@@ -160,13 +155,15 @@ describe('addCpmmMultiLiquidityAnswersSumToOneV2 guard (GP19c)', () => {
     expect(probSum).toBeCloseTo(1, 9)
   })
 
-  it('small add below A* on infeasible q still uses the merge (no premature fallback)', () => {
-    // At infeasible q the merge is still sane for small totals (A* > 0); the guard
-    // must not fall back until the merge itself would go insane.
+  it('small add on infeasible q merges the creation rule (no premature fallback)', () => {
+    // At infeasible q the add merges what creation would open at these odds, the
+    // exact √variance shape, whose reserves are all positive; the equal-split guard
+    // doesn't engage.
     const q = dominant(30, 0.9)
-    const pools = stateAt(q, 10_000) // deep pools => large A*
+    const pools = stateAt(q, 10_000)
     const result = addCpmmMultiLiquidityAnswersSumToOneV2(pools, 10)
-    const delta = cpmmMulti2SumToOnePools(q, 10)
+    const delta = cpmmMulti2SumToOneCreationPools(q, 10)
+    delta.forEach((d) => expect(d.poolYes).toBeGreaterThan(0))
     Object.keys(pools).forEach((id, i) => {
       expect(result[id].pool.YES).toBeCloseTo(10_000 + delta[i].poolYes, 6)
       expect(result[id].pool.NO).toBeCloseTo(10_000 + delta[i].poolNo, 6)

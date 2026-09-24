@@ -1057,9 +1057,10 @@ const isSanePoolYesNo = (pool: { YES: number; NO: number }, p: number) =>
 // LMSR/balanced-shaped at the margin — inconsistent with the √variance CREATION rule above.
 //
 // The creation-consistent rule (Evan: "apply creation's allocation to the *added* mana at current
-// probs; don't rearrange existing depth") is to MERGE a Δ = amount ante √variance creation computed
-// at the CURRENT probabilities into the existing reserves, then re-price each answer's p to hold its
-// probability. Properties (proofs/liquidity_add_split.py, GP17): each prob is preserved (unique
+// probs; don't rearrange existing depth") is to MERGE a Δ = amount ante creation
+// (cpmmMulti2SumToOneCreationPools, so the exact √variance shape wherever the closed form would
+// starve an answer) computed at the CURRENT probabilities into the existing reserves, then re-price
+// each answer's p to hold its probability. Properties (proofs/liquidity_add_split.py, GP17): each prob is preserved (unique
 // re-pricing, GP17b) so Σ prob = 1 is inherited; conservation holds because the Δ-creation is
 // all-winners-tight (locks exactly Δ) and resolution payout is linear in reserves, so the merge
 // superposes two conservative markets (GP17c); on an untraded market it equals create(A+Δ) and at
@@ -1080,7 +1081,7 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
     getCpmmProbability(poolsByAnswer[id].pool, poolsByAnswer[id].p)
   )
   // Allocate the ADDED mana exactly as creation would, at the current probs (√variance shape).
-  const delta = cpmmMulti2SumToOnePools(probs, amount)
+  const delta = cpmmMulti2SumToOneCreationPools(probs, amount)
   const result: {
     [answerId: string]: {
       pool: { YES: number; NO: number }
