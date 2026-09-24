@@ -1,19 +1,23 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { SportsMarket } from 'common/sports'
+import { MANIFOLD_SPORTS_USER_IDS, SportsMarket } from 'common/sports'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export const sportsMarkets: APIHandler<'sports-markets'> = async (props) => {
   const { sportsLeague } = props
   const pg = createSupabaseDirectClient()
 
+  // Official markets only: anyone can set sportsLeague and the team fields
+  // when creating a market, and the dashboards and admin monitor present
+  // these rows as @ManifoldSports games.
   const rows = await pg.manyOrNone<{ data: any }>(
     `select data
      from contracts
      where data->>'sportsLeague' = $1
+       and creator_id = any($2)
        and token = 'MANA'
      order by (data->>'closeTime')::bigint asc`,
-    [sportsLeague]
+    [sportsLeague, MANIFOLD_SPORTS_USER_IDS]
   )
 
   const now = Date.now()
