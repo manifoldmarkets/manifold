@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs'
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
-import { zip } from 'lodash'
 
 // List of secrets that are available to backend (api, functions, scripts, etc.)
 // Edit them at:
@@ -67,6 +66,17 @@ export const secrets = (
 
 type SecretId = (typeof secrets)[number]
 
+// Secrets a project may not have yet. A missing one is skipped, so the code
+// that reads it sees it unset, instead of stopping the API and scheduler from
+// starting. Only list integrations that already cope with a missing key.
+const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
+  // The Odds API sports jobs skip themselves without it.
+  'THE_ODDS_API_KEY',
+])
+
+// gRPC status code for NOT_FOUND.
+const GRPC_NOT_FOUND = 5
+
 // Fetches all secrets from google cloud.
 // For deployed google cloud service, no credential is needed.
 // For local and Vercel deployments: requires credentials json object.
@@ -85,23 +95,32 @@ export const getSecrets = async (credentials?: any, ...ids: SecretId[]) => {
 
   const secretIds = ids.length > 0 ? ids : secrets
 
-  const fullSecretNames = secretIds.map(
-    (secret: string) =>
-      `${client.projectPath(projectId)}/secrets/${secret}/versions/latest`
+  const secretValues = await Promise.all(
+    secretIds.map(async (secret: string) => {
+      const name = `${client.projectPath(
+        projectId
+      )}/secrets/${secret}/versions/latest`
+      try {
+        const [response] = await client.accessSecretVersion({ name })
+        return response.payload!.data!.toString()
+      } catch (e) {
+        if (
+          OPTIONAL_SECRETS.has(secret) &&
+          (e as { code?: number })?.code === GRPC_NOT_FOUND
+        ) {
+          console.warn(`Optional secret ${secret} not found; leaving it unset.`)
+          return undefined
+        }
+        throw e
+      }
+    })
   )
-
-  const secretResponses = await Promise.all(
-    fullSecretNames.map((name) =>
-      client.accessSecretVersion({
-        name,
-      })
-    )
-  )
-  const secretValues = secretResponses.map(([response]) =>
-    response.payload!.data!.toString()
-  )
-  const pairs = zip(secretIds, secretValues) as [string, string][]
-  return Object.fromEntries(pairs)
+  const result: { [secret: string]: string } = {}
+  secretIds.forEach((secret, i) => {
+    const value = secretValues[i]
+    if (value !== undefined) result[secret] = value
+  })
+  return result
 }
 
 // Fetches all secrets and loads them into process.env.
