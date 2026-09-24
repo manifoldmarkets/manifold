@@ -1,6 +1,5 @@
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
 import { formatPerpClosePercent, inferPriceDecimals } from 'common/perps/format'
@@ -13,6 +12,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import { useHideApiTrades } from 'web/hooks/use-hide-api-trades'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -53,8 +53,7 @@ export const PerpTradesTab = (props: {
   // Filtering is server-side (like the bets tab): dropping API rows on the
   // client would leave short, ragged pages since pagination counts rows
   // before the filter.
-  const [hideApiTrades, setHideApiTrades] = usePersistentInMemoryState(
-    false,
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades(
     `hide-api-perp-trades-${contract.id}`
   )
   // Hoisted out of EventRow: one resize listener for the tab, not one per row.

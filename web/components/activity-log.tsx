@@ -36,6 +36,7 @@ import {
   useGlobalComments,
   useSubscribeGlobalComments,
 } from 'web/hooks/use-comments'
+import { useHideApiTrades } from 'web/hooks/use-hide-api-trades'
 import {
   usePublicContracts,
   useLiveAllNewContracts,
@@ -105,8 +106,7 @@ export function ActivityLog(props: {
   )
 
   const [pill, setPill] = useState<PillOptions>('all')
-  const [hideApiTrades, setHideApiTrades] = usePersistentInMemoryState(
-    false,
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades(
     'live-hide-api-trades'
   )
   const effectiveHideApiTrades = showHideApiTrades && hideApiTrades
