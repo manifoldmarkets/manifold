@@ -182,7 +182,10 @@ function Section(props: {
 
 export default function SportsAdminPage() {
   useRedirectIfSignedOut()
-  const isAdmin = useAdmin() || useDev()
+  // Both hooks run on every render; `useAdmin() || useDev()` skipped one.
+  const admin = useAdmin()
+  const dev = useDev()
+  const isAdmin = admin || dev
 
   const [selectedSportId, setSelectedSportId] = useState<string>('soccer')
   const [selectedCompetition, setSelectedCompetition] =
@@ -685,9 +688,15 @@ export default function SportsAdminPage() {
           <Row className="flex-wrap items-end gap-4">
             {/* Sport */}
             <Col className="gap-1">
-              <label className="text-ink-600 text-xs font-medium">Sport</label>
+              <label
+                htmlFor="sports-admin-sport"
+                className="text-ink-600 text-xs font-medium"
+              >
+                Sport
+              </label>
               <div className="relative">
                 <select
+                  id="sports-admin-sport"
                   value={selectedSportId}
                   onChange={(e) => {
                     const sport = SPORT_CATEGORIES.find(
@@ -729,11 +738,15 @@ export default function SportsAdminPage() {
 
             {/* Competition */}
             <Col className="gap-1">
-              <label className="text-ink-600 text-xs font-medium">
+              <label
+                htmlFor="sports-admin-competition"
+                className="text-ink-600 text-xs font-medium"
+              >
                 Competition
               </label>
               <div className="relative">
                 <select
+                  id="sports-admin-competition"
                   value={selectedCompetition.label}
                   onChange={(e) => {
                     const comp = selectedSport.competitions.find(
@@ -815,11 +828,15 @@ export default function SportsAdminPage() {
             >
               {/* Tag + group status */}
               <Col className="gap-1.5">
-                <label className="text-ink-700 text-sm font-medium">
+                <label
+                  htmlFor="sports-admin-group-slug"
+                  className="text-ink-700 text-sm font-medium"
+                >
                   Official group tag
                 </label>
                 <Row className="gap-2">
                   <input
+                    id="sports-admin-group-slug"
                     type="text"
                     value={groupSlug}
                     onChange={(e) => setGroupSlug(e.target.value)}
@@ -852,10 +869,14 @@ export default function SportsAdminPage() {
 
               {/* Dashboard URL */}
               <Col className="gap-1.5">
-                <label className="text-ink-700 text-sm font-medium">
+                <label
+                  htmlFor="sports-admin-dashboard-url"
+                  className="text-ink-700 text-sm font-medium"
+                >
                   Dashboard URL
                 </label>
                 <input
+                  id="sports-admin-dashboard-url"
                   type="text"
                   value={dashboardUrl}
                   onChange={(e) => setDashboardUrl(e.target.value)}
@@ -869,7 +890,10 @@ export default function SportsAdminPage() {
 
               {/* Custom note */}
               <Col className="gap-1.5">
-                <label className="text-ink-700 text-sm font-medium">
+                <label
+                  htmlFor="sports-admin-custom-note"
+                  className="text-ink-700 text-sm font-medium"
+                >
                   Custom tournament note
                 </label>
                 <p className="text-ink-400 text-xs">
@@ -881,6 +905,7 @@ export default function SportsAdminPage() {
                   . Written once, appears in all market descriptions.
                 </p>
                 <textarea
+                  id="sports-admin-custom-note"
                   value={customNote}
                   onChange={(e) => setCustomNote(e.target.value)}
                   rows={3}
@@ -891,9 +916,9 @@ export default function SportsAdminPage() {
 
               {/* Description preview */}
               <Col className="gap-1.5">
-                <label className="text-ink-700 text-sm font-medium">
+                <span className="text-ink-700 text-sm font-medium">
                   Description preview
-                </label>
+                </span>
                 <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
                   {sampleDesc}
                 </pre>
@@ -979,17 +1004,23 @@ export default function SportsAdminPage() {
 
               {/* Liquidity tiers per stage */}
               <Col className="gap-2">
-                <label className="text-ink-700 text-sm font-medium">
+                <span className="text-ink-700 text-sm font-medium">
                   Liquidity tiers (mana)
-                </label>
+                </span>
                 <p className="text-ink-400 text-xs">
                   Valid Manifold tiers: 100 · 1,000 · 10,000 · 100,000
                 </p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {Object.entries(STAGE_LABELS).map(([code, label]) => (
                     <Col key={code} className="gap-1">
-                      <label className="text-ink-500 text-xs">{label}</label>
+                      <label
+                        htmlFor={`sports-admin-tier-${code}`}
+                        className="text-ink-500 text-xs"
+                      >
+                        {label}
+                      </label>
                       <input
+                        id={`sports-admin-tier-${code}`}
                         type="number"
                         value={stageTiers[code] ?? 1000}
                         onChange={(e) =>
@@ -1020,9 +1051,12 @@ export default function SportsAdminPage() {
             <Col className="gap-4">
               <p className="text-ink-500 text-sm">
                 Fetches upcoming <strong>{selectedCompetition.label}</strong>{' '}
-                games from The Odds API (14-day window) and creates binary
-                YES/NO markets, seeded from Vegas moneyline odds. Games that
-                already have a market are skipped automatically.
+                games from The Odds API (14-day window) and creates versus
+                markets (home vs away; home, away and Draw for soccer), opened
+                at the bookmakers&apos; devigged moneyline. Games that already
+                have a market are skipped and their kickoff is updated if the
+                provider has moved it; games with no line yet wait for the next
+                run, and one run creates at most 25 markets.
               </p>
               <Row className="items-center gap-3">
                 <span className="text-ink-600 text-xs">Dry run</span>
@@ -1144,8 +1178,14 @@ export default function SportsAdminPage() {
             {/* Controls */}
             <Row className="flex-wrap items-end gap-4">
               <Col className="gap-1">
-                <label className="text-ink-600 text-xs">Date from</label>
+                <label
+                  htmlFor="sports-admin-date-from"
+                  className="text-ink-600 text-xs"
+                >
+                  Date from
+                </label>
                 <input
+                  id="sports-admin-date-from"
                   type="date"
                   value={dateFrom}
                   onChange={(e) => {
@@ -1157,8 +1197,14 @@ export default function SportsAdminPage() {
                 />
               </Col>
               <Col className="gap-1">
-                <label className="text-ink-600 text-xs">Date to</label>
+                <label
+                  htmlFor="sports-admin-date-to"
+                  className="text-ink-600 text-xs"
+                >
+                  Date to
+                </label>
                 <input
+                  id="sports-admin-date-to"
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
@@ -1166,8 +1212,14 @@ export default function SportsAdminPage() {
                 />
               </Col>
               <Col className="gap-1">
-                <label className="text-ink-600 text-xs">Stage</label>
+                <label
+                  htmlFor="sports-admin-stage"
+                  className="text-ink-600 text-xs"
+                >
+                  Stage
+                </label>
                 <select
+                  id="sports-admin-stage"
                   value={stageFilter}
                   onChange={(e) => setStageFilter(e.target.value)}
                   className="border-ink-300 bg-canvas-0 text-ink-900 rounded border px-2 py-1.5 text-sm"
@@ -1261,9 +1313,8 @@ export default function SportsAdminPage() {
                               onChange={(e) => {
                                 setSelectedIds((prev) => {
                                   const next = new Set(prev)
-                                  e.target.checked
-                                    ? next.add(f.id)
-                                    : next.delete(f.id)
+                                  if (e.target.checked) next.add(f.id)
+                                  else next.delete(f.id)
                                   return next
                                 })
                               }}
@@ -1715,11 +1766,15 @@ export default function SportsAdminPage() {
 
             <Row className="flex-wrap items-end gap-4">
               <Col className="gap-1">
-                <label className="text-ink-600 text-xs">
+                <label
+                  htmlFor="sports-admin-community-topic"
+                  className="text-ink-600 text-xs"
+                >
                   Browse a topic (slug) for community markets
                 </label>
                 <Row className="gap-2">
                   <input
+                    id="sports-admin-community-topic"
                     type="text"
                     value={communityTopicDraft}
                     onChange={(e) => setCommunityTopicDraft(e.target.value)}
@@ -1747,10 +1802,14 @@ export default function SportsAdminPage() {
               </Col>
               {communityTopicSlug && (
                 <Col className="gap-1">
-                  <label className="text-ink-600 text-xs">
+                  <label
+                    htmlFor="sports-admin-community-search"
+                    className="text-ink-600 text-xs"
+                  >
                     Filter results by title
                   </label>
                   <input
+                    id="sports-admin-community-search"
                     type="text"
                     value={communitySearch}
                     onChange={(e) => onCommunitySearch(e.target.value)}
