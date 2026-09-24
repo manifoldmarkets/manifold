@@ -67,8 +67,8 @@ remainder.
   binary market, a big enough trade can drain one side of its pool outright.
   Those trades are refused with "Trade too large for current liquidity pool".
   Small pool sides are fine: a long shot's NO side opens at about 0.001 of the
-  ante. In random lifecycles no trade of up to half the market's liquidity was
-  refused, and about 0.1% of trades of up to three times it were.
+  ante. In random lifecycles about 1 in 10,000 trades of up to half the
+  market's liquidity was refused, and 0.1% of trades of up to three times it.
 - The per-answer drizzle leaves a subsidy pending on an answer within a
   millionth of 0% or 100%, where floating `p` to hold the probability would
   leave the pool math too little precision. Resolution pays pending subsidy
