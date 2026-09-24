@@ -1,8 +1,15 @@
-import { applyFunding, computeFundingRate, getPositionValue } from './amm'
+import {
+  applyFunding,
+  computeFundingRate,
+  getPositionValue,
+  openPosition,
+} from './amm'
+import { accruePerpPositionTakerFee } from './fees'
 import {
   fundingPerPeriod,
   getPerpPositionTotalCost,
   getPerpPriceForUserFacingPnl,
+  getPerpProfitScenarios,
   getUserFacingPnl,
   getUserFacingPnlFromPayout,
   getUserFacingPnlPercent,
@@ -169,5 +176,139 @@ describe('getPerpPriceForUserFacingPnl', () => {
         1_000
       )
     ).toBeUndefined()
+  })
+})
+
+describe('getPerpProfitScenarios', () => {
+  const tiers = [0.25, 0.5, 1] as const
+  // A fresh M$100 open at 10× from a mark of 100, paying a M$1 fee.
+  const fresh = makePosition('long', {
+    size: 1_000,
+    costBasis: 100,
+    originalCostBasis: 100,
+    takerFeeCostBasis: 1,
+    entryPrice: 100,
+  })
+
+  it('prices every tier net of the fee on both sides, as the card will show', () => {
+    for (const direction of ['long', 'short'] as const) {
+      const position = { ...fresh, direction }
+      const scenarios = getPerpProfitScenarios(position, 100, tiers)
+      expect(scenarios.map((s) => s.ret)).toEqual([...tiers])
+      for (const { ret, price, pnl } of scenarios) {
+        // The base is the whole cash committed: margin + fee.
+        expect(pnl).toBeCloseTo(ret * 101, 10)
+        expect(getUserFacingPnl(position, price)).toBeCloseTo(pnl, 10)
+        expect(getUserFacingPnlPercent(position, price)).toBeCloseTo(ret, 10)
+        // A profit scenario is a favourable move from the mark.
+        expect(direction === 'long' ? price > 100 : price < 100).toBe(true)
+      }
+    }
+  })
+
+  it('reduces to entry·(1 ± r/ℓ) when there is no fee', () => {
+    const noFee = { ...fresh, takerFeeCostBasis: 0 }
+    const longPrices = getPerpProfitScenarios(noFee, 100, tiers).map(
+      (s) => s.price
+    )
+    const shortPrices = getPerpProfitScenarios(
+      { ...noFee, direction: 'short' as const },
+      100,
+      tiers
+    ).map((s) => s.price)
+    expect(longPrices).toHaveLength(3)
+    expect(shortPrices).toHaveLength(3)
+    tiers.forEach((ret, i) => {
+      expect(longPrices[i]).toBeCloseTo(100 * (1 + ret / 10), 10)
+      expect(shortPrices[i]).toBeCloseTo(100 * (1 - ret / 10), 10)
+    })
+  })
+
+  it('prices an add on the merged row the position card will show', () => {
+    // Held: M$100 long at 5× from 50 with M$1 of fees, now marked at 60
+    // (+M$100 unrealized). Add M$50 at 4× at the mark for a M$0.50 fee,
+    // merged exactly as the engine merges it.
+    const held = makePosition('long', {
+      size: 500,
+      costBasis: 100,
+      originalCostBasis: 100,
+      takerFeeCostBasis: 1,
+      entryPrice: 50,
+      leverage: 5,
+    })
+    const opened = openPosition(
+      { pool: { L: 100, S: 100 }, positions: [held] },
+      'u',
+      'c',
+      'long',
+      50,
+      4,
+      60,
+      held
+    )
+    const merged = accruePerpPositionTakerFee(
+      opened.state,
+      opened.position,
+      0.5
+    ).position
+    expect(merged.size).toBe(700)
+    expect(merged.originalCostBasis).toBe(150)
+    expect(merged.takerFeeCostBasis).toBe(1.5)
+    expect(merged.entryPrice).toBeCloseTo(52.5, 10)
+
+    // At the mark the merged row already reads +98.5 on 151.5 committed
+    // (+65%), so +25% and +50% would be losses from here: only +100% is a
+    // profit scenario, and it is a +100% on the WHOLE row.
+    expect(getUserFacingPnlPercent(merged, 60)).toBeCloseTo(98.5 / 151.5, 10)
+    const scenarios = getPerpProfitScenarios(merged, 60, tiers)
+    expect(scenarios.map((s) => s.ret)).toEqual([1])
+    const [{ price, pnl }] = scenarios
+    expect(pnl).toBeCloseTo(151.5, 10)
+    expect(price).toBeGreaterThan(60)
+    expect(price).toBeCloseTo(63.975, 10)
+    expect(getUserFacingPnl(merged, price)).toBeCloseTo(151.5, 10)
+    expect(getUserFacingPnlPercent(merged, price)).toBeCloseTo(1, 10)
+
+    // Past every tier, there is nothing left to show.
+    expect(getPerpProfitScenarios(merged, 80, tiers)).toEqual([])
+  })
+
+  it('drops tiers a short has already passed the same way', () => {
+    // 10× short from 100 with no fee, marked at 94: +25% (at 97.5) and +50%
+    // (at 95) sit ABOVE the mark, i.e. would be losses; +100% (at 90) stands.
+    const short = makePosition('short', {
+      size: 1_000,
+      costBasis: 100,
+      originalCostBasis: 100,
+      takerFeeCostBasis: 0,
+      entryPrice: 100,
+    })
+    const scenarios = getPerpProfitScenarios(short, 94, tiers)
+    expect(scenarios.map((s) => s.ret)).toEqual([1])
+    expect(scenarios[0].price).toBeCloseTo(90, 10)
+  })
+
+  it('fails closed on inputs it cannot price', () => {
+    expect(getPerpProfitScenarios(fresh, Number.NaN, tiers)).toEqual([])
+    expect(getPerpProfitScenarios(fresh, 0, tiers)).toEqual([])
+    expect(getPerpProfitScenarios({ ...fresh, size: 0 }, 100, tiers)).toEqual(
+      []
+    )
+    expect(
+      getPerpProfitScenarios(
+        { ...fresh, takerFeeCostBasis: Number.NaN },
+        100,
+        tiers
+      )
+    ).toEqual([])
+    expect(getPerpProfitScenarios(fresh, 100, [0, -1, Number.NaN])).toEqual([])
+    // A 1× short's +100% would need a price of 0.
+    expect(
+      getPerpProfitScenarios(
+        { ...fresh, direction: 'short', size: 100, takerFeeCostBasis: 0 },
+        100,
+        [1]
+      )
+    ).toEqual([])
   })
 })

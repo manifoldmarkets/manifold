@@ -1,3 +1,4 @@
+import { MNX_INSTRUMENTS } from './mnx'
 import { formatPrice } from './format'
 
 type OracleTickDecoration = {
@@ -16,7 +17,17 @@ type OracleTickDecoration = {
 export const ORACLE_TICK_DECORATIONS: Readonly<
   Record<string, OracleTickDecoration>
 > = {
+  ...Object.fromEntries(
+    MNX_INSTRUMENTS.map((i) => [
+      i.feedId,
+      { prefix: '$', suffix: i.priceDisplay === 'billion_usd' ? 'B' : '' },
+    ])
+  ),
   'btc-usd': { prefix: '$' },
+  'spyx-usd': { prefix: '$' },
+  'qqqx-usd': { prefix: '$' },
+  'gldx-usd': { prefix: '$' },
+  'nvdax-usd': { prefix: '$' },
   'trump-approval-rating': { suffix: '%' },
   'votehub-generic-ballot-2026': { suffix: '%' },
   'vance-favorability': { suffix: '%' },
@@ -44,4 +55,16 @@ export const formatOraclePriceTick = (
   const { prefix = '', suffix = '' } =
     (feedId && ORACLE_TICK_DECORATIONS[feedId]) || {}
   return `${prefix}${formatPrice(value, inferPriceTickDecimals(step))}${suffix}`
+}
+
+/** Price units only; never use this formatter for mana or funding rates. */
+export const formatOraclePrice = (
+  feedId: string | undefined,
+  value: number,
+  decimals: number
+) => {
+  if (!Number.isFinite(value)) return '—'
+  const { prefix = '', suffix = '' } =
+    (feedId && ORACLE_TICK_DECORATIONS[feedId]) || {}
+  return `${prefix}${formatPrice(value, decimals)}${suffix}`
 }

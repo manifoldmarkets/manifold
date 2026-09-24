@@ -2,6 +2,8 @@ import { CheckIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ReactNode } from 'react'
 
+import { Tooltip } from './tooltip'
+
 /** Off = don't filter on this at all, include = only these, exclude = never these. */
 export type FilterState = 'off' | 'include' | 'exclude'
 
@@ -26,31 +28,40 @@ export function FilterPill(props: {
 }) {
   const { state, onChange, className, children } = props
 
+  // What a click does next, through the same Tooltip as the rest of the site
+  // — the browser's own `title` bubble is unstyled, slow, and never appears
+  // on touch, and this page already tooltips the reporter avatar that way.
+  // `noTap` because the pill is a click target: a tap should cycle the
+  // filter, not leave a bubble parked over the row.
   return (
-    <button
-      type="button"
-      aria-pressed={state !== 'off'}
-      title={
+    <Tooltip
+      text={
         state === 'include'
           ? 'Only showing these — click to exclude them'
           : state === 'exclude'
           ? 'Hiding these — click to clear'
           : 'Click to only show these'
       }
-      className={clsx(
-        'flex h-6 cursor-pointer select-none flex-row items-center gap-1 whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
-        state === 'include'
-          ? 'bg-primary-500 hover:bg-primary-600 focus-visible:bg-primary-600 text-white'
-          : state === 'exclude'
-          ? 'bg-scarlet-500 hover:bg-scarlet-600 focus-visible:bg-scarlet-600 text-white'
-          : 'bg-ink-200 hover:bg-ink-300 focus-visible:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
-        className
-      )}
-      onClick={() => onChange(NEXT_STATE[state])}
+      noTap
     >
-      {state === 'include' && <CheckIcon className="h-3 w-3" />}
-      {state === 'exclude' && <XIcon className="h-3 w-3" />}
-      {children}
-    </button>
+      <button
+        type="button"
+        aria-pressed={state !== 'off'}
+        className={clsx(
+          'flex h-6 cursor-pointer select-none flex-row items-center gap-1 whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+          state === 'include'
+            ? 'bg-primary-500 hover:bg-primary-600 focus-visible:bg-primary-600 text-white'
+            : state === 'exclude'
+            ? 'bg-scarlet-500 hover:bg-scarlet-600 focus-visible:bg-scarlet-600 text-white'
+            : 'bg-ink-200 hover:bg-ink-300 focus-visible:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
+          className
+        )}
+        onClick={() => onChange(NEXT_STATE[state])}
+      >
+        {state === 'include' && <CheckIcon className="h-3 w-3" />}
+        {state === 'exclude' && <XIcon className="h-3 w-3" />}
+        {children}
+      </button>
+    </Tooltip>
   )
 }

@@ -1,3 +1,7 @@
+import {
+  publishOracleObservation,
+  reportOracleTickFailure,
+} from 'shared/perps/publish-oracle-observation'
 import { normalizeOraclePointBatch } from 'common/perps/oracle'
 import { MINUTE_MS } from 'common/util/time'
 
@@ -53,7 +57,7 @@ export async function updateOracleFeeds() {
 }
 
 // Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
-// (5s, for BTC); every other feed opts down via pollPeriodMs, so raising the
+// (2s); every other feed opts down via pollPeriodMs, so raising the
 // tick rate for one source does not raise it for all of them. State is
 // in-memory — a scheduler restart polls everything once immediately, which is
 // the correct bias: fresher marks, and staleness alerting re-arms at once.
@@ -147,7 +151,7 @@ export const ORACLE_TICK_PERIOD_MS = 2_000
 // would have quantized to 5s — faster than asked, which is the wrong
 // direction to round for a rate-limited source. Half a tick makes every
 // period land on its nearest multiple of the tick (60s stays 60s) and
-// absorbs up to 2.5s of stamp jitter.
+// absorbs up to 1s of stamp jitter.
 const POLL_JITTER_TOLERANCE_MS = ORACLE_TICK_PERIOD_MS / 2
 
 const isPollDue = (
@@ -240,6 +244,15 @@ const probeDailyFeedStaleness = async (
 
 const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
   try {
+    if (feed.fetchObservation) {
+      await publishOracleObservation(
+        pg,
+        feed,
+        await feed.fetchObservation(),
+        FAST_TICK_ORACLE_BOUNDS
+      )
+      return
+    }
     const prevRow = await pg.oneOrNone<{ ts: string; price: number | string }>(
       `select ts, price from oracle_prices
        where feed_id = $1 order by ts desc limit 1`,
@@ -322,9 +335,8 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.
     //
-    // This is the ONLY caller that passes bounds. The fast tick is the one
-    // context where abandoning an apply beats completing it late: the next
-    // tick is seconds away and carries a better price. Every other caller
+    // Only the fast tick passes bounds: the next poll retries with a newer
+    // price. Other callers
     // (hourly update-perps, the daily publishers, the admin write path) must
     // wait and apply — see OracleUpdateBounds.
     await applyOraclePointToLivePerps(
@@ -334,7 +346,9 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       FAST_TICK_ORACLE_BOUNDS
     )
   } catch (err) {
-    log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
+    if (feed.fetchObservation)
+      reportOracleTickFailure(feed.id, err, FAST_TICK_ORACLE_BOUNDS)
+    else log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }
 }
 

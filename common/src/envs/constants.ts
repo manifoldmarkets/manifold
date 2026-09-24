@@ -570,6 +570,7 @@ export const RESERVED_PATHS = [
   'create-post',
   'date-docs',
   'dashboard',
+  'data',
   'discord',
   'discord-bot',
   'dream',

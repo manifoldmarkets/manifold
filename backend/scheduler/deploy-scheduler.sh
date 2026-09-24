@@ -7,10 +7,10 @@ REGION="us-east4"
 ZONE="us-east4-a"
 ENV=${1:-dev}
 # Which job set this instance runs (SCHEDULER_JOBS in scheduler/src/jobs):
-#   all   — every job on one instance (single-instance mode; the dev default)
+#   all   — every job on one instance (local single-instance mode; rejected by this deploy script)
 #   main  — everything except the PERP jobs (instance: scheduler)
 #   perps — only the PERP oracle/funding jobs (instance: scheduler-perps)
-# Prod requires an explicit main/perps pair so the 5s oracle tick never
+# DEV and PROD require an explicit main/perps pair so the 2s oracle tick never
 # shares an event loop with heavy batch jobs, which stall it for minutes.
 TARGET=${2:-all}
 
@@ -36,10 +36,10 @@ case $TARGET in
       exit 1
 esac
 
-if [ "$ENV" = "prod" ] && [ "$TARGET" = "all" ]; then
-    echo "PROD runs a split scheduler pair. Deploy each instance explicitly:"
-    echo "  ./deploy-scheduler.sh prod main    # batch jobs (instance: scheduler)"
-    echo "  ./deploy-scheduler.sh prod perps   # PERP oracle/funding jobs (instance: scheduler-perps)"
+if [ "$TARGET" = "all" ]; then
+    echo "$ENV runs a split scheduler pair. Deploy each instance explicitly:"
+    echo "  ./deploy-scheduler.sh $ENV main    # batch jobs (instance: scheduler)"
+    echo "  ./deploy-scheduler.sh $ENV perps   # PERP oracle/funding jobs (instance: scheduler-perps)"
     echo "Deploy main first, then perps, so the PERP jobs never run on two instances at once."
     exit 1
 fi

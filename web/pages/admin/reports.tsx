@@ -1,3 +1,8 @@
+import { SocialQuote } from 'common/social-post'
+import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
+import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
+import { SocialText } from 'web/components/yap/social-text'
+import { SocialRichContent } from 'web/components/yap/social-rich-content'
 import { JSONContent } from '@tiptap/core'
 import { contractPath } from 'common/contract'
 import { Row, millisToTs, run, tsToMillis } from 'common/supabase/utils'
@@ -24,27 +29,18 @@ import { convertPost } from 'common/top-level-post'
 
 const PAGE_SIZE = 20
 
-export async function getStaticProps() {
-  try {
-    const reports = await getReports({ limit: PAGE_SIZE })
-    return { props: { reports }, revalidate: 60 }
-  } catch (e) {
-    console.error(e)
-    return { props: { reports: [] }, revalidate: 60 }
-  }
+export default function Reports() {
+  const isAdmin = useAdmin()
+  return isAdmin ? <ReportsContent /> : <></>
 }
 
-export default function Reports(props: { reports: LiteReport[] }) {
+function ReportsContent() {
   const pagination = usePagination<LiteReport>({
     pageSize: PAGE_SIZE,
     q: getReports,
-    prefix: props.reports,
   })
 
   const reportsByContent = Object.values(groupBy(pagination.items, 'contentId'))
-
-  const isAdmin = useAdmin()
-  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={false} className="px-2">
@@ -55,8 +51,17 @@ export default function Reports(props: { reports: LiteReport[] }) {
 
         {!pagination.isLoading &&
           reportsByContent.map((reports) => {
-            const { slug, text, owner, contentId, contentType, createdTime } =
-              reports[0]
+            const {
+              slug,
+              text,
+              richContent,
+              imageUrls,
+              source,
+              owner,
+              contentId,
+              contentType,
+              createdTime,
+            } = reports[0]
 
             return (
               <div key={contentId} className="my-4">
@@ -102,7 +107,9 @@ export default function Reports(props: { reports: LiteReport[] }) {
                             href={slug}
                             className="text-primary-700 text-md my-1"
                           >
-                            {contentType}
+                            {contentType === 'social_post'
+                              ? 'post on Yap'
+                              : contentType}
                           </Link>
                         </>
                       )}
@@ -113,7 +120,27 @@ export default function Reports(props: { reports: LiteReport[] }) {
 
                 {contentType !== 'user' && (
                   <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
-                    <Content size="md" content={text} />
+                    {contentType === 'social_post' ? (
+                      <>
+                        {richContent ? (
+                          <SocialRichContent
+                            content={richContent}
+                            fallbackText={String(text)}
+                          />
+                        ) : (
+                          <SocialText text={String(text)} />
+                        )}
+                        {source && <SocialQuoteCard quote={source} />}
+                        {!!imageUrls?.length && (
+                          <SocialImageCarousel
+                            key={imageUrls.join('|')}
+                            images={imageUrls}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <Content size="md" content={text} />
+                    )}
                   </div>
                 )}
 
@@ -196,6 +223,9 @@ export type LiteReport = {
   slug: string
   id: string
   text: string | JSONContent
+  richContent?: JSONContent | null
+  imageUrls?: string[]
+  source?: SocialQuote | null
   owner: DisplayUser
   reporter: DisplayUser
   reasonsDescription: string | null
@@ -237,34 +267,53 @@ const convertReports = async (
   const postIds = rows
     .filter((r) => r.content_type === 'post')
     .map((r) => r.content_id)
+  const socialPostIds = [
+    ...new Set(
+      rows
+        .filter((r) => r.content_type === 'social_post')
+        .map((r) => r.content_id)
+    ),
+  ]
 
   // Fetch each entity once per batch, with independent lookups in parallel.
-  const [users, marketEntries, comments, posts] = await Promise.all([
-    getDisplayUsers(userIds),
-    Promise.all(
-      marketIds.map(async (id) => {
-        try {
-          return [id, await api('market/:id', { id, lite: true })] as const
-        } catch (error) {
-          if (error instanceof APIError && error.code === 404)
-            return [id, null] as const
-          throw error
-        }
-      })
-    ),
-    commentIds.length
-      ? run(db.from('contract_comments').select().in('comment_id', commentIds))
-      : Promise.resolve({ data: [] }),
-    postIds.length
-      ? run(db.from('old_posts').select().in('id', postIds))
-      : Promise.resolve({ data: [] }),
-  ])
+  const [users, marketEntries, comments, posts, socialPosts] =
+    await Promise.all([
+      getDisplayUsers(userIds),
+      Promise.all(
+        marketIds.map(async (id) => {
+          try {
+            return [id, await api('market/:id', { id, lite: true })] as const
+          } catch (error) {
+            if (error instanceof APIError && error.code === 404)
+              return [id, null] as const
+            throw error
+          }
+        })
+      ),
+      commentIds.length
+        ? run(
+            db.from('contract_comments').select().in('comment_id', commentIds)
+          )
+        : Promise.resolve({ data: [] }),
+      postIds.length
+        ? run(db.from('old_posts').select().in('id', postIds))
+        : Promise.resolve({ data: [] }),
+      socialPostIds.length
+        ? api('get-social-posts', {
+            ids: socialPostIds,
+            forModeration: 'true',
+          }).then((page) => page.posts)
+        : Promise.resolve([]),
+    ])
   const usersById = new Map(users.map((user) => [user.id, user]))
   const marketsById = new Map(marketEntries)
   const commentsById = new Map(
     comments.data.map((r) => [r.comment_id, convertContractComment(r)])
   )
   const postsById = new Map(posts.data.map((r) => [r.id, convertPost(r)]))
+  const socialPostsById = new Map(
+    filterDefined(socialPosts).map((post) => [post.id, post])
+  )
 
   return filterDefined(
     rows.map((report) => {
@@ -283,7 +332,12 @@ const convertReports = async (
       const reporter = usersById.get(userId)
       if (!owner || !reporter) return null
 
-      let content: { slug: string; text: JSONContent | string } | undefined
+      let content:
+        | Pick<
+            LiteReport,
+            'slug' | 'text' | 'richContent' | 'imageUrls' | 'source'
+          >
+        | undefined
       if (contentType === 'contract') {
         const contract = marketsById.get(contentId)
         if (contract)
@@ -303,6 +357,16 @@ const convertReports = async (
       } else if (contentType === 'user') {
         const user = usersById.get(contentId)
         if (user) content = { slug: `/${user.username}`, text: user.name }
+      } else if (contentType === 'social_post') {
+        const post = socialPostsById.get(contentId)
+        if (post && !post.removed)
+          content = {
+            slug: `/yap/${post.id}`,
+            text: post.text || post.markets.map((m) => m.question).join(' · '),
+            richContent: post.richContent,
+            imageUrls: post.imageUrls,
+            source: post.source,
+          }
       } else if (contentType === 'post') {
         const post = postsById.get(contentId)
         if (post) content = { slug: `/post/${post.slug}`, text: post.content }

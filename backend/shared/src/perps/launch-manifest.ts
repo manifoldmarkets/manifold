@@ -1,7 +1,13 @@
+import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
+import {
+  PERP_TICKER_MAX_LENGTH,
+  getPerpFeedTicker,
+  isValidPerpTicker,
+} from 'common/perps/ticker'
 
 import {
   BTC_USD_FEED_ID,
@@ -54,6 +60,40 @@ export type PerpLaunchMarketDefinition = {
  * instructions. The preflight warns when a market exceeds them so a reviewer
  * has to make that risk decision explicitly.
  */
+export const MNX_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] =
+  MNX_INSTRUMENTS.map((i) => ({
+    feedId: i.feedId,
+    question: i.question,
+    requiredTopics: [
+      {
+        name: i.category === 'equity' ? 'Stocks' : 'AI',
+        slugByEnvironment:
+          i.category === 'equity'
+            ? { DEV: 'economics-default', PROD: 'stocks' }
+            : { DEV: 'ai', PROD: 'ai' },
+      },
+    ],
+    oracleBehavior:
+      i.category === 'compute' ? 'scheduled-step' : 'continuous-public',
+    requiresSourceAsOf: true,
+    gameDesign: i.description,
+    latencyArbitrageRisk:
+      i.category === 'valuation'
+        ? 'MNX internal-book valuation futures have no external valuation anchor. The defined target is the MNX mark; do not clamp it to its eight-hour oracle EMA. Thinness and the public 2s cached-price window justify a 3× recommendation.'
+        : i.category === 'compute'
+        ? 'H100 references an hourly rental index. Poll at 2s, validate source age separately, and pause on MNX freezes. Scheduled steps and thinness justify 3×.'
+        : 'MNX equity marks combine internal-book prices and an external oracle fallback. The defined target is the derivative mark, including outside the underlying session. A public 2s cached-price window and thinness justify 3×.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: i.maxAgeMs,
+      subsidyLong: 25_000,
+      subsidyShort: 25_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+  }))
+
 export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   {
     feedId: BTC_USD_FEED_ID,
@@ -414,6 +454,14 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   },
 ]
 
+// MNX is a separately selectable rollout cohort in BOTH environments. Existing
+// release gates keep their scope until operators explicitly select --cohort=mnx.
+// Creation/title/topic policy and manifest validation include every cohort.
+export const ALL_PERP_LAUNCH_MARKETS = [
+  ...PERP_LAUNCH_MARKETS,
+  ...MNX_LAUNCH_MARKETS,
+]
+
 // Feeds that exist in the oracle registry but must never have a launch
 // market. Currently empty: the one prior member (the monotone ECI frontier)
 // was removed from the codebase entirely rather than retained as a
@@ -521,7 +569,20 @@ const collectDefinitionErrors = (
     )
   if (/\bperpetual\b/i.test(market.question))
     errors.push(
-      `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
+      `${market.feedId} repeats "perpetual" in its title; the ticker and market type are rendered separately`
+    )
+  // The ticker is what the title badge shows in place of the market type,
+  // what the /perps hub labels the row with, and what search matches, so a
+  // launch feed without one would launch unlabelled. It lives in `common`
+  // (the web renders it), not in this definition — see common/perps/ticker.
+  const ticker = getPerpFeedTicker(market.feedId)
+  if (!ticker)
+    errors.push(
+      `${market.feedId} has no canonical ticker in PERP_FEED_TICKERS (common/perps/ticker.ts)`
+    )
+  else if (!isValidPerpTicker(ticker))
+    errors.push(
+      `${market.feedId} ticker "${ticker}" is not one alphanumeric token of at most ${PERP_TICKER_MAX_LENGTH} characters starting with a letter`
     )
   if (
     market.requiresSourceAsOf !==
@@ -581,7 +642,7 @@ const collectDefinitionErrors = (
 
 export const getPerpLaunchManifestErrors = () => {
   const errors: string[] = []
-  const feedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+  const feedIds = ALL_PERP_LAUNCH_MARKETS.map((market) => market.feedId)
   const pendingIds = PERP_LAUNCH_PENDING_MARKETS.map((market) => market.feedId)
   if (new Set(feedIds).size !== feedIds.length)
     errors.push('launch manifest has duplicate feed ids')
@@ -595,7 +656,7 @@ export const getPerpLaunchManifestErrors = () => {
       errors.push(`${environment} has no official launch creator`)
   }
 
-  for (const market of PERP_LAUNCH_MARKETS) {
+  for (const market of ALL_PERP_LAUNCH_MARKETS) {
     const feed = getOracleFeed(market.feedId)
     collectDefinitionErrors(market, feed, errors)
     if (!feed) {
@@ -619,7 +680,7 @@ export const getPerpLaunchManifestErrors = () => {
     }
     if (feed.marketCreationEnabled)
       errors.push(
-        `${market.feedId} is pending but enabled for creation; promote it into PERP_LAUNCH_MARKETS or disable creation`
+        `${market.feedId} is pending but enabled for creation; promote it into ALL_PERP_LAUNCH_MARKETS or disable creation`
       )
     if (PERP_LAUNCH_EXCLUDED_FEED_IDS.includes(market.feedId))
       errors.push(`${market.feedId} is both pending and explicitly excluded`)

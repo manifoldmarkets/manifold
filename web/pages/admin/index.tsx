@@ -92,6 +92,7 @@ export default function AdminPage() {
         />
         <LabCard title="⚽ sports markets" href="/admin/sports" />
         <LabCard title="📈 create perp market" href="/admin/create-perp" />
+        <LabCard title="MNX partner dashboard" href="/admin/mnx" />
         <LabCard
           title="🧭 OpenRouter classifications"
           href="/admin/model-classifications"

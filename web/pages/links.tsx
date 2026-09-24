@@ -25,7 +25,7 @@ import {
   getUserManalinks,
   getUserManalinkClaims,
 } from 'web/lib/supabase/manalinks'
-import { getUserForStaticProps } from 'common/supabase/users'
+import { getUserByIdForStaticProps } from 'common/supabase/users'
 
 type LinkAndClaims = { link: ManalinkInfo; claims: ClaimInfo[] }
 
@@ -34,7 +34,7 @@ const LINKS_PER_PAGE = 24
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const adminDb = await initSupabaseAdmin()
   const [user, links, claims] = await Promise.all([
-    getUserForStaticProps(adminDb, creds.uid),
+    getUserByIdForStaticProps(adminDb, creds.uid),
     getUserManalinks(creds.uid, adminDb),
     getUserManalinkClaims(creds.uid, adminDb),
   ])
@@ -51,7 +51,7 @@ export function getManalinkUrl(slug: string) {
 }
 
 export default function LinkPage(props: {
-  user: User
+  user: User | null
   userLinks: LinkAndClaims[]
 }) {
   const { user, userLinks } = props

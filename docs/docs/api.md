@@ -1255,7 +1255,10 @@ For multiple choice markets, you must also provide:
 
 - `answers`: An array of strings, each of which will be a valid answer for the market.
 - `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'`. Defaults to `'DISABLED'`.
-- `shouldAnswersSumToOne`: Optional. If `true`, makes this market auto-arbitrage so that probabilities add up to 100% and restricts market resolution accordingly.
+- `shouldAnswersSumToOne`: Optional. Defaults to `true`. If `true`, makes this market auto-arbitrage so that probabilities add up to 100% and restricts market resolution accordingly.
+- `answerProbs`: Optional. An array of starting probabilities in percent, one per entry in `answers` and in the same order, each between 1 and 99. Defaults to an even split. The market's liquidity is spread around whatever probabilities you set. When `shouldAnswersSumToOne` is `true` (the default) these must add up to 100 — or to less than 100 when `addAnswersMode` is not `'DISABLED'`, in which case the `Other` answer takes the remainder.
+
+The automatically added `Other` answer counts toward the creation cost. **Compatibility note:** API requests that set `addAnswersMode` to `'ANYONE'` or `'ONLY_CREATOR'` and omit `shouldAnswersSumToOne` now include `Other` in the charged answer count. For example, at `liquidityTier: 100`, five listed answers plus `Other` cost M$150; those requests previously charged M$125.
 
 For bountied questions, you must also provide:
 
@@ -1905,9 +1908,13 @@ inside the `limit` cap.
 
 Create a perp market. Admin-only; documented for completeness. Takes the
 market question and description, an `oracleFeedId` from the registered feeds,
-and the risk parameters `maxLeverage`, `maxFundingRate`,
-`fundingSensitivity`, `maxOraclePriceAgeMs`, `subsidyLong`, and
-`subsidyShort`. Returns the created market as a `LiteMarket`.
+an optional `ticker` (the market's short identifier, e.g. `BTC`: one
+alphanumeric token of at most 8 characters, shown in place of the market type
+and matched by search; a feed that already has a canonical ticker accepts only
+that one, and it is the default when omitted), and the risk parameters
+`maxLeverage`, `maxFundingRate`, `fundingSensitivity`, `maxOraclePriceAgeMs`,
+`subsidyLong`, and `subsidyShort`. Returns the created market as a
+`LiteMarket`; perp markets carry their `ticker` there.
 
 ## Websockets
 

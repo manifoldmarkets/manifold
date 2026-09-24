@@ -19,6 +19,14 @@ export type MetricDescriptor = {
 export type MetricLabels = Record<string, string>
 
 export const CUSTOM_METRICS = {
+  'perps/mnx_backoff_remaining_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/mnx_backoff_suppressed_reads': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'ws/open_connections': {
     metricKind: 'GAUGE',
     valueKind: 'int64Value',

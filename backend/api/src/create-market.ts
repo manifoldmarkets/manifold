@@ -29,7 +29,7 @@ import {
 } from 'common/contract'
 import { FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { getNewContract } from 'common/new-contract'
+import { getAnswerProbsError, getNewContract } from 'common/new-contract'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { STONK_INITIAL_PROB } from 'common/stonk'
@@ -181,6 +181,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsMarketType,
     answerShortTexts,
     answerImageUrls,
+    answerProbs,
     takerAPIOrdersDisabled,
     liquidityTier,
     unit,
@@ -297,6 +298,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answers: answers ?? [],
           answerShortTexts,
           answerImageUrls,
+          answerProbs,
           addAnswersMode,
           shouldAnswersSumToOne,
           isAutoBounty,
@@ -446,6 +448,7 @@ function validateMarketBody(body: Body) {
     answers: string[] | undefined,
     answerShortTexts: string[] | undefined,
     answerImageUrls: string[] | undefined,
+    answerProbs: number[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
@@ -545,12 +548,26 @@ function validateMarketBody(body: Body) {
       answers,
       answerShortTexts,
       answerImageUrls,
+      answerProbs,
       addAnswersMode,
       shouldAnswersSumToOne,
     } = validateMarketType(outcomeType, createMultiSchema, body))
+    // Answers sum to one unless the creator says otherwise (getNewContract
+    // applies the same default), and that decides whether an "Other" answer
+    // gets created, so resolve it here before anything counts the answers.
+    shouldAnswersSumToOne = shouldAnswersSumToOne ?? true
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
+    if (answerProbs) {
+      const error = getAnswerProbsError({
+        answerProbs,
+        numAnswers: answers.length,
+        shouldAnswersSumToOne,
+        hasOtherAnswer,
+      })
+      if (error) throw new APIError(400, error)
+    }
     // Unfortunately this is a requirement because if we don't add an answer,
     // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
     // then the answer costs will be calculated based on 0, which is not what we want.
@@ -622,6 +639,7 @@ function validateMarketBody(body: Body) {
     sportsMarketType,
     answerShortTexts,
     answerImageUrls,
+    answerProbs,
     takerAPIOrdersDisabled,
     unit,
     midpoints,

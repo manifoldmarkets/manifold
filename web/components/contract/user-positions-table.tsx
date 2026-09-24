@@ -13,9 +13,15 @@ import { getStonkDisplayShares } from 'common/stonk'
 import {
   convertContractMetricRows,
   getContractMetricsCount,
+  getContractProfitCounts,
   getOrderedContractMetricRowsForContractId,
 } from 'common/supabase/contract-metrics'
+import {
+  getVersusPositionMetrics,
+  getVersusPositionUsers,
+} from 'common/supabase/versus-positions'
 import { User } from 'common/user'
+import { getVersusAnswers, mergeVersusMetricsByUser } from 'common/versus'
 import { first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, ReactNode, useEffect, useState } from 'react'
 import { FaArrowTrendUp } from 'react-icons/fa6'
@@ -70,6 +76,10 @@ export const UserPositionsTable = memo(
     } = props
     const answer = answerDetails?.answer
     const contractId = contract.id
+    // Versus positions can be stored on either answer (e.g. YES on the second
+    // answer placed through the API); they are listed relative to the main
+    // answer, so the second answer's metrics are fetched and mirrored too.
+    const versusAnswers = getVersusAnswers(contract)
 
     const [contractMetricsOrderedByProfit, setContractMetricsOrderedByProfit] =
       useState<ContractMetric[] | undefined>()
@@ -80,6 +90,10 @@ export const UserPositionsTable = memo(
       useState<ContractMetric[] | undefined>(undefined)
     const [nextSharesOffset, setNextSharesOffset] = useState(0)
     const [hasMoreShares, setHasMoreShares] = useState(true)
+    const [versusPositionUsers, setVersusPositionUsers] = useState<{
+      yes: string[]
+      no: string[]
+    }>()
 
     const [metricsCountsByAnswerId, setMetricsCountsByAnswerId] = useState<{
       [key: string]: number
@@ -104,6 +118,7 @@ export const UserPositionsTable = memo(
     const [loading, setLoading] = useState(false)
     const [totalYesPositions, setTotalYesPositions] = useState(0)
     const [totalNoPositions, setTotalNoPositions] = useState(0)
+    const [profitCounts, setProfitCounts] = useState({ profit: 0, loss: 0 })
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>(
       contract.isResolved ? 'profit' : 'shares'
     )
@@ -149,16 +164,49 @@ export const UserPositionsTable = memo(
           setHasMoreShares(true)
         }
       }
-      const rows = await getOrderedContractMetricRowsForContractId(
-        contractId,
-        db,
-        newSortBy === 'profit' ? undefined : answerIdForShares,
-        newSortBy,
-        ROWS_PER_CALL,
-        offsetToUse
-      )
-
-      const newMetrics = convertContractMetricRows(rows)
+      let newMetrics: ContractMetric[]
+      let hasMore: boolean
+      let users = versusPositionUsers
+      if (versusAnswers && newSortBy === 'shares' && (!users || !loadMore)) {
+        users = await getVersusPositionUsers(
+          contractId,
+          db,
+          versusAnswers.main.id,
+          versusAnswers.other.id
+        )
+        setVersusPositionUsers(users)
+        setTotalYesPositions(users.yes.length)
+        setTotalNoPositions(users.no.length)
+      }
+      if (newSortBy === 'shares' && versusAnswers && users) {
+        const end = offsetToUse + ROWS_PER_CALL
+        newMetrics = await getVersusPositionMetrics(
+          contractId,
+          db,
+          [versusAnswers.main.id, versusAnswers.other.id],
+          users.yes
+            .slice(offsetToUse, end)
+            .concat(users.no.slice(offsetToUse, end))
+        )
+        hasMore = end < Math.max(users.yes.length, users.no.length)
+      } else {
+        const [rows, counts] = await Promise.all([
+          getOrderedContractMetricRowsForContractId(
+            contractId,
+            db,
+            newSortBy === 'profit' ? undefined : answerIdForShares,
+            newSortBy,
+            ROWS_PER_CALL,
+            offsetToUse
+          ),
+          newSortBy === 'profit' && !loadMore
+            ? getContractProfitCounts(contractId, db)
+            : undefined,
+        ])
+        if (counts) setProfitCounts(counts)
+        newMetrics = convertContractMetricRows(rows)
+        hasMore = rows.length > 0
+      }
 
       if (newSortBy === 'profit') {
         setContractMetricsOrderedByProfit((prev) =>
@@ -168,11 +216,7 @@ export const UserPositionsTable = memo(
           )
         )
         setNextProfitOffset(offsetToUse + ROWS_PER_CALL)
-        if (loadMore) {
-          if (rows.length === 0) setHasMoreProfit(false)
-        } else {
-          setHasMoreProfit(rows.length > 0)
-        }
+        setHasMoreProfit(hasMore)
       } else {
         setContractMetricsOrderedByShares((prev) =>
           uniqBy(
@@ -181,11 +225,7 @@ export const UserPositionsTable = memo(
           )
         )
         setNextSharesOffset(offsetToUse + ROWS_PER_CALL)
-        if (loadMore) {
-          if (rows.length === 0) setHasMoreShares(false)
-        } else {
-          setHasMoreShares(rows.length > 0)
-        }
+        setHasMoreShares(hasMore)
       }
       setLoading(false)
     }
@@ -197,12 +237,15 @@ export const UserPositionsTable = memo(
 
     // Fetch total counts for YES/NO labels (independent of paged positions)
     useEffect(() => {
-      getContractMetricsCount(contractId, db, 'yes', currentAnswerId).then(
-        setTotalYesPositions
-      )
-      getContractMetricsCount(contractId, db, 'no', currentAnswerId).then(
-        setTotalNoPositions
-      )
+      // Versus counts come from the same combined ranking as the rows.
+      if (!versusAnswers) {
+        getContractMetricsCount(contractId, db, 'yes', currentAnswerId).then(
+          setTotalYesPositions
+        )
+        getContractMetricsCount(contractId, db, 'no', currentAnswerId).then(
+          setTotalNoPositions
+        )
+      }
     }, [currentAnswerId, contractId])
 
     // Fetch total positions for all answers (for multi-choice carousel/select)
@@ -230,9 +273,13 @@ export const UserPositionsTable = memo(
       getAllAnswerPositionCounts()
     }, [contract.id, contract.mechanism, answers, setTotalPositions]) // Added dependencies
 
-    const positionsToDisplay = contractMetricsOrderedByShares?.filter((cm) =>
-      currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId
-    )
+    const positionsToDisplay = !contractMetricsOrderedByShares
+      ? undefined
+      : versusAnswers
+      ? mergeVersusMetricsByUser(contract, contractMetricsOrderedByShares)
+      : contractMetricsOrderedByShares.filter((cm) =>
+          currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId
+        )
     const profitPositionsToDisplay = contractMetricsOrderedByProfit // Already filtered by backend for !cm.answerId effectively when sortBy is profit
 
     // Effect to load more data when user scrolls near the end of the list
@@ -277,8 +324,14 @@ export const UserPositionsTable = memo(
 
       const requiredItemsForPageEnd = (page + 1) * USER_TABLE_PAGE_SIZE
       const shouldLoadMore =
-        requiredItemsForPageEnd > tempLeftLength ||
-        requiredItemsForPageEnd > tempRightLength
+        (requiredItemsForPageEnd > tempLeftLength &&
+          (!versusAnswers ||
+            sortBy === 'profit' ||
+            tempLeftLength < totalYesPositions)) ||
+        (requiredItemsForPageEnd > tempRightLength &&
+          (!versusAnswers ||
+            sortBy === 'profit' ||
+            tempRightLength < totalNoPositions))
 
       if (shouldLoadMore && currentHasMore && !loading) {
         updateContractMetrics(sortBy, currentAnswerId, true /* loadMore */)
@@ -294,6 +347,8 @@ export const UserPositionsTable = memo(
       currentAnswerId,
       nextProfitOffset,
       nextSharesOffset,
+      totalYesPositions,
+      totalNoPositions,
     ])
 
     if (contract.mechanism === 'cpmm-1' || isBinaryMulti(contract)) {
@@ -317,8 +372,12 @@ export const UserPositionsTable = memo(
             contract={contract}
             positionsByShares={positionsToDisplay}
             positionsByProfit={profitPositionsToDisplay}
-            totalYesPositions={totalYesPositions}
-            totalNoPositions={totalNoPositions}
+            totalYesPositions={
+              sortBy === 'profit' ? profitCounts.profit : totalYesPositions
+            }
+            totalNoPositions={
+              sortBy === 'profit' ? profitCounts.loss : totalNoPositions
+            }
             sortBy={sortBy}
             page={page}
             setPage={setPage}
@@ -410,8 +469,12 @@ export const UserPositionsTable = memo(
             contract={contract}
             positionsByShares={positionsToDisplay}
             positionsByProfit={profitPositionsToDisplay}
-            totalYesPositions={totalYesPositions}
-            totalNoPositions={totalNoPositions}
+            totalYesPositions={
+              sortBy === 'profit' ? profitCounts.profit : totalYesPositions
+            }
+            totalNoPositions={
+              sortBy === 'profit' ? profitCounts.loss : totalNoPositions
+            }
             sortBy={sortBy}
             page={page}
             setPage={setPage}

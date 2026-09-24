@@ -231,6 +231,7 @@ export const fetchContractBetDataAndValidate = async (
     )
 
   const { closeTime, isResolved } = contract
+  if (contract.deleted) throw new APIError(403, 'Market is deleted.')
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed.')
   if (isResolved) throw new APIError(403, 'Market is resolved.')

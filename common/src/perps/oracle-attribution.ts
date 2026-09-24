@@ -1,3 +1,5 @@
+import { MNX_INSTRUMENTS } from './mnx'
+
 // Who to credit for each oracle feed's data, and under what terms.
 //
 // This lives in `common` rather than next to the feed registry in
@@ -31,6 +33,8 @@
 //     from the environment the feed was written in, so it carries a credit
 //     and a link and no licence label, and reading that page is an operator
 //     gate before a market is created on the feed.
+//   - MNX: public API/methodology reviewed; market links identify the target.
+//     No redistribution licence is claimed.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -65,6 +69,12 @@ export type OracleAttribution = {
 }
 
 export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
+  ...Object.fromEntries(
+    MNX_INSTRUMENTS.map((i) => [
+      i.feedId,
+      { source: 'MNX', url: i.url, showAsOf: true },
+    ])
+  ),
   'openrouter-open-weight-share': {
     source: 'OpenRouter (openrouter.ai/rankings)',
     url: 'https://openrouter.ai/rankings',

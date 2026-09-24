@@ -10,6 +10,7 @@ import {
   useFocus,
   useHover,
   useInteractions,
+  useMergeRefs,
   useRole,
 } from '@floating-ui/react'
 import clsx from 'clsx'
@@ -24,7 +25,16 @@ import {
   userHasCharityChampionTrophy,
 } from 'common/shop/items'
 import dayjs from 'dayjs'
-import { Ref, forwardRef, useEffect, useState } from 'react'
+import {
+  Children,
+  HTMLAttributes,
+  ReactElement,
+  Ref,
+  cloneElement,
+  forwardRef,
+  useEffect,
+  useState,
+} from 'react'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -46,6 +56,8 @@ export type UserHovercardProps = {
   children: React.ReactNode
   userId: string
   className?: string | undefined
+  asChild?: boolean
+  stopClickPropagation?: boolean
 }
 
 function formatLastActive(lastActiveTime: number) {
@@ -76,6 +88,8 @@ export function UserHovercard({
   children,
   userId,
   className,
+  asChild = false,
+  stopClickPropagation = false,
 }: UserHovercardProps) {
   const [open, setOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -104,22 +118,41 @@ export function UserHovercard({
     useRole(context, { role: 'dialog' }),
   ])
 
+  const child = asChild
+    ? (Children.only(children) as ReactElement<
+        HTMLAttributes<HTMLElement> & { ref?: Ref<HTMLElement> }
+      >)
+    : null
+  const referenceRef = useMergeRefs([refs.setReference, child?.props.ref])
+
   return (
     <>
-      <button
-        ref={refs.setReference}
-        className={clsx('inline-flex', className)}
-        {...getReferenceProps()}
-      >
-        {children}
-      </button>
+      {child ? (
+        cloneElement(child, {
+          ...getReferenceProps(child.props),
+          ref: referenceRef,
+          className: clsx(child.props.className, className),
+        })
+      ) : (
+        <button
+          ref={referenceRef}
+          className={clsx('inline-flex', className)}
+          {...getReferenceProps()}
+        >
+          {children}
+        </button>
+      )}
       {open && (
         <FloatingPortal>
           <div
             ref={refs.setFloating}
             className="fixed z-40"
             style={floatingStyles}
-            {...getFloatingProps()}
+            {...getFloatingProps({
+              onClick: stopClickPropagation
+                ? (event) => event.stopPropagation()
+                : undefined,
+            })}
           >
             <FetchUserHovercardContent
               userId={userId}

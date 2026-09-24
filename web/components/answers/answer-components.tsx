@@ -6,17 +6,17 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  getMainBinaryMCAnswer,
   MultiContract,
   resolution,
   tradingAllowed,
 } from 'common/contract'
+import { getVersusAnswers } from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
 import { capitalize } from 'lodash'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -42,7 +42,7 @@ import { AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { floatingEqual } from 'common/util/math'
-import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -365,14 +365,35 @@ export const BinaryMultiSellRow = (props: {
   const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
   const otherAnswer = contract.answers.find((a) => a.id !== answer.id)!
-  const { totalShares, maxSharesOutcome } = metric ?? {
-    totalShares: { YES: 0, NO: 0 },
-    maxSharesOutcome: 'YES',
+  const sharesOutcome = metric?.maxSharesOutcome
+  const sharesSum = metric?.totalShares[sharesOutcome ?? 'YES'] ?? 0
+  // `sharesOutcome` is relative to the answer the position is stored on: YES
+  // backs `answer`, NO backs the other one (see `versusSide` in common/versus).
+  const answerPseudonym = {
+    YES: {
+      pseudonymName: answer.text,
+      pseudonymColor: getAnswerColor(answer),
+    },
+    NO: {
+      pseudonymName: otherAnswer.text,
+      pseudonymColor: getAnswerColor(otherAnswer),
+    },
   }
-  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
-  const sharesSum = totalShares?.[sharesOutcome ?? 'YES'] ?? 0
 
-  if (!sharesOutcome || !user || contract.isResolved) return null
+  // Match the whole-share threshold used by per-answer position metrics.
+  // An absent metric means no position, not a zero-share YES position.
+  const canSell =
+    !!metric &&
+    (sharesOutcome === 'YES' || sharesOutcome === 'NO') &&
+    !!user &&
+    !contract.isResolved &&
+    Number.isFinite(sharesSum) &&
+    sharesSum >= 1
+  useEffect(() => {
+    if (!canSell) setOpen(false)
+  }, [canSell])
+
+  if (!canSell) return null
   return (
     <Row className={'mt-2'}>
       {open && (
@@ -383,8 +404,8 @@ export const BinaryMultiSellRow = (props: {
           shares={sharesSum}
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
-          answerId={getMainBinaryMCAnswer(contract)?.id}
-          binaryPseudonym={getPseudonym(contract)}
+          answerId={answer.id}
+          binaryPseudonym={answerPseudonym}
         />
       )}
       <Button
@@ -403,21 +424,29 @@ export const BinaryMultiSellRow = (props: {
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
-            pseudonym={{
-              YES: {
-                pseudonymName: answer.text,
-                pseudonymColor: getAnswerColor(answer),
-              },
-              NO: {
-                pseudonymName: otherAnswer.text,
-                pseudonymColor: getAnswerColor(otherAnswer),
-              },
-            }}
+            pseudonym={answerPseudonym}
           />
           shares
         </Row>
       </Button>
     </Row>
+  )
+}
+
+/**
+ * Sell buttons for a versus market. Positions can be stored on either answer
+ * (e.g. YES on the second answer placed through the API), so render one row
+ * per answer the user holds shares on.
+ */
+export const VersusSellRows = (props: { contract: CPMMMultiContract }) => {
+  const { contract } = props
+  const answers = getVersusAnswers(contract)
+  if (!answers) return null
+  return (
+    <>
+      <BinaryMultiSellRow contract={contract} answer={answers.main} />
+      <BinaryMultiSellRow contract={contract} answer={answers.other} />
+    </>
   )
 }
 

@@ -2,7 +2,18 @@ import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { XIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
+import {
+  DEFAULT_PERP_CREATOR_ACCOUNT,
+  PERP_CREATOR_ACCOUNT_LABELS,
+  PERP_CREATOR_ACCOUNTS,
+  PerpCreatorAccount,
+} from 'common/perps/creator-accounts'
 import { fundingPeriodNoun, fundingPeriodUnit } from 'common/perps/funding'
+import {
+  PERP_TICKER_MAX_LENGTH,
+  derivePerpTicker,
+  isValidPerpTicker,
+} from 'common/perps/ticker'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -10,6 +21,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import { TopicSelector } from 'web/components/topics/topic-selector'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -24,6 +36,10 @@ export default function AdminCreatePerpPage() {
     question: '',
     description: '',
     oracleFeedId: '',
+    ticker: '',
+    // Who owns the market: pays the backing now, receives the residual pool
+    // at settlement. The house account unless a partner feed says otherwise.
+    creatorAccount: DEFAULT_PERP_CREATOR_ACCOUNT as PerpCreatorAccount,
     maxLeverage: 10,
     // Annualized max funding rate as a percentage (e.g. 50 means 50%/yr).
     maxFundingRateAnnualPct: 50,
@@ -44,6 +60,7 @@ export default function AdminCreatePerpPage() {
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
+      ticker: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string
@@ -56,6 +73,16 @@ export default function AdminCreatePerpPage() {
         requiredTopicNames: string[]
         creatorAuthorized: boolean
       } | null
+      // Optional so the page stays usable against an API that predates the
+      // creator selector during a rolling deploy (see creatorSelectorSupported).
+      callerAuthorized?: boolean
+      creatorAccounts?: {
+        account: PerpCreatorAccount
+        label: string
+        allowed: boolean
+        username: string | null
+        unavailableReason: string | null
+      }[]
     }[]
   >([])
   const [feedLatest, setFeedLatest] = useState<{
@@ -110,6 +137,32 @@ export default function AdminCreatePerpPage() {
   const update = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
 
+  // The ticker follows the feed: a feed named in PERP_FEED_TICKERS has exactly
+  // one (the API rejects any other), an unnamed one gets a derived default the
+  // admin can edit. Recomputed whenever the feed changes so a label typed for
+  // a previous choice can't be submitted for the new one.
+  useEffect(() => {
+    const feedId = form.oracleFeedId.trim()
+    const canonical = knownFeeds.find((f) => f.id === feedId)?.ticker
+    setForm((f) => ({
+      ...f,
+      ticker: feedId ? canonical ?? derivePerpTicker(feedId) : '',
+    }))
+  }, [form.oracleFeedId, knownFeeds])
+
+  // A partner may only own its own feeds, so a choice made for one feed can't
+  // survive switching to another where it is not allowed.
+  useEffect(() => {
+    const feedId = form.oracleFeedId.trim()
+    const accounts = knownFeeds.find((f) => f.id === feedId)?.creatorAccounts
+    if (!accounts) return
+    setForm((f) =>
+      accounts.some((a) => a.account === f.creatorAccount && a.allowed)
+        ? f
+        : { ...f, creatorAccount: DEFAULT_PERP_CREATOR_ACCOUNT }
+    )
+  }, [form.oracleFeedId, knownFeeds])
+
   const subsidyTotal = form.subsidyLong + form.subsidyShort
 
   // The engine stores maxFundingRate per FUNDING PERIOD, and the period is
@@ -134,7 +187,62 @@ export default function AdminCreatePerpPage() {
   const launchCreatorUnauthorized =
     hasCompleteLaunchRecommendation &&
     launchRecommendation?.creatorAuthorized === false
+  // Older API responses carry no creator accounts. 'manifold' then means what
+  // it always meant (the caller, which the API requires to be the official
+  // account), but a partner selection must not be sent to an API that would
+  // silently create the market under the caller instead.
+  const creatorSelectorSupported =
+    selectedFeed == null || Array.isArray(selectedFeed.creatorAccounts)
+  const creatorAccounts =
+    selectedFeed?.creatorAccounts ??
+    PERP_CREATOR_ACCOUNTS.map((account) => ({
+      account,
+      label: PERP_CREATOR_ACCOUNT_LABELS[account],
+      allowed: account === DEFAULT_PERP_CREATOR_ACCOUNT,
+      username: null,
+      unavailableReason: null,
+    }))
+  const selectedCreator = creatorAccounts.find(
+    (a) => a.account === form.creatorAccount
+  )
+  const creatorBlockedReason =
+    selectedFeed != null &&
+    !creatorSelectorSupported &&
+    form.creatorAccount !== DEFAULT_PERP_CREATOR_ACCOUNT
+      ? 'Redeploy the current API before creating a market owned by another account.'
+      : selectedCreator && !selectedCreator.allowed
+      ? `${selectedCreator.label} cannot own a market on this feed.`
+      : selectedCreator?.unavailableReason
+      ? `${selectedCreator.label} is unavailable: ${selectedCreator.unavailableReason}.`
+      : null
+  // Every greyed-out option explains itself in place: a disabled toggle cannot
+  // be selected to reveal why, so the reason for each one is listed below.
+  const creatorApiOutOfDate = selectedFeed != null && !creatorSelectorSupported
+  const disabledCreatorReasons = creatorApiOutOfDate
+    ? []
+    : creatorAccounts.flatMap((a) =>
+        !a.allowed
+          ? [
+              {
+                account: a.account,
+                reason: selectedFeed
+                  ? `${a.label} cannot own a market on this feed.`
+                  : `${a.label} is only available on MNX feeds; choose the feed first.`,
+              },
+            ]
+          : a.unavailableReason
+          ? [
+              {
+                account: a.account,
+                reason: `${a.label} is unavailable: ${a.unavailableReason}.`,
+              },
+            ]
+          : []
+      )
+  const callerUnauthorized =
+    launchCreatorUnauthorized || selectedFeed?.callerAuthorized === false
   const feedCreationDisabled = selectedFeed?.marketCreationEnabled === false
+  const canonicalTicker = selectedFeed?.ticker ?? null
   const unregisteredFeed =
     feedCreationDisabled && selectedFeed?.updatePeriodMs == null
   const fundingPeriodMs = selectedFeed?.updatePeriodMs
@@ -207,9 +315,17 @@ export default function AdminCreatePerpPage() {
       toast.error('Redeploy the current API before creating this launch feed.')
       return
     }
-    if (launchCreatorUnauthorized) {
+    if (callerUnauthorized) {
+      toast.error('Sign in as the official Manifold account to create a PERP.')
+      return
+    }
+    if (creatorBlockedReason) {
+      toast.error(creatorBlockedReason)
+      return
+    }
+    if (!isValidPerpTicker(form.ticker.trim())) {
       toast.error(
-        'Sign in as the official Manifold account to create a launch PERP.'
+        `Ticker must be one alphanumeric token of at most ${PERP_TICKER_MAX_LENGTH} characters, starting with a letter.`
       )
       return
     }
@@ -219,6 +335,8 @@ export default function AdminCreatePerpPage() {
         question: form.question,
         description: form.description || undefined,
         oracleFeedId: form.oracleFeedId.trim(),
+        ticker: form.ticker.trim(),
+        creatorAccount: form.creatorAccount,
         maxLeverage: form.maxLeverage,
         maxFundingRate: maxFundingRatePerPeriod,
         fundingSensitivity: form.fundingSensitivity,
@@ -392,16 +510,83 @@ export default function AdminCreatePerpPage() {
                           : 'Current form differs.'}
                       </span>
                     </Row>
-                    {launchCreatorUnauthorized && (
+                    {callerUnauthorized && (
                       <p className="text-scarlet-700 mt-2 font-semibold">
-                        Sign in as the official Manifold account. Residual
-                        backing returns to the market creator, so another admin
-                        cannot create this launch feed.
+                        Sign in as the official Manifold account. The creator
+                        account below pays the backing and receives the residual
+                        at settlement, so another admin cannot create this
+                        market under either name.
                       </p>
                     )}
                   </>
                 )}
               </div>
+            )}
+          </div>
+
+          <div>
+            <span className="text-ink-700 mb-2 block text-sm font-medium">
+              Ticker
+            </span>
+            <Input
+              type="text"
+              value={form.ticker}
+              onChange={(e) => update('ticker', e.target.value)}
+              required
+              disabled={canonicalTicker != null}
+              maxLength={PERP_TICKER_MAX_LENGTH}
+              className="w-full max-w-[12rem] font-mono"
+              placeholder="e.g. BTC"
+            />
+            <p className="text-ink-500 mt-1 text-xs">
+              {canonicalTicker != null
+                ? 'Canonical for this feed (PERP_FEED_TICKERS in common/perps/ticker.ts); every market on the feed shows it.'
+                : `Shown in front of the title in place of the market type, used as the label on /perps, and matched by search. One alphanumeric token of at most ${PERP_TICKER_MAX_LENGTH} characters, starting with a letter. To make it canonical for the feed, add it to PERP_FEED_TICKERS.`}
+            </p>
+          </div>
+
+          <div>
+            <span className="text-ink-700 mb-2 block text-sm font-medium">
+              Creator account
+            </span>
+            <ChoicesToggleGroup
+              currentChoice={form.creatorAccount}
+              choicesMap={Object.fromEntries(
+                creatorAccounts.map((a) => [
+                  a.username ? `${a.label} · @${a.username}` : a.label,
+                  a.account,
+                ])
+              )}
+              disabledOptions={creatorAccounts
+                .filter((a) => !a.allowed || a.unavailableReason)
+                .map((a) => a.account)}
+              setChoice={(choice) =>
+                update('creatorAccount', choice as PerpCreatorAccount)
+              }
+            />
+            <p className="text-ink-500 mt-1 text-xs">
+              The selected account is the market's creator: it pays the backing
+              at creation and receives the residual pool at settlement, and its
+              name and badge show on the market. MNX can only own markets on MNX
+              feeds; the official Manifold account can own any feed.
+            </p>
+            {disabledCreatorReasons.map(({ account, reason }) => (
+              <p
+                key={account}
+                className={
+                  account === form.creatorAccount
+                    ? 'text-scarlet-700 mt-1 text-xs'
+                    : 'text-ink-500 mt-1 text-xs'
+                }
+              >
+                {reason}
+              </p>
+            ))}
+            {creatorApiOutOfDate && (
+              <p className="text-scarlet-700 mt-1 text-xs">
+                This API predates the creator selector; redeploy it before
+                relying on the options above.
+              </p>
             )}
           </div>
 
@@ -499,7 +684,10 @@ export default function AdminCreatePerpPage() {
               onChange={(v) => update('subsidyShort', v)}
               step={100}
               min={1}
-              hint={`Total ${subsidyTotal} paid by you at creation. Use symmetric pools for launch unless observed flow and stress tests support a deliberate skew.`}
+              hint={`Total ${subsidyTotal} paid by ${
+                selectedCreator?.label ??
+                PERP_CREATOR_ACCOUNT_LABELS[form.creatorAccount]
+              } at creation. Use symmetric pools for launch unless observed flow and stress tests support a deliberate skew.`}
             />
           </Row>
 
@@ -522,7 +710,8 @@ export default function AdminCreatePerpPage() {
                 feedRegistryStatus !== 'ready' ||
                 feedCreationDisabled ||
                 launchApiOutOfDate ||
-                launchCreatorUnauthorized
+                callerUnauthorized ||
+                creatorBlockedReason != null
               }
             >
               Create perp

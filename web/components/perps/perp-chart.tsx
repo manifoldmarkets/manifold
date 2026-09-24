@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
@@ -22,7 +23,7 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { median } from 'common/util/math'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
@@ -917,11 +918,12 @@ export const PerpChart = (props: {
                 type="button"
                 onClick={() => setTimeframe(f)}
                 disabled={!frameEligible(f)}
+                aria-pressed={activeFrame === f}
                 className={clsx(
-                  'rounded px-1.5 py-0.5 text-xs tabular-nums transition-colors',
+                  'focus-visible:ring-primary-500 min-h-[44px] min-w-[36px] rounded px-1.5 py-0.5 text-xs tabular-nums transition-colors focus-visible:ring-2 sm:min-h-[32px] sm:min-w-0',
                   activeFrame === f
                     ? 'bg-ink-200 text-ink-900 font-semibold'
-                    : 'text-ink-500 hover:text-ink-800',
+                    : 'text-ink-600 hover:text-ink-900',
                   !frameEligible(f) && 'cursor-not-allowed opacity-40'
                 )}
               >
@@ -967,7 +969,7 @@ export const PerpChart = (props: {
                 fill="currentColor"
                 opacity={0.6}
               >
-                {formatTick(t, mode, yTickDecimals)}
+                {formatTick(t, mode, yTickDecimals, contract.oracleFeedId)}
               </text>
             </g>
           ))}
@@ -1324,7 +1326,8 @@ export const PerpChart = (props: {
                 hovered.value,
                 mode,
                 priceDecimals,
-                fundingPeriodUnit(fundingPeriodMs)
+                fundingPeriodUnit(fundingPeriodMs),
+                contract.oracleFeedId
               )}
             </div>
             {mode === 'funding' && (
@@ -1464,11 +1467,12 @@ const OverlayChip = (props: {
       <button
         type="button"
         onClick={onClick}
+        aria-pressed={active}
         className={clsx(
-          'flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors',
+          'focus-visible:ring-primary-500 flex min-h-[44px] items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors focus-visible:ring-2 sm:min-h-[32px] sm:gap-1.5',
           active
             ? 'border-primary-300 bg-primary-100 text-ink-800'
-            : 'border-ink-200 text-ink-400 hover:text-ink-600'
+            : 'border-ink-300 text-ink-600 hover:bg-canvas-50 hover:text-ink-900'
         )}
       >
         {swatch}
@@ -1561,7 +1565,8 @@ const formatProjectionEndTick = (d: Date, spanMs: number) => {
 const formatTick = (
   v: number,
   mode: 'price' | 'funding',
-  priceDecimals: number
+  priceDecimals: number,
+  feedId: string
 ) => {
   if (mode === 'funding') {
     // Per-period percent, trailing zeros trimmed — the chart is read in the
@@ -1570,14 +1575,15 @@ const formatTick = (
     const trimmed = (v * 100).toFixed(3).replace(/\.?0+$/, '')
     return `${trimmed === '' || trimmed === '-' ? '0' : trimmed}%`
   }
-  return formatPrice(v, priceDecimals)
+  return formatOraclePrice(feedId, v, priceDecimals)
 }
 
 const formatHoverValue = (
   v: number,
   mode: 'price' | 'funding',
   priceDecimals: number,
-  fundingUnit: string
+  fundingUnit: string,
+  feedId: string
 ) => {
   if (mode === 'funding') {
     const pct = v * 100
@@ -1586,7 +1592,7 @@ const formatHoverValue = (
   // For price mode, bump decimals slightly for the hover readout so tiny
   // movements are visible even on coarse-scale axes.
   const hoverDecimals = Math.max(priceDecimals, v === Math.round(v) ? 0 : 2)
-  return formatPrice(v, hoverDecimals)
+  return formatOraclePrice(feedId, v, hoverDecimals)
 }
 
 // Sub-1% carry needs the extra digit to say anything at all; past that the

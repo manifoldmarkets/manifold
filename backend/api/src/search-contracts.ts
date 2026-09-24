@@ -10,8 +10,13 @@ import {
   getEffectiveDiscoveryExperimentVariant,
 } from 'common/discovery-experiment'
 import { SEARCH_ANCHOR_CLOCK_SKEW_ERROR } from 'common/search-request-coordination'
+import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { convertContract } from 'common/supabase/contracts'
-import { orderBy, uniqBy } from 'lodash'
+import {
+  getSearchQueryPagination,
+  getSearchResultPage,
+  sortLikeSql,
+} from 'shared/helpers/search-pagination'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import {
   createSupabaseDirectClient,
@@ -21,10 +26,10 @@ import {
   basicSearchSQL,
   getForYouSQL,
   getSearchContractSQL,
+  getSearchSort,
   getSemanticSearchContractSQL,
   SearchTypes,
   shouldSuppressStaleSeenMarkets,
-  sortFields,
 } from 'shared/supabase/search-contracts'
 import {
   EMBEDDING_MODEL,
@@ -248,7 +253,10 @@ const search = async (
     )
   } else {
     const cleanTerm = term.replace(/[''"]/g, '')
+    // A single token might be a perp ticker ("BTC"), which no tsvector
+    // covers; a multi-word query never is, so that lookup is skipped.
     const searchTypes: SearchTypes[] = [
+      ...(isPerpTickerSearchTerm(cleanTerm) ? (['ticker'] as const) : []),
       'prefix',
       'without-stopwords',
       'answer',
@@ -260,6 +268,7 @@ const search = async (
       .map((searchType) =>
         getSearchContractSQL({
           ...props,
+          ...getSearchQueryPagination(props),
           term: cleanTerm,
           uid: userId,
           searchType,
@@ -276,43 +285,49 @@ const search = async (
       return Array(searchTypes.length).fill([])
     })
 
-    const [
-      contractPrefixMatches,
-      contractsWithoutStopwords,
-      contractsWithMatchingAnswers,
-      contractsWithStopwords,
-      contractDescriptionMatches,
-    ] = results.map(
-      (result, i) =>
-        result.map((r: any) => ({
-          data: convertContract(r),
-          searchType: searchTypes[i],
-        })) as { data: Contract; searchType: SearchTypes }[]
-    )
+    type Match = { data: Contract; searchType: SearchTypes }
+    // Keyed by type rather than destructured by position: the ticker query
+    // is only sometimes in the list.
+    const matchesByType = Object.fromEntries(
+      searchTypes.map((searchType, i) => [
+        searchType,
+        results[i].map(
+          (r: Parameters<typeof convertContract>[0]): Match => ({
+            data: convertContract(r),
+            searchType,
+          })
+        ),
+      ])
+    ) as Partial<Record<SearchTypes, Match[]>>
+    const tickerMatches = matchesByType.ticker ?? []
+    const contractPrefixMatches = matchesByType.prefix ?? []
+    const contractsWithoutStopwords = matchesByType['without-stopwords'] ?? []
+    const contractsWithMatchingAnswers = matchesByType.answer ?? []
+    const contractsWithStopwords = matchesByType['with-stopwords'] ?? []
+    const contractDescriptionMatches = matchesByType.description ?? []
 
-    const contractsOfSimilarRelevance = orderBy(
+    // The tiers of similar relevance, merged in the database's own order so
+    // the page cut below is the page it fetched; answer matches count half.
+    const ordering = getSearchSort(sort)
+    const contractsOfSimilarRelevance = sortLikeSql(
       [
         ...contractsWithoutStopwords,
         ...contractsWithMatchingAnswers,
         ...contractPrefixMatches,
       ],
-      (c) =>
-        sortFields[sort].sortCallback(c.data) *
-        (c.searchType === 'answer' ? 0.5 : 1),
-      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+      ordering,
+      (match) => match.data,
+      (match) => (match.searchType === 'answer' ? 0.5 : 1)
     )
 
-    const lexicalResults = orderBy(
-      uniqBy(
-        [
-          ...contractsWithStopwords, // most obviously relevant
-          ...contractsOfSimilarRelevance, // next most relevant
-          ...contractDescriptionMatches, // least obviously relevant
-        ].map((c) => c.data),
-        'id'
-      ).slice(0, limit),
-      (c) => sortFields[sort].sortCallback(c),
-      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+    const lexicalResults = getSearchResultPage(
+      [
+        ...tickerMatches, // the market's own handle
+        ...contractsWithStopwords, // most obviously relevant
+        ...contractsOfSimilarRelevance, // next most relevant
+        ...contractDescriptionMatches, // least obviously relevant
+      ].map((c) => c.data),
+      { ...props, sort, ordering }
     )
     if (!options.markSearchMatches) return lexicalResults
 

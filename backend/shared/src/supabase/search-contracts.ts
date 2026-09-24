@@ -3,12 +3,18 @@ import { DiscoveryExperimentVariant } from 'common/discovery-experiment'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
 import { getPerpBackingPool } from 'common/perps/amm'
+import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 import { PrivateUser } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
+import {
+  SearchSort,
+  SearchSortDirection,
+  SearchSortValue,
+} from 'shared/helpers/search-pagination'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -330,6 +336,8 @@ export type SearchTypes =
   | 'description'
   | 'prefix'
   | 'answer'
+  // Perp tickers, matched on data->>'ticker' (no tsvector covers them).
+  | 'ticker'
 
 // Full-text search finds nothing unless the user guesses a word that is
 // literally in the question, so a near miss lands on "only nothingness"
@@ -522,6 +530,20 @@ export function getSearchContractSQL(
 
     whereSql,
     term.length && [
+      // A perp's ticker ("BTC", "SPYx") is stored in data->>'ticker', which
+      // no tsvector column sees, so it gets its own lookup: perps are a
+      // handful of rows behind the non-binary outcome_type index, and a
+      // prefix match on that set is what makes "BT" find BTC as you type.
+      // The API asks for this type only when the term could be a ticker;
+      // the guard here keeps the shared builder from ever interpolating a
+      // wildcard from a term it did not vet.
+      searchType === 'ticker' &&
+        (isPerpTickerSearchTerm(term)
+          ? where(
+              `outcome_type = 'PERP' and contracts.data->>'ticker' ilike $1`,
+              [`${term.trim()}%`]
+            )
+          : where('false')),
       searchType === 'prefix' &&
         where(
           `question_fts @@ to_tsquery('english_extended', $1)`,
@@ -676,19 +698,37 @@ function getSearchContractWhereSQL(args: {
   ]
 }
 
+type SortOrder = 'ASC' | 'ASC NULLS LAST' | 'DESC' | 'DESC NULLS LAST'
 type SortFields = Record<
   string,
   {
     sql: string
-    sortCallback: (c: Contract) => number
-    order: 'ASC' | 'ASC NULLS LAST' | 'DESC' | 'DESC NULLS LAST'
+    // `order` applies to the LAST expression of `sql`, as in the clause.
+    order: SortOrder
+    // The JS evaluation of `sql`, which the search API uses to merge the
+    // fetched match tiers and cut a page (see sortLikeSql in
+    // shared/helpers/search-pagination). It must rank rows exactly as the
+    // database does: a single-expression sort gives `sortCallback`; a sort
+    // whose `sql` has several expressions gives one key per expression in
+    // `sortKeys`, with each expression's direction in `keyDirections`.
+    sortCallback?: (c: Contract) => number
+    sortKeys?: (c: Contract) => SearchSortValue[]
+    keyDirections?: SearchSortDirection[]
   }
 >
 export const sortFields: SortFields = {
   score: {
     sql: `importance_score::numeric desc, unique_bettor_count`,
-    sortCallback: (c: Contract) =>
-      c.importanceScore > 0 ? c.importanceScore : c.uniqueBettorCount,
+    // Term for term what `sql` says. A single callback that fell back to the
+    // bettor count when importance was zero ranked popular zero-importance
+    // markets above scored ones — an order the database never produces, and
+    // one that made pages repeat and skip markets once the tiers were
+    // over-fetched (see sortLikeSql).
+    sortKeys: (c: Contract) => [c.importanceScore, c.uniqueBettorCount],
+    keyDirections: [
+      { order: 'desc', nullsFirst: true },
+      { order: 'desc', nullsFirst: true },
+    ],
     order: 'DESC',
   },
   'daily-score': {
@@ -772,17 +812,26 @@ export const sortFields: SortFields = {
   },
   'bounty-amount': {
     sql: "COALESCE((contracts.data->>'bountyLeft')::numeric, -1)",
-    sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
+    sortCallback: (c: Contract) =>
+      ('bountyLeft' in c ? c.bountyLeft : -1) ?? -1,
     order: 'DESC',
   },
   'prob-descending': {
     sql: "resolution DESC, (contracts.data->>'prob')::numeric",
-    sortCallback: (c: Contract) => ('prob' in c && c.prob) || 0,
+    sortKeys: (c: Contract) => [c.resolution, 'prob' in c ? c.prob : null],
+    keyDirections: [
+      { order: 'desc', nullsFirst: true },
+      { order: 'desc', nullsFirst: false },
+    ],
     order: 'DESC NULLS LAST',
   },
   'prob-ascending': {
     sql: "resolution DESC, (contracts.data->>'prob')::numeric",
-    sortCallback: (c: Contract) => ('prob' in c && c.prob) || 0,
+    sortKeys: (c: Contract) => [c.resolution, 'prob' in c ? c.prob : null],
+    keyDirections: [
+      { order: 'desc', nullsFirst: true },
+      { order: 'asc', nullsFirst: false },
+    ],
     order: 'ASC',
   },
   'prob-50': {
@@ -793,7 +842,25 @@ export const sortFields: SortFields = {
   },
 }
 function getSearchContractSortSQL(sort: string) {
-  return `${sortFields[sort].sql} ${sortFields[sort].order}`
+  // The id tiebreak makes the sort a total order, so `limit n` and
+  // `limit 2n` return consistent prefixes and the JS side (sortLikeSql) can
+  // reproduce the order exactly — pagination across the merged match tiers
+  // depends on both.
+  return `${sortFields[sort].sql} ${sortFields[sort].order}, contracts.id`
+}
+
+// Postgres puts nulls first for DESC and last for ASC unless told otherwise.
+const parseSortOrder = (order: SortOrder): SearchSortDirection => ({
+  order: order.startsWith('DESC') ? 'desc' : 'asc',
+  nullsFirst: order === 'DESC',
+})
+
+/** The JS twin of getSearchContractSortSQL(sort). */
+export const getSearchSort = (sort: string): SearchSort => {
+  const { sortCallback, sortKeys, keyDirections, order } = sortFields[sort]
+  if (sortKeys) return { keys: sortKeys, directions: keyDirections ?? [] }
+  if (!sortCallback) throw new Error(`Search sort ${sort} has no JS ordering`)
+  return { keys: (c) => [sortCallback(c)], directions: [parseSortOrder(order)] }
 }
 
 const loadScoreThresholds = async (threshold: number) => {

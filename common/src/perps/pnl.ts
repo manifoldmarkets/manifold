@@ -79,20 +79,26 @@ export const getPerpPositionTotalCost = (
 ) => getValidatedPerpPositionTotalCost(position) ?? 0
 
 /**
+ * The fields the PnL solvers read: a stored row, or a preview of the row a
+ * trade would produce.
+ */
+export type PerpPnlPositionInput = Pick<
+  PerpPosition,
+  | 'direction'
+  | 'size'
+  | 'costBasis'
+  | 'originalCostBasis'
+  | 'takerFeeCostBasis'
+  | 'entryPrice'
+>
+
+/**
  * Oracle/close price required to reach a user-facing PnL target. The target
  * is net of all opening/add fees already paid; future funding is necessarily
  * excluded. Returns undefined when the inputs cannot describe a valid target.
  */
 export const getPerpPriceForUserFacingPnl = (
-  position: Pick<
-    PerpPosition,
-    | 'direction'
-    | 'size'
-    | 'costBasis'
-    | 'originalCostBasis'
-    | 'takerFeeCostBasis'
-    | 'entryPrice'
-  >,
+  position: PerpPnlPositionInput,
   targetPnl: number
 ): number | undefined => {
   const { direction, size, costBasis, entryPrice } = position
@@ -120,6 +126,56 @@ export const getPerpPriceForUserFacingPnl = (
   return Number.isFinite(targetPrice) && targetPrice > 0
     ? targetPrice
     : undefined
+}
+
+export type PerpProfitScenario = {
+  /** Net return on the cash committed: margin plus opening/add fees. */
+  ret: number
+  /** Oracle price at which the position card reads exactly +ret. */
+  price: number
+  /** User-facing PnL at that price — ret × the cash committed. */
+  pnl: number
+}
+
+/**
+ * The trade panel's profit ladder for the position a trade RESULTS in: the
+ * row the position card will show once the trade lands. Each tier is a NET
+ * return on the cash committed to that row — margin plus every opening/add
+ * fee, the denominator of getUserFacingPnlPercent — so at the solved price
+ * the card reads exactly "+ret%" and exactly `pnl`.
+ *
+ * On a fresh open (or the new leg of a flip) the row is just the tranche. On
+ * an ADD it is the merged row, held margin and fees included — the only base
+ * the card can show, and why this takes a position rather than a margin: a
+ * "+25% on the tranche" target would mix the tranche's cash with the merged
+ * entry price. A tier the row already exceeds at the mark is dropped, since
+ * reaching it from here is a loss, not a profit scenario (only an add can
+ * start past one; a fresh row starts at −fee). Closing is free; future
+ * funding is unknowable here and excluded. Fails closed (empty) on a mark
+ * or row it cannot price.
+ */
+export const getPerpProfitScenarios = (
+  position: PerpPnlPositionInput,
+  markPrice: number,
+  returnTiers: readonly number[]
+): PerpProfitScenario[] => {
+  const totalCost = getValidatedPerpPositionTotalCost(position)
+  if (
+    totalCost === undefined ||
+    totalCost <= 0 ||
+    !Number.isFinite(markPrice) ||
+    markPrice <= 0
+  )
+    return []
+  return returnTiers.flatMap((ret) => {
+    if (!Number.isFinite(ret) || ret <= 0) return []
+    const pnl = ret * totalCost
+    const price = getPerpPriceForUserFacingPnl(position, pnl)
+    if (price === undefined) return []
+    const isFavourableMove =
+      position.direction === 'long' ? price > markPrice : price < markPrice
+    return isFavourableMove ? [{ ret, price, pnl }] : []
+  })
 }
 
 /**

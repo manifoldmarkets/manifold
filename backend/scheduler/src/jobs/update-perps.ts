@@ -1,7 +1,7 @@
 import { PerpContract } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
-import { getOracleFreshness } from 'common/perps/oracle'
+import { getOracleFreshness, getPerpOracleFreshness } from 'common/perps/oracle'
 import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -22,7 +22,7 @@ import { log } from 'shared/utils'
 //      maxOraclePriceAgeMs — this is the health check for daily feeds; fast
 //      feeds are additionally watched every tick by update-oracle-feeds).
 //   2. runOracleUpdate -> applies liquidations + ADL + updates oraclePrice.
-//      For fast-feed contracts the 5s tick has usually done this already,
+//      For fast-feed contracts the 2s tick has usually done this already,
 //      in which case the engine's no-change fast path makes it a cheap no-op.
 //   3. runFunding -> applies funding event, emits per-user funding events.
 //      The authoritative once-per-period gate lives inside runFunding
@@ -54,6 +54,17 @@ const updateOnePerp = async (contract: PerpContract) => {
     if (!feedDef) {
       log.error(
         `[update-perps] ${contract.slug}: feed ${contract.oracleFeedId} is not registered; refusing to mutate the market`
+      )
+      return
+    }
+    if (
+      contract.oracleFeedHealth &&
+      getPerpOracleFreshness(contract).status !== 'fresh'
+    ) {
+      // Provider incidents are paged by the fast tick's throttle. The engine
+      // rechecks under lock so a concurrent freeze cannot evade this prefilter.
+      log.warn(
+        `[update-perps] ${contract.slug}: provider health paused; skipping oracle and funding`
       )
       return
     }

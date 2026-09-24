@@ -8,7 +8,8 @@ import {
   TxnBalanceChange,
   BET_BALANCE_CHANGE_TYPES,
 } from 'common/balance-change'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
@@ -64,10 +65,14 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
 
 // Balance-log subtitle for perp txns, synthesized from the typed txn data so
 // the row reads like the bet rows ("Opened 5× long — Ṁ100 margin at 62,001").
-const perpTxnDescription = (txn: Txn): string | undefined => {
+const perpTxnDescription = (
+  txn: Txn,
+  oracleFeedId?: string
+): string | undefined => {
   const d = txn.data as any
   if (!d) return undefined
-  const px = (v: number) => formatPrice(v, inferPriceDecimals([v]))
+  const px = (v: number) =>
+    formatOraclePrice(oracleFeedId, v, inferPriceDecimals([v]))
   if (txn.category === 'PERP_OPEN_MARGIN') {
     const lev = Math.round(d.leverage) >= 2 ? `${Math.round(d.leverage)}× ` : ''
     return `Opened ${lev}${d.direction} — ${formatMoney(
@@ -98,9 +103,9 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
   if (txn.category === 'PERP_TAKER_FEE') {
     const bps = Number(d.feeBps)
     const pct = Number.isFinite(bps) ? ` (${(bps / 100).toFixed(2)}%)` : ''
-    return `Opening fee${pct} on ${formatMoney(
-      Number(d.sizeDelta) || 0
-    )} ${d.direction} notional — paid into the market's backing pool`
+    return `Opening fee${pct} on ${formatMoney(Number(d.sizeDelta) || 0)} ${
+      d.direction
+    } notional — paid into the market's backing pool`
   }
   if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
     return `Residual pools returned to creator (settled at ${px(d.finalPrice)})`
@@ -121,6 +126,7 @@ const getPerpBalanceChanges = async (
     `select e.id, e.ts, e.direction, e.size_delta, e.original_cost_basis_delta,
             e.oracle_price,
             c.question, c.slug, c.visibility, c.token,
+            c.data->>'oracleFeedId' as oracle_feed_id,
             c.data->>'creatorUsername' as creator_username
      from contract_perp_events e
      join contracts c on c.id = e.contract_id
@@ -143,7 +149,8 @@ const getPerpBalanceChanges = async (
         createdTime: new Date(r.ts).getTime(),
         description: `${leverage >= 2 ? `${leverage}× ` : ''}${
           r.direction
-        } liquidated at ${formatPrice(
+        } liquidated at ${formatOraclePrice(
+          r.oracle_feed_id,
           price,
           inferPriceDecimals([price])
         )} — ${formatMoney(margin)} margin forfeited to the pool`,
@@ -204,7 +211,12 @@ const getTxnBalanceChanges = async (
       token: txn.token,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
-      description: txn.description ?? perpTxnDescription(txn),
+      description:
+        txn.description ??
+        perpTxnDescription(
+          txn,
+          contract?.mechanism === 'perp' ? contract.oracleFeedId : undefined
+        ),
       contract: contract
         ? {
             question:
