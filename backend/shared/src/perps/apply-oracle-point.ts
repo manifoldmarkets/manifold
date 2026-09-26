@@ -28,7 +28,7 @@ import { log } from 'shared/utils'
  * on a long budget the alert lands BEFORE the market freezes at that
  * threshold. This is the signal nothing else provides: feed staleness reads
  * oracle_prices, which the publisher has already written by the time apply
- * runs, and the stuck-feed detector reads inFlightSince, which is clear
+ * runs, and the stuck-feed detector reads the in-flight guard, which is clear
  * because the poll itself completed. Both stay green while a single contract
  * silently stops tracking the price it executes against.
  */

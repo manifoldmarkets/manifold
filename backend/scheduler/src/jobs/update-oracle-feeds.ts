@@ -44,6 +44,10 @@ export async function updateOracleFeeds() {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
 
+  // Before dispatching, so the firing that abandons a stuck run also starts
+  // its replacement instead of leaving the feed dark for one more tick.
+  releaseStuckFeeds(now)
+
   for (const feed of ORACLE_FEEDS) {
     if (feed.cadence === 'fast') {
       if (isPollDue(feed.id, feed.pollPeriodMs, now))
@@ -52,8 +56,6 @@ export async function updateOracleFeeds() {
       dispatch(feed.id, () => probeDailyFeedStaleness(pg, feed))
     }
   }
-
-  alertOnStuckFeeds(now)
 }
 
 // Per-feed poll throttle. The cron fires at the rate the FASTEST feed wants
@@ -62,43 +64,56 @@ export async function updateOracleFeeds() {
 // in-memory — a scheduler restart polls everything once immediately, which is
 // the correct bias: fresher marks, and staleness alerting re-arms at once.
 const lastPollAttempt: Record<string, number> = {}
-/** Start time of the run currently in flight, or absent when idle. */
-const inFlightSince: Record<string, number> = {}
-/** Last time a stuck feed was reported, to keep the alert to once a period. */
-const lastStuckAlert: Record<string, number> = {}
+/** The run currently holding each feed's slot, or absent when idle. Compared
+ * by identity: a run that was abandoned as stuck may settle long after a newer
+ * run has taken its slot, and must not clear that newer run's entry. */
+const inFlight: Record<string, { startedAt: number }> = {}
 
-// How overdue an in-flight run must be before it is treated as stuck. Every
-// fetch adapter is bounded (AbortSignal.timeout), but the DB work behind
-// runOracleUpdate is not, and an advisory-lock wait or a pool starvation can
-// last far longer than any poll period.
+// How overdue an in-flight run must be before it is abandoned. Every fetch
+// adapter is bounded (AbortSignal.timeout), the fast tick bounds its own lock
+// and statement waits, and the pg client stops waiting on a query after an
+// hour — yet a btc-usd poll dispatched at 2026-09-26 17:09:48 UTC never
+// settled and logged nothing, not even the pg read timeout, so something in
+// it had no bound at all. Healthy runs finish in well under a second; a run
+// still going after two minutes is not coming back in time to matter.
 const STUCK_GRACE_MS = 2 * MINUTE_MS
-const STUCK_ALERT_INTERVAL_MS = 5 * MINUTE_MS
 
 /**
- * Because dispatch skips a feed while its previous run is in flight, a promise
- * that never settles takes that feed permanently dark — silently, since the
- * staleness check lives INSIDE the work that is no longer running. The job
- * itself keeps reporting success either way: `updateOracleFeeds` returns after
- * dispatching, so `scheduler_info.last_end_time` is now a dispatcher heartbeat
- * and says nothing about whether feed work completes. (`perp-launch-preflight`
- * reads that column as a liveness signal; it still correctly means "the job is
- * firing", which is what it checks.) This is the compensating signal.
+ * Abandon any run that has been in flight past STUCK_GRACE_MS, so the feed's
+ * next poll can start.
  *
- * `update-perps` would also catch it hourly for feeds with a live market; this
- * reports in minutes and covers feeds that have no market yet.
+ * Because dispatch skips a feed while its previous run is in flight, a promise
+ * that never settles would otherwise take that feed permanently dark — and
+ * silently, since the staleness check lives INSIDE the work that is no longer
+ * running. The job itself keeps reporting success either way:
+ * `updateOracleFeeds` returns after dispatching, so
+ * `scheduler_info.last_end_time` is a dispatcher heartbeat and says nothing
+ * about whether feed work completes. (`perp-launch-preflight` reads that
+ * column as a liveness signal; it still correctly means "the job is firing",
+ * which is what it checks.) This used to only log, every five minutes, while
+ * the feed stayed dark: the BTC market above sat frozen for six hours until
+ * the scheduler was redeployed.
+ *
+ * Abandoning does not cancel the run, it only stops it blocking the feed. A
+ * straggler overlapping a fresh run is safe: runOracleUpdate serializes on the
+ * per-contract advisory lock, decideOracleTransition ignores a point older
+ * than the contract's cached one (so a late apply cannot move the mark
+ * backwards), provider health is ordered by checkedAt, and oracle_prices
+ * inserts are idempotent on (feed_id, ts). A source that hangs on EVERY poll
+ * leaks one run per grace period, each reported here — a better failure than a
+ * feed that is silently dark.
  */
-const alertOnStuckFeeds = (now: number) => {
-  for (const feedId of Object.keys(inFlightSince)) {
-    const startedAt = inFlightSince[feedId]
-    if (startedAt == null) continue
-    const age = now - startedAt
+const releaseStuckFeeds = (now: number) => {
+  for (const feedId of Object.keys(inFlight)) {
+    const run = inFlight[feedId]
+    if (!run) continue
+    const age = now - run.startedAt
     if (age < STUCK_GRACE_MS) continue
-    if (now - (lastStuckAlert[feedId] ?? 0) < STUCK_ALERT_INTERVAL_MS) continue
-    lastStuckAlert[feedId] = now
+    delete inFlight[feedId]
     log.error(
       `[oracle-feeds] ${feedId}: poll has been in flight for ${Math.round(
         age / 1000
-      )}s and is blocking its own next run — the feed is effectively dark`
+      )}s — abandoning it so the feed can poll again`
     )
   }
 }
@@ -117,15 +132,17 @@ const alertOnStuckFeeds = (now: number) => {
  * cannot become an unhandled rejection that takes the scheduler down.
  */
 const dispatch = (feedId: string, run: () => Promise<void>) => {
-  if (inFlightSince[feedId] != null) return
-  const startedAt = Date.now()
-  inFlightSince[feedId] = startedAt
-  lastPollAttempt[feedId] = startedAt
+  if (inFlight[feedId]) return
+  const entry = { startedAt: Date.now() }
+  inFlight[feedId] = entry
+  lastPollAttempt[feedId] = entry.startedAt
   void run()
     .catch((err) => log.error(`[oracle-feeds] ${feedId}: unhandled — ${err}`))
     .finally(() => {
-      delete inFlightSince[feedId]
-      delete lastStuckAlert[feedId]
+      // Only release our own slot. If releaseStuckFeeds abandoned this run, a
+      // newer one may hold the slot by now; clearing it would let a third run
+      // stack on top of that one.
+      if (inFlight[feedId] === entry) delete inFlight[feedId]
     })
 }
 
