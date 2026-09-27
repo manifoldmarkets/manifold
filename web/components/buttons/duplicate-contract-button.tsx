@@ -103,14 +103,16 @@ export function duplicateContractHref(contract: Contract) {
     // cpmm-multi-2: carry the answers' CURRENT probabilities as the duplicate's
     // starting probabilities (a duplicate should start where the original stands,
     // not reset to uniform). Only when every kept answer is carried (no Other,
-    // matching the answers list above), and not once resolved, when prob holds
-    // the resolution instead. Fitted into the range bets trade in, since a long
-    // shot can sit under it, keeping answers that sum to one at 100.
+    // matching the answers list above), and not once the market or any answer
+    // is resolved, when prob holds the resolution instead. Fitted into the range
+    // bets trade in, since a long shot can sit under it, keeping answers that
+    // sum to one at 100.
     if (
       contract.mechanism === 'cpmm-multi-2' &&
       contract.outcomeType === 'MULTIPLE_CHOICE' &&
       contract.addAnswersMode === 'DISABLED' &&
-      !contract.isResolved
+      !contract.isResolved &&
+      contract.answers.every((a) => !a.resolution)
     ) {
       params.answerProbs = fitAnswerProbs(
         contract.answers.filter((a) => !a.isOther).map((a) => a.prob * 100),
