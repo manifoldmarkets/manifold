@@ -161,8 +161,8 @@ deploy.
   the order's price, and the solve, which searches the basket's shares and
   prices the other answers from them, can't land inside the jump. Searching
   the other answers' shares instead, as the single-answer arbitrage does,
-  would spend exactly the bet by construction. The solve takes about 0.1s at
-  10 answers and 0.7s at 50, against 40ms and 180ms on `cpmm-multi-1`. The
+  would spend exactly the bet by construction. The solve takes about 70ms at
+  10 answers and 0.7s at 50, against 35ms and 170ms on `cpmm-multi-1`. The
   site only sends multi-answer bets on numeric markets, which are never
   `cpmm-multi-2`, so this only affects API callers.
 - Depth is concentrated where an answer's liquidity went in, as on a binary

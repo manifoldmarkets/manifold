@@ -12,8 +12,8 @@
 // Skipped (describe.skip) in normal test runs so it doesn't slow the suite.
 //
 // Headline (shallow-pool fixtures, single core): the v2 cost inverse itself is
-// negligible (~µs), but the full v2 multi-buy solve is ~3-4x v1 wall-clock
-// (~100ms at n=10, ~0.7s at n=50) — the cost is the per-probe computeFills
+// negligible (~µs), but the full v2 multi-buy solve is ~2-4x v1 wall-clock
+// (~70ms at n=10, ~0.7s at n=50) — the cost is the per-probe computeFills
 // sweeps, not the outer search. A perf pass gates the creation flag flip, not
 // this PR (creation is kill-switched off). Kept in-tree (not in the evidence
 // repo) so the numbers stay reproducible against the code they measure.
