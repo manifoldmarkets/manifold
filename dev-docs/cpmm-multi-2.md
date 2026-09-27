@@ -156,17 +156,21 @@ that it sells more than a millionth more or fewer shares than asked now sells
 the shares asked; that takes a price within about an ulp of 0% or 100%, and
 no random state in the differential test reaches one.
 
-Turning creation on doesn't change which requests the public API accepts, but
-markets created with `answerProbs` then report `mechanism: 'cpmm-multi-2'`,
-and their answers carry `p`; note that in `docs/docs/api.md` in the same
-deploy.
+From this deploy on, answers in API and websocket responses carry `p`: 0.5 on
+every `cpmm-multi-1` answer, an added field. Turning creation on doesn't
+change which requests the public API accepts, but markets created with
+`answerProbs` then report `mechanism: 'cpmm-multi-2'`, and their answers' `p`
+varies; note that in `docs/docs/api.md` in the same deploy.
 
 ## Known limits
 
-- A single-answer bet or sale takes up to 1.4 times as long as on
-  `cpmm-multi-1`: a Ṁ100 buy with 20 resting orders takes about 5ms at 10
-  answers, 12ms at 30, 16ms at 50 and 33ms at 100, against 6, 9, 12 and 23ms
-  (medians of three runs).
+- A single-answer bet or sale takes up to about 1.6 times as long as on
+  `cpmm-multi-1`, most on markets opened at skewed odds. A Ṁ100 buy with 20
+  resting orders takes about 5ms at 10 answers, 12ms at 30, 16ms at 50 and 33ms
+  at 100, against 6, 9, 12 and 23ms. On a market opened with a favourite and
+  1% long shots, one with no resting orders takes 3.1, 9.5, 16.7 and 30.6ms,
+  against 2.1, 6.4, 10.3 and 21.7ms. These are medians in plain node, as
+  production runs; under jest the gap measures several times wider.
 - Buying several answers at once (`multi-bet`) is refused on `cpmm-multi-2`
   markets. Its solve fails its own verification (so the bet would fail, not
   mis-price) on about 1% of fuzzed baskets: where a large order rests on an
