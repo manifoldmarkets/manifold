@@ -1035,6 +1035,15 @@ export function cpmmMulti2SumToOnePools(
   })
 }
 
+// The p that makes pool (Y, N) display probability q — the GP6a weight
+// p(q) = qY / (qY + (1 - q)N), the inverse of getCpmmProbability in p. Used by v2
+// creation, the whole-market add re-price, and the "Other" split. If p ever needs
+// clamping away from {0,1} (float64 representability, GP19b caveat), this is the
+// single home for it.
+export function pForProbability(pool: { YES: number; NO: number }, q: number) {
+  return (q * pool.YES) / (q * pool.YES + (1 - q) * pool.NO)
+}
+
 // GP19a creation-feasibility guard. The √variance construction above is NOT total: for
 // skewed prob vectors the funding term D goes negative enough that some poolYes < 0 and
 // p ∉ (0,1). With one dominant answer and an even tail that first happens at n = 21
@@ -1045,15 +1054,6 @@ export function cpmmMulti2SumToOnePools(
 // sanity directly (no duplicated algebra to drift). The small margin keeps p (and via
 // re-pricing, reserves) representably far from {0,1} — float64 underflows exact-boundary
 // states (GP19b caveat).
-// The p that makes pool (Y, N) display probability q — the GP6a weight
-// p(q) = qY / (qY + (1 - q)N), the inverse of getCpmmProbability in p. Used by v2
-// creation, the whole-market add re-price, and the "Other" split. If p ever needs
-// clamping away from {0,1} (float64 representability, GP19b caveat), this is the
-// single home for it.
-export function pForProbability(pool: { YES: number; NO: number }, q: number) {
-  return (q * pool.YES) / (q * pool.YES + (1 - q) * pool.NO)
-}
-
 const CPMM_MULTI_2_SANITY_EPS = 1e-9
 const isSanePool = (x: { poolYes: number; poolNo: number; p: number }) =>
   x.poolYes > 0 &&
@@ -1069,9 +1069,9 @@ export function cpmmMulti2SumToOneFeasible(q: number[]) {
 // its own p set to its target so it reads back prob_i = q_i. If exactly one answer
 // wins, the pools pay ante/n + (n − 1)·ante/n = ante whichever it is, and an
 // independent answer pays ante/n either way, so none of the ante is thrown away.
-// Unlike the √variance shape this exists for every probability vector: it's the
-// same equal-split, p-floated allocation addCpmmMultiLiquidityAnswersSumToOneV2
-// falls back to (GP19e), started from empty pools.
+// Unlike the √variance shape this exists for every probability vector. Independent
+// answers open this way, each its own binary market, and the exact solve below uses
+// it for a single answer.
 export function cpmmMulti2BalancedPools(
   q: number[],
   ante: number
