@@ -152,8 +152,9 @@ deploy.
 ## Known limits
 
 - A single-answer bet or sale takes up to 1.4 times as long as on
-  `cpmm-multi-1`: with 20 resting orders, about 5ms at 10 answers, 12ms at 30,
-  20ms at 50 and 36ms at 100, against 6, 9, 14 and 26ms.
+  `cpmm-multi-1`: a Ṁ100 buy with 20 resting orders takes about 5ms at 10
+  answers, 12ms at 30, 16ms at 50 and 33ms at 100, against 6, 9, 12 and 23ms
+  (medians of three runs).
 - Buying several answers at once (`multi-bet`) is refused on `cpmm-multi-2`
   markets. Its solve fails its own verification (so the bet would fail, not
   mis-price) on about 1% of fuzzed baskets: where a large order rests on an
