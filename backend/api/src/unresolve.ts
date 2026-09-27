@@ -356,13 +356,19 @@ const undoResolution = async (
         where contract_id = $1
         order by answer_id, created_time desc
       ),
+      -- The answers as resolution found them: the latest edit recorded while the
+      -- market was unresolved, since this unresolve has already recorded its own.
+      -- The limit has to pick the edit before its answers are expanded.
       pre_resolution_answers as (
-        select jsonb_array_elements(data->'answers') as answer_data
-        from contract_edits
-        where contract_id = $1
-          and 'subsidyPool' = any(updated_keys)
-        order by created_time desc
-        limit 1
+        select jsonb_array_elements(edit.data->'answers') as answer_data
+        from (
+          select data from contract_edits
+          where contract_id = $1
+            and 'subsidyPool' = any(updated_keys)
+            and coalesce((data->>'isResolved')::boolean, false) = false
+          order by created_time desc
+          limit 1
+        ) edit
       )
       update answers
       set
@@ -403,17 +409,19 @@ const undoResolution = async (
       profit: metric.previousProfit ?? metric.profit,
     }))
     await bulkUpdateContractMetrics(updateMetrics, pg)
-    // Restore subsidyPool from contract_edits if available
+    // Restore subsidyPool from contract_edits if available: the answer's pool in
+    // the latest edit recorded while it was unresolved, which is the snapshot
+    // its resolution took. Later edits hold it resolved, with its subsidy paid.
     const preResolutionSubsidyPool = await pg.oneOrNone(
       `select (answer_data->>'subsidyPool')::numeric as subsidy_pool
-       from (
-         select jsonb_array_elements(data->'answers') as answer_data
-         from contract_edits
-         where contract_id = $2
-         order by created_time desc
-         limit 1
-       ) sub
-       where answer_data->>'id' = $1`,
+       from contract_edits
+       cross join lateral jsonb_array_elements(data->'answers') as answer_data
+       where contract_id = $2
+         and 'subsidyPool' = any(updated_keys)
+         and answer_data->>'id' = $1
+         and answer_data->>'resolution' is null
+       order by created_time desc
+       limit 1`,
       [answerId, contractId],
       (r) => r?.subsidy_pool as number | null
     )
