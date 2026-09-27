@@ -10,6 +10,7 @@ import {
   sumBy,
   uniq,
 } from 'lodash'
+import { answerP } from './answer'
 import { Bet, LimitBet } from './bet'
 import {
   calculateTotalSpentAndShares,
@@ -167,7 +168,7 @@ const computeMultiCpmmElasticity = (
   const elasticities = contract.answers.map((a) => {
     const cpmmState = {
       pool: { YES: a.poolYes, NO: a.poolNo },
-      p: a.p,
+      p: answerP(a),
       collectedFees: noFees,
     }
     const unfilledBetsForAnswer = unfilledBets.filter(

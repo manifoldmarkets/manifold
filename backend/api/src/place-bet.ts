@@ -8,7 +8,7 @@ import {
   updateMakers,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import {
@@ -489,7 +489,7 @@ export const executeNewBetResult = async (
         const { YES: poolYes, NO: poolNo } = cpmmState.pool
         // Use the answer's own p (cpmm-multi-2) so the denormalized `prob`
         // matches the read-path `probability`; p=0.5 ⇒ byte-identical for v1.
-        const prob = getCpmmProbability(cpmmState.pool, answer.p)
+        const prob = getCpmmProbability(cpmmState.pool, answerP(answer))
         answerUpdates.push({
           id: answer.id,
           poolYes,
@@ -519,7 +519,7 @@ export const executeNewBetResult = async (
     // newP is only set for cpmm-1; for multi the per-answer p is unchanged by a
     // buy/sell, so use answer.p (= 0.5 for cpmm-multi-1 ⇒ byte-identical). This
     // keeps the denormalized `prob` consistent with the read-path `probability`.
-    const prob = getCpmmProbability(newPool, answer.p)
+    const prob = getCpmmProbability(newPool, answerP(answer))
     answerUpdates.push({
       id: newBet.answerId,
       poolYes,

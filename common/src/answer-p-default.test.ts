@@ -1,6 +1,11 @@
+import { sumBy } from 'lodash'
 import { Answer, answerP } from './answer'
 import { getAnswerProbability } from './calculate'
+import { computeElasticity } from './calculate-metrics'
 import { MultiContract } from './contract'
+import { noFees } from './fees'
+import { getNewMultiCpmmBetInfo } from './new-bet'
+import { getSaleResultMultiSumsToOne } from './sell-bet'
 
 // Regression: answers deserialized from the denormalized contract data blob
 // (data->'answers' — SSR/SEO/embeds, search "lite" answers) bypass convertAnswer's
@@ -56,5 +61,95 @@ describe('getAnswerProbability on a blob-sourced (p-less) answer', () => {
     expect(
       getAnswerProbability(withAnswers(blobAnswer({ resolution: 'YES' })), 'a1')
     ).toBe(1)
+  })
+})
+
+// The same p-less answers reach the pricing code: the scheduler computes a
+// market's elasticity from the contract row's cached answers, and the site
+// previews bets and sales on whatever answers it loaded. cpmm-multi-1 priced
+// those at a hard-coded p = 0.5, so with p missing they must come out exactly
+// as they do with p = 0.5, not as NaN.
+describe('pricing a cpmm-multi-1 market whose answers have no p', () => {
+  const probs = [0.5, 0.3, 0.2]
+  const makeAnswers = (withP: boolean, k: number) =>
+    probs.map((q, i) => {
+      const poolYes = Math.sqrt((k * (1 - q)) / q)
+      return blobAnswer({
+        id: `a${i}`,
+        index: i,
+        poolYes,
+        poolNo: k / poolYes,
+        prob: q,
+        ...(withP ? { p: 0.5 } : {}),
+      })
+    })
+  // k is each answer's pool product. Elasticity bets Ṁ10,000, which pushes a
+  // shallow pool to 0% or 100% whatever its p, so it needs deep pools to show.
+  const makeContract = (withP: boolean, k = 100) =>
+    ({
+      id: 'c1',
+      mechanism: 'cpmm-multi-1',
+      outcomeType: 'MULTIPLE_CHOICE',
+      shouldAnswersSumToOne: true,
+      addAnswersMode: 'DISABLED',
+      isResolved: false,
+      collectedFees: noFees,
+      answers: makeAnswers(withP, k),
+    } as unknown as MultiContract)
+
+  const blob = makeContract(false)
+  const fresh = makeContract(true)
+
+  it('computes elasticity as with p = 0.5', () => {
+    const e = computeElasticity([], makeContract(false, 1e9))
+    expect(Number.isFinite(e)).toBe(true)
+    expect(Object.is(e, computeElasticity([], makeContract(true, 1e9)))).toBe(
+      true
+    )
+  })
+
+  it('previews a bet as with p = 0.5', () => {
+    const preview = (c: MultiContract) => {
+      const r = getNewMultiCpmmBetInfo(
+        c,
+        c.answers,
+        c.answers[1],
+        'YES',
+        50,
+        undefined,
+        [],
+        {}
+      )
+      if (!('otherBetResults' in r)) throw new Error('expected a linked bet')
+      return [
+        [r.newBet.shares, r.newBet.probAfter, r.newPool.YES, r.newPool.NO],
+        ...r.otherBetResults.map((o) => [
+          sumBy(o.takers, 'shares'),
+          o.bet.probAfter,
+          o.cpmmState.pool.YES,
+          o.cpmmState.pool.NO,
+        ]),
+      ]
+    }
+    const got = preview(blob)
+    expect(got.flat().every(Number.isFinite)).toBe(true)
+    expect(got).toEqual(preview(fresh))
+  })
+
+  it('previews a sale as with p = 0.5', () => {
+    const sale = (c: MultiContract) => {
+      const { saleValue, cpmmState } = getSaleResultMultiSumsToOne(
+        c,
+        'a0',
+        20,
+        'YES',
+        [],
+        {}
+      )
+      return [saleValue, cpmmState.pool.YES, cpmmState.pool.NO]
+    }
+    const got = sale(blob)
+    expect(got.every(Number.isFinite)).toBe(true)
+    expect(got).toEqual(sale(fresh))
   })
 })

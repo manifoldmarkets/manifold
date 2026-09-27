@@ -1,6 +1,6 @@
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { Dictionary, first, groupBy, mapValues, sum, sumBy } from 'lodash'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import { Bet, LimitBet, maker } from './bet'
 import {
   calculateAmountToBuySharesFixedP,
@@ -12,6 +12,11 @@ import { BINARY_SEARCH_NAN_ERROR, binarySearch, findRoot } from './util/algos'
 import { floatingEqual } from './util/math'
 import { addObjects } from './util/object'
 
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
+
+// Answers can come from the contract's cached copy, written before answers had
+// a p, so read p with answerP (or default it to 0.5 where it's destructured):
+// 0.5 is what cpmm-multi-1 has always priced at.
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
 // An answer's probability after a fill, at the answer's own p. computeFills
@@ -21,10 +26,10 @@ export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
 const probAfterFill = (r: {
   cpmmState: { pool: { [outcome: string]: number } }
   answer: Answer
-}) => getCpmmProbability(r.cpmmState.pool, r.answer.p)
+}) => getCpmmProbability(r.cpmmState.pool, answerP(r.answer))
 // Whether any answer prices at a p other than 0.5, as cpmm-multi-2 answers do.
 const hasGeneralP = (answers: Answer[]) =>
-  answers.some((a) => !floatingEqual(a.p, 0.5))
+  answers.some((a) => !floatingEqual(answerP(a), 0.5))
 
 // Whether an amount the arbitrage worked out is zero but for rounding.
 // cpmm-multi-1 allows Ṁ0.001, as it always has. At a general p an answer can
@@ -79,7 +84,7 @@ const noFillsReturn = (
     ordersToCancel: [] as LimitBet[],
     cpmmState: {
       pool: { YES: answer.poolYes, NO: answer.poolNo },
-      p: answer.p,
+      p: answerP(answer),
       collectedFees,
     },
     totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
@@ -169,8 +174,6 @@ export function calculateCpmmMultiArbitrageYesBets(
       sumBy(
         result.newBetResults.map((r) => r.takers),
         'amount'
-
-        // (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
       ),
       0
     )
@@ -186,7 +189,7 @@ export function calculateCpmmMultiArbitrageYesBets(
           ordersToCancel: [],
           cpmmState: {
             pool: { YES: r.answer.poolYes, NO: r.answer.poolNo },
-            p: r.answer.p,
+            p: 0.5,
             collectedFees,
           },
           totalFees: noFees,
@@ -282,7 +285,7 @@ function calculateCpmmMultiArbitrageBetsYes(
     const maxYesShares = amountToBet / yesSharePriceSum
     let yesAmounts: number[] = []
     binarySearch(0, maxYesShares, (yesShares) => {
-      yesAmounts = answersToBuy.map(({ id, poolYes, poolNo, p }) =>
+      yesAmounts = answersToBuy.map(({ id, poolYes, poolNo, p = 0.5 }) =>
         calculateAmountToBuySharesFixedP(
           { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
           yesShares,
@@ -431,7 +434,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
     let basketCost = 0
     const yesBetResults = initialAnswersToBuy.map((answer) => {
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
-      const state = { pool, p: answer.p, collectedFees }
+      const state = { pool, p: answerP(answer), collectedFees }
       const yesAmount = calculateAmountToBuySharesFixedP(
         state,
         g,
@@ -470,7 +473,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
     const othersSumAtEta = (eta: number) =>
       sumBy(others, (answer) => {
         const pool = { YES: answer.poolYes, NO: answer.poolNo }
-        const state = { pool, p: answer.p, collectedFees }
+        const state = { pool, p: answerP(answer), collectedFees }
         const noAmount = calculateAmountToBuySharesFixedP(
           state,
           eta,
@@ -489,7 +492,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
           undefined,
           true
         )
-        return getCpmmProbability(cpmmState.pool, answer.p)
+        return getCpmmProbability(cpmmState.pool, answerP(answer))
       })
 
     // The search revisits the points the doubling found.
@@ -510,7 +513,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
     let othersCost = 0
     const noBetResults = others.map((answer) => {
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
-      const state = { pool, p: answer.p, collectedFees }
+      const state = { pool, p: answerP(answer), collectedFees }
       const noAmount = calculateAmountToBuySharesFixedP(
         state,
         eta,
@@ -760,15 +763,16 @@ export const verifyCpmmMulti2BetResult = (
   // the EPS definitions above (legitimate ~2e-3 deviation shared with v1).
   let probSum = 0
   for (const a of updatedAnswers) {
-    if (!(a.poolYes > 0) || !(a.poolNo > 0) || !(a.p > 0 && a.p < 1)) {
+    const p = answerP(a)
+    if (!(a.poolYes > 0) || !(a.poolNo > 0) || !(p > 0 && p < 1)) {
       fail('final pool not positive / p outside (0,1)', {
         answerId: a.id,
         poolYes: a.poolYes,
         poolNo: a.poolNo,
-        p: a.p,
+        p,
       })
     }
-    probSum += getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+    probSum += getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, p)
   }
   if (Math.abs(probSum - 1) > V2_VERIFY_PROB_SUM_EPS) {
     fail('final probabilities do not sum to 1', { probSum })
@@ -845,7 +849,7 @@ export const getBetResultsAndUpdatedAnswers = (
     const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
     const yesBetResult = {
       ...computeFills(
-        { pool, p: answerToBuy.p, collectedFees },
+        { pool, p: answerP(answerToBuy), collectedFees },
         'YES',
         yesAmounts[i],
         limitProb,
@@ -973,7 +977,7 @@ export const combineBetsOnSameAnswers = (
       ordersToCancel: betsForAnswer.flatMap((r) => r.ordersToCancel),
       outcome,
       cpmmState: {
-        p: answer.p,
+        p: answerP(answer),
         pool: { YES: poolYes, NO: poolNo },
         collectedFees,
       },
@@ -1119,7 +1123,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   collectedFees: Fees
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
-  const noAmounts = otherAnswers.map(({ id, poolYes, poolNo, p }) =>
+  const noAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
     calculateAmountToBuySharesFixedP(
       { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
       noShares,
@@ -1141,7 +1145,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
     const result = {
       ...computeFills(
-        { pool, p: answer.p, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'NO',
         noAmount,
         undefined,
@@ -1192,7 +1196,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const yesBetResult = {
     ...computeFills(
-      { pool, p: answerToBuy.p, collectedFees },
+      { pool, p: answerP(answerToBuy), collectedFees },
       'YES',
       yesBetAmount,
       limitProb,
@@ -1346,7 +1350,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   collectedFees: Fees
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
-  const yesAmounts = otherAnswers.map(({ id, poolYes, poolNo, p }) =>
+  const yesAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
     calculateAmountToBuySharesFixedP(
       { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
       yesShares,
@@ -1368,7 +1372,11 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
     const { poolYes, poolNo } = answer
     const result = {
       ...computeFills(
-        { pool: { YES: poolYes, NO: poolNo }, p: answer.p, collectedFees },
+        {
+          pool: { YES: poolYes, NO: poolNo },
+          p: answerP(answer),
+          collectedFees,
+        },
         'YES',
         yesAmount,
         undefined,
@@ -1416,7 +1424,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const noBetResult = {
     ...computeFills(
-      { pool, p: answerToBuy.p, collectedFees },
+      { pool, p: answerP(answerToBuy), collectedFees },
       'NO',
       noBetAmount,
       limitProb,
@@ -1504,7 +1512,7 @@ const buyNoSharesInAnswers = (
     const { id, poolYes, poolNo } = answer
     const pool = { YES: poolYes, NO: poolNo }
     const noAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: answer.p, collectedFees },
+      { pool, p: answerP(answer), collectedFees },
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
@@ -1515,7 +1523,7 @@ const buyNoSharesInAnswers = (
 
     const res = {
       ...computeFills(
-        { pool, p: answer.p, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'NO',
         noAmount,
         undefined,
@@ -1583,14 +1591,14 @@ export function calculateCpmmMultiArbitrageSellNo(
   const yesShares = binarySearch(0, noShares, (yesShares) => {
     const noSharesInOtherAnswers = noShares - yesShares
     const yesAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: answerToSell.p, collectedFees },
+      { pool, p: answerP(answerToSell), collectedFees },
       yesShares,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId
     )
     const noAmounts = answersWithoutAnswerToSell.map(
-      ({ id, poolYes, poolNo, p }) =>
+      ({ id, poolYes, poolNo, p = 0.5 }) =>
         calculateAmountToBuySharesFixedP(
           { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
           noSharesInOtherAnswers,
@@ -1603,7 +1611,7 @@ export function calculateCpmmMultiArbitrageSellNo(
 
     const yesResult = {
       ...computeFills(
-        { pool, p: answerToSell.p, collectedFees },
+        { pool, p: answerP(answerToSell), collectedFees },
         'YES',
         yesAmount,
         limitProb,
@@ -1617,7 +1625,7 @@ export function calculateCpmmMultiArbitrageSellNo(
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
       return {
         ...computeFills(
-          { pool, p: answer.p, collectedFees },
+          { pool, p: answerP(answer), collectedFees },
           'NO',
           noAmount,
           undefined,
@@ -1637,14 +1645,14 @@ export function calculateCpmmMultiArbitrageSellNo(
 
   const noSharesInOtherAnswers = noShares - yesShares
   const yesAmount = calculateAmountToBuySharesFixedP(
-    { pool, p: answerToSell.p, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     yesShares,
     'YES',
     unfilledBetsByAnswer[id] ?? [],
     balanceByUserId
   )
   const noAmounts = answersWithoutAnswerToSell.map(
-    ({ id, poolYes, poolNo, p }) =>
+    ({ id, poolYes, poolNo, p = 0.5 }) =>
       calculateAmountToBuySharesFixedP(
         { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
         noSharesInOtherAnswers,
@@ -1655,7 +1663,7 @@ export function calculateCpmmMultiArbitrageSellNo(
       )
   )
   const yesBetResult = computeFills(
-    { pool, p: answerToSell.p, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     'YES',
     yesAmount,
     limitProb,
@@ -1667,7 +1675,7 @@ export function calculateCpmmMultiArbitrageSellNo(
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
     return {
       ...computeFills(
-        { pool, p: answer.p, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'NO',
         noAmount,
         undefined,
@@ -1779,14 +1787,14 @@ export function calculateCpmmMultiArbitrageSellYes(
   const noShares = binarySearch(0, yesShares, (noShares) => {
     const yesSharesInOtherAnswers = yesShares - noShares
     const noAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: answerToSell.p, collectedFees },
+      { pool, p: answerP(answerToSell), collectedFees },
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId
     )
     const yesAmounts = answersWithoutAnswerToSell.map(
-      ({ id, poolYes, poolNo, p }) =>
+      ({ id, poolYes, poolNo, p = 0.5 }) =>
         calculateAmountToBuySharesFixedP(
           { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
           yesSharesInOtherAnswers,
@@ -1799,7 +1807,7 @@ export function calculateCpmmMultiArbitrageSellYes(
 
     const noResult = {
       ...computeFills(
-        { pool, p: answerToSell.p, collectedFees },
+        { pool, p: answerP(answerToSell), collectedFees },
         'NO',
         noAmount,
         limitProb,
@@ -1813,7 +1821,7 @@ export function calculateCpmmMultiArbitrageSellYes(
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
       return {
         ...computeFills(
-          { pool, p: answer.p, collectedFees },
+          { pool, p: answerP(answer), collectedFees },
           'YES',
           yesAmount,
           undefined,
@@ -1833,14 +1841,14 @@ export function calculateCpmmMultiArbitrageSellYes(
 
   const yesSharesInOtherAnswers = yesShares - noShares
   const noAmount = calculateAmountToBuySharesFixedP(
-    { pool, p: answerToSell.p, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     noShares,
     'NO',
     unfilledBetsByAnswer[id] ?? [],
     balanceByUserId
   )
   const yesAmounts = answersWithoutAnswerToSell.map(
-    ({ id, poolYes, poolNo, p }) =>
+    ({ id, poolYes, poolNo, p = 0.5 }) =>
       calculateAmountToBuySharesFixedP(
         { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
         yesSharesInOtherAnswers,
@@ -1851,7 +1859,7 @@ export function calculateCpmmMultiArbitrageSellYes(
       )
   )
   const noBetResult = computeFills(
-    { pool, p: answerToSell.p, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     'NO',
     noAmount,
     limitProb,
@@ -1863,7 +1871,7 @@ export function calculateCpmmMultiArbitrageSellYes(
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
     return {
       ...computeFills(
-        { pool, p: answer.p, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'YES',
         yesAmount,
         undefined,
@@ -1989,7 +1997,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
     let saleBets: PreliminaryBetResults[]
     if (answersToSellNow.length !== initialAnswers.length) {
       const yesAmounts = oppositeAnswersFromSaleToBuyYesShares.map(
-        ({ id, poolYes, poolNo, p }) => {
+        ({ id, poolYes, poolNo, p = 0.5 }) => {
           return calculateAmountToBuySharesFixedP(
             { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
             sharesToSell,
@@ -2051,7 +2059,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
               //...betResult.takers, these are takers in the opposite outcome, not sure where to put them
             ],
             cpmmState: {
-              p: answer.p,
+              p: answerP(answer),
               pool: { YES: poolYes, NO: poolNo },
               collectedFees,
             },
@@ -2125,7 +2133,7 @@ export const getSellAllRedemptionPreliminaryBets = (
       makers: [],
       totalFees: noFees,
       cpmmState: {
-        p: answer.p,
+        p: answerP(answer),
         pool: { YES: poolYes, NO: poolNo },
         collectedFees,
       },

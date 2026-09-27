@@ -12,7 +12,7 @@ import {
   MultiContract,
 } from './contract'
 import { sumBy } from 'lodash'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import { addObjects, removeUndefinedProps } from './util/object'
 import {
   ArbitrageBetArray,
@@ -46,7 +46,7 @@ export const getCpmmSellBetInfo = (
       ? contract
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
-          p: answer!.p,
+          p: answerP(answer!),
           collectedFees: contract.collectedFees,
         }
 
@@ -129,7 +129,7 @@ export const getCpmmMultiSellBetInfo = (
   const { cpmmState, makers, takers, ordersToCancel, totalFees } = newBetResult!
 
   const probBefore = answerToSell.prob
-  const probAfter = getCpmmProbability(cpmmState.pool, answerToSell.p)
+  const probAfter = getCpmmProbability(cpmmState.pool, answerP(answerToSell))
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')
@@ -289,7 +289,7 @@ export const getSaleResult = (
   const initialCpmmState = answer
     ? {
         pool: { YES: answer.poolYes, NO: answer.poolNo },
-        p: answer.p,
+        p: answerP(answer),
         collectedFees: contract.collectedFees,
       }
     : {

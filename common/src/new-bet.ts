@@ -15,7 +15,7 @@ import {
 } from './contract'
 import { removeUndefinedProps } from './util/object'
 import { floatingEqual } from './util/math'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import {
   ArbitrageBetArray,
   buyNoSharesUntilAnswersSumToOne,
@@ -181,7 +181,11 @@ export const getNewMultiCpmmBetInfo = (
 
   const { poolYes, poolNo } = answer
   const pool = { YES: poolYes, NO: poolNo }
-  const cpmmState = { pool, p: answer.p, collectedFees: contract.collectedFees }
+  const cpmmState = {
+    pool,
+    p: answerP(answer),
+    collectedFees: contract.collectedFees,
+  }
 
   const answerUnfilledBets = unfilledBets.filter(
     (b) => b.answerId === answer.id

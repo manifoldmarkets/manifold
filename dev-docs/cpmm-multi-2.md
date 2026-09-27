@@ -128,6 +128,9 @@ too, so until the column exists creating any multiple choice market or adding
 an answer fails, and so does the scheduler's daily sports-market creation.
 The migration is additive and idempotent: existing rows read `p = 0.5`, which
 is what `cpmm-multi-1` pricing already assumes, so nothing changes for them.
+Answers in a market row's cached copy (`data.answers`) have no `p` until the
+market next changes, and the scheduler and the site price from that copy, so
+every read of an answer's `p` falls back to 0.5 (`answerP`).
 
 With both switches off, `cpmm-multi-1` bets, basket buys, answer adds,
 liquidity and payouts come out exactly as before, errors included, and so do

@@ -13,7 +13,7 @@ import {
   calculateCpmmMultiArbitrageSellNo,
   calculateCpmmMultiArbitrageSellYes,
 } from './calculate-cpmm-arbitrage'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import { MarketContract, MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { addObjects } from 'common/util/object'
 
@@ -758,7 +758,7 @@ export function calculateCpmmAmountToBuyShares(
       ? contract
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
-          p: answer!.p,
+          p: answerP(answer!),
           collectedFees: contract.collectedFees,
         }
 

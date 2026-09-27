@@ -79,7 +79,7 @@ export const getDefaultSort = (contract: MultiContract) => {
 // "lite" answers) bypass convertAnswer, so any answer written before p existed reads
 // p === undefined at runtime and a bare `answer.p` poisons downstream math with NaN.
 // Use this accessor anywhere the answer may have come from the blob.
-export const answerP = (answer: Answer) => answer.p ?? 0.5
+export const answerP = (answer: { p?: number }) => answer.p ?? 0.5
 
 export const sortAnswers = <T extends Answer>(
   contract: MultiContract,
