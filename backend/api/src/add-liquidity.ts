@@ -48,11 +48,9 @@ export const addContractLiquidity = async (
     // isMultiCpmm covers both cpmm-multi-1 and cpmm-multi-2; the subsidy lands in
     // subsidyPool + an LP-provision row, and the drizzle job injects it into the
     // pools (losslessly via the V2 float-p add for cpmm-multi-2; see 2b.6).
+    // Only markets of neither kind reach this, so the message needn't name cpmm-multi-2.
     if (contract.mechanism !== 'cpmm-1' && !isMultiCpmm(contract))
-      throw new APIError(
-        403,
-        'Only cpmm-1 and multiple-choice CPMM markets are supported'
-      )
+      throw new APIError(403, 'Only cpmm-1 and cpmm-multi-1 are supported')
 
     // Per-answer subsidy: only meaningful for multi-choice CPMM (each answer is its own binary
     // pool). Validate the answer belongs to this contract before we move any mana.
