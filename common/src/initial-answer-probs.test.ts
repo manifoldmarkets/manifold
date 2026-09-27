@@ -327,6 +327,23 @@ describe('getNewContract with answerProbs', () => {
       0.25
     )
   })
+
+  it('starts a converted market at the even split it opened at', () => {
+    // A cpmm-multi-1 market converted to cpmm-multi-2 keeps its pools, which
+    // have since moved; it opened at the even split, as it had no starting
+    // probabilities.
+    const contract = makeMultiContract({ answers: ['A', 'B', 'C', 'D'] })
+    const converted = {
+      ...contract,
+      mechanism: 'cpmm-multi-2' as const,
+      answers: contract.answers.map((a, i) =>
+        i === 0 ? { ...a, poolYes: a.poolYes / 9, prob: 0.75 } : a
+      ),
+    }
+    expect(getInitialAnswerProbability(converted, converted.answers[0])).toBe(
+      0.25
+    )
+  })
 })
 
 describe('editing starting probabilities in the create form', () => {
