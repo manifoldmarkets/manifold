@@ -489,6 +489,26 @@ describe('cpmm-multi-2 lossless liquidity add — INDEPENDENT / "Set" (addCpmmMu
     expect(sum(Object.values(probsAfter))).toBeCloseTo(1.75, 10)
   })
 
+  it('gives every answer an equal share, holding it as pending where the answer is outside 1%-99%', () => {
+    // Resolution credits each whole-market provider with amount / n of every
+    // answer, so every answer must take exactly that, deepened or pending.
+    const before = {
+      a0: { pool: { YES: 100, NO: 100 }, p: 0.6 },
+      a1: { pool: { YES: 100, NO: 100 }, p: 0.3 },
+      a2: { pool: { YES: 1e6, NO: 1 }, p: 0.5 }, // ~0.0001%, can't be deepened
+    }
+    const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 90)
+    expect(after.a2.pool).toEqual(before.a2.pool)
+    expect(after.a2.p).toBe(before.a2.p)
+    expect(after.a2.pendingSubsidy).toBe(30)
+    for (const id of ['a0', 'a1'] as const) {
+      expect(after[id].pendingSubsidy).toBe(0)
+      // A balanced pool at p takes 30 into both reserves.
+      expect(after[id].pool.YES).toBeCloseTo(130, 10)
+      expect(after[id].pool.NO).toBeCloseTo(130, 10)
+    }
+  })
+
   it('at p = 0.5 on a balanced pool reduces to the v1 fixed-p add (no discard)', () => {
     const before = market([0.5, 0.5])
     const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 50) // 25 per answer

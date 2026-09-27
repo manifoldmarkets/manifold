@@ -1481,18 +1481,26 @@ export function addCpmmMultiLiquidityToAnswersIndependentlyV2(
   },
   amount: number
 ) {
-  // Only answers the add can deepen take a share (isDeepenableProb); callers
-  // leave the subsidy pending when none can (canDeployCpmmMulti2Liquidity).
+  // Every answer takes an equal share, as on cpmm-multi-1: resolution credits
+  // each whole-market provider with amount / n of every answer
+  // (getIndependentMultiFixedPayouts), so any other split would move value
+  // between providers. An answer outside 1%-99% can't be deepened
+  // (isDeepenableProb), so its share waits as that answer's pending subsidy,
+  // which drizzleAnswer adds once it's back in the band and resolution pays out.
+  // Callers leave the whole subsidy pending when no answer can take any
+  // (canDeployCpmmMulti2Liquidity).
   const deepenable = deepenableAnswerIds(poolsByAnswer)
-  const amountPerAnswer = amount / Math.max(1, deepenable.length)
+  const amountPerAnswer =
+    amount / Math.max(1, Object.keys(poolsByAnswer).length)
   return mapValues(poolsByAnswer, ({ pool, p }, id) => {
-    if (!deepenable.includes(id)) return { pool, p, liquidity: 0 }
+    if (!deepenable.includes(id))
+      return { pool, p, liquidity: 0, pendingSubsidy: amountPerAnswer }
     const { newPool, liquidity, newP } = addCpmmLiquidity(
       pool,
       p,
       amountPerAnswer
     )
-    return { pool: newPool, p: newP, liquidity }
+    return { pool: newPool, p: newP, liquidity, pendingSubsidy: 0 }
   })
 }
 

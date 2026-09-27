@@ -81,7 +81,10 @@ can fall to 1e-20 or below. What keeps that priceable:
   to hold the probability keeps it there. Beyond the band, `p` would follow an
   answer to 1e-6 or 0.999, where a trade the size of the pool leaves a side
   smaller than a double can hold. Subsidy an answer can't take waits, and
-  resolution pays pending subsidy out.
+  resolution pays pending subsidy out. On an independent market every answer
+  takes an equal share of a whole-market add, since resolution credits each
+  provider with that share of every answer; an answer outside the band holds
+  its share as its own pending subsidy.
 - Nothing moves the `p` of an answer outside 1%–99% toward its price, which
   would leave the answer priced by a sliver of one side: at 1e-17 with
   `p` = 0.05 an answer is priced by 1e-13 of NO, so a trillionth of a mana

@@ -93,6 +93,9 @@ const drizzleMarket = async (contractId: string) => {
       const isV2 = contract.mechanism === 'cpmm-multi-2'
 
       let answerUpdates: (Partial<Answer> & { id: string })[]
+      // Shares of the subsidy that independent answers outside 1%-99% hold as
+      // their own pending subsidy.
+      let pendingByAnswer: [string, number][] = []
       if (isV2) {
         const poolsByAnswer = Object.fromEntries(
           answers.map((a) => [
@@ -102,9 +105,18 @@ const drizzleMarket = async (contractId: string) => {
         )
         // With no answer inside 1%-99%, the subsidy waits.
         if (!canDeployCpmmMulti2Liquidity(poolsByAnswer)) return
-        const newByAnswer = contract.shouldAnswersSumToOne
-          ? addCpmmMultiLiquidityAnswersSumToOneV2(poolsByAnswer, amount)
+        const independent = contract.shouldAnswersSumToOne
+          ? undefined
           : addCpmmMultiLiquidityToAnswersIndependentlyV2(poolsByAnswer, amount)
+        const newByAnswer =
+          independent ??
+          addCpmmMultiLiquidityAnswersSumToOneV2(poolsByAnswer, amount)
+        pendingByAnswer = Object.entries(independent ?? {})
+          .map(([answerId, { pendingSubsidy }]): [string, number] => [
+            answerId,
+            pendingSubsidy,
+          ])
+          .filter(([, pending]) => pending > 0)
         answerUpdates = Object.entries(newByAnswer)
           .slice(0, 50_000)
           .map(([answerId, { pool, p }]) => ({
@@ -134,6 +146,12 @@ const drizzleMarket = async (contractId: string) => {
       }
 
       await updateAnswers(pgTrans, contractId, answerUpdates)
+      // Atomic, as drizzleAnswer read-modify-writes subsidy_pool in its own tx.
+      for (const [answerId, pending] of pendingByAnswer)
+        await pgTrans.none(
+          `update answers set subsidy_pool = subsidy_pool + $1 where id = $2`,
+          [pending, answerId]
+        )
 
       await updateContract(pgTrans, contract.id, {
         subsidyPool: subsidyPool - amount,

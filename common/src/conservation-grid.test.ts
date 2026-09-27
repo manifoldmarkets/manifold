@@ -540,10 +540,12 @@ class Sim {
       })
       return
     }
-    const updated =
+    const independent =
       this.type === 'mc_sumone'
-        ? addCpmmMultiLiquidityAnswersSumToOneV2(map, amount)
+        ? undefined
         : addCpmmMultiLiquidityToAnswersIndependentlyV2(map, amount)
+    const updated =
+      independent ?? addCpmmMultiLiquidityAnswersSumToOneV2(map, amount)
     this.answers = this.answers.map((a) => {
       const u = updated[a.id]
       return {
@@ -552,6 +554,8 @@ class Sim {
         poolNo: u.pool.NO,
         p: u.p,
         prob: getCpmmProbability(u.pool, u.p),
+        // An independent answer outside 1%-99% holds its share as pending subsidy.
+        subsidyPool: a.subsidyPool + (independent?.[a.id].pendingSubsidy ?? 0),
       }
     })
     this.spend(user, amount)
