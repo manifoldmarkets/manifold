@@ -176,6 +176,26 @@ it('refreshes after the subscription acknowledgment', async () => {
   expect(calls).toBe(2)
 })
 
+it('keeps the mount read when the acknowledgment read fails', async () => {
+  const first = deferred<LimitBet[]>()
+  let calls = 0
+  const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+  try {
+    const m = await mount(() =>
+      ++calls === 1 ? first.promise : Promise.reject(new Error('503'))
+    )
+    await act(async () => {
+      for (const sub of mockSubscriptions)
+        if (sub.topics.includes(`contract/${m.id}/orders`)) sub.onSubscribed?.()
+    })
+    await act(async () => first.resolve([order(m.id)]))
+    expect(calls).toBe(2)
+    expect(m.latest[0]?.map((b) => b.id)).toEqual(['a'])
+  } finally {
+    error.mockRestore()
+  }
+})
+
 it('expires an idle order without waiting for another render or event', async () => {
   jest.useFakeTimers()
   try {

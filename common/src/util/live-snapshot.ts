@@ -1,12 +1,15 @@
 /** A shared snapshot with ordered refreshes and an overlay of live updates.
- * Updates received during a read win over that read. Starting a newer read
- * makes every older response obsolete, even if the newer read fails. */
+ * Updates received during a read win over that read. A response is dropped
+ * once a newer read's response has been published; until then it replaces
+ * the older snapshot, so a slow or failed newer read can't discard it. */
 export function createLiveSnapshot<T extends { id: string }>(
   normalize: (values: T[]) => T[] = (values) => values
 ) {
   let snapshot: T[] | undefined
-  let generation = 0
-  let updates: Map<string, T> | undefined
+  let started = 0
+  let published = 0
+  // Live updates received since each in-flight read started.
+  const overlays = new Map<number, Map<string, T>>()
   const listeners = new Set<() => void>()
 
   const publish = (values: T[]) => {
@@ -26,7 +29,8 @@ export function createLiveSnapshot<T extends { id: string }>(
       }
     },
     update: (changes: T[]) => {
-      for (const value of changes) updates?.set(value.id, value)
+      for (const overlay of overlays.values())
+        for (const value of changes) overlay.set(value.id, value)
       publish(merge(snapshot ?? [], changes))
     },
     // Used to remove orders when their expiry time is reached.
@@ -34,15 +38,20 @@ export function createLiveSnapshot<T extends { id: string }>(
       if (snapshot) publish(snapshot)
     },
     refresh: async (read: () => Promise<T[]>) => {
-      const current = ++generation
-      updates = new Map()
+      const generation = ++started
+      const overlay = new Map<string, T>()
+      overlays.set(generation, overlay)
       try {
         const values = await read()
-        if (generation === current) {
-          publish(merge(values, Array.from(updates?.values() ?? [])))
+        if (generation > published) {
+          published = generation
+          // Older reads still in flight can no longer be published.
+          for (const older of overlays.keys())
+            if (older < generation) overlays.delete(older)
+          publish(merge(values, Array.from(overlay.values())))
         }
       } finally {
-        if (generation === current) updates = undefined
+        overlays.delete(generation)
       }
     },
   }

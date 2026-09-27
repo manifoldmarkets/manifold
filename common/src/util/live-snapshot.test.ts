@@ -51,9 +51,21 @@ it('preserves new and partially filled orders received during a read', async () 
   expect(store.getSnapshot()).toEqual([{ id: 'a', amount: 25 }, { id: 'b' }])
 })
 
-it('keeps the last snapshot on failure, ignores obsolete reads, and allows retry', async () => {
+it('keeps the last snapshot when a read fails, and allows retry', async () => {
   const store = book()
   store.update([{ id: 'a' }])
+  await expect(
+    store.refresh(async () => {
+      throw new Error('offline')
+    })
+  ).rejects.toThrow('offline')
+  expect(store.getSnapshot()).toEqual([{ id: 'a' }])
+  await store.refresh(async () => [{ id: 'fresh' }])
+  expect(store.getSnapshot()).toEqual([{ id: 'fresh' }])
+})
+
+it('still applies an older response when the newer read fails', async () => {
+  const store = book()
   const old = deferred<Order[]>()
   const done = store.refresh(() => old.promise)
   await expect(
@@ -61,11 +73,25 @@ it('keeps the last snapshot on failure, ignores obsolete reads, and allows retry
       throw new Error('offline')
     })
   ).rejects.toThrow('offline')
-  old.resolve([{ id: 'obsolete' }])
+  store.update([{ id: 'b' }])
+  old.resolve([{ id: 'a' }])
   await done
+  expect(store.getSnapshot()).toEqual([{ id: 'a' }, { id: 'b' }])
+})
+
+it('applies an older response that finishes first until the newer one arrives', async () => {
+  const store = book()
+  const old = deferred<Order[]>(),
+    fresh = deferred<Order[]>()
+  const first = store.refresh(() => old.promise)
+  const second = store.refresh(() => fresh.promise)
+  old.resolve([{ id: 'a' }])
+  await first
   expect(store.getSnapshot()).toEqual([{ id: 'a' }])
-  await store.refresh(async () => [{ id: 'fresh' }])
-  expect(store.getSnapshot()).toEqual([{ id: 'fresh' }])
+  store.update([{ id: 'a', closed: true }])
+  fresh.resolve([{ id: 'a' }, { id: 'b' }])
+  await second
+  expect(store.getSnapshot()).toEqual([{ id: 'b' }])
 })
 
 it('notifies all subscribers and stops after unsubscribe', () => {
