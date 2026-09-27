@@ -57,6 +57,10 @@ positions in Other are refined the same way as on `cpmm-multi-1`
 (`convertOtherAnswerShares`): YES in Other also counts as YES in the new
 answer, and NO in Other becomes YES in every answer listed before it.
 
+The split moves Other's probability without a bet, so undoing a resolution
+restores a `cpmm-multi-2` answer's probability from its pool, which resolution
+leaves as it was, rather than from its last bet as `cpmm-multi-1` does.
+
 ## Pricing at extreme odds
 
 An answer's `p` can sit as far from 0.5 as a binary market's, and a

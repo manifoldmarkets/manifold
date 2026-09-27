@@ -342,6 +342,11 @@ const undoResolution = async (
     }))
     await bulkUpdateContractMetrics(updateMetrics, pg)
   }
+  // A cpmm-multi-2 answer's probability can move without a bet (adding an
+  // answer splits Other's), so its last bet can be stale, or missing. Resolution
+  // leaves the pools as they were, so restore its probability from them.
+  const isV2 = contract.mechanism === 'cpmm-multi-2'
+  const poolProb = `(answers.p * answers.pool_no) / ((1 - answers.p) * answers.pool_yes + answers.p * answers.pool_no)`
   if (isMultiCpmm(contract) && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract, restore subsidyPool
     const newAnswers = await pg.map(
@@ -363,15 +368,18 @@ const undoResolution = async (
       set
         resolution_time = null,
         resolver_id = null,
-        prob = coalesce(last_bet.prob_after, 0.5),
+        prob = ${isV2 ? poolProb : 'coalesce(last_bet.prob_after, 0.5)'},
         subsidy_pool = coalesce(
           (select (answer_data->>'subsidyPool')::numeric
            from pre_resolution_answers
            where answer_data->>'id' = answers.id),
           0
         )
-      from last_bet
-      where answers.id = last_bet.answer_id
+      ${
+        isV2
+          ? 'where answers.contract_id = $1'
+          : 'from last_bet where answers.id = last_bet.answer_id'
+      }
       returning *`,
       [contractId],
       convertAnswer
@@ -416,7 +424,10 @@ const undoResolution = async (
         resolution = null,
         resolution_time = null,
         resolution_probability = null,
-        prob = coalesce(
+        prob = ${
+          isV2
+            ? poolProb
+            : `coalesce(
           (select prob_after 
            from contract_bets 
            where answer_id = $1 
@@ -424,7 +435,8 @@ const undoResolution = async (
            order by created_time desc 
            limit 1),
           0.5
-        ),
+        )`
+        },
         resolver_id = null,
         subsidy_pool = $3
       where id = $1
