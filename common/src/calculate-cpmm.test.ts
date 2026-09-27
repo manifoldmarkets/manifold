@@ -6,7 +6,9 @@ import {
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
   calculateCpmmAmountToBuySharesFixedP,
   calculateCpmmPurchase,
+  calculateCpmmSale,
   calculateCpmmShares,
+  computeFills,
   CPMM_ARBITRAGE_ERROR_PREFIX,
   cpmmMulti2SumToOnePools,
   CpmmState,
@@ -514,11 +516,12 @@ describe('degenerate pool states', () => {
     ).toThrow(CPMM_ARBITRAGE_ERROR_PREFIX + 'NaN')
   })
 
-  it('deepens an answer only away from 0% and 100%', () => {
+  it('deepens an answer only inside the 1%-99% band', () => {
     expect(isDeepenableProb(0.5)).toBe(true)
-    expect(isDeepenableProb(0.004)).toBe(true)
-    expect(isDeepenableProb(1e-7)).toBe(false)
-    expect(isDeepenableProb(1 - 1e-7)).toBe(false)
+    expect(isDeepenableProb(0.01)).toBe(true)
+    expect(isDeepenableProb(0.99)).toBe(true)
+    expect(isDeepenableProb(0.004)).toBe(false)
+    expect(isDeepenableProb(0.996)).toBe(false)
     expect(isDeepenableProb(NaN)).toBe(false)
   })
 
@@ -561,5 +564,101 @@ describe('degenerate pool states', () => {
     expect(isCpmmDegenerateStateError(nanSearch)).toBe(true)
     expect(isCpmmDegenerateStateError(new Error('something else'))).toBe(false)
     expect(isCpmmDegenerateStateError(undefined)).toBe(false)
+  })
+})
+
+describe('pricing at extreme states', () => {
+  it('stops filling a pool too degenerate to price instead of looping', () => {
+    // A cpmm-multi-2 answer whose p was floated to 1e-12 (before liquidity adds
+    // stopped deepening answers that close to 0%). Every fill toward the 99%
+    // bound comes out a sliver short of it, so the fill loop never finished.
+    const { takers, cpmmState } = computeFills(
+      {
+        pool: { YES: 28.493145893492805, NO: 123.01466405954169 },
+        p: 1.0800949297938046e-12,
+        collectedFees: noFees,
+      },
+      'YES',
+      93.3484766886036,
+      undefined,
+      [],
+      {},
+      { max: 0.99, min: 0.01 },
+      true
+    )
+    expect(takers.length).toBeLessThanOrEqual(100)
+    expect(getCpmmProbability(cpmmState.pool, cpmmState.p)).toBeLessThan(0.99)
+    expect(isDrainedPool(cpmmState.pool)).toBe(false)
+  })
+
+  it('leaves a lopsided pool a tiny positive side instead of rounding it to 0', () => {
+    // A 95% favourite with p = 0.955 hit by a big NO purchase: its NO side
+    // falls to about 4e-24 of its YES side, which side + amount - shares can't
+    // represent.
+    const state = {
+      pool: { YES: 30.1711, NO: 15.3499 },
+      p: 0.9547,
+      collectedFees: noFees,
+    }
+    const { newPool } = calculateCpmmPurchase(state, 411.6, 'NO', true)
+    expect(isDrainedPool(newPool)).toBe(false)
+    const exact =
+      15.3499 * Math.exp(-(0.9547 / (1 - 0.9547)) * Math.log1p(411.6 / 30.1711))
+    expect(newPool.NO / exact).toBeCloseTo(1, 12)
+  })
+
+  it('computes cpmm-multi-1 pools exactly as before, however lopsided', () => {
+    // At p = 0.5 the pool update is the subtraction it always was.
+    const pool = { YES: 1000, NO: 1e-9 }
+    const { newPool } = calculateCpmmPurchase(
+      { pool, p: 0.5, collectedFees: noFees },
+      1e6,
+      'NO',
+      true
+    )
+    const shares = calculateCpmmShares(pool, 0.5, 1e6, 'NO')
+    expect(newPool.NO).toBe(1e-9 - shares + 1e6)
+  })
+
+  it('charges a mana a share for shares of a side below an ulp of them', () => {
+    // A favourite ground down to 2e-18: its NO side is 4e-16, and NO is a
+    // near-certain Ṁ1 a share. Pricing these at 0 let a sale elsewhere in the
+    // market count shares it never bought, and pay the seller for them.
+    const state = {
+      pool: { YES: 4952.7484905759, NO: 3.598175308605255e-16 },
+      p: 0.9689050277972809,
+      collectedFees: noFees,
+    }
+    const cost = calculateCpmmAmountToBuySharesFixedP(state, 99.7, 'NO')
+    expect(cost).toBe(99.7)
+    const { shares } = calculateCpmmPurchase(state, cost, 'NO', true)
+    expect(shares).toBeCloseTo(99.7, 12)
+  })
+
+  it('sells exactly the shares asked within an ulp of 100%', () => {
+    // An answer at p = 0.037 bought up to 1 - 4e-15. Selling 0.0456 YES buys
+    // 0.0456 NO for 2e-16, a sliver of any linear bracket; bisecting it found an
+    // amount that bought a fifth more, and paid the seller for them.
+    const state = {
+      pool: { YES: 9.2754427869599e-15, NO: 60.76966773165374 },
+      p: 0.03664829821400758,
+      collectedFees: noFees,
+    }
+    const shares = 0.0455886479608074
+    const { takers, saleValue, cpmmState } = calculateCpmmSale(
+      state,
+      shares,
+      'YES',
+      [],
+      {}
+    )
+    const sold = -sum(takers.map((t) => t.shares))
+    expect(sold / shares).toBeCloseTo(1, 12)
+    // No more than a mana a share.
+    expect(saleValue).toBeLessThanOrEqual(sold)
+    // The pool pays out what the seller gained, whichever way it resolves.
+    const { YES, NO } = cpmmState.pool
+    expect(YES - state.pool.YES - shares + saleValue).toBeCloseTo(0, 12)
+    expect(NO - state.pool.NO + saleValue).toBeCloseTo(0, 12)
   })
 })

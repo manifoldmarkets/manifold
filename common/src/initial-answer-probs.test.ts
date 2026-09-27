@@ -96,7 +96,6 @@ describe('getAnswerProbsError', () => {
     numAnswers: 3,
     shouldAnswersSumToOne: true,
     hasOtherAnswer: false,
-    addAnswersMode: 'DISABLED' as const,
   }
 
   it('accepts probabilities that add up to 100', () => {
@@ -167,14 +166,7 @@ describe('getAnswerProbsError', () => {
   })
 
   it('keeps the Other answer inside the same bounds', () => {
-    // Markets with 'Other' can gain answers, so they only take starting
-    // probabilities on cpmm-multi-1.
-    const withOther = {
-      ...sumToOne,
-      hasOtherAnswer: true,
-      addAnswersMode: 'ANYONE' as const,
-      cpmmMulti2Enabled: false,
-    }
+    const withOther = { ...sumToOne, hasOtherAnswer: true }
     expect(
       getAnswerProbsError({ ...withOther, answerProbs: [50, 20, 10] })
     ).toBeUndefined()
@@ -196,8 +188,6 @@ describe('getAnswerProbsError', () => {
           ...sumToOne,
           numAnswers: answerProbs.length,
           hasOtherAnswer: true,
-          addAnswersMode: 'ANYONE',
-          cpmmMulti2Enabled: false,
           answerProbs,
         })
       ).toBeUndefined()
@@ -380,7 +370,6 @@ describe('fitting live odds to seed a duplicate market', () => {
       numAnswers: answerProbs.length,
       shouldAnswersSumToOne,
       hasOtherAnswer: false,
-      addAnswersMode: 'DISABLED',
     }) === undefined
 
   it('raises long shots to the floor without breaking the total', () => {

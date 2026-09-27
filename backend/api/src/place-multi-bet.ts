@@ -60,9 +60,12 @@ export const placeMultiBetMain = async (
 
     const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
     if (!betOnAnswers) throw new APIError(404, 'Answers not found')
-    // cpmm-multi-2's basket solve takes about a second at 10 answers and six at
-    // 50, blocking the event loop for every other request while it runs.
-    // Single-answer bets don't use it.
+    // cpmm-multi-2's basket solve fails its own verification on about 1% of
+    // fuzzed baskets: where a large order rests on an answer outside the basket,
+    // the cost jumps past the bet amount at the order's price, which its search
+    // can't land in. It also takes 3-4x as long as cpmm-multi-1's (about 0.1s at
+    // 10 answers). Single-answer bets don't use it, and the site only sends
+    // multi-answer bets on numeric markets, which are never cpmm-multi-2.
     if (contract.mechanism === 'cpmm-multi-2' && betOnAnswers.length > 1)
       throw new APIError(
         400,

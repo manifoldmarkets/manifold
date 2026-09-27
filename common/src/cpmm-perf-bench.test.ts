@@ -2,7 +2,7 @@
 //   "Did you do any performance testing with this yet?"
 //
 // Measures:
-//   1. calculateCpmmAmountToBuySharesFixedP: p=0.5 closed form vs general-p 50-iter bisection
+//   1. calculateCpmmAmountToBuySharesFixedP: p=0.5 closed form vs general-p Newton
 //   2. Full multi-buy solve: v1 (calculateCpmmMultiArbitrageBetsYes, via public
 //      calculateCpmmMultiArbitrageYesBets) vs v2 (Approach C), n=10 answers,
 //      2-answer basket, M$100, with and without resting limit orders
@@ -11,16 +11,19 @@
 // Run with:  cd common && BENCH=1 npx jest cpmm-perf-bench --silent=false
 // Skipped (describe.skip) in normal test runs so it doesn't slow the suite.
 //
-// Headline (shallow-pool fixtures, single core): the v2 bisection itself is
-// negligible (~µs), but the full v2 multi-buy solve is ~7-10x v1 wall-clock
-// (~160ms at n=10, ~1-1.7s at n=50) — the cost is the per-probe computeFills
+// Headline (shallow-pool fixtures, single core): the v2 cost inverse itself is
+// negligible (~µs), but the full v2 multi-buy solve is ~3-4x v1 wall-clock
+// (~100ms at n=10, ~0.7s at n=50) — the cost is the per-probe computeFills
 // sweeps, not the outer search. A perf pass gates the creation flag flip, not
 // this PR (creation is kill-switched off). Kept in-tree (not in the evidence
 // repo) so the numbers stay reproducible against the code they measure.
 
 import { Answer } from './answer'
 import { LimitBet } from './bet'
-import { calculateCpmmAmountToBuySharesFixedP, CpmmState } from './calculate-cpmm'
+import {
+  calculateCpmmAmountToBuySharesFixedP,
+  CpmmState,
+} from './calculate-cpmm'
 import { calculateCpmmMultiArbitrageYesBets } from './calculate-cpmm-arbitrage'
 import { noFees } from './fees'
 
@@ -174,11 +177,11 @@ d('cpmm perf bench', () => {
       bench(() => calculateCpmmAmountToBuySharesFixedP(closedForm, 50, 'YES'))
     )
     row(
-      'p=0.3 bisection (50 iter), buy 50 shares',
+      'p=0.3 Newton, buy 50 shares',
       bench(() => calculateCpmmAmountToBuySharesFixedP(generalP, 50, 'YES'))
     )
     row(
-      'p=0.3 bisection (50 iter), sell 50 shares',
+      'p=0.3 Newton, sell 50 shares',
       bench(() => calculateCpmmAmountToBuySharesFixedP(generalP, -50, 'YES'))
     )
   })
@@ -245,15 +248,21 @@ d('cpmm perf bench', () => {
     )
     row(
       'v1, p=0.5, 5 resting limit orders',
-      bench(() => runMulti(answersHalf, 2, mkLimits(answersHalf), 'cpmm-multi-1'))
+      bench(() =>
+        runMulti(answersHalf, 2, mkLimits(answersHalf), 'cpmm-multi-1')
+      )
     )
     row(
       'v2, p=0.5, 5 resting limit orders',
-      bench(() => runMulti(answersHalf, 2, mkLimits(answersHalf), 'cpmm-multi-2'))
+      bench(() =>
+        runMulti(answersHalf, 2, mkLimits(answersHalf), 'cpmm-multi-2')
+      )
     )
     row(
       'v2, general per-answer p, 5 resting limit orders',
-      bench(() => runMulti(answersGenP, 2, mkLimits(answersGenP), 'cpmm-multi-2'))
+      bench(() =>
+        runMulti(answersGenP, 2, mkLimits(answersGenP), 'cpmm-multi-2')
+      )
     )
   })
 
@@ -263,7 +272,9 @@ d('cpmm perf bench', () => {
     const answersGenP = Array.from({ length: n }, (_, i) =>
       getAnswerWithP(i, 1 / n)
     )
-    console.log('\n--- 3. multi-buy solve, n=50, basket=2, M$100, no limits ---')
+    console.log(
+      '\n--- 3. multi-buy solve, n=50, basket=2, M$100, no limits ---'
+    )
     row(
       'v1, p=0.5',
       bench(() => runMulti(answersHalf, 2, [], 'cpmm-multi-1'))

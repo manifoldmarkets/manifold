@@ -370,25 +370,34 @@ describe('cpmm-multi-2 creation — odds the √variance shape cannot hold', () 
 })
 
 describe('which markets starting probabilities open as cpmm-multi-2', () => {
-  it('keeps markets that can gain answers on cpmm-multi-1', () => {
-    const contract = makeMC(['A', 'B'], [60, 30], 1000, true, 'ANYONE')
-    expect(contract.mechanism).toBe('cpmm-multi-1')
+  it('opens markets that can gain answers as cpmm-multi-2, Other included', () => {
+    const ante = 1000
+    const contract = makeMC(['A', 'B'], [60, 30], ante, true, 'ANYONE')
+    expect(contract.mechanism).toBe('cpmm-multi-2')
+    const { answers } = contract
+    expect(answers.map((a) => a.text)).toEqual(['A', 'B', 'Other'])
+    expect(answers.map((a) => a.isOther)).toEqual([false, false, true])
+    const probs = answers.map((a) =>
+      getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+    )
+    expect(probs[0]).toBeCloseTo(0.6, 9)
+    expect(probs[1]).toBeCloseTo(0.3, 9)
+    expect(probs[2]).toBeCloseTo(0.1, 9)
+    // Lossless: whichever answer wins, Other included, the pools pay back the
+    // whole ante.
+    const noTotal = sumBy(answers, (a) => a.poolNo)
+    for (const a of answers)
+      expect(a.poolYes - a.poolNo + noTotal).toBeCloseTo(ante, 6)
   })
 
-  it('refuses starting probabilities on them while cpmm-multi-2 is on', () => {
-    const props = {
-      answerProbs: [60, 30],
-      numAnswers: 2,
-      shouldAnswersSumToOne: true,
-      hasOtherAnswer: true,
-      addAnswersMode: 'ANYONE' as const,
-    }
+  it('takes starting probabilities on them', () => {
     expect(
-      getAnswerProbsError({ ...props, cpmmMulti2Enabled: true })
-    ).toContain('added later')
-    // With it off they get cpmm-multi-1's lossy seeding, as before.
-    expect(
-      getAnswerProbsError({ ...props, cpmmMulti2Enabled: false })
+      getAnswerProbsError({
+        answerProbs: [60, 30],
+        numAnswers: 2,
+        shouldAnswersSumToOne: true,
+        hasOtherAnswer: true,
+      })
     ).toBeUndefined()
   })
 

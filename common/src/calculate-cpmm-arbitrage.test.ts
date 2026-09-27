@@ -1195,6 +1195,40 @@ describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting lim
     expect(newBetResult.makers.length + saleValue).toBeGreaterThan(0)
   })
 
+  it("sells a cpmm-multi-1 answer next to a NO order resting at the other answer's price", () => {
+    // The same trade on cpmm-multi-1 pools, where the NaN fee failed a third of
+    // such sales on main ("only works for p = 0.5, got NaN").
+    const answer = (index: number, prob: number) => {
+      const poolYes = Math.sqrt((1000 * (1 - prob)) / prob)
+      return {
+        ...getAnswer(index, prob),
+        poolYes,
+        poolNo: 1000 / poolYes,
+      } as Answer
+    }
+    const answers = [answer(0, 0.6), answer(1, 0.4)]
+    const resting = getLimitBet(
+      'resting',
+      answers[1],
+      'NO',
+      'maker',
+      188.684,
+      0.4
+    )
+    const { saleValue } = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      0.5,
+      'YES',
+      undefined,
+      [resting],
+      {},
+      noFees
+    )
+    expect(saleValue).toBeGreaterThan(0)
+    expect(saleValue).toBeLessThan(0.5 * 0.61)
+  })
+
   it("sells a dust amount into a YES order resting at the answer's price", () => {
     // A 0.02% long shot whose drizzles took p to 1e-4: probing share counts far
     // below one ulp of its pool returns rounding noise, which used to walk the
@@ -1229,6 +1263,79 @@ describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting lim
         noFees
       )
       expect(saleValue / shares).toBeCloseTo(0.69, 6)
+    }
+  })
+
+  it('pays a seller only for shares the sale buys, next to an answer near 0%', () => {
+    // From the fuzz: a favourite ground down to 2e-18, whose NO side is 4e-16,
+    // with a YES order at 1% on it. Selling NO in another answer buys NO in this
+    // one, where the order covers 233 of the 333 shares; pricing the rest at 0
+    // left them unbought but paid for, Ṁ99.7 from nowhere.
+    const answer = (
+      index: number,
+      poolYes: number,
+      poolNo: number,
+      p: number
+    ) =>
+      ({
+        ...getAnswerWithP(index, p),
+        poolYes,
+        poolNo,
+        prob: getCpmmProbability({ YES: poolYes, NO: poolNo }, p),
+      } as Answer)
+    const answers = [
+      answer(0, 4952.7484905759, 3.598175308605255e-16, 0.9689050277972809),
+      answer(1, 128.2962645139363, 338.1400228088712, 0.9247365470217482),
+      answer(2, 1236.7191268316892, 38.2211340595028, 0.24549118238470446),
+      answer(3, 2124.447729053801, 234.9047207145989, 0.08370555830646977),
+      answer(4, 2124.447729053801, 234.9047207145989, 0.08370555830646977),
+    ]
+    const resting = [
+      getLimitBet('no', answers[0], 'NO', 'maker0', 12.69363427876906, 0.95),
+      getLimitBet('yes', answers[0], 'YES', 'maker1', 2.3290731078288283, 0.01),
+    ]
+    const shares = 1539.2001604704037
+    const { saleValue, newBetResult, otherBetResults } =
+      calculateCpmmMultiSumsToOneSale(
+        answers,
+        answers[2],
+        shares,
+        'NO',
+        undefined,
+        resting,
+        {},
+        noFees
+      )
+    const pools = new Map(
+      [
+        [answers[2].id, newBetResult.cpmmState.pool],
+        ...otherBetResults.map((r) => [r.answer.id, r.cpmmState.pool] as const),
+      ].map(([id, pool]) => [id, pool as { YES: number; NO: number }])
+    )
+    const makers = [newBetResult, ...otherBetResults].flatMap((r) => r.makers)
+    const payout = (winner: string, after: boolean) =>
+      sumBy(answers, (a) => {
+        const pool = (after && pools.get(a.id)) || {
+          YES: a.poolYes,
+          NO: a.poolNo,
+        }
+        return a.id === winner ? pool.YES : pool.NO
+      })
+    // Whichever answer wins, what the pools and makers gain pays exactly for
+    // the NO the seller gave up, net of what the seller and makers were paid.
+    for (const { id } of answers) {
+      const makersGain = sumBy(makers, (m) =>
+        (m.bet.outcome === 'YES') === (m.bet.answerId === id) ? m.shares : 0
+      )
+      const sellerLoss = id === answers[2].id ? 0 : shares
+      expect(
+        payout(id, true) -
+          payout(id, false) +
+          makersGain -
+          sumBy(makers, 'amount') +
+          saleValue -
+          sellerLoss
+      ).toBeCloseTo(0, 6)
     }
   })
 })

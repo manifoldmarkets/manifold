@@ -326,22 +326,13 @@ export const ANSWER_PROB_SUM_TOLERANCE = 1
 // cpmm-multi-2. A cpmm-multi-1 pool has p fixed at 0.5, so it can only hold an
 // answer away from an even split by throwing away shares the ante bought;
 // giving each answer its own p lets it open anywhere without losing any.
-// Only markets whose answers are fixed at creation get it for now: that's the
-// shape cpmm-multi-2 was validated end to end on, and adding an answer to one
-// whose answers sum to one splits 'Other' by crediting the pool's shares to the
-// creator as bets, which isn't settled for markets with several liquidity
-// providers.
 export const opensAsCpmmMulti2 = (props: {
   answerProbs: number[] | undefined
-  addAnswersMode: add_answers_mode
   cpmmMulti2Enabled?: boolean
 }) => {
-  const {
-    answerProbs,
-    addAnswersMode,
-    cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
-  } = props
-  return !!answerProbs && cpmmMulti2Enabled && addAnswersMode === 'DISABLED'
+  const { answerProbs, cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED } =
+    props
+  return !!answerProbs && cpmmMulti2Enabled
 }
 
 // Checks manually set starting probabilities (percent, one per listed answer)
@@ -352,23 +343,9 @@ export const getAnswerProbsError = (props: {
   numAnswers: number
   shouldAnswersSumToOne: boolean
   hasOtherAnswer: boolean
-  addAnswersMode: add_answers_mode
-  cpmmMulti2Enabled?: boolean
 }) => {
-  const {
-    answerProbs,
-    numAnswers,
-    shouldAnswersSumToOne,
-    hasOtherAnswer,
-    addAnswersMode,
-    cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
-  } = props
-
-  // With cpmm-multi-2 on, starting probabilities only open markets whose
-  // answers are fixed (see opensAsCpmmMulti2), rather than fall back to pools
-  // that would throw part of the ante away.
-  if (cpmmMulti2Enabled && addAnswersMode !== 'DISABLED')
-    return `Starting probabilities can't be set on a market where answers can be added later.`
+  const { answerProbs, numAnswers, shouldAnswersSumToOne, hasOtherAnswer } =
+    props
 
   if (answerProbs.length !== numAnswers)
     return `Expected ${numAnswers} starting probabilities, got ${answerProbs.length}.`
@@ -449,11 +426,7 @@ const getMultipleChoiceProps = (
     answers.length === 2 &&
     shouldAnswersSumToOne
 
-  const isV2 = opensAsCpmmMulti2({
-    answerProbs,
-    addAnswersMode,
-    cpmmMulti2Enabled,
-  })
+  const isV2 = opensAsCpmmMulti2({ answerProbs, cpmmMulti2Enabled })
 
   const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
   const answersWithOther = answers.concat(hasOther ? ['Other'] : [])
@@ -669,7 +642,10 @@ function createAnswers(
         // p=0.5 special case √(Y·N), which understates depth on the √variance asymmetric v2 pools
         // (Y_i≠N_i, p_i≠0.5). Balanced Set pools (Y=N) give the same value either way.
         totalLiquidity: getCpmmLiquidity({ YES: poolYes, NO: poolNo }, p),
-        isOther: false,
+        isOther:
+          shouldAnswersSumToOne &&
+          addAnswersMode !== 'DISABLED' &&
+          i === answers.length - 1,
       })
       return answer
     })

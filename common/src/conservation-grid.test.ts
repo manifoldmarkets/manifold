@@ -20,7 +20,9 @@ import { sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
+  addAnswerToCpmmMulti2Pools,
   addCpmmLiquidity,
+  canDeployCpmmMulti2Liquidity,
   addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
   calculateCpmmMultiSumsToOneSale,
@@ -45,6 +47,7 @@ import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
 import { CPMMMulti, MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
 import { fitAnswerProbs } from './answer-probs'
+import { floatingEqual } from './util/math'
 import {
   getNewContract,
   MAX_ANSWER_PROB,
@@ -105,6 +108,9 @@ class Sim {
   // placeBet refuses a cpmm-multi-2 trade that drains a pool side outright
   // (isDrainedPool). Off by default: the rows below never get near it.
   refuseDrainedPools = false
+  // Whole-market subsidy no answer could take as depth, waiting as the drizzle
+  // leaves it; resolution pays it out.
+  contractSubsidy = 0
   private lpId = 0
   private limitId = 0
 
@@ -262,7 +268,9 @@ class Sim {
         { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB },
         true
       )
-      const { pool: newPool, p: newP } = cpmmState
+      // placeBet keeps an answer's p through a trade (the fill's re-derived p
+      // only drifts from it).
+      const { pool: newPool } = cpmmState
       this.guardPools([newPool])
       const spent = sumBy(takers, (t) => t.amount)
       const shares = sumBy(takers, (t) => t.shares)
@@ -272,8 +280,7 @@ class Sim {
               ...x,
               poolYes: newPool.YES,
               poolNo: newPool.NO,
-              p: newP,
-              prob: getCpmmProbability(newPool, newP),
+              prob: getCpmmProbability(newPool, x.p),
             }
           : x
       )
@@ -393,8 +400,7 @@ class Sim {
               ...x,
               poolYes: cpmmState.pool.YES,
               poolNo: cpmmState.pool.NO,
-              p: cpmmState.p,
-              prob: getCpmmProbability(cpmmState.pool, cpmmState.p),
+              prob: getCpmmProbability(cpmmState.pool, x.p),
             }
           : x
       )
@@ -522,6 +528,18 @@ class Sim {
         { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
       ])
     )
+    if (!canDeployCpmmMulti2Liquidity(map)) {
+      this.contractSubsidy += amount
+      this.spend(user, amount)
+      this.liquidities.push({
+        id: `lp${this.lpId++}`,
+        userId: user,
+        contractId: 'c',
+        createdTime: this.lpId,
+        amount,
+      })
+      return
+    }
     const updated =
       this.type === 'mc_sumone'
         ? addCpmmMultiLiquidityAnswersSumToOneV2(map, amount)
@@ -545,6 +563,80 @@ class Sim {
       amount,
     })
     this.check(`addLiquidity M$${amount} by ${user}`)
+  }
+
+  // Add an answer to a sum-to-one market by splitting Other, as create-answer-cpmm
+  // does on cpmm-multi-2: the pools addAnswerToCpmmMulti2Pools returns, the
+  // adder's fee as their liquidity, Other's resting orders cancelled, and each
+  // trader's position in Other refined as convertOtherAnswerShares does: net YES
+  // in Other also counts as YES in the new answer, and net NO in Other becomes
+  // YES in every answer listed before it.
+  addAnswer(user: string, answerCost: number, id: string) {
+    const other = this.answers.find((a) => a.isOther)!
+    const listed = this.answers.filter((a) => !a.isOther)
+    const { pools, pendingSubsidy } = addAnswerToCpmmMulti2Pools(
+      Object.fromEntries(
+        this.answers.map((a) => [
+          a.id,
+          { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
+        ])
+      ),
+      other.id,
+      id,
+      answerCost
+    )
+    const withPool = (a: Answer): Answer => {
+      const { pool, p } = pools[a.id]
+      return {
+        ...a,
+        poolYes: pool.YES,
+        poolNo: pool.NO,
+        p,
+        prob: getCpmmProbability(pool, p),
+      }
+    }
+    const newAnswer = withPool({
+      ...other,
+      id,
+      text: id,
+      isOther: false,
+      subsidyPool: pendingSubsidy,
+    })
+    this.answers = [...listed.map(withPool), newAnswer, withPool(other)]
+
+    for (const [key, pos] of [...this.pos]) {
+      const [trader, answerId] = key.split('|')
+      if (answerId !== other.id) continue
+      const netYes = pos.YES - pos.NO
+      if (floatingEqual(netYes, 0)) continue
+      if (netYes > 0) this.posOf(trader, id).YES += netYes
+      else {
+        pos.NO += netYes
+        for (const a of listed) this.posOf(trader, a.id).YES -= netYes
+      }
+    }
+    // As the backend does: Other's orders go, and so do YES orders a listed
+    // price that had to give has passed.
+    const probBefore = new Map(listed.map((a) => [a.id, a.prob]))
+    this.unfilled = this.unfilled.filter((b) => {
+      if (b.answerId === other.id) return false
+      const answer = this.answers.find((a) => a.id === b.answerId)
+      if (!answer || b.outcome !== 'YES') return true
+      return (
+        floatingEqual(answer.prob, probBefore.get(answer.id)!) ||
+        b.limitProb <= answer.prob
+      )
+    })
+    this.spend(user, answerCost)
+    this.liquidities.push({
+      id: `lp${this.lpId++}`,
+      userId: user,
+      contractId: 'c',
+      createdTime: this.lpId,
+      amount: answerCost,
+      answerId: id,
+    })
+    this.check(`addAnswer ${id} M$${answerCost} by ${user}`)
   }
 
   private metrics(): ContractMetric[] {
@@ -587,7 +679,7 @@ class Sim {
           outs[i],
           ms,
           this.liquidities,
-          0
+          this.contractSubsidy / this.answers.length
         )
         traderPayouts.push(...r.traderPayouts)
         liquidityPayouts.push(...r.liquidityPayouts)
@@ -605,7 +697,7 @@ class Sim {
         resolutions,
         ms,
         this.liquidities,
-        0
+        this.contractSubsidy
       ))
     }
     for (const { userId, payout } of [...traderPayouts, ...liquidityPayouts])
@@ -632,22 +724,50 @@ class Sim {
                   : 0
               return yes * a.poolYes + (1 - yes) * a.poolNo + a.subsidyPool
             })
-          )
+          ) + this.contractSubsidy
     const dust = owed - sumBy(liquidityPayouts, (x) => x.payout)
     const providers = new Set(this.liquidities.map((l) => l.userId)).size
     const payoutsPerProvider = mode === 'set_yesno' ? this.answers.length : 1
     expect(dust).toBeGreaterThan(-1e-6)
     expect(dust).toBeLessThan(1e-3 * providers * payoutsPerProvider + 1e-6)
-    // Sum of all user balance deltas + fees + dropped dust must be exactly 0.
-    expect(netSum + this.fees + dust).toBeCloseTo(0, 4)
+    // Sum of all user balance deltas + fees + dropped dust must be 0, up to
+    // floating point rounding on the mana that moved (whale lifecycles move
+    // Ṁ100,000s, where rounding alone reaches Ṁ0.00001s).
+    const moved = sum(Object.values(this.balances).map(Math.abs)) + this.fees
+    expect(Math.abs(netSum + this.fees + dust)).toBeLessThan(
+      1e-9 * moved + 5e-5
+    )
   }
 
   // The param is a call-site label only (readable invariant-check tags); keep it named.
   private check(_step: string) {
     for (const a of this.answers) {
+      // A pool pushed within an ulp of 100% prices at exactly 1; it's still a
+      // pool (both sides positive and finite), which is what this checks.
+      expect(isDrainedPool({ YES: a.poolYes, NO: a.poolNo })).toBe(false)
+      // Creation opens every p within [0.01, 0.99], trades don't move it, and
+      // liquidity only deepens answers inside the 1%-99% band, which keeps it
+      // there.
+      expect(a.p).toBeGreaterThanOrEqual(0.01 - 1e-9)
+      expect(a.p).toBeLessThanOrEqual(0.99 + 1e-9)
       const pr = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
       expect(pr).toBeGreaterThan(0)
-      expect(pr).toBeLessThan(1)
+      expect(pr).toBeLessThanOrEqual(1)
+      // No answer is a hair trigger: a billionth of a mana on either side moves
+      // it by under 0.1%. An answer near 0% whose p is low, or near 100% whose p
+      // is high, is priced by a sliver of one side, and there a trade below what
+      // the arbitrage's arithmetic can resolve would swing it to 50%.
+      const lnOdds =
+        Math.log(a.p) +
+        Math.log(a.poolNo) -
+        Math.log1p(-a.p) -
+        Math.log(a.poolYes)
+      const probAt = (x: number) => 1 / (1 + Math.exp(-x))
+      const nudge = 1e-9
+      const afterYes = lnOdds + Math.log1p(nudge / a.poolNo) / a.p
+      const afterNo = lnOdds - Math.log1p(nudge / a.poolYes) / (1 - a.p)
+      expect(probAt(afterYes) - probAt(lnOdds)).toBeLessThan(1e-3)
+      expect(probAt(lnOdds) - probAt(afterNo)).toBeLessThan(1e-3)
     }
     if (this.type === 'mc_sumone') {
       const s = sumBy(this.answers, (a) =>
@@ -1163,11 +1283,10 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
 // the exact solution of that shape instead (cpmmMulti2SumToOneCreationPools falls back to it
 // when the closed form starves an answer or has no solution), up to 30 answers. Drive the
 // markets it actually opens, sum-to-one and independent, through random lifecycles: buys,
-// sells of held shares, resting limit orders, whole-market and per-answer liquidity, then a
-// random resolution.
-// A trade the calc refuses (throws on) is one the API would refuse: it leaves the market
-// untouched and the fuzz moves on. Everything else must hold Sim's invariants at every step
-// and close conservation at resolution.
+// sells of held shares, resting limit orders, whole-market and per-answer liquidity, answers
+// added to markets with an Other answer, then a random resolution.
+// No trade may be refused as draining a pool, and nothing may throw: every step must hold
+// Sim's invariants, and resolution must close conservation.
 describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
   const seeded = (seed: number) => () => {
     seed = (seed + 0x6d2b79f5) | 0
@@ -1179,6 +1298,13 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
   // How lopsided a favourite opens, and how big a trade can get against the ante.
   let favourite = { from: 60, spread: 35 }
   let maxTradeOfAnte = 0.5
+  // Harsher lifecycles: how often a trade hammers one answer (and later
+  // reverses onto the most extreme ones), how often it's dust, and how often a
+  // resting order sits right at the price or at the 1%/99% bound.
+  let grind = 0
+  let dust = 0
+  let edgeOrders = 0
+  let opsPerMarket = [6, 15]
   const pick = <T>(xs: T[]) => xs[Math.floor(rng() * xs.length)]
   const logUniform = (lo: number, hi: number) =>
     Math.exp(Math.log(lo) + rng() * (Math.log(hi) - Math.log(lo)))
@@ -1212,7 +1338,14 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     )!
   }
 
-  const open = (answerProbs: number[], sumsToOne: boolean, ante: number) => {
+  // `addable` markets open with an Other answer (Other takes the remainder of
+  // answerProbs) and can gain answers.
+  const open = (
+    answerProbs: number[],
+    sumsToOne: boolean,
+    ante: number,
+    addable = false
+  ) => {
     const contract = getNewContract({
       id: 'c',
       slug: 'c',
@@ -1228,7 +1361,7 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
       max: 0,
       isLogScale: false,
       answers: answerProbs.map((_, i) => `A${i}`),
-      addAnswersMode: 'DISABLED',
+      addAnswersMode: addable ? 'ANYONE' : 'DISABLED',
       shouldAnswersSumToOne: sumsToOne,
       answerProbs,
       cpmmMulti2Enabled: true,
@@ -1237,10 +1370,17 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     } as any) as CPMMMulti
     expect(contract.mechanism).toBe('cpmm-multi-2')
     const answers = contract.answers.map((a, i) => ({ ...a, id: `a${i}` }))
+    const expected =
+      addable && sumsToOne
+        ? [...answerProbs, 100 - sumBy(answerProbs)]
+        : answerProbs
+    expect(answers.map((a) => !!a.isOther)).toEqual(
+      expected.map((_, i) => addable && sumsToOne && i === answerProbs.length)
+    )
     answers.forEach((a, i) =>
       expect(
         getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
-      ).toBeCloseTo(answerProbs[i] / 100, 9)
+      ).toBeCloseTo(expected[i] / 100, 9)
     )
     // Lossless: the creator's pools pay back the whole ante however it resolves.
     if (sumsToOne) {
@@ -1270,13 +1410,22 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     const traders = ['alice', 'bob', 'carol']
     let trades = 0
     let refused = 0
+    let answersAdded = 0
     for (let market = 0; market < 30; market++) {
       const sumsToOne = rng() < 0.75
+      const addable = sumsToOne && rng() < 0.5
       const n = sumsToOne
         ? pick([2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 20, 30])
         : pick([1, 2, 3, 5, 8])
       const ante = pick([100, 1000, 10_000])
-      const answers = open(startingProbs(n, sumsToOne), sumsToOne, ante)
+      // An addable market's Other takes the last of n starting probabilities.
+      const probs = startingProbs(n, sumsToOne)
+      const answers = open(
+        addable ? probs.slice(0, -1) : probs,
+        sumsToOne,
+        ante,
+        addable
+      )
       const type = sumsToOne ? 'mc_sumone' : 'set_indep'
       const s = new Sim(
         { n, probs: 'balanced', type },
@@ -1286,14 +1435,33 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
       )
       s.refuseDrainedPools = true
 
-      const ops = 6 + Math.floor(rng() * 9)
+      const ops =
+        opsPerMarket[0] +
+        Math.floor(rng() * (opsPerMarket[1] - opsPerMarket[0]))
+      const target = Math.floor(rng() * n)
       for (let op = 0; op < ops; op++) {
         const roll = rng()
-        const i = Math.floor(rng() * n)
+        let i = Math.floor(rng() * s.answers.length)
         if (roll < 0.4) {
           trades++
-          const outcome = pick(['YES', 'NO'] as const)
-          const amount = logUniform(1, ante * maxTradeOfAnte)
+          let outcome = pick(['YES', 'NO'] as const)
+          const amount =
+            rng() < dust
+              ? logUniform(1e-4, 1)
+              : logUniform(1, ante * maxTradeOfAnte)
+          if (rng() < grind) {
+            const probs = s.answers.map((a) => a.prob)
+            if (op < ops / 2) {
+              i = target
+              outcome = 'YES'
+            } else if (rng() < 0.5) {
+              i = probs.indexOf(Math.min(...probs))
+              outcome = 'YES'
+            } else {
+              i = probs.indexOf(Math.max(...probs))
+              outcome = 'NO'
+            }
+          }
           if (!attempt(() => s.buy(pick(traders), i, outcome, amount)))
             refused++
         } else if (roll < 0.6) {
@@ -1316,8 +1484,14 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
             outcome === 'YES'
               ? prob * (0.5 + rng() * 0.45)
               : prob + (1 - prob) * (0.05 + rng() * 0.45)
+          // An order rests only at or away from the price; a crossed one would
+          // fill as it was placed.
           const limitProb =
-            Math.round(Math.min(0.99, Math.max(0.01, limit)) * 100) / 100
+            rng() < edgeOrders
+              ? outcome === 'YES'
+                ? pick([0.01, Math.max(0.01, Math.floor(prob * 100) / 100)])
+                : pick([0.99, Math.min(0.99, Math.ceil(prob * 100) / 100)])
+              : Math.round(Math.min(0.99, Math.max(0.01, limit)) * 100) / 100
           s.placeLimit(
             `maker${op}`,
             i,
@@ -1325,8 +1499,15 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
             limitProb,
             logUniform(5, ante / 4)
           )
-        } else if (roll < 0.88) {
+        } else if (roll < 0.83) {
           s.addLiquidity('lp', logUniform(10, ante))
+        } else if (roll < 0.94 && addable) {
+          s.addAnswer(
+            pick([...traders, 'dave']),
+            logUniform(ante / 200, ante / 10),
+            `x${market}_${op}`
+          )
+          answersAdded++
         } else {
           s.addLiquidity('lp2', logUniform(10, ante / 2), i)
         }
@@ -1334,8 +1515,9 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
 
       if (sumsToOne) {
         const mode = pick(['one', 'one', 'one', 'multiple', 'cancel'] as const)
-        if (mode === 'one') s.resolve('one', { winner: Math.floor(rng() * n) })
-        else if (mode === 'multiple' && n >= 2) {
+        if (mode === 'one')
+          s.resolve('one', { winner: Math.floor(rng() * s.answers.length) })
+        else if (mode === 'multiple' && s.answers.length >= 2) {
           const w = Math.round(rng() * 100) / 100
           s.resolve('multiple', { split: [w, 1 - w] })
         } else s.resolve('cancel')
@@ -1345,26 +1527,38 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
         })
       } else s.resolve('cancel')
     }
-    return { trades, refused }
+    return { trades, refused, answersAdded }
   }
 
   it('random lifecycles conserve mana and keep every invariant', () => {
-    const { trades, refused } = lifecycles()
+    const { trades, refused, answersAdded } = lifecycles()
     expect(trades).toBeGreaterThan(100)
-    // An ordinary trade almost never drains a pool outright: about 1 in
-    // 10,000 across wider sweeps.
-    expect(refused / trades).toBeLessThan(0.01)
+    expect(answersAdded).toBeGreaterThan(5)
+    expect(refused).toBe(0)
   })
 
   it('so do trades of up to three times the ante against big favourites', () => {
     rng = seeded(11)
     favourite = { from: 90, spread: 8 }
     maxTradeOfAnte = 3
-    const { trades, refused } = lifecycles()
+    const { trades, refused, answersAdded } = lifecycles()
     expect(trades).toBeGreaterThan(100)
-    // A few of these drain a pool outright, and are refused as a binary
-    // market's would be.
-    expect(refused / trades).toBeLessThan(0.01)
+    expect(answersAdded).toBeGreaterThan(5)
+    expect(refused).toBe(0)
+  })
+
+  it('and whales, answers ground to extreme odds and back, and dust', () => {
+    rng = seeded(4242)
+    favourite = { from: 80, spread: 19 }
+    maxTradeOfAnte = 10
+    grind = 0.5
+    dust = 0.2
+    edgeOrders = 0.3
+    opsPerMarket = [20, 50]
+    const { trades, refused, answersAdded } = lifecycles()
+    expect(trades).toBeGreaterThan(300)
+    expect(answersAdded).toBeGreaterThan(5)
+    expect(refused).toBe(0)
   })
 
   // Long shots' NO sides open at about 0.001 of the ante, so an ordinary trade on

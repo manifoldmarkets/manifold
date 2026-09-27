@@ -125,9 +125,30 @@ describe('addCpmmMultiLiquidityAnswersSumToOneV2 guard (GP19c)', () => {
   })
 
   it('infeasible q + large add stays sane and prob-preserving (fallback engages)', () => {
-    // n = 30, 0.90 dominant: creation-infeasible, so a large enough merge would drive
+    // n = 30, 0.70 dominant: creation-infeasible, so a large enough merge would drive
     // merged poolYes < 0. The guard must keep every pool sane with probs preserved.
-    checkSaneAndProbPreserving(dominant(30, 0.9), 100_000)
+    checkSaneAndProbPreserving(dominant(30, 0.7), 100_000)
+  })
+
+  it('leaves answers outside 1%-99% as they are', () => {
+    // n = 30, 0.90 dominant: every other answer is at 0.34%, where re-deriving p
+    // could leave it priced by a sliver of its pool. Only the favourite deepens.
+    const q = dominant(30, 0.9)
+    const pools = stateAt(q)
+    const result = addCpmmMultiLiquidityAnswersSumToOneV2(pools, 1000)
+    let probSum = 0
+    for (const [i, id] of Object.keys(pools).entries()) {
+      const prob = getCpmmProbability(result[id].pool, result[id].p)
+      expect(prob).toBeCloseTo(q[i], 12)
+      probSum += prob
+      if (i === 0) expect(result[id].liquidity).toBeGreaterThan(0)
+      else {
+        expect(result[id].pool).toEqual(pools[id].pool)
+        expect(result[id].p).toBe(pools[id].p)
+        expect(result[id].liquidity).toBe(0)
+      }
+    }
+    expect(probSum).toBeCloseTo(1, 12)
   })
 
   it('infeasible q survives an accumulating drizzle (many small adds)', () => {
@@ -159,7 +180,8 @@ describe('addCpmmMultiLiquidityAnswersSumToOneV2 guard (GP19c)', () => {
     // At infeasible q the add merges what creation would open at these odds, the
     // exact √variance shape, whose reserves are all positive; the equal-split guard
     // doesn't engage.
-    const q = dominant(30, 0.9)
+    const q = dominant(30, 0.7)
+    expect(cpmmMulti2SumToOneFeasible(q)).toBe(false)
     const pools = stateAt(q, 10_000)
     const result = addCpmmMultiLiquidityAnswersSumToOneV2(pools, 10)
     const delta = cpmmMulti2SumToOneCreationPools(q, 10)

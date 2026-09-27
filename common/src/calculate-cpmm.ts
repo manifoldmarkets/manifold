@@ -37,12 +37,15 @@ export const isCpmmDegenerateStateError = (e: unknown): e is Error =>
 export const isDrainedPool = (pool: { [outcome: string]: number }) =>
   Object.values(pool).some((side) => !(side > 0 && isFinite(side)))
 
-// Whether a lossless add can deepen a cpmm-multi-2 answer at this probability.
-// Floating p to hold the probability pulls p toward it as the pool fills, so
-// within a millionth of 0% or 100% the add would leave p extreme enough for the
-// pool math to lose precision. The per-answer drizzle leaves such an answer's
-// subsidy pending; resolution pays undrizzled subsidy out.
-export const isDeepenableProb = (prob: number) => prob > 1e-6 && prob < 1 - 1e-6
+// Whether a lossless add can deepen a cpmm-multi-2 answer at this probability:
+// within the 1%-99% band bets are held to. Floating p to hold the probability
+// moves p toward it as the pool fills, so adds only there keep every answer's p
+// within [0.01, 0.99], where creation puts it (trades never move p). Beyond, p
+// would follow an answer to 1e-6 or 0.999, and at such a p the pool has next to
+// no depth on one side: a trade the size of the pool leaves a side below what a
+// double can hold. The subsidy waits instead; resolution pays it out.
+export const isDeepenableProb = (prob: number) =>
+  prob >= MIN_CPMM_PROB && prob <= MAX_CPMM_PROB
 
 export type CpmmState = {
   pool: { [outcome: string]: number }
@@ -124,10 +127,13 @@ export function getCpmmFees(
     const averageProb = betAmountAfterFee / shares
     // A bet too small for the pool's floating point to register buys exactly 0
     // shares, at an average price of x/0. Charge it no fee rather than a NaN
-    // one, except at p = 0.5: there the NaN is one of the ways cpmm-multi-1's
-    // arbitrage reports a degenerate pool, which its sell diagnostics look for.
+    // one, which failed the whole trade: a sale next to a resting order probes
+    // such fills. A drained pool at p = 0.5 keeps the NaN, one of the ways
+    // cpmm-multi-1's arbitrage reports a degenerate pool, which its sell
+    // diagnostics look for.
     fee =
-      isFinite(averageProb) || floatingEqual(state.p, 0.5)
+      isFinite(averageProb) ||
+      (floatingEqual(state.p, 0.5) && isDrainedPool(state.pool))
         ? getTakerFee(shares, averageProb)
         : 0
   }
@@ -151,6 +157,30 @@ export function calculateCpmmSharesAfterFee(
   return calculateCpmmShares(pool, p, remainingBet, outcome)
 }
 
+// The side of the pool a purchase takes its shares from, after the purchase.
+// That's side + amount - shares, but the subtraction cancels when the trade
+// leaves the side many orders of magnitude below the amount, as it does when an
+// answer is pushed far toward 0% or 100% at a p far from 0.5: it rounds a small
+// positive side to 0, or to a few ulps of noise that later trades can't price.
+// There, take the side straight from the invariant instead:
+// side' = side * (other / (other + amount)) ^ ((1 - pSide) / pSide), where pSide
+// is the side's exponent in it (p for YES, 1 - p for NO). Anywhere the
+// subtraction keeps its precision, it's what this returns, bit for bit, and it
+// always is at p = 0.5 (give or take the few ulps a fill can move p), so
+// cpmm-multi-1 pools come out exactly as they did.
+const poolSideAfterPurchase = (
+  side: number,
+  other: number,
+  pSide: number,
+  amount: number,
+  shares: number
+) => {
+  const subtracted = side - shares + amount
+  if (floatingEqual(pSide, 0.5) || subtracted > 1e-6 * (side + amount))
+    return subtracted
+  return side * Math.exp(-((1 - pSide) / pSide) * Math.log1p(amount / other))
+}
+
 export function calculateCpmmPurchase(
   state: CpmmState,
   bet: number,
@@ -172,8 +202,14 @@ export function calculateCpmmPurchase(
 
   const [newY, newN] =
     outcome === 'YES'
-      ? [y - shares + remainingBet + fee, n + remainingBet + fee]
-      : [y + remainingBet + fee, n - shares + remainingBet + fee]
+      ? [
+          poolSideAfterPurchase(y, n, p, remainingBet, shares) + fee,
+          n + remainingBet + fee,
+        ]
+      : [
+          y + remainingBet + fee,
+          poolSideAfterPurchase(n, y, 1 - p, remainingBet, shares) + fee,
+        ]
 
   const postBetPool = { YES: newY, NO: newN }
 
@@ -236,36 +272,57 @@ export function calculateCpmmAmountToBuySharesFixedP(
   // for it, rather than bisect on NaN.
   if (!isFinite(state.p)) throw new Error(CPMM_ARBITRAGE_ERROR_PREFIX + state.p)
 
-  // General p (cpmm-multi-2): shares -> cost has no closed form, so invert the
-  // general-p forward map calculateCpmmShares by bisection (the proven Python
-  // oracle amm_core.cost_for_shares, GP3). The bisection runs on the log of the
-  // cost: at an extreme price the cost is a sliver of any linear bracket, whose
-  // precision would then buy or sell a visibly different number of shares than
-  // asked (0.25% more at a price of 4e-12). A trade of `shares` costs, or pays,
-  // less than `shares` mana, and a sale can't take more than the opposite pool.
+  // General p (cpmm-multi-2): shares -> cost has no closed form. Trading `a`
+  // mana for `shares` (s) of an outcome leaves the side it's paid from at
+  // own + a - s and the other side at other + a, with own^pOwn *
+  // other^(1 - pOwn) unchanged (pOwn is p for YES, 1 - p for NO), so the cost is
+  // the root of
+  //   h(a) = pOwn * log1p((a - s) / own) + (1 - pOwn) * log1p(a / other).
+  // In log1p form h keeps its precision at extreme prices, where the cost is a
+  // sliver of the shares. h rises and is concave in a, so Newton's method
+  // started below the root climbs to it without overshooting, in a handful of
+  // steps; a bracket catches any step that would leave it. A trade of s shares
+  // costs, or pays, less than s mana, and a sale can't take more than the other
+  // side.
   if (shares === 0) return 0
-  const sign = Math.sign(shares)
-  const target = Math.abs(shares)
-  // Shares traded for `amount` mana, both counted positive; rises with amount.
-  const sharesFor = (amount: number) =>
-    sign * calculateCpmmShares(state.pool, state.p, sign * amount, outcome)
-  const otherPool = outcome === 'YES' ? n : y
-  const high = shares > 0 ? target : Math.min(target, otherPool * (1 - 1e-9))
-  let low = high / 1e3
-  // A target this small, or a sale against an empty side, costs nothing the
-  // pool can represent.
-  if (low === 0) return 0
-  // Below one ulp of the pool, sharesFor returns rounding noise that can sit
-  // above a tiny target; stop before low underflows to 0, whose log is -Infinity.
-  for (let i = 0; i < 100 && low / 1e3 > 0 && sharesFor(low) > target; i++)
-    low /= 1e3
-  // binarySearch fail-fasts on a NaN comparator.
-  const logCost = binarySearch(
-    Math.log(low),
-    Math.log(high),
-    (logAmount) => sharesFor(Math.exp(logAmount)) - target
-  )
-  return sign * Math.exp(logCost)
+  const { p } = state
+  const [own, other, pOwn] = outcome === 'YES' ? [y, n, p] : [n, y, 1 - p]
+  let lo = shares > 0 ? Math.max(0, shares - own) : Math.max(shares, -other)
+  let hi = shares > 0 ? shares : 0
+  // Where the bracket is a single float, that's the cost: a mana a share when
+  // the side the shares come from is below one ulp of them, and nothing for a
+  // sale against an empty side.
+  if (!(hi > lo)) return hi
+  const h = (a: number) =>
+    pOwn * Math.log1p((a - shares) / own) + (1 - pOwn) * Math.log1p(a / other)
+  const slope = (a: number) =>
+    pOwn / (own + a - shares) + (1 - pOwn) / (other + a)
+  // Every share at the current price: below the root, buying or selling.
+  const price = (pOwn * other) / ((1 - pOwn) * own + pOwn * other)
+  let cost = shares * price
+  if (!(cost > lo && cost < hi)) cost = lo + (hi - lo) / 2
+  for (let i = 0; i < 100; i++) {
+    // When the side the shares come from is below one ulp of them, the bracket's
+    // low end can round to a cost that would take more than the side holds,
+    // where log1p's argument passes -1: that cost is too low.
+    const value = cost - shares <= -own ? -Infinity : h(cost)
+    // Only a degenerate pool gets here; fail the way the bisection this
+    // replaced did, which the sell diagnostics recognize.
+    if (isNaN(value))
+      throw new Error(
+        BINARY_SEARCH_NAN_ERROR + ' at ' + JSON.stringify({ cost, lo, hi })
+      )
+    if (value === 0) return cost
+    if (value < 0) lo = cost
+    else hi = cost
+    let next = value === -Infinity ? NaN : cost - value / slope(cost)
+    if (!(next > lo && next < hi)) next = lo + (hi - lo) / 2
+    // Down to adjacent floats: the high end is the least cost known to cover it.
+    if (!(next > lo && next < hi)) return hi
+    if (Math.abs(next - cost) <= 1e-15 * Math.abs(next)) return next
+    cost = next
+  }
+  return cost
 }
 
 export const computeFills = (
@@ -319,7 +376,11 @@ export const computeFills = (
   const currentBalanceByUserId = { ...balanceByUserId }
 
   let i = 0
-  while (true) {
+  // Each fill takes the next resting order or moves the pool up to one, so a bet
+  // needs about two fills per order. Only a pool too degenerate to price keeps
+  // returning fills that go nowhere; stop there rather than loop forever.
+  const maxFills = 2 * sortedBets.length + 100
+  for (let fills = 0; fills < maxFills; fills++) {
     const matchedBet: LimitBet | undefined = sortedBets[i]
     const fill = computeFill(
       amount,
@@ -539,17 +600,23 @@ export function calculateAmountToBuySharesFixedP(
 
   const remaningShares = shares - currShares
 
-  // Recompute up to currAmount to get the current cpmmState.
-  const { cpmmState } = computeFills(
-    state,
-    outcome,
-    currAmount,
-    undefined,
-    unfilledBets,
-    balanceByUserId,
-    undefined,
-    freeFees
-  )
+  // Recompute up to currAmount to get the current cpmmState. With nothing
+  // filled yet that's the state itself: a fill of nothing would re-derive p from
+  // the pool's probability, which within 1e-11 of 100% keeps only a few digits
+  // of it, and price the shares at a p the purchase itself doesn't use.
+  const { cpmmState } =
+    currAmount === 0
+      ? { cpmmState: state }
+      : computeFills(
+          state,
+          outcome,
+          currAmount,
+          undefined,
+          unfilledBets,
+          balanceByUserId,
+          undefined,
+          freeFees
+        )
   const fillAmount = calculateCpmmAmountToBuySharesFixedP(
     cpmmState,
     remaningShares,
@@ -639,10 +706,7 @@ export function calculateAmountToBuyShares(
 ) {
   const prob = getCpmmProbability(state.pool, state.p)
   const minAmount = shares * (outcome === 'YES' ? prob : 1 - prob)
-
-  // Search for amount between bounds.
-  // Min share price is based on current probability, and max is Ṁ1 each.
-  return binarySearch(minAmount, shares, (amount) => {
+  const sharesFor = (amount: number) => {
     const { takers } = computeFills(
       state,
       outcome,
@@ -651,10 +715,34 @@ export function calculateAmountToBuyShares(
       unfilledBets,
       balanceByUserId
     )
+    return sumBy(takers, (taker) => taker.shares)
+  }
 
-    const totalShares = sumBy(takers, (taker) => taker.shares)
-    return totalShares - shares
-  })
+  // Search for amount between bounds.
+  // Min share price is based on current probability, and max is Ṁ1 each.
+  const amount = binarySearch(
+    minAmount,
+    shares,
+    (amount) => sharesFor(amount) - shares
+  )
+  // Within an ulp or so of 0% or 100%, the cost of the cheap side's shares is
+  // a sliver of that bracket, finer than bisecting it resolves: selling 0.05
+  // shares at 1 - 4e-15 costs 2e-16, and the amount found could buy a fifth
+  // more shares than asked. Where it misses by more than a millionth, search
+  // again on the log of the amount, which resolves it relative to its own size,
+  // and take that if it buys the shares asked. (A miss can also be a jump no
+  // amount lands in, where a maker's balance runs out; that stays as it was.)
+  const missBy = (amount: number) => Math.abs(sharesFor(amount) - shares)
+  if (!(missBy(amount) > 1e-6 * shares)) return amount
+  const refined = Math.exp(
+    binarySearch(
+      Math.log(Math.max(minAmount, Number.MIN_VALUE)),
+      Math.log(shares),
+      (logAmount) => sharesFor(Math.exp(logAmount)) - shares,
+      100
+    )
+  )
+  return missBy(refined) <= 1e-9 * shares ? refined : amount
 }
 
 export function calculateCpmmAmountToBuyShares(
@@ -1141,18 +1229,237 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
   // conservation is inherited). The √variance shape is an optimization, not an
   // invariant; on the GP19a-feasible set the merge is unconditionally sane (A* = ∞) and
   // this fallback never engages.
-  const merged = answerIds.map((id) => result[id])
-  if (!merged.every((x) => isSanePoolYesNo(x.pool, x.p))) {
-    const equalAmount = amount / answerIds.length
+  // The same per-answer adds also stand in whenever some answer is outside the
+  // 1%-99% band bets are held to (isDeepenableProb), or merging the creation
+  // shape would carry some answer's p out of [0.01, 0.99] (further out than it
+  // already was), where it would be left with next to no depth on one side.
+  // The merge re-derives every answer's p, and for an answer near 0% or 100%
+  // that can move p toward 0.5 while the pool stays lopsided: an answer at
+  // 1e-17 with p = 0.05 is priced by 1e-13 of NO, so a trillionth of a mana
+  // moves it to 70%, below what the arbitrage's arithmetic can resolve. Only
+  // answers inside the band take the per-answer adds, which keeps their p
+  // inside too, weighted by the depth creation would give them; the rest keep
+  // their pools and p. Callers leave the subsidy pending if no answer can take
+  // it (canDeployCpmmMulti2Liquidity).
+  const keepsPInBand = (id: string) => {
+    const p = result[id].p
+    return (
+      (p >= MIN_CPMM_PROB && p <= MAX_CPMM_PROB) ||
+      Math.abs(p - 0.5) <= Math.abs(poolsByAnswer[id].p - 0.5)
+    )
+  }
+  const deepenable = deepenableAnswerIds(poolsByAnswer)
+  if (
+    deepenable.length < answerIds.length ||
+    !answerIds.every(
+      (id) => isSanePoolYesNo(result[id].pool, result[id].p) && keepsPInBand(id)
+    )
+  ) {
+    const depth = (id: string) => {
+      const q = probs[answerIds.indexOf(id)]
+      return Math.sqrt(q * (1 - q))
+    }
+    const totalDepth = sumBy(deepenable, depth)
     answerIds.forEach((id) => {
       const { pool, p } = poolsByAnswer[id]
-      const { newPool, newP } = addCpmmLiquidity(pool, p, equalAmount)
+      if (!deepenable.includes(id)) {
+        result[id] = { pool, p, liquidity: 0 }
+        return
+      }
+      const share = (amount * depth(id)) / totalDepth
+      const { newPool, newP } = addCpmmLiquidity(pool, p, share)
       const liquidity =
         getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
       result[id] = { pool: newPool, p: newP, liquidity }
     })
   }
   return result
+}
+
+const odds = (q: number) => q / (1 - q)
+
+// cpmm-multi-2: grows a listed answer's YES − NO by `delta`, as splitting Other
+// asks (addAnswerToCpmmMulti2Pools), holding its price wherever its p can stay
+// in [0.01, 0.99]. `cost` is the NO it adds, which comes out of the liquidity
+// budget, or frees into it when negative. In order of preference:
+// 1. Add delta YES, or remove delta NO, and float p up to hold the price.
+//    Adding YES keeps the pool deeper; removing NO, where NO is the bigger
+//    side, moves p less. Raising p keeps a pool well-conditioned below 99%.
+// 2. Shrink the pool in proportion, by at most half, which holds both the price
+//    and p; only an answer with more NO than YES grows YES − NO this way.
+// 3. Add delta YES and as much liquidity on both sides as brings p to 0.99,
+//    within the budget.
+// 4. Otherwise the price gives a little: keep p, or raise it to 0.99 below 99%,
+//    and remove delta NO or add delta YES, whichever moves the price less. The
+//    halves of Other take up what the price gave, so the answers still sum to
+//    one.
+// `upTo` is the last of these to try.
+const foldIntoListedAnswer = (
+  pool: { YES: number; NO: number },
+  p: number,
+  delta: number,
+  budget: number,
+  upTo: 'free' | 'budget' | 'any'
+):
+  | { pool: { YES: number; NO: number }; p: number; cost: number }
+  | undefined => {
+  const { YES: y, NO: n } = pool
+  if (!(delta > 0)) return { pool, p, cost: 0 }
+  const prob = getCpmmProbability(pool, p)
+  const grown = { pool: { YES: y + delta, NO: n }, cost: 0 }
+  const trimmed =
+    n - delta > y
+      ? { pool: { YES: y, NO: n - delta }, cost: -delta }
+      : undefined
+  if (prob <= MAX_CPMM_PROB)
+    for (const option of trimmed ? [grown, trimmed] : [grown]) {
+      const newP = pForProbability(option.pool, prob)
+      if (newP <= MAX_CPMM_PROB) return { ...option, p: newP }
+    }
+  if (n - y >= 2 * delta) {
+    const scale = 1 - delta / (n - y)
+    return {
+      pool: { YES: y * scale, NO: n * scale },
+      p,
+      cost: -n * (1 - scale),
+    }
+  }
+  if (upTo === 'free') return undefined
+  if (prob < MAX_CPMM_PROB) {
+    const m = odds(MAX_CPMM_PROB) / odds(prob)
+    const topUp = (y + delta - m * n) / (m - 1)
+    if (topUp <= budget)
+      return {
+        pool: { YES: y + delta + topUp, NO: n + topUp },
+        p: MAX_CPMM_PROB,
+        cost: topUp,
+      }
+  }
+  if (upTo === 'budget') return undefined
+  return {
+    ...(trimmed ?? grown),
+    p: prob <= MAX_CPMM_PROB ? Math.max(p, MAX_CPMM_PROB) : p,
+  }
+}
+
+// cpmm-multi-2: the pools after adding an answer to a sum-to-one market, which
+// splits "Other" into the new answer and a new Other. Other's pool belongs to
+// every liquidity provider, so the split pays them exactly what Other's pool
+// did, whichever answer wins. With Other's pool at (Y, N), each half takes a
+// pool (Y − N + δ + ν, ν), every listed answer's YES − NO grows by δ, and
+// S = N − δ − 2ν is left over as mana:
+// - A listed answer winning pays its own YES and every other answer's NO, now
+//   δ + 2ν + S = N more than without Other, as Other's NO did.
+// - Either half winning pays its own YES, the other half's ν and the listed
+//   answers' NO, plus S: Y, as Other's YES did.
+// By default ν = min(N, Y) / 2 and S = 0. When Other isn't a favourite (N ≤ Y)
+// that splits its pool in two and leaves the listed answers alone (δ = 0); when
+// it is, each half gets a balanced pool and the listed answers the rest,
+// δ = N − Y. Each half is priced at half of Other's probability, and where that
+// would put its p below 0.01, ν is lowered until p is 0.01.
+// Each listed answer takes its δ holding its price wherever its p can stay in
+// band (foldIntoListedAnswer), paying for any liquidity that needs out of the
+// fee for adding the answer and S. Where the fee alone can't, the halves are
+// made smaller, at the same p, until it can: that frees S and asks less of the
+// listed answers. The rest of the fee and S then go in as a whole-market
+// liquidity add (or wait as the new answer's subsidy, in the rare market with no
+// answer the add can deepen). No value leaves the pools, so each provider's
+// share at resolution is unchanged.
+export function addAnswerToCpmmMulti2Pools(
+  poolsByAnswer: {
+    [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+  },
+  otherAnswerId: string,
+  newAnswerId: string,
+  answerCost: number
+) {
+  const other = poolsByAnswer[otherAnswerId]
+  const { YES: y, NO: n } = other.pool
+  const probOther = getCpmmProbability(other.pool, other.p)
+  // The YES/NO ratio at which a half, at half of Other's probability, prices at
+  // p = 0.01.
+  const minRatio = odds(MIN_CPMM_PROB) / odds(probOther / 2)
+  const fullNo = Math.min(Math.min(n, y) / 2, y / (minRatio + 1))
+  // The halves' YES/NO ratio, which sets their p; at least 1.
+  const ratio = (y - fullNo) / fullNo
+  const fee = Math.max(0, answerCost)
+
+  // The split with halves of NO side `halfNo`, or undefined if some listed
+  // answer can't hold its price unless `finalTry`.
+  const splitWith = (halfNo: number, finalTry: boolean) => {
+    // At fullNo, δ = N − 2ν (0 when Other isn't a favourite) and S = 0.
+    const delta = Math.max(0, n - 2 * fullNo - (ratio - 1) * (fullNo - halfNo))
+    let budget = fee + Math.max(0, n - delta - 2 * halfNo)
+    const split: {
+      [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+    } = {}
+    // Answers that hold their price without the budget go first; the rest take
+    // it cheapest first.
+    const pending: string[] = []
+    for (const [id, { pool, p }] of Object.entries(poolsByAnswer)) {
+      if (id === otherAnswerId) continue
+      const folded = foldIntoListedAnswer(pool, p, delta, budget, 'free')
+      if (!folded) {
+        pending.push(id)
+        continue
+      }
+      budget -= folded.cost
+      split[id] = { pool: folded.pool, p: folded.p }
+    }
+    const topUpCost = (id: string) => {
+      const { pool, p } = poolsByAnswer[id]
+      const m = odds(MAX_CPMM_PROB) / odds(getCpmmProbability(pool, p))
+      return m > 1 ? (pool.YES + delta - m * pool.NO) / (m - 1) : Infinity
+    }
+    let given = 0
+    for (const id of sortBy(pending, topUpCost)) {
+      const { pool, p } = poolsByAnswer[id]
+      const folded = foldIntoListedAnswer(
+        pool,
+        p,
+        delta,
+        budget,
+        finalTry ? 'any' : 'budget'
+      )
+      if (!folded) return undefined
+      budget -= folded.cost
+      given +=
+        getCpmmProbability(pool, p) - getCpmmProbability(folded.pool, folded.p)
+      split[id] = { pool: folded.pool, p: folded.p }
+    }
+    const half = { YES: y - n + delta + halfNo, NO: halfNo }
+    const halfP = pForProbability(half, (probOther + given) / 2)
+    split[newAnswerId] = { pool: { ...half }, p: halfP }
+    split[otherAnswerId] = { pool: { ...half }, p: halfP }
+    return { split, budget }
+  }
+
+  // Smaller halves ask less of the listed answers and leave more to pay with,
+  // so the largest halves that let every listed answer hold its price are
+  // found by bisection. Below `least`, δ would be negative; at it, δ = 0.
+  let result = splitWith(fullNo, false)
+  if (!result) {
+    const least = ratio > 1 && y > n ? (y - n) / (ratio - 1) : 0
+    let [lo, hi] = [Math.max(least, fullNo / 1000), fullNo]
+    if (splitWith(lo, false))
+      for (let i = 0; i < 60; i++) {
+        const mid = (lo + hi) / 2
+        if (splitWith(mid, false)) lo = mid
+        else hi = mid
+      }
+    result = splitWith(lo, true)!
+  }
+  const { split, budget } = result
+
+  // With no answer able to take the rest as depth, it waits as the new answer's
+  // subsidy, which resolution pays out like any other.
+  if (!(budget > 0) || !canDeployCpmmMulti2Liquidity(split))
+    return { pools: split, pendingSubsidy: Math.max(0, budget) }
+  const pools = mapValues(
+    addCpmmMultiLiquidityAnswersSumToOneV2(split, budget),
+    ({ pool, p }) => ({ pool, p })
+  )
+  return { pools, pendingSubsidy: 0 }
 }
 
 // cpmm-multi-2: lossless whole-market liquidity add for INDEPENDENT (non-sum-to-one / "Set")
@@ -1178,8 +1485,12 @@ export function addCpmmMultiLiquidityToAnswersIndependentlyV2(
   },
   amount: number
 ) {
-  const amountPerAnswer = amount / Object.keys(poolsByAnswer).length
-  return mapValues(poolsByAnswer, ({ pool, p }) => {
+  // Only answers the add can deepen take a share (isDeepenableProb); callers
+  // leave the subsidy pending when none can (canDeployCpmmMulti2Liquidity).
+  const deepenable = deepenableAnswerIds(poolsByAnswer)
+  const amountPerAnswer = amount / Math.max(1, deepenable.length)
+  return mapValues(poolsByAnswer, ({ pool, p }, id) => {
+    if (!deepenable.includes(id)) return { pool, p, liquidity: 0 }
     const { newPool, liquidity, newP } = addCpmmLiquidity(
       pool,
       p,
@@ -1188,6 +1499,22 @@ export function addCpmmMultiLiquidityToAnswersIndependentlyV2(
     return { pool: newPool, p: newP, liquidity }
   })
 }
+
+const deepenableAnswerIds = (poolsByAnswer: {
+  [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+}) =>
+  Object.keys(poolsByAnswer).filter((id) =>
+    isDeepenableProb(
+      getCpmmProbability(poolsByAnswer[id].pool, poolsByAnswer[id].p)
+    )
+  )
+
+// Whether a cpmm-multi-2 liquidity add has any answer it can deepen. With none,
+// every answer outside 1%-99%, the subsidy stays pending; resolution pays
+// pending subsidy out.
+export const canDeployCpmmMulti2Liquidity = (poolsByAnswer: {
+  [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+}) => deepenableAnswerIds(poolsByAnswer).length > 0
 
 // The pool for a single answer at `prob`, minted out of `amount` mana worth of
 // shares. 1 mana mints one YES and one NO share, but holding both sides equally

@@ -8,7 +8,7 @@ import {
   getCpmmProbability,
 } from './calculate-cpmm'
 import { Fees, getFeesSplit, getTakerFee, noFees, sumAllFees } from './fees'
-import { binarySearch } from './util/algos'
+import { BINARY_SEARCH_NAN_ERROR, binarySearch, findRoot } from './util/algos'
 import { floatingEqual } from './util/math'
 import { addObjects } from './util/object'
 
@@ -22,6 +22,50 @@ const probAfterFill = (r: {
   cpmmState: { pool: { [outcome: string]: number } }
   answer: Answer
 }) => getCpmmProbability(r.cpmmState.pool, r.answer.p)
+// Whether any answer prices at a p other than 0.5, as cpmm-multi-2 answers do.
+const hasGeneralP = (answers: Answer[]) =>
+  answers.some((a) => !floatingEqual(a.p, 0.5))
+
+// Whether an amount the arbitrage worked out is zero but for rounding.
+// cpmm-multi-1 allows Ṁ0.001, as it always has. At a general p an answer can
+// move a long way on less than that, so cpmm-multi-2 allows only the rounding
+// error of the amounts it came from (`scale`).
+const isArbitrageZero = (amount: number, scale: number, generalP: boolean) =>
+  generalP
+    ? Math.abs(amount) <= 1e-12 * scale
+    : floatingArbitrageEqual(amount, 0)
+
+// Bounds for the share searches below, where `comparator` is positive once
+// `shares` is past the solution. cpmm-multi-1 bounds them by pricing every share
+// at the current probability, exactly as it always has. That price is a poor
+// guide at a general p, where an answer can sit at 1e-20 and still move a long
+// way on a small bet, and it cancels to 0 or below once the answer being bought
+// is lost in the rounding of the others' probabilities. cpmm-multi-2 starts from
+// the bet amount instead and doubles until the comparator turns positive, so the
+// search bisects an interval within a factor of two of the answer.
+const shareSearchBounds = (
+  answers: Answer[],
+  betAmount: number,
+  priceBound: number,
+  comparator: (shares: number) => number
+) => {
+  if (!hasGeneralP(answers)) return { min: 0, max: priceBound }
+  if (!(betAmount > 0)) return { min: 0, max: 0 }
+  let min = 0
+  let max = betAmount
+  for (let i = 0; i < 1100; i++) {
+    const comparison = comparator(max)
+    if (isNaN(comparison))
+      throw new Error(
+        BINARY_SEARCH_NAN_ERROR + ' at ' + JSON.stringify({ min, max, i })
+      )
+    if (comparison > 0) break
+    min = max
+    max *= 2
+  }
+  return { min, max }
+}
+
 const noFillsReturn = (
   outcome: string,
   answer: Answer,
@@ -330,14 +374,16 @@ function calculateCpmmMultiArbitrageBetsYes(
 // lives on a single answerId, the per-answer maker books are disjoint — there is no cross-leg
 // working-state maker mutation to reason about (unlike the v1 share-centric "NO in all" loop).
 //
-//   solve g (equal YES shares per basket answer) s.t. net spend == budget        [outer bisection]
+//   solve g (equal YES shares per basket answer) s.t. net spend == budget        [outer search]
 //     buy g YES shares in each basket answer (limit-aware single rising sweep)
-//     solve eta (NO shares in each non-basket answer) s.t. Sum prob == 1          [inner bisection]
+//     solve eta (NO shares in each non-basket answer) s.t. Sum prob == 1          [inner search]
 //       buy eta NO shares in each non-basket answer (limit-aware single falling sweep)
 //     net = basketCost + othersCost - eta*(n - m - 1)   (dollar-centric redemption; m = |basket|)
 //
 // net is strictly increasing in g (GP12a: dt/dg = Sum_basket prob > 0) and Sum_others prob is
-// strictly decreasing in eta (GP5a) — so both bisections are on monotone objectives.
+// strictly decreasing in eta (GP5a) — so both searches are on monotone objectives. Each
+// brackets its root by doubling and closes in with findRoot (regula falsi, safeguarded by
+// bisection), in about a dozen probes where bisection takes 50.
 //
 // Precondition: `initialAnswers` is the FULL LIVE answer set — every answer participating in
 // the sum-to-one constraint. Today that is all of the contract's answers by construction
@@ -446,12 +492,18 @@ function calculateCpmmMultiArbitrageBetsYesV2(
         return getCpmmProbability(cpmmState.pool, answer.p)
       })
 
+    // The search revisits the points the doubling found.
+    const sums = new Map<number, number>()
+    const othersSum = (eta: number) => {
+      if (!sums.has(eta)) sums.set(eta, othersSumAtEta(eta))
+      return sums.get(eta)!
+    }
     let eta = 0
-    if (othersSumAtEta(0) > target) {
-      let hi = 1
-      while (othersSumAtEta(hi) > target && hi < 1e12) hi *= 2
+    if (othersSum(0) > target) {
+      let [lo, hi] = [0, 1]
+      while (othersSum(hi) > target && hi < 1e12) [lo, hi] = [hi, 2 * hi]
       // othersSum decreasing in eta => comparator (target - othersSum) increasing in eta.
-      eta = binarySearch(0, hi, (e) => target - othersSumAtEta(e))
+      eta = findRoot(lo, hi, (e) => target - othersSum(e))
     }
 
     // --- realize the OTHER NO legs at eta, this time applying maker fills to working state ---
@@ -498,21 +550,28 @@ function calculateCpmmMultiArbitrageBetsYesV2(
   }
 
   // outer: net strictly increasing in g (and undefined past the feasibility boundary, which is an
-  // upper bound) => bracket by doubling, then bisect on net == betAmount.
-  let gHi = 1
+  // upper bound) => bracket by doubling, then search for net == betAmount.
+  // evalG depends on g alone, and the search revisits the points the doubling
+  // found and ends on one it has tried.
+  const evaluated = new Map<number, ReturnType<typeof evalG>>()
+  const evalAt = (g: number) => {
+    if (!evaluated.has(g)) evaluated.set(g, evalG(g))
+    return evaluated.get(g)
+  }
+  let [gLo, gHi] = [0, 1]
   while (true) {
-    const r = evalG(gHi)
+    const r = evalAt(gHi)
     if (!r || r.net >= betAmount) break
-    gHi *= 2
+    ;[gLo, gHi] = [gHi, 2 * gHi]
     if (gHi > 1e9) {
       throw new Error('budget unreachable in cpmm-multi-2 YES basket solve')
     }
   }
-  const g = binarySearch(0, gHi, (gg) => {
-    const r = evalG(gg)
+  const g = findRoot(gLo, gHi, (gg) => {
+    const r = evalAt(gg)
     return r ? r.net - betAmount : 1 // infeasible g overshoots Sum p => push g lower
   })
-  const solved = evalG(g)
+  const solved = evalAt(g)
   if (!solved) {
     // Reachable e.g. when the basket is ALL answers (m = n: every g is infeasible, target <= 0).
     // Typed so new-bet.ts maps it to a 503 instead of leaking a 500 stack to the API caller.
@@ -583,7 +642,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
     collectedFees
   )
 
-  // Always-on post-hoc verification (cost is one pass over the result vs. ~100 evalG bisection
+  // Always-on post-hoc verification (cost is one pass over the result vs. the 20-40 evalG
   // probes to produce it). Throws CpmmMulti2InvariantError; new-bet.ts maps it to a retryable
   // 503, so a wrong solve fails the bet instead of committing a mis-priced fill.
   verifyCpmmMulti2BetResult(
@@ -598,9 +657,9 @@ function calculateCpmmMultiArbitrageBetsYesV2(
 }
 
 // --- cpmm-multi-2 post-hoc solve verification -------------------------------------------------
-// The v2 solve above bisects on the premise that net(g) is strictly increasing. That premise is
+// The v2 solve above searches on the premise that net(g) is strictly increasing. That premise is
 // proven only at p = 1/2 with no resting limits (GP12a); production runs general p against a live
-// limit book. If the premise ever fails, binarySearch returns a wrong g SILENTLY — the taker is
+// limit book. If the premise ever fails, the search returns a wrong g SILENTLY — the taker is
 // mis-charged with no error anywhere. But verifying a claimed equilibrium is trivial even where
 // finding it is hard, so we check the returned result and fail the bet (which the client can
 // retry) rather than commit a wrong fill. This demotes monotonicity from a correctness assumption
@@ -942,7 +1001,9 @@ function calculateCpmmMultiArbitrageBetYes(
   // If you spend all of amount on NO shares at current price. Subtract out from the price the redemption mana.
   const maxNoShares = betAmount / (noSharePriceSum - answers.length + 2)
 
-  const noShares = binarySearch(0, maxNoShares, (noShares) => {
+  // The most shares tried that fit within the bet without overshooting.
+  let affordable = 0
+  const comparator = (noShares: number) => {
     const result = buyNoSharesInOtherAnswersThenYesInAnswer(
       answers,
       answerToBuy,
@@ -958,19 +1019,42 @@ function calculateCpmmMultiArbitrageBetYes(
     }
     const newStates = [...result.noBetResults, result.yesBetResult]
     const diff = 1 - sumBy(newStates, probAfterFill)
+    if (
+      diff <= 0 &&
+      noShares > affordable &&
+      sumBy(result.yesBetResult.takers, 'amount') <= betAmount
+    )
+      affordable = noShares
     return diff
-  })
-
-  const result = buyNoSharesInOtherAnswersThenYesInAnswer(
+  }
+  const { min, max } = shareSearchBounds(
     answers,
-    answerToBuy,
-    unfilledBetsByAnswer,
-    balanceByUserId,
     betAmount,
-    limitProb,
-    noShares,
-    collectedFees
+    maxNoShares,
+    comparator
   )
+  let noShares = binarySearch(min, max, comparator)
+
+  const buyNoShares = (noShares: number) =>
+    buyNoSharesInOtherAnswersThenYesInAnswer(
+      answers,
+      answerToBuy,
+      unfilledBetsByAnswer,
+      balanceByUserId,
+      betAmount,
+      limitProb,
+      noShares,
+      collectedFees
+    )
+  let result = buyNoShares(noShares)
+  // When the answer is exactly where the bet runs out, as when an order resting
+  // at the current price can take all of it, the search can stop a hair past
+  // that point; take the closest affordable point it tried instead. (Not on
+  // cpmm-multi-1, which fails there as it always has.)
+  if (!result && hasGeneralP(answers)) {
+    noShares = affordable
+    result = buyNoShares(noShares)
+  }
   if (!result) {
     console.log('no result', result)
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetYes')
@@ -1081,7 +1165,13 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   const redeemedAmount = noShares * (answers.length - 2)
   const netNoAmount = totalNoAmount - redeemedAmount
   let yesBetAmount = betAmount - netNoAmount
-  if (floatingArbitrageEqual(yesBetAmount, 0)) {
+  if (
+    isArbitrageZero(
+      yesBetAmount,
+      Math.max(betAmount, totalNoAmount, redeemedAmount),
+      hasGeneralP(answers)
+    )
+  ) {
     yesBetAmount = 0
   }
   if (yesBetAmount < 0) {
@@ -1143,7 +1233,9 @@ function calculateCpmmMultiArbitrageBetNo(
   )
   const maxYesShares = betAmount / yesSharePriceSum
 
-  const yesShares = binarySearch(0, maxYesShares, (yesShares) => {
+  // The most shares tried that fit within the bet without overshooting.
+  let affordable = 0
+  const comparator = (yesShares: number) => {
     const result = buyYesSharesInOtherAnswersThenNoInAnswer(
       answers,
       answerToBuy,
@@ -1158,19 +1250,40 @@ function calculateCpmmMultiArbitrageBetNo(
     const { yesBetResults, noBetResult } = result
     const newStates = [...yesBetResults, noBetResult]
     const diff = sumBy(newStates, probAfterFill) - 1
+    if (
+      diff <= 0 &&
+      yesShares > affordable &&
+      sumBy(noBetResult.takers, 'amount') <= betAmount
+    )
+      affordable = yesShares
     return diff
-  })
-
-  const result = buyYesSharesInOtherAnswersThenNoInAnswer(
+  }
+  const { min, max } = shareSearchBounds(
     answers,
-    answerToBuy,
-    unfilledBetsByAnswer,
-    balanceByUserId,
     betAmount,
-    limitProb,
-    yesShares,
-    collectedFees
+    maxYesShares,
+    comparator
   )
+  let yesShares = binarySearch(min, max, comparator)
+
+  const buyYesShares = (yesShares: number) =>
+    buyYesSharesInOtherAnswersThenNoInAnswer(
+      answers,
+      answerToBuy,
+      unfilledBetsByAnswer,
+      balanceByUserId,
+      betAmount,
+      limitProb,
+      yesShares,
+      collectedFees
+    )
+  let result = buyYesShares(yesShares)
+  // As in calculateCpmmMultiArbitrageBetYes: step back from a hair past the
+  // point where the bet runs out.
+  if (!result && hasGeneralP(answers)) {
+    yesShares = affordable
+    result = buyYesShares(yesShares)
+  }
   if (!result) {
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetNo')
   }
@@ -1276,7 +1389,13 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   })
   //{"id": "tQudZcEtlp", "slug": "whos-gonna-win-gn8sCuyRpl", "volume": 0, "answers": [{"id": "Ncus9Qtty2", "prob": 0.16666666666666666, "text": "a", "index": 0, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "CAqyQ8AOSn", "prob": 0.16666666666666666, "text": "b", "index": 1, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "Pc86OAUEsn", "prob": 0.16666666666666666, "text": "c", "index": 2, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "dn0gpUIzpq", "prob": 0.16666666666666666, "text": "d", "index": 3, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "uq5uZd5O0A", "prob": 0.16666666666666666, "text": "e", "index": 4, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "ACNE8CLyyS", "prob": 0.16666666666666666, "text": "Other", "index": 5, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": true, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}], "isRanked": false, "question": "Who's gonna win?", "closeTime": 1767254340000, "creatorId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "mechanism": "cpmm-multi-1", "elasticity": 4.99, "groupSlugs": ["nonpredictive"], "isResolved": false, "visibility": "public", "createdTime": 1755714659073, "creatorName": "Ian Bobby", "description": {"type": "doc", "content": [{"type": "paragraph"}]}, "outcomeType": "MULTIPLE_CHOICE", "subsidyPool": 0, "collectedFees": {"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}, "volume24Hours": 0, "addAnswersMode": "ANYONE", "totalLiquidity": 1000, "creatorUsername": "IanPhilip", "lastUpdatedTime": 1755714659519, "popularityScore": 0, "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2FIanPhilip%2FEyIU8AZ2RC.png?alt=media&token=ff41c9e8-21d5-412d-ac19-854a90cce076", "uniqueBettorCount": 0, "creatorCreatedTime": 1668811545000, "uniqueBettorCountDay": 0, "shouldAnswersSumToOne": true}
   let noBetAmount = betAmount - totalYesAmount
-  if (floatingArbitrageEqual(noBetAmount, 0)) {
+  if (
+    isArbitrageZero(
+      noBetAmount,
+      Math.max(betAmount, totalYesAmount),
+      hasGeneralP(answers)
+    )
+  ) {
     noBetAmount = 0
   }
   if (noBetAmount < 0) {

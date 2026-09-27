@@ -6,6 +6,7 @@ import {
   addCpmmLiquidityFixedP,
   addCpmmMultiLiquidityAnswersSumToOne,
   addCpmmMultiLiquidityAnswersSumToOneV2,
+  canDeployCpmmMulti2Liquidity,
   addCpmmMultiLiquidityToAnswersIndependently,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
   getCpmmProbability,
@@ -99,6 +100,8 @@ const drizzleMarket = async (contractId: string) => {
             { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
           ])
         )
+        // With no answer inside 1%-99%, the subsidy waits.
+        if (!canDeployCpmmMulti2Liquidity(poolsByAnswer)) return
         const newByAnswer = contract.shouldAnswersSumToOne
           ? addCpmmMultiLiquidityAnswersSumToOneV2(poolsByAnswer, amount)
           : addCpmmMultiLiquidityToAnswersIndependentlyV2(poolsByAnswer, amount)

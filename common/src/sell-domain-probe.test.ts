@@ -153,133 +153,139 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       ['n=30 probs 0.42 + 29x0.02', [0.42, ...Array(29).fill(0.02)]],
     ]
 
-    it.each(markets)('single-answer sell YES + conservation: %s', (label, probs) => {
-      const answers = mkV2Market(probs)
-      // Sell YES of the highest-prob answer (largest arb footprint at general p)
-      const idx = probs.indexOf(Math.max(...probs))
-      const toSell = answers[idx]
-      const S = 50
+    it.each(markets)(
+      'single-answer sell YES + conservation: %s',
+      (label, probs) => {
+        const answers = mkV2Market(probs)
+        // Sell YES of the highest-prob answer (largest arb footprint at general p)
+        const idx = probs.indexOf(Math.max(...probs))
+        const toSell = answers[idx]
+        const S = 50
 
-      const res = calculateCpmmMultiSumsToOneSale(
-        answers,
-        toSell,
-        S,
-        'YES',
-        undefined,
-        noBets,
-        noBalances,
-        noFees
-      )
-      const after = applySale(answers, toSell.id, res)
-      const stats = domainStats(answers, after)
+        const res = calculateCpmmMultiSumsToOneSale(
+          answers,
+          toSell,
+          S,
+          'YES',
+          undefined,
+          noBets,
+          noBalances,
+          noFees
+        )
+        const after = applySale(answers, toSell.id, res)
+        const stats = domainStats(answers, after)
 
-      // Mana conservation from raw pool deltas (fees are 0, no makers):
-      // sold answer got one NO buy: b_i = dY_i; every other answer got one YES
-      // buy: b_j = dN_j. Complete-set redemption identity: proceeds = S - sum(b).
-      const bSold = after[idx].poolYes - answers[idx].poolYes
-      const bOthers = after
-        .filter((_, j) => j !== idx)
-        .map((a, j2) => {
-          const beforeA = answers.filter((_, j) => j !== idx)[j2]
-          return a.poolNo - beforeA.poolNo
-        })
-      const totalBuy = bSold + sumBy(bOthers, (x) => x)
-      const conservationResidual = res.saleValue - (S - totalBuy)
+        // Mana conservation from raw pool deltas (fees are 0, no makers):
+        // sold answer got one NO buy: b_i = dY_i; every other answer got one YES
+        // buy: b_j = dN_j. Complete-set redemption identity: proceeds = S - sum(b).
+        const bSold = after[idx].poolYes - answers[idx].poolYes
+        const bOthers = after
+          .filter((_, j) => j !== idx)
+          .map((a, j2) => {
+            const beforeA = answers.filter((_, j) => j !== idx)[j2]
+            return a.poolNo - beforeA.poolNo
+          })
+        const totalBuy = bSold + sumBy(bOthers, (x) => x)
+        const conservationResidual = res.saleValue - (S - totalBuy)
 
-      // YES shares extracted per other answer should be equal across answers
-      const sOthers = after
-        .filter((_, j) => j !== idx)
-        .map((a, j2) => {
-          const beforeA = answers.filter((_, j) => j !== idx)[j2]
-          return a.poolNo - beforeA.poolNo - (a.poolYes - beforeA.poolYes)
-        })
-      const sSpread = Math.max(...sOthers) - Math.min(...sOthers)
+        // YES shares extracted per other answer should be equal across answers
+        const sOthers = after
+          .filter((_, j) => j !== idx)
+          .map((a, j2) => {
+            const beforeA = answers.filter((_, j) => j !== idx)[j2]
+            return a.poolNo - beforeA.poolNo - (a.poolYes - beforeA.poolYes)
+          })
+        const sSpread = Math.max(...sOthers) - Math.min(...sOthers)
 
-      const ok =
-        stats.allFinite &&
-        stats.minPool > 0 &&
-        Math.abs(stats.sumProbResidual) < 1e-6 &&
-        stats.maxLiqDrift < 1e-9 &&
-        Math.abs(conservationResidual) < 1e-6 &&
-        Number.isFinite(res.saleValue) &&
-        res.saleValue > 0 &&
-        res.saleValue < S
+        const ok =
+          stats.allFinite &&
+          stats.minPool > 0 &&
+          Math.abs(stats.sumProbResidual) < 1e-6 &&
+          stats.maxLiqDrift < 1e-9 &&
+          Math.abs(conservationResidual) < 1e-6 &&
+          Number.isFinite(res.saleValue) &&
+          res.saleValue > 0 &&
+          res.saleValue < S
 
-      record(
-        `P1 sellYES ${label}`,
-        ok ? 'SAFE' : 'BUG',
-        `${fmtStats(stats)} saleValue=${res.saleValue.toFixed(6)} ` +
-          `conservation=${conservationResidual.toExponential(2)} ` +
-          `otherLegShareSpread=${sSpread.toExponential(2)}`
-      )
-      expect(stats.allFinite).toBe(true)
-      expect(stats.minPool).toBeGreaterThan(0)
-      expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-6)
-      expect(stats.maxLiqDrift).toBeLessThan(1e-9)
-      expect(Math.abs(conservationResidual)).toBeLessThan(1e-6)
-    })
+        record(
+          `P1 sellYES ${label}`,
+          ok ? 'SAFE' : 'BUG',
+          `${fmtStats(stats)} saleValue=${res.saleValue.toFixed(6)} ` +
+            `conservation=${conservationResidual.toExponential(2)} ` +
+            `otherLegShareSpread=${sSpread.toExponential(2)}`
+        )
+        expect(stats.allFinite).toBe(true)
+        expect(stats.minPool).toBeGreaterThan(0)
+        expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-6)
+        expect(stats.maxLiqDrift).toBeLessThan(1e-9)
+        expect(Math.abs(conservationResidual)).toBeLessThan(1e-6)
+      }
+    )
 
-    it.each(markets)('single-answer sell NO + conservation: %s', (label, probs) => {
-      const answers = mkV2Market(probs)
-      // Sell NO of the LOWEST-prob answer (NO shares near price 1, extreme p)
-      const idx = probs.indexOf(Math.min(...probs))
-      const toSell = answers[idx]
-      const S = 50
-      const n = answers.length
+    it.each(markets)(
+      'single-answer sell NO + conservation: %s',
+      (label, probs) => {
+        const answers = mkV2Market(probs)
+        // Sell NO of the LOWEST-prob answer (NO shares near price 1, extreme p)
+        const idx = probs.indexOf(Math.min(...probs))
+        const toSell = answers[idx]
+        const S = 50
+        const n = answers.length
 
-      const res = calculateCpmmMultiSumsToOneSale(
-        answers,
-        toSell,
-        S,
-        'NO',
-        undefined,
-        noBets,
-        noBalances,
-        noFees
-      )
-      const after = applySale(answers, toSell.id, res)
-      const stats = domainStats(answers, after)
+        const res = calculateCpmmMultiSumsToOneSale(
+          answers,
+          toSell,
+          S,
+          'NO',
+          undefined,
+          noBets,
+          noBalances,
+          noFees
+        )
+        const after = applySale(answers, toSell.id, res)
+        const stats = domainStats(answers, after)
 
-      // sold answer got one YES buy: b_i = dN_i, yesShares = dN_i - dY_i.
-      // others got one NO buy each: b_j = dY_j.
-      // redemption = yesShares + (n-1)*(S - yesShares); proceeds = redemption - sum(b)
-      const bSold = after[idx].poolNo - answers[idx].poolNo
-      const yesShares =
-        after[idx].poolNo -
-        answers[idx].poolNo -
-        (after[idx].poolYes - answers[idx].poolYes)
-      const bOthers = after
-        .filter((_, j) => j !== idx)
-        .map((a, j2) => {
-          const beforeA = answers.filter((_, j) => j !== idx)[j2]
-          return a.poolYes - beforeA.poolYes
-        })
-      const totalBuy = bSold + sumBy(bOthers, (x) => x)
-      const redemption = yesShares + (n - 1) * (S - yesShares)
-      const conservationResidual = res.saleValue - (redemption - totalBuy)
+        // sold answer got one YES buy: b_i = dN_i, yesShares = dN_i - dY_i.
+        // others got one NO buy each: b_j = dY_j.
+        // redemption = yesShares + (n-1)*(S - yesShares); proceeds = redemption - sum(b)
+        const bSold = after[idx].poolNo - answers[idx].poolNo
+        const yesShares =
+          after[idx].poolNo -
+          answers[idx].poolNo -
+          (after[idx].poolYes - answers[idx].poolYes)
+        const bOthers = after
+          .filter((_, j) => j !== idx)
+          .map((a, j2) => {
+            const beforeA = answers.filter((_, j) => j !== idx)[j2]
+            return a.poolYes - beforeA.poolYes
+          })
+        const totalBuy = bSold + sumBy(bOthers, (x) => x)
+        const redemption = yesShares + (n - 1) * (S - yesShares)
+        const conservationResidual = res.saleValue - (redemption - totalBuy)
 
-      const ok =
-        stats.allFinite &&
-        stats.minPool > 0 &&
-        Math.abs(stats.sumProbResidual) < 1e-6 &&
-        stats.maxLiqDrift < 1e-9 &&
-        Math.abs(conservationResidual) < 1e-6 &&
-        Number.isFinite(res.saleValue) &&
-        res.saleValue > 0 &&
-        res.saleValue < S
+        const ok =
+          stats.allFinite &&
+          stats.minPool > 0 &&
+          Math.abs(stats.sumProbResidual) < 1e-6 &&
+          stats.maxLiqDrift < 1e-9 &&
+          Math.abs(conservationResidual) < 1e-6 &&
+          Number.isFinite(res.saleValue) &&
+          res.saleValue > 0 &&
+          res.saleValue < S
 
-      record(
-        `P1 sellNO ${label}`,
-        ok ? 'SAFE' : 'BUG',
-        `${fmtStats(stats)} saleValue=${res.saleValue.toFixed(6)} ` +
-          `conservation=${conservationResidual.toExponential(2)}`
-      )
-      expect(stats.allFinite).toBe(true)
-      expect(stats.minPool).toBeGreaterThan(0)
-      expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-6)
-      expect(stats.maxLiqDrift).toBeLessThan(1e-9)
-      expect(Math.abs(conservationResidual)).toBeLessThan(1e-6)
-    })
+        record(
+          `P1 sellNO ${label}`,
+          ok ? 'SAFE' : 'BUG',
+          `${fmtStats(stats)} saleValue=${res.saleValue.toFixed(6)} ` +
+            `conservation=${conservationResidual.toExponential(2)}`
+        )
+        expect(stats.allFinite).toBe(true)
+        expect(stats.minPool).toBeGreaterThan(0)
+        expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-6)
+        expect(stats.maxLiqDrift).toBeLessThan(1e-9)
+        expect(Math.abs(conservationResidual)).toBeLessThan(1e-6)
+      }
+    )
 
     it('sell YES equally across a basket (multi-sell path), n=10', () => {
       const probs = [0.55, ...Array(9).fill(0.05)]
@@ -324,7 +330,9 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
         'P1 sellYesEqually n=10 (50 @p=.55, 30 @p=.05)',
         ok ? 'SAFE' : 'BUG',
         `${fmtStats(stats)} proceeds=${proceeds.toFixed(6)} ` +
-          `otherNetMana=${otherAmount.toExponential(2)} otherNetShares=${otherShares.toExponential(2)}`
+          `otherNetMana=${otherAmount.toExponential(
+            2
+          )} otherNetShares=${otherShares.toExponential(2)}`
       )
       expect(stats.allFinite).toBe(true)
       expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-6)
@@ -349,7 +357,8 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
         'amount'
       )
       const poolsMoved = res.updatedAnswers.some(
-        (a, i) => a.poolYes !== answers[i].poolYes || a.poolNo !== answers[i].poolNo
+        (a, i) =>
+          a.poolYes !== answers[i].poolYes || a.poolNo !== answers[i].poolNo
       )
       const ok = Math.abs(proceeds - X) < 1e-9 && !poolsMoved
       record(
@@ -367,21 +376,41 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       const toSell = answers[2]
 
       const once = calculateCpmmMultiSumsToOneSale(
-        answers, toSell, 50, 'YES', undefined, noBets, noBalances, noFees
+        answers,
+        toSell,
+        50,
+        'YES',
+        undefined,
+        noBets,
+        noBalances,
+        noFees
       )
 
       const first = calculateCpmmMultiSumsToOneSale(
-        answers, toSell, 25, 'YES', undefined, noBets, noBalances, noFees
+        answers,
+        toSell,
+        25,
+        'YES',
+        undefined,
+        noBets,
+        noBalances,
+        noFees
       )
       const mid = applySale(answers, toSell.id, first)
       const second = calculateCpmmMultiSumsToOneSale(
-        mid, mid[2], 25, 'YES', undefined, noBets, noBalances, noFees
+        mid,
+        mid[2],
+        25,
+        'YES',
+        undefined,
+        noBets,
+        noBalances,
+        noFees
       )
       const afterOnce = applySale(answers, toSell.id, once)
       const afterTwice = applySale(mid, mid[2].id, second)
 
-      const proceedsDiff =
-        once.saleValue - (first.saleValue + second.saleValue)
+      const proceedsDiff = once.saleValue - (first.saleValue + second.saleValue)
       const maxPoolDiff = Math.max(
         ...afterOnce.flatMap((a, i) => [
           Math.abs(a.poolYes - afterTwice[i].poolYes),
@@ -392,7 +421,9 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       record(
         'P1 path independence n=3',
         ok ? 'SAFE' : 'BUG',
-        `proceedsDiff=${proceedsDiff.toExponential(2)} maxPoolDiff=${maxPoolDiff.toExponential(2)}`
+        `proceedsDiff=${proceedsDiff.toExponential(
+          2
+        )} maxPoolDiff=${maxPoolDiff.toExponential(2)}`
       )
       expect(Math.abs(proceedsDiff)).toBeLessThan(1e-6)
       expect(maxPoolDiff).toBeLessThan(1e-6)
@@ -439,7 +470,14 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       outcome: 'YES' | 'NO'
     ) => {
       const res = calculateCpmmMultiSumsToOneSale(
-        answers, toSell, S, outcome, undefined, noBets, noBalances, noFees
+        answers,
+        toSell,
+        S,
+        outcome,
+        undefined,
+        noBets,
+        noBalances,
+        noFees
       )
       const after = applySale(answers, toSell.id, res)
       const stats = domainStats(answers, after)
@@ -452,34 +490,50 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
 
     it('FIXED: sell 10,000 YES into thin pools (L=2), p far from 0.5', () => {
       const answers = mkV2Market([0.1, 0.1, 0.8], 2)
-      const { res, stats, anyNaNp } = sellAndInspect(answers, answers[2], 10_000, 'YES')
+      const { res, stats, anyNaNp } = sellAndInspect(
+        answers,
+        answers[2],
+        10_000,
+        'YES'
+      )
       record(
         'P2 oversell 10k YES (L=2, p=0.8)',
         'FIXED',
-        `NaN newP=${anyNaNp} ${fmtStats(stats)} saleValue=${res.saleValue.toFixed(4)} ` +
-          `— solver finds the interior root; pool side still underflows to exactly 0 ` +
-          `(physical; execution guarded by CPMM_MIN_POOL_QTY) but sum-to-one holds`
+        `NaN newP=${anyNaNp} ${fmtStats(
+          stats
+        )} saleValue=${res.saleValue.toFixed(4)} ` +
+          `— solver finds the interior root; the thinnest pool side comes out tiny ` +
+          `but positive, and sum-to-one holds`
       )
       // These assertions PIN the fixed behavior (was: NaN newP -> silent corner
       // collapse with sumProb ~ 0.1; addCpmmLiquidity's 0/0 rescue + binarySearch
       // NaN fail-fast repaired it):
       expect(anyNaNp).toBe(false) // no NaN out of addCpmmLiquidity
-      expect(stats.minPool).toBe(0) // the underflow itself is physical, still present
+      // The side used to come out exactly 0: side + amount - shares cancelled.
+      // It's taken from the invariant now, a tiny positive number.
+      expect(stats.minPool).toBeGreaterThan(0)
       expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-9) // sum-to-one restored
       expect(isFinite(res.saleValue) && res.saleValue > 0).toBe(true)
     })
 
     it('FIXED: sell 10,000 NO into thin pools (L=2)', () => {
       const answers = mkV2Market([0.1, 0.1, 0.8], 2)
-      const { res, stats, anyNaNp } = sellAndInspect(answers, answers[0], 10_000, 'NO')
+      const { res, stats, anyNaNp } = sellAndInspect(
+        answers,
+        answers[0],
+        10_000,
+        'NO'
+      )
       record(
         'P2 oversell 10k NO (L=2, p=0.1)',
         'FIXED',
-        `NaN newP=${anyNaNp} ${fmtStats(stats)} saleValue=${res.saleValue.toFixed(4)} ` +
+        `NaN newP=${anyNaNp} ${fmtStats(
+          stats
+        )} saleValue=${res.saleValue.toFixed(4)} ` +
           `— mirror-image of the YES case: interior root found, sum-to-one holds`
       )
       expect(anyNaNp).toBe(false)
-      expect(stats.minPool).toBe(0)
+      expect(stats.minPool).toBeGreaterThan(0)
       expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-9)
       expect(isFinite(res.saleValue) && res.saleValue > 0).toBe(true)
     })
@@ -489,12 +543,21 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       let firstNaN: number | undefined
       for (const S of [500, 1000, 2000, 4000, 5000, 10000]) {
         const answers = [
-          mkV2Answer(0, 0.05), mkV2Answer(1, 0.05), mkV2Answer(2, 0.9),
+          mkV2Answer(0, 0.05),
+          mkV2Answer(1, 0.05),
+          mkV2Answer(2, 0.9),
         ]
-        const { res, stats, anyNaNp } = sellAndInspect(answers, answers[2], S, 'YES')
+        const { res, stats, anyNaNp } = sellAndInspect(
+          answers,
+          answers[2],
+          S,
+          'YES'
+        )
         rows.push(
           `S=${S}: sumProb=${(1 + stats.sumProbResidual).toFixed(4)} ` +
-            `minPool=${stats.minPool.toExponential(1)} NaN=${anyNaNp} perShare=${(res.saleValue / S).toFixed(4)}`
+            `minPool=${stats.minPool.toExponential(
+              1
+            )} NaN=${anyNaNp} perShare=${(res.saleValue / S).toFixed(4)}`
         )
         if (anyNaNp && firstNaN === undefined) firstNaN = S
         // The old bug NaN'd from S≈5,000 (a realistic position size); pin clean math
@@ -512,13 +575,17 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
 
     it('control: p=0.5 pools never hit the NaN hole even at S=1e9', () => {
       const answers = [
-        mkAnswer(0, 1 / 3, 0.5), mkAnswer(1, 1 / 3, 0.5), mkAnswer(2, 1 / 3, 0.5),
+        mkAnswer(0, 1 / 3, 0.5),
+        mkAnswer(1, 1 / 3, 0.5),
+        mkAnswer(2, 1 / 3, 0.5),
       ]
       const { stats, anyNaNp } = sellAndInspect(answers, answers[2], 1e9, 'YES')
       record(
         'P2 p=0.5 control (S=1e9, L=100)',
         'SAFE',
-        `NaN newP=${anyNaNp} ${fmtStats(stats)} — residual pool decays only like k^2/b at p=0.5, ` +
+        `NaN newP=${anyNaNp} ${fmtStats(
+          stats
+        )} — residual pool decays only like k^2/b at p=0.5, ` +
           `so exact-zero cancellation is unreachable; the hole is general-p specific`
       )
       expect(anyNaNp).toBe(false)
@@ -532,9 +599,19 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
     const cases: [string, number[], number, 'YES' | 'NO'][] = [
       ['sell YES of 0.989 answer (n=2)', [0.989, 0.011], 0, 'YES'],
       ['sell YES of 0.011 answer (n=2)', [0.989, 0.011], 1, 'YES'],
-      ['sell NO of 0.011 answer (n=2, pushes it up through clamp)', [0.989, 0.011], 1, 'NO'],
+      [
+        'sell NO of 0.011 answer (n=2, pushes it up through clamp)',
+        [0.989, 0.011],
+        1,
+        'NO',
+      ],
       ['sell NO of 0.989 answer (n=2)', [0.989, 0.011], 0, 'NO'],
-      ['sell YES of 0.011 answer (n=3 with 0.978)', [0.978, 0.011, 0.011], 1, 'YES'],
+      [
+        'sell YES of 0.011 answer (n=3 with 0.978)',
+        [0.978, 0.011, 0.011],
+        1,
+        'YES',
+      ],
     ]
     it.each(cases)('%s', (label, probs, idx, outcome) => {
       const answers = mkV2Market(probs)
@@ -544,7 +621,14 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       let threw: string | undefined
       try {
         res = calculateCpmmMultiSumsToOneSale(
-          answers, toSell, S, outcome, undefined, noBets, noBalances, noFees
+          answers,
+          toSell,
+          S,
+          outcome,
+          undefined,
+          noBets,
+          noBalances,
+          noFees
         )
       } catch (e) {
         threw = (e as Error).message
@@ -567,7 +651,9 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       record(
         `P3 ${label}`,
         ok ? 'SAFE' : 'BUG',
-        `${fmtStats(stats)} saleValue=${res!.saleValue.toFixed(6)} probsAfter=[${probsAfter}]`
+        `${fmtStats(stats)} saleValue=${res!.saleValue.toFixed(
+          6
+        )} probsAfter=[${probsAfter}]`
       )
       expect(stats.allFinite).toBe(true)
       expect(stats.minPool).toBeGreaterThan(0)
@@ -599,10 +685,7 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
         'amount'
       )
       const sharesByAnswerId = Object.fromEntries(
-        buy.newBetResults.map((r) => [
-          r.answer.id,
-          sumBy(r.takers, 'shares'),
-        ])
+        buy.newBetResults.map((r) => [r.answer.id, sumBy(r.takers, 'shares')])
       )
       const userBets = Object.fromEntries(
         Object.entries(sharesByAnswerId).map(([id, s]) => [id, bets(s)])
@@ -637,7 +720,9 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
         'P4 round-trip basket (v2 buy M$100 -> sellYesEqually)',
         ok ? 'SAFE' : 'BUG',
         `spent=${spent.toFixed(8)} proceeds=${proceeds.toFixed(8)} ` +
-          `netCost=${netCost.toExponential(3)} maxPoolRestoreErr=${maxPoolRestoreErr.toExponential(3)} ` +
+          `netCost=${netCost.toExponential(
+            3
+          )} maxPoolRestoreErr=${maxPoolRestoreErr.toExponential(3)} ` +
           fmtStats(stats)
       )
       expect(Math.abs(netCost)).toBeLessThan(0.01)
@@ -704,8 +789,12 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       record(
         'P4 round-trip single answer (buy M$100 YES @p=0.05 -> sell)',
         ok ? 'SAFE' : 'BUG',
-        `spent=${spent.toFixed(8)} shares=${shares.toFixed(6)} proceeds=${sell.saleValue.toFixed(8)} ` +
-          `netCost=${netCost.toExponential(3)} maxPoolRestoreErr=${maxPoolRestoreErr.toExponential(3)} ` +
+        `spent=${spent.toFixed(8)} shares=${shares.toFixed(
+          6
+        )} proceeds=${sell.saleValue.toFixed(8)} ` +
+          `netCost=${netCost.toExponential(
+            3
+          )} maxPoolRestoreErr=${maxPoolRestoreErr.toExponential(3)} ` +
           fmtStats(stats)
       )
       expect(Math.abs(netCost)).toBeLessThan(0.01)
@@ -733,10 +822,24 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       const S = 50
 
       const v2res = calculateCpmmMultiSumsToOneSale(
-        answersV2, answersV2[2], S, 'YES', undefined, noBets, noBalances, noFees
+        answersV2,
+        answersV2[2],
+        S,
+        'YES',
+        undefined,
+        noBets,
+        noBalances,
+        noFees
       )
       const v1res = calculateCpmmMultiSumsToOneSale(
-        answersV1math, answersV1math[2], S, 'YES', undefined, noBets, noBalances, noFees
+        answersV1math,
+        answersV1math[2],
+        S,
+        'YES',
+        undefined,
+        noBets,
+        noBalances,
+        noFees
       )
 
       // Evaluate the v1-math result under the TRUE per-answer p
@@ -751,9 +854,16 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       record(
         'P5 v1-math-on-v2 divergence (hypothetical missed dispatch)',
         'INFO',
-        `saleValue v2=${v2res.saleValue.toFixed(4)} v1math=${v1res.saleValue.toFixed(4)} ` +
-          `diff=${saleValueDiff.toFixed(4)} (${((saleValueDiff / v2res.saleValue) * 100).toFixed(2)}%); ` +
-          `sumProb under TRUE p after v1-math sell=${sumProbTrue.toFixed(6)} (should be 1)`
+        `saleValue v2=${v2res.saleValue.toFixed(
+          4
+        )} v1math=${v1res.saleValue.toFixed(4)} ` +
+          `diff=${saleValueDiff.toFixed(4)} (${(
+            (saleValueDiff / v2res.saleValue) *
+            100
+          ).toFixed(2)}%); ` +
+          `sumProb under TRUE p after v1-math sell=${sumProbTrue.toFixed(
+            6
+          )} (should be 1)`
       )
       // No assertion: current code paths all use answer.p (verified by P1-P4).
       // This documents the blast radius if a future call site regresses.

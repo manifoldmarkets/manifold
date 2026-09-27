@@ -526,14 +526,8 @@ export function MarketPreview(props: {
         numAnswers: namedAnswerCount,
         shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
         hasOtherAnswer: !!hasOtherAnswer,
-        addAnswersMode: addAnswersMode ?? 'DISABLED',
       })
     : undefined
-  // Starting probabilities open a cpmm-multi-2 market, which for now needs its
-  // answers fixed at creation (see opensAsCpmmMulti2). They can still be turned
-  // off after adding answers is switched on, to clear the error that leaves.
-  const answerProbsUnavailable =
-    CPMM_MULTI_2_CREATION_ENABLED && addAnswersModeEnabled
 
   return (
     <Col
@@ -1250,7 +1244,6 @@ export function MarketPreview(props: {
                       <Row className="flex-wrap items-center gap-2">
                         <ShortToggle
                           on={!!data.answerProbs}
-                          disabled={answerProbsUnavailable && !data.answerProbs}
                           setOn={(on) =>
                             onEditAnswerProbs(
                               on
@@ -1270,9 +1263,7 @@ export function MarketPreview(props: {
                         </span>
                         <InfoTooltip
                           text={
-                            answerProbsUnavailable
-                              ? 'Only available when no one can add answers later.'
-                              : CPMM_MULTI_2_CREATION_ENABLED
+                            CPMM_MULTI_2_CREATION_ENABLED
                               ? 'Open the market at the odds you think are right instead of an even split. None of the liquidity you put up is lost to the odds you pick.'
                               : 'Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them.'
                           }

@@ -556,7 +556,6 @@ function validateMarketBody(body: Body) {
         numAnswers: answers.length,
         shouldAnswersSumToOne,
         hasOtherAnswer,
-        addAnswersMode: addAnswersMode ?? 'DISABLED',
       })
       if (error) throw new APIError(400, error)
     }
