@@ -16,10 +16,11 @@ export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
 }
 
 // Like getAnswer, but takes a row lock (SELECT ... FOR UPDATE). Required whenever a
-// transaction read-modify-writes answer fields with concrete values (e.g. subsidyPool):
-// the betsQueue serializes only within one process, so the per-answer addLiquidity API
-// path and the scheduler's drizzleAnswer would otherwise interleave read-then-write and
-// create or destroy subsidy mana. Both of those writers must use this locking read.
+// transaction read-modify-writes answer fields with concrete values, as the scheduler's
+// drizzleAnswer does with subsidyPool: the betsQueue serializes only within one process,
+// so another process's write (the per-answer addLiquidity path, which increments
+// subsidyPool atomically) would otherwise land between the read and the write, and
+// subsidy mana would be created or destroyed.
 export const getAnswerForUpdate = async (
   pg: SupabaseDirectClient,
   id: string

@@ -605,6 +605,7 @@ export function AnswerComponent(props: {
     (contract.mechanism === 'cpmm-multi-2' ||
       CPMM_MULTI_2_CONVERSION_ENABLED) &&
     !contract.isResolved &&
+    !answer.resolution &&
     (contract.closeTime ?? Infinity) > Date.now() &&
     answer.poolYes != undefined
 

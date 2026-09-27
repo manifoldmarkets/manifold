@@ -11,11 +11,7 @@ import { convertLiquidity } from 'common/supabase/liquidity'
 import { CPMM_MULTI_2_CONVERSION_ENABLED, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
-import {
-  getAnswer,
-  getAnswerForUpdate,
-  updateAnswer,
-} from 'shared/supabase/answers'
+import { getAnswer } from 'shared/supabase/answers'
 
 export const addLiquidity: APIHandler<'market/:contractId/add-liquidity'> =
   onlyUsersWhoCanPerformAction(
@@ -82,6 +78,10 @@ export const addContractLiquidity = async (
       const answer = await getAnswer(tx, answerId)
       if (!answer || answer.contractId !== contractId)
         throw new APIError(404, 'Answer not found on this contract')
+      // A resolved answer has paid out its pools and subsidy, and never pays
+      // out again, so a subsidy added to it would be lost.
+      if (answer.resolution)
+        throw new APIError(403, 'This answer is already resolved')
     }
 
     const { closeTime } = contract
@@ -131,21 +131,28 @@ export const addContractLiquidity = async (
       CPMM_MULTI_2_CONVERSION_ENABLED && contract.mechanism === 'cpmm-multi-1'
 
     if (answerId !== undefined) {
-      // Per-answer: the subsidy lands in THAT answer's subsidyPool (drizzleAnswer deepens it
-      // losslessly). updateAnswer takes a concrete value, so the read-then-add must hold a
-      // row lock — the scheduler's drizzleAnswer (separate process; betsQueue is per-process
-      // only) also read-modify-writes subsidyPool, and either interleaving would create or
-      // destroy subsidy mana.
-      const answer = await getAnswerForUpdate(tx, answerId)
-      await updateAnswer(tx, answerId, {
-        subsidyPool: (answer?.subsidyPool ?? 0) + subsidyAmount,
-      })
       // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion
-      // trigger applies just as for a whole-market add.
+      // trigger applies just as for a whole-market add. Update the contract row before the
+      // answer row, the order bets lock them in, so the two can't deadlock.
       await updateContract(tx, contractId, {
         totalLiquidity: FieldVal.increment(subsidyAmount),
         ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
       })
+      // Per-answer: the subsidy lands in THAT answer's subsidyPool (drizzleAnswer deepens it
+      // losslessly), and in its totalLiquidity, as addHouseSubsidyToAnswer does. An atomic
+      // increment, so it can't interleave with the scheduler's drizzleAnswer, which
+      // read-modify-writes subsidyPool under a row lock in another process. The resolution
+      // check here also covers an answer that resolved since the check above.
+      const updated = await tx.oneOrNone(
+        `update answers
+        set
+          total_liquidity = total_liquidity + $1,
+          subsidy_pool = subsidy_pool + $1
+        where id = $2 and resolution is null
+        returning id`,
+        [subsidyAmount, answerId]
+      )
+      if (!updated) throw new APIError(403, 'This answer is already resolved')
     } else {
       await updateContract(tx, contractId, {
         subsidyPool: FieldVal.increment(subsidyAmount),
