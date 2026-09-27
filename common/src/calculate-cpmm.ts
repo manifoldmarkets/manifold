@@ -1219,28 +1219,24 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
   })
 
   // GP19c guard: a sane TRADED market can sit at creation-infeasible probs, where the
-  // √variance delta has dY_i < 0 on some answers and a large enough add drives a merged
-  // poolYes < 0 (p ∉ (0,1)) — the critical total is A*(state) = min_{i: dY_i<0}
-  // Y_i/|dY_i(q,1)|, and drizzle accumulates to the same bound (homogeneity — dripping
-  // does not evade it). Rather than cap or reject (drizzle must never brick), fall back
-  // to the unconditionally-sane allocation: split the amount equally as per-answer
-  // lossless adds (GP19e: floated p is the GP6a weight — sane and prob-preserving for
-  // ANY positive reserves; this is exactly the shipped per-answer addLiquidity op, so
-  // conservation is inherited). The √variance shape is an optimization, not an
-  // invariant; on the GP19a-feasible set the merge is unconditionally sane (A* = ∞) and
-  // this fallback never engages.
-  // The same per-answer adds also stand in whenever some answer is outside the
-  // 1%-99% band bets are held to (isDeepenableProb), or merging the creation
-  // shape would carry some answer's p out of [0.01, 0.99] (further out than it
-  // already was), where it would be left with next to no depth on one side.
-  // The merge re-derives every answer's p, and for an answer near 0% or 100%
-  // that can move p toward 0.5 while the pool stays lopsided: an answer at
-  // 1e-17 with p = 0.05 is priced by 1e-13 of NO, so a trillionth of a mana
-  // moves it to 70%, below what the arbitrage's arithmetic can resolve. Only
-  // answers inside the band take the per-answer adds, which keeps their p
-  // inside too, weighted by the depth creation would give them; the rest keep
-  // their pools and p. Callers leave the subsidy pending if no answer can take
-  // it (canDeployCpmmMulti2Liquidity).
+  // √variance closed form's delta has dY_i < 0 on some answers, and a large enough add (or
+  // drizzle, which accumulates to the same bound) drives a merged poolYes < 0. The delta
+  // now comes from creation's rule, which solves the shape exactly wherever the closed
+  // form fails, so it's positive everywhere; the sanity check stays as a backstop. Rather
+  // than cap or reject (drizzle must never brick), the fallback is per-answer lossless
+  // adds (GP19e: floated p is the GP6a weight — sane and prob-preserving for ANY positive
+  // reserves; the same op as a per-answer addLiquidity, so conservation is inherited),
+  // weighted by the depth creation would give each answer.
+  // The per-answer adds also stand in whenever some answer is outside the 1%-99% band
+  // bets are held to (isDeepenableProb), or merging the creation shape would carry some
+  // answer's p out of [0.01, 0.99] (further out than it already was), where it would be
+  // left with next to no depth on one side. The merge re-derives every answer's p, and
+  // for an answer near 0% or 100% that can move p toward the answer's price while the
+  // pool stays lopsided: an answer at 1e-17 with p = 0.05 is priced by 1e-13 of NO, so a
+  // trillionth of a mana moves it to 70%, below what the arbitrage's arithmetic can
+  // resolve. Only answers inside the band take the per-answer adds, which keeps their p
+  // inside too; the rest keep their pools and p. Callers leave the subsidy pending if no
+  // answer can take it (canDeployCpmmMulti2Liquidity).
   const keepsPInBand = (id: string) => {
     const p = result[id].p
     return (
