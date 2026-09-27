@@ -26,11 +26,11 @@ import { getAnswerProbability } from 'common/calculate'
 // For now we rely on the legacy isBannedFromPosting field for UI checks
 import {
   CPMMMultiContract,
-  CPMM_MULTI_2_CONVERSION_ENABLED,
   Contract,
   MarketContract,
   MultiContract,
   contractPath,
+  convertsToCpmmMulti2,
   isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
@@ -602,8 +602,7 @@ export function AnswerComponent(props: {
   // cpmm-multi-1 ones the add would convert.
   const canSubsidizeAnswer =
     isMultiCpmm(contract) &&
-    (contract.mechanism === 'cpmm-multi-2' ||
-      CPMM_MULTI_2_CONVERSION_ENABLED) &&
+    (contract.mechanism === 'cpmm-multi-2' || convertsToCpmmMulti2(contract)) &&
     !contract.isResolved &&
     !answer.resolution &&
     (contract.closeTime ?? Infinity) > Date.now() &&

@@ -8,7 +8,7 @@ import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { CPMM_MULTI_2_CONVERSION_ENABLED, isMultiCpmm } from 'common/contract'
+import { convertsToCpmmMulti2, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { getAnswer } from 'shared/supabase/answers'
@@ -69,7 +69,7 @@ export const addContractLiquidity = async (
       // this add converts to cpmm-multi-2.
       if (
         contract.mechanism !== 'cpmm-multi-2' &&
-        !CPMM_MULTI_2_CONVERSION_ENABLED
+        !convertsToCpmmMulti2(contract)
       )
         throw new APIError(
           403,
@@ -127,8 +127,7 @@ export const addContractLiquidity = async (
     // persists each answer's concrete floated p. The mechanism flip is the API-visible version event
     // that switches reads/bets/drizzle to the v2 (lossless + reversible-fill) path. Gated behind its
     // own kill switch, separate from v2 creation, so it stays inert until deliberately enabled.
-    const shouldConvertToV2 =
-      CPMM_MULTI_2_CONVERSION_ENABLED && contract.mechanism === 'cpmm-multi-1'
+    const shouldConvertToV2 = convertsToCpmmMulti2(contract)
 
     if (answerId !== undefined) {
       // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion

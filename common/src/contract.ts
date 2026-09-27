@@ -574,6 +574,13 @@ export const CPMM_MULTI_2_CREATION_ENABLED = false
 // a live market trades (limit-order fills, liquidity adds) under positions and
 // orders placed against v1, so it stays off until v2 has run on new markets.
 export const CPMM_MULTI_2_CONVERSION_ENABLED = false
+// Whether adding liquidity converts this market to cpmm-multi-2. Only multiple
+// choice markets: numeric and date markets take bets across several answers at
+// once (multi-bet), which cpmm-multi-2 refuses for now.
+export const convertsToCpmmMulti2 = (contract: Contract) =>
+  CPMM_MULTI_2_CONVERSION_ENABLED &&
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.outcomeType === 'MULTIPLE_CHOICE'
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const

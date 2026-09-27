@@ -122,8 +122,10 @@ Both live in `common/src/contract.ts`.
   probabilities as `cpmm-multi-2`. Turning it off makes those markets
   `cpmm-multi-1` again, seeded as #4082 did; existing `cpmm-multi-2` markets
   keep trading as `cpmm-multi-2` either way.
-- `CPMM_MULTI_2_CONVERSION_ENABLED` converts an existing `cpmm-multi-1` market
-  to `cpmm-multi-2` the first time a user adds liquidity to it. It is off:
+- `CPMM_MULTI_2_CONVERSION_ENABLED` converts an existing `cpmm-multi-1`
+  multiple choice market to `cpmm-multi-2` the first time a user adds liquidity
+  to it (`convertsToCpmmMulti2`). Numeric and date markets never convert: they
+  bet across several answers at once, which `cpmm-multi-2` refuses. It is off:
   conversion changes how a live market fills limit orders and takes liquidity.
 
 ## Deployment
