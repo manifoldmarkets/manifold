@@ -105,6 +105,9 @@ export class APIRealtimeClient {
       this.receiveMessage(JSON.parse(ev.data))
     }
     this.ws.onerror = (ev) => {
+      // Like onclose: an error from a socket we've already replaced must not
+      // start a reconnect that would orphan the live one.
+      if (this.ws !== socket) return
       console.error('API websocket error: ', ev)
       // Browser errors are followed by close. The timer guard coalesces both.
       this.waitAndReconnect()

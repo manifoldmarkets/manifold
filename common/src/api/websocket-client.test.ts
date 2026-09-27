@@ -164,6 +164,17 @@ describe('APIRealtimeClient recovery', () => {
     await advance(60_000)
     expect(FakeWebSocket.instances).toHaveLength(2)
   })
+  it('ignores an error from a socket it has already replaced', async () => {
+    await connect()
+    const stale = latest()
+    stale.dropped()
+    await advance(5000)
+    await connect()
+    stale.onerror?.({})
+    await advance(5000)
+    expect(FakeWebSocket.instances).toHaveLength(2)
+    expect(latest().readyState).toBe(FakeWebSocket.OPEN)
+  })
   it('stops notifying an unsubscribed listener', async () => {
     const listener = jest.fn()
     const unsubscribe = client.onReconnect(listener)
