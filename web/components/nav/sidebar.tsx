@@ -63,9 +63,6 @@ function formatPrizePoolLabel(
 
 export const SPEND_MANA_ENABLED = true
 
-// Set to true to show a current event badge on the Shop nav item
-const SHOW_SHOP_EVENT_BADGE = true
-
 // Newest visibleSinceTime across all visible items. The sidebar NEW badge
 // fires when this exceeds the current user's lastShopVisitTime.
 const NEWEST_SHOP_ITEM_TIME = Math.max(
@@ -188,7 +185,6 @@ export default function Sidebar(props: {
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
         showShopNewBadge,
-        prizePoolLabel,
       })
 
   const bottomNavOptions = bottomNav(
@@ -327,7 +323,6 @@ const getDesktopNav = (
     showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    prizePoolLabel?: string
   }
 ) => {
   const { isLiveTV } = options
@@ -361,23 +356,14 @@ const getDesktopNav = (
         name: 'Shop',
         href: '/shop',
         icon: LuGem,
-        children:
-          options.showShopNewBadge || SHOW_SHOP_EVENT_BADGE ? (
-            <>
-              Shop
-              {/* NEW takes priority over Event — Event reappears once
-                  the user has cleared the NEW badge by visiting /shop. */}
-              {options.showShopNewBadge ? (
-                <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
-                  NEW
-                </span>
-              ) : SHOW_SHOP_EVENT_BADGE && options.prizePoolLabel ? (
-                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                  Prize {options.prizePoolLabel}
-                </span>
-              ) : null}
-            </>
-          ) : undefined,
+        children: options.showShopNewBadge ? (
+          <>
+            Shop
+            <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+              NEW
+            </span>
+          </>
+        ) : undefined,
       },
       options.isAdminOrMod && {
         name: 'Reports',
@@ -388,19 +374,6 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
-    {
-      name: 'Prize Drawing',
-      href: '/prize',
-      icon: GiftIcon,
-      children: options.prizePoolLabel ? (
-        <>
-          Prize Drawing
-          <span className="ml-2 rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-            {options.prizePoolLabel}
-          </span>
-        </>
-      ) : undefined,
-    },
     { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -420,7 +393,7 @@ const getMobileNav = (
   const { isAdminOrMod, isLiveTV, showShopNewBadge, prizePoolLabel } = options
 
   return buildArray<NavItem>(
-    {
+    loggedIn && {
       name: 'Prize Drawing',
       href: '/prize',
       icon: GiftIcon,
@@ -452,9 +425,7 @@ const getMobileNav = (
       href: '/reports',
       icon: ReportsIcon,
     },
-    // Show shop when enabled OR for admins (testing). On mobile we omit the
-    // "$10k prize" pill because the Prize Drawing tab above already advertises
-    // it — the duplicate is redundant in the vertical mobile nav.
+    // Show shop when enabled OR for admins (testing).
     (SPEND_MANA_ENABLED || isAdminOrMod) && {
       name: 'Shop',
       href: '/shop',
