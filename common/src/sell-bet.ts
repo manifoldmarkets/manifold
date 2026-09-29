@@ -194,6 +194,14 @@ export const getCpmmMultiSellSharesInfo = (
   balanceByUserId: { [userId: string]: number },
   loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
+  // calculateCpmmMultiArbitrageSellYesEqually redeems full sets at M$1 each,
+  // which only holds when the answers are constrained to sum to one.
+  // Guarding here as well as at the API layer keeps any future caller from
+  // over-paying sellers on an independent market.
+  if (!contract.shouldAnswersSumToOne)
+    throw new Error(
+      'getCpmmMultiSellSharesInfo is only valid when answers sum to one'
+    )
   const { answers, collectedFees } = contract
   const { otherBetResults, newBetResults } =
     calculateCpmmMultiArbitrageSellYesEqually(
