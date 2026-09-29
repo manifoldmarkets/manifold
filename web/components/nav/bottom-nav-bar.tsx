@@ -96,13 +96,6 @@ const signedOutNavigation = [
     alwaysShowName: true,
   },
   {
-    name: 'Explore',
-    href: '/explore',
-    icon: IoCompassOutline,
-    solidIcon: IoCompass,
-    iconClassName: exploreIconClassName,
-  },
-  {
     name: 'About',
     href: '/about',
     icon: QuestionMarkCircleIcon,
