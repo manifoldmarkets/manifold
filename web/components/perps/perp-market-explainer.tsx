@@ -1,4 +1,4 @@
-import { InformationCircleIcon } from '@heroicons/react/outline'
+import { InformationCircleIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
 import {
@@ -13,7 +13,8 @@ import { ReactNode, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 
 import { Col } from '../layout/col'
-import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
+import { Modal } from '../layout/modal'
 import { Tooltip } from '../widgets/tooltip'
 import { PERP_TICKER_CLASS } from './perp-market-badge'
 
@@ -60,23 +61,62 @@ export function PerpMarketExplainer(props: {
           <InformationCircleIcon aria-hidden className="h-[0.8em] w-[0.8em]" />
         </button>
       </Tooltip>
-      <Modal
-        open={open}
-        setOpen={setOpen}
-        size="md"
-        ariaLabel="How perpetual markets work"
-      >
-        <Col
-          className={clsx(
-            MODAL_CLASS,
-            SCROLLABLE_MODAL_CLASS,
-            '!items-stretch text-left'
-          )}
-        >
-          <PerpExplainerContent contract={contract} />
-        </Col>
-      </Modal>
+      <PerpExplainerModal contract={contract} open={open} setOpen={setOpen} />
     </>
+  )
+}
+
+/** The title and close controls stay outside the scrolling reading area. */
+export function PerpExplainerModal(props: {
+  contract?: PerpContract
+  open: boolean
+  setOpen: (open: boolean) => void
+  children?: ReactNode
+  showHubLink?: boolean
+}) {
+  const { contract, open, setOpen, children, showHubLink = true } = props
+  return (
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      size={children ? 'xl' : 'lg'}
+      ariaLabel="How perps work"
+      hideCloseButton
+    >
+      <Col className="bg-canvas-0 text-ink-1000 max-h-[calc(100dvh-6rem)] overflow-hidden rounded-t-xl text-left sm:max-h-[85dvh] sm:rounded-xl">
+        <Row className="border-ink-200 dark:border-ink-300 shrink-0 items-center justify-between gap-3 border-b px-4 py-2 sm:px-6">
+          <h2 className="text-ink-900 text-lg font-semibold">How perps work</h2>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close explainer"
+            className="text-ink-600 hover:bg-canvas-50 hover:text-ink-900 focus-visible:ring-primary-500 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:ring-2"
+          >
+            <XIcon className="h-5 w-5" aria-hidden />
+          </button>
+        </Row>
+        <Col className="min-h-0 gap-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
+          {children ?? <PerpExplainerContent contract={contract} hideHeading />}
+        </Col>
+        <Row className="border-ink-200 dark:border-ink-300 shrink-0 items-center justify-between gap-3 border-t px-4 py-3 sm:px-6">
+          {showHubLink && (
+            <Link
+              href="/perps"
+              className="text-primary-600 dark:text-primary-400 text-sm hover:underline"
+            >
+              All perpetual markets →
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 ml-auto min-h-[44px] rounded-lg px-5 text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            Back to market
+          </button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 

@@ -829,8 +829,8 @@ export function MnxDashboardView({
                 <p>
                   The annualized funding cap is converted using each market’s
                   funding period; it is a maximum, not a promised yield. Lower
-                  leverage caps apply to new opens and adds. Increasing MNX
-                  leverage requires current provider support.
+                  leverage caps apply to new opens and adds. A cap can be set
+                  above the leverage MNX itself offers.
                 </p>
                 <p>
                   Maximum mark age also gates closes. The strictest minimum

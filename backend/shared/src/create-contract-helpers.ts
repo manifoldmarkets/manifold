@@ -19,13 +19,16 @@ export async function generateAntes(
     !contract.shouldAnswersSumToOne
   ) {
     const { answers } = contract
+    // Each answer's pool was seeded with an even share of the ante. Record
+    // that, not the pool's geometric mean: the two agree for an answer that
+    // opened at 50%, but the mean understates it for one that opened
+    // elsewhere, and this amount is what a cancellation refunds.
+    const answerAnte = ante / answers.length
     for (const answer of answers) {
-      const ante = Math.sqrt(answer.poolYes * answer.poolNo)
-
       const lp = getCpmmInitialLiquidity(
         providerId,
         contract,
-        ante,
+        answerAnte,
         contract.createdTime,
         answer.id
       )

@@ -7,11 +7,13 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
+  ChatAlt2Icon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
 import {
+  ChatAlt2Icon as ChatAlt2IconSolid,
   MenuAlt3Icon,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   // SearchIcon as SearchIconSolid,
@@ -24,7 +26,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
 import { FaSearch as SearchIconSolid } from 'react-icons/fa'
-import { IoCompass, IoCompassOutline } from 'react-icons/io5'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import {
@@ -48,8 +49,7 @@ const itemClass =
 const selectedItemClass = 'text-primary-700'
 const touchItemClass = 'touch-press-effect'
 const iconClassName = 'mx-auto my-1 h-[1.6rem] w-[1.6rem]'
-const exploreIconClassName =
-  ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
+const yapIconClassName = ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
 
 // Wrapper components for NotificationsIcon to work with the navigation system
 const NotificationsIconOutline = (props: { className?: string }) => (
@@ -68,11 +68,11 @@ function getNavigation(user: User) {
       solidIcon: SearchIconSolid,
     },
     {
-      name: 'Explore',
-      href: '/explore',
-      icon: IoCompassOutline,
-      solidIcon: IoCompass,
-      iconClassName: exploreIconClassName,
+      name: 'Yap',
+      href: '/yap',
+      icon: ChatAlt2Icon,
+      solidIcon: ChatAlt2IconSolid,
+      iconClassName: yapIconClassName,
     },
     {
       name: 'Profile',

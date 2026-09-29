@@ -57,7 +57,7 @@ export const useMnxLinkProps = (props: {
     location,
   ])
   useEffect(() => {
-    if (!isNative || !authorized || !instrument || !location) return
+    if (!authorized || !instrument || !location) return
     let cancelled = false
     setInvite(undefined)
     api('get-mnx-invite-link', { feedId: instrument.feedId, location }).then(
@@ -71,10 +71,9 @@ export const useMnxLinkProps = (props: {
     return () => {
       cancelled = true
     }
-  }, [isNative, authorized, instrument, location, requestKey, attempt])
+  }, [authorized, instrument, location, requestKey, attempt])
 
   const currentInvite = invite?.key === requestKey ? invite : undefined
-  const nativeInviteRequired = isNative && !!instrument && !!location
   const navigationHref = mnxNavigationHref({
     url: href,
     feedId,
@@ -83,7 +82,7 @@ export const useMnxLinkProps = (props: {
     authorized,
     inviteUrl: currentInvite?.url,
   })
-  const waitingForInvite = nativeInviteRequired && !navigationHref
+  const waitingForInvite = !!instrument && !!location && !navigationHref
   const record = () =>
     track(MNX_CLICK_EVENT, {
       location,
@@ -96,9 +95,8 @@ export const useMnxLinkProps = (props: {
       url: href,
     })
   return {
-    // Native's onOpenWindow ignores same-origin URLs. Give it the final
-    // external URL synchronously on tap, signed with the WebView's session.
-    // Browsers still resolve auth in a new tab for native anchor behavior.
+    // Give signed-in users the final invite URL before they click, so normal
+    // anchor behavior (including native's onOpenWindow) opens MNX directly.
     href: navigationHref,
     'aria-busy': waitingForInvite && !currentInvite?.failed,
     role: waitingForInvite ? ('link' as const) : undefined,
