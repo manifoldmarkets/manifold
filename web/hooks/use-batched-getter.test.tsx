@@ -11,18 +11,20 @@ const deferred = () => {
   })
   return { promise, resolve }
 }
-let root: ReactTestRenderer
+const roots: ReactTestRenderer[] = []
 let id = 0
 beforeEach(() => {
   ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterEach(async () => {
-  await act(async () => root?.unmount())
+  await act(async () => {
+    for (const root of roots.splice(0)) root.unmount()
+  })
   executeBatchQuery.cancel()
 })
 
-async function mount(read: () => Promise<any[]>) {
-  const market = `batch-${id++}`
+async function mount(read: () => Promise<any[]>, market = `batch-${id++}`) {
+  let root!: ReactTestRenderer
   let latest: any,
     setValue: any,
     refreshKey = 0
@@ -41,6 +43,7 @@ async function mount(read: () => Promise<any[]>) {
   await act(async () => {
     root = create(<Consumer />)
   })
+  roots.push(root)
   return {
     market,
     latest: () => latest,
@@ -66,6 +69,41 @@ it('does not deliver an old batch response to callbacks added during that read',
   await act(async () => fresh.resolve([{ id: m.market, pool: 2 }]))
   await act(async () => old.resolve([{ id: m.market, pool: 1 }]))
   expect(m.latest().pool).toBe(2)
+})
+
+it('gives an older request the newer value when the newer one finishes first', async () => {
+  const old = deferred(),
+    fresh = deferred()
+  let calls = 0
+  const read = () => (++calls === 1 ? old.promise : fresh.promise)
+  const first = await mount(read)
+  first.dispatch()
+  const second = await mount(read, first.market)
+  second.dispatch()
+  await act(async () => fresh.resolve([{ id: first.market, pool: 2 }]))
+  await act(async () => old.resolve([{ id: first.market, pool: 1 }]))
+  expect(second.latest().pool).toBe(2)
+  expect(first.latest().pool).toBe(2)
+  // A later mount starts from the shared cache, which must not have regressed.
+  const later = await mount(() => new Promise(() => {}), first.market)
+  expect(later.latest().pool).toBe(2)
+})
+
+it('gives a failed older request the newer value', async () => {
+  const log = jest.spyOn(console, 'error').mockImplementation(() => {})
+  let fail!: (error: Error) => void
+  const old = new Promise<any[]>((_, no) => (fail = no))
+  const fresh = deferred()
+  let calls = 0
+  const read = () => (++calls === 1 ? old : fresh.promise)
+  const first = await mount(read)
+  first.dispatch()
+  const second = await mount(read, first.market)
+  second.dispatch()
+  await act(async () => fresh.resolve([{ id: first.market, pool: 2 }]))
+  await act(async () => fail(new Error('offline')))
+  expect(first.latest().pool).toBe(2)
+  log.mockRestore()
 })
 
 it('replays live pool changes over the fetched market snapshot', async () => {

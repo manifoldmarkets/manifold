@@ -19,6 +19,12 @@ export const pendingCallbacks: Map<
 
 type FilterCallback<T> = (data: T[], id: string) => T | undefined
 
+// Per key: requests in flight, and the newest response delivered while any
+// are. Dispatch order stands in for snapshot order.
+const inFlight = new Map<string, number>()
+const newest = new Map<string, { generation: number; value: unknown }>()
+let dispatches = 0
+
 export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
   const requestsToProcess = pendingRequests.splice(0, pendingRequests.length)
   const key = (queryType: string, id: string) => `${queryType}-${id}`
@@ -26,13 +32,22 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
   const batchPromises = requestsToProcess.map(
     async ({ queryType, ids, userId }) => {
       if (!ids.size) return
+      const generation = ++dispatches
       const callbacksById = new Map(
         Array.from(ids, (id) => {
-          const callbacks = pendingCallbacks.get(key(queryType, id)) ?? []
-          pendingCallbacks.delete(key(queryType, id))
+          const k = key(queryType, id)
+          inFlight.set(k, (inFlight.get(k) ?? 0) + 1)
+          const callbacks = pendingCallbacks.get(k) ?? []
+          pendingCallbacks.delete(k)
           return [id, callbacks] as const
         })
       )
+      // Once a newer request for the same key has delivered, this request's
+      // consumers get that value instead of an older one.
+      const newer = (id: string) => {
+        const latest = newest.get(key(queryType, id))
+        return latest && latest.generation > generation ? latest : undefined
+      }
 
       try {
         const handler = handlers[queryType as keyof QueryHandlers]
@@ -44,15 +59,31 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
         const data = await handler({ ids, userId })
 
         ids.forEach((id) => {
-          const callbacks = callbacksById.get(id) ?? []
-          const filteredData = filtersByQueryType[queryType](data, id)
-          callbacks.forEach((callback) => callback(filteredData))
+          const latest = newer(id)
+          const value = latest
+            ? latest.value
+            : filtersByQueryType[queryType](data, id)
+          if (!latest) newest.set(key(queryType, id), { generation, value })
+          callbacksById.get(id)?.forEach((callback) => callback(value))
         })
       } catch (error) {
-        for (const callbacks of callbacksById.values()) {
-          callbacks.forEach((callback) => callback(undefined, error))
+        for (const [id, callbacks] of callbacksById) {
+          const latest = newer(id)
+          callbacks.forEach((callback) =>
+            latest ? callback(latest.value) : callback(undefined, error)
+          )
         }
         console.error(`Error fetching batch data for ${queryType}:`, error)
+      } finally {
+        for (const id of ids) {
+          const k = key(queryType, id)
+          const remaining = (inFlight.get(k) ?? 1) - 1
+          if (remaining > 0) inFlight.set(k, remaining)
+          else {
+            inFlight.delete(k)
+            newest.delete(k)
+          }
+        }
       }
     }
   )
