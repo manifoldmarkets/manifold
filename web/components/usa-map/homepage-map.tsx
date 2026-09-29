@@ -22,10 +22,25 @@ import { GovernorState } from './governor-state'
 import { HouseMapSection } from './house-map'
 import { FeedContractCard } from '../contract/feed-contract-card'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
+import { isCandidateLabelledAnswer } from './state-election-map'
 
 // 2026 midterms: no presidential race. The Senate/Governor races map onto
 // states; the House is decided by district, so it's a table rather than a map.
 type MapMode = 'senate' | 'house' | 'governor'
+
+/**
+ * Whether the state's party market already names the candidates — e.g. its
+ * answers read "Josh Turek (D)" rather than "Democratic party".
+ *
+ * When it does, the separate "who's running" card is pure duplication: the
+ * same two names a few pixels apart, and at slightly different prices, since
+ * they are two independent markets. Show it only where the party panel still
+ * says nothing about who is on the ballot.
+ */
+const partyMarketNamesCandidates = (contract: Contract | null | undefined) =>
+  !!contract &&
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.answers.some((a) => isCandidateLabelledAnswer(a.text))
 
 export function HomepageMap(props: {
   rawSenateStateContracts: MapContractsDictionary
@@ -131,13 +146,17 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
-          {selectedState && rawGovernorCandidateContracts[selectedState] && (
-            <CandidateRaceCard
-              contract={
-                rawGovernorCandidateContracts[selectedState] as Contract
-              }
-            />
-          )}
+          {selectedState &&
+            rawGovernorCandidateContracts[selectedState] &&
+            !partyMarketNamesCandidates(
+              governorContractsDictionary[selectedState]
+            ) && (
+              <CandidateRaceCard
+                contract={
+                  rawGovernorCandidateContracts[selectedState] as Contract
+                }
+              />
+            )}
         </>
       ) : mode === 'house' ? (
         <>
@@ -199,11 +218,17 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
-          {selectedState && rawSenateCandidateContracts[selectedState] && (
-            <CandidateRaceCard
-              contract={rawSenateCandidateContracts[selectedState] as Contract}
-            />
-          )}
+          {selectedState &&
+            rawSenateCandidateContracts[selectedState] &&
+            !partyMarketNamesCandidates(
+              senateContractsDictionary[selectedState]
+            ) && (
+              <CandidateRaceCard
+                contract={
+                  rawSenateCandidateContracts[selectedState] as Contract
+                }
+              />
+            )}
         </>
       )}
     </Col>

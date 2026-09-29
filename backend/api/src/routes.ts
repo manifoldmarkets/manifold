@@ -1,3 +1,11 @@
+import {
+  createSocialPost,
+  editSocialPost,
+  deleteSocialPost,
+  getSocialPosts,
+  getSocialPost,
+  getSocialLikers,
+} from './social-posts'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
 import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
@@ -195,6 +203,7 @@ import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
 import { setJobInterest } from './set-job-interest'
 import { getJobInterest } from './get-job-interest'
+import { getMnxInviteLink } from './get-mnx-invite-link'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -427,6 +436,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-notif-settings': updateNotifSettings,
   'set-job-interest': setJobInterest,
   'get-job-interest': getJobInterest,
+  'get-mnx-invite-link': getMnxInviteLink,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,
@@ -558,6 +568,12 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refer-user': referUser,
   'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
+  'create-social-post': createSocialPost,
+  'edit-social-post': editSocialPost,
+  'delete-social-post': deleteSocialPost,
+  'get-social-posts': getSocialPosts,
+  'get-social-post': getSocialPost,
+  'get-social-likers': getSocialLikers,
   'create-post': createPost,
   'update-post': updatePost,
   'update-post-comment': updatePostComment,

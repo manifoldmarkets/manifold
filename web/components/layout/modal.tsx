@@ -18,6 +18,7 @@ export function Modal(props: {
   className?: string
   onClose?: () => void
   ariaLabel?: string
+  hideCloseButton?: boolean
 }) {
   const {
     children,
@@ -28,6 +29,7 @@ export function Modal(props: {
     className,
     onClose,
     ariaLabel,
+    hideCloseButton = false,
   } = props
 
   const sizeClass = {
@@ -81,7 +83,7 @@ export function Modal(props: {
           >
             {children}
 
-            {setOpen && (
+            {setOpen && !hideCloseButton && (
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close dialog"

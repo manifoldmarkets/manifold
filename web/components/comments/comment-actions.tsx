@@ -78,11 +78,11 @@ export function CommentActions(props: {
       {user && (
         <IconButton
           size={'xs'}
-          aria-label="Repost comment to followers"
+          aria-label="Post comment to Yap"
           onClick={() => setReposting(true)}
           className={'text-ink-500 min-w-[60px]'}
         >
-          <Tooltip text="Repost to followers" placement="bottom">
+          <Tooltip text="Post to Yap" placement="bottom">
             <BiRepost className="h-6 w-6" />
           </Tooltip>
         </IconButton>
