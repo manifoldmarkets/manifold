@@ -4,7 +4,8 @@ import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { auth } from 'web/lib/firebase/users'
 
-type Click = { userId?: string; value: boolean }
+// saved: this click's own me/update has gone through.
+type Click = { userId?: string; value: boolean; saved?: boolean }
 
 // This tab's last click, shared by every mounted toggle (the Trades tab and
 // the trades modal can both be open).
@@ -39,31 +40,36 @@ export const useHideApiTrades = () => {
     () => lastClick,
     () => undefined
   )
-  // A click is shown until the account value catches up with it. It only
-  // counts for whoever made it, so after signing in the account's value wins.
-  const clicked = click?.userId === user?.id ? click?.value : undefined
+  // A click only counts for whoever made it, so after signing in the
+  // account's value wins.
+  const ownClick = click?.userId === user?.id ? click : undefined
+  const clicked = ownClick?.value
+  const clickSaved = !!ownClick?.saved
 
-  // Only a change to the account value clears the click, so a quick on/off
-  // doesn't flicker while its saves come back. Once cleared, changes made in
-  // other tabs show through.
+  // The click is shown until its own save is in and the account value matches
+  // it. An earlier click's save landing first can't clear it, so quick toggling
+  // doesn't flicker. Once it's dropped, changes made in other tabs show through.
   useEffect(() => {
-    if (user && clicked === saved) setLastClick(undefined)
-  }, [saved])
+    if (clickSaved && clicked === saved) setLastClick(undefined)
+  }, [saved, clickSaved])
 
   const setHideApiTrades = useEvent((enabled: boolean) => {
     const userId = user?.id
-    const click = { userId, value: enabled }
+    const click: Click = { userId, value: enabled }
     setLastClick(click)
-    if (userId)
-      saving = saving
-        .then(() => {
-          if (auth.currentUser?.uid === userId)
-            return api('me/update', { hideApiTrades: enabled })
+    if (!userId) return
+    saving = saving
+      .then(async () => {
+        if (auth.currentUser?.uid !== userId) {
           // Unsaved, so it mustn't override the account's value if it signs
           // back in.
           if (lastClick === click) setLastClick(undefined)
-        })
-        .catch(() => {})
+          return
+        }
+        await api('me/update', { hideApiTrades: enabled })
+        if (lastClick === click) setLastClick({ ...click, saved: true })
+      })
+      .catch(() => {})
   })
 
   return [clicked ?? saved, setHideApiTrades] as const
