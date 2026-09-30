@@ -175,8 +175,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [now] = useState(Date.now())
   const oldestBetTime = oldestBet?.createdTime ?? now
 
+  // Bumped whenever the filters change, so a page requested under earlier
+  // filters can be dropped when it arrives.
+  const filtersEpochRef = useRef(0)
   const loadMore = useEvent(async () => {
     if (!shouldLoadMore) return false
+    const epoch = filtersEpochRef.current
 
     try {
       const newBets = await api('bets', {
@@ -189,6 +193,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         userId: selectedUser?.id,
         excludeApi: hideApiTrades,
       })
+      // Stale: appending it could move the next page past trades the current
+      // filters show. Report more so the loader carries on.
+      if (filtersEpochRef.current !== epoch) return true
 
       if (newBets.length > 0) {
         setOlderBets((bets) => uniqBy([...bets, ...newBets], (b) => b.id))
@@ -202,6 +209,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     }
   })
   useEffect(() => {
+    filtersEpochRef.current++
     setOlderBets([])
     setFinishedLoadingMatchingBets(false)
     loadMore()
