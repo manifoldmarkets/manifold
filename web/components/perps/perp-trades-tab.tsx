@@ -50,6 +50,9 @@ export const PerpTradesTab = (props: {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const initializedRef = useRef(false)
+  // Bumped whenever the list resets for a new filter, so a page requested
+  // under the old filter can be dropped when it arrives.
+  const filterEpochRef = useRef(0)
   // Filtering is server-side (like the bets tab): dropping API rows on the
   // client would leave short, ragged pages since pagination counts rows
   // before the filter.
@@ -63,6 +66,7 @@ export const PerpTradesTab = (props: {
   // prepending unseen rows without disturbing pagination.
   useEffect(() => {
     let cancelled = false
+    filterEpochRef.current++
     initializedRef.current = false
     setEvents(null)
     setHasMore(true)
@@ -105,6 +109,7 @@ export const PerpTradesTab = (props: {
 
   const loadMore = async () => {
     if (!events || !hasMore || loadingMore) return false
+    const epoch = filterEpochRef.current
     setLoadingMore(true)
     try {
       const oldest = events[events.length - 1]
@@ -114,6 +119,8 @@ export const PerpTradesTab = (props: {
         limit: PAGE_SIZE,
         ...(hideApiTrades ? { excludeApi: true } : {}),
       })
+      // Stale: the list was reset for another filter while this loaded.
+      if (filterEpochRef.current !== epoch) return true
       if (more.length === 0) {
         setHasMore(false)
         return false

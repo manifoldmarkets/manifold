@@ -22,8 +22,9 @@ const setLastClick = (click: Click | undefined) => {
 }
 
 // Saves run one at a time in click order, so quick toggling can't leave the
-// account on an earlier click. Each is skipped if the account that clicked is
-// no longer signed in, since api() sends whoever is signed in when it runs.
+// account on an earlier click. api() sends as whoever is signed in when it
+// runs, so a save is skipped, and its click dropped, if the account that
+// clicked has signed out.
 let saving: Promise<unknown> = Promise.resolve()
 
 // Every "Hide API trades" toggle shares one value. For signed-in users it's
@@ -51,14 +52,17 @@ export const useHideApiTrades = () => {
 
   const setHideApiTrades = useEvent((enabled: boolean) => {
     const userId = user?.id
-    setLastClick({ userId, value: enabled })
+    const click = { userId, value: enabled }
+    setLastClick(click)
     if (userId)
       saving = saving
-        .then(() =>
-          auth.currentUser?.uid === userId
-            ? api('me/update', { hideApiTrades: enabled })
-            : undefined
-        )
+        .then(() => {
+          if (auth.currentUser?.uid === userId)
+            return api('me/update', { hideApiTrades: enabled })
+          // Unsaved, so it mustn't override the account's value if it signs
+          // back in.
+          if (lastClick === click) setLastClick(undefined)
+        })
         .catch(() => {})
   })
 
