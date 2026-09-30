@@ -70,6 +70,8 @@ export const PerpTradesTab = (props: {
     initializedRef.current = false
     setEvents(null)
     setHasMore(true)
+    // A page still loading for the old filter mustn't block the new list.
+    setLoadingMore(false)
     const load = () =>
       api('get-perp-events', {
         contractId: contract.id,
@@ -129,7 +131,8 @@ export const PerpTradesTab = (props: {
       setHasMore(more.length === PAGE_SIZE)
       return true
     } finally {
-      setLoadingMore(false)
+      // After a reset, loadingMore belongs to the new list's requests.
+      if (filterEpochRef.current === epoch) setLoadingMore(false)
     }
   }
 
