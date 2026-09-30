@@ -1,33 +1,35 @@
 import clsx from 'clsx'
-import { RAIL_SPORT_CATEGORIES, SportKey } from 'common/sports-schedule'
+import { AnySportKey, SportInfo } from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
 
-export type SportSelection = SportKey | 'all' | 'live'
+export type SportSelection = AnySportKey | 'all' | 'live'
 
 /**
  * Horizontal chip rail for picking a sport, in the style of the league bars on
- * Polymarket / DraftKings. Sports with something on this week (games or
- * markets closing) come first and carry a count; a "Live" chip appears
- * whenever something is in play.
+ * Polymarket / DraftKings. Every sport gets a chip; those with something on
+ * this week (games or markets closing) come first and carry a count; a "Live"
+ * chip appears whenever something is in play.
  */
 export function SportRail(props: {
+  sports: SportInfo[]
   selected: SportSelection
   onSelect: (sport: SportSelection) => void
-  counts: Partial<Record<SportKey, number>>
+  counts: Partial<Record<AnySportKey, number>>
   liveCount: number
   className?: string
 }) {
-  const { selected, onSelect, counts, liveCount, className } = props
+  const { sports, selected, onSelect, counts, liveCount, className } = props
 
-  const withGames = RAIL_SPORT_CATEGORIES.filter(
-    (s) => (counts[s.key] ?? 0) > 0
-  )
-  const withoutGames = RAIL_SPORT_CATEGORIES.filter(
+  const withGames = sports.filter((s) => (counts[s.key] ?? 0) > 0)
+  const withoutGames = sports.filter(
     (s) => !(counts[s.key] ?? 0) && s.key !== 'other'
   )
-  const totalGames = Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)
+  const totalGames = Object.values(counts).reduce<number>(
+    (a, b) => a + (b ?? 0),
+    0
+  )
 
   const select = (sport: SportSelection) => {
     track('sports rail select', { sport })

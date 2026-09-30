@@ -1,4 +1,4 @@
-import { groupBy, sortBy, uniq } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
@@ -8,7 +8,8 @@ import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS, teamBadge } from 'common/sports'
 import {
-  ALL_SPORTS_GROUP_IDS,
+  AnySportKey,
+  buildSportsIndex,
   findRelatedMarkets,
   gameStatus,
   isDrawAnswer,
@@ -17,10 +18,11 @@ import {
   RelatedRef,
   ScheduleGame,
   ScheduleTeam,
-  SportKey,
   sportForMarket,
-  sportGroupIds,
+  SportsIndex,
   SportsScheduleResponse,
+  SportsTopic,
+  SportsTopicLink,
   SPORTS_DEFAULT_GROUP_ID,
   splitFlag,
   UpcomingMarketRef,
@@ -47,16 +49,17 @@ const MARKET_OUTCOME_TYPES =
 type Pg = ReturnType<typeof createSupabaseDirectClient>
 
 export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
-  const sport = (props.sport ?? 'all') as SportKey | 'all'
+  const sport: AnySportKey | 'all' = props.sport ?? 'all'
   const daysAhead = props.daysAhead ?? 14
   const limit = props.limit ?? 120
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const horizon = now + daysAhead * DAY_MS
 
+  const index = await getSportsIndex(pg, now)
   const [official, weekAll] = await Promise.all([
-    getOfficialGames(pg, daysAhead, now),
-    getUpcomingMarkets(pg),
+    getOfficialGames(pg, index, daysAhead, now),
+    getUpcomingMarkets(pg, index),
   ])
   const games = official.filter((g) => g.startTime < horizon)
 
@@ -77,7 +80,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
   if (ordered.length > 0) {
-    const candidates = await getRelatedCandidates(pg, 'all')
+    const candidates = await getRelatedCandidates(pg, index)
     const candidateClose = new Map(candidates.map((c) => [c.id, c.closeTime]))
     const matchesByGame = ordered.map((g) =>
       findRelatedMarkets(
@@ -133,7 +136,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   )
 
   // Rail badges: live and upcoming games plus this week's markets, per sport.
-  const counts: Partial<Record<SportKey, number>> = {}
+  const counts: Partial<Record<AnySportKey, number>> = {}
   let liveCount = 0
   for (const g of ordered) {
     if (g.status === 'finished') continue
@@ -154,8 +157,66 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     ).slice(0, MAX_UPCOMING_RETURNED),
     counts,
     liveCount,
+    sports: index.sports,
   }
   return response
+}
+
+// ─── Sports from the topic tree ───────────────────────────────────────────────
+
+// Mods rearrange topics rarely, and every schedule request needs the tree.
+const SPORTS_INDEX_TTL_MS = 5 * 60 * 1000
+const MAX_TOPIC_DEPTH = 6
+let sportsIndexCache: { at: number; index: SportsIndex } | undefined
+
+async function getSportsIndex(pg: Pg, now: number): Promise<SportsIndex> {
+  if (sportsIndexCache && now - sportsIndexCache.at < SPORTS_INDEX_TTL_MS)
+    return sportsIndexCache.index
+  try {
+    const rows = await pg.manyOrNone<{
+      parent_id: string
+      child_id: string
+      slug: string
+      name: string
+      total_members: number | null
+    }>(
+      `with recursive tree(parent_id, child_id, depth) as (
+         select gg.top_id, gg.bottom_id, 1
+         from group_groups gg
+         join groups g on g.id = gg.bottom_id and g.privacy_status = 'public'
+         where gg.top_id = $1
+         union
+         select gg.top_id, gg.bottom_id, t.depth + 1
+         from tree t
+         join group_groups gg on gg.top_id = t.child_id
+         join groups g on g.id = gg.bottom_id and g.privacy_status = 'public'
+         where t.depth < ${MAX_TOPIC_DEPTH}
+       )
+       select distinct t.parent_id, t.child_id, g.slug, g.name, g.total_members
+       from tree t join groups g on g.id = t.child_id`,
+      [SPORTS_DEFAULT_GROUP_ID]
+    )
+    const topics = new Map<string, SportsTopic>()
+    const links: SportsTopicLink[] = []
+    for (const r of rows) {
+      links.push({ parentId: r.parent_id, childId: r.child_id })
+      topics.set(r.child_id, {
+        id: r.child_id,
+        slug: r.slug,
+        name: r.name,
+        totalMembers: Number(r.total_members ?? 0),
+      })
+    }
+    const index = buildSportsIndex([...topics.values()], links)
+    sportsIndexCache = { at: now, index }
+    return index
+  } catch (e) {
+    // The curated sports alone still make a working page.
+    log.error('[sports-schedule] could not load the sports topics', {
+      error: e instanceof Error ? e.message : String(e),
+    })
+    return sportsIndexCache?.index ?? buildSportsIndex([], [])
+  }
 }
 
 // ─── Official (pipeline-created) games ────────────────────────────────────────
@@ -170,6 +231,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 // @ManifoldSports account are game rows.
 async function getOfficialGames(
   pg: Pg,
+  index: SportsIndex,
   daysAhead: number,
   now: number
 ): Promise<ScheduleGame[]> {
@@ -205,6 +267,7 @@ async function getOfficialGames(
         c,
         answersByContract[c.id] ?? [],
         groupIdsByContract[c.id] ?? [],
+        index,
         now
       )
     )
@@ -218,6 +281,7 @@ function toOfficialGame(
   c: Contract,
   answers: Answer[],
   groupIds: string[],
+  index: SportsIndex,
   now: number
 ): ScheduleGame | null {
   const d = c as any
@@ -296,7 +360,7 @@ function toOfficialGame(
     slug: c.slug,
     creatorUsername: c.creatorUsername,
     question: c.question,
-    sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }),
+    sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }, index),
     league: d.sportsLeague ?? '',
     binary,
     sportsEventId,
@@ -387,16 +451,10 @@ async function getGroupIds(
 // games still show their "first to score"-style props.
 async function getRelatedCandidates(
   pg: Pg,
-  sport: SportKey | 'all'
+  index: SportsIndex
 ): Promise<RelatedCandidate[]> {
-  // A single-sport view still draws from the generic Sports topic, so a prop
-  // tagged only "Sports" attaches to its game no matter which view is open.
-  const groupIds =
-    sport === 'all'
-      ? ALL_SPORTS_GROUP_IDS
-      : uniq([...sportGroupIds(sport), SPORTS_DEFAULT_GROUP_ID])
-  return querySportsMarkets(pg, {
-    groupIds,
+  return querySportsMarkets(pg, index, {
+    groupIds: index.allGroupIds,
     closeFrom: `-${FINISHED_GRACE_HOURS} hours`,
     closeTo: '45 days',
     orderBy: 'importance',
@@ -407,9 +465,12 @@ async function getRelatedCandidates(
 // Everything in any sports topic closing within the week, soonest first.
 // Always fetched across all sports so the rail badges are complete whichever
 // sport is open; the response is filtered down afterwards.
-async function getUpcomingMarkets(pg: Pg): Promise<UpcomingMarketRef[]> {
-  const rows = await querySportsMarkets(pg, {
-    groupIds: ALL_SPORTS_GROUP_IDS,
+async function getUpcomingMarkets(
+  pg: Pg,
+  index: SportsIndex
+): Promise<UpcomingMarketRef[]> {
+  const rows = await querySportsMarkets(pg, index, {
+    groupIds: index.allGroupIds,
     closeFrom: '0 seconds',
     closeTo: `${UPCOMING_DAYS} days`,
     orderBy: 'close',
@@ -424,6 +485,7 @@ async function getUpcomingMarkets(pg: Pg): Promise<UpcomingMarketRef[]> {
 
 async function querySportsMarkets(
   pg: Pg,
+  index: SportsIndex,
   opts: {
     groupIds: string[]
     /** Postgres interval strings relative to now(). */
@@ -473,7 +535,7 @@ async function querySportsMarkets(
     closeTime: r.close_time ? tsToMillis(r.close_time) : null,
     sportsEventId: r.sports_event_id,
     marketType: r.sports_market_type,
-    sport: sportForMarket({ groupIds: r.group_ids }),
+    sport: sportForMarket({ groupIds: r.group_ids }, index),
     importanceScore: Number(r.importance_score ?? 0),
   }))
 }

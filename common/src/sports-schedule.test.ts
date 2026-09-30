@@ -1,4 +1,6 @@
 import {
+  buildSportsIndex,
+  CURATED_SPORTS,
   findRelatedMarkets,
   gameStatus,
   GameForMatching,
@@ -10,7 +12,11 @@ import {
   relatedGroupFor,
   splitFlag,
   sportForMarket,
+  SPORTS_DEFAULT_GROUP_ID,
+  SportsTopic,
+  SportsTopicLink,
   sportTagIds,
+  splitTopicName,
   teamAliases,
   teamDisplayName,
 } from './sports-schedule'
@@ -457,5 +463,160 @@ describe('pipeline handoff fields', () => {
         marketType: null,
       })
     ).toBe('game-lines')
+  })
+})
+
+describe('sports from the topic tree', () => {
+  // A slice of the prod tree under 🏟️ Sports.
+  const root = SPORTS_DEFAULT_GROUP_ID
+  const football = 'Vcf6CYTTSXAiStbKSqQq'
+  const soccer = 'ypd6vR44ZzJyN9xykx6e'
+  const nfl = 'TNQwmbE5p6dnKx2e6Qlp'
+  const collegeFootball = 'ky1VPTuxrLXMnHyajZFp'
+  const basketball = 'NjkFkdkvRvBHoeMDQ5NB'
+  const collegeBasketball = 'beeb69e0-b36f-451a-80e1-e059df456bb1'
+  const sportsBetting = 'b3ll9Ch9rdbcrTRAbjUf'
+  const mma = 'VAI9srd7zaNEvJ1iYLO1'
+  const formula1 = 'OyHBKJOz9YaGkDctpwuY'
+  const topics: SportsTopic[] = [
+    [soccer, 'soccer', '⚽ Soccer', 8951],
+    [sportsBetting, 'sports-betting', 'Sports Betting', 6163],
+    [basketball, 'basketball', '🏀 Basketball', 5484],
+    [collegeBasketball, 'college-basketball', '🏀 College Basketball', 3101],
+    [nfl, 'nfl', '🏈 NFL', 4902],
+    ['superbowl', 'super-bowl', '🏈 Super Bowl', 684],
+    [football, 'football', '⚽ 🏈 Football', 2818],
+    [collegeFootball, 'college-football', 'College Football', 2518],
+    ['cycling', 'road-bicycle-racing', '🚲  Cycling', 1719],
+    ['tdf', 'tour-de-france', 'Tour de France', 73],
+    ['womens', 'peloton-discord-65dd39510b70', 'Womens Cycling', 14],
+    ['esports', 'esports', 'Esports', 204],
+    ['motorsports', 'motorsports', 'Motorsports', 120],
+    [formula1, 'formula-1', '🏎️ Formula 1', 3055],
+    ['combat', 'combat-sports', 'Combat Sports', 72],
+    [mma, 'mma', 'MMA', 54],
+    ['boxing', 'boxing', 'Boxing', 48],
+    ['sumo', 'sumo', 'Sumo', 13],
+  ].map(([id, slug, name, totalMembers]) => ({
+    id: id as string,
+    slug: slug as string,
+    name: name as string,
+    totalMembers: totalMembers as number,
+  }))
+  const links: SportsTopicLink[] = [
+    [root, soccer],
+    [root, sportsBetting],
+    [root, basketball],
+    [root, nfl],
+    [root, football],
+    [root, 'cycling'],
+    [root, 'womens'],
+    [root, 'esports'],
+    [root, 'motorsports'],
+    [root, 'combat'],
+    [root, 'sumo'],
+    [football, soccer],
+    [football, nfl],
+    [football, collegeFootball],
+    [basketball, collegeBasketball],
+    [nfl, 'superbowl'],
+    ['cycling', 'tdf'],
+    ['cycling', 'womens'],
+    ['motorsports', formula1],
+    ['combat', mma],
+    ['combat', 'boxing'],
+    ['combat', 'sumo'],
+  ].map(([parentId, childId]) => ({ parentId, childId }))
+  const index = buildSportsIndex(topics, links)
+  const sportOf = (...groupIds: string[]) => sportForMarket({ groupIds }, index)
+
+  it('lists every curated sport, then a sport per other subtopic, biggest first', () => {
+    expect(index.sports.map((s) => s.key)).toEqual([
+      ...CURATED_SPORTS.map((s) => s.key),
+      'road-bicycle-racing',
+      'esports',
+      'motorsports',
+      'combat-sports',
+    ])
+  })
+
+  it('takes the chip from the topic', () => {
+    const cycling = index.sports.find((s) => s.key === 'road-bicycle-racing')
+    expect(cycling).toMatchObject({
+      label: 'Cycling',
+      emoji: '🚲',
+      slug: 'road-bicycle-racing',
+      groupIds: ['cycling'],
+    })
+    expect(splitTopicName('Esports', 'esports')).toEqual({
+      emoji: '🎮',
+      label: 'Esports',
+    })
+    expect(splitTopicName('Curling', 'curling').emoji).toBe('🏅')
+    expect(splitTopicName('pickleball', 'pickleball').label).toBe('Pickleball')
+  })
+
+  it('files markets deeper in the tree under their sport', () => {
+    expect(sportOf('tdf')).toBe('road-bicycle-racing')
+    expect(sportOf('womens')).toBe('road-bicycle-racing')
+    expect(sportOf('sumo')).toBe('combat-sports')
+    expect(sportOf('boxing')).toBe('combat-sports')
+    expect(sportOf('superbowl')).toBe('nfl')
+  })
+
+  it('lets a curated sport beat the topic around it', () => {
+    expect(sportOf('combat', mma)).toBe('mma')
+    expect(sportOf('motorsports', formula1)).toBe('f1')
+    expect(sportOf(basketball, collegeBasketball)).toBe('ncaab')
+    expect(sportOf(collegeFootball, football)).toBe('ncaaf')
+  })
+
+  it('never files a market by a topic that groups sports', () => {
+    expect(sportOf(football, soccer)).toBe('soccer')
+    expect(sportOf(football)).toBe('other')
+    expect(sportOf(sportsBetting)).toBe('other')
+    expect(index.allGroupIds).toEqual(
+      expect.arrayContaining([root, football, sportsBetting, 'tdf'])
+    )
+  })
+
+  it('no longer reads Football + Soccer as NFL without the tree either', () => {
+    expect(sportForMarket({ groupIds: [football, soccer] })).toBe('soccer')
+    expect(sportForMarket({ groupIds: [football, nfl] })).toBe('nfl')
+    // New NFL games are still tagged with the Football topic.
+    expect(sportTagIds('nfl')).toContain(football)
+  })
+
+  it('claims a topic by slug where ids differ, as on dev', () => {
+    const dev = buildSportsIndex(
+      [{ id: 'dev-nhl', slug: 'nhl', name: 'NHL', totalMembers: 2 }],
+      [{ parentId: root, childId: 'dev-nhl' }]
+    )
+    expect(dev.sports.map((s) => s.key)).toEqual(
+      CURATED_SPORTS.map((s) => s.key)
+    )
+    expect(sportForMarket({ groupIds: ['dev-nhl'] }, dev)).toBe('nhl')
+  })
+
+  it('keeps reserved and odd slugs out of the keys, and survives cycles', () => {
+    const odd = buildSportsIndex(
+      [
+        { id: 'a', slug: 'other', name: 'Other', totalMembers: 5 },
+        { id: 'Bx', slug: 'Polo', name: 'Polo', totalMembers: 4 },
+        { id: 'c', slug: 'loop', name: 'Loop', totalMembers: 3 },
+      ],
+      [
+        { parentId: root, childId: 'a' },
+        { parentId: root, childId: 'Bx' },
+        { parentId: root, childId: 'c' },
+        { parentId: 'c', childId: 'Bx' },
+        { parentId: 'Bx', childId: 'c' },
+      ]
+    )
+    expect(odd.sports.slice(CURATED_SPORTS.length).map((s) => s.key)).toEqual([
+      'topic-a',
+      'polo',
+    ])
+    expect(sportForMarket({ groupIds: ['c'] }, odd)).toBe('polo')
   })
 })
