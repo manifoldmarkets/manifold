@@ -128,9 +128,9 @@ export type User = {
 
   userDeleted?: boolean
   optOutBetWarnings?: boolean
-  // Start the "Hide API trades" filters switched on; each view can still
-  // flip its own filter (see useHideApiTrades).
-  hideApiTradesByDefault?: boolean
+  // Last state of the "Hide API trades" toggle on trade lists, saved so it
+  // sticks across markets and devices (see useHideApiTrades).
+  hideApiTrades?: boolean
   signupBonusPaid?: number
   isBot?: boolean
   isAdvancedTrader?: boolean

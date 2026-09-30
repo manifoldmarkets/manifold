@@ -106,9 +106,7 @@ export function ActivityLog(props: {
   )
 
   const [pill, setPill] = useState<PillOptions>('all')
-  const [hideApiTrades, setHideApiTrades] = useHideApiTrades(
-    'live-hide-api-trades'
-  )
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades()
   const effectiveHideApiTrades = showHideApiTrades && hideApiTrades
 
   const [minAmountFilterIndex, setMinAmountFilterIndex] =

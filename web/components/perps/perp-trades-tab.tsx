@@ -53,9 +53,7 @@ export const PerpTradesTab = (props: {
   // Filtering is server-side (like the bets tab): dropping API rows on the
   // client would leave short, ragged pages since pagination counts rows
   // before the filter.
-  const [hideApiTrades, setHideApiTrades] = useHideApiTrades(
-    `hide-api-perp-trades-${contract.id}`
-  )
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades()
   // Hoisted out of EventRow: one resize listener for the tab, not one per row.
   const isMobile = useIsMobile(800)
 

@@ -46,9 +46,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
 
   const [minAmountFilterIndex, setMinAmountFilterIndex] =
     usePersistentInMemoryState(0, `bet-amount-filter-${contract.id}`)
-  const [hideApiTrades, setHideApiTrades] = useHideApiTrades(
-    `hide-api-trades-${contract.id}`
-  )
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades()
   const isNumber = outcomeType === 'NUMBER'
 
   // User filter state
@@ -109,7 +107,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
 
   // Drop pages loaded under other filters during render, before loadMore
   // measures where to continue from. Clicks already clear them, but the API
-  // trades filter also changes on its own when the account default loads.
+  // trades filter also changes on its own when the user's saved value loads or
+  // is changed in another tab.
   const filtersKey = `${selectedMinAmount}-${selectedUser?.id}-${hideApiTrades}`
   const [olderBetsFiltersKey, setOlderBetsFiltersKey] = useState(filtersKey)
   if (olderBetsFiltersKey !== filtersKey) {
