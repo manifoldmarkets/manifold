@@ -1,11 +1,13 @@
 import { PlusIcon } from '@heroicons/react/solid'
+import { keyBy, sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import {
-  RAIL_SPORT_CATEGORIES,
-  SPORT_BY_KEY,
-  SportKey,
+  AnySportKey,
+  CURATED_SPORTS,
+  SPORT_KEY_RE,
+  SportInfo,
 } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -33,11 +35,9 @@ const LEGACY_TAB_TO_SPORT: Record<string, SportSelection> = {
   mlb: 'mlb',
 }
 
+// Any sport key is accepted here; the schedule's list of sports says which exist.
 const isSportSelection = (s: unknown): s is SportSelection =>
-  s === 'all' ||
-  s === 'live' ||
-  (typeof s === 'string' &&
-    Object.prototype.hasOwnProperty.call(SPORT_BY_KEY, s))
+  typeof s === 'string' && SPORT_KEY_RE.test(s)
 
 export default function SportsPage() {
   const user = useUser()
@@ -56,10 +56,9 @@ export default function SportsPage() {
     const raw = router.query.sport ?? router.query.tab
     const value = (Array.isArray(raw) ? raw[0] : raw)?.toLowerCase()
     if (!value) return undefined
-    if (isSportSelection(value)) return value
-    return Object.prototype.hasOwnProperty.call(LEGACY_TAB_TO_SPORT, value)
-      ? LEGACY_TAB_TO_SPORT[value]
-      : undefined
+    if (Object.prototype.hasOwnProperty.call(LEGACY_TAB_TO_SPORT, value))
+      return LEGACY_TAB_TO_SPORT[value]
+    return isSportSelection(value) ? value : undefined
   }, [router.isReady, router.query.sport, router.query.tab])
 
   // Stored values are user data: validate before trusting them.
@@ -99,21 +98,34 @@ export default function SportsPage() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
   }
 
-  const scheduleSport: SportKey | 'all' =
+  const scheduleSport: AnySportKey | 'all' =
     requested === 'live' ? 'all' : requested
   const { schedule, loading } = useSportsSchedule(scheduleSport, ready)
+  // Every sport under the Sports topic, once the schedule brings the list.
+  const sports = schedule?.sports ?? CURATED_SPORTS
+  const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
+  // A link or remembered choice for a sport that no longer exists.
+  const unknownSport =
+    !!schedule &&
+    requested !== 'all' &&
+    requested !== 'live' &&
+    !sportsByKey[requested]
+  useEffect(() => {
+    if (unknownSport) setSelected('all')
+  }, [unknownSport])
   // If nothing is live any more, the Live chip is gone: fall back to All.
   const selected: SportSelection =
-    requested === 'live' && schedule && schedule.liveCount === 0
+    unknownSport ||
+    (requested === 'live' && schedule && schedule.liveCount === 0)
       ? 'all'
       : requested
   const games = schedule?.games ?? []
   const upcoming = schedule?.upcoming ?? []
   const hasGames = games.some((g) => g.status !== 'finished')
-  const sport =
-    selected === 'all' || selected === 'live'
-      ? undefined
-      : SPORT_BY_KEY[selected]
+  const allSports = selected === 'all' || selected === 'live'
+  const sport: SportInfo | undefined = allSports
+    ? undefined
+    : sportsByKey[selected]
 
   return (
     <Page trackPageView="/sports" className="!col-span-10">
@@ -143,6 +155,7 @@ export default function SportsPage() {
 
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
           <SportRail
+            sports={sports}
             selected={selected}
             onSelect={setSelected}
             counts={schedule?.counts ?? {}}
@@ -163,6 +176,7 @@ export default function SportsPage() {
                 refs={upcoming}
                 sport={scheduleSport}
                 showSport={selected === 'all'}
+                sportsByKey={sportsByKey}
               />
             )}
             {schedule &&
@@ -172,11 +186,15 @@ export default function SportsPage() {
                 <EmptyWeek
                   selected={selected}
                   label={sport?.longLabel ?? 'sports'}
+                  sports={sports}
+                  counts={schedule.counts}
                 />
               )}
           </Col>
           {/* Right rail on desktop; stacks under the schedule on phones. */}
-          <SportsMarketSections sport={scheduleSport} enabled={ready} />
+          {(allSports || sport) && (
+            <SportsMarketSections sport={sport ?? 'all'} enabled={ready} />
+          )}
         </div>
 
         <p className="text-ink-400 px-1 pb-2 text-[11px]">
@@ -189,12 +207,18 @@ export default function SportsPage() {
   )
 }
 
-function EmptyWeek(props: { selected: SportSelection; label: string }) {
-  const { selected, label } = props
-  const others = RAIL_SPORT_CATEGORIES.filter((s) => s.key !== selected).slice(
-    0,
-    4
-  )
+function EmptyWeek(props: {
+  selected: SportSelection
+  label: string
+  sports: SportInfo[]
+  counts: Partial<Record<AnySportKey, number>>
+}) {
+  const { selected, label, sports, counts } = props
+  // Point at sports that do have something on this week.
+  const others = sortBy(
+    sports.filter((s) => s.key !== selected),
+    (s) => -(counts[s.key] ?? 0)
+  ).slice(0, 4)
   return (
     <Col className="border-ink-200 bg-canvas-0 gap-1.5 rounded-lg border px-4 py-4">
       <span className="text-ink-900 text-sm font-semibold">

@@ -7,7 +7,10 @@ jest.mock('shared/utils', () => ({
 }))
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { SPORT_CATEGORIES } from 'common/sports-schedule'
+import {
+  SPORT_CATEGORIES,
+  SPORTS_DEFAULT_GROUP_ID,
+} from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
 
 const kickoff = Date.now() + 60 * 60 * 1000
@@ -40,11 +43,27 @@ const props = ['nfl', 'soccer'].map((sport) => ({
   group_ids: [groupId(sport)],
 }))
 
+// Cycling sits under Sports with Tour de France inside it. The endpoint keeps
+// the tree for a few minutes, so every test sees the same one.
+const tree = [
+  [SPORTS_DEFAULT_GROUP_ID, 'cycling', 'road-bicycle-racing', '🚲  Cycling'],
+  ['cycling', 'tdf', 'tour-de-france', 'Tour de France'],
+].map(([parent_id, child_id, slug, name]) => ({
+  parent_id,
+  child_id,
+  slug,
+  name,
+  total_members: 10,
+}))
+let marketRows: typeof props = props
+
 beforeEach(() => {
+  marketRows = props
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     manyOrNone: async (sql: string) => {
       if (sql.includes("where data->>'sportsEventId'")) return official
-      if (sql.includes('select c.id, c.question')) return props
+      if (sql.includes('select c.id, c.question')) return marketRows
+      if (sql.includes('from group_groups')) return tree
       if (sql.includes('from group_contracts'))
         return ['nfl', 'soccer'].map((sport) => ({
           contract_id: sport,
@@ -74,4 +93,31 @@ it('rail counts and the week feed stay stable across sports, limits and includeR
     if (options.includeRelated === false)
       expect(result.games.every((g) => g.related.length === 0)).toBe(true)
   }
+})
+
+it('gives every Sports subtopic a sport and files markets from deeper topics', async () => {
+  marketRows = [
+    ...props,
+    {
+      id: 'stage-9',
+      question: 'Who wins stage 9?',
+      sports_event_id: null as unknown as string,
+      sports_market_type: null as unknown as string,
+      close_time: new Date(kickoff + 60 * 60 * 1000).toISOString(),
+      importance_score: 1,
+      group_ids: ['tdf'],
+    },
+  ]
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await getSchedule({ sport: 'road-bicycle-racing' })
+  const result = 'result' in response ? response.result : response
+  expect(result.sports.map((s) => s.key)).toEqual([
+    ...SPORT_CATEGORIES.map((s) => s.key),
+    'road-bicycle-racing',
+  ])
+  expect(result.counts).toEqual({ nfl: 1, soccer: 1, 'road-bicycle-racing': 1 })
+  expect(result.games).toEqual([])
+  expect(result.upcoming.map((m) => m.id)).toEqual(['stage-9'])
 })

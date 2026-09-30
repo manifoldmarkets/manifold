@@ -65,7 +65,7 @@ import {
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
-import { SportsScheduleResponse } from 'common/sports-schedule'
+import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -5150,24 +5150,8 @@ export const API = (_apiTypeCheck = {
     cache: 'public, max-age=30, stale-while-revalidate=60',
     props: z
       .object({
-        sport: z
-          .enum([
-            'all',
-            'nfl',
-            'nba',
-            'mlb',
-            'nhl',
-            'soccer',
-            'ncaaf',
-            'ncaab',
-            'tennis',
-            'f1',
-            'mma',
-            'golf',
-            'cricket',
-            'other',
-          ])
-          .optional(),
+        // 'all', a curated sport key, or a sport from a Sports subtopic.
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
         daysAhead: z.coerce.number().int().min(1).max(60).optional(),
         limit: z.coerce.number().int().min(1).max(400).optional(),
         includeRelated: coerceBoolean.optional(),

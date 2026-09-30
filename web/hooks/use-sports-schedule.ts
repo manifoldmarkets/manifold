@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import {
+  AnySportKey,
   LIVE_STATUSES,
-  SportKey,
   SportsScheduleResponse,
 } from 'common/sports-schedule'
 import {
@@ -29,7 +29,7 @@ const IDLE_REFRESH_MS = 5 * 60_000
  * Rows stay pure: this hook owns the single set of subscriptions for the
  * whole list, so a 100-game page costs ~100 topics, not 300+.
  */
-export function useSportsSchedule(sport: SportKey | 'all', enabled = true) {
+export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
   const { data, refresh, loading } = useAPIGetter(
     'sports-schedule',
     { sport },
