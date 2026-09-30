@@ -1,7 +1,9 @@
 import { useEvent } from 'client-common/hooks/use-event'
+import { getLocalOnlyUserId } from 'common/util/api'
 import { useEffect, useSyncExternalStore } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
+import { auth } from 'web/lib/firebase/users'
 
 // saved: this click's own me/update has gone through.
 type Click = { userId?: string; value: boolean; saved?: boolean }
@@ -22,14 +24,17 @@ const setLastClick = (click: Click | undefined) => {
 }
 
 // Saves run one at a time in click order, so quick toggling can't leave the
-// account on an earlier click. api() sends as whoever is signed in when it
-// runs, so a save is skipped, and its click dropped, if the account that
-// clicked has signed out.
+// account on an earlier click. Each is skipped, and its click dropped, unless
+// api() is about to send it as the account that clicked, which may have
+// switched since.
 let saving: Promise<unknown> = Promise.resolve()
-// The app's signed-in account (AuthContext, as useUser returns it), kept
-// current by the mounted toggles. Firebase's currentUser won't do: it's null
-// while the session restores on load, and always in local-only mode.
-let signedInUserId: string | undefined
+
+// Who api() sends as: the local user in local-only mode, otherwise the
+// Firebase user once its session has been restored on page load.
+const apiUserId = async () => {
+  await auth.authStateReady()
+  return getLocalOnlyUserId() ?? auth.currentUser?.uid
+}
 
 // Every "Hide API trades" toggle shares one value. For signed-in users it's
 // saved to their account, and me/update broadcasts the change to their open
@@ -38,9 +43,6 @@ let signedInUserId: string | undefined
 export const useHideApiTrades = () => {
   const user = useUser()
   const saved = !!user?.hideApiTrades
-  useEffect(() => {
-    signedInUserId = user?.id
-  }, [user?.id])
   const click = useSyncExternalStore(
     subscribe,
     () => lastClick,
@@ -66,7 +68,7 @@ export const useHideApiTrades = () => {
     if (!userId) return
     saving = saving
       .then(async () => {
-        if (signedInUserId !== userId) {
+        if ((await apiUserId()) !== userId) {
           // Unsaved, so it mustn't override the account's value if it signs
           // back in.
           if (lastClick === click) setLastClick(undefined)
