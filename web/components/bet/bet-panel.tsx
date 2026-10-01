@@ -981,7 +981,6 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
-              key={`${multiProps?.answerToBuy.id ?? contract.id}-${outcome}`}
               betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
