@@ -130,6 +130,17 @@ const createAnswerCpmmMain = async (
 
   const { newAnswer, user } = await runTransactionWithRetries(
     async (pgTrans) => {
+      // The mechanism picks the split below. A liquidity add can convert a
+      // cpmm-multi-1 market to cpmm-multi-2 after `contract` was read, and the
+      // drizzle then floats its answers' p, so read the mechanism again in each
+      // attempt. A conversion committed after this read changes the contract
+      // row, which this transaction updates below, so the attempt fails to
+      // serialize and is retried.
+      const { mechanism } = await pgTrans.one<
+        Pick<CPMMMultiContract, 'mechanism'>
+      >(`select mechanism from contracts where id = $1`, [contract.id])
+      const currentContract = { ...contract, mechanism }
+
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -180,10 +191,10 @@ const createAnswerCpmmMain = async (
 
       const updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
-        if (contract.mechanism === 'cpmm-multi-2') {
+        if (mechanism === 'cpmm-multi-2') {
           await createAnswerAndSumAnswersToOneV2(
             pgTrans,
-            contract,
+            currentContract,
             answers,
             newAnswer,
             answerCost
@@ -192,7 +203,7 @@ const createAnswerCpmmMain = async (
           await createAnswerAndSumAnswersToOne(
             pgTrans,
             user,
-            contract,
+            currentContract,
             answers,
             newAnswer,
             answerCost
@@ -201,7 +212,7 @@ const createAnswerCpmmMain = async (
         const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
         await convertOtherAnswerShares(
           pgTrans,
-          contract,
+          currentContract,
           updatedAnswers,
           newAnswer.id
         )
@@ -215,7 +226,7 @@ const createAnswerCpmmMain = async (
 
       const lp = getCpmmInitialLiquidity(
         user.id,
-        contract,
+        currentContract,
         answerCost,
         createdTime,
         newAnswer.id
