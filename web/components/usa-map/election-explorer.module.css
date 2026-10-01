@@ -14,52 +14,85 @@
   isolation: isolate;
 }
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -24px;
+  padding: 10px 24px;
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
-  padding-bottom: 18px;
+  box-shadow: 0 4px 12px #00000006;
+}
+.headerSentinel {
+  height: 1px;
 }
 .tabs {
-  display: flex;
-  gap: 20px;
-  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 .tabs button {
-  position: relative;
-  font-size: 17px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-size: 14px;
   font-weight: 600;
   color: var(--muted);
-  padding: 12px 0;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: var(--soft);
+}
+.tabs button:hover {
+  color: var(--accent);
+  border-color: var(--line);
 }
 .tabs button[aria-selected='true'] {
   color: var(--accent);
+  border-color: var(--accent);
+  background: rgb(var(--color-primary-100) / 0.18);
 }
-.tabs button[aria-selected='true']::after {
-  position: absolute;
-  content: '';
-  height: 2px;
-  background: var(--accent);
-  bottom: -19px;
-  left: 0;
-  right: 0;
+.tabArt {
+  width: 68px;
+  flex-shrink: 0;
+}
+.tabText {
+  text-align: left;
+}
+.tabText small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.header[data-stuck='true'] .tabArt,
+.header[data-stuck='true'] .tabText small {
+  display: none;
+}
+.header[data-stuck='true'] .tabs button {
+  padding: 8px 14px;
 }
 .controls {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 10px;
 }
 .controlCard {
-  min-width: 170px;
-  padding: 10px 12px;
+  min-width: 0;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 .controlMain {
   display: grid;
-  grid-template-columns: 1fr auto;
-  column-gap: 12px;
-  row-gap: 8px;
+  grid-template-columns: 56px 1fr auto;
+  column-gap: 14px;
+  row-gap: 10px;
+  align-items: center;
   width: 100%;
   text-align: left;
   transition: background 150ms;
@@ -68,7 +101,7 @@
   background: var(--soft);
 }
 .controlMain > span {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
 }
 .controlLeader {
@@ -76,19 +109,25 @@
   align-items: center;
   gap: 7px;
 }
-.controlLeader img {
+.controlIcon img {
   object-fit: contain;
+  width: 56px;
+  height: 56px;
 }
 .controlBets {
   display: flex;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 .controlBets button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   flex: 1;
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 4px 6px;
+  border-radius: 6px;
+  padding: 7px 10px;
   font-size: 11px;
   font-weight: 600;
 }
@@ -127,21 +166,21 @@
   display: block;
   color: var(--muted);
   font-weight: 400;
-  font-size: 10px;
+  font-size: 11px;
+  margin-top: 3px;
 }
 .controlCard strong {
-  font-size: 21px;
+  font-size: 34px;
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
 }
-.controlCard strong > span {
-  font-size: 12px;
-  color: var(--muted);
+.controlBets strong {
+  font-size: 14px;
 }
 .controlBar {
   display: flex;
-  grid-column: span 2;
-  height: 3px;
+  grid-column: 1 / -1;
+  height: 4px;
   overflow: hidden;
   border-radius: 2px;
   background: var(--soft);
@@ -154,7 +193,7 @@
   gap: 12px;
   color: var(--muted);
   font-size: 11px;
-  padding: 16px 0 21px;
+  padding: 12px 0;
 }
 .meta > span {
   display: flex;
@@ -179,7 +218,7 @@
   font-size: 12px;
 }
 .balanceLabels b {
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -224,7 +263,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 12px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 10px;
 }
@@ -232,7 +271,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 24px;
+  margin-top: 12px;
 }
 .segment {
   display: flex;
@@ -347,11 +386,12 @@
 }
 .noRace {
   fill: rgb(var(--color-ink-100));
-  cursor: default;
 }
-.noRace:hover {
-  stroke: var(--paper);
-  stroke-width: 0.6;
+.noRace[role='button']:hover,
+.noRace[aria-pressed='true'] {
+  fill: rgb(var(--color-ink-200));
+  stroke: #00d3df;
+  stroke-width: 2;
 }
 .stateOutline {
   fill: none;
@@ -391,11 +431,8 @@
   pointer-events: none;
 }
 .zoomControls {
-  position: absolute;
-  right: 8px;
-  bottom: 14px;
   display: flex;
-  flex-direction: column;
+  flex-shrink: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--paper);
@@ -408,7 +445,7 @@
   font-size: 21px;
 }
 .zoomControls button + button {
-  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
 }
 .zoomControls button:disabled {
   opacity: 0.3;
@@ -561,6 +598,17 @@
   font-size: 11px;
   line-height: 1.6;
 }
+.exploreState {
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px;
+  font-size: 12px;
+  text-align: left;
+}
+.exploreState:hover {
+  background: var(--soft);
+}
 .marketLink {
   color: var(--accent);
   font-size: 12px;
@@ -611,36 +659,55 @@
   color: white;
   margin-top: 4px;
 }
-@media (max-width: 850px) {
-  .header {
-    display: contents;
+@media (min-width: 851px) {
+  .explorer {
+    --map-height: clamp(280px, calc(100svh - 350px), 420px);
   }
-  .tabs {
+  .toolbar {
     position: sticky;
-    top: 0;
-    z-index: 10;
+    top: var(--header-height, 82px);
+    z-index: 9;
+    margin: 8px -24px 0;
+    padding: 10px 24px;
     background: var(--paper);
+    border-bottom: 1px solid var(--line);
     box-shadow: 0 4px 12px #0000000a;
-    margin: -22px -24px 0;
-    padding: 12px 24px 8px;
-    justify-content: center;
-    border-bottom: 1px solid var(--line);
   }
-  .tabs button[aria-selected='true']::after {
-    bottom: -9px;
-  }
-  .controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    margin-top: 14px;
-    padding-bottom: 13px;
-    border-bottom: 1px solid var(--line);
-  }
-  .controlCard {
-    min-width: 0;
+  .map {
+    height: var(--map-height);
   }
   .details {
-    top: 355px;
+    top: auto;
+    bottom: 84px;
+    max-height: calc(var(--map-height) - 16px);
+  }
+}
+@media (max-width: 850px) {
+  .details {
+    position: fixed;
+    top: auto;
+    bottom: 68px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 55vh;
+    z-index: 30;
+    padding: 18px;
+    border-radius: 15px;
+  }
+  .controlMain {
+    grid-template-columns: 42px 1fr auto;
+    gap: 8px;
+  }
+  .controlIcon img {
+    width: 42px;
+    height: 42px;
+  }
+  .controlMain > span {
+    font-size: 14px;
+  }
+  .controlLeader strong {
+    font-size: 28px;
   }
 }
 @media (max-width: 540px) {
@@ -648,33 +715,71 @@
     padding: 14px 12px 0;
     border-radius: 12px;
   }
-  .tabs {
-    margin: -14px -12px 0;
+  .header {
+    margin: 0 -12px;
     padding: 8px 12px;
-    gap: 30px;
+  }
+  .tabs {
+    gap: 6px;
   }
   .tabs button {
-    font-size: 15px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px 4px;
+    font-size: 12px;
+  }
+  .tabArt {
+    width: 48px;
+  }
+  .tabText {
+    text-align: center;
+  }
+  .tabText small {
+    display: none;
+  }
+  .header[data-stuck='true'] .tabs button {
+    padding: 8px 4px;
+  }
+  .controls {
+    gap: 8px;
   }
   .controlCard {
-    padding: 9px 10px;
-  }
-  .controlCard strong {
-    font-size: 20px;
+    padding: 12px 10px;
   }
   .controlMain {
-    column-gap: 5px;
+    grid-template-columns: 1fr auto;
+    row-gap: 6px;
+  }
+  .controlTitle {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .controlMain > .controlTitle {
+    font-size: 12px;
+  }
+  .controlCard small {
+    font-size: 9px;
+  }
+  .controlIcon {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+  .controlIcon img {
+    width: 38px;
+    height: 38px;
   }
   .controlLeader {
-    gap: 4px;
+    grid-column: 1;
+    grid-row: 2;
   }
-  .controlLeader img {
-    width: 22px;
-    height: 22px;
+  .controlBets button {
+    flex-direction: column;
+    padding: 6px 3px;
+    font-size: 9px;
   }
   .meta {
     font-size: 9px;
-    padding: 13px 0 20px;
+    padding: 12px 0;
   }
   .balanceLabels > span > span {
     font-size: 10px;
@@ -690,16 +795,20 @@
     font-size: 9px;
   }
   .toolbar {
-    flex-wrap: wrap;
-    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    margin-top: 12px;
   }
   .segment {
-    flex: 1;
+    grid-column: 1;
+    grid-row: 1;
   }
   .segment button {
     flex: 1;
   }
   .search {
+    grid-column: 1;
+    grid-row: 2;
     width: 100%;
     padding: 10px;
   }
@@ -710,17 +819,17 @@
     margin: 18px -9px 0;
   }
   .zoomControls {
-    bottom: 0;
-    right: 0;
-    flex-direction: row;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
   }
   .zoomControls button {
     width: 30px;
     height: 30px;
   }
-  .zoomControls button + button {
-    border-top: 0;
-    border-left: 1px solid var(--line);
+  .toolButton {
+    grid-column: 2;
+    grid-row: 2;
   }
   .legend {
     flex-direction: column;
@@ -735,18 +844,6 @@
   }
   .hoverCard {
     display: none;
-  }
-  .details {
-    position: fixed;
-    top: auto;
-    bottom: 68px;
-    left: 8px;
-    right: 8px;
-    width: auto;
-    max-height: 55vh;
-    z-index: 30;
-    padding: 18px;
-    border-radius: 15px;
   }
   .results {
     grid-template-columns: 1fr;

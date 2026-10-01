@@ -9,6 +9,7 @@ import { PartyPanel } from 'web/components/us-elections/contracts/party-panel/pa
 import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/party-panel/binary-party-panel'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
+import { ChamberIllustration } from './chamber-illustration'
 import { DATA } from './usa-map-data'
 import {
   DEM_COLOR,
@@ -59,6 +60,10 @@ export function ElectionExplorer(props: Props) {
   const [mapError, setMapError] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const selectionOrigin = useRef<HTMLElement | SVGElement | null>(null)
+  const explorerRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const headerSentinelRef = useRef<HTMLDivElement>(null)
+  const [headerStuck, setHeaderStuck] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const [camera, setCamera] = useState({ x: 0, y: 0, k: 1 })
   const drag = useRef<{
@@ -83,6 +88,10 @@ export function ElectionExplorer(props: Props) {
   const summary = seatSummary(races, mode)
   const selectedRace = selected ? raceById.get(selected) : undefined
   const hoverRace = hovered ? raceById.get(hovered) : undefined
+  const selectedNoRace =
+    mode !== 'house' && selected && !selectedRace ? DATA[selected] : undefined
+  const hoveredNoRace =
+    mode !== 'house' && hovered && !hoverRace ? DATA[hovered] : undefined
   const matches = (race: Race) =>
     (!filter || raceTier(race) === filter) &&
     (!query.trim() ||
@@ -90,6 +99,30 @@ export function ElectionExplorer(props: Props) {
         .toLowerCase()
         .includes(query.trim().toLowerCase()))
   const filtered = races.filter(matches)
+
+  useEffect(() => {
+    const sentinel = headerSentinelRef.current
+    if (!sentinel) return
+    const observer = new IntersectionObserver(([entry]) =>
+      setHeaderStuck(!entry.isIntersecting && entry.boundingClientRect.top < 0)
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const header = headerRef.current
+    if (!header) return
+    const updateHeaderHeight = () =>
+      explorerRef.current?.style.setProperty(
+        '--header-height',
+        `${header.getBoundingClientRect().height}px`
+      )
+    const observer = new ResizeObserver(updateHeaderHeight)
+    observer.observe(header)
+    updateHeaderHeight()
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const abort = new AbortController()
@@ -152,6 +185,8 @@ export function ElectionExplorer(props: Props) {
 
   const shapeProps = (id: string) => {
     const race = raceById.get(id)
+    const noElection = mode !== 'house' && !race && !!DATA[id] && id !== 'DC'
+    const selectable = !!race || noElection
     return {
       fill: race ? raceColor(race) ?? `url(#${patternId})` : undefined,
       className: clsx(
@@ -160,8 +195,8 @@ export function ElectionExplorer(props: Props) {
         selected === id && styles.selected
       ),
       opacity: race && !matches(race) ? 0.15 : 1,
-      role: race ? 'button' : undefined,
-      tabIndex: race && matches(race) ? 0 : -1,
+      role: selectable ? 'button' : undefined,
+      tabIndex: (race && matches(race)) || noElection ? 0 : -1,
       'aria-label': race
         ? `${race.label}, ${
             race.odds
@@ -170,17 +205,17 @@ export function ElectionExplorer(props: Props) {
                 }`
               : 'unpriced'
           }`
-        : `${DATA[id]?.name ?? id}: no race in 2026`,
-      'aria-pressed': race ? selected === id : undefined,
+        : `${DATA[id]?.name ?? id}: no ${modeName(mode)} election in 2026`,
+      'aria-pressed': selectable ? selected === id : undefined,
       onPointerEnter: (e: React.PointerEvent<SVGElement>) => {
-        if (e.pointerType === 'mouse' && race) setHovered(id)
+        if (e.pointerType === 'mouse' && selectable) setHovered(id)
       },
       onPointerLeave: () => setHovered(undefined),
       onClick: (e: React.MouseEvent<SVGElement>) => {
-        if (race && !drag.current?.moved) choose(id, e.currentTarget)
+        if (selectable && !drag.current?.moved) choose(id, e.currentTarget)
       },
       onKeyDown: (e: React.KeyboardEvent<SVGElement>) => {
-        if (race && (e.key === 'Enter' || e.key === ' ')) {
+        if (selectable && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault()
           choose(id, e.currentTarget)
         }
@@ -204,13 +239,27 @@ export function ElectionExplorer(props: Props) {
       : null
 
   return (
-    <section className={styles.explorer} aria-label="2026 election explorer">
-      <header className={styles.header}>
+    <section
+      ref={explorerRef}
+      className={styles.explorer}
+      aria-label="2026 election explorer"
+    >
+      <div className={styles.controls}>
+        <ControlCard label="House" contract={props.houseControl} />
+        <ControlCard label="Senate" contract={props.senateControl} />
+      </div>
+      <div ref={headerSentinelRef} className={styles.headerSentinel} />
+      <header
+        ref={headerRef}
+        className={styles.header}
+        data-stuck={headerStuck}
+      >
         <div className={styles.tabs} role="tablist" aria-label="Election type">
           {MODES.map((m, i) => (
             <button
               key={m}
               role="tab"
+              aria-label={modeName(m)}
               aria-selected={mode === m}
               tabIndex={mode === m ? 0 : -1}
               onClick={() => changeMode(m)}
@@ -227,13 +276,21 @@ export function ElectionExplorer(props: Props) {
                 }
               }}
             >
-              {modeName(m)}
+              <span className={styles.tabArt}>
+                <ChamberIllustration mode={m} />
+              </span>
+              <span className={styles.tabText}>
+                {modeName(m)}
+                <small>
+                  {m === 'house'
+                    ? '435 districts'
+                    : m === 'senate'
+                    ? '35 elections'
+                    : '36 elections'}
+                </small>
+              </span>
             </button>
           ))}
-        </div>
-        <div className={styles.controls}>
-          <ControlCard label="House" contract={props.houseControl} />
-          <ControlCard label="Senate" contract={props.senateControl} />
         </div>
       </header>
       <div className={styles.meta}>
@@ -337,6 +394,33 @@ export function ElectionExplorer(props: Props) {
             </button>
           )}
         </label>
+        <div
+          className={styles.zoomControls}
+          role="group"
+          aria-label="Map zoom controls"
+        >
+          <button
+            aria-label="Zoom in"
+            disabled={camera.k >= 6}
+            onClick={() => zoom(1.5)}
+          >
+            +
+          </button>
+          <button
+            aria-label="Zoom out"
+            disabled={camera.k <= 1}
+            onClick={() => zoom(1 / 1.5)}
+          >
+            −
+          </button>
+          <button
+            aria-label="Reset map view"
+            title="Reset view"
+            onClick={resetView}
+          >
+            ↺
+          </button>
+        </div>
       </div>
       {(filter || query) && (
         <div className={styles.filterNotice} role="status">
@@ -399,7 +483,9 @@ export function ElectionExplorer(props: Props) {
             onPointerMove={(e) => {
               if (!drag.current || !e.buttons || camera.k === 1) return
               const d = drag.current
-              const ratio = 960 / e.currentTarget.getBoundingClientRect().width
+              const bounds = e.currentTarget.getBoundingClientRect()
+              const ratio =
+                1 / Math.min(bounds.width / 960, bounds.height / 600)
               if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) {
                 d.moved = true
                 e.currentTarget.setPointerCapture(e.pointerId)
@@ -567,34 +653,17 @@ export function ElectionExplorer(props: Props) {
             </g>
           </svg>
         )}
-        <div className={styles.zoomControls}>
-          <button
-            aria-label="Zoom in"
-            disabled={camera.k >= 6}
-            onClick={() => zoom(1.5)}
-          >
-            +
-          </button>
-          <button
-            aria-label="Zoom out"
-            disabled={camera.k <= 1}
-            onClick={() => zoom(1 / 1.5)}
-          >
-            −
-          </button>
-          <button
-            aria-label="Reset map view"
-            title="Reset view"
-            onClick={resetView}
-          >
-            ↺
-          </button>
-        </div>
-        {hoverRace && !selected && (
+        {(hoverRace || hoveredNoRace) && !selected && (
           <div className={styles.hoverCard}>
-            <strong>{hoverRace.label}</strong>
-            <RaceQuote race={hoverRace} />
-            <span>Click to explore this race</span>
+            <strong>{hoverRace?.label ?? hoveredNoRace?.name}</strong>
+            {hoverRace ? (
+              <>
+                <RaceQuote race={hoverRace} />
+                <span>Click to explore this race</span>
+              </>
+            ) : (
+              <span>No {modeName(mode)} election in 2026</span>
+            )}
           </div>
         )}
       </div>
@@ -632,6 +701,41 @@ export function ElectionExplorer(props: Props) {
           : ''}
         Select a race to explore the odds. Zoom in to drag the map.
       </p>
+
+      {selectedNoRace && (
+        <section
+          className={styles.details}
+          aria-label={`${selectedNoRace.name} election details`}
+        >
+          <div className={styles.detailHeading}>
+            <div>
+              <span className={styles.eyebrow}>2026 · {modeName(mode)}</span>
+              <h3>{selectedNoRace.name}</h3>
+            </div>
+            <button
+              ref={closeRef}
+              aria-label="Close race details"
+              onClick={closeDetails}
+            >
+              ×
+            </button>
+          </div>
+          <p className={styles.empty}>
+            No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
+            2026. This office is not on the ballot here.
+          </p>
+          <button
+            className={styles.exploreState}
+            onClick={() => {
+              const name = selectedNoRace.name
+              changeMode('house')
+              setQuery(name)
+            }}
+          >
+            Explore {selectedNoRace.name} House districts →
+          </button>
+        </section>
+      )}
 
       {selectedRace && (
         <section
@@ -831,17 +935,23 @@ function ControlCard({
     (contract.closeTime == null || contract.closeTime > Date.now())
   const content = (
     <>
-      <span>
-        {label}
-        <small>control</small>
-      </span>
-      <span className={styles.controlLeader}>
+      <span className={styles.controlIcon}>
         <Image
           src={`/politics-party/${rep ? 'republican' : 'democrat'}_symbol.png`}
           alt={rep ? 'Republican elephant' : 'Democratic donkey'}
-          width={28}
-          height={28}
+          width={64}
+          height={64}
         />
+      </span>
+      <span className={styles.controlTitle}>
+        {label} control
+        <small>
+          {odds
+            ? `${rep ? 'Republicans' : 'Democrats'} favored`
+            : 'Market unavailable'}
+        </small>
+      </span>
+      <span className={styles.controlLeader}>
         <strong style={{ color: rep ? REP_COLOR : DEM_COLOR }}>
           {odds ? pct(rep ? odds.rep : odds.dem) : '—'}
         </strong>
@@ -877,7 +987,7 @@ function ControlCard({
               onClick={() => setOutcome('NO')}
               style={{ color: DEM_COLOR }}
             >
-              D {pct(odds.dem)}
+              <span>Democratic</span> <strong>{pct(odds.dem)}</strong>
             </button>
             <button
               disabled={!tradable}
@@ -886,7 +996,7 @@ function ControlCard({
               onClick={() => setOutcome('YES')}
               style={{ color: REP_COLOR }}
             >
-              R {pct(odds.rep)}
+              <span>Republican</span> <strong>{pct(odds.rep)}</strong>
             </button>
           </div>
         )}

@@ -73,5 +73,11 @@ zoom/pan/reset; race selection by mouse, touch and keyboard; closing details;
 methodology; a missing atlas; and missing/cancelled market prices. The chamber
 cards and district choices open the existing betting dialogs. Polling cards
 open the existing perpetual trading flow, preserving position, oracle freshness,
-and risk checks. Mobile tabs stay sticky within the map. Duplicate race lists
-below the map have been removed.
+and risk checks. Chamber tabs stay sticky within the explorer on all screen
+sizes; their illustrations disappear when pinned. Desktop map tools stay below
+that bar, with zoom at the top right, and the map height is capped to fit the
+viewport. Larger chamber-control cards scroll away above the tabs. States with
+no Senate or gubernatorial election can be selected in either map view: they
+highlight, explain that the office is not on the ballot, and offer a shortcut
+to that state's House districts. This is distinct from an unpriced race.
+Duplicate race lists below the map have been removed.

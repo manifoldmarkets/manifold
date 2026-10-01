@@ -116,9 +116,7 @@ export function USElectionsPage(
       {/* 2026 Midterms — the balance-of-power levers and the race map together
           in a single card so the section reads as one unit. */}
       <SectionInView section="midterms map" className="gap-3">
-        <SectionHeader subtitle="Who controls Washington after the 2026 midterms">
-          2026 Midterms
-        </SectionHeader>
+        <SectionHeader>2026 Midterms</SectionHeader>
         <LiveElectionMap
           houseControlContract={houseControlContract}
           senateControlContract={senateControlContract}
