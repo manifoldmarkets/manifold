@@ -90,9 +90,10 @@ export function RaceDetailsPanel(props: {
     if (!panel) return
     const observer = new ResizeObserver(() => {
       const { x, y } = offsetRef.current
-      if (x || y) move(x, y)
+      move(x, y)
     })
     observer.observe(panel)
+    if (panel.parentElement) observer.observe(panel.parentElement)
     return () => observer.disconnect()
   }, [move])
 
