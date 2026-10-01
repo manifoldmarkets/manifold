@@ -558,7 +558,7 @@
 }
 .details {
   position: absolute;
-  z-index: 4;
+  z-index: 12;
   right: 30px;
   top: 320px;
   width: min(345px, calc(100% - 40px));
