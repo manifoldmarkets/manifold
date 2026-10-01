@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -29,6 +30,7 @@ export function RaceDetailsPanel(props: {
   const offsetRef = useRef(offset)
   const [collapsed, setCollapsed] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [moved, setMoved] = useState(false)
   const drag = useRef<{ x: number; y: number; px: number; py: number }>()
   const contentId = useId()
   const helpId = useId()
@@ -57,18 +59,25 @@ export function RaceDetailsPanel(props: {
         Math.min(window.innerHeight - bounds.height - bottomGap - baseY, y)
       ),
     }
-    offsetRef.current = next
-    setOffset(next)
+    setOffset((previous) =>
+      previous.x === next.x && previous.y === next.y ? previous : next
+    )
   }, [])
   const reset = useCallback(() => {
-    offsetRef.current = { x: 0, y: 0 }
-    setOffset(offsetRef.current)
-  }, [])
+    move(0, 0)
+    setMoved(false)
+  }, [move])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Geometry must be compared with the transform already committed to the DOM.
+    offsetRef.current = offset
+  }, [offset])
+
+  useLayoutEffect(() => {
     setCollapsed(false)
     panelRef.current?.querySelector('[data-details-content]')?.scrollTo(0, 0)
-  }, [title])
+    move(offsetRef.current.x, offsetRef.current.y)
+  }, [title, move])
 
   useEffect(() => {
     // A resize can switch between the desktop card and mobile bottom sheet.
@@ -117,11 +126,13 @@ export function RaceDetailsPanel(props: {
             }}
             onPointerMove={(e) => {
               const start = drag.current
-              if (start)
+              if (start) {
                 move(
                   start.px + e.clientX - start.x,
                   start.py + e.clientY - start.y
                 )
+                setMoved(true)
+              }
             }}
             onPointerUp={(e) => {
               if (e.currentTarget.hasPointerCapture(e.pointerId))
@@ -142,6 +153,7 @@ export function RaceDetailsPanel(props: {
               else if (e.key === 'ArrowUp') move(x, y - step)
               else if (e.key === 'ArrowDown') move(x, y + step)
               else return
+              if (e.key !== 'Home') setMoved(true)
               e.preventDefault()
             }}
           >
@@ -156,7 +168,7 @@ export function RaceDetailsPanel(props: {
           <button
             aria-label="Reset popup position"
             title="Reset position"
-            disabled={offset.x === 0 && offset.y === 0}
+            disabled={!moved}
             onClick={reset}
           >
             <RefreshIcon aria-hidden />
