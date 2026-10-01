@@ -10,6 +10,7 @@ import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/par
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
 import { ChamberIllustration } from './chamber-illustration'
+import { RaceDetailsPanel } from './race-details-panel'
 import { DATA } from './usa-map-data'
 import {
   DEM_COLOR,
@@ -23,6 +24,8 @@ import {
   electionOdds,
   ElectionMode,
   leadingParty,
+  matchesRaceQuery,
+  matchesStateQuery,
   OTHER_COLOR,
   COMPLEMENT_COLOR,
   outcomeLabel,
@@ -95,12 +98,17 @@ export function ElectionExplorer(props: Props) {
   const hoveredNoRace =
     mode !== 'house' && hovered && !hoverRace ? DATA[hovered] : undefined
   const matches = (race: Race) =>
-    (!filter || raceTier(race) === filter) &&
-    (!query.trim() ||
-      `${race.label} ${race.shortLabel} ${race.matchup ?? ''}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()))
+    (!filter || raceTier(race) === filter) && matchesRaceQuery(race, query)
   const filtered = races.filter(matches)
+  const noElectionMatches =
+    mode === 'house' || filter || !query.trim()
+      ? []
+      : Object.entries(DATA).filter(
+          ([state]) =>
+            state !== 'DC' &&
+            !raceById.has(state) &&
+            matchesStateQuery(state, query)
+        )
 
   useEffect(() => {
     const sentinel = headerSentinelRef.current
@@ -115,11 +123,15 @@ export function ElectionExplorer(props: Props) {
   useEffect(() => {
     const header = headerRef.current
     if (!header) return
-    const updateHeaderHeight = () =>
-      explorerRef.current?.style.setProperty(
-        '--header-height',
-        `${header.getBoundingClientRect().height}px`
-      )
+    const updateHeaderHeight = () => {
+      const height = `${header.getBoundingClientRect().height}px`
+      explorerRef.current?.style.setProperty('--header-height', height)
+      if (header.dataset.stuck !== 'true')
+        explorerRef.current?.style.setProperty(
+          '--expanded-header-height',
+          height
+        )
+    }
     const observer = new ResizeObserver(updateHeaderHeight)
     observer.observe(header)
     updateHeaderHeight()
@@ -253,50 +265,56 @@ export function ElectionExplorer(props: Props) {
         <ControlCard label="Senate" contract={props.senateControl} />
       </div>
       <div ref={headerSentinelRef} className={styles.headerSentinel} />
-      <header
-        ref={headerRef}
-        className={styles.header}
-        data-stuck={headerStuck}
-      >
-        <div className={styles.tabs} role="tablist" aria-label="Election type">
-          {MODES.map((m, i) => (
-            <button
-              key={m}
-              role="tab"
-              aria-label={modeName(m)}
-              aria-selected={mode === m}
-              tabIndex={mode === m ? 0 : -1}
-              onClick={() => changeMode(m)}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-                  e.preventDefault()
-                  const next = (i + (e.key === 'ArrowRight' ? 1 : 2)) % 3
-                  changeMode(MODES[next])
-                  ;(
-                    e.currentTarget.parentElement?.children[
-                      next
-                    ] as HTMLButtonElement
-                  )?.focus()
-                }
-              }}
-            >
-              <span className={styles.tabArt}>
-                <ChamberIllustration mode={m} />
-              </span>
-              <span className={styles.tabText}>
-                {modeName(m)}
-                <small>
-                  {m === 'house'
-                    ? '435 districts'
-                    : m === 'senate'
-                    ? '35 elections'
-                    : '36 elections'}
-                </small>
-              </span>
-            </button>
-          ))}
-        </div>
-      </header>
+      <div className={styles.headerSlot}>
+        <header
+          ref={headerRef}
+          className={styles.header}
+          data-stuck={headerStuck}
+        >
+          <div
+            className={styles.tabs}
+            role="tablist"
+            aria-label="Election type"
+          >
+            {MODES.map((m, i) => (
+              <button
+                key={m}
+                role="tab"
+                aria-label={modeName(m)}
+                aria-selected={mode === m}
+                tabIndex={mode === m ? 0 : -1}
+                onClick={() => changeMode(m)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    e.preventDefault()
+                    const next = (i + (e.key === 'ArrowRight' ? 1 : 2)) % 3
+                    changeMode(MODES[next])
+                    ;(
+                      e.currentTarget.parentElement?.children[
+                        next
+                      ] as HTMLButtonElement
+                    )?.focus()
+                  }
+                }}
+              >
+                <span className={styles.tabArt}>
+                  <ChamberIllustration mode={m} />
+                </span>
+                <span className={styles.tabText}>
+                  {modeName(m)}
+                  <small>
+                    {m === 'house'
+                      ? '435 districts'
+                      : m === 'senate'
+                      ? '35 elections'
+                      : '36 elections'}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </header>
+      </div>
       <div className={styles.meta}>
         <span>
           <span className={styles.liveDot} /> Manifold market odds
@@ -335,7 +353,10 @@ export function ElectionExplorer(props: Props) {
               aria-label={`Filter ${summary.counts[t.id]} ${t.label}`}
               aria-pressed={filter === t.id}
               style={{ flex: summary.counts[t.id], background: t.color }}
-              onClick={() => setFilter(filter === t.id ? undefined : t.id)}
+              onClick={() => {
+                setFilter(filter === t.id ? undefined : t.id)
+                setSelected(undefined)
+              }}
             >
               {summary.counts[t.id] / summary.total > 0.055 &&
                 summary.counts[t.id]}
@@ -403,7 +424,10 @@ export function ElectionExplorer(props: Props) {
             aria-label="Find a state or district"
             placeholder="Find a state or district"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setSelected(undefined)
+            }}
           />
           {query && (
             <button aria-label="Clear search" onClick={() => setQuery('')}>
@@ -443,6 +467,8 @@ export function ElectionExplorer(props: Props) {
         <div className={styles.filterNotice} role="status">
           {filtered.length} matching races
           {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
+          {noElectionMatches.length > 0 &&
+            ` · ${noElectionMatches.length} with no election`}
           <button
             onClick={() => {
               setQuery('')
@@ -453,14 +479,23 @@ export function ElectionExplorer(props: Props) {
           </button>
         </div>
       )}
-      {query && (
-        <div className={styles.results}>
-          {filtered.slice(0, 8).map((r) => (
+      {query.trim() && (
+        <div
+          className={styles.results}
+          role="region"
+          aria-label="Race search results"
+        >
+          {filtered.map((r) => (
             <button key={r.id} onClick={(e) => choose(r.id, e.currentTarget)}>
               {r.label} <RaceQuote race={r} />
             </button>
           ))}
-          {filtered.length === 0 && (
+          {noElectionMatches.map(([state, data]) => (
+            <button key={state} onClick={(e) => choose(state, e.currentTarget)}>
+              {data.name} <span>No {modeName(mode)} election</span>
+            </button>
+          ))}
+          {filtered.length === 0 && noElectionMatches.length === 0 && (
             <span>No matching races. Try a state name or TX-15.</span>
           )}
         </div>
@@ -726,23 +761,13 @@ export function ElectionExplorer(props: Props) {
       </p>
 
       {selectedNoRace && (
-        <section
-          className={styles.details}
-          aria-label={`${selectedNoRace.name} election details`}
+        <RaceDetailsPanel
+          title={selectedNoRace.name}
+          eyebrow={`2026 · ${modeName(mode)}`}
+          label={`${selectedNoRace.name} election details`}
+          closeRef={closeRef}
+          onClose={closeDetails}
         >
-          <div className={styles.detailHeading}>
-            <div>
-              <span className={styles.eyebrow}>2026 · {modeName(mode)}</span>
-              <h3>{selectedNoRace.name}</h3>
-            </div>
-            <button
-              ref={closeRef}
-              aria-label="Close race details"
-              onClick={closeDetails}
-            >
-              ×
-            </button>
-          </div>
           <p className={styles.empty}>
             No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
             2026. This office is not on the ballot here.
@@ -757,29 +782,17 @@ export function ElectionExplorer(props: Props) {
           >
             Explore {selectedNoRace.name} House districts →
           </button>
-        </section>
+        </RaceDetailsPanel>
       )}
 
       {selectedRace && (
-        <section
-          className={styles.details}
-          aria-label={`${selectedRace.label} details`}
+        <RaceDetailsPanel
+          title={selectedRace.label}
+          eyebrow={`${modeName(mode)} · ${selectedRace.shortLabel}`}
+          label={`${selectedRace.label} details`}
+          closeRef={closeRef}
+          onClose={closeDetails}
         >
-          <div className={styles.detailHeading}>
-            <div>
-              <span className={styles.eyebrow}>
-                {modeName(mode)} · {selectedRace.shortLabel}
-              </span>
-              <h3>{selectedRace.label}</h3>
-            </div>
-            <button
-              ref={closeRef}
-              aria-label="Close race details"
-              onClick={closeDetails}
-            >
-              ×
-            </button>
-          </div>
           <div className={styles.detailSummary}>
             <span
               style={{
@@ -848,7 +861,7 @@ export function ElectionExplorer(props: Props) {
                 <RaceMarket contract={candidate} />
               </div>
             )}
-        </section>
+        </RaceDetailsPanel>
       )}
 
       <Modal

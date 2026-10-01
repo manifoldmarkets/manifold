@@ -13,12 +13,19 @@
   padding: 22px 24px 0;
   isolation: isolate;
 }
-.header {
+.headerSlot {
   position: sticky;
   top: 0;
   z-index: 10;
   margin: 0 -24px;
+  /* Keep document geometry stable when the sticky header compacts. Otherwise
+     scroll anchoring can move its sentinel back across the collapse threshold. */
+  height: var(--expanded-header-height, auto);
+  pointer-events: none;
+}
+.header {
   padding: 10px 24px;
+  pointer-events: auto;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
   box-shadow: 0 4px 12px #00000006;
@@ -97,8 +104,14 @@
   text-align: left;
   transition: background 150ms;
 }
-.controlCard:hover {
+.controlMain:hover:not(:disabled) {
   background: var(--soft);
+  border-radius: 6px;
+}
+.controlMain:focus-visible,
+.controlBets button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .controlMain > span {
   font-size: 16px;
@@ -131,9 +144,11 @@
   font-size: 11px;
   font-weight: 600;
 }
-.controlBets button:hover,
+.controlBets button:hover:not(:disabled),
 .betChoices button:hover {
   background: var(--soft);
+  border-color: currentColor;
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 .betChoices {
   display: grid;
@@ -349,6 +364,9 @@
   gap: 4px;
   padding: 10px 0;
   font-size: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .results button {
   text-align: left;
@@ -545,36 +563,85 @@
   top: 320px;
   width: min(345px, calc(100% - 40px));
   max-height: 470px;
-  overflow: auto;
+  overflow: hidden;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 13px;
-  padding: 20px;
   box-shadow: 0 12px 48px #00000026;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 .detailHeading {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 6px;
+  padding: 14px 14px 12px;
+  flex-shrink: 0;
 }
-.detailHeading h3 {
-  font-size: 21px;
+.detailMoveHeading {
+  min-width: 0;
+  flex: 1;
+}
+.detailDragHandle {
+  width: 100%;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border-radius: 4px;
+}
+.detailDragHandle[data-dragging='true'] {
+  cursor: grabbing;
+}
+.detailTitle {
+  display: block;
+  font-size: 18px;
   font-weight: 600;
   margin-top: 4px;
 }
-.detailHeading > button {
+.dragHint {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 4px;
+}
+.detailActions {
+  display: flex;
+  gap: 3px;
+}
+.detailActions button {
   flex-shrink: 0;
   border: 1px solid var(--line);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 22px;
+  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
   color: var(--muted);
-  line-height: 1;
+}
+.detailActions button:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
+}
+.detailActions button:disabled {
+  opacity: 0.35;
+}
+.detailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 0 18px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.detailContent[hidden] {
+  display: none;
+}
+.detailDragHandle:focus-visible,
+.detailActions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .eyebrow {
   text-transform: uppercase;
@@ -701,7 +768,6 @@
     width: auto;
     max-height: 55vh;
     z-index: 30;
-    padding: 18px;
     border-radius: 15px;
   }
   .controlMain {
@@ -724,8 +790,10 @@
     padding: 14px 12px 0;
     border-radius: 12px;
   }
-  .header {
+  .headerSlot {
     margin: 0 -12px;
+  }
+  .header {
     padding: 8px 12px;
   }
   .tabs {

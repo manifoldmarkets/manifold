@@ -155,6 +155,33 @@ export const raceColor = (race: Race) =>
 export const districtId = (state: string, district: number) =>
   `${state}-${district}`
 
+const exactStateQuery = (value: string) =>
+  Object.keys(DATA).find(
+    (state) =>
+      state.toLowerCase() === value || DATA[state].name.toLowerCase() === value
+  )
+
+export function matchesStateQuery(state: string, query: string) {
+  const value = query.trim().toLowerCase()
+  const exactState = exactStateQuery(value)
+  if (exactState) return state === exactState
+  return DATA[state]?.name.toLowerCase().includes(value) ?? false
+}
+
+export function matchesRaceQuery(race: Race, query: string) {
+  const value = query.trim().toLowerCase().replace(/[–—‑]/g, '-')
+  const district = /^([a-z]{2})[\s-]*(\d+|al|at[- ]large)$/.exec(value)
+  if (district) {
+    const number = /^\d+$/.test(district[2]) ? Number(district[2]) : 0
+    return race.state === district[1].toUpperCase() && race.district === number
+  }
+  const exactState = exactStateQuery(value)
+  if (exactState) return race.state === exactState
+  return `${race.label} ${race.shortLabel} ${race.matchup ?? ''}`
+    .toLowerCase()
+    .includes(value)
+}
+
 export function parseHouseAnswer(text: string) {
   const state = Object.keys(DATA)
     .sort((a, b) => DATA[b].name.length - DATA[a].name.length)

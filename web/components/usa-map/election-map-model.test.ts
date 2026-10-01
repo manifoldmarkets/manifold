@@ -13,6 +13,8 @@ import {
   outcomeLabel,
   raceColor,
   COMPLEMENT_COLOR,
+  matchesRaceQuery,
+  matchesStateQuery,
 } from './election-map-model'
 
 const multi = (
@@ -30,6 +32,30 @@ const multi = (
       resolution: a.resolution,
     })),
   } as Contract)
+
+test('district search matches exact numbers and state codes without unrelated substrings', () => {
+  const races = buildRaces('house', {})
+  for (const query of ['TX-1', 'TX 01', 'tx1', 'TX–1']) {
+    assert.deepEqual(
+      races.filter((r) => matchesRaceQuery(r, query)).map((r) => r.id),
+      ['TX-1']
+    )
+  }
+  assert.equal(
+    races.filter((r) => matchesRaceQuery(r, 'California')).length,
+    52
+  )
+  assert.equal(races.filter((r) => matchesRaceQuery(r, 'IN')).length, 9)
+  assert.equal(races.filter((r) => matchesRaceQuery(r, 'Virginia')).length, 11)
+  assert.equal(
+    matchesRaceQuery(races.find((r) => r.id === 'AK-0')!, 'AK-AL'),
+    true
+  )
+  assert.equal(matchesStateQuery('VA', 'virginia'), true)
+  assert.equal(matchesStateQuery('VA', 'VA'), true)
+  assert.equal(matchesStateQuery('WV', 'VA'), false)
+  assert.equal(matchesStateQuery('WV', 'Virginia'), false)
+})
 
 test('all 435 House races match both geographic and cartogram geometry exactly', () => {
   const races = buildRaces('house', {})
