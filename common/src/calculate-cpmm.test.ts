@@ -236,10 +236,17 @@ describe('CPMM Calculations', () => {
           shares,
           'YES'
         )
+        // The shares that amount buys, in log1p form: exact to a few ulps of
+        // the shares themselves.
+        const exact =
+          amount -
+          pool.YES * Math.expm1(((p - 1) / p) * Math.log1p(amount / pool.NO))
+        expect(Math.abs(exact - shares)).toBeLessThan(1e-12 * Math.abs(shares))
+        // The trade itself goes through the forward map, which rounds to a few
+        // ulps of the 22,892 side: up to 5 here, depending on Node's `**`.
         const traded = calculateCpmmShares(pool, p, amount, 'YES')
-        // Down to the forward map's own float resolution on a 22,892 side.
         expect(Math.abs(traded - shares)).toBeLessThan(
-          1e-9 * Math.abs(shares) + 1e-11
+          1e-9 * Math.abs(shares) + 16 * Number.EPSILON * pool.YES
         )
       }
     })
