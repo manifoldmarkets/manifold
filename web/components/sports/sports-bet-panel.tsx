@@ -15,13 +15,14 @@ import { db } from 'web/lib/supabase/db'
 import { formatMoney } from 'common/util/format'
 import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
-import { CPMMMultiContract } from 'common/contract'
+import { BinaryContract, CPMMMultiContract } from 'common/contract'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Input } from 'web/components/widgets/input'
 import { ProbabilitySlider } from 'web/components/widgets/probability-input'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { OrderBookPanel } from 'web/components/bet/order-book'
-import { MultiBetDialog } from 'web/components/bet/bet-dialog'
+import { BetDialog, MultiBetDialog } from 'web/components/bet/bet-dialog'
+import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { getLimitBetReturns } from 'client-common/lib/bet'
 import { SportsMatch, MatchOutcome, SPORTS_COLORS } from './sports-match-card'
 
@@ -34,9 +35,12 @@ const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
 export function SportsVersusBetDialog({
   contractId,
   onClose,
+  initialAnswerId,
 }: {
   contractId: string | undefined
   onClose: () => void
+  /** The answer (team) the dialog opens on; defaults to the first answer. */
+  initialAnswerId?: string
 }) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
 
@@ -61,12 +65,77 @@ export function SportsVersusBetDialog({
   }, [contractId])
 
   if (!contract) return null
+  // The versus panel treats the first answer as YES and the second as NO, so
+  // the side is decided by where the answer sits in the fetched market, not
+  // by which team is home ("Lakers @ Celtics" lists the away team first).
+  const initialOutcome =
+    initialAnswerId && contract.answers[1]?.id === initialAnswerId
+      ? 'NO'
+      : 'YES'
   return (
     <MultiBetDialog
       contract={contract}
       open
       setOpen={(open) => {
         if (!open) onClose()
+      }}
+      initialOutcome={initialOutcome}
+    />
+  )
+}
+
+// Binary sports markets (NFL, CFB, NBA, etc.) — plain BINARY contracts where
+// YES = home team wins and NO = away team wins. Uses the standard BetDialog
+// with team names surfaced as pseudonyms so the UI says "Bears" / "Chiefs"
+// instead of "YES" / "NO".
+export function SportsBinaryBetDialog({
+  contractId,
+  match,
+  initialOutcome,
+  onClose,
+}: {
+  contractId: string | undefined
+  match: SportsMatch
+  initialOutcome: MatchOutcome
+  onClose: () => void
+}) {
+  const [contract, setContract] = useState<BinaryContract | null>(null)
+
+  useEffect(() => {
+    if (!contractId) return
+    let cancelled = false
+    getContract(db, contractId)
+      .then((c) => {
+        if (cancelled || !c || c.mechanism !== 'cpmm-1') return
+        setContract(c as BinaryContract)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [contractId])
+
+  if (!contract) return null
+
+  const mappedOutcome: BinaryOutcomes =
+    initialOutcome === 'teamA'
+      ? 'YES'
+      : initialOutcome === 'teamB'
+      ? 'NO'
+      : undefined
+
+  return (
+    <BetDialog
+      contract={contract}
+      open
+      setOpen={(open) => {
+        if (!open) onClose()
+      }}
+      trackingLocation="sports dashboard"
+      initialOutcome={mappedOutcome}
+      binaryPseudonym={{
+        YES: { pseudonymName: match.teamA.name, pseudonymColor: 'green' },
+        NO: { pseudonymName: match.teamB.name, pseudonymColor: 'red' },
       }}
     />
   )
