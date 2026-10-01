@@ -121,7 +121,8 @@ Both live in `common/src/contract.ts`.
 - `CPMM_MULTI_2_CREATION_ENABLED` opens new markets with starting
   probabilities as `cpmm-multi-2`. Turning it off makes those markets
   `cpmm-multi-1` again, seeded as #4082 did; existing `cpmm-multi-2` markets
-  keep trading as `cpmm-multi-2` either way.
+  keep trading as `cpmm-multi-2` either way. It is on for dev only
+  (`ENV === 'DEV'`) and off in production.
 - `CPMM_MULTI_2_CONVERSION_ENABLED` converts an existing `cpmm-multi-1`
   multiple choice market to `cpmm-multi-2` the first time a user adds liquidity
   to it (`convertsToCpmmMulti2`). Numeric and date markets never convert: they
