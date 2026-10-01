@@ -53,14 +53,13 @@ const statePartyBinaryPseudonym = {
     pseudonymColor: 'sienna' as keyof typeof sliderColors,
   },
   NO: {
-    pseudonymName: 'Democratic',
-    pseudonymColor: 'azure' as keyof typeof sliderColors,
+    pseudonymName: 'Any other winner',
+    pseudonymColor: 'gray' as keyof typeof sliderColors,
   },
 }
 
 // Party bars for a binary state market (e.g. the FL Senate special, "Will a
-// Republican win ...?"). YES = Republican, NO = Democratic — the same
-// convention getPartyProbs uses to color the map.
+// Republican win ...?"). NO includes Democrats, independents and other winners.
 export function StateBinaryPartyPanel(props: { contract: BinaryContract }) {
   const { contract } = props
   const user = useUser()
@@ -100,7 +99,7 @@ function StateBinaryPartyBar(props: {
   const { resolution } = contract
 
   const isRep = outcome === 'YES'
-  const partyName = isRep ? 'Republican Party' : 'Democratic Party'
+  const partyName = isRep ? 'Republican Party' : 'Any other winner'
   const repProb = getDisplayProbability(contract)
   const prob = isRep ? repProb : 1 - repProb
   const resolvedProb =

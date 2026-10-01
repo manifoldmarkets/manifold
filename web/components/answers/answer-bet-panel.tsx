@@ -1,4 +1,7 @@
 import { Answer } from 'common/answer'
+import { ComponentProps } from 'react'
+import { getAnswerProbability } from 'common/calculate'
+import { versusSideProb } from 'common/versus'
 import { CPMMMultiContract, CPMMNumericContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -11,6 +14,7 @@ export function AnswerCpmmBetPanel(props: {
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
   alwaysShowOutcomeSwitcher?: boolean
+  pseudonym?: ComponentProps<typeof BuyPanel>['pseudonym']
   feedReason?: string
 }) {
   const {
@@ -19,7 +23,11 @@ export function AnswerCpmmBetPanel(props: {
     closePanel,
     outcome,
     feedReason,
-    alwaysShowOutcomeSwitcher,
+    alwaysShowOutcomeSwitcher = true,
+    pseudonym = {
+      YES: { pseudonymName: 'YES', pseudonymColor: 'green' },
+      NO: { pseudonymName: 'NO', pseudonymColor: 'red' },
+    },
   } = props
 
   return (
@@ -37,11 +45,26 @@ export function AnswerCpmmBetPanel(props: {
         feedReason={feedReason}
         inModal={true}
         alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}
+        pseudonym={pseudonym}
       >
-        <Row className="text-ink-900 mb-6 justify-between text-lg">
-          <h1>{answer.text}</h1>
-          <div className="font-semibold">{formatPercent(answer.prob)}</div>
-        </Row>
+        {(selectedOutcome) => (
+          <Col className="text-ink-900 mb-4 gap-2">
+            <h1 className="text-lg">{answer.text}</h1>
+            <Row className="items-baseline justify-between gap-2">
+              <span className="text-ink-500 text-sm">
+                {pseudonym[selectedOutcome ?? 'YES'].pseudonymName} probability
+              </span>
+              <span className="text-lg font-semibold">
+                {formatPercent(
+                  versusSideProb(
+                    selectedOutcome ?? 'YES',
+                    getAnswerProbability(contract, answer.id)
+                  )
+                )}
+              </span>
+            </Row>
+          </Col>
+        )}
       </BuyPanel>
     </Col>
   )

@@ -19,7 +19,14 @@ const GOVERNOR_STATES =
   'AK AL AR AZ CA CO CT FL GA HI IA ID IL KS MA MD ME MI MN NE NH NM NV NY OH OK OR PA RI SC SD TN TX VT WI WY'.split(
     ' '
   )
-export type Odds = { dem: number; rep: number; other: number }
+export type Odds = {
+  dem: number
+  rep: number
+  other: number
+  notDem?: number
+  notRep?: number
+}
+const OUTCOMES = ['dem', 'rep', 'other', 'notDem', 'notRep'] as const
 export type Race = {
   id: string
   state: string
@@ -49,6 +56,11 @@ export type Atlas = {
 }
 
 export const OTHER_COLOR = '#318b83'
+export const COMPLEMENT_COLOR = '#9e9fbd'
+export const outcomeLabel = (outcome: keyof Odds) =>
+  ({ dem: 'D', rep: 'R', other: 'Other', notDem: 'Not D', notRep: 'Not R' }[
+    outcome
+  ])
 export const TIERS = [
   { id: 'safe-d', label: 'Safe D', color: '#4a5fa8' },
   { id: 'likely-d', label: 'Likely D', color: '#718ac4' },
@@ -58,6 +70,8 @@ export const TIERS = [
   { id: 'likely-r', label: 'Likely R', color: '#c87570' },
   { id: 'safe-r', label: 'Safe R', color: '#9d3336' },
   { id: 'other', label: 'Other leads', color: OTHER_COLOR },
+  { id: 'not-d', label: 'Not Democratic', color: COMPLEMENT_COLOR },
+  { id: 'not-r', label: 'Not Republican', color: COMPLEMENT_COLOR },
   { id: 'unpriced', label: 'Unpriced', color: '#a4a4b5' },
 ] as const
 export type Tier = (typeof TIERS)[number]['id']
@@ -67,16 +81,29 @@ export function normalizeOdds(odds: Odds): Odds | undefined {
   const sum = values.reduce((a, b) => a + b, 0)
   if (values.some((p) => !Number.isFinite(p) || p < 0) || sum <= 0)
     return undefined
-  return { dem: odds.dem / sum, rep: odds.rep / sum, other: odds.other / sum }
+  return {
+    dem: odds.dem / sum,
+    rep: odds.rep / sum,
+    other: odds.other / sum,
+    ...(odds.notDem !== undefined ? { notDem: odds.notDem / sum } : {}),
+    ...(odds.notRep !== undefined ? { notRep: odds.notRep / sum } : {}),
+  }
 }
 
 // These curated binary markets all ask whether the Republican wins.
 // Keep independent outcomes separate, including races with no Democratic nominee.
-export function electionOdds(contract?: Contract | null): Odds | undefined {
+export function electionOdds(
+  contract?: Contract | null,
+  twoPartyControl = false
+): Odds | undefined {
   if (!contract || contract.resolution === 'CANCEL') return undefined
-  if (contract.mechanism === 'cpmm-1') {
+  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
     const rep = getDisplayProbability(contract)
-    return normalizeOdds({ dem: 1 - rep, rep, other: 0 })
+    return normalizeOdds(
+      twoPartyControl
+        ? { dem: 1 - rep, rep, other: 0 }
+        : { dem: 0, rep, other: 0, notRep: 1 - rep }
+    )
   }
   if (contract.mechanism !== 'cpmm-multi-1' || !contract.shouldAnswersSumToOne)
     return undefined
@@ -95,10 +122,8 @@ export function electionOdds(contract?: Contract | null): Odds | undefined {
 
 export function leadingParty(odds?: Odds): keyof Odds | undefined {
   if (!odds) return undefined
-  const sorted = (Object.keys(odds) as (keyof Odds)[]).sort(
-    (a, b) => odds[b] - odds[a]
-  )
-  return Math.abs(odds[sorted[0]] - odds[sorted[1]]) < 1e-9
+  const sorted = [...OUTCOMES].sort((a, b) => (odds[b] ?? 0) - (odds[a] ?? 0))
+  return Math.abs((odds[sorted[0]] ?? 0) - (odds[sorted[1]] ?? 0)) < 1e-9
     ? undefined
     : sorted[0]
 }
@@ -107,6 +132,8 @@ export function raceTier(race: Pick<Race, 'odds'>): Tier {
   const o = race.odds
   if (!o) return 'unpriced'
   const party = leadingParty(o)
+  if (party === 'notDem') return 'not-d'
+  if (party === 'notRep') return 'not-r'
   if (party === 'other') return 'other'
   if (!party || o[party] < 0.6) return 'tossup'
   return `${o[party] >= 0.9 ? 'safe' : o[party] >= 0.75 ? 'likely' : 'lean'}-${
@@ -119,7 +146,12 @@ export const raceColor = (race: Race) =>
     ? undefined
     : leadingParty(race.odds) === 'other'
     ? OTHER_COLOR
-    : partyProbsToColor(race.odds.dem, race.odds.rep)
+    : ['notDem', 'notRep'].includes(leadingParty(race.odds) ?? '')
+    ? COMPLEMENT_COLOR
+    : partyProbsToColor(
+        race.odds.notRep ?? race.odds.dem,
+        race.odds.notDem ?? race.odds.rep
+      )
 export const districtId = (state: string, district: number) =>
   `${state}-${district}`
 
@@ -196,7 +228,7 @@ export function buildRaces(
       const id = districtId(parsed.state, parsed.district)
       if (priced.has(id)) continue
       const dem = getAnswerProbability(contract, answer.id)
-      const odds = normalizeOdds({ dem, rep: 1 - dem, other: 0 })
+      const odds = normalizeOdds({ dem, rep: 0, other: 0, notDem: 1 - dem })
       if (odds)
         priced.set(id, {
           contract,
@@ -249,10 +281,18 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
     dem: held.dem,
     rep: held.rep,
     other: 0,
+    notDem: 0,
+    notRep: 0,
     tied: 0,
     unpriced: 0,
   }
-  const expected = { dem: held.dem, rep: held.rep, other: 0 }
+  const expected = {
+    dem: held.dem,
+    rep: held.rep,
+    other: 0,
+    notDem: 0,
+    notRep: 0,
+  }
   for (const race of races) {
     counts[raceTier(race)]++
     const party = leadingParty(race.odds)
@@ -260,8 +300,7 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
     else {
       if (party) leaders[party]++
       else leaders.tied++
-      for (const p of ['dem', 'rep', 'other'] as const)
-        expected[p] += race.odds[p]
+      for (const p of OUTCOMES) expected[p] += race.odds[p] ?? 0
     }
   }
   return {

@@ -10,6 +10,9 @@ import {
   Race,
   raceTier,
   seatSummary,
+  outcomeLabel,
+  raceColor,
+  COMPLEMENT_COLOR,
 } from './election-map-model'
 
 const multi = (
@@ -53,6 +56,8 @@ test('missing markets do not erase scheduled races or manufacture prices', () =>
     dem: 34,
     rep: 31,
     other: 0,
+    notDem: 0,
+    notRep: 0,
     tied: 0,
     unpriced: 35,
   })
@@ -104,6 +109,8 @@ test('exact ties are separate, while toss-up leaders still count once', () => {
     dem: 1,
     rep: 0,
     other: 1,
+    notDem: 0,
+    notRep: 0,
     tied: 1,
     unpriced: 1,
   })
@@ -128,6 +135,46 @@ test('resolved House outcomes override pools; cancelled answers stay unpriced', 
   const races = buildRaces('house', {}, house)
   assert.equal(races.find((r) => r.id === 'CA-49')?.odds?.dem, 1)
   assert.equal(races.find((r) => r.id === 'TX-15')?.odds, undefined)
+})
+
+test('a Montana NO quote is not a Republican quote or a Republican seat', () => {
+  const races = buildRaces(
+    'house',
+    {},
+    multi([{ text: 'Montana 1', probability: 0.32 }], false)
+  )
+  const race = races.find((r) => r.id === 'MT-1')!
+  assert.equal(race.odds?.dem, 0.32)
+  assert.equal(race.odds?.rep, 0)
+  assert.equal(race.odds?.notDem, 1 - 0.32)
+  assert.equal(outcomeLabel(leadingParty(race.odds)!), 'Not D')
+  assert.equal(raceTier(race), 'not-d')
+  assert.equal(raceColor(race), COMPLEMENT_COLOR)
+  const summary = seatSummary(races, 'house')
+  assert.equal(summary.leaders.rep, 0)
+  assert.equal(summary.leaders.notDem, 1)
+  assert.equal(summary.expected.rep, 0)
+  assert.equal(summary.expected.notDem, 1 - 0.32)
+  assert.equal(
+    Object.values(summary.counts).reduce((a, b) => a + b, 0),
+    435
+  )
+})
+
+test('Republican NO includes every other winner, while control odds retain their two sides', () => {
+  const contract = {
+    mechanism: 'cpmm-1',
+    outcomeType: 'BINARY',
+    p: 0.5,
+    pool: { YES: 70, NO: 30 },
+  } as Contract
+  const odds = electionOdds(contract)!
+  assert.equal(odds.rep, 0.3)
+  assert.equal(odds.dem, 0)
+  assert.equal(odds.notRep, 0.7)
+  assert.equal(raceTier({ odds }), 'not-r')
+  assert.equal(outcomeLabel(leadingParty(odds)!), 'Not R')
+  assert.equal(electionOdds(contract, true)?.dem, 0.7)
 })
 
 test('reviewed state portfolios add coverage without replacing curated races', () => {

@@ -506,6 +506,8 @@
 }
 .legendKeys {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   font-size: 9px;
   color: var(--muted);

@@ -38,9 +38,12 @@ general-election context; the other individual sources have sparse criteria.
 None of the 14 additional sources has established equivalence to the original.
 They remain candidate mappings in the prototype, not approved canonical sources.
 
-Before treating this as a homogeneous party forecast, fix two model assumptions:
-Democrat NO includes all non-Democratic winners, not just Republicans (and WI-7
-Republican NO is not necessarily Democratic YES). Named-candidate markets also
+Party-win NO quotes are stored as `notDem` / `notRep`, displayed as any other
+winner, and counted separately from Democratic, Republican and independent
+winners. They do not become the opposing party's probability or seat count.
+The two chamber-control markets retain their separate D/R control presentation.
+
+Before treating this as a homogeneous party forecast, named-candidate markets
 cannot automatically become ballot-party probabilities: replacements, party
 switches and an unclassified `Other` answer can change the result. Two Democratic
 candidate answers summing to 100% is an answer-set constraint, not a separately
@@ -49,7 +52,7 @@ hold these sources out of party totals until the necessary rules are clarified.
 
 Cancelled/invalid quotes fall through to the next source. Independent portfolio
 answers are Democrat-win propositions; a NO bet means any non-Democratic winner.
-The prototype currently sums candidate party tags; the audit above identifies
+The prototype still sums candidate party tags; the audit above identifies
 why that must not be described as verified-equivalent party odds.
 Never map primary, vote-margin, conditional, or state-legislature questions.
 Unlinked districts stay unpriced; no assumed safe-seat probabilities are added.
@@ -81,3 +84,9 @@ no Senate or gubernatorial election can be selected in either map view: they
 highlight, explain that the office is not on the ballot, and offer a shortcut
 to that state's House districts. This is distinct from an unpriced race.
 Duplicate race lists below the map have been removed.
+
+Answer and binary betting dialogs label the currently selected outcome's quote;
+quick-bet projections and limit-order inputs use that same side's probability.
+Switching sides resets the limit price to the newly selected side, while the
+stored bet outcome and answer ID remain unchanged. Check both sides of MT-1,
+another district portfolio, WI-7, and chamber controls without submitting bets.

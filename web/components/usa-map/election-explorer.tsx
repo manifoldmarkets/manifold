@@ -24,6 +24,8 @@ import {
   ElectionMode,
   leadingParty,
   OTHER_COLOR,
+  COMPLEMENT_COLOR,
+  outcomeLabel,
   Race,
   raceColor,
   raceTier,
@@ -201,7 +203,9 @@ export function ElectionExplorer(props: Props) {
         ? `${race.label}, ${
             race.odds
               ? `${pct(Math.max(...Object.values(race.odds)))} ${
-                  leadingParty(race.odds) ?? 'tied'
+                  leadingParty(race.odds)
+                    ? outcomeLabel(leadingParty(race.odds)!)
+                    : 'tied'
                 }`
               : 'unpriced'
           }`
@@ -357,6 +361,19 @@ export function ElectionExplorer(props: Props) {
           </span>
         </div>
       </div>
+      {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+        <p className={styles.note}>
+          {[
+            summary.leaders.notDem > 0 &&
+              `${summary.leaders.notDem} races favor a non-Democratic winner`,
+            summary.leaders.notRep > 0 &&
+              `${summary.leaders.notRep} races favor a non-Republican winner`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          . These outcomes are counted separately from party wins.
+        </p>
+      )}
       <div className={styles.toolbar}>
         <div className={styles.segment} aria-label="Map view">
           {(['map', 'cartogram'] as const).map((v) => (
@@ -681,6 +698,12 @@ export function ElectionExplorer(props: Props) {
             <i style={{ background: OTHER_COLOR }} />
             Other leads
           </span>
+          {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+            <span>
+              <i style={{ background: COMPLEMENT_COLOR }} />
+              Any other winner
+            </span>
+          )}
           <span>
             <i className={styles.hatchSwatch} />
             Unpriced
@@ -770,15 +793,23 @@ export function ElectionExplorer(props: Props) {
           </div>
           {selectedRace.odds && (
             <div className={styles.raceBar}>
-              {(['dem', 'rep', 'other'] as const).map((p, i) => (
-                <span
-                  key={p}
-                  style={{
-                    width: `${selectedRace.odds![p] * 100}%`,
-                    background: [DEM_COLOR, REP_COLOR, OTHER_COLOR][i],
-                  }}
-                />
-              ))}
+              {(['dem', 'rep', 'other', 'notDem', 'notRep'] as const).map(
+                (p, i) => (
+                  <span
+                    key={p}
+                    style={{
+                      width: `${(selectedRace.odds![p] ?? 0) * 100}%`,
+                      background: [
+                        DEM_COLOR,
+                        REP_COLOR,
+                        OTHER_COLOR,
+                        COMPLEMENT_COLOR,
+                        COMPLEMENT_COLOR,
+                      ][i],
+                    }}
+                  />
+                )
+              )}
             </div>
           )}
           {!selectedRace.contract ? (
@@ -831,7 +862,9 @@ export function ElectionExplorer(props: Props) {
             Colors show the chance of winning implied by Manifold markets, not
             vote share. Darker colors mean a stronger favorite. Teal means an
             independent or other outcome leads; hatching means no usable market
-            odds.
+            odds. A gray “any other winner” quote is the NO side of a party-win
+            question, including all other parties. It is counted separately from
+            Democratic and Republican wins.
           </p>
           <p>
             The seat bar counts each seat once for its leading outcome. Exact
@@ -900,9 +933,7 @@ function RaceQuote({ race }: { race: Race }) {
         ? 'Unpriced'
         : !party
         ? 'Tied'
-        : `${party === 'dem' ? 'D' : party === 'rep' ? 'R' : 'Other'} ${pct(
-            race.odds[party]
-          )}`}
+        : `${outcomeLabel(party)} ${pct(race.odds[party] ?? 0)}`}
     </span>
   )
 }
@@ -928,7 +959,7 @@ function ControlCard({
   contract: Contract | null
 }) {
   const [outcome, setOutcome] = useState<'YES' | 'NO'>()
-  const odds = electionOdds(contract)
+  const odds = electionOdds(contract, true)
   const rep = odds && odds.rep > odds.dem
   const tradable =
     contract?.mechanism === 'cpmm-1' &&

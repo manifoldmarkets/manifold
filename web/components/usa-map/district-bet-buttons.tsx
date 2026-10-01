@@ -10,7 +10,7 @@ import {
   MODAL_CLASS,
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
-import { DEM_COLOR, REP_COLOR } from './state-election-map'
+import { DEM_COLOR } from './state-election-map'
 import styles from './election-explorer.module.css'
 
 export function DistrictBetButtons({
@@ -40,16 +40,16 @@ export function DistrictBetButtons({
           onClick={() => setOutcome('YES')}
           style={{ color: DEM_COLOR }}
         >
-          <span>Bet Democratic</span>
+          <span>Yes · Democratic</span>
           <strong>{formatPercent(dem)}</strong>
         </button>
         <button
           disabled={closed}
           aria-haspopup="dialog"
           onClick={() => setOutcome('NO')}
-          style={{ color: REP_COLOR }}
+          className="text-ink-600"
         >
-          <span>Bet not Democratic</span>
+          <span>No · Any other winner</span>
           <strong>{formatPercent(1 - dem)}</strong>
         </button>
       </div>
@@ -76,6 +76,10 @@ export function DistrictBetButtons({
             outcome={outcome}
             closePanel={() => setOutcome(undefined)}
             alwaysShowOutcomeSwitcher
+            pseudonym={{
+              YES: { pseudonymName: 'Democratic', pseudonymColor: 'azure' },
+              NO: { pseudonymName: 'Any other winner', pseudonymColor: 'gray' },
+            }}
           />
         </Modal>
       )}
