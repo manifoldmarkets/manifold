@@ -806,7 +806,8 @@ function RaceMarket({ contract }: { contract: Contract }) {
     <>
       {contract.mechanism === 'cpmm-multi-1' ? (
         <PartyPanel contract={contract} maxAnswers={5} />
-      ) : contract.mechanism === 'cpmm-1' ? (
+      ) : contract.mechanism === 'cpmm-1' &&
+        contract.outcomeType === 'BINARY' ? (
         <StateBinaryPartyPanel contract={contract} />
       ) : null}
     </>
