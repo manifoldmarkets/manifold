@@ -127,6 +127,9 @@ Both live in `common/src/contract.ts`.
   to it (`convertsToCpmmMulti2`). Numeric and date markets never convert: they
   bet across several answers at once, which `cpmm-multi-2` refuses. It is off:
   conversion changes how a live market fills limit orders and takes liquidity.
+  A conversion can land between an earlier read of a market and a transaction
+  on it, so backend code that writes with `cpmm-multi-1` or `cpmm-multi-2`
+  math reads the mechanism inside its transaction.
 
 ## Deployment
 
