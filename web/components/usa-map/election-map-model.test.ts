@@ -167,7 +167,7 @@ test('Republican NO includes every other winner, while control odds retain their
     outcomeType: 'BINARY',
     p: 0.5,
     pool: { YES: 70, NO: 30 },
-  } as Contract
+  } as unknown as Contract
   const odds = electionOdds(contract)!
   assert.equal(odds.rep, 0.3)
   assert.equal(odds.dem, 0)
