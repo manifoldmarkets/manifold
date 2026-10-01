@@ -652,6 +652,13 @@
   color: rgb(var(--color-primary-700));
   text-decoration: underline;
 }
+.sources .sourceCredit {
+  font-size: 11px;
+  color: rgb(var(--color-ink-500));
+}
+.sourceCredit a {
+  color: inherit;
+}
 .dismiss {
   padding: 9px 16px;
   border-radius: 7px;

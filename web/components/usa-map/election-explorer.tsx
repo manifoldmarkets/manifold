@@ -852,22 +852,24 @@ export function ElectionExplorer(props: Props) {
             separate markets, not derived from the seat totals.
           </p>
           <p>
-            Map geometry and cartogram coordinates:{' '}
-            <a
-              href="https://drops.mts.now/midterms/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Theo Jaffee / MTS
-            </a>
-            , September 24, 2026 dataset, based on Census geography and
-            redistricting research. Missouri uses its 2022 map pending
-            litigation. Boundaries are a snapshot.
+            District boundaries reflect a September 24, 2026 snapshot based on
+            Census geography and redistricting research. Missouri uses its 2022
+            map pending litigation.
           </p>
           <p>
             Prices update through Manifold’s subscriptions. Community markets
             may be thinly traded; an unchanged price is not a new forecast.
             Outcomes are normalized within each race for map colors.
+          </p>
+          <p className={styles.sourceCredit}>
+            Map data:{' '}
+            <a
+              href="https://drops.mts.now/midterms/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              MTS
+            </a>
           </p>
           <button className={styles.dismiss} onClick={() => setSources(false)}>
             Got it
