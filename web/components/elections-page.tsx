@@ -2,10 +2,9 @@ import { ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from './layout/row'
-import { HomepageMap } from './usa-map/homepage-map'
+import { LiveElectionMap } from './usa-map/live-election-map'
 import { TrendingMidtermsCarousel } from './us-elections/trending-midterms-carousel'
 import { FeedContractCard } from './contract/feed-contract-card'
-import { BalanceOfPowerPanel } from './us-elections/balance-of-power-panel'
 import { Presidency2028Section } from './us-elections/presidency-2028-section'
 import { BackButton } from './contract/back-button'
 import { ContractsTable } from './contract/contracts-table'
@@ -68,7 +67,7 @@ export function USElectionsPage(
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
-    tossUpContracts,
+    additionalHouseContracts,
     pollingPerpContracts,
     redistrictingContracts,
     trendingContracts,
@@ -120,20 +119,16 @@ export function USElectionsPage(
         <SectionHeader subtitle="Who controls Washington after the 2026 midterms">
           2026 Midterms
         </SectionHeader>
-        <Col className="bg-canvas-0 gap-4 rounded-xl p-4 sm:p-5">
-          <BalanceOfPowerPanel
-            houseControl={houseControlContract}
-            senateControl={senateControlContract}
-          />
-          <div className="border-ink-200 border-t" />
-          <HomepageMap
-            rawSenateStateContracts={rawSenateStateContracts}
-            rawGovernorStateContracts={rawGovernorStateContracts}
-            rawSenateCandidateContracts={rawSenateCandidateContracts}
-            rawGovernorCandidateContracts={rawGovernorCandidateContracts}
-            houseDistrictsContract={houseDistrictsContract}
-          />
-        </Col>
+        <LiveElectionMap
+          houseControlContract={houseControlContract}
+          senateControlContract={senateControlContract}
+          rawSenateStateContracts={rawSenateStateContracts}
+          rawGovernorStateContracts={rawGovernorStateContracts}
+          rawSenateCandidateContracts={rawSenateCandidateContracts}
+          rawGovernorCandidateContracts={rawGovernorCandidateContracts}
+          houseDistrictsContract={houseDistrictsContract}
+          additionalHouseContracts={additionalHouseContracts}
+        />
       </SectionInView>
 
       {/* Polling averages - the continuously-updating numbers (approval,
@@ -145,23 +140,6 @@ export function USElectionsPage(
             Polling averages
           </SectionHeader>
           <PollingPerpsRow contracts={pollingPerpContracts} />
-        </SectionInView>
-      )}
-
-      {/* Closest races - replaces the retired hand-curated primaries list
-          (six of its seven markets had resolved by Sept 2026). Derived from
-          the map markets in getTossUpRaces, so it re-ranks itself as the races
-          move and can never go stale. */}
-      {tossUpContracts.length > 0 && (
-        <SectionInView section="toss-ups" className="gap-3">
-          <SectionHeader subtitle="The tightest Senate and Governor races on the board">
-            Closest races
-          </SectionHeader>
-          <ContractsTable
-            contracts={tossUpContracts}
-            hideAvatar
-            trackingPostfix="election toss-ups"
-          />
         </SectionInView>
       )}
 

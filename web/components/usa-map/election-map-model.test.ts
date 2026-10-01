@@ -1,0 +1,206 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { Contract } from 'common/contract'
+import atlas from 'web/public/data/election-atlas.json'
+import {
+  buildRaces,
+  electionOdds,
+  leadingParty,
+  parseHouseAnswer,
+  Race,
+  raceTier,
+  seatSummary,
+} from './election-map-model'
+
+const multi = (
+  answers: { text: string; probability: number; resolution?: string }[],
+  shouldAnswersSumToOne = true
+) =>
+  ({
+    mechanism: 'cpmm-multi-1',
+    shouldAnswersSumToOne,
+    answers: answers.map((a, i) => ({
+      id: String(i),
+      text: a.text,
+      poolYes: 1 - a.probability,
+      poolNo: a.probability,
+      resolution: a.resolution,
+    })),
+  } as Contract)
+
+test('all 435 House races match both geographic and cartogram geometry exactly', () => {
+  const races = buildRaces('house', {})
+  assert.equal(races.length, 435)
+  const ids = races.map((r) => r.id).sort()
+  assert.equal(new Set(ids).size, 435)
+  assert.deepEqual(
+    ids,
+    atlas.districts.map((d) => `${d.state}-${d.district}`).sort()
+  )
+  assert.deepEqual(
+    ids,
+    atlas.hex.hexes.map((d) => `${d.state}-${d.district}`).sort()
+  )
+})
+
+test('missing markets do not erase scheduled races or manufacture prices', () => {
+  const senate = buildRaces('senate', {})
+  const governor = buildRaces('governor', {})
+  assert.equal(senate.length, 35)
+  assert.equal(governor.length, 36)
+  assert.equal(seatSummary(senate, 'senate').total, 100)
+  assert.deepEqual(seatSummary(senate, 'senate').leaders, {
+    dem: 34,
+    rep: 31,
+    other: 0,
+    tied: 0,
+    unpriced: 35,
+  })
+  assert.equal(seatSummary(governor, 'governor').leaders.unpriced, 36)
+})
+
+test('district labels, candidate suffixes, and at-large labels join reliably', () => {
+  assert.deepEqual(
+    parseHouseAnswer('West Virginia 2 · Candidate (D) v. Other (R)'),
+    { state: 'WV', district: 2, matchup: 'Candidate (D) v. Other (R)' }
+  )
+  assert.equal(parseHouseAnswer('Alaska at-large')?.district, 0)
+  assert.equal(parseHouseAnswer('Alaska 1')?.district, 0)
+  assert.equal(parseHouseAnswer('California 49')?.district, 49)
+  assert.equal(parseHouseAnswer('California Senate'), undefined)
+  assert.equal(
+    parseHouseAnswer("Texas' 35th Congressional District")?.district,
+    35
+  )
+  assert.equal(
+    parseHouseAnswer('New York’s 2nd Congressional District')?.district,
+    2
+  )
+  assert.equal(parseHouseAnswer('California 99'), undefined)
+  assert.equal(parseHouseAnswer('Alaska 55'), undefined)
+})
+
+test('independents remain independent even when no Democrat is on the ballot', () => {
+  const odds = electionOdds(
+    multi([
+      { text: 'Republicans', probability: 0.35 },
+      { text: 'Independent (Dan Osborn)', probability: 0.65 },
+    ])
+  )
+  assert.deepEqual(odds, { dem: 0, rep: 0.35, other: 0.65 })
+  assert.equal(leadingParty(odds), 'other')
+  assert.equal(raceTier({ odds }), 'other')
+})
+
+test('exact ties are separate, while toss-up leaders still count once', () => {
+  const races = [
+    { odds: { dem: 0.5, rep: 0.5, other: 0 } },
+    { odds: { dem: 0.51, rep: 0.49, other: 0 } },
+    { odds: { dem: 0.1, rep: 0.1, other: 0.8 } },
+    {},
+  ] as Race[]
+  const s = seatSummary(races, 'house')
+  assert.deepEqual(s.leaders, {
+    dem: 1,
+    rep: 0,
+    other: 1,
+    tied: 1,
+    unpriced: 1,
+  })
+  assert.equal(
+    Object.values(s.counts).reduce((a, b) => a + b, 0),
+    4
+  )
+  assert.equal(
+    Object.values(s.leaders).reduce((a, b) => a + b, 0),
+    4
+  )
+})
+
+test('resolved House outcomes override pools; cancelled answers stay unpriced', () => {
+  const house = multi(
+    [
+      { text: 'California 49', probability: 0.3, resolution: 'YES' },
+      { text: 'Texas 15', probability: 0.7, resolution: 'CANCEL' },
+    ],
+    false
+  )
+  const races = buildRaces('house', {}, house)
+  assert.equal(races.find((r) => r.id === 'CA-49')?.odds?.dem, 1)
+  assert.equal(races.find((r) => r.id === 'TX-15')?.odds, undefined)
+})
+
+test('reviewed state portfolios add coverage without replacing curated races', () => {
+  const primary = multi([{ text: 'Texas 15', probability: 0.8 }], false)
+  const additional = {
+    'which-texas-house-districts-will-th': multi(
+      [
+        { text: "Texas' 15th Congressional District", probability: 0.2 },
+        { text: "Texas' 1st Congressional District", probability: 0.1 },
+      ],
+      false
+    ),
+  }
+  const races = buildRaces('house', {}, primary, additional)
+  assert.equal(races.find((r) => r.id === 'TX-15')?.odds?.dem, 0.8)
+  assert.equal(races.find((r) => r.id === 'TX-1')?.odds?.dem, 0.1)
+  assert.equal(
+    races.find((r) => r.id === 'TX-1')?.contract,
+    additional['which-texas-house-districts-will-th']
+  )
+  assert.equal(seatSummary(races, 'house').leaders.unpriced, 433)
+})
+
+test('a cancelled source falls back, while malformed district portfolios do not price races', () => {
+  const primary = multi(
+    [{ text: 'Texas 15', probability: 0.8, resolution: 'CANCEL' }],
+    false
+  )
+  const additional = {
+    'which-texas-house-districts-will-th': multi(
+      [{ text: "Texas' 15th Congressional District", probability: 0.2 }],
+      false
+    ),
+  }
+  assert.equal(
+    buildRaces('house', {}, primary, additional).find((r) => r.id === 'TX-15')
+      ?.odds?.dem,
+    0.2
+  )
+  assert.equal(
+    buildRaces(
+      'house',
+      {},
+      multi([{ text: 'Texas 15', probability: 0.8 }])
+    ).find((r) => r.id === 'TX-15')?.odds,
+    undefined
+  )
+})
+
+test('same-party general-election candidate markets retain candidate bets and sum party odds', () => {
+  const candidates = multi([
+    { text: 'Candidate A (D)', probability: 0.6 },
+    { text: 'Candidate B (D)', probability: 0.4 },
+  ])
+  const race = buildRaces('house', {}, null, {
+    '2026-us-house-ca-7-winner': candidates,
+  }).find((r) => r.id === 'CA-7')!
+  assert.deepEqual(race.odds, { dem: 1, rep: 0, other: 0 })
+  assert.equal(race.answerId, undefined)
+  assert.equal(race.contract, candidates)
+})
+
+test('cancelled markets and invalid probabilities are unpriced', () => {
+  const contract = multi([
+    { text: 'Democrats', probability: 0.5 },
+    { text: 'Republicans', probability: 0.5 },
+  ])
+  assert.equal(
+    electionOdds({ ...contract, resolution: 'CANCEL' } as Contract),
+    undefined
+  )
+  assert.equal(
+    electionOdds(multi([{ text: 'Democrats', probability: NaN }])),
+    undefined
+  )
+})

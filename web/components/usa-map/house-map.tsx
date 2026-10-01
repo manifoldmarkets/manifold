@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Answer } from 'common/answer'
+import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -163,7 +164,7 @@ function HouseStateDistricts(props: {
 }
 
 // A single district race; clicking the row opens the bet modal for that answer.
-function HouseDistrictRow(props: {
+export function HouseDistrictRow(props: {
   contract: CPMMMultiContract
   answer: Answer
   state: string
@@ -171,7 +172,7 @@ function HouseDistrictRow(props: {
   const { contract, answer, state } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
-  const dem = answer.prob
+  const dem = getAnswerProbability(contract, answer.id)
   const rep = 1 - dem
   const demLeads = dem >= 0.5
   const parsed = parseDistrict(answer.text)
