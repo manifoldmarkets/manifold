@@ -223,44 +223,50 @@ export function AuthProvider(props: {
           sawFbUser.current = true
           setUserCookie(fbUser.toJSON())
 
+          // Tracked until the profile is set, so a change landing just as it
+          // loads isn't missed.
           const changes = trackUserChanges(fbUser.uid)
-          const [user, privateUser, supabaseJwt] = await Promise.all([
-            getUserSafe(fbUser.uid),
-            getPrivateUserSafe(),
-            getSupabaseToken().catch((e) => {
-              console.error('Error getting supabase token', e)
-              return null
-            }),
-          ]).finally(changes.stop)
-          // The fetches above can outlive the user they were for: a sign-out or
-          // an account switch may have landed while they were in flight. If so,
-          // this callback is stale — drop it BEFORE any global side effect.
-          // updateSupabaseAuth in particular installs a token into the shared
-          // Supabase REST/realtime client, so a stale callback would otherwise
-          // leave Supabase authenticated as the old user while Firebase/UI are
-          // the new one. Committing it would also push the old user back to the
-          // native app (via onAuthLoad -> 'users').
-          if (auth.currentUser?.uid !== fbUser.uid) return
-
-          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
-          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
-
-          if (!user || !privateUser) {
-            const deviceToken = ensureDeviceToken()
-            const adminToken = getAdminToken()
-
-            const newUser = (await createUser({
-              deviceToken,
-              adminToken,
-              visitedContractIds: getSavedContractVisitsLocally(),
-            })) as UserAndPrivateUser
-
+          try {
+            const [user, privateUser, supabaseJwt] = await Promise.all([
+              getUserSafe(fbUser.uid),
+              getPrivateUserSafe(),
+              getSupabaseToken().catch((e) => {
+                console.error('Error getting supabase token', e)
+                return null
+              }),
+            ])
+            // The fetches above can outlive the user they were for: a sign-out
+            // or an account switch may have landed while they were in flight.
+            // If so, this callback is stale — drop it BEFORE any global side
+            // effect. updateSupabaseAuth in particular installs a token into
+            // the shared Supabase REST/realtime client, so a stale callback
+            // would otherwise leave Supabase authenticated as the old user
+            // while Firebase/UI are the new one. Committing it would also push
+            // the old user back to the native app (via onAuthLoad -> 'users').
             if (auth.currentUser?.uid !== fbUser.uid) return
-            onAuthLoad(fbUser, newUser.user, newUser.privateUser)
-          } else {
-            // The profile may have been read before changes made while these
-            // loaded, e.g. a setting saved during a token refresh.
-            onAuthLoad(fbUser, { ...user, ...changes.since }, privateUser)
+
+            // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
+            if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
+
+            if (!user || !privateUser) {
+              const deviceToken = ensureDeviceToken()
+              const adminToken = getAdminToken()
+
+              const newUser = (await createUser({
+                deviceToken,
+                adminToken,
+                visitedContractIds: getSavedContractVisitsLocally(),
+              })) as UserAndPrivateUser
+
+              if (auth.currentUser?.uid !== fbUser.uid) return
+              onAuthLoad(fbUser, newUser.user, newUser.privateUser)
+            } else {
+              // The profile may have been read before changes made while these
+              // loaded, e.g. a setting saved during a token refresh.
+              onAuthLoad(fbUser, { ...user, ...changes.since }, privateUser)
+            }
+          } finally {
+            changes.stop()
           }
         } else {
           // User logged out; reset to null
