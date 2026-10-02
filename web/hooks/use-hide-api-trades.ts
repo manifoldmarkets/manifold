@@ -66,41 +66,51 @@ const applyClick = (click: Click) => {
         if (lastClick === click) setLastClick(undefined)
         return
       }
-      // What reaches the account while the request is in flight: its own
-      // broadcast, and changes from other tabs or devices.
+      // What reaches the account from the request until it's been handled:
+      // its own broadcast, and changes from other tabs or devices.
       const changes = trackUserChanges(userId)
       try {
-        await api('me/update', { hideApiTrades: value }).finally(changes.stop)
-      } catch (e) {
-        // An account that isn't allowed to save it (e.g. one banned from
-        // posting) keeps the click for the session, like a signed-out visitor.
-        // Otherwise the switch goes back to the saved value, so a failed save
-        // doesn't look like it stuck.
-        if (lastClick === click && !(e instanceof APIError && e.code === 403)) {
-          setLastClick(undefined)
-          toast.error("Couldn't save Hide API trades. Please try again.")
+        try {
+          await api('me/update', { hideApiTrades: value })
+        } catch (e) {
+          // An account that isn't allowed to save it (e.g. one banned from
+          // posting) keeps the click for the session, like a signed-out
+          // visitor. Otherwise the switch goes back to the saved value, so a
+          // failed save doesn't look like it stuck.
+          if (
+            lastClick === click &&
+            !(e instanceof APIError && e.code === 403)
+          ) {
+            setLastClick(undefined)
+            toast.error("Couldn't save Hide API trades. Please try again.")
+          }
+          return
         }
-        return
+        // The last await, so nothing can arrive unseen between reading what
+        // arrived below and the tracker stopping.
+        const stillSignedIn = (await apiUserId()) === userId
+        const values = changes.updates
+          .filter((update) => 'hideApiTrades' in update)
+          .map((update) => update.hideApiTrades)
+        // If nothing for it reached the account while saving (its broadcast is
+        // late or missed), the account value gets it anyway, so it's still
+        // there once the click is dropped.
+        if (!values.length)
+          applyLocalUserUpdate({ id: userId, hideApiTrades: value })
+        // If the last value that did arrive is different, it may be a newer
+        // change from another tab or device. Without a server version there's
+        // no telling, so it's left in place and shows right away.
+        const superseded =
+          !!values.length && values[values.length - 1] !== value
+        // Otherwise the click waits for the account value to match, but only
+        // while a list using it is mounted (see subscribe) and its account is
+        // still the one signed in.
+        const keep = !!listeners.size && !superseded && stillSignedIn
+        if (lastClick === click)
+          setLastClick(keep ? { ...click, saved: true } : undefined)
+      } finally {
+        changes.stop()
       }
-      const values = changes.updates
-        .filter((update) => 'hideApiTrades' in update)
-        .map((update) => update.hideApiTrades)
-      // If nothing for it reached the account while saving (its broadcast is
-      // late or missed), the account value gets it anyway, so it's still there
-      // once the click is dropped.
-      if (!values.length)
-        applyLocalUserUpdate({ id: userId, hideApiTrades: value })
-      // If the last value that did arrive is different, it may be a newer
-      // change from another tab or device. Without a server version there's no
-      // telling, so it's left in place and shows right away.
-      const superseded = !!values.length && values[values.length - 1] !== value
-      // Otherwise the click waits for the account value to match, but only
-      // while a list using it is mounted (see subscribe) and its account is
-      // still the one signed in.
-      const keep =
-        !!listeners.size && !superseded && (await apiUserId()) === userId
-      if (lastClick === click)
-        setLastClick(keep ? { ...click, saved: true } : undefined)
     })
     .catch(() => {})
 }
