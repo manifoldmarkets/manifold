@@ -275,6 +275,7 @@ function getResolutionParams(
       }
     } else if (outcome === 'CHOOSE_ONE') {
       const { answerId } = cpmmMultiParams
+      validateAnswerCpmm(contract, answerId)
       const resolutions = { [answerId]: 100 }
       return {
         outcome: answerId,
