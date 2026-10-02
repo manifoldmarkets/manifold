@@ -24,13 +24,22 @@ const subscribe = (listener: () => void) => {
   listeners.add(listener)
   return () => {
     listeners.delete(listener)
-    // A saved click only waits for the account value to catch up while a list
-    // that uses it is mounted. With none left, the account value takes over,
-    // so the click can't hide a change made later in another tab or device.
+    // Some clicks only wait while a list that uses them is mounted. With none
+    // left, the account value takes over:
+    // - a saved click waits for the account value to catch up, so it can't
+    //   hide a change made later in another tab or device;
+    // - one made before it was known who's signed in waits to be handed to
+    //   them (see useHideApiTrades), so it can't go to someone who signs in
+    //   later instead.
     // Checked once the commit is done, so a list replacing this one in the
     // same render (e.g. moving straight to another market) still counts.
     queueMicrotask(() => {
-      if (!listeners.size && lastClick?.saved) lastClick = undefined
+      if (
+        !listeners.size &&
+        lastClick &&
+        (lastClick.saved || lastClick.userId === undefined)
+      )
+        lastClick = undefined
     })
   }
 }
