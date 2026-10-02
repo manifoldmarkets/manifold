@@ -86,13 +86,16 @@ const sumToOneError = (legs: Parameters<typeof probAfterFill>[0][]) =>
 
 // Whether a trade leaves a sum-to-one market's probabilities further from
 // summing to one than SUM_TO_ONE_REFUSAL and than it found them. `poolsAfter`
-// holds the pools of the answers it traded, by id; the rest keep theirs.
+// holds the pools of the answers it traded, by id; the rest keep theirs. Only
+// unresolved answers count, as cpmm-multi-2 reserves resolving linked answers
+// NO one at a time (see CPMMMulti in contract.ts).
 export const cpmmMultiTradeMissesSumToOne = (
   answers: Answer[],
   poolsAfter: { [answerId: string]: { [outcome: string]: number } }
 ) => {
+  const unresolved = answers.filter((a) => !a.resolution)
   const sumOf = (poolOf: (a: Answer) => { [outcome: string]: number }) =>
-    sumBy(answers, (a) => getCpmmProbability(poolOf(a), answerP(a)))
+    sumBy(unresolved, (a) => getCpmmProbability(poolOf(a), answerP(a)))
   const before = sumOf((a) => ({ YES: a.poolYes, NO: a.poolNo }))
   const after = sumOf(
     (a) => poolsAfter[a.id] ?? { YES: a.poolYes, NO: a.poolNo }

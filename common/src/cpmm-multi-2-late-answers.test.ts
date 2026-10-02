@@ -224,6 +224,24 @@ describe('cpmmMultiTradeMissesSumToOne', () => {
     expect(cpmmMultiTradeMissesSumToOne(healthy, { a: at(0.9) })).toBe(true)
   })
 
+  it('leaves resolved answers out', () => {
+    // An answer resolved NO early, its pool left at 5%: the open answers sum
+    // to one without it.
+    const withResolved = [
+      ...healthy,
+      { ...answer('c', 0.95, 0.05), resolution: 'NO' } as Answer,
+    ]
+    expect(
+      cpmmMultiTradeMissesSumToOne(withResolved, {
+        a: at(0.7 + 1e-12),
+        b: at(0.3),
+      })
+    ).toBe(false)
+    expect(
+      cpmmMultiTradeMissesSumToOne(withResolved, { a: at(0.99), b: at(0.6) })
+    ).toBe(true)
+  })
+
   it('lets a market already off trade, as long as it gets no further off', () => {
     // Summing to 1.64, like the market live testing left.
     const broken = [answer('a', 0.01, 0.99), answer('b', 0.35, 0.65)]
