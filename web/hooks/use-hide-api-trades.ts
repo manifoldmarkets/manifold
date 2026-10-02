@@ -85,19 +85,22 @@ const applyClick = (click: Click) => {
       const values = changes.updates
         .filter((update) => 'hideApiTrades' in update)
         .map((update) => update.hideApiTrades)
-      const sawOwn = values.includes(value)
-      // If its broadcast is late or missed, the account value gets it anyway,
-      // so it's still there once the click is dropped.
-      if (!sawOwn) applyLocalUserUpdate({ id: userId, hideApiTrades: value })
-      // A different value broadcast after its own is a newer change from
-      // another tab or device, so it shows right away. Otherwise the click
-      // waits for the account value to match, unless no list is using it
-      // (see subscribe).
-      const superseded = sawOwn && values[values.length - 1] !== value
+      // If nothing for it reached the account while saving (its broadcast is
+      // late or missed), the account value gets it anyway, so it's still there
+      // once the click is dropped.
+      if (!values.length)
+        applyLocalUserUpdate({ id: userId, hideApiTrades: value })
+      // If the last value that did arrive is different, it may be a newer
+      // change from another tab or device. Without a server version there's no
+      // telling, so it's left in place and shows right away.
+      const superseded = !!values.length && values[values.length - 1] !== value
+      // Otherwise the click waits for the account value to match, but only
+      // while a list using it is mounted (see subscribe) and its account is
+      // still the one signed in.
+      const keep =
+        !!listeners.size && !superseded && (await apiUserId()) === userId
       if (lastClick === click)
-        setLastClick(
-          listeners.size && !superseded ? { ...click, saved: true } : undefined
-        )
+        setLastClick(keep ? { ...click, saved: true } : undefined)
     })
     .catch(() => {})
 }
