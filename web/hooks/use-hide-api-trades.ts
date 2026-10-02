@@ -16,16 +16,17 @@ const subscribe = (listener: () => void) => {
   listeners.add(listener)
   return () => {
     listeners.delete(listener)
-    // A saved click only waits for the account value to catch up while a
-    // toggle is showing it. With none left, the account value takes over, so
-    // the click can't hide a change made later in another tab or device.
-    // Checked once the commit is done, so a toggle replacing this one in the
+    // A saved click only waits for the account value to catch up while a list
+    // that uses it is mounted. With none left, the account value takes over,
+    // so the click can't hide a change made later in another tab or device.
+    // Checked once the commit is done, so a list replacing this one in the
     // same render (e.g. moving straight to another market) still counts.
     queueMicrotask(() => {
       if (!listeners.size && lastClick?.saved) lastClick = undefined
     })
   }
 }
+const skipSubscribe = () => () => {}
 const setLastClick = (click: Click | undefined) => {
   lastClick = click
   listeners.forEach((listener) => listener())
@@ -48,12 +49,14 @@ const apiUserId = async () => {
 // saved to their account, and me/update broadcasts the change to their open
 // tabs, so it sticks across markets, tabs, devices and reloads. Signed-out
 // users keep it in memory until they reload.
-export const useHideApiTrades = () => {
+// inUse: whether the caller filters by the value. One that doesn't (a topic
+// page's activity log) doesn't watch clicks, so it can't keep one alive.
+export const useHideApiTrades = (inUse = true) => {
   const user = useUser()
   const saved = !!user?.hideApiTrades
   const click = useSyncExternalStore(
-    subscribe,
-    () => lastClick,
+    inUse ? subscribe : skipSubscribe,
+    () => (inUse ? lastClick : undefined),
     () => undefined
   )
   // A click only counts for whoever made it, so after signing in the
@@ -63,9 +66,9 @@ export const useHideApiTrades = () => {
   const clickSaved = !!ownClick?.saved
 
   // The click is shown until its own save is in and the account value matches
-  // it, or no toggle is left on screen. An earlier click's save landing first
-  // can't clear it, so quick toggling doesn't flicker. Once it's dropped,
-  // changes made in other tabs and devices show through.
+  // it, or no list using it is left mounted. An earlier click's save landing
+  // first can't clear it, so quick toggling doesn't flicker. Once it's
+  // dropped, changes made in other tabs and devices show through.
   useEffect(() => {
     if (clickSaved && clicked === saved) setLastClick(undefined)
   }, [saved, clickSaved])
@@ -84,7 +87,7 @@ export const useHideApiTrades = () => {
           return
         }
         await api('me/update', { hideApiTrades: enabled })
-        // With no toggle on screen there's nothing to wait for (see subscribe).
+        // With no list using it there's nothing to wait for (see subscribe).
         if (lastClick === click)
           setLastClick(listeners.size ? { ...click, saved: true } : undefined)
       })
