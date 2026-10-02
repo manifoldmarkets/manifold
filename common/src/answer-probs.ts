@@ -1,4 +1,4 @@
-import { sum } from 'lodash'
+import { orderBy, range, sum } from 'lodash'
 
 // The create form keeps one starting percentage per answer slot, blank slots
 // included, so they line up with the answers by index. A blank slot isn't an
@@ -13,6 +13,28 @@ export const roundAnswerProbs = (probs: number[]) => {
   const biggest = rounded.indexOf(Math.max(...rounded))
   rounded[biggest] = Math.round((rounded[biggest] + residual) * 10) / 10
   return rounded
+}
+
+// Rounds to a tenth of a percent like roundAnswerProbs, but spreads what's left
+// over instead of putting it all on one answer: each rounds down, then the
+// tenths that leaves short go one each to the ones rounded down the most, so
+// none moves by a tenth or more. A copy of a big market needs this: 51 even
+// answers each round up to 2%, 102% in all, and the whole -2 on one answer
+// would leave it at 0%. Near ties go to the bigger answer, then the earlier.
+const spreadRoundAnswerProbs = (probs: number[]) => {
+  const tenths = probs.map((prob) => prob * 10)
+  // The allowance keeps a value already on a tenth from flooring a tenth down.
+  const rounded = tenths.map((t) => Math.floor(t + 1e-9))
+  const short = Math.round(sum(tenths)) - sum(rounded)
+  const nearly = (x: number) => Math.round(x * 1e6)
+  orderBy(
+    range(probs.length),
+    [(i) => nearly(tenths[i] - rounded[i]), (i) => nearly(tenths[i])],
+    ['desc', 'desc']
+  )
+    .slice(0, Math.max(0, short))
+    .forEach((i) => rounded[i]++)
+  return rounded.map((t) => t / 10)
 }
 
 // For answers that sum to one: sets one slot and rescales the rest so the total
@@ -62,7 +84,10 @@ export const fitAnswerProbs = (
         )
       : scaled
   if (fitted.some((prob) => prob > max)) return undefined
-  return roundAnswerProbs(fitted)
+  const rounded = spreadRoundAnswerProbs(fitted)
+  return rounded.every((prob) => prob >= min && prob <= max)
+    ? rounded
+    : undefined
 }
 
 // Fits a live market's odds to seed a copy of it (see fitAnswerProbs), given

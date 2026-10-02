@@ -426,6 +426,51 @@ describe('fitting live odds to seed a duplicate market', () => {
   it('gives up when the answers can’t all fit', () => {
     expect(fitAnswerProbs(Array(101).fill(1), true, 1, 99)).toBeUndefined()
   })
+
+  it('spreads the rounding over many answers, so none leaves the range', () => {
+    // 51 even answers each round to 2%, 102% in all. Putting the whole -2 on
+    // one answer left it at 0%, and the copy's form refused it.
+    const even = fitAnswerProbs(Array(51).fill(100 / 51), true, 1, 99)!
+    expect(even.filter((prob) => prob === 2)).toHaveLength(31)
+    expect(even.filter((prob) => prob === 1.9)).toHaveLength(20)
+    expect(passes(even)).toBe(true)
+    // Each 2.25% rounds up a tenth; the 1% answer keeps its 1%.
+    const tail = fitAnswerProbs([...Array(44).fill(2.25), 1], true, 1, 99)!
+    expect(tail[44]).toBe(1)
+    expect(passes(tail)).toBe(true)
+  })
+
+  it('carries every even split, and always passes the create form’s check', () => {
+    for (let n = 2; n <= 100; n++) {
+      const fitted = fitAnswerProbs(Array(n).fill(100 / n), true, 1, 99)!
+      expect(fitted).toHaveLength(n)
+      fitted.forEach((prob) =>
+        expect(Math.abs(prob - 100 / n)).toBeLessThan(0.1)
+      )
+      expect(passes(fitted)).toBe(true)
+    }
+    let seed = 11
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let i = 0; i < 3000; i++) {
+      const n = 2 + Math.floor(rng() * 99)
+      // Near-even weights, where rounding piles up, or ordinary ones with
+      // some answers far under 1%.
+      const nearEven = rng() < 0.5
+      const weights = Array.from({ length: n }, () =>
+        nearEven ? 1 + rng() * 0.05 : rng() < 0.2 ? rng() * 1e-6 : rng() ** 3
+      )
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => (w / total) * 100)
+      const fitted = fitAnswerProbs(probs, true, 1, 99)
+      // Only odds that can't fit at all are left behind.
+      if (probs.every((prob) => prob >= 1 && prob <= 99))
+        expect(fitted).toBeDefined()
+      if (fitted) expect(passes(fitted)).toBe(true)
+    }
+  })
 })
 
 describe('fitting the odds of a market with an Other answer to seed a copy', () => {
@@ -465,6 +510,33 @@ describe('fitting the odds of a market with an Other answer to seed a copy', () 
 
   it('gives up when the answers can’t all fit', () => {
     expect(fit(Array(100).fill(1))).toBeUndefined()
+  })
+
+  it('carries many near-even answers, whatever their rounding adds up to', () => {
+    for (let n = 2; n <= 99; n++) {
+      const fitted = fit(Array(n).fill(100 / n))!
+      expect(fitted).toHaveLength(n - 1)
+      expect(passes(fitted)).toBe(true)
+      // Within the rounding, plus the tenth that keeps Other off the floor.
+      fitted.forEach((prob) =>
+        expect(Math.abs(prob - 100 / n)).toBeLessThan(0.2)
+      )
+    }
+    let seed = 13
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let i = 0; i < 2000; i++) {
+      const n = 2 + Math.floor(rng() * 65)
+      const weights = Array.from({ length: n }, () => 1 + rng() * 0.05)
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => (w / total) * 100)
+      const fitted = fit(probs)
+      if (probs.every((prob) => prob >= 1.5 && prob <= 98.5))
+        expect(fitted).toBeDefined()
+      if (fitted) expect(passes(fitted)).toBe(true)
+    }
   })
 
   it('always passes the create form’s check, and keeps odds already in range', () => {
