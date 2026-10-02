@@ -6,13 +6,37 @@ import { FullUser } from 'common/api/user-types'
 import { PrivateUser } from 'common/user'
 
 type UserUpdate = Partial<User> & { id: string }
-type UserFetch = { userId: string; since: Partial<User> }
+
+// Changes being recorded for fetches in flight (see trackUserChanges).
+const trackers = new Set<{ userId: string; since: Partial<User> }>()
+const recordChange = (update: UserUpdate) => {
+  trackers.forEach((tracker) => {
+    if (tracker.userId === update.id)
+      tracker.since = { ...tracker.since, ...update }
+  })
+}
+
+// Records the changes made to a user, by broadcasts and local updates, until
+// stop() is called. A fetch made meanwhile may have read the user before them,
+// so they should be applied again on top of its result.
+export const trackUserChanges = (userId: string) => {
+  const tracker = {
+    userId,
+    since: {} as Partial<User>,
+    stop: () => {
+      trackers.delete(tracker)
+    },
+  }
+  trackers.add(tracker)
+  return tracker
+}
 
 // Changes this client knows it just made, e.g. from a mutation's response.
 // They're applied like a broadcast, in case that broadcast is missed (e.g. the
 // websocket was down).
 const localUpdateListeners = new Set<(update: UserUpdate) => void>()
 export const applyLocalUserUpdate = (update: UserUpdate) => {
+  recordChange(update)
   localUpdateListeners.forEach((listener) => listener(update))
 }
 
@@ -23,14 +47,7 @@ export const useWebsocketUser = (
 ) => {
   const [user, setUser] = useState<User | null | undefined>()
 
-  // The latest fetch, with the changes received since it started. It may have
-  // read the user before them, so they're applied again on top of its result.
-  const latestFetch = useRef<UserFetch | undefined>(undefined)
-
   const applyUpdate = (update: UserUpdate) => {
-    const pending = latestFetch.current
-    if (pending?.userId === update.id)
-      pending.since = { ...pending.since, ...update }
     setUser((prevUser) =>
       prevUser?.id === update.id ? { ...prevUser, ...update } : prevUser
     )
@@ -39,21 +56,22 @@ export const useWebsocketUser = (
   useApiSubscription({
     topics: [`user/${userId ?? '_'}`],
     onBroadcast: ({ data }) => {
-      const { user } = data
+      const user = data.user as UserUpdate
       console.log('ws update', user)
-      applyUpdate(user as UserUpdate)
+      recordChange(user)
+      applyUpdate(user)
     },
   })
 
+  const latestFetch = useRef(0)
   const refreshUser = async (id: string) => {
-    const thisFetch: UserFetch = { userId: id, since: {} }
-    latestFetch.current = thisFetch
-    const result = await getFullUserById(id)
+    const fetchId = ++latestFetch.current
+    const changes = trackUserChanges(id)
+    const result = await getFullUserById(id).finally(changes.stop)
     // Only the latest fetch counts, so an earlier one landing late can't
     // overwrite it.
-    if (latestFetch.current !== thisFetch) return
-    latestFetch.current = undefined
-    setUser({ ...result, ...thisFetch.since })
+    if (fetchId === latestFetch.current)
+      setUser({ ...result, ...changes.since })
   }
 
   useEffect(() => {

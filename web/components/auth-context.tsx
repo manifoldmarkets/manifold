@@ -1,6 +1,6 @@
 'use client'
 import { createContext, ReactNode, useEffect, useRef, useState } from 'react'
-import { isEqual, pickBy } from 'lodash'
+import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth, firebaseLogout } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/api/api'
@@ -28,6 +28,7 @@ import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/api/api'
 
 import { useWebsocketUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
+import { trackUserChanges } from 'client-common/hooks/use-websocket-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 import toast from 'react-hot-toast'
@@ -86,24 +87,6 @@ const setUserCookie = (data: object | undefined) => {
   ])
 }
 
-// A profile fetched for the signed-in user may have been read before changes
-// the live user (kept current by websocket and local updates) got while it
-// loaded, e.g. a setting saved during a token refresh. Those changes win.
-const withLiveChanges = (
-  user: User,
-  liveBefore: User | null | undefined,
-  liveNow: User | null | undefined
-): User =>
-  liveNow?.id === user.id
-    ? {
-        ...user,
-        ...pickBy(
-          liveNow,
-          (value, key) => !isEqual(value, liveBefore?.[key as keyof User])
-        ),
-      }
-    : user
-
 export const AuthContext = createContext<AuthUser>(undefined)
 
 export function AuthProvider(props: {
@@ -124,8 +107,6 @@ export function AuthProvider(props: {
   const sawFbUser = useRef(false)
   const committedUserId = useRef(user?.id)
   committedUserId.current = user?.id
-  // The live user (listenUser below), for profile loads to check against.
-  const liveUser = useRef<User | null | undefined>(undefined)
 
   const authUser = !user
     ? user
@@ -242,7 +223,7 @@ export function AuthProvider(props: {
           sawFbUser.current = true
           setUserCookie(fbUser.toJSON())
 
-          const liveBefore = liveUser.current
+          const changes = trackUserChanges(fbUser.uid)
           const [user, privateUser, supabaseJwt] = await Promise.all([
             getUserSafe(fbUser.uid),
             getPrivateUserSafe(),
@@ -250,7 +231,7 @@ export function AuthProvider(props: {
               console.error('Error getting supabase token', e)
               return null
             }),
-          ])
+          ]).finally(changes.stop)
           // The fetches above can outlive the user they were for: a sign-out or
           // an account switch may have landed while they were in flight. If so,
           // this callback is stale — drop it BEFORE any global side effect.
@@ -277,11 +258,9 @@ export function AuthProvider(props: {
             if (auth.currentUser?.uid !== fbUser.uid) return
             onAuthLoad(fbUser, newUser.user, newUser.privateUser)
           } else {
-            onAuthLoad(
-              fbUser,
-              withLiveChanges(user, liveBefore, liveUser.current),
-              privateUser
-            )
+            // The profile may have been read before changes made while these
+            // loaded, e.g. a setting saved during a token refresh.
+            onAuthLoad(fbUser, { ...user, ...changes.since }, privateUser)
           }
         } else {
           // User logged out; reset to null
@@ -313,7 +292,6 @@ export function AuthProvider(props: {
   const uid = authUser ? authUser.user.id : authUser
 
   const listenUser = useWebsocketUser(uid ?? undefined)
-  liveUser.current = listenUser
   useEffectCheckEquality(() => {
     if (authLoaded && listenUser) {
       if (user) {
