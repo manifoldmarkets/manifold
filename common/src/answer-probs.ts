@@ -64,3 +64,26 @@ export const fitAnswerProbs = (
   if (fitted.some((prob) => prob > max)) return undefined
   return roundAnswerProbs(fitted)
 }
+
+// Fits a live market's odds to seed a copy of it (see fitAnswerProbs), given
+// in percent with any Other answer last. The copy doesn't list Other: it's
+// recreated with whatever the other answers leave. So it's fitted along with
+// them, then dropped, and kept a tenth clear of min and max, where adding up
+// the rest in floating point could leave it a hair outside. Undefined if they
+// can't all fit.
+export const fitCopiedAnswerProbs = (
+  probs: number[],
+  shouldAnswersSumToOne: boolean,
+  hasOther: boolean,
+  min: number,
+  max: number
+) => {
+  const fitted = fitAnswerProbs(probs, shouldAnswersSumToOne, min, max)
+  if (!fitted || !hasOther) return fitted
+  const listed = fitted.slice(0, -1)
+  const other = 100 - sum(listed)
+  const biggest = listed.indexOf(Math.max(...listed))
+  const step = other < min + 0.05 ? -0.1 : other > max - 0.05 ? 0.1 : 0
+  listed[biggest] = Math.round((listed[biggest] + step) * 10) / 10
+  return listed.every((prob) => prob >= min && prob <= max) ? listed : undefined
+}

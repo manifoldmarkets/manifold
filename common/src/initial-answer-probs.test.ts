@@ -1,5 +1,6 @@
 import {
   fitAnswerProbs,
+  fitCopiedAnswerProbs,
   roundAnswerProbs,
   withAnswerProbRemoved,
   withAnswerProbSet,
@@ -424,5 +425,73 @@ describe('fitting live odds to seed a duplicate market', () => {
 
   it('gives up when the answers can’t all fit', () => {
     expect(fitAnswerProbs(Array(101).fill(1), true, 1, 99)).toBeUndefined()
+  })
+})
+
+describe('fitting the odds of a market with an Other answer to seed a copy', () => {
+  // The copy lists every answer but Other, and recreates Other with whatever
+  // the listed ones leave.
+  const passes = (answerProbs: number[]) =>
+    getAnswerProbsError({
+      answerProbs,
+      numAnswers: answerProbs.length,
+      shouldAnswersSumToOne: true,
+      hasOtherAnswer: true,
+    }) === undefined
+  const fit = (probs: number[]) =>
+    fitCopiedAnswerProbs(probs, true, true, 1, 99)
+
+  it('carries the listed answers, leaving Other its share', () => {
+    expect(fit([40, 30, 30])).toEqual([40, 30])
+    expect(passes([40, 30])).toBe(true)
+  })
+
+  it('keeps Other a tenth clear of the floor and the ceiling', () => {
+    // Other under the floor is raised to it, then a tenth more.
+    const low = fit([98, 1.5, 0.5])!
+    expect(low).toEqual([97.4, 1.5])
+    expect(passes(low)).toBe(true)
+    // Other over the ceiling.
+    const high = fit([0.5, 99.5])!
+    expect(high).toEqual([1.1])
+    expect(passes(high)).toBe(true)
+  })
+
+  it('carries independent answers, which have no Other, one by one', () => {
+    expect(fitCopiedAnswerProbs([80, 20, 50], false, false, 1, 99)).toEqual([
+      80, 20, 50,
+    ])
+  })
+
+  it('gives up when the answers can’t all fit', () => {
+    expect(fit(Array(100).fill(1))).toBeUndefined()
+  })
+
+  it('always passes the create form’s check, and keeps odds already in range', () => {
+    let seed = 7
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    let carried = 0
+    for (let i = 0; i < 3000; i++) {
+      const n = 2 + Math.floor(rng() * 99)
+      // Mostly ordinary weights, with some answers far under 1%.
+      const weights = Array.from({ length: n }, () =>
+        rng() < 0.2 ? rng() * 1e-6 : rng() ** 3
+      )
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => (w / total) * 100)
+      const fitted = fit(probs)
+      if (!fitted) continue
+      carried++
+      expect(fitted).toHaveLength(n - 1)
+      expect(passes(fitted)).toBe(true)
+      if (probs.every((prob) => prob >= 1.5 && prob <= 98.5))
+        fitted.forEach((prob, j) =>
+          expect(Math.abs(prob - probs[j])).toBeLessThan(0.2)
+        )
+    }
+    expect(carried).toBeGreaterThan(2000)
   })
 })
