@@ -1,4 +1,5 @@
 import { useEvent } from 'client-common/hooks/use-event'
+import { applyLocalUserUpdate } from 'client-common/hooks/use-websocket-user'
 import { getLocalOnlyUserId } from 'common/util/api'
 import { useEffect, useSyncExternalStore } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -87,6 +88,9 @@ export const useHideApiTrades = (inUse = true) => {
           return
         }
         await api('me/update', { hideApiTrades: enabled })
+        // The account value gets it even if the broadcast is missed, so it's
+        // still there once the click is dropped.
+        applyLocalUserUpdate({ id: userId, hideApiTrades: enabled })
         // With no list using it there's nothing to wait for (see subscribe).
         if (lastClick === click)
           setLastClick(listeners.size ? { ...click, saved: true } : undefined)
