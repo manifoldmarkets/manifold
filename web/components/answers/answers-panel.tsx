@@ -599,10 +599,12 @@ export function AnswerComponent(props: {
 
   // Per-answer subsidy: deepen this answer's own binary CPMM (open market). Only
   // where it's lossless, as add-liquidity enforces: cpmm-multi-2 markets, or
-  // cpmm-multi-1 ones the add would convert.
+  // cpmm-multi-1 ones the add would convert. And only on public markets, the
+  // only ones the liquidity modal takes adds on.
   const canSubsidizeAnswer =
     isMultiCpmm(contract) &&
     (contract.mechanism === 'cpmm-multi-2' || convertsToCpmmMulti2(contract)) &&
+    contract.visibility === 'public' &&
     !contract.isResolved &&
     !answer.resolution &&
     (contract.closeTime ?? Infinity) > Date.now() &&

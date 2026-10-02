@@ -6,8 +6,9 @@ import {
 } from 'common/calculate-cpmm'
 import { isMultiCpmm, type MarketContract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatWithCommas } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
+import { sumBy } from 'lodash'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
@@ -33,7 +34,11 @@ export function AddLiquidityModal(props: {
 }) {
   const { contract, isOpen, setOpen, answerId, answerText } = props
 
-  const lps = useLiquidity(contract.id) ?? []
+  // Opened for an answer, its own contributors: those who subsidized it, and
+  // whoever added it.
+  const lps = (useLiquidity(contract.id) ?? []).filter(
+    (lp) => !answerId || lp.answerId === answerId
+  )
 
   const [amount, setAmount] = useState<number | undefined>(0)
 
@@ -55,7 +60,7 @@ export function AddLiquidityModal(props: {
         </div>
 
         {/* Stats Section */}
-        <LiquidityStats contract={contract} />
+        <LiquidityStats contract={contract} answerId={answerId} />
 
         {/* Action Section */}
         <AddLiquidityControl
@@ -89,20 +94,34 @@ export function AddLiquidityModal(props: {
   )
 }
 
-function LiquidityStats(props: { contract: MarketContract }) {
-  const { contract } = props
+function LiquidityStats(props: {
+  contract: MarketContract
+  answerId?: string
+}) {
+  const { contract, answerId } = props
   const isCashContract = contract.token === 'CASH'
 
-  // Calculate drizzled amount (total minus pending)
-  const drizzled =
-    contract.mechanism === 'cpmm-1'
-      ? contract.totalLiquidity - contract.subsidyPool
-      : contract.totalLiquidity
+  // Active liquidity is the total less subsidy still waiting to drizzle in:
+  // the market's own and, on a multiple choice market, each open answer's.
+  const openAnswers = isMultiCpmm(contract)
+    ? contract.answers.filter((a) => !a.resolution)
+    : []
+  const pending =
+    contract.mechanism === 'cpmm-1' || isMultiCpmm(contract)
+      ? (contract.subsidyPool ?? 0) +
+        sumBy(openAnswers, (a) => a.subsidyPool ?? 0)
+      : 0
+  const drizzled = contract.totalLiquidity - pending
+  const answer = answerId
+    ? openAnswers.find((a) => a.id === answerId)
+    : undefined
 
   return (
     <Row className="bg-canvas-50 text-ink-600 flex-wrap gap-x-6 gap-y-2 rounded-lg border px-4 py-3 text-sm">
       <Row className="items-center gap-1.5">
-        <span className="text-ink-500">Liquidity:</span>
+        <span className="text-ink-500">
+          {answerId ? 'Market liquidity:' : 'Liquidity:'}
+        </span>
         <span className="text-ink-900 font-medium">
           <MoneyDisplay amount={drizzled} isCashContract={isCashContract} />
           {' / '}
@@ -116,6 +135,21 @@ function LiquidityStats(props: { contract: MarketContract }) {
           size="sm"
         />
       </Row>
+      {!!answer?.subsidyPool && (
+        <Row className="items-center gap-1.5">
+          <span className="text-ink-500">Pending for this answer:</span>
+          <span className="text-ink-900 font-medium">
+            <MoneyDisplay
+              amount={answer.subsidyPool}
+              isCashContract={isCashContract}
+            />
+          </span>
+          <InfoTooltip
+            text="Subsidy for this answer trickles into its pool over time."
+            size="sm"
+          />
+        </Row>
+      )}
       {contract.mechanism === 'cpmm-1' && (
         <Row className="items-center gap-1.5">
           <span className="text-ink-500">Pool:</span>
