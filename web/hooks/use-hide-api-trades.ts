@@ -16,6 +16,14 @@ const subscribe = (listener: () => void) => {
   listeners.add(listener)
   return () => {
     listeners.delete(listener)
+    // A saved click only waits for the account value to catch up while a
+    // toggle is showing it. With none left, the account value takes over, so
+    // the click can't hide a change made later in another tab or device.
+    // Checked once the commit is done, so a toggle replacing this one in the
+    // same render (e.g. moving straight to another market) still counts.
+    queueMicrotask(() => {
+      if (!listeners.size && lastClick?.saved) lastClick = undefined
+    })
   }
 }
 const setLastClick = (click: Click | undefined) => {
@@ -55,8 +63,9 @@ export const useHideApiTrades = () => {
   const clickSaved = !!ownClick?.saved
 
   // The click is shown until its own save is in and the account value matches
-  // it. An earlier click's save landing first can't clear it, so quick toggling
-  // doesn't flicker. Once it's dropped, changes made in other tabs show through.
+  // it, or no toggle is left on screen. An earlier click's save landing first
+  // can't clear it, so quick toggling doesn't flicker. Once it's dropped,
+  // changes made in other tabs and devices show through.
   useEffect(() => {
     if (clickSaved && clicked === saved) setLastClick(undefined)
   }, [saved, clickSaved])
@@ -75,7 +84,9 @@ export const useHideApiTrades = () => {
           return
         }
         await api('me/update', { hideApiTrades: enabled })
-        if (lastClick === click) setLastClick({ ...click, saved: true })
+        // With no toggle on screen there's nothing to wait for (see subscribe).
+        if (lastClick === click)
+          setLastClick(listeners.size ? { ...click, saved: true } : undefined)
       })
       .catch(() => {})
   })
