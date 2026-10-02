@@ -24,6 +24,7 @@ import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { useHideApiTrades } from 'web/hooks/use-hide-api-trades'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -45,10 +46,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
 
   const [minAmountFilterIndex, setMinAmountFilterIndex] =
     usePersistentInMemoryState(0, `bet-amount-filter-${contract.id}`)
-  const [hideApiTrades, setHideApiTrades] = usePersistentInMemoryState(
-    false,
-    `hide-api-trades-${contract.id}`
-  )
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades()
   const isNumber = outcomeType === 'NUMBER'
 
   // User filter state
@@ -106,6 +104,18 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     { label: 'M$10,000+', value: 10000 },
   ]
   const selectedMinAmount = minAmountOptions[minAmountFilterIndex].value
+
+  // Drop pages loaded under other filters during render, before loadMore
+  // measures where to continue from. Clicks already clear them, but the API
+  // trades filter also changes on its own when the user's saved value loads or
+  // is changed in another tab.
+  const filtersKey = `${selectedMinAmount}-${selectedUser?.id}-${hideApiTrades}`
+  const [olderBetsFiltersKey, setOlderBetsFiltersKey] = useState(filtersKey)
+  if (olderBetsFiltersKey !== filtersKey) {
+    setOlderBetsFiltersKey(filtersKey)
+    setOlderBets([])
+    setFinishedLoadingMatchingBets(false)
+  }
 
   // Filter initial and live-updated bets on client side; older bets are also
   // filtered by the server when loaded.
@@ -165,8 +175,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [now] = useState(Date.now())
   const oldestBetTime = oldestBet?.createdTime ?? now
 
+  // Bumped whenever the filters change, so a page requested under earlier
+  // filters can be dropped when it arrives.
+  const filtersEpochRef = useRef(0)
   const loadMore = useEvent(async () => {
     if (!shouldLoadMore) return false
+    const epoch = filtersEpochRef.current
 
     try {
       const newBets = await api('bets', {
@@ -179,6 +193,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         userId: selectedUser?.id,
         excludeApi: hideApiTrades,
       })
+      // Stale: appending it could move the next page past trades the current
+      // filters show. Report more so the loader carries on.
+      if (filtersEpochRef.current !== epoch) return true
 
       if (newBets.length > 0) {
         setOlderBets((bets) => uniqBy([...bets, ...newBets], (b) => b.id))
@@ -192,6 +209,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     }
   })
   useEffect(() => {
+    filtersEpochRef.current++
     setOlderBets([])
     setFinishedLoadingMatchingBets(false)
     loadMore()
