@@ -7,21 +7,28 @@ import { PrivateUser } from 'common/user'
 
 type UserUpdate = Partial<User> & { id: string }
 
-// Changes being recorded for fetches in flight (see trackUserChanges).
-const trackers = new Set<{ userId: string; since: Partial<User> }>()
+// Changes being recorded for requests in flight (see trackUserChanges).
+const trackers = new Set<{
+  userId: string
+  updates: UserUpdate[]
+  since: Partial<User>
+}>()
 const recordChange = (update: UserUpdate) => {
   trackers.forEach((tracker) => {
-    if (tracker.userId === update.id)
-      tracker.since = { ...tracker.since, ...update }
+    if (tracker.userId !== update.id) return
+    tracker.updates.push(update)
+    tracker.since = { ...tracker.since, ...update }
   })
 }
 
 // Records the changes made to a user, by broadcasts and local updates, until
-// stop() is called. A fetch made meanwhile may have read the user before them,
-// so they should be applied again on top of its result.
+// stop() is called: in order (updates), and merged (since). A fetch made
+// meanwhile may have read the user before them, so they should be applied
+// again on top of its result.
 export const trackUserChanges = (userId: string) => {
   const tracker = {
     userId,
+    updates: [] as UserUpdate[],
     since: {} as Partial<User>,
     stop: () => {
       trackers.delete(tracker)

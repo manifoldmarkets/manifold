@@ -1,5 +1,8 @@
 import { useEvent } from 'client-common/hooks/use-event'
-import { applyLocalUserUpdate } from 'client-common/hooks/use-websocket-user'
+import {
+  applyLocalUserUpdate,
+  trackUserChanges,
+} from 'client-common/hooks/use-websocket-user'
 import { APIError } from 'common/api/utils'
 import { getLocalOnlyUserId } from 'common/util/api'
 import { useEffect, useSyncExternalStore } from 'react'
@@ -63,8 +66,11 @@ const applyClick = (click: Click) => {
         if (lastClick === click) setLastClick(undefined)
         return
       }
+      // What reaches the account while the request is in flight: its own
+      // broadcast, and changes from other tabs or devices.
+      const changes = trackUserChanges(userId)
       try {
-        await api('me/update', { hideApiTrades: value })
+        await api('me/update', { hideApiTrades: value }).finally(changes.stop)
       } catch (e) {
         // An account that isn't allowed to save it (e.g. one banned from
         // posting) keeps the click for the session, like a signed-out visitor.
@@ -76,12 +82,22 @@ const applyClick = (click: Click) => {
         }
         return
       }
-      // The account value gets it even if the broadcast is missed, so it's
-      // still there once the click is dropped.
-      applyLocalUserUpdate({ id: userId, hideApiTrades: value })
-      // With no list using it there's nothing to wait for (see subscribe).
+      const values = changes.updates
+        .filter((update) => 'hideApiTrades' in update)
+        .map((update) => update.hideApiTrades)
+      const sawOwn = values.includes(value)
+      // If its broadcast is late or missed, the account value gets it anyway,
+      // so it's still there once the click is dropped.
+      if (!sawOwn) applyLocalUserUpdate({ id: userId, hideApiTrades: value })
+      // A different value broadcast after its own is a newer change from
+      // another tab or device, so it shows right away. Otherwise the click
+      // waits for the account value to match, unless no list is using it
+      // (see subscribe).
+      const superseded = sawOwn && values[values.length - 1] !== value
       if (lastClick === click)
-        setLastClick(listeners.size ? { ...click, saved: true } : undefined)
+        setLastClick(
+          listeners.size && !superseded ? { ...click, saved: true } : undefined
+        )
     })
     .catch(() => {})
 }
