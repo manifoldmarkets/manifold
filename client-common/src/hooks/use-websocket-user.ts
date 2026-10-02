@@ -6,10 +6,11 @@ import { FullUser } from 'common/api/user-types'
 import { PrivateUser } from 'common/user'
 
 type UserUpdate = Partial<User> & { id: string }
+type UserFetch = { userId: string; since: Partial<User> }
 
 // Changes this client knows it just made, e.g. from a mutation's response.
-// They're applied like a broadcast, in case that broadcast is missed: the
-// websocket was down, or it arrived before the first fetch returned.
+// They're applied like a broadcast, in case that broadcast is missed (e.g. the
+// websocket was down).
 const localUpdateListeners = new Set<(update: UserUpdate) => void>()
 export const applyLocalUserUpdate = (update: UserUpdate) => {
   localUpdateListeners.forEach((listener) => listener(update))
@@ -22,34 +23,37 @@ export const useWebsocketUser = (
 ) => {
   const [user, setUser] = useState<User | null | undefined>()
 
+  // The latest fetch, with the changes received since it started. It may have
+  // read the user before them, so they're applied again on top of its result.
+  const latestFetch = useRef<UserFetch | undefined>(undefined)
+
+  const applyUpdate = (update: UserUpdate) => {
+    const pending = latestFetch.current
+    if (pending?.userId === update.id)
+      pending.since = { ...pending.since, ...update }
+    setUser((prevUser) =>
+      prevUser?.id === update.id ? { ...prevUser, ...update } : prevUser
+    )
+  }
+
   useApiSubscription({
     topics: [`user/${userId ?? '_'}`],
     onBroadcast: ({ data }) => {
       const { user } = data
       console.log('ws update', user)
-      setUser((prevUser) => {
-        if (!prevUser) {
-          return prevUser
-        } else {
-          return {
-            ...prevUser,
-            ...(user as Partial<User>),
-          }
-        }
-      })
+      applyUpdate(user as UserUpdate)
     },
   })
 
-  // Only the latest fetch counts, so one started before a change can't
-  // overwrite a later one that has it.
-  const latestFetch = useRef(0)
-  const appliedFetch = useRef(0)
   const refreshUser = async (id: string) => {
-    const fetchId = ++latestFetch.current
+    const thisFetch: UserFetch = { userId: id, since: {} }
+    latestFetch.current = thisFetch
     const result = await getFullUserById(id)
-    if (fetchId !== latestFetch.current) return
-    appliedFetch.current = fetchId
-    setUser(result)
+    // Only the latest fetch counts, so an earlier one landing late can't
+    // overwrite it.
+    if (latestFetch.current !== thisFetch) return
+    latestFetch.current = undefined
+    setUser({ ...result, ...thisFetch.since })
   }
 
   useEffect(() => {
@@ -65,13 +69,7 @@ export const useWebsocketUser = (
   useEffect(() => {
     if (!userId) return
     const listener = (update: UserUpdate) => {
-      if (update.id !== userId) return
-      setUser((prevUser) =>
-        prevUser?.id === update.id ? { ...prevUser, ...update } : prevUser
-      )
-      // A fetch still in flight (like the first one, before there's anything
-      // to merge into) may predate the change, so a newer one replaces it.
-      if (appliedFetch.current !== latestFetch.current) refreshUser(userId)
+      if (update.id === userId) applyUpdate(update)
     }
     localUpdateListeners.add(listener)
     return () => {
