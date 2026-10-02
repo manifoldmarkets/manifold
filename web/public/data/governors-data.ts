@@ -47,10 +47,9 @@ export const governors2024: StateElectionMarket[] = [
   },
 ]
 
-// 2026 gubernatorial races. Community-created party-outcome markets exist for
-// only a subset of the ~36 states on the ballot, so the governor map is
-// intentionally sparse (uncovered states render uncolored). Best-trafficked
-// party market per state as of the 2026 rebuild.
+// Curated general-election sources, not an exhaustive inventory of markets.
+// Ballot coverage is separate: unlinked states remain visible and unpriced.
+// Candidate-winner sources retain their actual answer labels in the bet panel.
 export const governors2026: StateElectionMarket[] = [
   { state: 'TX', slug: 'texas-governors-race-which-party-wi' },
   { state: 'GA', slug: 'georgia-governors-race-which-party' },
@@ -66,6 +65,16 @@ export const governors2026: StateElectionMarket[] = [
   { state: 'NE', slug: 'which-party-will-win-the-2026-nebra-hCZdznyt5s' },
   { state: 'CO', slug: 'which-party-will-in-the-2026-colora' },
   { state: 'NM', slug: 'which-party-will-win-the-2026-new-m-EyudAL0LqQ' },
+  // Reviewed October 2: Michigan includes party nominees, Duggan and Other;
+  // Florida explicitly asks about a Republican general-election winner.
+  { state: 'MI', slug: 'who-will-the-2026-michigan-governor' },
+  { state: 'FL', slug: 'will-a-republican-win-the-florida-g' },
+  // Named general-election winners. Descriptions link the relevant election;
+  // creator comments explicitly request dashboard inclusion. Replacement and
+  // cancellation criteria remain unspecified; these are not party contracts.
+  { state: 'KS', slug: '2026-kansas-governor-election-winne' },
+  { state: 'OH', slug: '2026-ohio-governor-election-winner' },
+  { state: 'OR', slug: '2026-oregon-governor-election-winne' },
 ]
 
 // Candidate ("who will be elected") markets for marquee governor races, surfaced

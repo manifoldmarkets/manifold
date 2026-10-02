@@ -268,7 +268,11 @@ export function buildRaces(
   for (const source of HOUSE_RACE_MARKETS) {
     const contract = additionalHouse[source.slug]
     const odds = electionOdds(contract)
-    if (contract && odds && !priced.has(source.district))
+    if (
+      contract &&
+      odds &&
+      (source.preferOverPortfolio || !priced.has(source.district))
+    )
       priced.set(source.district, { contract, odds })
   }
   return Object.entries(DATA)

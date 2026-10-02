@@ -3,7 +3,8 @@
 // Their titles ask whether Democrats win; ballot affiliation, fusion tickets,
 // certification and third-party treatment have not been established as matching
 // the original market. See ELECTION-ATLAS.md before promoting these mappings.
-// The competitive-district market remains the first choice where it has odds.
+// The competitive-district market is the default unless a race has an explicit
+// reviewed override below.
 export const HOUSE_DISTRICT_MARKETS = [
   'which-new-york-house-districts-will',
   'which-texas-house-districts-will-th',
@@ -19,7 +20,18 @@ export const HOUSE_DISTRICT_MARKETS = [
 // these has established identical settlement semantics to the original market.
 // Candidate party tags are not a ballot-affiliation rule, and WI-7's Republican
 // NO is not necessarily Democratic YES. Do not treat this list as an approval.
-export const HOUSE_RACE_MARKETS = [
+export const HOUSE_RACE_MARKETS: {
+  district: string
+  slug: string
+  preferOverPortfolio?: boolean
+}[] = [
+  // Final November round, explicitly including Bill Hill (I). A Dem/Not-Dem
+  // portfolio cannot express this race's Republican/independent contest.
+  {
+    district: 'AK-0',
+    slug: 'who-will-win-the-alaska-house-elect',
+    preferOverPortfolio: true,
+  },
   { district: 'CA-4', slug: 'who-will-win-the-ca4-house-election-0suAR0A066' },
   { district: 'CA-7', slug: '2026-us-house-ca-7-winner' },
   { district: 'CA-34', slug: '2026-us-house-ca34-winner' },

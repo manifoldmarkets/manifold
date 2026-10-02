@@ -679,9 +679,15 @@
   background: var(--soft);
 }
 .marketLink {
+  display: inline-block;
   color: var(--accent);
   font-size: 12px;
-  margin-left: auto;
+  margin-top: 8px;
+  padding: 4px 0;
+}
+.marketLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .candidates {
   border-top: 1px solid var(--line);

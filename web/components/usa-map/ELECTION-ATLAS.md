@@ -28,6 +28,8 @@ state portfolios (116 additional districts) and eight individual markets in
 `web/public/data/house-market-data.ts`. The October 1, 2026 search found 192
 candidate mappings; it did not establish equivalent resolution criteria, nor
 prove that the other 243 districts have no markets anywhere on Manifold.
+The October 2 review below adds a ninth individual source that overrides
+Alaska's existing portfolio entry without increasing the covered district count.
 
 A subsequent audit of all 15 descriptions, answer sets and 26 public comments
 found that the original market uses ballot party affiliation, explicitly includes
@@ -57,6 +59,54 @@ why that must not be described as verified-equivalent party odds.
 Never map primary, vote-margin, conditional, or state-legislature questions.
 Unlinked districts stay unpriced; no assumed safe-seat probabilities are added.
 Governor ballot coverage is maintained separately from market coverage.
+
+### October 2 market-selection review
+
+This follow-up used public API search, full descriptions and public comments;
+no Manifold database MCP connection was available. It is not an exhaustive
+inventory of existing markets. Liquidity figures are snapshots, not simulated
+trade depth or guarantees about price impact.
+
+- Alaska House now prefers Jack's `who-will-win-the-alaska-house-elect`
+  (`9zPhhzEnCc`, liquidity 1,000) over the Dem/Not-Dem portfolio. The description
+  explicitly resolves to the November final-round winner, not the primary.
+  Answers include Begich (R), Schultz (D), Hill (I) and Other. If unavailable or
+  cancelled, the portfolio remains the fallback. Other House priorities stay
+  unchanged; this override does not add a newly covered district.
+- Iowa Senate now uses Plant's `who-will-win-the-2026-united-states-u09U0PqQSn`
+  (`I9QNz9Q2L2`, liquidity 10,000), previously available only as the secondary
+  candidate market. The old source `which-party-will-win-the-2026-iowa` has
+  liquidity 100 and an empty description. Plant's creator comment establishes
+  the post-primary general-election context. Its two answers name Turek and
+  Hinson; the description's text export is image-only. Replacement/third-party
+  settlement remains unverified, and this is not a generic party-win contract.
+- Governor coverage adds Michigan, Florida, Kansas, Ohio and Oregon (19 of 36
+  scheduled states linked). Michigan's `who-will-the-2026-michigan-governor`
+  (`LE6s82ZcAp`) names party nominees, Duggan and Other and says to resolve to
+  the winner. Florida's `will-a-republican-win-the-florida-g`
+  (`uODgxBgIoHZWqFqHGPbe`) explicitly asks whether a Republican wins the election;
+  NO still means any other winner. Kansas (`NI8z9LLtR5`), Ohio (`tyqgQCS0zd`) and
+  Oregon (`InE0tLCOC0`) are named-candidate general-election winner markets;
+  their descriptions link the corresponding election and creator comments
+  request dashboard inclusion. They do not specify replacement/cancellation
+  edge cases. Each newly selected governor market had liquidity 1,000.
+- Alaska Senate's current source (`0L8uQURR06`) has liquidity 200. Plant's
+  `will-dan-sullivan-win-reelection-to` (`ULun8EOAAn`) has liquidity 1,000 and
+  explicit official-result criteria, but asks about Sullivan personally.
+  It must not be dropped into a component that labels YES as every Republican
+  winner. The source remains unchanged pending an explicit candidate-binary
+  presentation or a suitable party market.
+- AndrewG's Senate-control market says seats won in the 2026 elections, with
+  a Republican VP tiebreak at 50 and expected caucusing for elected independents.
+  It does not explicitly specify treatment of later party switches. Jack's
+  public comment asks that question without a creator answer visible in the
+  page reviewed. Keep that ambiguity open rather than promise a particular
+  resolution. No market criteria, subsidies or balances were changed.
+
+Every race source and chamber-control card offers a separate description and
+comments link in a new tab; the trade actions still open their in-page dialogs.
+Candidate-party aggregation remains subject to the limitation above.
+
 Senate totals include the 65 seats not on the ballot (34 Democratic caucus,
 31 Republican). Independent race outcomes remain separate.
 

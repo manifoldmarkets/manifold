@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import Image from 'next/image'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 import { Modal } from 'web/components/layout/modal'
@@ -844,6 +844,7 @@ export function ElectionExplorer(props: Props) {
                 label={selectedRace.label}
                 matchup={selectedRace.matchup}
               />
+              <MarketDetailsLink contract={selectedRace.contract} />
             </>
           ) : (
             <RaceMarket contract={selectedRace.contract} />
@@ -878,6 +879,11 @@ export function ElectionExplorer(props: Props) {
             odds. A gray “any other winner” quote is the NO side of a party-win
             question, including all other parties. It is counted separately from
             Democratic and Republican wins.
+          </p>
+          <p>
+            Candidate markets price the listed people. Their party colors come
+            from the answer labels; check the market description for how other
+            winners or replacement candidates are handled.
           </p>
           <p>
             The seat bar counts each seat once for its leading outcome. Exact
@@ -960,7 +966,22 @@ function RaceMarket({ contract }: { contract: Contract }) {
         contract.outcomeType === 'BINARY' ? (
         <StateBinaryPartyPanel contract={contract} />
       ) : null}
+      <MarketDetailsLink contract={contract} />
     </>
+  )
+}
+
+function MarketDetailsLink({ contract }: { contract: Contract }) {
+  return (
+    <a
+      className={styles.marketLink}
+      href={contractPath(contract)}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Read description and comments: ${contract.question} (opens in a new tab)`}
+    >
+      Market description & comments <span aria-hidden="true">↗</span>
+    </a>
   )
 }
 
@@ -1046,6 +1067,7 @@ function ControlCard({
             </button>
           </div>
         )}
+        {contract && <MarketDetailsLink contract={contract} />}
       </div>
       {outcome &&
         contract?.mechanism === 'cpmm-1' &&

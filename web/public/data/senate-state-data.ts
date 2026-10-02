@@ -169,7 +169,10 @@ export const senate2026: StateElectionMarket[] = [
     otherParty: 'Democratic Party',
   },
   { state: 'IL', slug: 'which-party-will-win-the-2026-illin' },
-  { state: 'IA', slug: 'which-party-will-win-the-2026-iowa' },
+  // Plant's general-election candidate market: 10k liquidity at the October 2
+  // review, versus 100 in the previous source. Trade the named candidates;
+  // replacement-candidate settlement is not specified by this market.
+  { state: 'IA', slug: 'who-will-win-the-2026-united-states-u09U0PqQSn' },
   { state: 'KS', slug: 'which-party-will-win-the-2026-kansa' },
   { state: 'KY', slug: 'which-party-will-win-the-kentucky-s' },
   { state: 'LA', slug: 'which-party-will-win-the-2026-louis' },

@@ -250,6 +250,40 @@ test('a cancelled source falls back, while malformed district portfolios do not 
   )
 })
 
+test('Alaska uses its reviewed candidate market over the Democratic district portfolio', () => {
+  const portfolio = multi(
+    [{ text: 'Alaska at-large', probability: 0.02 }],
+    false
+  )
+  const candidates = multi([
+    { text: 'Nick Begich III (R)', probability: 0.3 },
+    { text: 'Matt Schultz (D)', probability: 0.01 },
+    { text: 'Bill Hill (I)', probability: 0.68 },
+    { text: 'Other', probability: 0.01 },
+  ])
+  const additional = { 'who-will-win-the-alaska-house-elect': candidates }
+  const race = buildRaces('house', {}, portfolio, additional).find(
+    (r) => r.id === 'AK-0'
+  )!
+  assert.equal(race.contract, candidates)
+  assert.equal(race.answerId, undefined)
+  assert.equal(race.odds?.notDem, undefined)
+  assert.equal(leadingParty(race.odds), 'other')
+  assert.equal(seatSummary([race], 'house').leaders.rep, 0)
+
+  for (const unavailable of [
+    null,
+    { ...candidates, resolution: 'CANCEL' } as Contract,
+  ]) {
+    const fallback = buildRaces('house', {}, portfolio, {
+      'who-will-win-the-alaska-house-elect': unavailable,
+    }).find((r) => r.id === 'AK-0')!
+    assert.equal(fallback.contract, portfolio)
+    assert.equal(fallback.answerId, '0')
+    assert.equal(fallback.odds?.notDem, 0.98)
+  }
+})
+
 test('same-party general-election candidate markets retain candidate bets and sum party odds', () => {
   const candidates = multi([
     { text: 'Candidate A (D)', probability: 0.6 },
