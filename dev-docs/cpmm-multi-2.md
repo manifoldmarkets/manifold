@@ -100,6 +100,21 @@ can fall to 1e-20 or below. What keeps that priceable:
   100%. Trades can't get an answer there either: pushing a low-`p` answer
   toward 0%, or a high-`p` one toward 100%, moves its price only in proportion
   to the mana spent.
+- Splitting a tiny Other is the one way an answer comes to be priced by a
+  sliver of its pool. Each answer added halves Other, so a market that gains
+  answers while nobody buys Other ends up with answers far below 1% (from 30%,
+  the 50th opens near 3e-16), with NO sides to match; once one is bought up,
+  its pool is all but empty. Trades through those can miss summing to one by
+  more than the arithmetic resolves: a buy on dev left a market summing to
+  164%. So a `cpmm-multi-2` single-answer buy or sale that misses summing to
+  one by more than 1e-9 is solved again. A buy is priced from the other
+  answers: with s shares in each of them, the answer must end at one minus
+  the sum of their prices, and its own leg buys it to exactly that. A sale
+  searches each leg's shares directly, down to adjacent floats. placeBet
+  refuses one that still misses by more than 1e-6 with a 403, unless the
+  market was already that far off and the trade leaves it no further. Buys
+  stay exact 200 splits deep. A big sale of an answer bought up from about
+  100 splits deep can be refused, though a smaller one goes through.
 - Shares of a side that is under one ulp of them cost a mana each: the answer
   is that certain. (Pricing them at 0 let a sale elsewhere in the market count
   NO it never bought and pay the seller for it.)
@@ -192,6 +207,13 @@ varies; note that in `docs/docs/api.md` in the same deploy.
   shots, Ṁ30 against the favourite moves it to 90.9% (87.8% on `cpmm-multi-1`),
   but Ṁ300 moves it to 3.2% (17%). An answer that rallies from near 0% after
   liquidity went in near 0% can be moved a long way by a small bet.
+- An answer added once Other is tiny opens near 0% with almost no liquidity of
+  its own, and once it's bought up its price moves a long way on little,
+  whichever answer is traded. Trades the arithmetic can't resolve there are
+  solved again (see Pricing at extreme odds), which takes about 0.2s at 50
+  answers and 0.5s at 100 under jest, and a few very deep in such a chain are
+  refused. A floor on how far Other can be split would keep markets out of
+  this.
 - Adding liquidity to a single answer is only offered on `cpmm-multi-2`
   markets, or `cpmm-multi-1` ones the add would convert. A `cpmm-multi-1`
   answer is pinned at `p = 0.5`, so it would throw most of the subsidy away on
