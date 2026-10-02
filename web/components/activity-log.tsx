@@ -171,7 +171,11 @@ export function ActivityLog(props: {
     })
   }
 
+  // Only the latest request counts, so one made under earlier filters (e.g.
+  // before the saved Hide API trades value loaded) can't replace its results.
+  const topicalRequestId = useRef(0)
   const getRecentTopicalContent = async (topicSlugs: string[]) => {
+    const requestId = ++topicalRequestId.current
     setLoading(true)
     const recentContracts = await getRecentActiveContractsOnTopics(
       topicSlugs,
@@ -192,6 +196,7 @@ export function ActivityLog(props: {
       recentContractIds,
       count
     )
+    if (requestId !== topicalRequestId.current) return
     setRecentTopicalBets(recentBets)
     setRecentTopicalComments(recentComments)
     setLoading(false)
