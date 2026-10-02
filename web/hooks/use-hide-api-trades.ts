@@ -1,7 +1,9 @@
 import { useEvent } from 'client-common/hooks/use-event'
 import { applyLocalUserUpdate } from 'client-common/hooks/use-websocket-user'
+import { APIError } from 'common/api/utils'
 import { getLocalOnlyUserId } from 'common/util/api'
 import { useEffect, useSyncExternalStore } from 'react'
+import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { auth } from 'web/lib/firebase/users'
@@ -61,7 +63,19 @@ const applyClick = (click: Click) => {
         if (lastClick === click) setLastClick(undefined)
         return
       }
-      await api('me/update', { hideApiTrades: value })
+      try {
+        await api('me/update', { hideApiTrades: value })
+      } catch (e) {
+        // An account that isn't allowed to save it (e.g. one banned from
+        // posting) keeps the click for the session, like a signed-out visitor.
+        // Otherwise the switch goes back to the saved value, so a failed save
+        // doesn't look like it stuck.
+        if (lastClick === click && !(e instanceof APIError && e.code === 403)) {
+          setLastClick(undefined)
+          toast.error("Couldn't save Hide API trades. Please try again.")
+        }
+        return
+      }
       // The account value gets it even if the broadcast is missed, so it's
       // still there once the click is dropped.
       applyLocalUserUpdate({ id: userId, hideApiTrades: value })
