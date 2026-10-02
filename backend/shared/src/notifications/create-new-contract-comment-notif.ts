@@ -99,6 +99,9 @@ export const createCommentOnContractNotification = async (
 
   const needNotFollowContractReasons = ['tagged_user']
 
+  // Users reached only through @traders get their own preference, so they can
+  // keep these pings without the push alerts they want for direct tags.
+  let allTradersTaggedUserIds: string[] = []
   if (
     taggedUserIds?.includes(ALL_TRADERS_ID) &&
     (sourceUser.id === sourceContract.creatorId ||
@@ -107,8 +110,9 @@ export const createCommentOnContractNotification = async (
   ) {
     const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
     const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
-    const allUsers = uniq(allBettors.concat(allVoters))
-    taggedUserIds.push(...allUsers)
+    allTradersTaggedUserIds = uniq(allBettors.concat(allVoters)).filter(
+      (id) => !taggedUserIds.includes(id)
+    )
   }
   const bettorIds = await getUniqueBettorIds(sourceContract.id, pg)
 
@@ -116,6 +120,7 @@ export const createCommentOnContractNotification = async (
     ...followerIds,
     sourceContract.creatorId,
     ...(taggedUserIds ?? []),
+    ...allTradersTaggedUserIds,
     ...(repliedUsersInfo ? Object.keys(repliedUsersInfo) : []),
     ...bettorIds,
   ])
@@ -134,7 +139,8 @@ export const createCommentOnContractNotification = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: NotificationReason
+    reason: NotificationReason,
+    preference: NotificationReason = reason
   ) => {
     const privateUser = privateUserMap.get(userId)
     if (
@@ -147,7 +153,7 @@ export const createCommentOnContractNotification = async (
       return
 
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
-      getNotificationDestinationsForUser(privateUser, reason)
+      getNotificationDestinationsForUser(privateUser, preference)
 
     const receivedNotifications = usersToReceivedNotifications[userId] ?? []
 
@@ -178,7 +184,7 @@ export const createCommentOnContractNotification = async (
       const { bet } = repliedUsersInfo?.[userId] ?? {}
       // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
       const email = getNewCommentEmail(
-        reason,
+        preference,
         privateUser,
         privateUser.name,
         sourceUser,
@@ -216,6 +222,15 @@ export const createCommentOnContractNotification = async (
       )
     )
   }
+  await Promise.all(
+    allTradersTaggedUserIds.map(async (userId) =>
+      sendNotificationsIfSettingsPermit(
+        userId,
+        'tagged_user',
+        'tagged_all_traders'
+      )
+    )
+  )
   log('notifying creator')
   await sendNotificationsIfSettingsPermit(
     sourceContract.creatorId,

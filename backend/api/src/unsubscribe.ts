@@ -2,7 +2,10 @@ import { Request, Response } from 'express'
 import { getPrivateUser } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
-import { notification_preference } from 'common/user-notification-preferences'
+import {
+  getSavedNotificationDestinations,
+  notification_preference,
+} from 'common/user-notification-preferences'
 import { getApiUrl } from 'common//api/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -31,8 +34,12 @@ export const unsubscribe = async (req: Request, res: Response) => {
     return
   }
 
-  const previousDestinations =
-    user.notificationPreferences[notificationSubscriptionType]
+  const previousDestinations = [
+    ...getSavedNotificationDestinations(
+      user.notificationPreferences,
+      notificationSubscriptionType
+    ),
+  ]
 
   let newDestinations = previousDestinations
   if (wantsToOptOutAll) newDestinations.push('email')
