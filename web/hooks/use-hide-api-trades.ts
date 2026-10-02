@@ -7,7 +7,7 @@ import { APIError } from 'common/api/utils'
 import { getLocalOnlyUserId } from 'common/util/api'
 import { useEffect, useSyncExternalStore } from 'react'
 import toast from 'react-hot-toast'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { auth } from 'web/lib/firebase/users'
 
@@ -113,8 +113,11 @@ const applyClick = (click: Click) => {
 // page's activity log) doesn't watch clicks, so it can't keep one alive.
 export const useHideApiTrades = (inUse = true) => {
   const user = useUser()
-  // undefined until it's known who's signed in, and null if no one is.
-  const userId = user === undefined ? undefined : user?.id ?? null
+  const authorized = useIsAuthorized()
+  // undefined until it's known who's signed in, and null if no one is. During
+  // a sign-in or account switch, the previous user can still be showing.
+  const userId =
+    authorized === undefined ? undefined : authorized ? user?.id : null
   const saved = !!user?.hideApiTrades
   const click = useSyncExternalStore(
     inUse ? subscribe : skipSubscribe,

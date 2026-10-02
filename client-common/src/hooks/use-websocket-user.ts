@@ -73,12 +73,18 @@ export const useWebsocketUser = (
   const latestFetch = useRef(0)
   const refreshUser = async (id: string) => {
     const fetchId = ++latestFetch.current
+    // Tracked until the result is set, so a change landing just as the fetch
+    // settles isn't missed.
     const changes = trackUserChanges(id)
-    const result = await getFullUserById(id).finally(changes.stop)
-    // Only the latest fetch counts, so an earlier one landing late can't
-    // overwrite it.
-    if (fetchId === latestFetch.current)
-      setUser({ ...result, ...changes.since })
+    try {
+      const result = await getFullUserById(id)
+      // Only the latest fetch counts, so an earlier one landing late can't
+      // overwrite it.
+      if (fetchId === latestFetch.current)
+        setUser({ ...result, ...changes.since })
+    } finally {
+      changes.stop()
+    }
   }
 
   useEffect(() => {
