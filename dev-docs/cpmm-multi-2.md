@@ -115,6 +115,11 @@ can fall to 1e-20 or below. What keeps that priceable:
   market was already that far off and the trade leaves it no further. Buys
   stay exact 200 splits deep. A big sale of an answer bought up from about
   100 splits deep can be refused, though a smaller one goes through.
+  Multi-sell and multi-bet write their results one at a time and aren't
+  solved again; each refuses, on the same test over the pools all its
+  results leave, a trade that would miss. (On dev, a one-answer multi-sell
+  beside an Other bought up to the 99% cap would have left a market summing
+  to 4.86%; the normal sale of the same position is exact.)
 - Shares of a side that is under one ulp of them cost a mana each: the answer
   is that certain. (Pricing them at 0 let a sale elsewhere in the market count
   NO it never bought and pay the seller for it.)
