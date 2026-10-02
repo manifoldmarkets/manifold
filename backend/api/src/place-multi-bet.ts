@@ -5,6 +5,11 @@ import {
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { ValidatedAPIParams } from 'common/api/schema'
+import {
+  CPMM_MULTI_2_UNPRICED_ERROR,
+  cpmmMultiTradeMissesSumToOne,
+  poolsAfterResults,
+} from 'common/calculate-cpmm-arbitrage'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { isMultiCpmm } from 'common/contract'
 import * as crypto from 'crypto'
@@ -92,6 +97,18 @@ export const placeMultiBetMain = async (
       balanceByUserId,
       expiresAt
     )
+
+    // As in multi-sell: executeNewBetResult checks single-answer trades only,
+    // so check what all the results leave before writing any of them.
+    if (
+      contract.mechanism === 'cpmm-multi-2' &&
+      shouldAnswersSumToOne &&
+      cpmmMultiTradeMissesSumToOne(
+        contract.answers,
+        poolsAfterResults(newBetResults)
+      )
+    )
+      throw new APIError(403, CPMM_MULTI_2_UNPRICED_ERROR)
 
     const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)

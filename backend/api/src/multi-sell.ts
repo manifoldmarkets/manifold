@@ -1,6 +1,10 @@
 import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
+import {
+  cpmmMultiTradeMissesSumToOne,
+  poolsAfterResults,
+} from 'common/calculate-cpmm-arbitrage'
 import { isSummary } from 'common/contract-metric'
 import { isMultiCpmm } from 'common/contract'
 import { MS_PER_DAY } from 'common/loans'
@@ -140,6 +144,21 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       balancesByUserId,
       loanAmountByAnswerId
     )
+    // A cpmm-multi-2 sale this solve can't price leaves the probabilities
+    // missing summing to one, as one beside an answer bought up on an
+    // all-but-empty pool can. Refuse it before writing anything:
+    // executeNewBetResult checks single-answer trades only.
+    if (
+      contract.mechanism === 'cpmm-multi-2' &&
+      cpmmMultiTradeMissesSumToOne(
+        contract.answers,
+        poolsAfterResults(betResults)
+      )
+    )
+      throw new APIError(
+        403,
+        "This sale can't be priced accurately at these odds. Try selling each answer on its own."
+      )
     const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')

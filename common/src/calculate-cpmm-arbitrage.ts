@@ -76,7 +76,8 @@ const shareSearchBounds = (
 // of summing to one. A single-answer buy or sale that misses by more than
 // SUM_TO_ONE_TOLERANCE is solved again (priceLedArbitrage, splitSaleExactly),
 // and placeBet refuses one that still misses by more than SUM_TO_ONE_REFUSAL
-// (cpmmMultiTradeMissesSumToOne).
+// (cpmmMultiTradeMissesSumToOne). Multi-sell and multi-bet aren't solved again;
+// they're refused on the same test, over all their results (poolsAfterResults).
 const SUM_TO_ONE_TOLERANCE = 1e-9
 const SUM_TO_ONE_REFUSAL = 1e-6
 export const CPMM_MULTI_2_UNPRICED_ERROR =
@@ -103,6 +104,29 @@ export const cpmmMultiTradeMissesSumToOne = (
   return (
     Math.abs(after - 1) > Math.max(SUM_TO_ONE_REFUSAL, Math.abs(before - 1))
   )
+}
+
+// The pools a trade written as several bet results leaves, by answer id, in
+// the order executeNewBetResult writes them: each result's other answers, then
+// its own, with later results last. For cpmmMultiTradeMissesSumToOne on trades
+// that check can't see one result at a time, as multi-sell's.
+export const poolsAfterResults = (
+  results: {
+    newBet: { answerId?: string }
+    newPool?: { [outcome: string]: number }
+    otherBetResults?: {
+      answer: { id: string }
+      cpmmState: { pool: { [outcome: string]: number } }
+    }[]
+  }[]
+) => {
+  const pools: { [answerId: string]: { [outcome: string]: number } } = {}
+  for (const { newBet, newPool, otherBetResults } of results) {
+    for (const { answer, cpmmState } of otherBetResults ?? [])
+      pools[answer.id] = cpmmState.pool
+    if (newBet.answerId && newPool) pools[newBet.answerId] = newPool
+  }
+  return pools
 }
 
 // A price-led buy's leg in the answer being bought (see priceLedArbitrage):

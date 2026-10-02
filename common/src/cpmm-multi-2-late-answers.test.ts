@@ -3,7 +3,9 @@ import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
   calculateCpmmMultiArbitrageBet,
+  calculateCpmmMultiArbitrageSellYes,
   cpmmMultiTradeMissesSumToOne,
+  poolsAfterResults,
 } from './calculate-cpmm-arbitrage'
 import {
   addAnswerToCpmmMulti2Pools,
@@ -11,6 +13,7 @@ import {
 } from './calculate-cpmm'
 import { noFees } from './fees'
 import { getNewContract } from './new-contract'
+import { getCpmmMultiSellSharesInfo } from './sell-bet'
 
 // Each answer added to a cpmm-multi-2 market splits Other in two, so a market
 // that gains answers while nobody buys Other ends up with answers far below 1%,
@@ -19,10 +22,10 @@ import { getNewContract } from './new-contract'
 // buy's own leg moved that answer from 0% to 99% on less than the rounding of
 // the other answers' legs. These buys are now solved price-led there.
 
-// A market opened at A 40%, B 30% and Other 30% on Ṁ1,000, then split 50
-// times at Ṁ100 an answer, in index order as the backend reads it: listed
-// answers, then the newest, then Other.
-const splitMarket = (splits: number) => {
+// A market opened at A 40%, B 30% and Other 30% (or the odds given) on
+// Ṁ1,000, then split `splits` times at Ṁ100 an answer, in index order as the
+// backend reads it: listed answers, then the newest, then Other.
+const splitMarket = (splits: number, answerProbs = [40, 30]) => {
   const contract = getNewContract({
     id: 'c',
     slug: 'c',
@@ -40,7 +43,7 @@ const splitMarket = (splits: number) => {
     answers: ['A', 'B'],
     addAnswersMode: 'ANYONE',
     shouldAnswersSumToOne: true,
-    answerProbs: [40, 30],
+    answerProbs,
     cpmmMulti2Enabled: true,
     token: 'MANA',
     unit: '',
@@ -194,6 +197,152 @@ describe('cpmm-multi-2 buys on answers split off a tiny Other', () => {
 
 // placeBet refuses a single-answer trade the arbitrage couldn't price, by
 // what it would leave the probabilities summing to.
+describe('cpmm-multi-2 multi-sell beside an answer bought up to 99%', () => {
+  // Live testing: A 98% and B 1%, so Other opens at 1%, then 36 answers
+  // added. Ṁ100 of YES on the newest, then Ṁ3,000 of YES on Other, which the
+  // 99% cap stops at Ṁ642.09, leaving Other's pool all but empty. Selling the
+  // newest answer through multi-sell then wrote pools summing to 4.86%:
+  // multi-sell's search for the NO shares that bring the sum back to one can't
+  // land on Other. multi-sell and multi-bet now refuse a v2 trade like this.
+  // The arbitrage's own legs carry each answer's pool in cpmmState.
+  type Leg = {
+    answer: { id: string }
+    cpmmState: { pool: { [outcome: string]: number } }
+  }
+  const poolsAfterTrade = (
+    answerId: string,
+    own: Pick<Leg, 'cpmmState'>,
+    others: Leg[]
+  ) =>
+    poolsAfterResults([
+      {
+        newBet: { answerId },
+        newPool: own.cpmmState.pool,
+        otherBetResults: others,
+      },
+    ])
+  const holding = () => {
+    let answers = splitMarket(36, [98, 1])
+    const newest = answers[answers.length - 2]
+    const other = answers[answers.length - 1]
+    const buy = (id: string, amount: number) => {
+      const answer = answers.find((a) => a.id === id)!
+      const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+        answers,
+        answer,
+        'YES',
+        amount,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+      const pools = poolsAfterTrade(id, newBetResult, otherBetResults)
+      answers = answers.map((a) => ({
+        ...a,
+        poolYes: pools[a.id].YES,
+        poolNo: pools[a.id].NO,
+        prob: getCpmmProbability(pools[a.id], a.p),
+      }))
+      return sumBy(newBetResult.takers, 'shares')
+    }
+    const shares = buy(newest.id, 100)
+    buy(other.id, 3000)
+    return { answers, newest, shares }
+  }
+  const multiSell = (answers: Answer[], answerId: string, shares: number) =>
+    getCpmmMultiSellSharesInfo(
+      {
+        id: 'c',
+        mechanism: 'cpmm-multi-2',
+        shouldAnswersSumToOne: true,
+        answers,
+        collectedFees: noFees,
+      } as any,
+      { [answerId]: [{ answerId, outcome: 'YES', shares } as any] },
+      [],
+      {},
+      {}
+    )
+  const sumAfter = (
+    answers: Answer[],
+    pools: ReturnType<typeof poolsAfterResults>
+  ) =>
+    sumBy(answers, (a) =>
+      getCpmmProbability(pools[a.id] ?? { YES: a.poolYes, NO: a.poolNo }, a.p)
+    )
+
+  it('refuses the sale that broke the sum, and sells it on its own exactly', () => {
+    const { answers, newest, shares } = holding()
+    expect(Math.abs(sumAfter(answers, {}) - 1)).toBeLessThan(1e-12)
+
+    const pools = poolsAfterResults(multiSell(answers, newest.id, shares))
+    expect(Object.keys(pools)).toHaveLength(answers.length)
+    expect(sumAfter(answers, pools)).toBeLessThan(0.1)
+    expect(cpmmMultiTradeMissesSumToOne(answers, pools)).toBe(true)
+
+    const { newBetResult, otherBetResults } =
+      calculateCpmmMultiArbitrageSellYes(
+        answers,
+        newest,
+        shares,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+    const salePools = poolsAfterTrade(newest.id, newBetResult, otherBetResults)
+    expect(Math.abs(sumAfter(answers, salePools) - 1)).toBeLessThan(1e-9)
+    expect(cpmmMultiTradeMissesSumToOne(answers, salePools)).toBe(false)
+  })
+
+  it('passes a multi-sell that keeps the sum', () => {
+    // The same position, before Other is bought up.
+    let answers = splitMarket(36, [98, 1])
+    const newest = answers[answers.length - 2]
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      newest,
+      'YES',
+      100,
+      undefined,
+      [],
+      {},
+      noFees
+    )
+    const bought = poolsAfterTrade(newest.id, newBetResult, otherBetResults)
+    answers = answers.map((a) => ({
+      ...a,
+      poolYes: bought[a.id].YES,
+      poolNo: bought[a.id].NO,
+      prob: getCpmmProbability(bought[a.id], a.p),
+    }))
+    const shares = sumBy(newBetResult.takers, 'shares')
+    const pools = poolsAfterResults(multiSell(answers, newest.id, shares))
+    expect(Math.abs(sumAfter(answers, pools) - 1)).toBeLessThan(1e-6)
+    expect(cpmmMultiTradeMissesSumToOne(answers, pools)).toBe(false)
+  })
+})
+
+describe('poolsAfterResults', () => {
+  const pool = (n: number) => ({ YES: n, NO: n })
+  it('keeps the pool each answer is written with last', () => {
+    expect(
+      poolsAfterResults([
+        {
+          newBet: { answerId: 'a' },
+          newPool: pool(1),
+          otherBetResults: [
+            { answer: { id: 'b' }, cpmmState: { pool: pool(2) } },
+            { answer: { id: 'c' }, cpmmState: { pool: pool(3) } },
+          ],
+        },
+        { newBet: { answerId: 'b' }, newPool: pool(4) },
+      ])
+    ).toEqual({ a: pool(1), b: pool(4), c: pool(3) })
+  })
+})
+
 describe('cpmmMultiTradeMissesSumToOne', () => {
   // Two answers at p = 0.5, so each one's probability is N / (Y + N).
   const answer = (id: string, poolYes: number, poolNo: number) =>
