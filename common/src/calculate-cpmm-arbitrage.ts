@@ -4,6 +4,7 @@ import { Answer, answerP } from './answer'
 import { Bet, LimitBet, maker } from './bet'
 import {
   calculateAmountToBuySharesFixedP,
+  calculateCpmmAmountToProbIncludingFees,
   computeFills,
   getCpmmProbability,
 } from './calculate-cpmm'
@@ -69,6 +70,195 @@ const shareSearchBounds = (
     max *= 2
   }
   return { min, max }
+}
+
+// The searches leave a cpmm-multi-2 market's probabilities within about 1e-13
+// of summing to one. A single-answer buy or sale that misses by more than
+// SUM_TO_ONE_TOLERANCE is solved again (priceLedArbitrage, splitSaleExactly),
+// and placeBet refuses one that still misses by more than SUM_TO_ONE_REFUSAL
+// (cpmmMultiTradeMissesSumToOne).
+const SUM_TO_ONE_TOLERANCE = 1e-9
+const SUM_TO_ONE_REFUSAL = 1e-6
+export const CPMM_MULTI_2_UNPRICED_ERROR =
+  "This trade can't be priced accurately at these odds. Try a different amount."
+const sumToOneError = (legs: Parameters<typeof probAfterFill>[0][]) =>
+  Math.abs(1 - sumBy(legs, probAfterFill))
+
+// Whether a trade leaves a sum-to-one market's probabilities further from
+// summing to one than SUM_TO_ONE_REFUSAL and than it found them. `poolsAfter`
+// holds the pools of the answers it traded, by id; the rest keep theirs.
+export const cpmmMultiTradeMissesSumToOne = (
+  answers: Answer[],
+  poolsAfter: { [answerId: string]: { [outcome: string]: number } }
+) => {
+  const sumOf = (poolOf: (a: Answer) => { [outcome: string]: number }) =>
+    sumBy(answers, (a) => getCpmmProbability(poolOf(a), answerP(a)))
+  const before = sumOf((a) => ({ YES: a.poolYes, NO: a.poolNo }))
+  const after = sumOf(
+    (a) => poolsAfter[a.id] ?? { YES: a.poolYes, NO: a.poolNo }
+  )
+  return (
+    Math.abs(after - 1) > Math.max(SUM_TO_ONE_REFUSAL, Math.abs(before - 1))
+  )
+}
+
+// A price-led buy's leg in the answer being bought (see priceLedArbitrage):
+// buy `outcome` until its price reaches `target`, filling resting orders on the
+// way as any trade does. Undefined if that costs more than `budget`. Orders rest
+// within 1%-99%, so a target past those bounds is the pool's alone, at a cost
+// exact however lopsided the pool. Within them the cost is found by filling
+// with up to `cap`.
+const buyToPrice = (
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  target: number,
+  budget: number,
+  cap: number,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  collectedFees: Fees
+) => {
+  if (!isFinite(target) || !(budget >= 0)) return undefined
+  const p = answerP(answer)
+  const state = {
+    pool: { YES: answer.poolYes, NO: answer.poolNo },
+    p,
+    collectedFees,
+  }
+  const before = getCpmmProbability(state.pool, p)
+  if (outcome === 'YES' ? !(target > before) : !(target < before))
+    return computeFills(
+      state,
+      outcome,
+      0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+  if (outcome === 'YES' ? target < MIN_CPMM_PROB : target > MAX_CPMM_PROB) {
+    const cost = calculateCpmmAmountToProbIncludingFees(state, target, outcome)
+    if (!(cost <= budget)) return undefined
+    return computeFills(
+      state,
+      outcome,
+      cost,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+  }
+  const fills = computeFills(
+    state,
+    outcome,
+    cap,
+    target,
+    unfilledBets,
+    balanceByUserId
+  )
+  if (!(sumBy(fills.takers, 'amount') <= budget)) return undefined
+  // The pool lands on the target to about 1e-10 of it (its updated side is a
+  // difference of much larger ones); one that stops well short of it, as a
+  // pool too degenerate to fill does, doesn't count.
+  const after = getCpmmProbability(fills.cpmmState.pool, p)
+  const reached =
+    outcome === 'YES'
+      ? after >= target * (1 - 1e-9)
+      : 1 - after >= (1 - target) * (1 - 1e-9)
+  return reached ? fills : undefined
+}
+
+// cpmm-multi-2's second solve of a single-answer buy. An answer split off a
+// tiny Other is priced by a sliver of one side of its pool, so its whole move
+// from 1% to 99% can cost less than the rounding of the other answers' legs.
+// The usual search hands the answer's own leg what's left of the bet after
+// those legs, which there is mostly rounding, so the answer lands wherever that
+// falls. Here the other answers' legs set the price instead: with `shares` in
+// each of them, the answer must end at one minus the sum of theirs, and its own
+// leg buys it to exactly that (`legsAt`). The search is then for the most
+// shares the bet affords, and the cost of that moves smoothly with `shares`.
+const priceLedArbitrage = <T>(
+  answers: Answer[],
+  betAmount: number,
+  legsAt: (shares: number) => T | undefined
+) => {
+  const affordable: { shares: number; result?: T } = { shares: -1 }
+  const comparator = (shares: number) => {
+    const result = legsAt(shares)
+    if (!result) return 1
+    if (shares > affordable.shares) {
+      affordable.shares = shares
+      affordable.result = result
+    }
+    return -1
+  }
+  const { min, max } = shareSearchBounds(
+    answers,
+    betAmount,
+    betAmount,
+    comparator
+  )
+  // Down to adjacent floats: a leg priced by a sliver of its pool can make the
+  // last few halvings worth a noticeable part of the bet.
+  binarySearch(min, max, comparator, 200)
+  return affordable.result ?? legsAt(0)
+}
+
+// cpmm-multi-2: keep a single-answer buy's result while its probabilities sum
+// to one; otherwise solve it price-led, and keep whichever is closer.
+const checkSumsToOne = <T>(
+  answers: Answer[],
+  betAmount: number,
+  result: T,
+  legsOf: (result: T) => Parameters<typeof probAfterFill>[0][],
+  priceLedLegsAt: (shares: number) => T | undefined
+) => {
+  if (!hasGeneralP(answers)) return result
+  const error = sumToOneError(legsOf(result))
+  if (error <= SUM_TO_ONE_TOLERANCE) return result
+  const priceLed = priceLedArbitrage(answers, betAmount, priceLedLegsAt)
+  return priceLed && sumToOneError(legsOf(priceLed)) < error ? priceLed : result
+}
+
+// cpmm-multi-2: a sale splits the shares sold between the answer's own leg
+// (`own` shares) and a leg in every other answer (`others` shares in each),
+// and the sells below search `own`, leaving `others` to the rounding of
+// total - own. Once an answer in the sale has an all-but-empty pool, as one
+// split off a tiny Other has after it's bought up, the last bits of its leg's
+// shares move it a long way, and the probabilities miss summing to one. Past
+// SUM_TO_ONE_TOLERANCE, search each leg's shares directly, down to adjacent
+// floats, and keep the closest. `sumErrorAt` is signed, and positive while
+// `own` is too many.
+const splitSaleExactly = (
+  total: number,
+  own: number,
+  sumErrorAt: (own: number, others: number) => number
+) => {
+  let best = { own, others: total - own }
+  let error = Math.abs(sumErrorAt(own, total - own))
+  if (error <= SUM_TO_ONE_TOLERANCE) return best
+  const ownSearched = binarySearch(
+    0,
+    total,
+    (own) => sumErrorAt(own, total - own),
+    200
+  )
+  const othersSearched = binarySearch(
+    0,
+    total,
+    (others) => -sumErrorAt(total - others, others),
+    200
+  )
+  for (const split of [
+    { own: ownSearched, others: total - ownSearched },
+    { own: total - othersSearched, others: othersSearched },
+  ]) {
+    const splitError = Math.abs(sumErrorAt(split.own, split.others))
+    if (splitError < error) {
+      best = split
+      error = splitError
+    }
+  }
+  return best
 }
 
 const noFillsReturn = (
@@ -1064,7 +1254,24 @@ function calculateCpmmMultiArbitrageBetYes(
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetYes')
   }
 
-  const { noBetResults, yesBetResult } = result
+  const { noBetResults, yesBetResult } = checkSumsToOne(
+    answers,
+    betAmount,
+    result,
+    (r) => [...r.noBetResults, r.yesBetResult],
+    (shares) =>
+      buyNoSharesInOtherAnswersThenYesInAnswer(
+        answers,
+        answerToBuy,
+        unfilledBetsByAnswer,
+        balanceByUserId,
+        betAmount,
+        limitProb,
+        shares,
+        collectedFees,
+        true
+      )
+  )
 
   if (DEBUG) {
     const endTime = Date.now()
@@ -1120,7 +1327,9 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   betAmount: number,
   limitProb: number | undefined,
   noShares: number,
-  collectedFees: Fees
+  collectedFees: Fees,
+  // Price the answer's own leg from the other legs (priceLedArbitrage).
+  priceLed = false
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
   const noAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
@@ -1169,17 +1378,36 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   const redeemedAmount = noShares * (answers.length - 2)
   const netNoAmount = totalNoAmount - redeemedAmount
   let yesBetAmount = betAmount - netNoAmount
-  if (
-    isArbitrageZero(
+  let pricedFills: ReturnType<typeof computeFills> | undefined
+  if (priceLed) {
+    // The answer ends at one minus the other answers' prices, bought there
+    // from what's left of the bet.
+    const target = 1 - sumBy(noBetResults, probAfterFill)
+    if (limitProb !== undefined && target > limitProb) return undefined
+    pricedFills = buyToPrice(
+      answerToBuy,
+      'YES',
+      target,
       yesBetAmount,
-      Math.max(betAmount, totalNoAmount, redeemedAmount),
-      hasGeneralP(answers)
+      betAmount,
+      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+      workingBalanceByUserId,
+      collectedFees
     )
-  ) {
-    yesBetAmount = 0
-  }
-  if (yesBetAmount < 0) {
-    return undefined
+    if (!pricedFills) return undefined
+  } else {
+    if (
+      isArbitrageZero(
+        yesBetAmount,
+        Math.max(betAmount, totalNoAmount, redeemedAmount),
+        hasGeneralP(answers)
+      )
+    ) {
+      yesBetAmount = 0
+    }
+    if (yesBetAmount < 0) {
+      return undefined
+    }
   }
 
   for (const noBetResult of noBetResults) {
@@ -1195,14 +1423,15 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
 
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const yesBetResult = {
-    ...computeFills(
-      { pool, p: answerP(answerToBuy), collectedFees },
-      'YES',
-      yesBetAmount,
-      limitProb,
-      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
-      workingBalanceByUserId
-    ),
+    ...(pricedFills ??
+      computeFills(
+        { pool, p: answerP(answerToBuy), collectedFees },
+        'YES',
+        yesBetAmount,
+        limitProb,
+        workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+        workingBalanceByUserId
+      )),
     answer: answerToBuy,
   }
 
@@ -1291,7 +1520,24 @@ function calculateCpmmMultiArbitrageBetNo(
   if (!result) {
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetNo')
   }
-  const { yesBetResults, noBetResult } = result
+  const { yesBetResults, noBetResult } = checkSumsToOne(
+    answers,
+    betAmount,
+    result,
+    (r) => [...r.yesBetResults, r.noBetResult],
+    (shares) =>
+      buyYesSharesInOtherAnswersThenNoInAnswer(
+        answers,
+        answerToBuy,
+        unfilledBetsByAnswer,
+        balanceByUserId,
+        betAmount,
+        limitProb,
+        shares,
+        collectedFees,
+        true
+      )
+  )
 
   if (DEBUG) {
     const endTime = Date.now()
@@ -1347,7 +1593,9 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   betAmount: number,
   limitProb: number | undefined,
   yesShares: number,
-  collectedFees: Fees
+  collectedFees: Fees,
+  // Price the answer's own leg from the other legs (priceLedArbitrage).
+  priceLed = false
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
   const yesAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
@@ -1397,17 +1645,36 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   })
   //{"id": "tQudZcEtlp", "slug": "whos-gonna-win-gn8sCuyRpl", "volume": 0, "answers": [{"id": "Ncus9Qtty2", "prob": 0.16666666666666666, "text": "a", "index": 0, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "CAqyQ8AOSn", "prob": 0.16666666666666666, "text": "b", "index": 1, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "Pc86OAUEsn", "prob": 0.16666666666666666, "text": "c", "index": 2, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "dn0gpUIzpq", "prob": 0.16666666666666666, "text": "d", "index": 3, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "uq5uZd5O0A", "prob": 0.16666666666666666, "text": "e", "index": 4, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "ACNE8CLyyS", "prob": 0.16666666666666666, "text": "Other", "index": 5, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": true, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}], "isRanked": false, "question": "Who's gonna win?", "closeTime": 1767254340000, "creatorId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "mechanism": "cpmm-multi-1", "elasticity": 4.99, "groupSlugs": ["nonpredictive"], "isResolved": false, "visibility": "public", "createdTime": 1755714659073, "creatorName": "Ian Bobby", "description": {"type": "doc", "content": [{"type": "paragraph"}]}, "outcomeType": "MULTIPLE_CHOICE", "subsidyPool": 0, "collectedFees": {"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}, "volume24Hours": 0, "addAnswersMode": "ANYONE", "totalLiquidity": 1000, "creatorUsername": "IanPhilip", "lastUpdatedTime": 1755714659519, "popularityScore": 0, "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2FIanPhilip%2FEyIU8AZ2RC.png?alt=media&token=ff41c9e8-21d5-412d-ac19-854a90cce076", "uniqueBettorCount": 0, "creatorCreatedTime": 1668811545000, "uniqueBettorCountDay": 0, "shouldAnswersSumToOne": true}
   let noBetAmount = betAmount - totalYesAmount
-  if (
-    isArbitrageZero(
+  let pricedFills: ReturnType<typeof computeFills> | undefined
+  if (priceLed) {
+    // The answer ends at one minus the other answers' prices, bought there
+    // from what's left of the bet.
+    const target = 1 - sumBy(yesBetResults, probAfterFill)
+    if (limitProb !== undefined && target < limitProb) return undefined
+    pricedFills = buyToPrice(
+      answerToBuy,
+      'NO',
+      target,
       noBetAmount,
-      Math.max(betAmount, totalYesAmount),
-      hasGeneralP(answers)
+      betAmount,
+      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+      workingBalanceByUserId,
+      collectedFees
     )
-  ) {
-    noBetAmount = 0
-  }
-  if (noBetAmount < 0) {
-    return undefined
+    if (!pricedFills) return undefined
+  } else {
+    if (
+      isArbitrageZero(
+        noBetAmount,
+        Math.max(betAmount, totalYesAmount),
+        hasGeneralP(answers)
+      )
+    ) {
+      noBetAmount = 0
+    }
+    if (noBetAmount < 0) {
+      return undefined
+    }
   }
 
   for (const yesBetResult of yesBetResults) {
@@ -1423,14 +1690,15 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
 
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const noBetResult = {
-    ...computeFills(
-      { pool, p: answerP(answerToBuy), collectedFees },
-      'NO',
-      noBetAmount,
-      limitProb,
-      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
-      workingBalanceByUserId
-    ),
+    ...(pricedFills ??
+      computeFills(
+        { pool, p: answerP(answerToBuy), collectedFees },
+        'NO',
+        noBetAmount,
+        limitProb,
+        workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+        workingBalanceByUserId
+      )),
     answer: answerToBuy,
   }
   // Redeem YES shares in other answers to NO shares in this answer.
@@ -1588,8 +1856,7 @@ export function calculateCpmmMultiArbitrageSellNo(
   // We buy some yes shares in the answer directly, and the rest is from converting No shares of all the other answers.
   // The proportion of each is dependent on what leaves the final probability sum at 1.
   // Which is what this binary search is discovering.
-  const yesShares = binarySearch(0, noShares, (yesShares) => {
-    const noSharesInOtherAnswers = noShares - yesShares
+  const sumErrorAt = (yesShares: number, noSharesInOtherAnswers: number) => {
     const yesAmount = calculateAmountToBuySharesFixedP(
       { pool, p: answerP(answerToSell), collectedFees },
       yesShares,
@@ -1641,9 +1908,15 @@ export function calculateCpmmMultiArbitrageSellNo(
     const newStates = [yesResult, ...noResults]
     const diff = sumBy(newStates, probAfterFill) - 1
     return diff
-  })
-
-  const noSharesInOtherAnswers = noShares - yesShares
+  }
+  const searched = binarySearch(0, noShares, (yesShares) =>
+    sumErrorAt(yesShares, noShares - yesShares)
+  )
+  const { own: yesShares, others: noSharesInOtherAnswers } = hasGeneralP(
+    answers
+  )
+    ? splitSaleExactly(noShares, searched, sumErrorAt)
+    : { own: searched, others: noShares - searched }
   const yesAmount = calculateAmountToBuySharesFixedP(
     { pool, p: answerP(answerToSell), collectedFees },
     yesShares,
@@ -1784,8 +2057,7 @@ export function calculateCpmmMultiArbitrageSellYes(
     (a) => a.id !== answerToSell.id
   )
 
-  const noShares = binarySearch(0, yesShares, (noShares) => {
-    const yesSharesInOtherAnswers = yesShares - noShares
+  const sumErrorAt = (noShares: number, yesSharesInOtherAnswers: number) => {
     const noAmount = calculateAmountToBuySharesFixedP(
       { pool, p: answerP(answerToSell), collectedFees },
       noShares,
@@ -1837,9 +2109,15 @@ export function calculateCpmmMultiArbitrageSellYes(
     const newStates = [noResult, ...yesResults]
     const diff = 1 - sumBy(newStates, probAfterFill)
     return diff
-  })
-
-  const yesSharesInOtherAnswers = yesShares - noShares
+  }
+  const searched = binarySearch(0, yesShares, (noShares) =>
+    sumErrorAt(noShares, yesShares - noShares)
+  )
+  const { own: noShares, others: yesSharesInOtherAnswers } = hasGeneralP(
+    answers
+  )
+    ? splitSaleExactly(yesShares, searched, sumErrorAt)
+    : { own: searched, others: yesShares - searched }
   const noAmount = calculateAmountToBuySharesFixedP(
     { pool, p: answerP(answerToSell), collectedFees },
     noShares,

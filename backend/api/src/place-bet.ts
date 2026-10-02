@@ -12,6 +12,10 @@ import { Answer, answerP } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import {
+  CPMM_MULTI_2_UNPRICED_ERROR,
+  cpmmMultiTradeMissesSumToOne,
+} from 'common/calculate-cpmm-arbitrage'
+import {
   CpmmState,
   getCpmmProbability,
   isDrainedPool,
@@ -380,6 +384,26 @@ export const executeNewBetResult = async (
     )
   ) {
     throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+  // A single-answer cpmm-multi-2 trade the arbitrage couldn't price leaves the
+  // probabilities missing summing to one, as one through an answer split off a
+  // tiny Other can. Refuse it rather than write it. (A multi-answer trade
+  // writes its legs one call at a time.)
+  if (
+    mechanism === 'cpmm-multi-2' &&
+    isMultiCpmm(contract) &&
+    contract.shouldAnswersSumToOne &&
+    !isMultiBet &&
+    newBet.answerId &&
+    newPool &&
+    cpmmMultiTradeMissesSumToOne(contract.answers, {
+      [newBet.answerId]: newPool,
+      ...Object.fromEntries(
+        (otherBetResults ?? []).map((r) => [r.answer.id, r.cpmmState.pool])
+      ),
+    })
+  ) {
+    throw new APIError(403, CPMM_MULTI_2_UNPRICED_ERROR)
   }
 
   if (

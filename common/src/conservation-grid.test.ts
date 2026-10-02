@@ -35,7 +35,9 @@ import {
 } from './calculate-cpmm'
 import {
   calculateCpmmMultiArbitrageBet,
+  CPMM_MULTI_2_UNPRICED_ERROR,
   calculateCpmmMultiArbitrageYesBets,
+  cpmmMultiTradeMissesSumToOne,
 } from './calculate-cpmm-arbitrage'
 import { noFees, getFeeTotal } from './fees'
 import {
@@ -108,6 +110,13 @@ class Sim {
   // placeBet refuses a cpmm-multi-2 trade that drains a pool side outright
   // (isDrainedPool). Off by default: the rows below never get near it.
   refuseDrainedPools = false
+  // Answers split off a tiny Other are hair triggers (see check); only the
+  // markets built to have them allow them.
+  allowHairTriggers = false
+  // placeBet also refuses a single-answer cpmm-multi-2 trade that leaves the
+  // probabilities missing summing to one (cpmmMultiTradeMissesSumToOne). Off
+  // by default: only those markets get near it.
+  refuseUnpricedTrades = false
   // Whole-market subsidy no answer could take as depth, waiting as the drizzle
   // leaves it; resolution pays it out.
   contractSubsidy = 0
@@ -117,6 +126,14 @@ class Sim {
   private guardPools(pools: { [outcome: string]: number }[]) {
     if (this.refuseDrainedPools && pools.some(isDrainedPool))
       throw new Error(DRAINED_POOL_REFUSAL)
+  }
+
+  private guardSumToOne(poolById: Map<string, { [o: string]: number }>) {
+    if (
+      this.refuseUnpricedTrades &&
+      cpmmMultiTradeMissesSumToOne(this.answers, Object.fromEntries(poolById))
+    )
+      throw new Error(CPMM_MULTI_2_UNPRICED_ERROR)
   }
 
   // `answers` opens the market on answers built elsewhere (getNewContract) instead of a
@@ -310,6 +327,7 @@ class Sim {
     poolById.set(res.newBetResult.answer.id, res.newBetResult.cpmmState.pool)
     for (const o of res.otherBetResults)
       poolById.set(o.answer.id, o.cpmmState.pool)
+    this.guardSumToOne(poolById)
     this.answers = this.answers.map((a) => {
       const pl = poolById.get(a.id)
       return pl
@@ -432,6 +450,7 @@ class Sim {
     const poolById = new Map<string, { [o: string]: number }>()
     poolById.set(answerToSell.id, newBetResult.cpmmState.pool)
     for (const o of otherBetResults) poolById.set(o.answer.id, o.cpmmState.pool)
+    this.guardSumToOne(poolById)
     this.answers = this.answers.map((a) => {
       const pl = poolById.get(a.id)
       return pl
@@ -760,7 +779,10 @@ class Sim {
       // No answer is a hair trigger: a billionth of a mana on either side moves
       // it by under 0.1%. An answer near 0% whose p is low, or near 100% whose p
       // is high, is priced by a sliver of one side, and there a trade below what
-      // the arbitrage's arithmetic can resolve would swing it to 50%.
+      // the arbitrage's arithmetic can resolve would swing it to 50%. Trades and
+      // liquidity don't make them, but splitting a tiny Other does; trades
+      // through those are solved again or refused (calculate-cpmm-arbitrage).
+      if (this.allowHairTriggers) continue
       const lnOdds =
         Math.log(a.p) +
         Math.log(a.poolNo) -
@@ -1604,5 +1626,96 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     s.buy('alice', 0, 'NO', 5)
     expect(s.answers[0].prob).toBeCloseTo(0.01, 6)
     s.resolve('set_yesno', { setOutcomes: ['NO', 'YES', 'NO', 'YES'] })
+  })
+
+  // Every answer added splits Other in two, so a market that gains answers
+  // while nobody buys Other ends up with answers far below 1%, priced by a
+  // sliver of their pool's NO side: the 50th opens near 3e-16. Live testing
+  // found a buy on one leaving the probabilities summing to 164%. Buys and
+  // sales there are solved again when they miss summing to one, and placeBet
+  // refuses them if they still do (calculate-cpmm-arbitrage). Drive lifecycles through
+  // such markets: buys on the late answers and the listed ones, sales of what
+  // was bought, resting orders on late answers, liquidity and more answers,
+  // then a resolution.
+  const splitLifecycle = (splits: number, resolution: 'late' | 'cancel') => {
+    const s = new Sim(
+      { n: 3, probs: 'balanced', type: 'mc_sumone' },
+      'creator',
+      1000,
+      open([40, 30], true, 1000, true)
+    )
+    s.refuseDrainedPools = true
+    s.refuseUnpricedTrades = true
+    s.allowHairTriggers = true
+    for (let i = 0; i < splits; i++) s.addAnswer('adder', 100, `new${i}`)
+    expect(s.answers[s.answers.length - 2].prob).toBeLessThan(1e-15)
+    // One of the 15 answers added last (Other is last of all).
+    const late = () => s.answers.length - 2 - Math.floor(rng() * 15)
+    let refused = 0
+    const trade = (fn: () => void) => {
+      try {
+        fn()
+      } catch (e) {
+        const message = (e as Error)?.message
+        if (
+          message !== DRAINED_POOL_REFUSAL &&
+          message !== CPMM_MULTI_2_UNPRICED_ERROR
+        )
+          throw e
+        refused++
+      }
+    }
+    for (let k = 0; k < 12; k++) {
+      const trader = pick(['alice', 'bob', 'carol'])
+      const r = rng()
+      if (r < 0.4) {
+        trade(() => s.buy(trader, late(), 'YES', logUniform(0.01, 500)))
+      } else if (r < 0.55) {
+        const outcome = pick(['YES', 'NO'] as const)
+        trade(() => s.buy(trader, pick([0, 1]), outcome, logUniform(1, 300)))
+      } else if (r < 0.75) {
+        const held = s.answers
+          .map((_, i) => i)
+          .filter((i) => s.sharesOf(trader, i, 'YES') > 1e-6)
+        if (held.length) {
+          const i = pick(held)
+          const shares = s.sharesOf(trader, i, 'YES') * pick([0.5, 1])
+          trade(() => s.sell(trader, i, 'YES', shares))
+        }
+      } else if (r < 0.85) {
+        const limit = pick([0.05, 0.1, 0.3])
+        s.placeLimit('maker', late(), 'NO', limit, logUniform(5, 100))
+      } else if (r < 0.93) {
+        s.addLiquidity('lp', logUniform(10, 500))
+      } else {
+        s.addAnswer('adder', 100, `more${k}`)
+      }
+      const probSum = sumBy(s.answers, (a) =>
+        getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      )
+      expect(Math.abs(probSum - 1)).toBeLessThan(1e-6)
+    }
+    if (resolution === 'cancel') s.resolve('cancel')
+    else s.resolve('one', { winner: late() })
+    return refused
+  }
+
+  it('and markets whose Other was split 50 times', () => {
+    let refused = 0
+    for (const resolution of ['late', 'cancel'] as const) {
+      rng = seeded(1)
+      refused += splitLifecycle(50, resolution)
+    }
+    expect(refused).toBe(0)
+  })
+
+  // Deeper still, an answer bought up from there keeps a pool so close to
+  // empty (here 1e-16 a side, at 32%) that no split of a big sale between it
+  // and the other answers sums to one at any float: this lifecycle meets one.
+  // Such a trade is refused rather than made (a tenth of it sells), and what's
+  // made still conserves mana.
+  it('and refuses only what it cannot price after 100 splits', () => {
+    rng = seeded(6)
+    expect(splitLifecycle(100, 'late')).toBeGreaterThan(0)
   })
 })
