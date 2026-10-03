@@ -1287,8 +1287,7 @@ const odds = (q: number) => q / (1 - q)
 //    within the budget.
 // 4. Otherwise the price gives a little: keep p, or raise it to 0.99 below 99%,
 //    and remove delta NO or add delta YES, whichever moves the price less. The
-//    halves of Other take up what the price gave, so the answers still sum to
-//    one.
+//    new Other takes up what the price gave, so the answers still sum to one.
 // `upTo` is the last of these to try.
 const foldIntoListedAnswer = (
   pool: { YES: number; NO: number },
@@ -1338,29 +1337,40 @@ const foldIntoListedAnswer = (
   }
 }
 
+// cpmm-multi-2: the chance an answer opens at when it's added to a sum-to-one
+// market. Nobody picks it. A contender worth more gets bought up from here,
+// and a long shot barely moves anything.
+export const NEW_ANSWER_PROB = 0.02
+
+const clampP = (p: number, [lo, hi] = [MIN_CPMM_PROB, MAX_CPMM_PROB]) =>
+  Math.min(hi, Math.max(lo, p))
+
 // cpmm-multi-2: the pools after adding an answer to a sum-to-one market, which
 // splits "Other" into the new answer and a new Other. Other's pool belongs to
 // every liquidity provider, so the split pays them exactly what Other's pool
-// did, whichever answer wins. With Other's pool at (Y, N), each half takes a
-// pool (Y − N + δ + ν, ν), every listed answer's YES − NO grows by δ, and
-// S = N − δ − 2ν is left over as mana:
-// - A listed answer winning pays its own YES and every other answer's NO, now
-//   δ + 2ν + S = N more than without Other, as Other's NO did.
-// - Either half winning pays its own YES, the other half's ν and the listed
-//   answers' NO, plus S: Y, as Other's YES did.
-// By default ν = min(N, Y) / 2 and S = 0. When Other isn't a favourite (N ≤ Y)
-// that splits its pool in two and leaves the listed answers alone (δ = 0); when
-// it is, each half gets a balanced pool and the listed answers the rest,
-// δ = N − Y. Each half is priced at half of Other's probability, and where that
-// would put its p below 0.01, ν is lowered until p is 0.01.
-// Each listed answer takes its δ holding its price wherever its p can stay in
-// band (foldIntoListedAnswer), paying for any liquidity that needs out of the
-// fee for adding the answer and S. Where the fee alone can't, the halves are
-// made smaller, at the same p, until it can: that frees S and asks less of the
-// listed answers. The rest of the fee and S then go in as a whole-market
-// liquidity add (or wait as the new answer's subsidy, in the rare market with no
-// answer the add can deepen). No value leaves the pools, so each provider's
-// share at resolution is unchanged.
+// did, whichever answer wins, plus the fee for adding the answer. It splits the
+// shares as cpmm-multi-1 does (createAnswerAndSumAnswersToOne):
+// - Other's YES beyond its NO goes into both parts, as YES in Other pays
+//   whichever of them wins.
+// - Its NO beyond its YES, δ, becomes YES in every listed answer, as NO in
+//   Other pays exactly when one of them wins. Each listed answer takes it
+//   holding its price (foldIntoListedAnswer), paying for any liquidity that
+//   needs out of the new Other's share, up to half of it.
+// - The rest of Other's pool, as many YES as NO, is mana, and so is the fee.
+//   The new answer's NO side takes the fee's worth, or half if there's less,
+//   and the new Other's the rest. The fee is tiered by the market's liquidity
+//   per answer, so the new answer gets a pool of its own about as deep as the
+//   others', not a sliver of Other's.
+// Every outcome then pays the fee more than it did, and nothing else changes.
+// A pool's p sets its prices without moving any value, so the prices come
+// last. The new answer opens at NEW_ANSWER_PROB, which comes out of the new
+// Other down to 1%. The listed answers keep their prices unless that leaves
+// some still to find, which they give up in proportion to their prices. An
+// answer's p falls with its price and stays in [0.01, 0.99]. Where one
+// couldn't give its share, every pool first takes the same YES out of the new
+// Other's NO, which pays the same whichever answer wins and leaves each p more
+// room. Undefined if even that can't make room, which takes an answer above
+// 99%.
 export function addAnswerToCpmmMulti2Pools(
   poolsByAnswer: {
     [answerId: string]: { pool: { YES: number; NO: number }; p: number }
@@ -1369,93 +1379,140 @@ export function addAnswerToCpmmMulti2Pools(
   newAnswerId: string,
   answerCost: number
 ) {
-  const other = poolsByAnswer[otherAnswerId]
-  const { YES: y, NO: n } = other.pool
-  const probOther = getCpmmProbability(other.pool, other.p)
-  // The YES/NO ratio at which a half, at half of Other's probability, prices at
-  // p = 0.01.
-  const minRatio = odds(MIN_CPMM_PROB) / odds(probOther / 2)
-  const fullNo = Math.min(Math.min(n, y) / 2, y / (minRatio + 1))
-  // The halves' YES/NO ratio, which sets their p; at least 1.
-  const ratio = (y - fullNo) / fullNo
+  const { YES: y, NO: n } = poolsByAnswer[otherAnswerId].pool
   const fee = Math.max(0, answerCost)
+  const delta = Math.max(0, n - y)
+  const mana = fee + Math.min(y, n)
+  if (!(mana > 0)) return undefined
+  const newNo = fee > 0 ? Math.min(fee, mana / 2) : mana / 2
 
-  // The split with halves of NO side `halfNo`, or undefined if some listed
-  // answer can't hold its price unless `finalTry`.
-  const splitWith = (halfNo: number, finalTry: boolean) => {
-    // At fullNo, δ = N − 2ν (0 when Other isn't a favourite) and S = 0.
-    const delta = Math.max(0, n - 2 * fullNo - (ratio - 1) * (fullNo - halfNo))
-    let budget = fee + Math.max(0, n - delta - 2 * halfNo)
-    const split: {
+  // Listed answers that hold their price without the budget go first; the rest
+  // take it cheapest first, and any it can't cover gives a little of its price.
+  const listed: {
+    [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+  } = {}
+  let budget = (mana - newNo) / 2
+  let cost = 0
+  const pending: string[] = []
+  for (const [id, { pool, p }] of Object.entries(poolsByAnswer)) {
+    if (id === otherAnswerId) continue
+    const folded = foldIntoListedAnswer(pool, p, delta, 0, 'free')
+    if (!folded) {
+      pending.push(id)
+      continue
+    }
+    cost += folded.cost
+    budget -= folded.cost
+    listed[id] = { pool: folded.pool, p: folded.p }
+  }
+  const topUpCost = (id: string) => {
+    const { pool, p } = poolsByAnswer[id]
+    const m = odds(MAX_CPMM_PROB) / odds(getCpmmProbability(pool, p))
+    return m > 1 ? (pool.YES + delta - m * pool.NO) / (m - 1) : Infinity
+  }
+  for (const id of sortBy(pending, topUpCost)) {
+    const { pool, p } = poolsByAnswer[id]
+    const folded = foldIntoListedAnswer(pool, p, delta, budget, 'any')!
+    cost += folded.cost
+    budget -= folded.cost
+    listed[id] = { pool: folded.pool, p: folded.p }
+  }
+
+  const yesOver = Math.max(0, y - n)
+  const otherNo = mana - newNo - cost
+  const listedIds = Object.keys(listed)
+  const probs = mapValues(listed, ({ pool, p }) => getCpmmProbability(pool, p))
+  // What Other had, plus whatever a listed price gave.
+  const room = 1 - sum(Object.values(probs))
+  // A listed answer's p stays in [0.01, 0.99], or no further out than it was.
+  const bounds = (id: string): [number, number] => {
+    const { p } = poolsByAnswer[id]
+    return [Math.min(MIN_CPMM_PROB, p), Math.max(MAX_CPMM_PROB, p)]
+  }
+
+  // The new answer's and the new Other's pools and prices with `sets` YES
+  // added to every pool, out of the new Other's NO, and what that leaves the
+  // listed answers to keep between them.
+  const partsAt = (sets: number) => {
+    const newPool = { YES: yesOver + sets + newNo, NO: newNo }
+    const otherPool = { YES: yesOver + otherNo, NO: otherNo - sets }
+    const newProb = getCpmmProbability(
+      newPool,
+      clampP(pForProbability(newPool, NEW_ANSWER_PROB))
+    )
+    // The new Other gives what it can toward the new answer, down to 1%.
+    const otherTarget =
+      room < MIN_CPMM_PROB ? room : Math.max(MIN_CPMM_PROB, room - newProb)
+    const otherP = clampP(pForProbability(otherPool, otherTarget))
+    const keep = 1 - newProb - getCpmmProbability(otherPool, otherP)
+    return { newPool, otherPool, otherP, keep }
+  }
+
+  const splitAt = (sets: number) => {
+    const { newPool, otherPool, otherP, keep } = partsAt(sets)
+    const withSets = (pool: { YES: number; NO: number }) => ({
+      YES: pool.YES + sets,
+      NO: pool.NO,
+    })
+    // Each listed answer at s of its price, as near as its p allows.
+    const pAt = (id: string, s: number) =>
+      s === 1 && sets === 0
+        ? listed[id].p
+        : clampP(
+            pForProbability(withSets(listed[id].pool), s * probs[id]),
+            bounds(id)
+          )
+    const keptAt = (s: number) =>
+      sumBy(listedIds, (id) =>
+        getCpmmProbability(withSets(listed[id].pool), pAt(id, s))
+      )
+    if (keptAt(0) > keep) return undefined
+    let [lo, hi] = [0, 1]
+    // Within rounding of keeping every price, they keep them exactly.
+    if (keptAt(1) <= keep + 1e-12) lo = 1
+    else
+      for (let i = 0; i < 100; i++) {
+        const mid = (lo + hi) / 2
+        if (keptAt(mid) > keep) hi = mid
+        else lo = mid
+      }
+    const pools: {
       [answerId: string]: { pool: { YES: number; NO: number }; p: number }
     } = {}
-    // Answers that hold their price without the budget go first; the rest take
-    // it cheapest first.
-    const pending: string[] = []
-    for (const [id, { pool, p }] of Object.entries(poolsByAnswer)) {
-      if (id === otherAnswerId) continue
-      const folded = foldIntoListedAnswer(pool, p, delta, budget, 'free')
-      if (!folded) {
-        pending.push(id)
-        continue
-      }
-      budget -= folded.cost
-      split[id] = { pool: folded.pool, p: folded.p }
-    }
-    const topUpCost = (id: string) => {
-      const { pool, p } = poolsByAnswer[id]
-      const m = odds(MAX_CPMM_PROB) / odds(getCpmmProbability(pool, p))
-      return m > 1 ? (pool.YES + delta - m * pool.NO) / (m - 1) : Infinity
-    }
-    let given = 0
-    for (const id of sortBy(pending, topUpCost)) {
-      const { pool, p } = poolsByAnswer[id]
-      const folded = foldIntoListedAnswer(
-        pool,
-        p,
-        delta,
-        budget,
-        finalTry ? 'any' : 'budget'
-      )
-      if (!folded) return undefined
-      budget -= folded.cost
-      given +=
-        getCpmmProbability(pool, p) - getCpmmProbability(folded.pool, folded.p)
-      split[id] = { pool: folded.pool, p: folded.p }
-    }
-    const half = { YES: y - n + delta + halfNo, NO: halfNo }
-    const halfP = pForProbability(half, (probOther + given) / 2)
-    split[newAnswerId] = { pool: { ...half }, p: halfP }
-    split[otherAnswerId] = { pool: { ...half }, p: halfP }
-    return { split, budget }
+    for (const id of listedIds)
+      pools[id] = { pool: withSets(listed[id].pool), p: pAt(id, lo) }
+    pools[otherAnswerId] = { pool: otherPool, p: otherP }
+    // The new answer takes exactly what's left, so the answers sum to one.
+    const left =
+      1 -
+      sumBy(Object.values(pools), ({ pool, p }) => getCpmmProbability(pool, p))
+    // Rounding in what's left can carry its p a hair past an edge it was held
+    // at, where it stays, leaving the sum off by no more than the rounding.
+    const newP = clampP(pForProbability(newPool, left))
+    if (!(Math.abs(getCpmmProbability(newPool, newP) - left) <= 1e-12))
+      return undefined
+    pools[newAnswerId] = { pool: newPool, p: newP }
+    return pools
   }
 
-  // Smaller halves ask less of the listed answers and leave more to pay with,
-  // so the largest halves that let every listed answer hold its price are
-  // found by bisection. Below `least`, δ would be negative; at it, δ = 0.
-  let result = splitWith(fullNo, false)
-  if (!result) {
-    const least = ratio > 1 && y > n ? (y - n) / (ratio - 1) : 0
-    let [lo, hi] = [Math.max(least, fullNo / 1000), fullNo]
-    if (splitWith(lo, false))
-      for (let i = 0; i < 60; i++) {
-        const mid = (lo + hi) / 2
-        if (splitWith(mid, false)) lo = mid
-        else hi = mid
-      }
-    result = splitWith(lo, true)!
+  // The share of its price every listed answer keeps, if each can.
+  const { keep } = partsAt(0)
+  const share = keep >= 1 - room - 1e-12 ? 1 : keep / (1 - room)
+  // An answer's p falls with its price, so one near the bottom of its bounds
+  // can't give its share. YES added to its pool raises the p any price needs,
+  // so every pool takes the same YES, the fewest that let each give its share,
+  // out of the new Other's NO, which keeps at least half.
+  const setsNeeded = (id: string) => {
+    const target = share * probs[id]
+    const { YES, NO } = listed[id].pool
+    const [lo] = bounds(id)
+    const sets = (odds(lo) * NO) / odds(target) - YES
+    return isFinite(sets) ? sets : 0
   }
-  const { split, budget } = result
-
-  // With no answer able to take the rest as depth, it waits as the new answer's
-  // subsidy, which resolution pays out like any other.
-  if (!(budget > 0) || !canDeployCpmmMulti2Liquidity(split))
-    return { pools: split, pendingSubsidy: Math.max(0, budget) }
-  const pools = mapValues(
-    addCpmmMultiLiquidityAnswersSumToOneV2(split, budget),
-    ({ pool, p }) => ({ pool, p })
-  )
-  return { pools, pendingSubsidy: 0 }
+  const most = Math.max(0, otherNo / 2)
+  const sets =
+    share >= 1 ? 0 : Math.min(most, Math.max(0, ...listedIds.map(setsNeeded)))
+  return splitAt(sets) ?? (sets < most ? splitAt(most) : undefined)
 }
 
 // cpmm-multi-2: lossless whole-market liquidity add for INDEPENDENT (non-sum-to-one / "Set")

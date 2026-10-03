@@ -475,10 +475,11 @@ async function createAnswerAndSumAnswersToOne(
 
 // cpmm-multi-2: split "Other" into the new answer and a new Other with
 // addAnswerToCpmmMulti2Pools, which keeps every share in the pools (so each
-// liquidity provider's share of them is unchanged), prices each half at half of
-// Other's probability, holds the listed answers' prices, and adds the fee for
-// the answer as whole-market liquidity. Users' own positions in Other are
-// refined the same way by convertOtherAnswerShares.
+// liquidity provider's share of them is unchanged) and puts the fee for the
+// answer into the new answer's pool. The new answer opens at 2%, out of Other
+// while Other can spare it, and otherwise partly out of the listed answers.
+// Users' own positions in Other are refined the same way by
+// convertOtherAnswerShares.
 async function createAnswerAndSumAnswersToOneV2(
   pgTrans: SupabaseTransaction,
   contract: CPMMMultiContract,
@@ -494,7 +495,7 @@ async function createAnswerAndSumAnswersToOneV2(
     )
   }
 
-  const { pools, pendingSubsidy } = addAnswerToCpmmMulti2Pools(
+  const pools = addAnswerToCpmmMulti2Pools(
     Object.fromEntries(
       answers.map((a) => [
         a.id,
@@ -505,6 +506,11 @@ async function createAnswerAndSumAnswersToOneV2(
     newAnswer.id,
     answerCost
   )
+  if (!pools)
+    throw new APIError(
+      403,
+      "This market's prices leave no room to add another answer."
+    )
   const poolFields = (answerId: string) => {
     const { pool, p } = pools[answerId]
     return {
@@ -525,7 +531,7 @@ async function createAnswerAndSumAnswersToOneV2(
       pools[newAnswer.id].pool,
       pools[newAnswer.id].p
     ),
-    subsidyPool: pendingSubsidy,
+    subsidyPool: 0,
   })
   await updateAnswers(
     pgTrans,
@@ -541,9 +547,9 @@ async function createAnswerAndSumAnswersToOneV2(
   })
 
   // Other's resting limit orders were priced against the old Other. Listed
-  // answers keep theirs, as their prices hold, except in the rare split where
-  // one had to give a little (addAnswerToCpmmMulti2Pools): there the YES orders
-  // its new price has passed are cancelled rather than left crossed.
+  // answers keep theirs while their prices hold. Where they give some of their
+  // price to the new answer (addAnswerToCpmmMulti2Pools), the YES orders their
+  // new prices have passed are cancelled rather than left crossed.
   const ordersToCancel = await getUnfilledBets(
     pgTrans,
     contract.id,

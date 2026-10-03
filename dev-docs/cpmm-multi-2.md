@@ -25,37 +25,59 @@ merge in whatever creation would open at the current odds.
 In a sum-to-one market where answers can be added, "Other" is an answer like
 any other, and its pool belongs to every liquidity provider. Adding an answer
 splits Other into the new answer and a new Other (`addAnswerToCpmmMulti2Pools`),
-each at half of Other's probability, with pools that pay the providers exactly
-what Other's did whichever answer wins. With Other's pool at (Y, N), each half
-takes (Y − N + δ + ν, ν), every listed answer's YES − NO grows by δ, and
-S = N − δ − 2ν is left over as mana:
+with pools that pay the providers exactly what Other's did whichever answer
+wins, plus the fee for adding the answer. It splits the shares as
+`cpmm-multi-1` does (`createAnswerAndSumAnswersToOne`). With Other's pool at
+(Y, N):
 
-- A listed answer winning pays δ more from the listed pools, 2ν from the
-  halves and S: N, as Other's NO did.
-- Either half winning pays its own YES, the other half's ν, the listed answers'
-  NO and S: Y, as Other's YES did.
+- Other's YES beyond its NO goes into both new pools, as YES in Other pays
+  whichever of them wins.
+- Its NO beyond its YES, δ = N − Y, becomes YES in every listed answer, as NO
+  in Other pays exactly when one of them wins. A listed answer takes it holding
+  its price: it adds δ YES (or removes δ NO) with its p floated to hold the
+  price, shrinks in proportion (holding p too), or adds liquidity alongside
+  until its p is 0.99, paid from the new Other's share. Only where none of
+  those fits, in edge cases no random market in the tests reaches, does its
+  price give a little.
+- The rest of Other's pool, as many YES as NO, is mana, and so is the fee. The
+  new answer's NO side takes the fee's worth, or half if there's less, and the
+  new Other's the rest.
 
-Usually ν = N/2 and δ = S = 0: Other's pool is split in two and nothing else
-changes. When Other is a favourite (N > Y), each half gets a balanced pool and
-the listed answers take δ = N − Y. Where a half would price below p = 0.01,
-ν is lowered until it prices at 0.01.
+So the new answer gets a pool of its own, paid for by the fee. The fee is
+tiered by the market's liquidity per answer (Ṁ25, Ṁ100, Ṁ1,000 or Ṁ10,000),
+so the new answer trades about as deeply as the others. In a Ṁ1,000 market at
+30/20/10/5 with Other at 35%, buying the new answer from 2% to 20% costs Ṁ33
+and to 50% Ṁ131, against Ṁ26 and Ṁ145 for an answer listed at 2% in the same
+market from the start.
 
-A listed answer takes its δ holding its price: it adds δ YES (or removes δ NO)
-with its p floated to hold the price, shrinks in proportion (holding p too), or
-adds liquidity alongside until its p is 0.99, paid from the fee for adding the
-answer and S. Where the fee isn't enough for that, the halves are made smaller
-at the same p until it is, which frees S and asks less of the listed answers.
-Only where even that fails, in edge cases no random market in the tests
-reaches, does a listed price give a little to the halves, and the backend then
-cancels the YES orders that price has passed. What's left of the fee and S
-goes in as a whole-market liquidity add, or waits as the new answer's subsidy
-when no answer is inside 1%–99%.
+Every outcome then pays the fee more than it did, and nothing else changes. A
+pool's p sets its prices without moving any value, so the prices come last:
+
+- The new answer opens at 2% (`NEW_ANSWER_PROB`). Nobody picks its price. A
+  contender worth more gets bought up from there, and a long shot barely moves
+  anything.
+- The new Other gives what it can toward that, down to 1%. While Other is at
+  3% or more, the listed answers keep their prices.
+- Below that, the listed answers give the rest, each the same share of its
+  price. With Other at 2%, Other goes to 1% and the listed answers give up 1
+  point between them. An Other already below 1% stays where it is.
+- A listed answer's p falls with its price, within [0.01, 0.99]. Where one
+  near 0.01 couldn't give its share, every pool takes the same YES out of the
+  new Other's NO, the fewest that let each give its share. YES in every answer
+  pays the same whichever wins, and leaves each p more room: a favourite at
+  98% keeps giving its share, add after add.
+- Where even that can't make room, the add is refused with a 403. That takes
+  an answer above 99%, which no trade can reach.
+
+Where a listed price gives, the backend cancels the YES orders the new price
+has passed. Other's resting orders are always cancelled.
 
 No value leaves the pools and nobody is credited a position, so each
-provider's share of the pools at resolution is what it was. Traders' own
-positions in Other are refined the same way as on `cpmm-multi-1`
-(`convertOtherAnswerShares`): YES in Other also counts as YES in the new
-answer, and NO in Other becomes YES in every answer listed before it.
+provider's share of the pools at resolution is what it was, and the adder's
+fee is recorded as their liquidity. Traders' own positions in Other are
+refined the same way as on `cpmm-multi-1` (`convertOtherAnswerShares`): YES in
+Other also counts as YES in the new answer, and NO in Other becomes YES in
+every answer listed before it.
 
 The split moves Other's probability without a bet, so undoing a resolution
 restores a `cpmm-multi-2` answer's probability from its pool, which resolution
@@ -89,24 +111,25 @@ can fall to 1e-20 or below. What keeps that priceable:
   takes an equal share of a whole-market add, since resolution credits each
   provider with that share of every answer; an answer outside the band holds
   its share as its own pending subsidy.
-- Nothing moves the `p` of an answer outside 1%–99% toward its price, which
-  would leave the answer priced by a sliver of one side: at 1e-17 with
-  `p` = 0.05 an answer is priced by 1e-13 of NO, so a trillionth of a mana
-  would move it to 70%, below what the arbitrage's arithmetic can resolve. A
-  whole-market add merges the creation shape, which re-derives every `p`, only
-  when every answer is inside the band, and otherwise goes to the answers
-  inside it, weighted by the depth creation would give them. Splitting Other
-  only raises the `p` of an answer near 0%, and keeps the `p` of one near
-  100%. Trades can't get an answer there either: pushing a low-`p` answer
-  toward 0%, or a high-`p` one toward 100%, moves its price only in proportion
-  to the mana spent.
-- Splitting a tiny Other is the one way an answer comes to be priced by a
-  sliver of its pool. Each answer added halves Other, so a market that gains
-  answers while nobody buys Other ends up with answers far below 1% (from 30%,
-  the 50th opens near 3e-16), with NO sides to match; once one is bought up,
-  its pool is all but empty. Trades through those can miss summing to one by
-  more than the arithmetic resolves: a buy on dev left a market summing to
-  164%. So a `cpmm-multi-2` single-answer buy or sale that misses summing to
+- Nothing moves the `p` of an answer outside 1%–99% toward its price beyond
+  what its price moves, which would leave the answer priced by a sliver of one
+  side: at 1e-17 with `p` = 0.05 an answer is priced by 1e-13 of NO, so a
+  trillionth of a mana would move it to 70%, below what the arbitrage's
+  arithmetic can resolve. A whole-market add merges the creation shape, which
+  re-derives every `p`, only when every answer is inside the band, and
+  otherwise goes to the answers inside it, weighted by the depth creation would
+  give them. Adding an answer moves a listed answer's `p` only with its price,
+  when it gives its share of the new answer's 2% (a long shot's by about 2%),
+  and raises it as YES goes into its pool. Trades can't get an answer there
+  either: pushing a low-`p` answer toward 0%, or a high-`p` one toward 100%,
+  moves its price only in proportion to the mana spent.
+- Until new answers opened at 2%, splitting a tiny Other was the one way an
+  answer came to be priced by a sliver of its pool. Each answer added halved
+  Other, so a market that gained answers while nobody bought Other ended up
+  with answers far below 1% (from 30%, the 50th opened near 3e-16), with NO
+  sides to match; once one is bought up, its pool is all but empty. Dev still
+  has such markets. Trades through those can miss summing to one by more than
+  the arithmetic resolves: a buy on dev left a market summing to 164%. So a `cpmm-multi-2` single-answer buy or sale that misses summing to
   one by more than 1e-9 is solved again. A buy is priced from the other
   answers: with s shares in each of them, the answer must end at one minus
   the sum of their prices, and its own leg buys it to exactly that. A sale
@@ -212,13 +235,18 @@ varies; note that in `docs/docs/api.md` in the same deploy.
   shots, Ṁ30 against the favourite moves it to 90.9% (87.8% on `cpmm-multi-1`),
   but Ṁ300 moves it to 3.2% (17%). An answer that rallies from near 0% after
   liquidity went in near 0% can be moved a long way by a small bet.
-- An answer added once Other is tiny opens near 0% with almost no liquidity of
-  its own, and once it's bought up its price moves a long way on little,
-  whichever answer is traded. Trades the arithmetic can't resolve there are
-  solved again (see Pricing at extreme odds), which takes about 0.2s at 50
-  answers and 0.5s at 100 under jest, and a few very deep in such a chain are
-  refused. A floor on how far Other can be split would keep markets out of
-  this.
+- A new answer opens at 2% whatever its chances, so whoever adds a strong
+  contender that wasn't listed can buy it up first. That's deliberate: it
+  rewards adding the right answers.
+- Once Other is below 3%, each answer added takes up to 2 points from the
+  listed answers without a trade, and the first trader to buy them back gains
+  what the pools lose. On a Ṁ1,000 market with a 97% favourite that's about
+  Ṁ6.5 an add; `cpmm-multi-1`'s add leaves Ṁ18 there, and Ṁ10 to Ṁ12 even with
+  Other at 5% or more, where this leaves nothing.
+- Markets split by the old halving (see Pricing at extreme odds) keep their
+  slivers. Trades the arithmetic can't resolve there are solved again, which
+  takes about 0.2s at 50 answers and 0.5s at 100 under jest, and a few very
+  deep in such a chain are refused.
 - Adding liquidity to a single answer is only offered on `cpmm-multi-2`
   markets, or `cpmm-multi-1` ones the add would convert. A `cpmm-multi-1`
   answer is pinned at `p = 0.5`, so it would throw most of the subsidy away on

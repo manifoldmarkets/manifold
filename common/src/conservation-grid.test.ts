@@ -16,7 +16,7 @@
 // (partial / sell-all round-trip), whole-market AND per-answer add-liquidity, resolve.
 // Remaining gaps live in the instance harness (validate_lifecycle.py), not here: real
 // API/DB plumbing, drizzle scheduling, and the v1->v2 conversion lifecycle.
-import { sum, sumBy } from 'lodash'
+import { mapValues, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
@@ -32,6 +32,7 @@ import {
   getCpmmProbability,
   isDeepenableProb,
   isDrainedPool,
+  pForProbability,
 } from './calculate-cpmm'
 import {
   calculateCpmmMultiArbitrageBet,
@@ -62,6 +63,35 @@ const sumToOnePools = cpmmMulti2SumToOnePools
 
 // What placeBet answers a cpmm-multi-2 trade that drains a pool (isDrainedPool).
 const DRAINED_POOL_REFUSAL = 'Trade too large for current liquidity pool.'
+
+// The split cpmm-multi-2 made before new answers opened at 2%
+// (addAnswerToCpmmMulti2Pools): Other's pool cut in two, each half at half
+// Other's price, and the fee spread over the market, as far as the markets
+// built with it below needed it.
+type Pools = {
+  [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+}
+const halvingSplit = (
+  pools: Pools,
+  otherId: string,
+  newId: string,
+  fee: number
+): Pools => {
+  const { pool, p } = pools[otherId]
+  const half = { YES: pool.YES - pool.NO + pool.NO / 2, NO: pool.NO / 2 }
+  const halfP = pForProbability(half, getCpmmProbability(pool, p) / 2)
+  // Below, the old split kept p at 0.01 and moved NO into the listed answers.
+  if (!(halfP >= 0.01)) throw new Error('Needs the rest of the old split')
+  const split = {
+    ...pools,
+    [otherId]: { pool: half, p: halfP },
+    [newId]: { pool: { ...half }, p: halfP },
+  }
+  return mapValues(
+    addCpmmMultiLiquidityAnswersSumToOneV2(split, fee),
+    ({ pool, p }) => ({ pool, p })
+  )
+}
 
 function setPools(q: number[], ante: number) {
   const L = ante / q.length
@@ -110,8 +140,8 @@ class Sim {
   // placeBet refuses a cpmm-multi-2 trade that drains a pool side outright
   // (isDrainedPool). Off by default: the rows below never get near it.
   refuseDrainedPools = false
-  // Answers split off a tiny Other are hair triggers (see check); only the
-  // markets built to have them allow them.
+  // Answers the old halving split cut off a tiny Other are hair triggers (see
+  // check); only the markets built to have them allow them.
   allowHairTriggers = false
   // placeBet also refuses a single-answer cpmm-multi-2 trade that leaves the
   // probabilities missing summing to one (cpmmMultiTradeMissesSumToOne). Off
@@ -589,25 +619,25 @@ class Sim {
   }
 
   // Add an answer to a sum-to-one market by splitting Other, as create-answer-cpmm
-  // does on cpmm-multi-2: the pools addAnswerToCpmmMulti2Pools returns, the
-  // adder's fee as their liquidity, Other's resting orders cancelled, and each
-  // trader's position in Other refined as convertOtherAnswerShares does: net YES
-  // in Other also counts as YES in the new answer, and net NO in Other becomes
+  // does on cpmm-multi-2: the pools addAnswerToCpmmMulti2Pools returns (or with
+  // `halving`, the split before new answers opened at 2%), the adder's fee as
+  // their liquidity, Other's resting orders cancelled, and each trader's
+  // position in Other refined as convertOtherAnswerShares does: net YES in
+  // Other also counts as YES in the new answer, and net NO in Other becomes
   // YES in every answer listed before it.
-  addAnswer(user: string, answerCost: number, id: string) {
+  addAnswer(user: string, answerCost: number, id: string, halving = false) {
     const other = this.answers.find((a) => a.isOther)!
     const listed = this.answers.filter((a) => !a.isOther)
-    const { pools, pendingSubsidy } = addAnswerToCpmmMulti2Pools(
-      Object.fromEntries(
-        this.answers.map((a) => [
-          a.id,
-          { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
-        ])
-      ),
-      other.id,
-      id,
-      answerCost
+    const before = Object.fromEntries(
+      this.answers.map((a) => [
+        a.id,
+        { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
+      ])
     )
+    const pools = halving
+      ? halvingSplit(before, other.id, id, answerCost)
+      : addAnswerToCpmmMulti2Pools(before, other.id, id, answerCost)
+    if (!pools) throw new Error('No room for the new answer')
     const withPool = (a: Answer): Answer => {
       const { pool, p } = pools[a.id]
       return {
@@ -623,7 +653,7 @@ class Sim {
       id,
       text: id,
       isOther: false,
-      subsidyPool: pendingSubsidy,
+      subsidyPool: 0,
     })
     this.answers = [...listed.map(withPool), newAnswer, withPool(other)]
 
@@ -779,9 +809,10 @@ class Sim {
       // No answer is a hair trigger: a billionth of a mana on either side moves
       // it by under 0.1%. An answer near 0% whose p is low, or near 100% whose p
       // is high, is priced by a sliver of one side, and there a trade below what
-      // the arbitrage's arithmetic can resolve would swing it to 50%. Trades and
-      // liquidity don't make them, but splitting a tiny Other does; trades
-      // through those are solved again or refused (calculate-cpmm-arbitrage).
+      // the arbitrage's arithmetic can resolve would swing it to 50%. Trades,
+      // liquidity and answers added don't make them, but the old halving split
+      // of a tiny Other did; trades through those are solved again or refused
+      // (calculate-cpmm-arbitrage).
       if (this.allowHairTriggers) continue
       const lnOdds =
         Math.log(a.p) +
@@ -1628,15 +1659,16 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     s.resolve('set_yesno', { setOutcomes: ['NO', 'YES', 'NO', 'YES'] })
   })
 
-  // Every answer added splits Other in two, so a market that gains answers
-  // while nobody buys Other ends up with answers far below 1%, priced by a
-  // sliver of their pool's NO side: the 50th opens near 3e-16. Live testing
-  // found a buy on one leaving the probabilities summing to 164%. Buys and
-  // sales there are solved again when they miss summing to one, and placeBet
-  // refuses them if they still do (calculate-cpmm-arbitrage). Drive lifecycles through
-  // such markets: buys on the late answers and the listed ones, sales of what
-  // was bought, resting orders on late answers, liquidity and more answers,
-  // then a resolution.
+  // Before new answers opened at 2%, each answer added split Other in two, so
+  // a market that gained answers while nobody bought Other ended up with
+  // answers far below 1%, priced by a sliver of their pool's NO side: the 50th
+  // opened near 3e-16, and dev still has such markets. Live testing found a buy
+  // on one leaving the probabilities summing to 164%. Buys and sales there are
+  // solved again when they miss summing to one, and placeBet refuses them if
+  // they still do (calculate-cpmm-arbitrage). Drive lifecycles through such
+  // markets: buys on the late answers and the listed ones, sales of what was
+  // bought, resting orders on late answers, liquidity and more answers, added
+  // as they are now, then a resolution.
   const splitLifecycle = (splits: number, resolution: 'late' | 'cancel') => {
     const s = new Sim(
       { n: 3, probs: 'balanced', type: 'mc_sumone' },
@@ -1647,7 +1679,7 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     s.refuseDrainedPools = true
     s.refuseUnpricedTrades = true
     s.allowHairTriggers = true
-    for (let i = 0; i < splits; i++) s.addAnswer('adder', 100, `new${i}`)
+    for (let i = 0; i < splits; i++) s.addAnswer('adder', 100, `new${i}`, true)
     expect(s.answers[s.answers.length - 2].prob).toBeLessThan(1e-15)
     // One of the 15 answers added last (Other is last of all).
     const late = () => s.answers.length - 2 - Math.floor(rng() * 15)

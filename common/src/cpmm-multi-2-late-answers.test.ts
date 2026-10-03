@@ -1,4 +1,4 @@
-import { sumBy } from 'lodash'
+import { mapValues, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
@@ -8,23 +8,51 @@ import {
   poolsAfterResults,
 } from './calculate-cpmm-arbitrage'
 import {
-  addAnswerToCpmmMulti2Pools,
+  addCpmmMultiLiquidityAnswersSumToOneV2,
   getCpmmProbability,
+  pForProbability,
 } from './calculate-cpmm'
 import { noFees } from './fees'
 import { getNewContract } from './new-contract'
 import { getCpmmMultiSellSharesInfo } from './sell-bet'
 
-// Each answer added to a cpmm-multi-2 market splits Other in two, so a market
-// that gains answers while nobody buys Other ends up with answers far below 1%,
-// priced by a sliver of their pool's NO side. Live testing found a Ṁ100 YES
-// buy on the 36th such answer leaving the probabilities summing to 164%: the
-// buy's own leg moved that answer from 0% to 99% on less than the rounding of
-// the other answers' legs. These buys are now solved price-led there.
+// Until new answers opened at 2% (addAnswerToCpmmMulti2Pools), adding one to
+// a cpmm-multi-2 market cut Other's pool in two, each half at half Other's
+// price, and spread the fee over the market. A market that gained answers
+// while nobody bought Other ended up with answers far below 1%, priced by a
+// sliver of their pool's NO side, and dev still has some. Live testing found a
+// Ṁ100 YES buy on the 36th such answer leaving the probabilities summing to
+// 164%: the buy's own leg moved that answer from 0% to 99% on less than the
+// rounding of the other answers' legs. These buys are now solved price-led.
+// This is that split, as far as these markets needed it.
+type Pools = {
+  [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+}
+const halvingSplit = (
+  pools: Pools,
+  otherId: string,
+  newId: string,
+  fee: number
+): Pools => {
+  const { pool, p } = pools[otherId]
+  const half = { YES: pool.YES - pool.NO + pool.NO / 2, NO: pool.NO / 2 }
+  const halfP = pForProbability(half, getCpmmProbability(pool, p) / 2)
+  // Below, the old split kept p at 0.01 and moved NO into the listed answers.
+  if (!(halfP >= 0.01)) throw new Error('Needs the rest of the old split')
+  const split = {
+    ...pools,
+    [otherId]: { pool: half, p: halfP },
+    [newId]: { pool: { ...half }, p: halfP },
+  }
+  return mapValues(
+    addCpmmMultiLiquidityAnswersSumToOneV2(split, fee),
+    ({ pool, p }) => ({ pool, p })
+  )
+}
 
 // A market opened at A 40%, B 30% and Other 30% (or the odds given) on
-// Ṁ1,000, then split `splits` times at Ṁ100 an answer, in index order as the
-// backend reads it: listed answers, then the newest, then Other.
+// Ṁ1,000, then split `splits` times that way at Ṁ100 an answer, in index
+// order as the backend reads it: listed answers, then the newest, then Other.
 const splitMarket = (splits: number, answerProbs = [40, 30]) => {
   const contract = getNewContract({
     id: 'c',
@@ -56,7 +84,7 @@ const splitMarket = (splits: number, answerProbs = [40, 30]) => {
   }))
   for (let i = 0; i < splits; i++) {
     const other = answers.find((a) => a.isOther)!
-    const { pools } = addAnswerToCpmmMulti2Pools(
+    const pools = halvingSplit(
       Object.fromEntries(
         answers.map((a) => [
           a.id,
@@ -116,7 +144,7 @@ describe('cpmm-multi-2 buys on answers split off a tiny Other', () => {
   const answers = splitMarket(50)
   const last = answers.find((a) => a.id === 'new49')!
 
-  it('opens the 50th answer priced by a sliver of its pool', () => {
+  it('leaves the 50th answer priced by a sliver of its pool', () => {
     expect(
       sumBy(answers, (a) =>
         getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
