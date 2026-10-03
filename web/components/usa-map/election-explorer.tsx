@@ -759,9 +759,6 @@ export function ElectionExplorer(props: Props) {
                             style={{ fill: labelColor(s.state) }}
                           >
                             {s.state}
-                            {isMeasures && measureCount(s.state) > 0
-                              ? ` · ${measureCount(s.state)}`
-                              : ''}
                           </text>
                         ))}
                     {labels &&
@@ -781,9 +778,6 @@ export function ElectionExplorer(props: Props) {
                               className={styles.stateLabel}
                             >
                               {state}
-                              {isMeasures && measureCount(state) > 0
-                                ? ` ${measureCount(state)}`
-                                : ''}
                             </text>
                           </g>
                         )
@@ -845,9 +839,6 @@ export function ElectionExplorer(props: Props) {
                             style={{ fill: labelColor(t.state) }}
                           >
                             {t.state}
-                            {isMeasures && measureCount(t.state) > 0
-                              ? ` · ${measureCount(t.state)}`
-                              : ''}
                           </text>
                         </g>
                       ))}
@@ -1150,9 +1141,9 @@ export function ElectionExplorer(props: Props) {
             {isMeasures ? (
               <>
                 <p>
-                  State shading and labels show how many statewide questions are
-                  on the November 3, 2026 ballot. They do not combine the odds
-                  of unrelated measures.
+                  State shading shows how many statewide questions are on the
+                  November 3, 2026 ballot. They do not combine the odds of
+                  unrelated measures.
                 </p>
                 <p>
                   Each measure has its own approval odds and Pass/Fail bets. A
