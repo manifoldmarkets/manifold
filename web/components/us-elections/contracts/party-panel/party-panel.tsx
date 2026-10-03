@@ -40,10 +40,19 @@ import {
 export function PartyPanel(props: {
   contract: MultiContract
   maxAnswers?: number
+  answerColors?: Record<string, string>
+  hidePartyNote?: boolean
   includeNeedle?: boolean
   includeHead?: boolean
 }) {
-  const { contract, maxAnswers = Infinity, includeNeedle, includeHead } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    includeNeedle,
+    includeHead,
+    answerColors,
+    hidePartyNote,
+  } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -95,6 +104,7 @@ export function PartyPanel(props: {
   // crude but fails safe — an unrecognised wording hides a true note rather
   // than showing a false one.
   const namesCandidates =
+    !hidePartyNote &&
     answers.some((a) => isCandidateLabelledAnswer(a.text)) &&
     /which\s+party/i.test(contract.question)
 
@@ -183,7 +193,9 @@ export function PartyPanel(props: {
                   key={answer.id}
                   answer={answer}
                   contract={contract}
-                  color={getPartyColor(answer.text)}
+                  color={
+                    answerColors?.[answer.id] ?? getPartyColor(answer.text)
+                  }
                   user={user}
                   userBets={userBetsByAnswer[answer.id]}
                   includeHead={includeHead}
@@ -208,7 +220,7 @@ export function PartyPanel(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getPartyColor(answer.text)}
+              color={answerColors?.[answer.id] ?? getPartyColor(answer.text)}
               user={user}
               userBets={userBetsByAnswer[answer.id]}
               includeHead={includeHead}

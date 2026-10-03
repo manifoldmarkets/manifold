@@ -1,0 +1,298 @@
+// Creates the reviewed 2026 general-election markets listed in a manifest.
+//
+// DRY RUN (default; no credentials, no writes):
+//   cd backend/scripts
+//   npx ts-node create-election-markets.ts \
+//     --manifest elections-2026/manifest.json --out elections-2026/out
+//   Add --online to re-run the read-only duplicate search against the public
+//   API (unauthenticated GETs only).
+//
+// APPLY (only after the manifest's `review` and `budget` blocks are filled in
+// by a reviewer; never run by the audit that produced the manifest):
+//   MANIFOLD_API_KEY=<key of the creator account> npx ts-node create-election-markets.ts \
+//     --manifest elections-2026/manifest.json --state elections-2026/state.prod.json \
+//     --env prod --apply --creator-username <username> --max-mana <cap for this run>
+//
+// Apply re-checks the reserved ids and searches for equivalent markets before
+// every create, persists the state file after every request, stops on any
+// ambiguous outcome, and never creates an entry twice. See
+// backend/shared/src/elections/election-market-creation.ts.
+
+import * as fs from 'fs'
+import * as path from 'path'
+import {
+  API_BASES,
+  applyManifest,
+  buildDashboardMapping,
+  CreationState,
+  costOf,
+  emptyState,
+  findExisting,
+  idempotencyKeyFor,
+  makeHttpApi,
+  Manifest,
+  planOffline,
+  validateManifest,
+} from 'shared/elections/election-market-creation'
+
+type Args = Record<string, string | boolean>
+function parseArgs(argv: string[]): Args {
+  const out: Args = {}
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (!a.startsWith('--')) continue
+    const k = a.slice(2)
+    const next = argv[i + 1]
+    if (next === undefined || next.startsWith('--')) out[k] = true
+    else {
+      out[k] = next
+      i++
+    }
+  }
+  return out
+}
+
+const readJson = <T>(file: string): T =>
+  JSON.parse(fs.readFileSync(file, 'utf8'))
+function writeAtomic(file: string, data: unknown) {
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  const tmp = `${file}.tmp-${process.pid}`
+  fs.writeFileSync(
+    tmp,
+    typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+  )
+  fs.renameSync(tmp, file)
+}
+
+function report(
+  manifest: Manifest,
+  state: CreationState,
+  plan: ReturnType<typeof planOffline>,
+  online?: Record<string, string[]>
+) {
+  const lines: string[] = []
+  const by = (a: string) => plan.filter((p) => p.action === a)
+  const total = by('create').reduce((s, p) => s + (p.cost?.total ?? 0), 0)
+  const byOffice: Record<string, { n: number; mana: number }> = {}
+  for (const p of by('create')) {
+    const office = p.raceKey.split('-')[1]
+    byOffice[office] ??= { n: 0, mana: 0 }
+    byOffice[office].n++
+    byOffice[office].mana += p.cost?.total ?? 0
+  }
+  lines.push(`# Election market creation — ${manifest.manifestVersion}`)
+  lines.push('')
+  lines.push(
+    `Series \`${manifest.series}\` · ${
+      manifest.entries.length
+    } manifest entries · review approved: **${
+      manifest.review.approved
+    }** · approved budget: ${
+      manifest.budget.approvedMaxTotalMana ?? '**not set**'
+    }`
+  )
+  lines.push('')
+  lines.push(`| action | races |\n|---|---|`)
+  for (const a of [
+    'create',
+    'already-created',
+    'skip-existing',
+    'needs-review',
+    'pending-reconciliation',
+    'failed-earlier',
+    'unresolved',
+  ])
+    lines.push(`| ${a} | ${by(a).length} |`)
+  lines.push('')
+  lines.push(
+    `**Estimated cost of planned creations: Ṁ${total.toLocaleString(
+      'en-US'
+    )}** (ante incl. per-answer charges + extra liquidity; the API charges nothing else at creation).`
+  )
+  for (const [o, v] of Object.entries(byOffice))
+    lines.push(`- ${o}: ${v.n} markets, Ṁ${v.mana.toLocaleString('en-US')}`)
+  lines.push('')
+  lines.push(
+    'Seed probabilities below are SEEDS for the initial pool, not observed market forecasts.'
+  )
+  lines.push('')
+  for (const entry of manifest.entries) {
+    const p = plan.find((x) => x.raceKey === entry.raceKey)!
+    lines.push(`## ${entry.raceKey} — ${p.action}`)
+    if (entry.status !== 'ready') {
+      lines.push(`Unresolved: ${(entry.unresolvedFields ?? []).join('; ')}`)
+      lines.push('')
+      continue
+    }
+    const pl = entry.payload!
+    const c = costOf(pl)
+    lines.push(`**${pl.question}**`)
+    lines.push(
+      `- ${entry.proposition} · ${pl.outcomeType} · sum-to-one ${
+        pl.shouldAnswersSumToOne
+      } · close ${new Date(pl.closeTime).toISOString()} · tier ${
+        pl.liquidityTier
+      }${pl.extraLiquidity ? ` + Ṁ${pl.extraLiquidity}` : ''} → **Ṁ${c.total}**`
+    )
+    lines.push(
+      `- answers (seed %): ${(pl.answers ?? [])
+        .map((a, i) => `${a} ${pl.answerProbs?.[i]}%`)
+        .join(' · ')}`
+    )
+    lines.push(`- seed basis: ${entry.seed?.basis}`)
+    lines.push(
+      `- liquidity: ${entry.liquidityPlan?.rationale ?? ''}${
+        entry.liquidityPlan?.alternatives
+          ? ` Alternatives: ${entry.liquidityPlan.alternatives}`
+          : ''
+      }`
+    )
+    lines.push(
+      `- reserved idempotency key (not yet a contract): \`${p.idempotencyKey}\``
+    )
+    if (online?.[entry.raceKey]?.length)
+      lines.push(`- online recheck: ${online[entry.raceKey].join('; ')}`)
+    lines.push('')
+  }
+  return lines.join('\n')
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  const manifestFile = String(args.manifest ?? '')
+  if (!manifestFile) throw new Error('--manifest <file> is required')
+  const manifest = readJson<Manifest>(manifestFile)
+  const outDir = String(
+    args.out ?? path.join(path.dirname(manifestFile), 'out')
+  )
+  const stateFile = args.state ? String(args.state) : undefined
+  const state: CreationState =
+    stateFile && fs.existsSync(stateFile)
+      ? readJson(stateFile)
+      : emptyState(manifest)
+  const env = (args.env ?? 'prod') as keyof typeof API_BASES
+  const apiBase = API_BASES[env]
+  if (!apiBase)
+    throw new Error(`--env must be one of ${Object.keys(API_BASES).join(', ')}`)
+
+  const errors = validateManifest(manifest)
+  const plan = planOffline(manifest, state)
+
+  if (!args.apply) {
+    // Dry run: the client below cannot write, and no key is read or sent.
+    let online: Record<string, string[]> | undefined
+    if (args.online) {
+      const api = makeHttpApi({ apiBase, allowWrites: false })
+      online = {}
+      for (const entry of manifest.entries.filter(
+        (e) => e.status === 'ready'
+      )) {
+        const key = idempotencyKeyFor(manifest.series, entry.raceKey)
+        const atKey = await api.getMarket(key)
+        const found = await findExisting(entry, api)
+        online[entry.raceKey] = [
+          ...(atKey
+            ? [
+                `a market already exists at the reserved id ${key}: ${atKey.question}`,
+              ]
+            : []),
+          ...found.equivalent.map(
+            (v) => `EQUIVALENT ${v.m.id} "${v.m.question}" (${v.reason})`
+          ),
+          ...found.ambiguous.map(
+            (v) => `AMBIGUOUS ${v.m.id} "${v.m.question}" (${v.reason})`
+          ),
+        ]
+        await new Promise((r) => setTimeout(r, 300))
+      }
+    }
+    writeAtomic(
+      path.join(outDir, 'dry-run-report.md'),
+      report(manifest, state, plan, online)
+    )
+    writeAtomic(
+      path.join(outDir, 'dry-run-payloads.json'),
+      manifest.entries
+        .filter((e) => e.status === 'ready')
+        .map((e) => ({
+          raceKey: e.raceKey,
+          reservedIdempotencyKey: idempotencyKeyFor(manifest.series, e.raceKey),
+          cost: costOf(e.payload!),
+          payload: e.payload,
+        }))
+    )
+    writeAtomic(path.join(outDir, 'dry-run-plan.json'), {
+      validationErrors: errors,
+      plan,
+    })
+    writeAtomic(
+      path.join(outDir, 'dry-run-dashboard-mapping.json'),
+      buildDashboardMapping(manifest, state)
+    )
+    const counts = plan.reduce<Record<string, number>>(
+      (m, p) => ((m[p.action] = (m[p.action] ?? 0) + 1), m),
+      {}
+    )
+    const total = plan
+      .filter((p) => p.action === 'create')
+      .reduce((s, p) => s + (p.cost?.total ?? 0), 0)
+    console.log(
+      JSON.stringify(
+        {
+          mode: 'dry-run',
+          online: !!args.online,
+          validationErrors: errors.length,
+          counts,
+          estimatedManaForPlannedCreations: total,
+          outDir,
+        },
+        null,
+        2
+      )
+    )
+    if (errors.length) {
+      console.log(errors.join('\n'))
+      process.exitCode = 1
+    }
+    return
+  }
+
+  // Apply.
+  if (!stateFile)
+    throw new Error(
+      '--state <file> is required with --apply (it records every request)'
+    )
+  const apiKey = process.env.MANIFOLD_API_KEY
+  if (!apiKey)
+    throw new Error(
+      'MANIFOLD_API_KEY must be set in the environment for --apply'
+    )
+  const api = makeHttpApi({ apiBase, apiKey, allowWrites: true })
+  const result = await applyManifest(
+    manifest,
+    state,
+    api,
+    {
+      apply: true,
+      creatorUsername: args['creator-username']
+        ? String(args['creator-username'])
+        : undefined,
+      maxTotalMana: args['max-mana'] ? Number(args['max-mana']) : undefined,
+      retryUnconfirmed: !!args['retry-unconfirmed'],
+      log: (l) => console.log(l),
+    },
+    (s) => writeAtomic(stateFile, s)
+  )
+  writeAtomic(
+    path.join(outDir, `dashboard-mapping.${env}.json`),
+    buildDashboardMapping(manifest, state)
+  )
+  console.log(JSON.stringify({ mode: 'apply', env, ...result }, null, 2))
+  if (result.stoppedReason || result.failed.length || result.pending.length)
+    process.exitCode = 1
+}
+
+main().catch((e) => {
+  console.error(e instanceof Error ? e.message : e)
+  process.exit(1)
+})

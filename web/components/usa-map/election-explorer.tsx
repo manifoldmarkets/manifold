@@ -11,6 +11,7 @@ import { CongressHouse } from 'web/public/custom-components/congress_house'
 import { CongressSenate } from 'web/public/custom-components/congress_senate'
 import { Governor } from 'web/public/custom-components/governor'
 import { ElectionBalance } from './election-balance'
+import { sourceAudit } from './audited-sources'
 import { Contract, contractPath } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
@@ -26,12 +27,7 @@ import {
   HELD_COLORS,
 } from './election-incumbents'
 import { DATA } from './usa-map-data'
-import {
-  DEM_COLOR,
-  REP_COLOR,
-  isCandidateLabelledAnswer,
-  isColorLight,
-} from './state-election-map'
+import { DEM_COLOR, REP_COLOR, isColorLight } from './state-election-map'
 import {
   Atlas,
   buildRaces,
@@ -209,7 +205,13 @@ export function ElectionExplorer(props: Props) {
       tabIndex: (race && matches(race)) || noElection ? 0 : -1,
       'aria-label': race
         ? `${race.label}, ${
-            race.odds
+            race.basis?.kind === 'ballot'
+              ? `${race.basis.party} same-party ballot`
+              : race.basis?.kind === 'decided'
+              ? `${race.basis.candidate} elected unopposed`
+              : race.basis?.kind === 'candidate-only'
+              ? 'candidate market only'
+              : race.odds
               ? `${pct(Math.max(...Object.values(race.odds)))} ${
                   leadingParty(race.odds)
                     ? outcomeLabel(leadingParty(race.odds)!)
@@ -437,12 +439,24 @@ export function ElectionExplorer(props: Props) {
         </header>
         <div className={styles.coverage}>
           <span>
-            {races.length - summary.leaders.unpriced} of {races.length} races
-            priced{mode === 'senate' && ' · 65 seats not on the ballot'}
+            {
+              races.filter(
+                (r) =>
+                  r.odds &&
+                  r.basis?.kind !== 'ballot' &&
+                  r.basis?.kind !== 'decided'
+              ).length
+            }{' '}
+            of {races.length} seats with party odds
+            {mode === 'house' &&
+              ` · ${
+                summary.counts['fixed-d'] + summary.counts['fixed-r']
+              } determined by ballot`}
+            {mode === 'senate' && ' · 65 seats not on the ballot'}
           </span>
           <span>
             {summary.leaders.unpriced > 0 &&
-              `${summary.leaders.unpriced} unpriced`}
+              `${summary.leaders.unpriced} without party odds`}
             {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
             {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
           </span>
@@ -784,7 +798,7 @@ export function ElectionExplorer(props: Props) {
             )}
             <span>
               <i className={styles.hatchSwatch} />
-              Unpriced
+              No party odds
             </span>
             {mode !== 'house' && (
               <span>
@@ -852,14 +866,26 @@ export function ElectionExplorer(props: Props) {
                     ?.color,
                 }}
               >
-                {TIERS.find((t) => t.id === raceTier(selectedRace))?.label}
+                {selectedRace.basis?.kind === 'candidate-only'
+                  ? 'Candidate market'
+                  : TIERS.find((t) => t.id === raceTier(selectedRace))?.label}
               </span>
               {selectedRace.odds && <RaceQuote race={selectedRace} />}
             </div>
-            {selectedRace.odds && (
-              <div className={styles.raceBar}>
-                {(['dem', 'rep', 'other', 'notDem', 'notRep'] as const).map(
-                  (p, i) => (
+            {selectedRace.odds &&
+              selectedRace.basis?.kind !== 'ballot' &&
+              selectedRace.basis?.kind !== 'decided' && (
+                <div className={styles.raceBar}>
+                  {(
+                    [
+                      'dem',
+                      'rep',
+                      'other',
+                      'notDem',
+                      'notRep',
+                      'unknown',
+                    ] as const
+                  ).map((p, i) => (
                     <span
                       key={p}
                       style={{
@@ -870,22 +896,39 @@ export function ElectionExplorer(props: Props) {
                           OTHER_COLOR,
                           COMPLEMENT_COLOR,
                           COMPLEMENT_COLOR,
+                          COMPLEMENT_COLOR,
                         ][i],
                       }}
                     />
-                  )
-                )}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
             <IncumbentDetails
               mode={mode}
               state={selectedRace.state}
               district={selectedRace.district}
             />
+            {selectedRace.basis?.kind === 'ballot' && (
+              <p className={styles.note}>
+                Both November finalists are{' '}
+                {selectedRace.basis.party === 'D' ? 'Democrats' : 'Republicans'}
+                : {selectedRace.basis.finalists.join(' and ')}. This seat counts
+                by the certified ballot. Candidate odds are separate.
+              </p>
+            )}
+            {selectedRace.basis?.kind === 'decided' && (
+              <p className={styles.note}>
+                {selectedRace.basis.candidate} is unopposed and deemed elected.
+                This seat is not on the November ballot.
+              </p>
+            )}
             {!selectedRace.contract ? (
               <p className={styles.empty}>
-                No Manifold market is linked to this race yet. It is excluded
-                from priced seat estimates.
+                {selectedRace.basis?.kind === 'decided'
+                  ? 'No election market is needed for this decided seat.'
+                  : selectedRace.basis?.kind === 'ballot'
+                  ? 'No candidate market is linked yet; the ballot party still counts in the balance.'
+                  : 'No Manifold market is linked yet. This race is excluded from priced seat estimates.'}
               </p>
             ) : selectedRace.answerId &&
               selectedRace.contract.mechanism === 'cpmm-multi-1' &&
@@ -907,12 +950,8 @@ export function ElectionExplorer(props: Props) {
             )}
             {candidate &&
               candidate.id !== selectedRace.contract?.id &&
-              !(
-                selectedRace.contract?.mechanism === 'cpmm-multi-1' &&
-                selectedRace.contract.answers.some((a) =>
-                  isCandidateLabelledAnswer(a.text)
-                )
-              ) && (
+              sourceAudit(selectedRace.contract?.slug)?.kind !==
+                'candidate' && (
                 <div className={styles.candidates}>
                   <div className={styles.candidateHeading}>
                     <span className={styles.eyebrow}>Candidate market</span>
@@ -948,8 +987,13 @@ export function ElectionExplorer(props: Props) {
             </p>
             <p>
               Held Senate seats are hatched at the ends of the balance bar; safe
-              forecasts are separate. All 435 House seats are up in 2026, so an
-              unpriced race is not a locked-in seat.
+              forecasts are separate. House seats determined by the certified
+              ballot have separate D/R by ballot segments: nine same-party
+              California contests and Florida’s unopposed 10th district.
+              Candidate bets remain available independently of that
+              classification. Other missing prices never imply a safe or held
+              seat. Unclassified probability includes unknown or withdrawn
+              candidates and does not count as an independent win.
             </p>
             <p>
               Officeholders were checked on October 3, 2026 against the{' '}
@@ -1106,7 +1150,13 @@ function RaceQuote({ race }: { race: Race }) {
             : undefined,
       }}
     >
-      {!race.odds
+      {race.basis?.kind === 'ballot'
+        ? `${race.basis.party} · same-party ballot`
+        : race.basis?.kind === 'decided'
+        ? `${race.basis.party} · elected unopposed`
+        : race.basis?.kind === 'candidate-only'
+        ? 'Candidate market only'
+        : !race.odds
         ? 'Unpriced'
         : !party
         ? 'Tied'
@@ -1116,14 +1166,58 @@ function RaceQuote({ race }: { race: Race }) {
 }
 
 function RaceMarket({ contract }: { contract: Contract }) {
+  const audit = sourceAudit(contract.slug)
+  const answerColors =
+    audit && contract.mechanism === 'cpmm-multi-1'
+      ? Object.fromEntries(
+          contract.answers.map((a) => [
+            a.id,
+            audit.answerParties?.[a.id] === 'D'
+              ? '#adc4e3'
+              : audit.answerParties?.[a.id] === 'R'
+              ? '#ecbab5'
+              : '#9E9FBD',
+          ])
+        )
+      : undefined
   return (
     <>
       {contract.mechanism === 'cpmm-multi-1' ? (
-        <PartyPanel contract={contract} maxAnswers={5} />
+        <PartyPanel
+          contract={contract}
+          answerColors={answerColors}
+          hidePartyNote={!!audit}
+        />
       ) : contract.mechanism === 'cpmm-1' &&
         contract.outcomeType === 'BINARY' ? (
         <StateBinaryPartyPanel contract={contract} />
       ) : null}
+      {audit?.kind === 'candidate' && (
+        <p className={styles.note}>
+          Candidate market. Prices apply to the named candidates; replacement
+          and unlisted-winner rules depend on this market.
+        </p>
+      )}
+      {audit?.kind === 'candidate-binary' && (
+        <p className={styles.note}>
+          YES means {audit.candidate ?? 'the named candidate'} wins. NO means
+          any other winner, including someone from the same party. This bet does
+          not price party control.
+        </p>
+      )}
+      {audit?.confidence === 'conditional' && (
+        <p className={styles.note}>
+          Some resolution rules are unspecified. See chart for the market’s
+          criteria and comments.
+        </p>
+      )}
+      {contract.id === '0L8uQURR06' && (
+        <p className={styles.note}>
+          The title asks which party wins, but the Republican answer names “Dan
+          Sullivan.” Two candidates share that name; the intended scope needs
+          clarification.
+        </p>
+      )}
     </>
   )
 }
@@ -1152,6 +1246,7 @@ function ControlCard({
   const [outcome, setOutcome] = useState<'YES' | 'NO'>()
   const odds = electionOdds(contract, true)
   const rep = odds && odds.rep > odds.dem
+  const noLabel = label === 'Senate' ? 'Not Republican' : 'Democratic'
   const tradable =
     contract?.mechanism === 'cpmm-1' &&
     contract.outcomeType === 'BINARY' &&
@@ -1173,7 +1268,7 @@ function ControlCard({
         </strong>
       </span>
       <span className={styles.controlParty}>
-        {odds ? (rep ? 'Republican' : 'Democratic') : 'Unavailable'}
+        {odds ? (rep ? 'Republican' : noLabel) : 'Unavailable'}
       </span>
     </>
   )
@@ -1181,7 +1276,15 @@ function ControlCard({
     <>
       <div className={styles.controlCard}>
         <div className={styles.controlTop}>
-          <span>{label} control</span>
+          <span
+            title={
+              label === 'Senate'
+                ? 'Republicans win at least 51 seats, or 50 with the VP tiebreak, in the 2026 elections. Post-election party switches are not addressed by the market.'
+                : undefined
+            }
+          >
+            {label} control
+          </span>
           {contract && (
             <a
               className={styles.chartLink}
@@ -1220,11 +1323,12 @@ function ControlCard({
             <button
               disabled={!tradable}
               aria-haspopup="dialog"
-              aria-label={`Bet Democratic ${label} control`}
+              aria-label={`Bet ${noLabel} ${label} control`}
               onClick={() => setOutcome('NO')}
               style={{ color: DEM_COLOR }}
             >
-              <span>Dem</span> <strong>{pct(odds.dem)}</strong>
+              <span>{label === 'Senate' ? 'Not R' : 'Dem'}</span>{' '}
+              <strong>{pct(odds.dem)}</strong>
             </button>
             <button
               disabled={!tradable}
@@ -1250,7 +1354,10 @@ function ControlCard({
             questionPseudonym={`${label} control`}
             binaryPseudonym={{
               YES: { pseudonymName: 'Republican', pseudonymColor: 'sienna' },
-              NO: { pseudonymName: 'Democratic', pseudonymColor: 'azure' },
+              NO: {
+                pseudonymName: noLabel,
+                pseudonymColor: label === 'Senate' ? 'gray' : 'azure',
+              },
             }}
           />
         )}

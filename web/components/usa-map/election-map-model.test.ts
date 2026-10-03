@@ -85,6 +85,7 @@ test('missing markets do not erase scheduled races or manufacture prices', () =>
     other: 0,
     notDem: 0,
     notRep: 0,
+    unknown: 0,
     tied: 0,
     unpriced: 35,
   })
@@ -112,7 +113,11 @@ test('balance separates held seats from forecasts and keeps unknown House races 
   const house = balanceSegments(seatSummary(buildRaces('house', {}), 'house'))
   assert.deepEqual(
     house.map((s) => [s.id, s.count]),
-    [['unpriced', 435]]
+    [
+      ['fixed-d', 9],
+      ['unpriced', 425],
+      ['fixed-r', 1],
+    ]
   )
   const mixed = balanceSegments(
     seatSummary(
@@ -183,6 +188,7 @@ test('exact ties are separate, while toss-up leaders still count once', () => {
     other: 1,
     notDem: 0,
     notRep: 0,
+    unknown: 0,
     tied: 1,
     unpriced: 1,
   })
@@ -223,9 +229,10 @@ test('a Montana NO quote is not a Republican quote or a Republican seat', () => 
   assert.equal(raceTier(race), 'not-d')
   assert.equal(raceColor(race), COMPLEMENT_COLOR)
   const summary = seatSummary(races, 'house')
-  assert.equal(summary.leaders.rep, 0)
+  // CA-40 is the only Republican seat here: R v R on the certified ballot.
+  assert.equal(summary.leaders.rep, 1)
   assert.equal(summary.leaders.notDem, 1)
-  assert.equal(summary.expected.rep, 0)
+  assert.equal(summary.expected.rep, 1)
   assert.equal(summary.expected.notDem, 1 - 0.32)
   assert.equal(
     Object.values(summary.counts).reduce((a, b) => a + b, 0),
@@ -267,7 +274,8 @@ test('reviewed state portfolios add coverage without replacing curated races', (
     races.find((r) => r.id === 'TX-1')?.contract,
     additional['which-texas-house-districts-will-th']
   )
-  assert.equal(seatSummary(races, 'house').leaders.unpriced, 433)
+  // 9 same-party ballots and FL-10 (decided) count without a market.
+  assert.equal(seatSummary(races, 'house').leaders.unpriced, 423)
 })
 
 test('a cancelled source falls back, while malformed district portfolios do not price races', () => {
@@ -301,12 +309,22 @@ test('Alaska uses its reviewed candidate market over the Democratic district por
     [{ text: 'Alaska at-large', probability: 0.02 }],
     false
   )
-  const candidates = multi([
+  // Real IDs: the audited answer → party map applies (Schultz withdrew).
+  const auditedIds = ['AP0zQpUcug', 'ytQ5UsCccN', 'AzEt0Qtnu9', 'cAALtNgyhc']
+  const base = multi([
     { text: 'Nick Begich III (R)', probability: 0.3 },
     { text: 'Matt Schultz (D)', probability: 0.01 },
     { text: 'Bill Hill (I)', probability: 0.68 },
     { text: 'Other', probability: 0.01 },
   ])
+  const candidates = {
+    ...base,
+    id: '9zPhhzEnCc',
+    answers: (base as unknown as { answers: object[] }).answers.map((a, i) => ({
+      ...a,
+      id: auditedIds[i],
+    })),
+  } as Contract
   const additional = { 'who-will-win-the-alaska-house-elect': candidates }
   const race = buildRaces('house', {}, portfolio, additional).find(
     (r) => r.id === 'AK-0'
@@ -330,7 +348,7 @@ test('Alaska uses its reviewed candidate market over the Democratic district por
   }
 })
 
-test('same-party general-election candidate markets retain candidate bets and sum party odds', () => {
+test('same-party ballots count by ballot composition while keeping candidate bets', () => {
   const candidates = multi([
     { text: 'Candidate A (D)', probability: 0.6 },
     { text: 'Candidate B (D)', probability: 0.4 },
@@ -339,6 +357,7 @@ test('same-party general-election candidate markets retain candidate bets and su
     '2026-us-house-ca-7-winner': candidates,
   }).find((r) => r.id === 'CA-7')!
   assert.deepEqual(race.odds, { dem: 1, rep: 0, other: 0 })
+  assert.equal(race.basis?.kind, 'ballot')
   assert.equal(race.answerId, undefined)
   assert.equal(race.contract, candidates)
 })

@@ -28,7 +28,7 @@ export function ElectionBalance({
         </span>
         <span className={styles.threshold}>
           {mode === 'house'
-            ? '218 for a majority · all 435 seats up'
+            ? '218 for a majority · 435 seats'
             : mode === 'senate'
             ? '51 D / 50 R · hatched seats not up'
             : `${summary.total} governorships up`}
@@ -56,6 +56,11 @@ export function ElectionBalance({
               title={title}
               aria-label={`Filter ${title}`}
               aria-pressed={filter === segment.tier}
+              className={
+                segment.tier === 'fixed-d' || segment.tier === 'fixed-r'
+                  ? styles.heldSeats
+                  : undefined
+              }
               style={style}
               onClick={() => onFilter(segment.tier!)}
             >

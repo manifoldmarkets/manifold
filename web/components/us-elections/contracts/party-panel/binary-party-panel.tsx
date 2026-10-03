@@ -47,16 +47,7 @@ const politicsBinaryPseudonym = {
   },
 }
 
-const statePartyBinaryPseudonym = {
-  YES: {
-    pseudonymName: 'Republican',
-    pseudonymColor: 'sienna' as keyof typeof sliderColors,
-  },
-  NO: {
-    pseudonymName: 'Any other winner',
-    pseudonymColor: 'gray' as keyof typeof sliderColors,
-  },
-}
+import { binaryElectionLabels } from 'web/components/usa-map/audited-sources'
 
 // Party bars for a binary state market (e.g. the FL Senate special, "Will a
 // Republican win ...?"). NO includes Democrats, independents and other winners.
@@ -98,23 +89,24 @@ function StateBinaryPartyBar(props: {
   const { contract, outcome, userBets, user, showPosition } = props
   const { resolution } = contract
 
-  const isRep = outcome === 'YES'
-  const partyName = isRep ? 'Republican Party' : 'Any other winner'
-  const repProb = getDisplayProbability(contract)
-  const prob = isRep ? repProb : 1 - repProb
+  const isYes = outcome === 'YES'
+  const statePartyBinaryPseudonym = binaryElectionLabels(contract)
+  const partyName = statePartyBinaryPseudonym[outcome].pseudonymName
+  const yesProb = getDisplayProbability(contract)
+  const prob = isYes ? yesProb : 1 - yesProb
   const resolvedProb =
     resolution === 'YES'
-      ? isRep
+      ? isYes
         ? 1
         : 0
       : resolution === 'NO'
-      ? isRep
+      ? isYes
         ? 0
         : 1
       : resolution === 'MKT'
       ? prob
       : undefined
-  const probChange = isRep
+  const probChange = isYes
     ? contract.probChanges.day
     : -contract.probChanges.day
 

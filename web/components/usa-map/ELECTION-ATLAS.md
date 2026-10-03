@@ -10,7 +10,8 @@ coordinates are the `hex` and `tiles` fields of that page's `data.js`.
 The interface credits this source in its methodology dialog.
 
 The atlas uses the reference's 120th Congress district boundaries, including
-its redistricting updates and its 2022 Missouri map pending litigation. It
+its redistricting updates and its 2022 Missouri map. The October 3 audit reports
+that Missouri will use that map; see the official-source evidence below. It
 does not automatically follow later boundary changes. Check the source and
 district market definitions before replacing the snapshot.
 
@@ -22,43 +23,33 @@ convert `objects.states` and `objects.districts_2027` with `topojson-client`
 rounded path centroid; retain the source hex and tile coordinates. Assert
 435 unique district IDs in both representations.
 
-Prices come from existing Manifold contracts and their subscriptions. The current
-prototype starts with the original 68-district market, then falls back to six
-state portfolios (116 additional districts) and eight individual markets in
-`web/public/data/house-market-data.ts`. The October 1, 2026 search found 192
-candidate mappings; it did not establish equivalent resolution criteria, nor
-prove that the other 243 districts have no markets anywhere on Manifold.
-The October 2 review below adds a ninth individual source that overrides
-Alaska's existing portfolio entry without increasing the covered district count.
+Prices come from existing Manifold contracts and their subscriptions. The October
+3 database audit and integration record are in
+`backend/scripts/elections-2026/audit/INTEGRATION.md`. That record distinguishes
+implemented mappings, conditional sources and recommendations requiring funding.
+The original House portfolio retains priority except for reviewed overrides.
 
-A subsequent audit of all 15 descriptions, answer sets and 26 public comments
-found that the original market uses ballot party affiliation, explicitly includes
-Democratic fusion tickets, and settles finally on certified results. Names in
-answer labels do not change its party proposition. All six added portfolios have
-empty descriptions. CA-7/34 specify the November winner; CO-1 has creator-comment
-general-election context; the other individual sources have sparse criteria.
-None of the 14 additional sources has established equivalence to the original.
-They remain candidate mappings in the prototype, not approved canonical sources.
+Audited sources use explicit contract/answer identities and binary orientation.
+Democratic NO and Republican NO are complements, never the other party's quote.
+Candidate binaries supply candidate bets only. Candidate multi markets can supply
+party estimates by audited affiliation, with visible candidate-market caveats;
+unknown, withdrawn and mixed outcomes remain unclassified. Historical unaudited
+sources retain their legacy interpretation. Homepage colors use the audited
+interpretation for these 2026 sources too.
 
-Party-win NO quotes are stored as `notDem` / `notRep`, displayed as any other
-winner, and counted separately from Democratic, Republican and independent
-winners. They do not become the opposing party's probability or seat count.
-The two chamber-control markets retain their separate D/R control presentation.
+Nine California same-party ballots and Florida's unopposed 10th district count
+by ballot composition/status in separate balance segments. These are not traded
+100% party propositions. Candidate markets remain attached where available,
+including CA-12's candidate binary. Missing/cancelled candidate markets do not
+change the ballot basis. All other unlinked seats remain unpriced.
 
-Before treating this as a homogeneous party forecast, named-candidate markets
-cannot automatically become ballot-party probabilities: replacements, party
-switches and an unclassified `Other` answer can change the result. Two Democratic
-candidate answers summing to 100% is an answer-set constraint, not a separately
-traded 100% Democrat-win proposition. Keep candidate bets separately labelled or
-hold these sources out of party totals until the necessary rules are clarified.
+AndrewG's Senate-control market has no explicit party-switch cutoff. Its NO
+button says Not Republican; the title tooltip describes the election-seat
+threshold and unresolved timing. The House control card retains its D/R display.
+No creation, subsidy or other market write is part of this integration.
 
-Cancelled/invalid quotes fall through to the next source. Independent portfolio
-answers are Democrat-win propositions; a NO bet means any non-Democratic winner.
-The prototype still sums candidate party tags; the audit above identifies
-why that must not be described as verified-equivalent party odds.
-Never map primary, vote-margin, conditional, or state-legislature questions.
-Unlinked districts stay unpriced; no assumed safe-seat probabilities are added.
-Governor ballot coverage is maintained separately from market coverage.
+The following October 2 review is historical context; the October 3 integration
+record supersedes its mapping/coverage statements.
 
 ### October 2 market-selection review
 
@@ -117,7 +108,7 @@ and `tsconfig-paths` already present in the repository. Set
 then run:
 
 ```
-node -r ts-node/register/transpile-only -r tsconfig-paths/register --test web/components/usa-map/election-map-model.test.ts web/components/usa-map/election-incumbents.test.ts
+node -r ts-node/register/transpile-only -r tsconfig-paths/register --test web/components/usa-map/election-map-model.test.ts web/components/usa-map/election-incumbents.test.ts web/components/usa-map/audited-sources.test.ts
 ```
 
 Visual checks: desktop and narrow widths; House geographic/hex maps; Senate
@@ -165,7 +156,8 @@ assumed odds for unlinked races; they do not alter priced seat estimates.
 The balance bar separates held Senate seats (34 Democratic caucus, 31 Republican)
 from safe forecasts with hatching and a divider at each end. Forecast D tiers
 run left-to-right toward the uncertain middle, with R tiers toward the right.
-All 435 House seats are up in 2026: missing markets remain unpriced, never held.
+All 435 House seats are represented; nine same-party CA ballots and unopposed
+FL-10 count separately by ballot status. Other missing markets remain unpriced.
 Duplicate race lists below the map have been removed.
 
 Answer and binary betting dialogs label the currently selected outcome's quote;

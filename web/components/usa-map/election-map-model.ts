@@ -8,6 +8,14 @@ import {
 } from 'web/public/data/house-market-data'
 import { DATA } from './usa-map-data'
 import {
+  basisOdds,
+  fixedBasisIds,
+  raceOdds,
+  seatBasis,
+  SeatBasis,
+  sourceAudit,
+} from './audited-sources'
+import {
   isDemocraticAnswer,
   isRepublicanAnswer,
   partyProbsToColor,
@@ -19,14 +27,9 @@ const GOVERNOR_STATES =
   'AK AL AR AZ CA CO CT FL GA HI IA ID IL KS MA MD ME MI MN NE NH NM NV NY OH OK OR PA RI SC SD TN TX VT WI WY'.split(
     ' '
   )
-export type Odds = {
-  dem: number
-  rep: number
-  other: number
-  notDem?: number
-  notRep?: number
-}
-const OUTCOMES = ['dem', 'rep', 'other', 'notDem', 'notRep'] as const
+import { normalizeOdds, Odds, OUTCOMES } from './election-odds'
+export { normalizeOdds } from './election-odds'
+export type { Odds } from './election-odds'
 export type Race = {
   id: string
   state: string
@@ -37,6 +40,9 @@ export type Race = {
   answerId?: string
   matchup?: string
   odds?: Odds
+  // Why the race counts the way it does: a market, a same-party ballot, a
+  // seat decided before Election Day, or a candidate-only source.
+  basis?: SeatBasis
 }
 export type Atlas = {
   states: { state: string; name: string; path: string; center: number[] }[]
@@ -58,10 +64,18 @@ export type Atlas = {
 export const OTHER_COLOR = '#318b83'
 export const COMPLEMENT_COLOR = '#9e9fbd'
 export const outcomeLabel = (outcome: keyof Odds) =>
-  ({ dem: 'D', rep: 'R', other: 'Other', notDem: 'Not D', notRep: 'Not R' }[
-    outcome
-  ])
+  ({
+    dem: 'D',
+    rep: 'R',
+    other: 'Other',
+    notDem: 'Not D',
+    notRep: 'Not R',
+    unknown: 'Unclassified',
+  }[outcome])
 export const TIERS = [
+  { id: 'fixed-d', label: 'D by ballot', color: '#4a5fa8' },
+  { id: 'fixed-r', label: 'R by ballot', color: '#9d3336' },
+  { id: 'unknown', label: 'Unclassified outcome', color: COMPLEMENT_COLOR },
   { id: 'safe-d', label: 'Safe D', color: '#4a5fa8' },
   { id: 'likely-d', label: 'Likely D', color: '#718ac4' },
   { id: 'lean-d', label: 'Lean D', color: '#a9bde0' },
@@ -75,20 +89,6 @@ export const TIERS = [
   { id: 'unpriced', label: 'Unpriced', color: '#a4a4b5' },
 ] as const
 export type Tier = (typeof TIERS)[number]['id']
-
-export function normalizeOdds(odds: Odds): Odds | undefined {
-  const values = Object.values(odds)
-  const sum = values.reduce((a, b) => a + b, 0)
-  if (values.some((p) => !Number.isFinite(p) || p < 0) || sum <= 0)
-    return undefined
-  return {
-    dem: odds.dem / sum,
-    rep: odds.rep / sum,
-    other: odds.other / sum,
-    ...(odds.notDem !== undefined ? { notDem: odds.notDem / sum } : {}),
-    ...(odds.notRep !== undefined ? { notRep: odds.notRep / sum } : {}),
-  }
-}
 
 // These curated binary markets all ask whether the Republican wins.
 // Keep independent outcomes separate, including races with no Democratic nominee.
@@ -128,13 +128,16 @@ export function leadingParty(odds?: Odds): keyof Odds | undefined {
     : sorted[0]
 }
 
-export function raceTier(race: Pick<Race, 'odds'>): Tier {
+export function raceTier(race: Pick<Race, 'odds' | 'basis'>): Tier {
+  if (race.basis?.kind === 'ballot' || race.basis?.kind === 'decided')
+    return race.basis.party === 'D' ? 'fixed-d' : 'fixed-r'
   const o = race.odds
   if (!o) return 'unpriced'
   const party = leadingParty(o)
   if (party === 'notDem') return 'not-d'
   if (party === 'notRep') return 'not-r'
   if (party === 'other') return 'other'
+  if (party === 'unknown') return 'unknown'
   if (!party || o[party] < 0.6) return 'tossup'
   return `${o[party] >= 0.9 ? 'safe' : o[party] >= 0.75 ? 'likely' : 'lean'}-${
     party === 'dem' ? 'd' : 'r'
@@ -146,7 +149,7 @@ export const raceColor = (race: Race) =>
     ? undefined
     : leadingParty(race.odds) === 'other'
     ? OTHER_COLOR
-    : ['notDem', 'notRep'].includes(leadingParty(race.odds) ?? '')
+    : ['notDem', 'notRep', 'unknown'].includes(leadingParty(race.odds) ?? '')
     ? COMPLEMENT_COLOR
     : partyProbsToColor(
         race.odds.notRep ?? race.odds.dem,
@@ -232,11 +235,15 @@ export function buildRaces(
         }`,
         shortLabel: state,
         contract: contracts[state] ?? undefined,
-        odds: electionOdds(contracts[state]),
+        ...(({ odds, basis }) => ({ odds, basis }))(
+          raceOdds(state, contracts[state], contracts[state]?.slug, (c) =>
+            electionOdds(c)
+          )
+        ),
       }))
   const priced = new Map<
     string,
-    Pick<Race, 'contract' | 'answerId' | 'odds' | 'matchup'>
+    Pick<Race, 'contract' | 'answerId' | 'odds' | 'matchup' | 'basis'>
   >()
   for (const contract of [
     house,
@@ -250,7 +257,18 @@ export function buildRaces(
     )
       continue
     for (const answer of contract.answers) {
-      const parsed = parseHouseAnswer(answer.text)
+      const audited = sourceAudit(contract.slug)
+      if (audited && contract.id !== audited.contractId) continue
+      const mapped = audited?.answerDistricts?.[answer.id]
+      // This portfolio has audited IDs because its labels include incumbent tags.
+      if (audited?.answerDistricts && !mapped) continue
+      const parsed = mapped
+        ? {
+            state: mapped.split('-')[0],
+            district: Number(mapped.split('-')[1]),
+            matchup: undefined,
+          }
+        : parseHouseAnswer(answer.text)
       if (!parsed || answer.resolution === 'CANCEL') continue
       const id = districtId(parsed.state, parsed.district)
       if (priced.has(id)) continue
@@ -267,13 +285,35 @@ export function buildRaces(
   }
   for (const source of HOUSE_RACE_MARKETS) {
     const contract = additionalHouse[source.slug]
-    const odds = electionOdds(contract)
+    const { odds, basis } = raceOdds(
+      source.district,
+      contract,
+      contract?.slug ?? source.slug,
+      electionOdds
+    )
+    // Candidate-only sources stay attached for betting but never price party.
     if (
       contract &&
-      odds &&
+      contract.resolution !== 'CANCEL' &&
+      (odds || basis.kind !== 'market') &&
       (source.preferOverPortfolio || !priced.has(source.district))
     )
-      priced.set(source.district, { contract, odds })
+      priced.set(source.district, { contract, odds, basis })
+  }
+  // Same-party ballots and decided seats count by that fact, with or without
+  // a (candidate) market, and exactly once.
+  for (const id of fixedBasisIds()) {
+    const basis = seatBasis(id)
+    const current = priced.get(id)
+    // A portfolio's party question is not a candidate betting source.
+    const candidateMarket = current?.answerId ? undefined : current
+    priced.set(id, {
+      ...candidateMarket,
+      odds: basisOdds(basis),
+      basis,
+      matchup:
+        basis.kind === 'ballot' ? basis.finalists.join(' · ') : undefined,
+    })
   }
   return Object.entries(DATA)
     .filter(([state]) => state !== 'DC')
@@ -312,10 +352,12 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
     other: 0,
     notDem: 0,
     notRep: 0,
+    unknown: 0,
     tied: 0,
     unpriced: 0,
   }
   const expected = {
+    unknown: 0,
     dem: held.dem,
     rep: held.rep,
     other: 0,
@@ -345,6 +387,7 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
 // are distinct from safe forecasts and cannot filter races on this year's ballot.
 export function balanceSegments(summary: ReturnType<typeof seatSummary>) {
   const tierOrder: Tier[] = [
+    'fixed-d',
     'safe-d',
     'likely-d',
     'lean-d',
@@ -352,10 +395,12 @@ export function balanceSegments(summary: ReturnType<typeof seatSummary>) {
     'other',
     'not-d',
     'not-r',
+    'unknown',
     'unpriced',
     'lean-r',
     'likely-r',
     'safe-r',
+    'fixed-r',
   ]
   const held = (party: 'dem' | 'rep') => ({
     id: `held-${party}`,
