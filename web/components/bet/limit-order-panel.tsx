@@ -163,6 +163,14 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
+  const quoteKey = `${contract.id}-${multiProps?.answerToBuy.id}-${outcome}`
+  const previousQuoteKey = useRef(quoteKey)
+  useEffect(() => {
+    if (previousQuoteKey.current === quoteKey) return
+    previousQuoteKey.current = quoteKey
+    setLimitProbInt(Math.round(initialProb * 100))
+    setError(undefined)
+  }, [quoteKey, initialProb])
 
   // Track the last applied prefill timestamp to avoid re-applying or resetting
   const lastAppliedPrefillTimestamp = useRef<number | null>(null)

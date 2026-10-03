@@ -1,0 +1,382 @@
+<title>2026 Ballot Measure Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (memo); wide tables scroll inside their own frames. Non-party palette: measures are not D/R. */
+:root {
+  --bg: #f5f6f4;
+  --surface: #ffffff;
+  --fg: #1d2420;
+  --muted: #5d6762;
+  --line: #d8ddd9;
+  --accent: #2d6a5f;
+  --pass: #2f6f4e;
+  --fail: #8a4b2a;
+  --warn: #8f6200;
+  --warn-bg: #fff3d6;
+  --bad: #a3262a;
+  --bad-bg: #fde9e8;
+  --ok: #2c6e3f;
+  --ok-bg: #e4f2e7;
+  --chip: #edf0ee;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121614; --surface: #1a201d; --fg: #e3e8e5; --muted: #9aa49f; --line: #2c3430; --accent: #7fc4b5;
+    --pass: #8fd3a8; --fail: #e3a67f; --warn: #f0c060; --warn-bg: #3a2e12; --bad: #f19a96; --bad-bg: #3d1d1d;
+    --ok: #8fd3a2; --ok-bg: #173323; --chip: #232a26; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1a201d; --fg: #e3e8e5; --muted: #9aa49f; --line: #2c3430; --accent: #7fc4b5;
+  --pass: #8fd3a8; --fail: #e3a67f; --warn: #f0c060; --warn-bg: #3a2e12; --bad: #f19a96; --bad-bg: #3d1d1d;
+  --ok: #8fd3a2; --ok-bg: #173323; --chip: #232a26; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; border-bottom: 3px solid var(--fg); padding-bottom: 18px; }
+.eyebrow { font: 600 12px/1.3 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(30px, 5vw, 46px)/1.05 var(--display); font-stretch: 82%; margin: 0; text-wrap: balance; }
+h2 { font: 750 26px/1.15 var(--display); font-stretch: 85%; margin: 0; text-wrap: balance; }
+h3 { font: 700 18px/1.25 var(--display); font-stretch: 92%; margin: 0; }
+p, li { max-width: 72ch; }
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.25em; display: grid; gap: 6px; }
+section { display: grid; gap: 16px; }
+.lede { font-size: 17px; }
+.meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11.5px/1.3 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--chip); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip { display: inline-block; font: 600 11px/1.6 var(--body); padding: 0 7px; border-radius: 999px; background: var(--chip); white-space: nowrap; }
+.chip.ok { background: var(--ok-bg); color: var(--ok); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.callout { border-left: 4px solid var(--warn); background: var(--warn-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.grid2 > * { min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+.small { font-size: 13px; color: var(--muted); }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font: 12.5px/1.55 var(--mono); margin: 0; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+details > summary { cursor: pointer; font-weight: 600; }
+details[open] > summary { margin-bottom: 10px; }
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Manifold · PR #4114 <span class="mono">codex/elections-map@cd0d1be62</span> · fourth tab: ballot measures</div>
+  <h1>2026 Ballot Measure Audit</h1>
+  <p class="lede">Every statewide question on the November 3, 2026 ballot: verified against official sources, matched to existing Manifold markets by proposition rather than title, and given a reviewed, dry-run-only creation plan where no suitable market exists.</p>
+  <div class="meta">
+    <span>DB snapshot <b>2026-10-03 05:11 UTC</b> (candidate pull) · deep pulls to 08:0x UTC (read-only role, read-only transactions)</span>
+    <span>Official checks 2026-10-03</span>
+    <span>No market was created, edited, subsidised, bet on or commented on.</span>
+  </div>
+</header>
+
+<section>
+  <h2>Summary</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Status</th><th class="num">Measures</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip ok">reuse · confirmed</span></td><td class="num">10</td><td>The market text matches approval at the 2026 vote, with the right YES orientation.</td></tr>
+      <tr><td><span class="chip warn">reuse · conditional</span></td><td class="num">11</td><td>Usable with a stated gap: an empty description, an unspecified off-ballot rule, or an answer not renamed to the official number.</td></tr>
+      <tr><td><span class="chip">create · ready</span></td><td class="num">102</td><td>A genuine gap with a concrete payload. Costs Ṁ102,000 at tier 1,000.</td></tr>
+      <tr><td><span class="chip bad">create · held</span></td><td class="num">20</td><td>A gap, but identity, criteria or the official source are not confirmed. A draft entry exists and is excluded from apply.</td></tr>
+      <tr><td><span class="chip bad">held</span></td><td class="num">2</td><td>A human must decide: CA Prop 43 identity, and Idaho's advisory gun question.</td></tr>
+      <tr><td><b>Total on the Nov 3 ballot</b></td><td class="num"><b>145</b></td><td>39 states. One removed Arkansas initiative, not in the inventory, is recorded as out of scope.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Cost (no budget approved)</h3>
+      <ul>
+        <li><b>Ṁ102,000</b> for 102 markets at tier 1,000.</li>
+        <li><b>+Ṁ117,000</b> if all 13 recommended upgrades to 10,000 are accepted, for <b>Ṁ219,000</b> in total.</li>
+        <li>The 20 held entries would add Ṁ20,000 at 1,000 each if resolved.</li>
+        <li>The 306,000 race budget does <b>not</b> cover any of this.</li>
+        <li>Recommended subsidies to existing markets are listed separately and not implemented.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Reference check</h3>
+      <p>The reference map showed 0 of 145 measures priced. In fact, 21 measures already have a usable source (10 confirmed, 11 conditional) and 3 more have a candidate source awaiting a creator's answer. Only 102 are ready-to-create gaps.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Inventory reconciliation</h2>
+  <p>All 145 discovery entries are on the Nov 3 ballot. There are no additions in any state. The one removal (Arkansas "Ballot Measure Rights", rejected July 30) was never in the inventory. Each measure was verified against the Secretary of State or the official voter guide. Corrections and notable facts:</p>
+  <ul>
+    <li><b>California:</b>
+      <ul>
+        <li>The billionaire tax is <b>Prop 40</b> (25-0024A1), and voter ID is <b>Prop 39</b> (25-0007A1).</li>
+        <li><b>Prop 43 is the Legislature's ACA 22.</b> The Howard Jarvis "Local Taxpayer Protection Act" initiative (#1983) was withdrawn June 25, and ACA 13 was removed.</li>
+        <li>Props 41 and 42 can void Prop 40 if they get more yes votes.</li>
+      </ul>
+    </li>
+    <li><b>Washington:</b> the income-tax measure is <b>IP26-645</b> (initiative to the people), not IL26-645.</li>
+    <li><b>North Dakota:</b> the court struck the term-limits measure, so the 60% measure is now <b>Measure 1</b> and free school meals is <b>Measure 2</b>.</li>
+    <li><b>New Mexico:</b> the inventory's bond amounts are wrong; official figures are $21.6M, $19.3M and $352.2M.</li>
+    <li><b>Missouri:</b>
+      <ul>
+        <li><b>Amendment 3 (2026)</b> is new and would repeal 2024's Amendment 3. Markets on the 2022 and 2024 votes are rejected.</li>
+        <li><b>Prop A:</b> YES approves the 2025 map (HB 1); NO keeps the 2022 boundaries.</li>
+      </ul>
+    </li>
+    <li><b>Nevada:</b> Questions 6 and 7 are the required second votes. Both first passed in 2024; only the 2026 vote counts here.</li>
+    <li><b>Approval rules recorded verbatim:</b>
+      <ul>
+        <li>Florida: 60%.</li>
+        <li>Colorado: 55%, except Amendment 87, which only repeals language.</li>
+        <li>Tennessee: YES must also exceed half of all votes cast for governor.</li>
+        <li>Wyoming: a majority of all ballots cast.</li>
+        <li>Minnesota: a blank counts as NO.</li>
+        <li>Nebraska: 35% of total votes.</li>
+        <li>Massachusetts: 30% turnout rule.</li>
+        <li>New Hampshire: two-thirds.</li>
+        <li>Washington: votes on the measure must be at least ⅓ of all votes cast.</li>
+      </ul>
+    </li>
+    <li><b>Other states:</b>
+      <ul>
+        <li>Idaho's gun question is advisory and multiple-choice.</li>
+        <li>Utah: A is the publication amendment and B is the 60% tax amendment.</li>
+        <li>Maryland Question 3's wording was replaced by court order on Sept 3.</li>
+        <li>Wisconsin's three amendments are on the November ballot, not April's.</li>
+        <li>Arizona 143, 145 and 212 were struck by courts.</li>
+      </ul>
+    </li>
+    <li><b>Access gaps:</b> the official sites for Arizona, Nevada, Alaska, Florida, Georgia, North Carolina, Rhode Island, Michigan and Ohio blocked this network, and Arizona and Alaska blocked a second fetch path too. Those identities rest on Ballotpedia quoting official text, legislature or county copies, or news. That is why the Arizona and Alaska creation entries are held.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Existing markets to reuse</h2>
+  <p>Pool liquidity, live order depth and the simulated Ṁ100 buy come from the snapshot, using the repository's bet code (<code>common/new-bet</code>). Portfolio answers are independent; the portfolio's total liquidity is never treated as per-measure depth.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Measure</th><th>Source</th><th>YES means</th><th>Off-ballot</th><th class="num">Liquidity</th><th>Ṁ100 YES / NO</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>CA Prop 39 (voter ID)</td><td><span class="mono">lRZgqlQttA</span> Jack1 binary</td><td>approved</td><td>N/A</td><td class="num">1,150</td><td>29.0→35.1 / →26.5</td><td><span class="chip ok">confirmed</span></td></tr>
+      <tr><td>CA Prop 40 (billionaire tax)</td><td><span class="mono">9nsyLEANnz</span> binary, 450 bettors</td><td>passes (YES even if 41/42 later void it)</td><td>NO</td><td class="num">1,100</td><td>28.8→31.0 / →24.5</td><td><span class="chip ok">confirmed</span></td></tr>
+      <tr><td>CA Props 4, 5, 37</td><td>zax portfolio <span class="mono">uLQCU5QPuc</span> answers <span class="mono">AhEzEguEUU</span>, <span class="mono">UUUt0U9NPN</span>, <span class="mono">5Z8sOAnOqh</span></td><td>approved</td><td>NO</td><td class="num">3,333 / 3,333 / 1,000 per answer</td><td>Prop 37: 62.0→65.5 / →56.2</td><td><span class="chip warn">conditional</span> answers not renamed to prop numbers</td></tr>
+      <tr><td>NV Q6 (abortion) · Q7 (voter ID)</td><td><span class="mono">psU5ytQOIp</span> · <span class="mono">E06l9Ntq8S</span></td><td>approved at the 2026 second vote</td><td>NO</td><td class="num">1,000 each</td><td>Q7: 79.9→81.4 / →73.4</td><td><span class="chip ok">confirmed</span></td></tr>
+      <tr><td>AZ Prop 318</td><td><span class="mono">pgRndcpPUd</span></td><td>approved</td><td>unspecified</td><td class="num">101</td><td>50.0→79.8 / →20.2</td><td><span class="chip ok">confirmed</span>; non-neutral title; subsidy 900</td></tr>
+      <tr><td>CO Prop 132</td><td><span class="mono">UOt2ZnLlZS</span> ("Initiative 85", found by API search)</td><td>approved</td><td>NO</td><td class="num">1,000</td><td>62.5→66.0 / →56.7</td><td><span class="chip ok">confirmed</span></td></tr>
+      <tr><td>WY Initiative 1</td><td><span class="mono">ORzdEn66CO</span> (states the majority-of-all-ballots rule)</td><td>approved</td><td>NO</td><td class="num">1,000</td><td>34.1→40.2 / →31.1</td><td><span class="chip ok">confirmed</span>; stale</td></tr>
+      <tr><td>AL Amendment 3</td><td><span class="mono">Qd9Z9nZIQu</span></td><td>approved</td><td>unspecified</td><td class="num">100</td><td>94.0→96.1 / →38.9</td><td><span class="chip ok">confirmed</span>; subsidy 900</td></tr>
+      <tr><td>MO Prop A</td><td><span class="mono">nEUCdz5As9</span> (creator <code>z6x0yyj2dj</code>)</td><td>2025 map approved (YES on Prop A)</td><td>unspecified</td><td class="num">1,000</td><td>39.1→44.9 / →35.9</td><td><span class="chip ok">confirmed</span>; subsidy 9,000</td></tr>
+      <tr><td>MA Q3 (all-party primary)</td><td><span class="mono">yscS66uzy8</span> binary</td><td>approved</td><td>N/A</td><td class="num">1,000</td><td>36.8→42.7 / →33.5</td><td><span class="chip ok">confirmed</span>; deeper than its portfolio answer (111)</td></tr>
+      <tr><td>MA Q1, Q2, Q4–Q9</td><td>Gabrielle portfolio <span class="mono">gdgt00gApu</span>, one answer each</td><td>approved</td><td>unspecified</td><td class="num">111 per answer</td><td>Q1: 44.0→76.1 / →19.6</td><td><span class="chip warn">conditional</span> empty description; subsidy 2,000</td></tr>
+    </tbody>
+  </table></div>
+  <details>
+    <summary>Verdicts on the 16 supplied leads</summary>
+    <ul>
+      <li><span class="mono">uLQCU5QPuc</span> zax California portfolio: answers for Props 4, 5 and 37 are reused, conditionally. The voter-ID answer is a shallower duplicate of Prop 39. Answers <span class="mono">zCy2A0cONh</span> (ACA 13, removed) and <span class="mono">ASdN2yPRp2</span> (#1983, withdrawn) are not 2026 measures, although both are still open. The total liquidity of 13,000 is not per-measure depth.</li>
+      <li><span class="mono">lRZgqlQttA</span> is confirmed as Prop 39. It resolves N/A if off the ballot, unlike the portfolio, which resolves NO. <span class="mono">Dfb107f99f</span> is a verbatim copy with 100 liquidity.</li>
+      <li><span class="mono">9nsyLEANnz</span> is confirmed as Prop 40. <span class="mono">A8UOqyCPZ8</span> is a suitable but shallower duplicate. <span class="mono">n88RANq2Ac</span> is derivative prop bets, and <span class="mono">9gqSEL8ppn</span> is conditional on Prop 40 passing; both are rejected.</li>
+      <li><span class="mono">6UytuZ0cQh</span> BenM "Prop 43" is <b>held</b>. Its description is about the withdrawn #1983 initiative, not ACA 22.</li>
+      <li><span class="mono">t299qpNsCt</span> is conditional: the creator means the 2026 voter-ID Prop 39, with 100 liquidity.</li>
+      <li><span class="mono">yscS66uzy8</span> is MA Q3, confirmed. <span class="mono">gdgt00gApu</span> is the MA portfolio, conditional; its Q5 answer is petition 25-17 (revenue limit), not 25-18.</li>
+      <li>Confirmed: <span class="mono">E06l9Ntq8S</span> and <span class="mono">psU5ytQOIp</span> (Nevada Q7 and Q6), <span class="mono">Qd9Z9nZIQu</span> (Alabama Amendment 3), <span class="mono">pgRndcpPUd</span> (Arizona Prop 318), and <span class="mono">nEUCdz5As9</span> (Missouri Prop A, YES = map approved).</li>
+    </ul>
+  </details>
+</section>
+
+<section>
+  <h2>Held for a decision</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Measures</th><th>Why</th><th>What resolves it</th></tr></thead>
+    <tbody>
+      <tr><td>AZ Props 141, 142, 144, 316, 317, 319, 320 · AK Measures 2, 3</td><td>Official sites blocked from both fetch paths; numbers and titles come from Ballotpedia quoting official text.</td><td>A reviewer confirms them on azsos.gov or elections.alaska.gov.</td></tr>
+      <tr><td>RI bond questions 1–5</td><td>Question order (Q4 vs Q5) and the environment bond amount ($55M vs $50M) conflict between sources.</td><td>Confirm against the RI SOS voter information handbook.</td></tr>
+      <tr><td>NE term limits · NH register of probate · KS citizenship voting</td><td>The official ballot numbers are not yet published. The required question format needs an identifier.</td><td>Add the printed number when published.</td></tr>
+      <tr><td>CO Amendment 81 · FL Amendment 3</td><td>Each has an existing market whose rule differs: Colorado resolves on yes over no although 55% is needed; Florida targets a different homestead plan.</td><td>Ask the creators (mndrix, Ram_N). Reuse and subsidise if fixed; otherwise create.</td></tr>
+      <tr><td>MI Proposal 1 (constitutional convention)</td><td>Identity is certain: the state constitution (art. XII §3) puts this question on the ballot automatically. But michigan.gov and legislature.mi.gov block our network, and the only cited sources are the Citizens Research Council, Ballotpedia and Michigan Public, none of them official.</td><td>Swap in the Secretary of State or Board of State Canvassers page and release.</td></tr>
+      <tr><td>CA Prop 43</td><td>BenM's market may refer to the withdrawn initiative.</td><td>Ask BenM to name Prop 43 / ACA 22, or create a separate market.</td></tr>
+      <tr><td>ID state-gun question</td><td>An advisory multiple-choice question; the "be approved" binary template does not apply.</td><td>Decide whether a multi-answer market is wanted.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Creation plan</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Market shape and rules</h3>
+      <p>One binary per measure: "Will {State} {Designation} ({short subject}) be approved in the November 3, 2026 election?" Every description uses the same template:</p>
+      <ul>
+        <li>the official approval rule, quoted verbatim;</li>
+        <li>only the 2026 vote counts, with second votes stated;</li>
+        <li>advisory questions mean voter approval only. Only a measure whose verified type is advisory is described that way. The validator rejects a binding measure described as advisory, after Idaho HJR 4 was wrongly marked advisory (its notes mention the separate state-gun question);</li>
+        <li>the certified result controls, recounts included;</li>
+        <li><b>N/A</b> if the measure is removed, its votes are not counted, or the vote is postponed;</li>
+        <li>later court rulings do not change the result.</li>
+      </ul>
+      <p>Unnumbered measures, such as North Carolina's amendments, are named by subject. Markets close 2026-11-04 12:00 UTC, after every state has closed its polls. This matches the race manifest.</p>
+    </div>
+    <div class="panel">
+      <h3>Seeds and liquidity</h3>
+      <ul>
+        <li><b>32</b> seeds come from cited 2026 polls or prior results. <b>70</b> are 50% with no basis, and all are flagged for review. 20 cited seeds are also flagged, as judgement calls on the evidence. Seeds are not forecasts.</li>
+        <li>Default tier is 1,000. 10,000 is recommended for 13 measures with evidence: CA Props 3, 41, 42 and 45; CO Amendment 87; Iowa Amendment 1; Idaho Prop 1; Maryland Question 3; Missouri Amendment 3; Montana I-194; Nebraska Initiative 440; Virginia Question 1; Washington IP26-645.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tier</th><th class="num">Cost each</th><th>Ṁ10 YES at 50%</th><th>Ṁ100 YES at 50%</th><th>Ṁ100 NO at 85%</th></tr></thead>
+    <tbody>
+      <tr><td>100 (not recommended)</td><td class="num">100</td><td>50→54.8</td><td>50→80.0</td><td>85→5.3</td></tr>
+      <tr><td><b>1,000 (default)</b></td><td class="num">1,000</td><td>50→50.5</td><td>50→54.8</td><td>85→75.0</td></tr>
+      <tr><td>10,000 (recommended upgrades)</td><td class="num">10,000</td><td>50→50.0</td><td>50→50.5</td><td>85→84.1</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Duplicate recheck</h3>
+  <div id="online-result">
+    <p>The read-only online recheck last ran against the public API on 2026-10-03, finishing about 10:40 UTC, for both manifests. It used no credentials and made no writes.</p>
+    <ul>
+      <li><b>Result:</b> no reserved ID is taken. None of the 102 ballot markets or 225 race markets has an equivalent or ambiguous match.</li>
+      <li><b>Answers now included:</b> searches send <code>includeLiteAnswers=true</code>; before that, every multi-answer market came back with no answers. The first run with answers flagged 22 race entries (33 hits) and 2 measures. All were unrelated answer lists: NASCAR drivers, the next Speaker, another state's Senate race, the Mayor of London, the Milei mega-market. The classifier and reviewed rejections now handle them; see the review section below. A live query confirms answers come back, for example 19 for the Midwest House portfolio.</li>
+      <li><b>Search coverage:</b> the search requires every word, so long subject phrases often return nothing. The complete search is the database audit, which covered titles, descriptions, answers and comments. This recheck only catches markets created after the snapshot. Apply runs it again just before each write.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>Script changes</h2>
+  <ul>
+    <li><code>election-market-creation.ts</code> adds a <code>ballot-measure</code> entry kind with:
+      <ul>
+        <li>measure identity: state, official designation, aliases, approval rule, certifier and official source;</li>
+        <li>a YES-means-approved proposition and a BALLOT_MEASURES dashboard row.</li>
+      </ul>
+      Its own manifest kind and series keep it apart from the race manifest; the validator refuses to mix the two. The race manifest's dry run is unchanged: 225 markets, Ṁ306,000.</li>
+    <li><b>Validation:</b>
+      <ul>
+        <li>the exact question shape, the state and the designation;</li>
+        <li>the threshold quoted verbatim;</li>
+        <li>N/A, recount, certification and court rules;</li>
+        <li>second-vote wording, and advisory wording that never promises a law;</li>
+        <li>50% seeds flagged for review.</li>
+      </ul>
+    </li>
+    <li><b>Duplicate check:</b>
+      <ul>
+        <li>matches the designation and aliases, and checks portfolio answers individually by answer ID;</li>
+        <li>treats a different state, year, or a qualification-only question as unrelated;</li>
+        <li>holds opposite wording, repeal wording, and conditional, combined, margin, court or implementation questions for review.</li>
+      </ul>
+    </li>
+    <li><b>Kept from the race manifest:</b> dry run by default, paginated search, apply gates, finite caps, deterministic idempotency, resume, and a stop on ambiguous outcomes.</li>
+    <li><b>Fix to the shared duplicate search (affects the race manifest too).</b>
+      <ul>
+        <li>The PR paged <code>/v0/search-markets</code> by <code>offset</code> up to 10,000, but the API rejects any offset above 1,000 with HTTP 400. A term with 1,100 or more results, such as "Question 1", made the online check crash.</li>
+        <li>Race terms name a state and an office, so they rarely reach that depth, but both manifests use the same code path.</li>
+        <li>It now pages with <code>sort=newest</code> and a <code>beforeTime</code> cursor, as the API's own error message recommends. Pages are 100 rows, because the server answers a failed query with HTTP 200 and no rows, and small pages stay inside its statement timeout. Rows created in the same millisecond at a page boundary are re-read and de-duplicated by ID.</li>
+        <li>It still fails closed on a page that adds nothing new, rows without a creation time, a 404 or malformed result, or more than 20,000 results.</li>
+        <li>Every ballot search term now names the state. A bare alias such as "Prop 1" is searched as "California Prop 1".</li>
+      </ul>
+    </li>
+    <li><b>Tests:</b>
+      <ul>
+        <li>18 new mocked ballot tests and 8 new tests for search, classification and apply safety; all 48 tests in the suite pass. The CLI type-checks.</li>
+        <li>6 tests for the fourth-tab model.</li>
+        <li>The web project type-checks.</li>
+      </ul>
+    </li>
+  </ul>
+<pre>cd backend/scripts
+npx ts-node --transpile-only create-election-markets.ts \
+  --manifest elections-2026/ballot-measures/manifest.json --out elections-2026/ballot-measures/out [--online]
+# apply: only after review, budget and creator are set; not run by this audit</pre>
+</section>
+
+<section>
+  <h2>Script and manifest review (after integration)</h2>
+  <p>Scope: <code>create-election-markets.ts</code>, the shared creation module, and both manifests as integrated at <span class="mono">85766fbfc</span>. The integration records @ManifoldPolitics as creator and a 410,000 combined ceiling, conditional on this audit. An independent read-only review of the apply path was checked against the server code (create-market, search, the ante rules), and every finding below was confirmed in the code before it was fixed.</p>
+  <p><b>Verdict:</b> not safe to apply as integrated. Safe to apply after <code>review-fixes-on-85766fbfc.patch</code>, once the human review below is done.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Problem</th><th>What could go wrong</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip bad">blocker</span> Duplicate search never asked for answers</td><td>Every multi-answer market came back with none. A portfolio answer naming a measure looked unrelated, so a duplicate would be created. Existing race markets could only look ambiguous.</td><td>Send <code>includeLiteAnswers=true</code>. Re-read any multi-answer hit that might block creation in full, so resolved answers are judged correctly.</td></tr>
+      <tr><td><span class="chip warn">should fix</span> A failed search looked like "no duplicates"</td><td>The server answers a failed search query with HTTP 200 and no rows. The client also turned a 404 into "no rows".</td><td>A 404 or malformed result stops the run. Pages shrink to 100 rows, to stay inside the server's statement timeout.</td></tr>
+      <tr><td><span class="chip warn">should fix</span> A 2xx reply without a contract ID</td><td>The entry was recorded as a free failure and never reconciled. The market would exist but go uncounted.</td><td>Treated as ambiguous and reconciled by the reserved ID. A later run also reads a failed entry's reserved ID, and counts its full cost if the market exists.</td></tr>
+      <tr><td><span class="chip warn">should fix</span> The state file is the only spend ledger</td><td>A mistyped <code>--state</code> path silently started from zero. A dev state file could be reused on prod. Two concurrent runs overwrote each other's records and could each spend <code>--max-mana</code>.</td><td>Apply needs an existing state file, or <code>--init-state</code>. The state records the API base and creator and refuses a mismatch. A <code>.lock</code> file blocks a second run.</td></tr>
+      <tr><td><span class="chip warn">should fix</span> Seeds not verified</td><td>The API ignores unknown fields. If prod predates <code>answerProbs</code> support (#4082), every race would open at an even split with no error.</td><td>After each multi-answer create, the opening probabilities are compared with the seeds. A difference over 1.5 points stops the run.</td></tr>
+      <tr><td><span class="chip warn">should fix</span> Rejections and defaults</td><td>A 4xx rejection marked one entry failed and carried on, so a schema error could fail all 225. <code>--env</code> defaulted to prod.</td><td>Any rejection stops the run. Apply requires <code>--env</code>.</td></tr>
+      <tr><td><span class="chip warn">manifest</span> Idaho HJR 4; Michigan Proposal 1</td><td>HJR 4's description called a binding amendment non-binding. Michigan Proposal 1's only source was not official.</td><td>The advisory flag now comes from the verified measure type only, and the validator rejects a binding measure described as advisory. Michigan Proposal 1 is held.</td></tr>
+      <tr><td><span class="chip warn">classifier</span> Surname matches in answer lists</td><td>22 races would have stopped as needs-review over markets such as NASCAR drivers and the next Speaker.</td><td>An answer must carry the candidate's full name. A question naming only another office or other states is unrelated. "Government" no longer reads as governor. Reviewed rejections cover the rest; the recheck is now clean.</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Checked and sound:</b>
+      <ul>
+        <li>Cost matches what the server charges (ante, the "Other" answer, extra liquidity).</li>
+        <li>The run, manifest and balance caps are checked before every write, and include in-flight reservations.</li>
+        <li><code>in-flight</code> is persisted before each POST. Timeouts and 5xx are reconciled read-only, and a retry needs <code>--retry-unconfirmed</code>.</li>
+        <li>The creator is verified through <code>/v0/me</code>.</li>
+        <li>Payload fields match the API schema exactly. Tiers are valid, and there are at most 5 topics.</li>
+        <li>All 328 reserved IDs are distinct across the two series. State writes are atomic.</li>
+      </ul>
+    </li>
+    <li><b>Race manifest:</b> content unchanged since the race audit, except close times: November 4 12:00 UTC, December 2 for the 13 Georgia runoff-eligible seats and December 13 for Louisiana's 6. 225 markets cost exactly the 306,000 allocation. The only new edits are seven reviewed rejections.</li>
+    <li><b>Ballot manifest:</b> 102 markets, Ṁ102,000, within the 103,000 allocation. Accepting any of the 13 upgrades needs a larger cap, or the run stops partway.</li>
+    <li><b>Not changed (process):</b>
+      <ul>
+        <li><code>review.approved</code> isn't tied to the manifest's content. Approve immediately before applying, and don't edit the manifest afterwards.</li>
+        <li>Markets recorded as "answer ids not yet read back" aren't backfilled automatically.</li>
+      </ul>
+    </li>
+    <li><b>Before applying:</b>
+      <ul>
+        <li>Apply the patch and rerun the dry run and the online check.</li>
+        <li>A reviewer approves payloads and the 90 flagged seeds, then sets <code>review.approved</code>.</li>
+        <li>Start with <code>--init-state</code> and a small <code>--max-mana</code> (for example 3,000), so the first multi-answer market proves the seeds are applied. Then run the rest.</li>
+      </ul>
+    </li>
+  </ul>
+</section>
+
+<section>
+  <h2>Fourth tab handoff</h2>
+  <ul>
+    <li><b>Tab:</b> "Ballot measures" (compact "Measures") after Governor.</li>
+    <li><b>Map:</b> the existing state map; states show measure counts with a non-party palette. "No statewide measures" is distinct from "No linked market".</li>
+    <li><b>Details panel:</b> each measure shows its chance of approval, Pass/Fail buttons mapped to the exact contract outcome (and answer ID for portfolios), a chart link, a neutral summary and the official-source link.</li>
+    <li><b>Search:</b> by state, proposition number and topic.</li>
+    <li><b>Portfolios:</b> trade one answer independently; never use sum-to-one controls.</li>
+    <li><b>Code:</b> <code>web/components/usa-map/ballot-measures-model.ts</code> plus <code>web/public/data/ballot-measures-2026.json</code>. Details are in <code>UI-HANDOFF.md</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Files</h2>
+  <p>Branch <code>claude/ballot-measures-audit</code> in worktree <code>C:/Projects/manifold-wt-ballot-measures</code>, based on the PR head <span class="mono">cd0d1be62</span>. It is not pushed or committed; the patch is <code>ballot-measures/audit/ballot-measures.patch</code>.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Path</th><th>Contents</th></tr></thead>
+    <tbody>
+      <tr><td><code>backend/scripts/elections-2026/ballot-measures/audit/measure-inventory.json</code></td><td>All 146 records: verified identity, rules, sources, coverage, with the audit timestamp.</td></tr>
+      <tr><td><code>…/audit/recommended-mappings.json</code></td><td>Sources with contract and answer IDs, YES meaning, rules, evidence, depth and simulated buys; alternatives; rejected answers; subsidies.</td></tr>
+      <tr><td><code>…/ballot-measures/manifest.json</code>, <code>out/</code></td><td>The separate creation manifest (122 entries, 102 ready) and its dry-run output.</td></tr>
+      <tr><td><code>…/ballot-measures/README.md</code>, <code>UI-HANDOFF.md</code></td><td>Run instructions and the fourth-tab handoff.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</div>

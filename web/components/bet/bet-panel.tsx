@@ -102,7 +102,7 @@ type BuyPanelProps = {
       pseudonymColor: SliderColor
     }
   }
-  children?: React.ReactNode
+  children?: React.ReactNode | ((outcome: BinaryOutcomes) => React.ReactNode)
   alwaysShowOutcomeSwitcher?: boolean
   className?: string
 }
@@ -436,6 +436,8 @@ export const BuyPanelBody = (
     amount: number
     timestamp: number // unique identifier for each click
   } | null>(null)
+  const matchingPrefillOrder =
+    prefillLimitOrder?.outcome === outcome ? prefillLimitOrder : null
 
   // Handle order book click to prefill limit order
   const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
@@ -684,9 +686,13 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  // Toggle always shows Yes/No - only the main bet button shows custom text
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
+    : props.pseudonym
+    ? {
+        [props.pseudonym.YES.pseudonymName]: 'YES',
+        [props.pseudonym.NO.pseudonymName]: 'NO',
+      }
     : { Yes: 'YES', No: 'NO' }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
@@ -766,20 +772,26 @@ export const BuyPanelBody = (
   return (
     <>
       <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
-        {children}
+        {typeof children === 'function' ? children(outcome) : children}
         <Row className="mb-2 mt-2 flex-wrap items-center justify-between gap-x-2 gap-y-1">
           {outcomeControl ?? (
             <Row
               className={clsx(
                 'gap-1',
-                // Hide toggle for binary MC questions or prop-provided pseudonyms (but NOT for PAMPU skin)
-                (isBinaryMC || propPseudonymName) && 'invisible'
+                (isBinaryMC || propPseudonymName) &&
+                  !props.alwaysShowOutcomeSwitcher &&
+                  'invisible'
               )}
             >
               <ChoicesToggleGroup
                 currentChoice={outcome}
                 color={outcome === 'YES' ? 'light-green' : 'light-red'}
                 choicesMap={choicesMap}
+                toggleClassName={
+                  props.pseudonym
+                    ? 'px-2 text-xs sm:px-4 sm:text-sm'
+                    : undefined
+                }
                 setChoice={(outcome) => {
                   setOutcome(outcome as 'YES' | 'NO')
                   // Cancel dismiss timer if user is switching outcomes
@@ -969,7 +981,7 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
-              betAmount={prefillLimitOrder?.amount ?? betAmount}
+              betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
               user={user}
@@ -977,9 +989,9 @@ export const BuyPanelBody = (
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
-              initialProb={prefillLimitOrder?.limitProb}
-              expiration={prefillLimitOrder ? 1 : undefined}
-              prefillTimestamp={prefillLimitOrder?.timestamp}
+              initialProb={matchingPrefillOrder?.limitProb}
+              expiration={matchingPrefillOrder ? 1 : undefined}
+              prefillTimestamp={matchingPrefillOrder?.timestamp}
             />
           </>
         )}
