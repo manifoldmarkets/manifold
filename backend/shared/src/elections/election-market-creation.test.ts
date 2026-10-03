@@ -117,6 +117,7 @@ function mockApi(o: MockOpts = {}) {
       username: 'ElectionBot',
       balance: 1_000_000,
     })),
+    publishMarket: jest.fn(async () => undefined),
     createMarket: jest.fn(async (body) => {
       const i = createCalls++
       api.creates.push(body)
@@ -276,6 +277,37 @@ describe('http client', () => {
     headers: { get: () => null },
     json: async () => body,
     text: async () => JSON.stringify(body),
+  })
+
+  test('quiet publication uses the visibility update endpoint and requires success', async () => {
+    const fetch = jest
+      .fn()
+      .mockResolvedValueOnce(okJson({ success: true }))
+      .mockResolvedValueOnce(okJson({}))
+    const api = makeHttpApi({
+      apiBase: 'https://example.com',
+      apiKey: 'mock',
+      allowWrites: true,
+      fetch,
+    })
+    await api.publishMarket!('test-id')
+    expect(fetch).toHaveBeenCalledWith(
+      'https://example.com/v0/market/test-id/update',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ visibility: 'public' }),
+      })
+    )
+    await expect(api.publishMarket!('test-id')).rejects.toThrow(
+      /did not confirm success/
+    )
+    const dryRun = makeHttpApi({
+      apiBase: 'https://example.com',
+      allowWrites: false,
+      fetch,
+    })
+    await expect(dryRun.publishMarket!('test-id')).rejects.toThrow(/dry run/)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   test('duplicate searches page with a creation-time cursor (not offset) and ask for answers', async () => {
@@ -991,5 +1023,86 @@ describe('ambiguous timeouts', () => {
       (c) => c[0].idempotencyKey
     )
     expect(new Set(keys).size).toBe(1)
+  })
+})
+
+describe('quiet creation', () => {
+  test('creates unlisted, verifies seeds, then publishes while keeping the manifest public', async () => {
+    const { api } = mockApi()
+    const first = partyEntry('AL', 'Alabama')
+    const m = manifest([first])
+    const state = emptyState(m)
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toBeUndefined()
+    expect(api.creates[0].visibility).toBe('unlisted')
+    expect(first.payload!.visibility).toBe('public')
+    expect(api.publishMarket).toHaveBeenCalledWith(
+      state.entries[first.raceKey].contractId
+    )
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      costMana: 1000,
+      pendingPublication: false,
+    })
+  })
+
+  test('publication errors preserve spend and resume without creating or charging twice', async () => {
+    const { api } = mockApi()
+    const first = partyEntry('AL', 'Alabama')
+    const m = manifest([first, partyEntry('AK', 'Alaska')])
+    const state = emptyState(m)
+    ;(api.publishMarket as jest.Mock).mockRejectedValueOnce(
+      new Error('timeout')
+    )
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toMatch(/publication is pending/)
+    expect(result.spentThisRun).toBe(1000)
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      costMana: 1000,
+      pendingPublication: true,
+    })
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    const resumed = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(resumed.stoppedReason).toBeUndefined()
+    expect(resumed.spentThisRun).toBe(1000)
+    expect(api.createMarket).toHaveBeenCalledTimes(2)
+    expect(api.publishMarket).toHaveBeenCalledTimes(3)
+    expect(state.entries[first.raceKey].pendingPublication).toBe(false)
+  })
+
+  test('bad seeded prices leave the market unlisted and block publication', async () => {
+    const { api } = mockApi({ ignoreSeeds: true })
+    const first = partyEntry('AL', 'Alabama')
+    const m = manifest([first])
+    const state = emptyState(m)
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toMatch(/seeded/)
+    expect(state.entries[first.raceKey].pendingPublication).toBe(true)
+    expect(api.publishMarket).not.toHaveBeenCalled()
   })
 })

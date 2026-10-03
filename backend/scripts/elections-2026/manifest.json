@@ -1,12 +1,12 @@
 {
-  "manifestVersion": "2026-10-03.5",
+  "manifestVersion": "2026-10-03.6",
   "series": "us-2026-general-v1",
   "generatedAt": "2026-10-03T02:37:57.303Z",
   "review": {
-    "approved": false,
-    "reviewedBy": null,
-    "reviewedAt": null,
-    "notes": "On October 3, 2026 the user selected @ManifoldPolitics as creator and approved a combined ceiling of 410,000 mana, conditional on the independent audit passing before creation. This manifest is allocated 306,000 mana; the race and ballot allocations total 409,000, leaving 1,000 unallocated. Optional ballot liquidity upgrades, existing-market subsidies and held entries are not included. Payload, criteria and initial probability review remain unapproved; only set approved=true, reviewedBy and reviewedAt after that audit passes. Use --creator-username ManifoldPolitics; the script verifies the API key account."
+    "approved": true,
+    "reviewedBy": "Tod (owner launch approval after independent audit)",
+    "reviewedAt": "2026-10-03T11:02:35.312Z",
+    "notes": "Owner authorized proceeding on October 3, 2026 after the independent audit fixes were integrated and tested. The 90 flagged ready ballot seeds use an explicitly accepted neutral 50%; individual seed review is waived. Other audited ballot seeds and the existing race seeds are retained. Creator: @ManifoldPolitics. Combined spending ceiling: 410,000 mana; this manifest allocation: 306000; current combined planned spend: 408,000. Held entries, optional liquidity upgrades and subsidies remain excluded. Start with a small race batch to verify production multi-answer seed support. Duplicate/idempotency checks and all runtime stops remain enabled."
   },
   "budget": {
     "approvedMaxTotalMana": 306000

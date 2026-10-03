@@ -219,6 +219,8 @@ export type EntryState = {
   // Persist with the created record: a rerun must not skip a seed failure.
   // Clear only after a person has reviewed the market and API seed support.
   seedReviewRequired?: string
+  // Quiet creation stages the market unlisted, then publishes after read-back.
+  pendingPublication?: boolean
   existing?: {
     id: string
     slug?: string
@@ -275,10 +277,11 @@ export type ElectionApi = {
   searchMarkets(term: string): Promise<MarketLike[]>
   // Authenticated read of the API key's own account.
   me(): Promise<{ id: string; username: string; balance: number }>
-  // The only write.
+  // Creation charges the ante. Publishing only changes visibility.
   createMarket(
     body: CreatePayload & { idempotencyKey: string }
   ): Promise<{ id: string; slug?: string; url?: string }>
+  publishMarket?(id: string): Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -571,6 +574,7 @@ export type ApplyOptions = {
   creatorUsername?: string
   maxTotalMana?: number
   retryUnconfirmed?: boolean
+  quiet?: boolean
   // The API base this run writes to; recorded in (and checked against) state.
   apiBase?: string
   now?: () => number
@@ -1178,6 +1182,8 @@ export async function applyManifest(
   const problems = applyPreconditions(manifest, opts)
   if (problems.length)
     throw new Error(`Refusing to apply:\n- ${problems.join('\n- ')}`)
+  if (opts.quiet && !api.publishMarket)
+    throw new Error('Quiet creation requires a client that can publish markets')
   if (state.series !== manifest.series)
     throw new Error(
       `State file belongs to series ${state.series}, not ${manifest.series}`
@@ -1247,6 +1253,25 @@ export async function applyManifest(
     }
     return undefined
   }
+  const publishPending = async (raceKey: string) => {
+    const record = state.entries[raceKey]
+    if (!record.pendingPublication) return true
+    try {
+      if (!record.contractId || !api.publishMarket)
+        throw new Error('missing contract ID or publication client')
+      // The public read API omits visibility. The update's success confirms
+      // the awaited DB write; repeating the same visibility after a timeout
+      // is harmless and doesn't re-run creation notifications or charge mana.
+      await api.publishMarket(record.contractId)
+      await save(raceKey, { status: 'created', pendingPublication: false })
+      return true
+    } catch (err) {
+      result.stoppedReason = `${raceKey} was created and its cost recorded, but publication is pending: ${
+        (err as Error).message
+      }; resume with the same state file`
+      return false
+    }
+  }
 
   for (const entry of manifest.entries) {
     if (entry.status !== 'ready') continue
@@ -1258,6 +1283,8 @@ export async function applyManifest(
         log(
           `${entry.raceKey}: already created as ${prior.contractId}; manifest payload changed since — NOT recreating`
         )
+      if (prior.status === 'created' && !(await publishPending(entry.raceKey)))
+        break
       continue
     }
     // 1) Read-only reconciliation of our reserved id, always first — also for
@@ -1285,6 +1312,7 @@ export async function applyManifest(
         costMana: prior?.reservedMana || costOf(entry.payload!).total,
         reservedMana: 0,
         seedReviewRequired: seedProblem,
+        pendingPublication: prior?.pendingPublication ?? opts.quiet,
         message: 'reconciled read-only: market exists at the reserved id',
       })
       result.created.push(entry.raceKey)
@@ -1292,6 +1320,7 @@ export async function applyManifest(
         result.stoppedReason = `${entry.raceKey} exists, but ${seedProblem}; review its opening prices before creating more (current prices may have moved)`
         break
       }
+      if (!(await publishPending(entry.raceKey))) break
       continue
     }
     if (prior?.status === 'needs-review' || prior?.status === 'failed') {
@@ -1379,6 +1408,7 @@ export async function applyManifest(
       idempotencyKey: key,
       payloadHash: hash,
       reservedMana: cost.total,
+      pendingPublication: !!opts.quiet,
     })
     let createdId: string | undefined
     let ambiguous: string | undefined
@@ -1386,6 +1416,7 @@ export async function applyManifest(
       try {
         const res = await api.createMarket({
           ...entry.payload!,
+          visibility: opts.quiet ? 'unlisted' : entry.payload!.visibility,
           idempotencyKey: key,
         })
         createdId = res?.id || undefined
@@ -1462,6 +1493,7 @@ export async function applyManifest(
         result.stoppedReason = `${entry.raceKey} was created, but ${seedProblem}; stopped before creating more`
         break
       }
+      if (!(await publishPending(entry.raceKey))) break
       continue
     }
     if (createdId) {
@@ -1484,6 +1516,7 @@ export async function applyManifest(
         result.stoppedReason = `${entry.raceKey}: ${seedProblem}; stopped before creating more`
         break
       }
+      if (!(await publishPending(entry.raceKey))) break
       continue
     }
     await save(entry.raceKey, {
@@ -1546,7 +1579,7 @@ const toMarketLike = (m: any): MarketLike => ({
 export const SEARCH_PAGE_SIZE = 100
 const SEARCH_MAX_PAGES = 200
 
-// `allowWrites: false` (every dry run) makes createMarket throw before any
+// `allowWrites: false` (every dry run) blocks creation and publication before any
 // request is made, and no API key is attached to reads.
 export function makeHttpApi(opts: {
   apiBase: string
@@ -1669,6 +1702,24 @@ export function makeHttpApi(opts: {
     me: async () => {
       const u = await read('v0/me', true)
       return { id: u.id, username: u.username, balance: Number(u.balance) }
+    },
+    publishMarket: async (id) => {
+      if (!opts.allowWrites) throw new Error('Refusing to write: dry run')
+      if (!opts.apiKey)
+        throw new Error('MANIFOLD_API_KEY is required to publish')
+      const res = await f(url(`v0/market/${encodeURIComponent(id)}/update`), {
+        method: 'POST',
+        headers: {
+          Authorization: `Key ${opts.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ visibility: 'public' }),
+        signal: timeout(opts.createTimeoutMs ?? 60_000),
+      })
+      if (!res.ok) throw await classify(res, 'publish market')
+      const body = await res.json().catch(() => undefined)
+      if (body?.success !== true)
+        throw new Error('publication response did not confirm success')
     },
     createMarket: async (body) => {
       if (!opts.allowWrites)

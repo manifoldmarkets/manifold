@@ -14,6 +14,8 @@
 //     --env prod --apply --creator-username <username> --max-mana <cap for this run>
 //   The first apply for a manifest and environment also needs --init-state;
 //   later runs must point at that same state file. --env has no default here.
+//   Add --quiet to create unlisted, verify prices, then publish without the
+//   public-creation follower notifications/emails.
 //
 // Apply re-checks the reserved ids and searches for equivalent markets before
 // every create, persists the state file after every request, stops on any
@@ -279,7 +281,10 @@ async function main() {
     }
     writeAtomic(
       path.join(outDir, 'dry-run-report.md'),
-      report(manifest, state, plan, online)
+      report(manifest, state, plan, online) +
+        (args.quiet
+          ? '\nQuiet mode: create unlisted, verify prices, then publish through the visibility update API.\n'
+          : '')
     )
     writeAtomic(
       path.join(outDir, 'dry-run-payloads.json'),
@@ -289,7 +294,10 @@ async function main() {
           raceKey: e.raceKey,
           reservedIdempotencyKey: idempotencyKeyFor(manifest.series, e.raceKey),
           cost: costOf(e.payload!),
-          payload: e.payload,
+          payload: args.quiet
+            ? { ...e.payload!, visibility: 'unlisted' }
+            : e.payload,
+          ...(args.quiet ? { afterCreation: { visibility: 'public' } } : {}),
         }))
     )
     writeAtomic(path.join(outDir, 'dry-run-plan.json'), {
@@ -312,6 +320,7 @@ async function main() {
         {
           mode: 'dry-run',
           online: !!args.online,
+          quiet: !!args.quiet,
           validationErrors: errors.length,
           counts,
           estimatedManaForPlannedCreations: total,
@@ -379,6 +388,7 @@ async function main() {
           : undefined,
         maxTotalMana: args['max-mana'] ? Number(args['max-mana']) : undefined,
         retryUnconfirmed: !!args['retry-unconfirmed'],
+        quiet: !!args.quiet,
         log: (l) => console.log(l),
       },
       (s) => writeAtomic(stateFile, s)
