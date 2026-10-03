@@ -249,7 +249,7 @@ test('rolls back a replacement that never becomes ready', async () => {
   assert.equal(groupTemplate(f), 'api-old')
   assert.equal(f.info.targetSize, 1)
   assert.equal(f.info.updatePolicy.type, 'PROACTIVE')
-  // The old writer resyncs any socket that missed the replacement's events.
+  // The old writer is told the replacement is gone, after its deletion.
   assert.equal(f.metadata.old[HANDOVER_KEY], 'new')
   const [signal] = handoverSignals(f)
   assert(
@@ -508,7 +508,7 @@ test('fails deployment if a backend becomes unhealthy after old-VM removal', asy
   await assert.rejects(rollout(options, f.dependencies), /Timed out/)
   assert.deepEqual(deletions(f), ['old'])
   assert.equal(f.info.updatePolicy.type, 'OPPORTUNISTIC')
-  // The old writer is gone, so its sockets' replacements were still resynced.
+  // The old VM is gone, so the survivor was still told about the handover.
   assert.equal(f.metadata.new[HANDOVER_KEY], 'old')
 })
 

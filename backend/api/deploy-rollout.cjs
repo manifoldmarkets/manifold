@@ -8,10 +8,10 @@ const { execFileSync } = require('node:child_process')
 const { setTimeout: sleep } = require('node:timers/promises')
 
 // Instance metadata watched by the API writer (shared/websockets/handover.ts).
-// While two writers serve, each broadcasts only to its own sockets. Once the
-// retired VM is gone, a new value here makes the survivor close every socket
-// it accepted earlier, so those clients reconnect and backfill. The pending
-// key is written before the deletion, so an interrupted run can finish it.
+// Once the retired VM is gone, its name here tells the survivor to check that
+// every broadcast the retired writer relayed reached it, and otherwise to close
+// its sockets so their clients reconnect and backfill. The pending key is
+// written before the deletion, so an interrupted run can finish the handover.
 const HANDOVER_KEY = 'api-websocket-handover'
 const PENDING_HANDOVER_KEY = 'api-websocket-handover-pending'
 
@@ -213,9 +213,7 @@ async function rollout(
     instanceResource('add-metadata', name, `--metadata=${key}=${value}`)
   const signalHandover = (survivor, retired) => {
     setMetadata(survivor, HANDOVER_KEY, retired)
-    log(
-      `Asked ${survivor} to close WebSocket connections opened while ${retired} was serving`
-    )
+    log(`Signalled the WebSocket handover from ${retired} to ${survivor}`)
   }
   // A run interrupted after deleting the retired VM may not have signalled.
   const finishPendingHandover = (survivor) => {
@@ -308,8 +306,8 @@ async function rollout(
 
   // The replacement never became ready everywhere, and the old VM served
   // throughout. Converge back to it with the same steps as a rollout: keep
-  // it, delete the replacement by name, then have the old writer close the
-  // sockets that may have missed the replacement's broadcasts.
+  // it, delete the replacement by name, then signal the handover to the old
+  // writer, which checks whether it got all of the replacement's broadcasts.
   let replacementSeen
   const rollBack = async (cause) => {
     const previous = templateOf(oldInstances[0])
@@ -407,7 +405,7 @@ async function rollout(
   // healthy replacement instead, so always name the old instance explicitly.
   managed('delete-instances', `--instances=${retired}`)
   // The retired writer can broadcast until its VM is gone, not merely out of
-  // the group, so only then is it safe to ask the survivor to resync.
+  // the group, so only then can the survivor judge what it received.
   await waitFor(`Waiting for ${retired} to shut down`, () => {
     const inGroup = instances().some((vm) => vm.instance === oldInstance)
     return (
