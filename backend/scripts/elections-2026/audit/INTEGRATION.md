@@ -63,8 +63,11 @@ been created, subsidized, edited, or traded.
 
 ## Creation handoff
 
-The manifest remains unapproved with no account or budget. Its default proposal
-costs 306,000 mana, excluding existing-market subsidies. Version 2026-10-03.2
+The manifest's payload review remains unapproved, with no creator account selected.
+The user accepted the 306,000 mana budget on October 3 (version 2026-10-03.3):
+216 House markets at 1,000, eight closer House markets at 10,000, and Rhode Island
+governor at 10,000. This excludes ballot measures and existing-market subsidies.
+Version 2026-10-03.2
 changes proposed closing times to after election night and through the scheduled
 Georgia/Louisiana runoffs. Seeds are starting pool values, not market forecasts.
 

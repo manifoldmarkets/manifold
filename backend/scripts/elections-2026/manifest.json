@@ -1,15 +1,15 @@
 {
-  "manifestVersion": "2026-10-03.2",
+  "manifestVersion": "2026-10-03.3",
   "series": "us-2026-general-v1",
   "generatedAt": "2026-10-03T02:37:57.303Z",
   "review": {
     "approved": false,
     "reviewedBy": null,
     "reviewedAt": null,
-    "notes": "Set approved=true, reviewer and date only after reading dry-run-report.md. No budget has been approved."
+    "notes": "The user accepted the 306,000 mana funding envelope on October 3, 2026, with 1,000 per noncompetitive House market. Payload and criteria review remains unapproved. Set approved=true, reviewer and date only after reviewing the dry-run report. This budget excludes ballot measures and existing-market subsidies."
   },
   "budget": {
-    "approvedMaxTotalMana": null
+    "approvedMaxTotalMana": 306000
   },
   "defaults": {
     "closeTimeUtc": "2026-11-04T12:00:00.000Z",

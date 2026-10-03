@@ -9,6 +9,8 @@ import {
 } from '@heroicons/react/outline'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
 import { CongressSenate } from 'web/public/custom-components/congress_senate'
+import { CongressCenter } from 'web/public/custom-components/congress_center'
+import { Congress } from 'web/public/custom-components/congress'
 import { Governor } from 'web/public/custom-components/governor'
 import { ElectionBalance } from './election-balance'
 import { sourceAudit } from './audited-sources'
@@ -300,38 +302,7 @@ export function ElectionExplorer(props: Props) {
                 ))}
               </select>
             </label>
-            <div
-              className={styles.tabs}
-              role="tablist"
-              aria-label="Election type"
-            >
-              {MODES.map((m, i) => (
-                <button
-                  key={m}
-                  role="tab"
-                  aria-label={modeName(m)}
-                  title={modeName(m)}
-                  aria-selected={mode === m}
-                  tabIndex={mode === m ? 0 : -1}
-                  onClick={() => changeMode(m)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-                      e.preventDefault()
-                      const next = (i + (e.key === 'ArrowRight' ? 1 : 2)) % 3
-                      changeMode(MODES[next])
-                      ;(
-                        e.currentTarget.parentElement?.children[
-                          next
-                        ] as HTMLButtonElement
-                      )?.focus()
-                    }
-                  }}
-                >
-                  <ChamberIcon mode={m} />
-                  <span>{modeName(m)}</span>
-                </button>
-              ))}
-            </div>
+            <ChamberTabs mode={mode} onChange={changeMode} />
 
             <button
               className={styles.viewToggle}
@@ -1080,13 +1051,64 @@ export function ElectionExplorer(props: Props) {
   )
 }
 
+function ChamberTabs({
+  mode,
+  onChange,
+}: {
+  mode: ElectionMode
+  onChange: (mode: ElectionMode) => void
+}) {
+  const tab = (m: ElectionMode) => (
+    <button
+      role="tab"
+      aria-label={modeName(m)}
+      title={modeName(m)}
+      aria-selected={mode === m}
+      tabIndex={mode === m ? 0 : -1}
+      onClick={() => onChange(m)}
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+        e.preventDefault()
+        const next =
+          (MODES.indexOf(m) + (e.key === 'ArrowRight' ? 1 : MODES.length - 1)) %
+          MODES.length
+        onChange(MODES[next])
+        e.currentTarget
+          .closest('[role="tablist"]')
+          ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+          [next]?.focus()
+      }}
+    >
+      {m === 'governor' && <ChamberIcon mode={m} />}
+      <span>{modeName(m)}</span>
+    </button>
+  )
+  return (
+    <div className={styles.tabs} role="tablist" aria-label="Election type">
+      <div className={styles.capitolTabs}>
+        {tab('house')}
+        <span className={styles.capitol} aria-hidden>
+          {/* Reuse the original left wing, dome and right wing as one building. */}
+          <CongressSenate
+            className={clsx(mode === 'house' && styles.selectedWing)}
+          />
+          <CongressCenter />
+          <CongressHouse
+            className={clsx(mode === 'senate' && styles.selectedWing)}
+          />
+        </span>
+        {tab('senate')}
+      </div>
+      {tab('governor')}
+    </div>
+  )
+}
+
 function ChamberIcon({ mode }: { mode: ElectionMode }) {
   return (
     <span className={styles.tabIcon} aria-hidden>
-      {mode === 'house' ? (
-        <CongressHouse height={6} />
-      ) : mode === 'senate' ? (
-        <CongressSenate height={6} />
+      {mode === 'house' || mode === 'senate' ? (
+        <Congress height={6} />
       ) : (
         <Governor height={6} />
       )}

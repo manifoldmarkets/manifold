@@ -119,7 +119,10 @@ cards and district choices open the existing betting dialogs. Polling cards
 open the existing perpetual trading flow, preserving position, oracle freshness,
 and risk checks. Chamber tabs stay sticky within the explorer on all screen
 sizes. The compact balance strip pins above a single row containing the original
-chamber icons, view toggle, labels, search and zoom. At narrow container widths,
+chamber icons, view toggle, labels, search and zoom.
+House and Senate flank one joined Capitol using the original wing and dome assets;
+the selected chamber highlights its wing. The mobile selector uses the complete
+Capitol icon instead of an isolated wing. At narrow container widths,
 the chamber tabs become a labelled selector and search opens inline below the
 row. There is no scroll-triggered resizing. The map height is capped to fit the
 viewport. Compact chamber-control cards sit outside the map section and scroll
@@ -131,7 +134,7 @@ highlight, show sitting officeholders on hover and selection, explain that the
 office is not on the ballot, and offer a shortcut to that state's House districts.
 Their colored crosshatching shows current party control (purple for a split
 Senate delegation), distinct from an unpriced race's gray hatching. White map
-borders remain visible in dark mode, with dark borders in light mode. Race
+boundaries are used in light mode, with dark boundaries in dark mode. Race
 details retain dragging, keyboard movement and reset after moving; the collapse
 option is removed. Each source's small chart link sits in its heading.
 

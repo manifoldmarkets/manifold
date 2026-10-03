@@ -6,7 +6,7 @@
   --ink: rgb(var(--color-ink-800));
   --accent: rgb(var(--color-primary-700));
   color: var(--ink);
-  --map-border: #161616;
+  --map-border: #fff;
 }
 .explorer {
   position: relative;
@@ -808,7 +808,49 @@
   }
 }
 :global(.dark) .layout {
-  --map-border: #fff;
+  --map-border: #161616;
+}
+.capitolTabs {
+  display: flex;
+  position: relative;
+}
+.capitolTabs button {
+  width: 85px;
+}
+.capitolTabs button:first-child {
+  padding-right: 30px;
+}
+.capitolTabs button:last-child {
+  padding-left: 30px;
+}
+.capitol {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: -1px;
+  transform: translateX(-50%);
+  width: 53px;
+  height: 30px;
+  pointer-events: none;
+  color: var(--muted);
+}
+.capitol svg {
+  position: absolute;
+  width: 24px;
+  height: 30px;
+  fill: currentColor;
+}
+.capitol svg:first-child {
+  left: 0;
+}
+.capitol svg:nth-child(2) {
+  left: 13.5px;
+}
+.capitol svg:last-child {
+  left: 28.5px;
+}
+.capitol .selectedWing {
+  color: var(--accent);
 }
 .tabIcon {
   display: flex;
@@ -926,7 +968,7 @@
     width: 20px;
   }
 }
-@container mapheader (max-width: 480px) {
+@container mapheader (max-width: 540px) {
   .partyFull {
     display: none;
   }
