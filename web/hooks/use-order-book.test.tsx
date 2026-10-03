@@ -1,4 +1,6 @@
 import { act, create, ReactTestRenderer } from 'react-test-renderer'
+import { maxCachedAgeMs } from 'common/api/cache'
+import { API } from 'common/api/schema'
 import { LimitBet } from 'common/bet'
 import {
   useUnfilledBets,
@@ -28,6 +30,18 @@ jest.mock('client-common/hooks/use-api-subscription', () => {
         return () => mockSubscriptions.delete(options)
       }, [options.enabled, JSON.stringify(options.topics)])
     },
+  }
+})
+
+jest.mock('client-common/hooks/use-staggered-reconnect-count', () => {
+  // Load it with the shortest reconnect delay a client can draw.
+  const random = jest.spyOn(Math, 'random').mockReturnValue(0)
+  try {
+    return jest.requireActual(
+      'client-common/hooks/use-staggered-reconnect-count'
+    )
+  } finally {
+    random.mockRestore()
   }
 })
 
@@ -210,7 +224,15 @@ it('keeps the mount read when the acknowledgment read fails', async () => {
   }
 })
 
-it('reads display books through the CDN and reconciles reconnects after a delay', async () => {
+const advance = async (ms: number) => {
+  // In steps, so consumers whose delays differ would refetch separately.
+  for (let elapsed = 0; elapsed < ms; elapsed += 1_000)
+    await act(async () => {
+      jest.advanceTimersByTime(Math.min(1_000, ms - elapsed))
+    })
+}
+
+it('reads display books through the CDN and reconciles after the first connection', async () => {
   jest.useFakeTimers()
   try {
     const read = jest.fn(async (_params: any) => [] as LimitBet[])
@@ -224,7 +246,26 @@ it('reads display books through the CDN and reconciles reconnects after a delay'
         if (sub.topics.includes(`contract/${m.id}/orders`)) sub.onSubscribed?.()
     })
     expect(read).toHaveBeenCalledTimes(1)
-    await m.reconnect() // first connection
+    // The mount read could have missed broadcasts sent before the first
+    // connection, so it is reconciled once the CDN's copy must postdate it.
+    await m.reconnect()
+    await advance(maxCachedAgeMs(API.bets.cache))
+    expect(read).toHaveBeenCalledTimes(1)
+    await advance(45_000)
+    expect(read).toHaveBeenCalledTimes(2)
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
+it('reconciles a display book mounted on an open connection only after a reconnect', async () => {
+  jest.useFakeTimers()
+  try {
+    mockGeneration = 1
+    const read = jest.fn(async (_params: any) => [] as LimitBet[])
+    const m = await mount(read, undefined, 2)
+    await advance(60_000)
+    expect(read).toHaveBeenCalledTimes(1)
     // Were each consumer to draw its own delay, these would set them apart.
     const random = jest
       .spyOn(Math, 'random')
@@ -232,14 +273,9 @@ it('reads display books through the CDN and reconciles reconnects after a delay'
       .mockReturnValueOnce(0.9)
     await m.reconnect()
     random.mockRestore()
-    await act(async () => {
-      jest.advanceTimersByTime(4_999)
-    })
+    await advance(maxCachedAgeMs(API.bets.cache))
     expect(read).toHaveBeenCalledTimes(1)
-    for (let elapsed = 5_000; elapsed <= 30_000; elapsed += 1_000)
-      await act(async () => {
-        jest.advanceTimersByTime(1_000)
-      })
+    await advance(45_000)
     expect(read).toHaveBeenCalledTimes(2)
   } finally {
     jest.useRealTimers()

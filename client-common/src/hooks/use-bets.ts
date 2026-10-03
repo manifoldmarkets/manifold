@@ -233,7 +233,7 @@ export const useUnfilledBets = (
     enabled?: boolean
     /** For quote panels: read from the origin, and reconcile as soon as a
      * subscription or reconnect could have missed broadcasts. Otherwise reads
-     * go through the CDN and reconcile only after reconnects, staggered. */
+     * go through the CDN, and reconcile after each connection, staggered. */
     fresh?: boolean
   }
 ) => {

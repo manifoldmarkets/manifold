@@ -104,7 +104,7 @@ export function useLiveContract<C extends Contract = Contract>(
     /** For pages and panels that quote this contract: read it from the origin,
      * and reconcile as soon as a subscription or reconnect could have missed
      * broadcasts. Cards and tables read through the CDN instead, and
-     * reconcile only after reconnects, staggered. */
+     * reconcile after each connection, staggered. */
     fresh?: boolean
   }
 ): C {
