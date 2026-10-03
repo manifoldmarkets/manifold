@@ -379,9 +379,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "Qd9Z9nZIQu"
-      ],
+      "reviewedRejectedContractIds": ["Qd9Z9nZIQu"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Alabama Amendment 2",
@@ -486,9 +484,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "Qd9Z9nZIQu"
-      ],
+      "reviewedRejectedContractIds": ["Qd9Z9nZIQu"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Alabama Amendment 4",
@@ -1564,9 +1560,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "PE7JRFf3CFrXwrDdYhRC"
-      ],
+      "reviewedRejectedContractIds": ["PE7JRFf3CFrXwrDdYhRC"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Arizona Proposition 320",
@@ -1677,9 +1671,7 @@
         "A8UOqyCPZ8",
         "n88RANq2Ac"
       ],
-      "reviewedRejectedAnswers": [
-        "uLQCU5QPuc#5Z8sOAnOqh"
-      ],
+      "reviewedRejectedAnswers": ["uLQCU5QPuc#5Z8sOAnOqh"],
       "searchTerms": [
         "California Proposition 1",
         "CA Prop 1",
@@ -1804,9 +1796,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "S6g7m8tLf79PzDSiPm8a"
-      ],
+      "reviewedRejectedContractIds": ["S6g7m8tLf79PzDSiPm8a"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "California Proposition 2",
@@ -1915,13 +1905,8 @@
         "enhancedTier": 10000,
         "enhancedRationale": "High attention, not close: 17% of likely voters name it the proposition they are most interested in (3rd of 14) https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/; IGS headline measure https://escholarship.org/uc/item/3w14s99c"
       },
-      "reviewedRejectedContractIds": [
-        "uLQCU5QPuc",
-        "5dQZnILqsp"
-      ],
-      "reviewedRejectedAnswers": [
-        "uLQCU5QPuc#5Z8sOAnOqh"
-      ],
+      "reviewedRejectedContractIds": ["uLQCU5QPuc", "5dQZnILqsp"],
+      "reviewedRejectedAnswers": ["uLQCU5QPuc#5Z8sOAnOqh"],
       "searchTerms": [
         "California Proposition 3",
         "CA Prop 3",
@@ -2036,11 +2021,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "y2nyOySApA",
-        "A8UOqyCPZ8",
-        "n88RANq2Ac"
-      ],
+      "reviewedRejectedContractIds": ["y2nyOySApA", "A8UOqyCPZ8", "n88RANq2Ac"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "California Proposition 38",
@@ -2311,9 +2292,7 @@
         "A8UOqyCPZ8",
         "9gqSEL8ppn"
       ],
-      "reviewedRejectedAnswers": [
-        "uLQCU5QPuc#ASdN2yPRp2"
-      ],
+      "reviewedRejectedAnswers": ["uLQCU5QPuc#ASdN2yPRp2"],
       "searchTerms": [
         "California Proposition 42",
         "CA Prop 42",
@@ -2608,12 +2587,8 @@
         "enhancedTier": 10000,
         "enhancedRationale": "Close: PPIC 49/46 (within 3 pts) https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/"
       },
-      "reviewedRejectedContractIds": [
-        "n88RANq2Ac"
-      ],
-      "reviewedRejectedAnswers": [
-        "n88RANq2Ac#0q922gl6Pl"
-      ],
+      "reviewedRejectedContractIds": ["n88RANq2Ac"],
+      "reviewedRejectedAnswers": ["n88RANq2Ac#0q922gl6Pl"],
       "searchTerms": [
         "California Proposition 45",
         "CA Prop 45",
@@ -2721,9 +2696,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "85g5Az95SP"
-      ],
+      "reviewedRejectedContractIds": ["85g5Az95SP"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Colorado Amendment 81",
@@ -3199,9 +3172,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "Zz2Z8A2psp"
-      ],
+      "reviewedRejectedContractIds": ["Zz2Z8A2psp"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Colorado Amendment 86",
@@ -3970,9 +3941,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "g0lc8tPgg5"
-      ],
+      "reviewedRejectedContractIds": ["g0lc8tPgg5"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Florida Amendment 2",
@@ -4086,9 +4055,7 @@
         "enhancedTier": 10000,
         "enhancedRationale": "Close to the threshold (63% vs 60% needed, per the poll above); Florida Realtors put $10M behind the YES campaign (https://www.wokv.com/news/local/florida-realtors-launch-pro-amendment-3-campaign-putting-up-10-million-behind-effort/KCEVIQTGQVEYDDA2BFSHUTQZWQ/)."
       },
-      "reviewedRejectedContractIds": [
-        "g0lc8tPgg5"
-      ],
+      "reviewedRejectedContractIds": ["g0lc8tPgg5"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Florida Amendment 3",
@@ -5147,9 +5114,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "YIydLTsKEdwHoIRmqkdc"
-      ],
+      "reviewedRejectedContractIds": ["YIydLTsKEdwHoIRmqkdc"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Indiana Public Question 1",
@@ -5242,9 +5207,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "YIydLTsKEdwHoIRmqkdc"
-      ],
+      "reviewedRejectedContractIds": ["YIydLTsKEdwHoIRmqkdc"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Indiana Public Question 2",
@@ -5335,9 +5298,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "6QcSA7TDWbewSc6BGXjn"
-      ],
+      "reviewedRejectedContractIds": ["6QcSA7TDWbewSc6BGXjn"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Kansas citizen-only voting requirement",
@@ -6737,9 +6698,7 @@
         "enhancedTier": 10000,
         "enhancedRationale": "High attention: mid-decade congressional redistricting fight; MD Supreme Court order Sept 3 covered by AP (https://local10.com/news/2026/09/03/marylands-top-court-allows-democratic-backed-congressional-redistricting-measure-on-november-ballot); Gov. Moore campaigning (https://foxbaltimore.com/news/local/gov-moore-pressed-on-redistricting-priorities-as-he-vows-to-campaign-for-question-3); competing polls, 31% undecided."
       },
-      "reviewedRejectedContractIds": [
-        "pI8Ps9lAPt"
-      ],
+      "reviewedRejectedContractIds": ["pI8Ps9lAPt"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Maryland Question 3",
@@ -6937,9 +6896,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "pwxDAcUm8FZYh5Jq4Tuo"
-      ],
+      "reviewedRejectedContractIds": ["pwxDAcUm8FZYh5Jq4Tuo"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Michigan Proposal 2",
@@ -7141,9 +7098,7 @@
         "u6orjep45h",
         "sqS4Xw15o2RKrTa2X94x"
       ],
-      "reviewedRejectedAnswers": [
-        "u6orjep45h#c6ctlfmovv"
-      ],
+      "reviewedRejectedAnswers": ["u6orjep45h#c6ctlfmovv"],
       "searchTerms": [
         "Missouri Amendment 3",
         "MO Amendment 3",
@@ -7263,9 +7218,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "nEUCdz5As9"
-      ],
+      "reviewedRejectedContractIds": ["nEUCdz5As9"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Missouri Amendment 6",
@@ -9435,9 +9388,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "u0IO6zQUg5"
-      ],
+      "reviewedRejectedContractIds": ["u0IO6zQUg5"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Ohio Issue 3",
@@ -11250,9 +11201,7 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [
-        "g52LuLnInh"
-      ],
+      "reviewedRejectedContractIds": ["g52LuLnInh"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Virginia Question 3",
@@ -11745,9 +11694,7 @@
         "enhancedTier": 10000,
         "enhancedRationale": "High attention: Gov. Ferguson and celebrities campaigning, 511k signatures, WA Supreme Court 4-4 on ballot language: https://www.spokesman.com/stories/2026/sep/30/survey-finds-residents-support-millionaires-tax-wh/ ; https://www.cpapracticeadvisor.com/2026/09/30/poll-support-for-repealing-washington-millionaires-tax-drops-with-budget-impact/190794/"
       },
-      "reviewedRejectedContractIds": [
-        "E65dQh5Szq"
-      ],
+      "reviewedRejectedContractIds": ["E65dQh5Szq"],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Washington Initiative IP26-645",
