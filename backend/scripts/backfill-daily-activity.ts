@@ -18,8 +18,8 @@ import { materializeActivityDays } from '../scheduler/src/jobs/update-stats'
 //
 // Expect roughly 15–150s a day, serially: bot limit-order churn puts up to
 // ~360k bet rows in a day since mid-September 2026, and cold pages dominate.
-// 91 days is therefore an hour or two, not minutes. Run it outside the
-// 10:00–15:00 UTC batch window.
+// 91 days is therefore an hour or two, not minutes. Run it in the
+// 13:00–17:00 UTC quiet window, after the morning batch train.
 //
 //   yarn ts-node backend/scripts/backfill-daily-activity.ts 2026-07-04 2026-10-03
 //
