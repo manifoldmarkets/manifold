@@ -1,7 +1,7 @@
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { createClient } from 'common/supabase/utils'
-import { HOUR_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import * as pgPromise from 'pg-promise'
 import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
@@ -171,15 +171,28 @@ export function createSupabaseDirectClient(opts?: {
     )
   }
 
-  // Server-side cap on total statement runtime, including lock waits. Opt-in
-  // via env so only request-serving processes get it (set in
-  // backend/api/ecosystem.config.js); the scheduler and ad-hoc scripts
-  // legitimately run long statements and leave it unset. Without this cap,
-  // queries that are slow only because the db's disk throughput is saturated
-  // pile up for hundreds of seconds and amplify the saturation
+  // How long the client waits for any one query before giving up with
+  // 'Query read timeout'.
+  const queryTimeout = HOUR_MS
+
+  // Server-side cap on total statement runtime, including lock waits.
+  // Request-serving processes set a tight one via env (in
+  // backend/api/ecosystem.config.js): without it, queries that are slow only
+  // because the db's disk throughput is saturated pile up for hundreds of
+  // seconds and amplify the saturation.
+  //
+  // Everything else — the scheduler, ad-hoc scripts — legitimately runs long
+  // statements, so it gets a cap just under queryTimeout rather than none.
+  // query_timeout only stops the client WAITING: the statement it gave up on
+  // keeps running on the server, holding I/O and its connection, long after
+  // anything can use the result — the path update-stats' 68-day scan took
+  // every night from 2026-09-20. A minute's margin makes the server cancel
+  // first, so the caller gets a clean 'canceling statement due to statement
+  // timeout' and the connection stays usable. `set local statement_timeout`
+  // inside a transaction still overrides this, in either direction.
   const statementTimeout = process.env.PG_STATEMENT_TIMEOUT_MS
     ? parseInt(process.env.PG_STATEMENT_TIMEOUT_MS)
-    : undefined
+    : queryTimeout - MINUTE_MS
 
   log('Connecting to postgres at ' + dbHost + ':' + port)
   const client = pgp({
@@ -189,7 +202,8 @@ export function createSupabaseDirectClient(opts?: {
     password: password,
 
     // ian: query_timeout doesn't cancel long-running queries, it just stops waiting for them
-    query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
+    // (statement_timeout below is what cancels them)
+    query_timeout: queryTimeout, // mqp: debugging scheduled job behavior
 
     // ian: during a pool-depletion-related outage, we can cancel any stuck queries
     // without a huge backlog of waiting connections instead of redeploying the api.
@@ -201,7 +215,7 @@ export function createSupabaseDirectClient(opts?: {
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
     idle_in_transaction_session_timeout: opts?.idleInTxnTimeout ?? 60_000, // 1 minute
-    ...(statementTimeout ? { statement_timeout: statementTimeout } : {}),
+    statement_timeout: statementTimeout,
     max: 40,
   })
   const pool = client.$pool
