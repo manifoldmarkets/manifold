@@ -1,4 +1,6 @@
 .layout {
+  position: relative;
+  z-index: 30;
   --measure-accent: #24665d;
   --no-measures: #d4d4d4;
   --paper: rgb(var(--color-canvas-0));
@@ -69,6 +71,36 @@
   padding: 14px;
   background: var(--soft);
   border-radius: 10px;
+}
+.controlLabel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.controlInfo {
+  position: relative;
+  color: var(--muted);
+  font-weight: 400;
+}
+.controlInfo summary {
+  cursor: pointer;
+  list-style: none;
+}
+.controlInfo summary::-webkit-details-marker {
+  display: none;
+}
+.controlInfo p {
+  position: absolute;
+  left: -90px;
+  top: 24px;
+  z-index: 1;
+  width: 190px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  font-size: 11px;
+  box-shadow: 0 4px 12px #0002;
 }
 .controlTop {
   display: flex;
@@ -549,7 +581,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 6px;
-  padding: 14px 14px 12px;
+  padding: 10px 12px 8px;
   flex-shrink: 0;
 }
 .detailMoveHeading {
@@ -569,7 +601,7 @@
 }
 .detailTitle {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   margin-top: 4px;
 }
@@ -605,7 +637,7 @@
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-  padding: 0 18px 18px;
+  padding: 0 12px 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -651,7 +683,7 @@
 }
 .candidates {
   border-top: 1px solid var(--line);
-  padding-top: 12px;
+  padding-top: 8px;
 }
 .mapLoading {
   display: flex;
@@ -715,16 +747,67 @@
   }
 }
 @media (max-width: 850px) {
+  .map {
+    height: max(360px, calc(100svh - 180px));
+  }
+  .stage {
+    margin-top: 8px;
+  }
   .details {
     position: fixed;
     top: auto;
-    bottom: 68px;
+    bottom: calc(64px + env(safe-area-inset-bottom));
     left: 8px;
     right: 8px;
     width: auto;
-    max-height: 55vh;
+    max-height: min(38svh, 320px);
     z-index: 30;
     border-radius: 15px;
+  }
+  .detailHeading {
+    align-items: center;
+    padding: 8px 10px 6px;
+  }
+  .detailTitle {
+    font-size: 15px;
+    margin: 0;
+  }
+  .detailDragHandle .eyebrow,
+  .dragHint,
+  .detailSummary,
+  .raceBar {
+    display: none;
+  }
+  .detailContent {
+    gap: 6px;
+    padding: 0 10px 10px;
+  }
+  .incumbents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    align-items: baseline;
+    font-size: 11px;
+  }
+  .incumbents .eyebrow {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 10px;
+  }
+  .note,
+  .empty {
+    line-height: 1.4;
+  }
+  .exploreState {
+    border: 0;
+    padding: 4px 0;
+  }
+  .betChoices button {
+    padding: 7px;
+    gap: 2px;
+  }
+  .betChoices strong {
+    font-size: 18px;
   }
 }
 @media (max-width: 540px) {
@@ -740,29 +823,39 @@
     margin-bottom: 12px;
   }
   .controlCard {
-    padding: 12px 10px;
+    padding: 8px;
   }
   .controlTop {
     font-size: 11px;
     gap: 4px;
+    margin-bottom: 4px;
   }
   .chartLink {
     font-size: 10px;
   }
   .controlMain {
-    flex-wrap: wrap;
-    gap: 4px 8px;
+    gap: 6px;
   }
   .controlParty {
-    flex-basis: 100%;
-    padding-left: 40px;
-    font-size: 12px;
+    display: none;
+  }
+  .controlIcon img {
+    width: 24px;
+    height: 24px;
   }
   .controlLeader strong {
-    font-size: 28px;
+    font-size: 24px;
+  }
+  .controlBar {
+    height: 4px;
+    margin-top: 4px;
+  }
+  .controlBets {
+    margin-top: 6px;
+    gap: 4px;
   }
   .controlBets button {
-    padding: 6px 3px;
+    padding: 5px 2px;
     font-size: 11px;
     gap: 3px;
   }
@@ -786,12 +879,12 @@
     font-size: 12px;
   }
   .stage {
-    margin: 18px -9px 0;
+    margin: 8px -9px 0;
   }
   .legend {
     flex-direction: column;
     gap: 12px;
-    margin-top: 32px;
+    margin-top: 12px;
   }
   .ramp {
     width: 200px;

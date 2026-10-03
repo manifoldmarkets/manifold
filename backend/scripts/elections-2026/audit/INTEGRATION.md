@@ -30,8 +30,10 @@ descriptions; the frontend conservatively marks those conditional.
   withdrawn and mixed candidate outcomes are unclassified, not independent wins.
 - Use the same interpretation for homepage/OG map colors and popup trade labels.
   Preserve every candidate answer in the popup, including answers beyond five.
-  The Senate-control NO option says Not Republican, since it is not a separate
-  Democratic-control proposition. The source's party-switch cutoff is unresolved.
+  The Senate-control card uses Dem/Rep shorthand, with a brief information note
+  explaining that Dem trades NO on Republican control, including independents.
+  It is not a separate Democratic-control proposition. The source's party-switch
+  cutoff is unresolved.
 
 ## Deliberate differences from the proposal
 

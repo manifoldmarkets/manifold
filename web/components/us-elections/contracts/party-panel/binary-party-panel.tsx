@@ -51,8 +51,11 @@ import { binaryElectionLabels } from 'web/components/usa-map/audited-sources'
 
 // Party bars for a binary state market (e.g. the FL Senate special, "Will a
 // Republican win ...?"). NO includes Democrats, independents and other winners.
-export function StateBinaryPartyPanel(props: { contract: BinaryContract }) {
-  const { contract } = props
+export function StateBinaryPartyPanel(props: {
+  contract: BinaryContract
+  compact?: boolean
+}) {
+  const { contract, compact } = props
   const user = useUser()
 
   const userBets = useUserContractBets(
@@ -73,6 +76,7 @@ export function StateBinaryPartyPanel(props: { contract: BinaryContract }) {
           userBets={userBets}
           user={user}
           showPosition={sharesOutcome === outcome}
+          compact={compact}
         />
       ))}
     </Col>
@@ -85,8 +89,9 @@ function StateBinaryPartyBar(props: {
   userBets?: Bet[]
   user?: User | null
   showPosition: boolean
+  compact?: boolean
 }) {
-  const { contract, outcome, userBets, user, showPosition } = props
+  const { contract, outcome, userBets, user, showPosition, compact } = props
   const { resolution } = contract
 
   const isYes = outcome === 'YES'
@@ -115,9 +120,9 @@ function StateBinaryPartyBar(props: {
       color={getPartyColor(partyName)}
       prob={prob}
       resolvedProb={resolvedProb}
-      className={clsx('cursor-pointer py-1.5')}
+      className={clsx('cursor-pointer', compact ? 'py-1' : 'py-1.5')}
       label={
-        <Row className="relative h-8">
+        <Row className={clsx('relative', compact ? 'min-h-6' : 'h-8')}>
           <Col>
             <CreatorAndAnswerLabel
               text={partyName}
@@ -139,11 +144,15 @@ function StateBinaryPartyBar(props: {
       end={
         <Row className={'items-center gap-1 sm:gap-2'}>
           <div className="relative">
-            <div className="text-lg font-bold">{formatPercent(prob)}</div>
-            <PercentChangeToday
-              probChange={probChange}
-              className="absolute right-1 top-6 whitespace-nowrap text-xs"
-            />
+            <div className={clsx('font-bold', compact ? 'text-sm' : 'text-lg')}>
+              {formatPercent(prob)}
+            </div>
+            {!compact && (
+              <PercentChangeToday
+                probChange={probChange}
+                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              />
+            )}
           </div>
           <BinaryBetButton
             contract={contract}

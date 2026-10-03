@@ -24,6 +24,7 @@ import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/par
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
 import { RaceDetailsPanel } from './race-details-panel'
+import { useMapCamera } from './use-map-camera'
 import { BallotMeasureCard } from './ballot-measure-card'
 import {
   BALLOT_MEASURES,
@@ -97,14 +98,14 @@ export function ElectionExplorer(props: Props) {
   const searchRef = useRef<HTMLInputElement>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
-  const [camera, setCamera] = useState({ x: 0, y: 0, k: 1 })
-  const drag = useRef<{
-    x: number
-    y: number
-    px: number
-    py: number
-    moved: boolean
-  }>()
+  const {
+    svgRef,
+    camera,
+    dragged,
+    viewBox,
+    resetView,
+    zoom: zoomMap,
+  } = useMapCamera(!!atlas)
   const patternId = `unpriced-${useId().replace(/:/g, '')}`
   const races = useMemo(
     () =>
@@ -215,24 +216,30 @@ export function ElectionExplorer(props: Props) {
     setSelected(undefined)
     selectionOrigin.current?.focus({ preventScroll: true })
   }
+  const focusMap = () => {
+    if (
+      window.innerWidth <= 850 &&
+      (explorerRef.current?.getBoundingClientRect().top ?? 0) > 8
+    )
+      explorerRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      })
+  }
+  const zoom = (factor: number) => {
+    setHovered(undefined)
+    zoomMap(factor)
+    focusMap()
+  }
   const choose = (id: string, element: HTMLElement | SVGElement) => {
     selectionOrigin.current = element
     setSelected(id)
     setSearchOpen(false)
     setHovered(undefined)
+    focusMap()
   }
-  const resetView = () => setCamera({ x: 0, y: 0, k: 1 })
-  const zoom = (factor: number) =>
-    setCamera((c) => {
-      const k = Math.max(1, Math.min(6, c.k * factor))
-      return k === 1
-        ? { x: 0, y: 0, k }
-        : {
-            x: 480 - ((480 - c.x) * k) / c.k,
-            y: 300 - ((300 - c.y) * k) / c.k,
-            k,
-          }
-    })
   const changeMode = (next: ExplorerMode) => {
     setMode(next)
     setSelected(undefined)
@@ -305,7 +312,7 @@ export function ElectionExplorer(props: Props) {
       },
       onPointerLeave: () => setHovered(undefined),
       onClick: (e: React.MouseEvent<SVGElement>) => {
-        if (selectable && !drag.current?.moved) choose(id, e.currentTarget)
+        if (selectable && !dragged.current) choose(id, e.currentTarget)
       },
       onKeyDown: (e: React.KeyboardEvent<SVGElement>) => {
         if (selectable && (e.key === 'Enter' || e.key === ' ')) {
@@ -650,7 +657,8 @@ export function ElectionExplorer(props: Props) {
             </div>
           ) : (
             <svg
-              viewBox="0 0 960 600"
+              ref={svgRef}
+              viewBox={viewBox}
               aria-label={`${modeName(mode)} ${
                 view === 'map'
                   ? 'geographic map'
@@ -661,46 +669,8 @@ export function ElectionExplorer(props: Props) {
               className={styles.map}
               data-mode={mode}
               style={{ touchAction: camera.k > 1 ? 'none' : 'pan-y' }}
-              onPointerDown={(e) => {
-                drag.current = {
-                  x: e.clientX,
-                  y: e.clientY,
-                  px: camera.x,
-                  py: camera.y,
-                  moved: false,
-                }
-              }}
-              onPointerMove={(e) => {
-                if (!drag.current || !e.buttons || camera.k === 1) return
-                const d = drag.current
-                const bounds = e.currentTarget.getBoundingClientRect()
-                const ratio =
-                  1 / Math.min(bounds.width / 960, bounds.height / 600)
-                if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) {
-                  d.moved = true
-                  e.currentTarget.setPointerCapture(e.pointerId)
-                }
-                if (d.moved) {
-                  setHovered(undefined)
-                  setCamera((c) => ({
-                    ...c,
-                    x: Math.max(
-                      960 * (1 - c.k),
-                      Math.min(0, d.px + (e.clientX - d.x) * ratio)
-                    ),
-                    y: Math.max(
-                      600 * (1 - c.k),
-                      Math.min(0, d.py + (e.clientY - d.y) * ratio)
-                    ),
-                  }))
-                }
-              }}
-              onPointerUp={(e) => {
-                if (e.currentTarget.hasPointerCapture(e.pointerId))
-                  e.currentTarget.releasePointerCapture(e.pointerId)
-              }}
-              onPointerCancel={() => {
-                drag.current = undefined
+              onPointerMove={() => {
+                if (dragged.current) setHovered(undefined)
               }}
             >
               <defs>
@@ -1037,7 +1007,7 @@ export function ElectionExplorer(props: Props) {
           >
             <p className={styles.empty}>
               No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
-              2026. This office is not on the ballot here.
+              2026.
             </p>
             <IncumbentDetails mode={raceMode} state={selected!} />
             <button
@@ -1048,7 +1018,7 @@ export function ElectionExplorer(props: Props) {
                 setQuery(name)
               }}
             >
-              Explore {selectedNoRace.name} House districts →
+              Explore House districts →
             </button>
           </RaceDetailsPanel>
         )}
@@ -1110,11 +1080,6 @@ export function ElectionExplorer(props: Props) {
                   ))}
                 </div>
               )}
-            <IncumbentDetails
-              mode={raceMode}
-              state={selectedRace.state}
-              district={selectedRace.district}
-            />
             {selectedRace.basis?.kind === 'ballot' && (
               <p className={styles.note}>
                 Both November finalists are{' '}
@@ -1155,6 +1120,11 @@ export function ElectionExplorer(props: Props) {
             ) : (
               <RaceMarket contract={selectedRace.contract} />
             )}
+            <IncumbentDetails
+              mode={raceMode}
+              state={selectedRace.state}
+              district={selectedRace.district}
+            />
             {candidate &&
               candidate.id !== selectedRace.contract?.id &&
               sourceAudit(selectedRace.contract?.slug)?.kind !==
@@ -1474,12 +1444,13 @@ function RaceMarket({ contract }: { contract: Contract }) {
       {contract.mechanism === 'cpmm-multi-1' ? (
         <PartyPanel
           contract={contract}
+          compact
           answerColors={answerColors}
           hidePartyNote={!!audit}
         />
       ) : contract.mechanism === 'cpmm-1' &&
         contract.outcomeType === 'BINARY' ? (
-        <StateBinaryPartyPanel contract={contract} />
+        <StateBinaryPartyPanel contract={contract} compact />
       ) : null}
       {audit?.kind === 'candidate' && (
         <p className={styles.note}>
@@ -1535,7 +1506,7 @@ function ControlCard({
   const [outcome, setOutcome] = useState<'YES' | 'NO'>()
   const odds = electionOdds(contract, true)
   const rep = odds && odds.rep > odds.dem
-  const noLabel = label === 'Senate' ? 'Not Republican' : 'Democratic'
+  const noLabel = 'Democratic'
   const tradable =
     contract?.mechanism === 'cpmm-1' &&
     contract.outcomeType === 'BINARY' &&
@@ -1565,14 +1536,14 @@ function ControlCard({
     <>
       <div className={styles.controlCard}>
         <div className={styles.controlTop}>
-          <span
-            title={
-              label === 'Senate'
-                ? 'Republicans win at least 51 seats, or 50 with the VP tiebreak, in the 2026 elections. Post-election party switches are not addressed by the market.'
-                : undefined
-            }
-          >
+          <span className={styles.controlLabel}>
             {label} control
+            {label === 'Senate' && (
+              <details className={styles.controlInfo}>
+                <summary aria-label="About Senate control">ⓘ</summary>
+                <p>Dem = no Republican majority; includes independents.</p>
+              </details>
+            )}
           </span>
           {contract && (
             <a
@@ -1616,8 +1587,7 @@ function ControlCard({
               onClick={() => setOutcome('NO')}
               style={{ color: DEM_COLOR }}
             >
-              <span>{label === 'Senate' ? 'Not R' : 'Dem'}</span>{' '}
-              <strong>{pct(odds.dem)}</strong>
+              <span>Dem</span> <strong>{pct(odds.dem)}</strong>
             </button>
             <button
               disabled={!tradable}
@@ -1645,7 +1615,7 @@ function ControlCard({
               YES: { pseudonymName: 'Republican', pseudonymColor: 'sienna' },
               NO: {
                 pseudonymName: noLabel,
-                pseudonymColor: label === 'Senate' ? 'gray' : 'azure',
+                pseudonymColor: 'azure',
               },
             }}
           />

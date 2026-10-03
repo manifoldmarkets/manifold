@@ -43,9 +43,10 @@ by ballot composition/status in separate balance segments. These are not traded
 including CA-12's candidate binary. Missing/cancelled candidate markets do not
 change the ballot basis. All other unlinked seats remain unpriced.
 
-AndrewG's Senate-control market has no explicit party-switch cutoff. Its NO
-button says Not Republican; the title tooltip describes the election-seat
-threshold and unresolved timing. The House control card retains its D/R display.
+AndrewG's Senate-control market has no explicit party-switch cutoff. Both control
+cards use Dem/Rep display labels. The Senate information note explains that Dem
+is shorthand for no Republican majority, including independents; it trades NO
+on the Republican-control market, not a separate Democratic-control proposition.
 No creation, subsidy or other market write is part of this integration.
 
 The following October 2 review is historical context; the October 3 integration

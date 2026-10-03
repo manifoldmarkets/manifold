@@ -44,6 +44,7 @@ export function PartyPanel(props: {
   hidePartyNote?: boolean
   includeNeedle?: boolean
   includeHead?: boolean
+  compact?: boolean
 }) {
   const {
     contract,
@@ -52,6 +53,7 @@ export function PartyPanel(props: {
     includeHead,
     answerColors,
     hidePartyNote,
+    compact,
   } = props
   const { resolutions, outcomeType } = contract
 
@@ -199,6 +201,7 @@ export function PartyPanel(props: {
                   user={user}
                   userBets={userBetsByAnswer[answer.id]}
                   includeHead={includeHead}
+                  compact={compact}
                 />
               ))}
             </>
@@ -224,6 +227,7 @@ export function PartyPanel(props: {
               user={user}
               userBets={userBetsByAnswer[answer.id]}
               includeHead={includeHead}
+              compact={compact}
             />
           ))}
         </>
@@ -262,6 +266,7 @@ function PartyAnswer(props: {
   userBets?: Bet[]
   user?: User | null
   includeHead?: boolean
+  compact?: boolean
 }) {
   const {
     answer,
@@ -272,6 +277,7 @@ function PartyAnswer(props: {
     userBets,
     user,
     includeHead,
+    compact,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -321,11 +327,12 @@ function PartyAnswer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         className={clsx(
-          'cursor-pointer py-1.5',
+          'cursor-pointer',
+          compact ? 'py-1' : 'py-1.5',
           selected && 'ring-primary-600 ring-2'
         )}
         label={
-          <Row className="relative h-8">
+          <Row className={clsx('relative', compact ? 'min-h-6' : 'h-8')}>
             {!!includeHead && head}
             <Col className={clsx(includeHead ? 'ml-12' : '')}>
               <CreatorAndAnswerLabel
@@ -350,11 +357,17 @@ function PartyAnswer(props: {
         end={
           <Row className={'items-center gap-1 sm:gap-2'}>
             <div className="relative">
-              <AnswerStatus contract={contract} answer={answer} />
-              <PercentChangeToday
-                probChange={answer.probChanges.day}
-                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              <AnswerStatus
+                contract={contract}
+                answer={answer}
+                className={compact ? '!text-sm' : undefined}
               />
+              {!compact && (
+                <PercentChangeToday
+                  probChange={answer.probChanges.day}
+                  className="absolute right-1 top-6 whitespace-nowrap text-xs"
+                />
+              )}
             </div>
             <MultiBettor
               contract={contract as CPMMMultiContract}
