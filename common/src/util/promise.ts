@@ -75,3 +75,29 @@ export const mapAsync = <T, U>(
     else doWork()
   })
 }
+
+/** Collapses concurrent requests for the same key onto a single promise, so a
+ * burst of callers wanting the same thing at the same moment makes one request
+ * between them. The entry is dropped as soon as it settles: this dedupes, it
+ * does not cache, so a caller arriving afterwards still gets fresh data. */
+export const createRequestDeduper = <T>(
+  scope: 'in-flight' | 'burst' = 'in-flight'
+) => {
+  const inFlight = new Map<string, Promise<T>>()
+
+  return (key: string, makeRequest: () => Promise<T>) => {
+    const existing = inFlight.get(key)
+    if (existing) return existing
+
+    const request = makeRequest()
+    inFlight.set(key, request)
+    const clear = () => {
+      if (inFlight.get(key) === request) inFlight.delete(key)
+    }
+    // Burst mode joins callers from the current batch of effects only. A later
+    // visibility/reconnect event must start a new read even if this one hangs.
+    if (scope === 'burst') queueMicrotask(clear)
+    else request.then(clear, clear)
+    return request
+  }
+}

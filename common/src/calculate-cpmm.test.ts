@@ -1,10 +1,14 @@
+import { getLimitOrderFill, LimitBet } from './bet'
 import {
   addCpmmLiquidity,
   calculateCpmmPurchase,
+  calculateCpmmSale,
   calculateCpmmShares,
+  computeFills,
   CpmmState,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
+  getCpmmProbabilityAfterSale,
   removeCpmmLiquidity,
 } from './calculate-cpmm'
 import { noFees } from './fees'
@@ -189,6 +193,172 @@ describe('CPMM Calculations', () => {
       expect(finalPool.YES).toBeCloseTo(initialPool.YES, 5)
       expect(finalPool.NO).toBeCloseTo(initialPool.NO, 5)
       expect(finalP).toBeCloseTo(initialP, 5)
+    })
+  })
+
+  describe('open limit orders', () => {
+    const makeLimitOrder = (overrides: Partial<LimitBet> = {}): LimitBet => ({
+      id: 'limit-order',
+      userId: 'maker',
+      contractId: 'contract',
+      createdTime: 0,
+      amount: 0,
+      shares: 0,
+      outcome: 'YES',
+      limitProb: 0.5,
+      orderAmount: 10000,
+      isFilled: false,
+      isCancelled: false,
+      fills: [],
+      probBefore: 0.5,
+      probAfter: 0.5,
+      fees: noFees,
+      isRedemption: false,
+      ...overrides,
+    })
+
+    const state: CpmmState = {
+      pool: { YES: 10000, NO: 10000 },
+      p: 0.5,
+      collectedFees: noFees,
+    }
+    const balanceByUserId = { maker: 100000 }
+
+    it('matches a buyer against an open order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder()],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(1)
+    })
+
+    it('ignores a cancelled order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ isCancelled: true })],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(0)
+    })
+
+    it('ignores a filled order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ isFilled: true })],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(0)
+    })
+
+    it('ignores an expired order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ expiresAt: Date.now() - 1000 })],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(0)
+    })
+
+    it('reports how much of a trade rests on limit orders', () => {
+      const orders = [
+        makeLimitOrder({ id: 'a' }),
+        makeLimitOrder({ id: 'b', createdTime: 1 }),
+      ]
+      const { makers, takers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        orders,
+        balanceByUserId
+      )
+      const fill = getLimitOrderFill(makers)
+
+      // The first order is deep enough to take the whole trade on its own.
+      expect(fill.orderCount).toBe(1)
+      expect(fill.shares).toBeGreaterThan(0)
+      expect(fill.shares).toBeCloseTo(
+        takers.reduce((total, taker) => total + taker.shares, 0),
+        6
+      )
+    })
+
+    it('reports no limit order fill once the orders are cancelled', () => {
+      const { makers, takers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ isCancelled: true })],
+        balanceByUserId
+      )
+
+      // The trade still happens, but entirely against the pool.
+      expect(takers.length).toBeGreaterThan(0)
+      expect(getLimitOrderFill(makers)).toEqual({ shares: 0, orderCount: 0 })
+    })
+
+    it('measures the limit order fill in the shares being sold', () => {
+      const shares = 2000
+      const { makers } = calculateCpmmSale(
+        state,
+        shares,
+        'YES',
+        [makeLimitOrder()],
+        balanceByUserId
+      )
+
+      // The sell panel shows this against the size of the sale, so the two have
+      // to be the same unit — the order absorbs the sale whole here.
+      expect(getLimitOrderFill(makers).shares).toBeCloseTo(shares, 6)
+    })
+
+    it('cancelling your own order moves the price your sale would make', () => {
+      const shares = 2000
+      const order = makeLimitOrder()
+
+      // The order is big enough to absorb the whole sale at its limit price.
+      const withOpenOrder = getCpmmProbabilityAfterSale(
+        state,
+        shares,
+        'YES',
+        [order],
+        balanceByUserId
+      )
+      expect(withOpenOrder).toBeCloseTo(0.5, 6)
+
+      const withoutOrders = getCpmmProbabilityAfterSale(
+        state,
+        shares,
+        'YES',
+        [],
+        balanceByUserId
+      )
+      expect(withoutOrders).toBeLessThan(0.5)
+
+      // Once cancelled it can't be the counterparty any more, so the sale has
+      // to move the pool just as it would with an empty order book.
+      const withCancelledOrder = getCpmmProbabilityAfterSale(
+        state,
+        shares,
+        'YES',
+        [{ ...order, isCancelled: true }],
+        balanceByUserId
+      )
+      expect(withCancelledOrder).toBeCloseTo(withoutOrders, 6)
     })
   })
 })

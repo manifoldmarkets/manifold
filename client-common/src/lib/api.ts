@@ -1,3 +1,4 @@
+import { isUncachedQuoteRead } from 'common/api/cache'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import {
   BaseApiCallOptions,
@@ -52,6 +53,6 @@ export async function apiWithAuth<P extends APIPath>(
     pathProps.method,
     auth,
     params,
-    options
+    isUncachedQuoteRead(path, params) ? { ...options, cache: 'no-store' } : options
   )) as Promise<APIResponse<P>>
 }

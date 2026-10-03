@@ -1,11 +1,25 @@
-import { APIParams, APIResponse } from 'common/api/schema'
-import { Bet, LimitBet } from 'common/bet'
+import { maxCachedAgeMs } from 'common/api/cache'
+import { API, APIParams, APIResponse } from 'common/api/schema'
+import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
+import { createLiveSnapshot } from 'common/util/live-snapshot'
+import { createRequestDeduper } from 'common/util/promise'
 import { User } from 'common/user'
-import { sortBy, uniq, uniqBy } from 'lodash'
-import { Dispatch, SetStateAction, useEffect } from 'react'
-import { useApiSubscription } from './use-api-subscription'
+import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
+import {
+  useApiSubscription,
+  useWebsocketReconnectCount,
+} from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useStaggeredReconnectCount } from './use-staggered-reconnect-count'
 
 export function useBetsOnce(
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -167,52 +181,109 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   return newBets
 }
 
+// Each contract has one observable snapshot for quote panels and one for
+// display-only consumers. Quote reads come from the origin. Display reads go
+// through the CDN, so they can lag a confirmed change by up to its max age;
+// keeping the snapshots apart stops one from replacing a quote panel's. A
+// confirmed cancel changes both, including when no consumer is mounted. Live
+// updates are kept only while a response might not include them, so no
+// tombstone TTL is needed.
+const dedupeRefresh = createRequestDeduper<void>('burst')
+const createOrderBook = (fresh: boolean) =>
+  createLiveSnapshot<LimitBet>(
+    (bets) =>
+      sortBy(
+        bets.filter((bet) => isOpenLimitOrder(bet)),
+        'createdTime'
+      ),
+    fresh ? 0 : maxCachedAgeMs(API.bets.cache)
+  )
+const orderBooks = new Map<string, ReturnType<typeof createOrderBook>>()
+const bookKey = (contractId: string, fresh: boolean) =>
+  `${fresh ? 'quote' : 'display'}:${contractId}`
+const getOrderBook = (contractId: string, fresh: boolean) => {
+  // Never share mutable market state between SSR requests.
+  if (typeof window === 'undefined') return createOrderBook(fresh)
+  const key = bookKey(contractId, fresh)
+  let book = orderBooks.get(key)
+  if (!book) {
+    book = createOrderBook(fresh)
+    orderBooks.set(key, book)
+  }
+  return book
+}
+const getServerSnapshot = () => undefined
+
+/** Apply confirmed mutations to the snapshots every consumer reads. */
+export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
+  for (const [contractId, updates] of Object.entries(
+    groupBy(bets, 'contractId')
+  )) {
+    // With no cached book, a later mount starts from a server read.
+    for (const fresh of [true, false])
+      orderBooks.get(bookKey(contractId, fresh))?.update(updates)
+  }
+}
+
 export const useUnfilledBets = (
   contractId: string,
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
   useIsPageVisible: () => boolean,
   options?: {
     enabled?: boolean
+    /** For quote panels: read from the origin, and reconcile as soon as a
+     * subscription or reconnect could have missed broadcasts. Otherwise reads
+     * go through the CDN, and reconcile after each connection, staggered. */
+    fresh?: boolean
   }
 ) => {
-  const { enabled = true } = options ?? {}
-
-  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
-    undefined,
-    `unfilled-bets-${contractId}`
+  const { enabled = true, fresh = false } = options ?? {}
+  const book = useMemo(
+    () => getOrderBook(contractId, fresh),
+    [contractId, fresh]
   )
-
-  const addBets = (newBets: LimitBet[]) => {
-    setBets((bets) => {
-      return sortBy(
-        uniqBy([...newBets, ...(bets ?? [])], 'id'),
-        'createdTime'
-      ).filter(
-        (bet) =>
-          !bet.isFilled &&
-          !bet.isCancelled &&
-          (!bet.expiresAt || bet.expiresAt > Date.now())
-      )
-    })
-  }
-
+  const bets = useSyncExternalStore(
+    book.subscribe,
+    book.getSnapshot,
+    getServerSnapshot
+  )
   const isPageVisible = useIsPageVisible()
+  const reconnectCount = useWebsocketReconnectCount()
+  const staggeredReconnectCount = useStaggeredReconnectCount()
+  const connection = fresh ? reconnectCount : staggeredReconnectCount
 
-  useEffect(() => {
-    if (enabled)
-      api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
-        // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
-        (bets) => setBets(bets as LimitBet[])
+  const refresh = useEvent(() => {
+    if (!enabled || !isPageVisible) return
+    const params: APIParams<'bets'> = {
+      contractId,
+      kinds: 'open-limit',
+      order: 'asc',
+    }
+    dedupeRefresh(`orders:${bookKey(contractId, fresh)}:${connection}`, () =>
+      book.refresh(
+        () => api(fresh ? { ...params, fresh } : params) as Promise<LimitBet[]>
       )
-  }, [enabled, contractId, isPageVisible])
+    ).catch((e) => console.error('Failed to load limit orders', e))
+  })
+  useEffect(refresh, [enabled, book, contractId, isPageVisible, connection])
 
   useApiSubscription({
+    onSubscribed: fresh ? refresh : undefined,
     enabled,
     topics: [`contract/${contractId}/orders`],
-    onBroadcast: ({ data }) => {
-      addBets(data.bets as LimitBet[])
-    },
+    onBroadcast: ({ data }) => book.update(data.bets as LimitBet[]),
   })
+
+  useEffect(() => {
+    if (!enabled || !bets?.length) return
+    const expiry = Math.min(...bets.map((b) => b.expiresAt ?? Infinity))
+    if (!Number.isFinite(expiry)) return
+    const timer = setTimeout(
+      book.normalize,
+      Math.min(2 ** 31 - 1, Math.max(0, expiry - Date.now()))
+    )
+    return () => clearTimeout(timer)
+  }, [enabled, book, bets])
 
   return bets
 }
@@ -226,52 +297,82 @@ export const useUnfilledBetsAndBalanceByUserId = (
   useIsPageVisible: () => boolean
 ) => {
   const unfilledBets =
-    useUnfilledBets(contractId, api, useIsPageVisible, { enabled: true }) ?? []
+    useUnfilledBets(contractId, api, useIsPageVisible, {
+      enabled: true,
+      fresh: true,
+    }) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
-  const balances = useUserBalances(userIds, usersApi, useIsPageVisible) ?? []
-
-  const balanceByUserId = Object.fromEntries(
-    balances.map(({ id, balance }) => [id, balance])
+  const balanceByUserId = useUserBalances(
+    contractId,
+    userIds,
+    usersApi,
+    useIsPageVisible
   )
   return { unfilledBets, balanceByUserId }
 }
 
+type MakerBalance = { id: string; balance: number }
+const balancesByContract = new Map<
+  string,
+  ReturnType<typeof createLiveSnapshot<MakerBalance>>
+>()
+const getBalances = (contractId: string) => {
+  if (typeof window === 'undefined') return createLiveSnapshot<MakerBalance>()
+  let store = balancesByContract.get(contractId)
+  if (!store) {
+    store = createLiveSnapshot<MakerBalance>()
+    balancesByContract.set(contractId, store)
+  }
+  return store
+}
+
 const useUserBalances = (
+  contractId: string,
   userIds: string[],
   api: (
     params: APIParams<'users/by-id/balance'>
   ) => Promise<APIResponse<'users/by-id/balance'>>,
   useIsPageVisible: () => boolean
 ) => {
-  const [users, setUsers] = usePersistentInMemoryState<
-    { id: string; balance: number }[]
-  >([], `user-balances-${userIds.join('-')}`)
+  const store = useMemo(() => getBalances(contractId), [contractId])
+  const users = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    getServerSnapshot
+  )
   const isPageVisible = useIsPageVisible()
-
-  // Load initial data
-  useEffect(() => {
-    if (!userIds.length || !isPageVisible) return
-    api({ ids: userIds }).then((users) => {
-      setUsers(users)
-    })
-  }, [userIds.join(','), isPageVisible])
-
-  // Subscribe to updates
-  useApiSubscription({
-    topics: userIds.map((id) => `user/${id}`),
-    onBroadcast: ({ data }) => {
-      const { user } = data as { user: Partial<User> }
-      if (!user) return
-      const prevUser = users.find((u) => u.id === user.id)
-      if (!prevUser) return
-      setUsers((prevUsers) => {
-        return prevUsers.map((prevU) =>
-          prevU.id === user.id ? { ...prevU, ...user } : prevU
-        )
+  const reconnectCount = useWebsocketReconnectCount()
+  const ids = [...userIds].sort()
+  const idsKey = ids.join(',')
+  const refresh = useEvent(() => {
+    if (!isPageVisible || !ids.length) return
+    dedupeRefresh(`balances:${contractId}:${idsKey}:${reconnectCount}`, () =>
+      store.refresh(async () => {
+        const users = await api({ ids, fresh: true })
+        const byId = new Map(users.map((user) => [user.id, user.balance]))
+        // Missing/deleted users cannot fund a fill. Retry them on the next
+        // mount, refocus, reconnect, or maker-set change, like every other id.
+        return ids.map((id) => ({ id, balance: byId.get(id) ?? 0 }))
       })
-    },
-    enabled: userIds.length > 0 && isPageVisible,
+    ).catch((e) => console.error('Failed to load maker balances', e))
   })
-
-  return users
+  // Preserve known balances while revalidating. "Known" does not mean fresh:
+  // subscriptions stop while hidden and when a maker leaves the book.
+  useEffect(refresh, [store, contractId, idsKey, isPageVisible, reconnectCount])
+  useApiSubscription({
+    topics: ids.map((id) => `user/${id}`),
+    enabled: ids.length > 0 && isPageVisible,
+    onSubscribed: refresh,
+    onBroadcast: ({ data }) => {
+      const { id, balance } = (data.user ?? {}) as Partial<User>
+      if (id !== undefined && balance !== undefined && ids.includes(id))
+        store.update([{ id, balance }])
+    },
+  })
+  return useMemo(() => {
+    const byId = new Map(users?.map((user) => [user.id, user.balance]))
+    // computeFills interprets undefined as unlimited. Until a maker's balance
+    // arrives, omit its liquidity from the quote rather than inventing funding.
+    return Object.fromEntries(userIds.map((id) => [id, byId.get(id) ?? 0]))
+  }, [users, idsKey])
 }
