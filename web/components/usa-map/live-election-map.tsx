@@ -11,6 +11,7 @@ type Props = {
   rawGovernorCandidateContracts: MapContractsDictionary
   houseDistrictsContract: Contract | null
   additionalHouseContracts?: MapContractsDictionary
+  ballotMeasureContracts?: MapContractsDictionary
   houseControlContract: Contract | null
   senateControlContract: Contract | null
 }
@@ -38,6 +39,7 @@ export function LiveElectionMap(props: Props) {
       ...Object.values(props.rawGovernorCandidateContracts),
       props.houseDistrictsContract,
       ...Object.values(props.additionalHouseContracts ?? {}),
+      ...Object.values(props.ballotMeasureContracts ?? {}),
       props.houseControlContract,
       props.senateControlContract,
     ].filter((c): c is Contract => !!c)
@@ -64,6 +66,7 @@ export function LiveElectionMap(props: Props) {
         governorCandidates={dictionary(props.rawGovernorCandidateContracts)}
         house={live(props.houseDistrictsContract)}
         additionalHouse={dictionary(props.additionalHouseContracts ?? {})}
+        measures={dictionary(props.ballotMeasureContracts ?? {})}
         houseControl={live(props.houseControlContract)}
         senateControl={live(props.senateControlContract)}
       />

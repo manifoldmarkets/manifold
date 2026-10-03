@@ -6,6 +6,7 @@ import {
   ViewGridIcon,
   SearchIcon,
   AnnotationIcon,
+  ClipboardCheckIcon,
 } from '@heroicons/react/outline'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
 import { CongressSenate } from 'web/public/custom-components/congress_senate'
@@ -23,6 +24,13 @@ import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/par
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
 import { RaceDetailsPanel } from './race-details-panel'
+import { BallotMeasureCard } from './ballot-measure-card'
+import {
+  BALLOT_MEASURES,
+  approvalChance,
+  matchesMeasureQuery,
+  measureColor,
+} from './ballot-measures-model'
 import {
   getHeldOffice,
   getIncumbentGroups,
@@ -60,13 +68,20 @@ type Props = {
   additionalHouse?: MapContractsDictionary
   houseControl: Contract | null
   senateControl: Contract | null
+  measures?: MapContractsDictionary
 }
-const MODES: ElectionMode[] = ['house', 'senate', 'governor']
-const modeName = (mode: ElectionMode) => mode[0].toUpperCase() + mode.slice(1)
+type ExplorerMode = ElectionMode | 'measures'
+const MODES: ExplorerMode[] = ['house', 'senate', 'governor', 'measures']
+const modeName = (mode: ExplorerMode) =>
+  mode === 'measures'
+    ? 'Ballot measures'
+    : mode[0].toUpperCase() + mode.slice(1)
 const pct = (p: number) => formatPercent(p)
 
 export function ElectionExplorer(props: Props) {
-  const [mode, setMode] = useState<ElectionMode>('senate')
+  const [mode, setMode] = useState<ExplorerMode>('senate')
+  const isMeasures = mode === 'measures'
+  const raceMode = isMeasures ? 'senate' : mode
   const [view, setView] = useState<'map' | 'cartogram'>('map')
   const [labels, setLabels] = useState(true)
   const [query, setQuery] = useState('')
@@ -93,22 +108,63 @@ export function ElectionExplorer(props: Props) {
   const patternId = `unpriced-${useId().replace(/:/g, '')}`
   const races = useMemo(
     () =>
-      buildRaces(
-        mode,
-        mode === 'senate' ? props.senate : props.governor,
-        props.house,
-        props.additionalHouse
-      ),
-    [mode, props.senate, props.governor, props.house, props.additionalHouse]
+      isMeasures
+        ? []
+        : buildRaces(
+            raceMode,
+            mode === 'senate' ? props.senate : props.governor,
+            props.house,
+            props.additionalHouse
+          ),
+    [
+      mode,
+      isMeasures,
+      raceMode,
+      props.senate,
+      props.governor,
+      props.house,
+      props.additionalHouse,
+    ]
   )
   const raceById = useMemo(() => new Map(races.map((r) => [r.id, r])), [races])
-  const summary = seatSummary(races, mode)
+  const summary = seatSummary(races, raceMode)
+  const measuresByState = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.keys(DATA).map((state) => [
+          state,
+          BALLOT_MEASURES.filter((m) => m.state === state),
+        ])
+      ),
+    []
+  )
+  const measureMatches = BALLOT_MEASURES.filter((m) =>
+    matchesMeasureQuery(m, query, DATA[m.state].name)
+  )
+  const measureCount = (state: string) => measuresByState[state]?.length ?? 0
+  const measureQuote = (key: string) => {
+    const m = BALLOT_MEASURES.find((m) => m.key === key)!
+    return approvalChance(
+      m,
+      m.source ? props.measures?.[m.source.contractId] : undefined
+    )
+  }
+  const measureStateLabel = (state: string) =>
+    measureCount(state)
+      ? `${measureCount(state)} statewide measure${
+          measureCount(state) === 1 ? '' : 's'
+        }`
+      : 'No statewide measures'
   const selectedRace = selected ? raceById.get(selected) : undefined
   const hoverRace = hovered ? raceById.get(hovered) : undefined
   const selectedNoRace =
-    mode !== 'house' && selected && !selectedRace ? DATA[selected] : undefined
+    !isMeasures && mode !== 'house' && selected && !selectedRace
+      ? DATA[selected]
+      : undefined
   const hoveredNoRace =
-    mode !== 'house' && hovered && !hoverRace ? DATA[hovered] : undefined
+    !isMeasures && mode !== 'house' && hovered && !hoverRace
+      ? DATA[hovered]
+      : undefined
   const matches = (race: Race) =>
     (!filter || raceTier(race) === filter) && matchesRaceQuery(race, query)
   const filtered = races.filter(matches)
@@ -118,7 +174,7 @@ export function ElectionExplorer(props: Props) {
       : Object.entries(DATA).filter(
           ([state]) =>
             state !== 'DC' &&
-            !raceById.has(state) &&
+            (isMeasures ? !measureCount(state) : !raceById.has(state)) &&
             matchesStateQuery(state, query)
         )
 
@@ -177,7 +233,7 @@ export function ElectionExplorer(props: Props) {
             k,
           }
     })
-  const changeMode = (next: ElectionMode) => {
+  const changeMode = (next: ExplorerMode) => {
     setMode(next)
     setSelected(undefined)
     setHovered(undefined)
@@ -190,22 +246,37 @@ export function ElectionExplorer(props: Props) {
     const race = raceById.get(id)
     const noElection = mode !== 'house' && !race && !!DATA[id] && id !== 'DC'
     const selectable = !!race || noElection
-    const held = noElection ? getHeldOffice(mode, id) : undefined
+    const held =
+      noElection && !isMeasures ? getHeldOffice(raceMode, id) : undefined
     return {
-      fill: race
+      fill: isMeasures
+        ? measureColor(measureCount(id))
+        : race
         ? raceColor(race) ?? `url(#${patternId})`
         : held
         ? `url(#${patternId}-${held.control})`
         : undefined,
       className: clsx(
         styles.shape,
-        !race && !held && styles.noRace,
+        !race && !held && (!isMeasures || !measureCount(id)) && styles.noRace,
         selected === id && styles.selected
       ),
-      opacity: race && !matches(race) ? 0.15 : 1,
+      opacity: isMeasures
+        ? query &&
+          !measureMatches.some((m) => m.state === id) &&
+          !matchesStateQuery(id, query)
+          ? 0.15
+          : 1
+        : race && !matches(race)
+        ? 0.15
+        : 1,
       role: selectable ? 'button' : undefined,
       tabIndex: (race && matches(race)) || noElection ? 0 : -1,
-      'aria-label': race
+      'aria-label': isMeasures
+        ? `${DATA[id]?.name ?? id}: ${measureStateLabel(
+            id
+          )} on November 3, 2026`
+        : race
         ? `${race.label}, ${
             race.basis?.kind === 'ballot'
               ? `${race.basis.party} same-party ballot`
@@ -245,7 +316,11 @@ export function ElectionExplorer(props: Props) {
     }
   }
   const labelColor = (state: string) => {
-    if (getHeldOffice(mode, state)) return '#fff'
+    if (isMeasures) {
+      const color = measureColor(measureCount(state))
+      return color ? (isColorLight(color) ? '#1e293b' : '#fff') : undefined
+    }
+    if (getHeldOffice(raceMode, state)) return '#fff'
     const race = raceById.get(state)
     const color = race && raceColor(race)
     return color ? (isColorLight(color) ? '#1e293b' : '#fff') : undefined
@@ -278,26 +353,33 @@ export function ElectionExplorer(props: Props) {
         aria-label="2026 election explorer"
       >
         <header className={styles.header}>
-          <ElectionBalance
-            summary={summary}
-            mode={mode}
-            filter={filter}
-            onFilter={(tier) => {
-              setFilter(filter === tier ? undefined : tier)
-              setSelected(undefined)
-            }}
-          />
+          {isMeasures ? (
+            <div className={styles.measureOverview}>
+              <strong>145 statewide questions</strong>
+              <span>39 states · November 3</span>
+            </div>
+          ) : (
+            <ElectionBalance
+              summary={summary}
+              mode={raceMode}
+              filter={filter}
+              onFilter={(tier) => {
+                setFilter(filter === tier ? undefined : tier)
+                setSelected(undefined)
+              }}
+            />
+          )}
           <div className={styles.toolbar}>
             <label className={styles.mobileMode}>
               <ChamberIcon mode={mode} />
               <select
                 aria-label="Election type"
                 value={mode}
-                onChange={(e) => changeMode(e.target.value as ElectionMode)}
+                onChange={(e) => changeMode(e.target.value as ExplorerMode)}
               >
                 {MODES.map((m) => (
                   <option key={m} value={m}>
-                    {modeName(m)}
+                    {m === 'measures' ? 'Measures' : modeName(m)}
                   </option>
                 ))}
               </select>
@@ -307,10 +389,18 @@ export function ElectionExplorer(props: Props) {
             <button
               className={styles.viewToggle}
               aria-label={`Switch to ${
-                view === 'map' ? 'cartogram' : 'geographic map'
+                view === 'map'
+                  ? isMeasures
+                    ? 'state tiles'
+                    : 'cartogram'
+                  : 'geographic map'
               }`}
               title={`Switch to ${
-                view === 'map' ? 'cartogram' : 'geographic map'
+                view === 'map'
+                  ? isMeasures
+                    ? 'state tiles'
+                    : 'cartogram'
+                  : 'geographic map'
               }`}
               onClick={() => {
                 setView(view === 'map' ? 'cartogram' : 'map')
@@ -323,7 +413,9 @@ export function ElectionExplorer(props: Props) {
               ) : (
                 <ViewGridIcon aria-hidden />
               )}
-              <span>{view === 'map' ? 'Map' : 'Cartogram'}</span>
+              <span>
+                {view === 'map' ? 'Map' : isMeasures ? 'Tiles' : 'Cartogram'}
+              </span>
             </button>
             <button
               className={clsx(styles.toolButton, labels && styles.activeTool)}
@@ -341,9 +433,11 @@ export function ElectionExplorer(props: Props) {
                   styles.searchToggle,
                   (searchOpen || query) && styles.activeTool
                 )}
-                aria-label="Search races"
+                aria-label={
+                  isMeasures ? 'Search ballot measures' : 'Search races'
+                }
                 aria-expanded={searchOpen}
-                title="Search races"
+                title={isMeasures ? 'Search ballot measures' : 'Search races'}
                 onClick={() => setSearchOpen(!searchOpen)}
               >
                 <SearchIcon aria-hidden />
@@ -352,8 +446,14 @@ export function ElectionExplorer(props: Props) {
                 <SearchIcon aria-hidden />
                 <input
                   ref={searchRef}
-                  aria-label="Find a state or district"
-                  placeholder="Find a race"
+                  aria-label={
+                    isMeasures
+                      ? 'Find a state, proposition or topic'
+                      : 'Find a state or district'
+                  }
+                  placeholder={
+                    isMeasures ? 'State, prop or topic' : 'Find a race'
+                  }
                   value={query}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') {
@@ -408,49 +508,67 @@ export function ElectionExplorer(props: Props) {
             </div>
           </div>
         </header>
-        <div className={styles.coverage}>
-          <span>
-            {
-              races.filter(
-                (r) =>
-                  r.odds &&
-                  r.basis?.kind !== 'ballot' &&
-                  r.basis?.kind !== 'decided'
-              ).length
-            }{' '}
-            of {races.length} seats with party odds
-            {mode === 'house' &&
-              ` · ${
-                summary.counts['fixed-d'] + summary.counts['fixed-r']
-              } determined by ballot`}
-            {mode === 'senate' && ' · 65 seats not on the ballot'}
-          </span>
-          <span>
-            {summary.leaders.unpriced > 0 &&
-              `${summary.leaders.unpriced} without party odds`}
-            {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
-            {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
-          </span>
-        </div>
-        {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
-          <p className={styles.note}>
-            {[
-              summary.leaders.notDem > 0 &&
-                `${summary.leaders.notDem} races favor a non-Democratic winner`,
-              summary.leaders.notRep > 0 &&
-                `${summary.leaders.notRep} races favor a non-Republican winner`,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-            . These outcomes are counted separately from party wins.
-          </p>
+        {isMeasures ? (
+          <div className={styles.coverage}>
+            <span>
+              {
+                BALLOT_MEASURES.filter((m) => measureQuote(m.key) !== undefined)
+                  .length
+              }{' '}
+              of {BALLOT_MEASURES.length} measures with market odds
+            </span>
+            <span>Shading shows number of measures, not chance of passage</span>
+          </div>
+        ) : (
+          <div className={styles.coverage}>
+            <span>
+              {
+                races.filter(
+                  (r) =>
+                    r.odds &&
+                    r.basis?.kind !== 'ballot' &&
+                    r.basis?.kind !== 'decided'
+                ).length
+              }{' '}
+              of {races.length} seats with party odds
+              {mode === 'house' &&
+                ` · ${
+                  summary.counts['fixed-d'] + summary.counts['fixed-r']
+                } determined by ballot`}
+              {mode === 'senate' && ' · 65 seats not on the ballot'}
+            </span>
+            <span>
+              {summary.leaders.unpriced > 0 &&
+                `${summary.leaders.unpriced} without party odds`}
+              {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
+              {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
+            </span>
+          </div>
         )}
+        {!isMeasures &&
+          (summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+            <p className={styles.note}>
+              {[
+                summary.leaders.notDem > 0 &&
+                  `${summary.leaders.notDem} races favor a non-Democratic winner`,
+                summary.leaders.notRep > 0 &&
+                  `${summary.leaders.notRep} races favor a non-Republican winner`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              . These outcomes are counted separately from party wins.
+            </p>
+          )}
         {(filter || query) && (
           <div className={styles.filterNotice} role="status">
-            {filtered.length} matching races
+            {isMeasures
+              ? `${measureMatches.length} matching measures`
+              : `${filtered.length} matching races`}
             {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
             {noElectionMatches.length > 0 &&
-              ` · ${noElectionMatches.length} with no election`}
+              ` · ${noElectionMatches.length} with no ${
+                isMeasures ? 'statewide measures' : 'election'
+              }`}
             <button
               onClick={() => {
                 setQuery('')
@@ -465,8 +583,28 @@ export function ElectionExplorer(props: Props) {
           <div
             className={styles.results}
             role="region"
-            aria-label="Race search results"
+            aria-label={
+              isMeasures
+                ? 'Ballot measure search results'
+                : 'Race search results'
+            }
           >
+            {isMeasures &&
+              measureMatches.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={(e) => choose(m.state, e.currentTarget)}
+                >
+                  <span>
+                    {DATA[m.state].name} · {m.designation ?? m.title}
+                  </span>
+                  <span>
+                    {measureQuote(m.key) === undefined
+                      ? 'No odds'
+                      : `${pct(measureQuote(m.key)!)} pass`}
+                  </span>
+                </button>
+              ))}
             {filtered.map((r) => (
               <button key={r.id} onClick={(e) => choose(r.id, e.currentTarget)}>
                 {r.label} <RaceQuote race={r} />
@@ -477,12 +615,22 @@ export function ElectionExplorer(props: Props) {
                 key={state}
                 onClick={(e) => choose(state, e.currentTarget)}
               >
-                {data.name} <span>No {modeName(mode)} election</span>
+                {data.name}{' '}
+                <span>
+                  {isMeasures
+                    ? 'No statewide measures'
+                    : `No ${modeName(mode)} election`}
+                </span>
               </button>
             ))}
-            {filtered.length === 0 && noElectionMatches.length === 0 && (
-              <span>No matching races. Try a state name or TX-15.</span>
-            )}
+            {(isMeasures ? measureMatches.length : filtered.length) === 0 &&
+              noElectionMatches.length === 0 && (
+                <span>
+                  {isMeasures
+                    ? 'No matching measures. Try a state, Prop 39 or a topic.'
+                    : 'No matching races. Try a state name or TX-15.'}
+                </span>
+              )}
           </div>
         )}
 
@@ -504,7 +652,11 @@ export function ElectionExplorer(props: Props) {
             <svg
               viewBox="0 0 960 600"
               aria-label={`${modeName(mode)} ${
-                view === 'map' ? 'geographic map' : 'equal-seat cartogram'
+                view === 'map'
+                  ? 'geographic map'
+                  : isMeasures
+                  ? 'state tiles'
+                  : 'equal-seat cartogram'
               }`}
               className={styles.map}
               data-mode={mode}
@@ -637,6 +789,9 @@ export function ElectionExplorer(props: Props) {
                             style={{ fill: labelColor(s.state) }}
                           >
                             {s.state}
+                            {isMeasures && measureCount(s.state) > 0
+                              ? ` · ${measureCount(s.state)}`
+                              : ''}
                           </text>
                         ))}
                     {labels &&
@@ -656,6 +811,9 @@ export function ElectionExplorer(props: Props) {
                               className={styles.stateLabel}
                             >
                               {state}
+                              {isMeasures && measureCount(state) > 0
+                                ? ` ${measureCount(state)}`
+                                : ''}
                             </text>
                           </g>
                         )
@@ -717,6 +875,9 @@ export function ElectionExplorer(props: Props) {
                             style={{ fill: labelColor(t.state) }}
                           >
                             {t.state}
+                            {isMeasures && measureCount(t.state) > 0
+                              ? ` · ${measureCount(t.state)}`
+                              : ''}
                           </text>
                         </g>
                       ))}
@@ -725,14 +886,23 @@ export function ElectionExplorer(props: Props) {
               </g>
             </svg>
           )}
-          {(hoverRace || hoveredNoRace) && !selected && (
+          {isMeasures && hovered && DATA[hovered] && !selected && (
+            <div className={styles.hoverCard}>
+              <strong>{DATA[hovered].name}</strong>
+              <span>{measureStateLabel(hovered)} on November 3</span>
+              {measureCount(hovered) > 0 && (
+                <span>Click to explore measures and odds</span>
+              )}
+            </div>
+          )}
+          {!isMeasures && (hoverRace || hoveredNoRace) && !selected && (
             <div className={styles.hoverCard}>
               <strong>{hoverRace?.label ?? hoveredNoRace?.name}</strong>
               {hoverRace ? (
                 <>
                   <RaceQuote race={hoverRace} />
                   <IncumbentDetails
-                    mode={mode}
+                    mode={raceMode}
                     state={hoverRace.state}
                     district={hoverRace.district}
                   />
@@ -741,44 +911,63 @@ export function ElectionExplorer(props: Props) {
               ) : (
                 <>
                   <span>No {modeName(mode)} election in 2026</span>
-                  <IncumbentDetails mode={mode} state={hovered!} />
+                  <IncumbentDetails mode={raceMode} state={hovered!} />
                 </>
               )}
             </div>
           )}
         </div>
-        <div className={styles.legend}>
-          <div className={styles.ramp}>
-            <div>
-              <span>Republican</span>
-              <span>50 / 50</span>
-              <span>Democratic</span>
+        {isMeasures ? (
+          <div className={styles.legend}>
+            <div className={styles.legendKeys}>
+              {[0, 1, 3, 6, 10].map((n, i) => (
+                <span key={n}>
+                  <i
+                    style={{
+                      background: measureColor(n) ?? 'var(--soft)',
+                      border: '1px solid var(--line)',
+                    }}
+                  />
+                  {['None', '1–2', '3–5', '6–9', '10+'][i]}
+                </span>
+              ))}
+              <span>statewide measures</span>
             </div>
-            <div className={styles.gradient} />
           </div>
-          <div className={styles.legendKeys}>
-            <span>
-              <i style={{ background: OTHER_COLOR }} />
-              Other leads
-            </span>
-            {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+        ) : (
+          <div className={styles.legend}>
+            <div className={styles.ramp}>
+              <div>
+                <span>Republican</span>
+                <span>50 / 50</span>
+                <span>Democratic</span>
+              </div>
+              <div className={styles.gradient} />
+            </div>
+            <div className={styles.legendKeys}>
               <span>
-                <i style={{ background: COMPLEMENT_COLOR }} />
-                Any other winner
+                <i style={{ background: OTHER_COLOR }} />
+                Other leads
               </span>
-            )}
-            <span>
-              <i className={styles.hatchSwatch} />
-              No party odds
-            </span>
-            {mode !== 'house' && (
+              {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+                <span>
+                  <i style={{ background: COMPLEMENT_COLOR }} />
+                  Any other winner
+                </span>
+              )}
               <span>
-                <i className={styles.noRaceSwatch} />
-                Not on ballot · current party
+                <i className={styles.hatchSwatch} />
+                No party odds
               </span>
-            )}
+              {mode !== 'house' && (
+                <span>
+                  <i className={styles.noRaceSwatch} />
+                  Not on ballot · current party
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
         <p className={styles.hint}>
           {view === 'cartogram'
             ? `Each ${
@@ -787,10 +976,57 @@ export function ElectionExplorer(props: Props) {
                   : 'tile is one state'
               }. `
             : ''}
-          Select a race to explore the odds. Zoom in to drag the map.{' '}
+          {isMeasures
+            ? 'Select a state to explore its ballot measures.'
+            : 'Select a race to explore the odds.'}{' '}
+          Zoom in to drag the map.{' '}
           <button onClick={() => setSources(true)}>More info</button>
         </p>
 
+        {isMeasures && selected && DATA[selected] && (
+          <RaceDetailsPanel
+            title={DATA[selected].name}
+            eyebrow="2026 · Ballot measures"
+            label={`${DATA[selected].name} ballot measures`}
+            closeRef={closeRef}
+            onClose={closeDetails}
+          >
+            {measureCount(selected) === 0 ? (
+              <p className={styles.note}>
+                No statewide measures on the November 3, 2026 ballot.
+              </p>
+            ) : (
+              <>
+                <p className={styles.note}>
+                  {measureStateLabel(selected)}. Pass means approval of the
+                  ballot question, including a question proposing repeal.
+                </p>
+                {(query
+                  ? measureMatches.filter((m) => m.state === selected)
+                  : measuresByState[selected]
+                ).map((m) => (
+                  <BallotMeasureCard
+                    key={m.key}
+                    measure={m}
+                    contract={
+                      m.source
+                        ? props.measures?.[m.source.contractId]
+                        : undefined
+                    }
+                  />
+                ))}
+                {query && (
+                  <button
+                    className={styles.chartLink}
+                    onClick={() => setQuery('')}
+                  >
+                    Show all {measureCount(selected)} measures →
+                  </button>
+                )}
+              </>
+            )}
+          </RaceDetailsPanel>
+        )}
         {selectedNoRace && (
           <RaceDetailsPanel
             title={selectedNoRace.name}
@@ -803,7 +1039,7 @@ export function ElectionExplorer(props: Props) {
               No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
               2026. This office is not on the ballot here.
             </p>
-            <IncumbentDetails mode={mode} state={selected!} />
+            <IncumbentDetails mode={raceMode} state={selected!} />
             <button
               className={styles.exploreState}
               onClick={() => {
@@ -875,7 +1111,7 @@ export function ElectionExplorer(props: Props) {
                 </div>
               )}
             <IncumbentDetails
-              mode={mode}
+              mode={raceMode}
               state={selectedRace.state}
               district={selectedRace.district}
             />
@@ -941,93 +1177,121 @@ export function ElectionExplorer(props: Props) {
         >
           <div className={styles.sources}>
             <h2>How to read the map</h2>
-            <p>
-              Colors show the chance of winning implied by Manifold markets, not
-              vote share. Darker colors mean a stronger favorite. Teal means an
-              independent or other outcome leads; gray hatching means no usable
-              market odds. A gray “any other winner” quote is the NO side of a
-              party-win question, including all other parties. It is counted
-              separately from Democratic and Republican wins.
-            </p>
-            <p>
-              Colored crosshatching marks offices not on the 2026 ballot and
-              shows their current party, not election odds. Purple indicates a
-              split Senate delegation. Select or hover over a state to see its
-              sitting officeholders; Senate control colors group independents
-              with their caucus.
-            </p>
-            <p>
-              Held Senate seats are hatched at the ends of the balance bar; safe
-              forecasts are separate. House seats determined by the certified
-              ballot have separate D/R by ballot segments: nine same-party
-              California contests and Florida’s unopposed 10th district.
-              Candidate bets remain available independently of that
-              classification. Other missing prices never imply a safe or held
-              seat. Unclassified probability includes unknown or withdrawn
-              candidates and does not count as an independent win.
-            </p>
-            <p>
-              Officeholders were checked on October 3, 2026 against the{' '}
-              <a
-                href="https://clerk.house.gov/xml/lists/MemberData.xml"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                House Clerk
-              </a>
-              ,{' '}
-              <a
-                href="https://www.senate.gov/senators/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Senate
-              </a>{' '}
-              and{' '}
-              <a
-                href="https://www.nga.org/governors/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                National Governors Association
-              </a>
-              . House incumbents refer to current district numbers in the 119th
-              Congress; 2026 boundaries may differ. Incumbents are not
-              necessarily candidates for reelection.
-            </p>
-            <p>
-              Candidate markets price the listed people. Their party colors come
-              from the answer labels; check the market description for how other
-              winners or replacement candidates are handled.
-            </p>
-            <p>
-              The seat bar counts each seat once for its leading outcome. Exact
-              ties and unpriced races stay separate. Senate totals include 34
-              Democratic-caucus and 31 Republican seats not on the ballot.
-              Republicans control a 50–50 Senate through the Vice President’s
-              tie-breaking vote.
-            </p>
-            <p>
-              Safe: 90% or higher. Likely: 75–90%. Lean: 60–75%. Toss-up:
-              neither side reaches 60%. Select a segment to filter races.
-            </p>
-            <p>
-              House coverage combines the curated competitive-district market
-              with reviewed state-wide district and individual winner markets.
-              Unlinked districts are unpriced, including safe seats; that does
-              not mean there is no market anywhere on Manifold. Chamber-control
-              odds are separate markets, not derived from the seat totals.
-            </p>
-            <p>
-              District boundaries reflect a September 24, 2026 snapshot based on
-              Census geography and redistricting research. Missouri uses its
-              2022 map pending litigation.
-            </p>
-            <p>
-              Prices update through Manifold’s subscriptions. Community markets
-              may be thinly traded; an unchanged price is not a new forecast.
-              Outcomes are normalized within each race for map colors.
-            </p>
+            {isMeasures ? (
+              <>
+                <p>
+                  State shading and labels show how many statewide questions are
+                  on the November 3, 2026 ballot. They do not combine the odds
+                  of unrelated measures.
+                </p>
+                <p>
+                  Each measure has its own approval odds and Pass/Fail bets. A
+                  repeal question passes when voters approve the repeal.
+                  Portfolio questions are traded independently; their
+                  probabilities do not need to add to 100%.
+                </p>
+                <p>
+                  Ballot identities and market criteria were audited on October
+                  3. Conditional sources carry a criteria note. Questions
+                  without a suitable source have no odds; uncertain identities
+                  stay under review. Official voter information and the market’s
+                  own rules are linked in each card.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Colors show the chance of winning implied by Manifold markets,
+                  not vote share. Darker colors mean a stronger favorite. Teal
+                  means an independent or other outcome leads; gray hatching
+                  means no usable market odds. A gray “any other winner” quote
+                  is the NO side of a party-win question, including all other
+                  parties. It is counted separately from Democratic and
+                  Republican wins.
+                </p>
+                <p>
+                  Colored crosshatching marks offices not on the 2026 ballot and
+                  shows their current party, not election odds. Purple indicates
+                  a split Senate delegation. Select or hover over a state to see
+                  its sitting officeholders; Senate control colors group
+                  independents with their caucus.
+                </p>
+                <p>
+                  Held Senate seats are hatched at the ends of the balance bar;
+                  safe forecasts are separate. House seats determined by the
+                  certified ballot have separate D/R by ballot segments: nine
+                  same-party California contests and Florida’s unopposed 10th
+                  district. Candidate bets remain available independently of
+                  that classification. Other missing prices never imply a safe
+                  or held seat. Unclassified probability includes unknown or
+                  withdrawn candidates and does not count as an independent win.
+                </p>
+                <p>
+                  Officeholders were checked on October 3, 2026 against the{' '}
+                  <a
+                    href="https://clerk.house.gov/xml/lists/MemberData.xml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    House Clerk
+                  </a>
+                  ,{' '}
+                  <a
+                    href="https://www.senate.gov/senators/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Senate
+                  </a>{' '}
+                  and{' '}
+                  <a
+                    href="https://www.nga.org/governors/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    National Governors Association
+                  </a>
+                  . House incumbents refer to current district numbers in the
+                  119th Congress; 2026 boundaries may differ. Incumbents are not
+                  necessarily candidates for reelection.
+                </p>
+                <p>
+                  Candidate markets price the listed people. Their party colors
+                  come from the answer labels; check the market description for
+                  how other winners or replacement candidates are handled.
+                </p>
+                <p>
+                  The seat bar counts each seat once for its leading outcome.
+                  Exact ties and unpriced races stay separate. Senate totals
+                  include 34 Democratic-caucus and 31 Republican seats not on
+                  the ballot. Republicans control a 50–50 Senate through the
+                  Vice President’s tie-breaking vote.
+                </p>
+                <p>
+                  Safe: 90% or higher. Likely: 75–90%. Lean: 60–75%. Toss-up:
+                  neither side reaches 60%. Select a segment to filter races.
+                </p>
+                <p>
+                  House coverage combines the curated competitive-district
+                  market with reviewed state-wide district and individual winner
+                  markets. Unlinked districts are unpriced, including safe
+                  seats; that does not mean there is no market anywhere on
+                  Manifold. Chamber-control odds are separate markets, not
+                  derived from the seat totals.
+                </p>
+                <p>
+                  District boundaries reflect a September 24, 2026 snapshot
+                  based on Census geography and redistricting research. Missouri
+                  uses its 2022 map pending litigation.
+                </p>
+                <p>
+                  Prices update through Manifold’s subscriptions. Community
+                  markets may be thinly traded; an unchanged price is not a new
+                  forecast. Outcomes are normalized within each race for map
+                  colors.
+                </p>
+              </>
+            )}
             <p className={styles.sourceCredit}>
               Map data:{' '}
               <a
@@ -1055,10 +1319,10 @@ function ChamberTabs({
   mode,
   onChange,
 }: {
-  mode: ElectionMode
-  onChange: (mode: ElectionMode) => void
+  mode: ExplorerMode
+  onChange: (mode: ExplorerMode) => void
 }) {
-  const tab = (m: ElectionMode) => (
+  const tab = (m: ExplorerMode) => (
     <button
       role="tab"
       aria-label={modeName(m)}
@@ -1079,8 +1343,8 @@ function ChamberTabs({
           [next]?.focus()
       }}
     >
-      {m === 'governor' && <ChamberIcon mode={m} />}
-      <span>{modeName(m)}</span>
+      {(m === 'governor' || m === 'measures') && <ChamberIcon mode={m} />}
+      <span>{m === 'measures' ? 'Measures' : modeName(m)}</span>
     </button>
   )
   return (
@@ -1100,15 +1364,18 @@ function ChamberTabs({
         {tab('senate')}
       </div>
       {tab('governor')}
+      {tab('measures')}
     </div>
   )
 }
 
-function ChamberIcon({ mode }: { mode: ElectionMode }) {
+function ChamberIcon({ mode }: { mode: ExplorerMode }) {
   return (
     <span className={styles.tabIcon} aria-hidden>
       {mode === 'house' || mode === 'senate' ? (
         <Congress height={6} />
+      ) : mode === 'measures' ? (
+        <ClipboardCheckIcon />
       ) : (
         <Governor height={6} />
       )}

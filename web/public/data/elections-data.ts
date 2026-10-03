@@ -298,6 +298,7 @@ export type ElectionsPageProps = {
   // Per-district House market (independent multi-choice).
   houseDistrictsContract: Contract | null
   additionalHouseContracts?: MapContractsDictionary
+  ballotMeasureContracts?: MapContractsDictionary
   // Closest open races from the Senate/Governor maps, auto-derived — replaces
   // the retired hand-curated primaries list.
   tossUpContracts: Contract[]

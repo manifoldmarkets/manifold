@@ -73,7 +73,8 @@ export type RaceIdentity = {
   candidateNames: string[]
 }
 
-export type ManifestEntry = {
+export type RaceManifestEntry = {
+  kind?: 'race'
   raceKey: string
   status: 'ready' | 'unresolved'
   unresolvedFields?: string[]
@@ -96,7 +97,92 @@ export type ManifestEntry = {
   evidence?: Record<string, unknown>
 }
 
+// A statewide ballot question on the November 3, 2026 ballot. Measures are a
+// different proposition from races: one binary per measure, YES = the measure
+// is approved under its own official approval rule at this election.
+export type MeasureDesignationKind =
+  | 'prop'
+  | 'question'
+  | 'amendment'
+  | 'issue'
+  | 'measure'
+  | 'sq'
+  | 'initiative'
+  | 'ci'
+  | 'i'
+  | 'hjr'
+  | 'proposal'
+  | 'il26'
+  | 'referendum'
+  | 'other'
+
+export type MeasureIdentity = {
+  cycle: 2026
+  electionDate: '2026-11-03'
+  state: string
+  stateName: string
+  // The official ballot number/letter, e.g. { kind: 'prop', value: '50' }.
+  // Null when the state does not number the question; aliases must then
+  // identify it.
+  designation: {
+    kind: MeasureDesignationKind
+    value: string
+    label: string
+  } | null
+  officialTitle: string
+  shortSubject: string
+  // Old initiative/filing numbers, act names and nicknames a market may use.
+  aliases: string[]
+  measureType: string
+  advisory: boolean
+  // The official approval rule, including any turnout or second-vote rule.
+  approvalRule: string
+  // e.g. "first approved by voters in 2024" for Nevada initiated amendments.
+  secondVoteOf?: string | null
+  certifyingAuthority: string
+  officialSourceUrl: string
+}
+
+export type MeasureManifestEntry = {
+  kind: 'ballot-measure'
+  // Stable key, e.g. "2026-measure-CA-prop-50". Named raceKey so the shared
+  // plan/apply/state machinery treats both kinds alike.
+  raceKey: string
+  status: 'ready' | 'unresolved'
+  unresolvedFields?: string[]
+  measure: MeasureIdentity
+  proposition: 'measure-approval'
+  yesMeaning: string
+  shapeRationale: string
+  payload?: CreatePayload
+  seed?: { basis: string; note: string; needsReview: boolean }
+  liquidityPlan?: {
+    tier: number
+    rationale: string
+    enhancedTier?: number
+    enhancedRationale?: string
+    alternatives?: string
+  }
+  reviewedRejectedContractIds?: string[]
+  // Portfolio answers already reviewed and rejected: "contractId#answerId".
+  reviewedRejectedAnswers?: string[]
+  searchTerms: string[]
+  dashboard: { list: 'BALLOT_MEASURES'; key: string; state: string }
+  evidence?: Record<string, unknown>
+}
+
+// `ManifestEntry` stays the race entry for existing callers.
+export type ManifestEntry = RaceManifestEntry
+export type AnyManifestEntry = RaceManifestEntry | MeasureManifestEntry
+
+export const isMeasureEntry = (
+  entry: AnyManifestEntry
+): entry is MeasureManifestEntry => entry.kind === 'ballot-measure'
+
 export type Manifest = {
+  // 'ballot-measures' manifests hold only ballot-measure entries and use their
+  // own idempotency series; absent means the original race manifest.
+  kind?: 'races' | 'ballot-measures'
   manifestVersion: string
   series: string
   generatedAt: string
@@ -110,7 +196,7 @@ export type Manifest = {
     // Cap across ALL runs for this manifest series; set by the reviewer.
     approvedMaxTotalMana: number | null
   }
-  entries: ManifestEntry[]
+  entries: AnyManifestEntry[]
 }
 
 export type EntryState = {
@@ -130,7 +216,13 @@ export type EntryState = {
   answers?: { id: string; text: string }[]
   costMana?: number
   reservedMana?: number
-  existing?: { id: string; slug?: string; question: string; verdict: string }[]
+  existing?: {
+    id: string
+    slug?: string
+    question: string
+    verdict: string
+    answerId?: string
+  }[]
   message?: string
   updatedAt: string
 }
@@ -151,7 +243,7 @@ export type MarketLike = {
   isResolved?: boolean
   resolution?: string
   closeTime?: number
-  answers?: { id: string; text: string }[]
+  answers?: { id: string; text: string; resolution?: string }[]
 }
 
 export class ApiError extends Error {
@@ -215,7 +307,149 @@ export function costOf(payload: CreatePayload) {
 // Validation
 // ---------------------------------------------------------------------------
 
-export function validateEntry(entry: ManifestEntry, now = Date.now()) {
+// One resolution template for every measure market, so the rules are the
+// same across states: the official approval rule (quoted), the 2026 vote only,
+// the certified result, recounts, N/A when there is no vote, and a fixed
+// choice that later court rulings do not change the result.
+export function measureDescriptionMarkdown(
+  m: MeasureIdentity,
+  extra: { yesMeans: string; noMeans: string; seedNote: string }
+) {
+  const name = `${m.stateName} ${
+    m.designation ? `${m.designation.label} ` : ''
+  }(${m.officialTitle})`
+  return [
+    `This market resolves **YES** if ${name} is **approved by voters at the November 3, 2026 general election** under its official approval rule:`,
+    '',
+    `> ${m.approvalRule}`,
+    '',
+    m.secondVoteOf
+      ? `This is the second required vote (${m.secondVoteOf}). Only the 2026 vote counts here: the market resolves YES only if the measure is approved at the November 3, 2026 election.`
+      : `Only the November 3, 2026 vote counts; earlier votes on similar proposals do not.`,
+    m.advisory
+      ? 'This is an **advisory** (non-binding) question. YES means voters approve the question at the ballot; it does not mean any law is enacted or takes effect.'
+      : 'YES means voter approval at this election, not that the measure is later implemented.',
+    '',
+    '**What the votes mean (official summary):**',
+    `- YES: ${extra.yesMeans}`,
+    `- NO: ${extra.noMeans}`,
+    '',
+    `**Results:** resolves on the result certified by ${m.certifyingAuthority}. It may resolve earlier once official returns or the Associated Press show the outcome cannot change and no recount is pending; if a recount or certified correction changes the outcome before resolution, the certified result controls.`,
+    '',
+    '**No vote:** if the measure is removed from the ballot, a court orders its votes not to be counted, or the vote is postponed beyond November 3, 2026, the market resolves N/A.',
+    '',
+    '**Later legal challenges:** resolution follows voter approval as certified. A court later invalidating, enjoining or delaying the measure does not change the resolution.',
+    '',
+    `**Starting probability:** ${extra.seedNote}`,
+    '',
+    `Official source: ${m.officialSourceUrl}`,
+  ].join('\n')
+}
+
+// Exact question shape for measure markets (task requirement).
+export const MEASURE_QUESTION_RE =
+  /^Will .+ be approved in the November 3, 2026 election\?$/
+
+export function validateMeasureEntry(
+  entry: MeasureManifestEntry,
+  now = Date.now()
+) {
+  const errors: string[] = []
+  const e = (m: string) => errors.push(`${entry.raceKey}: ${m}`)
+  const id = entry.measure
+  if (!/^2026-measure-[A-Z]{2}-[a-z0-9-]+$/.test(entry.raceKey))
+    e('raceKey must look like 2026-measure-<ST>-<slug>')
+  if (!id || id.cycle !== 2026 || id.electionDate !== '2026-11-03')
+    e('measure identity must be the November 3, 2026 election')
+  if (id && !entry.raceKey.startsWith(`2026-measure-${id.state}-`))
+    e('raceKey state must match the measure state')
+  if (entry.dashboard?.list !== 'BALLOT_MEASURES')
+    e('dashboard.list must be BALLOT_MEASURES')
+  if (entry.status !== 'ready') return errors
+  if (!id?.designation && !(id?.aliases ?? []).length)
+    e('needs an official designation or aliases to identify the measure')
+  for (const k of [
+    'officialTitle',
+    'approvalRule',
+    'certifyingAuthority',
+    'officialSourceUrl',
+  ] as const)
+    if (!id?.[k]) e(`measure.${k} is required`)
+  if (id?.officialSourceUrl && !/^https:\/\//.test(id.officialSourceUrl))
+    e('measure.officialSourceUrl must be an https URL')
+  const p = entry.payload
+  if (!p) return [...errors, `${entry.raceKey}: ready entry has no payload`]
+  if (p.outcomeType !== 'BINARY')
+    e('ballot-measure markets are binary (YES = approved)')
+  if (!MEASURE_QUESTION_RE.test(p.question))
+    e(
+      'question must read "Will <state, identifier, subject> be approved in the November 3, 2026 election?"'
+    )
+  if (p.question.length > MAX_QUESTION_LENGTH)
+    e(`question must be at most ${MAX_QUESTION_LENGTH} characters`)
+  if (!p.question.includes(id.stateName)) e('question must name the state')
+  if (
+    id.designation &&
+    !p.question.toLowerCase().includes(id.designation.label.toLowerCase())
+  )
+    e('question must include the official designation')
+  if (
+    !(
+      Number.isFinite(p.initialProb) &&
+      p.initialProb! >= MIN_ANSWER_PROB &&
+      p.initialProb! <= MAX_ANSWER_PROB
+    )
+  )
+    e(`initialProb must be ${MIN_ANSWER_PROB}-${MAX_ANSWER_PROB}`)
+  if (p.answers?.length || p.answerProbs?.length)
+    e('a binary payload has no answers')
+  const d = p.descriptionMarkdown ?? ''
+  if (d.length < 400) e('description must state the full resolution criteria')
+  if (id?.approvalRule && !d.includes(id.approvalRule))
+    e('description must quote the official approval rule verbatim')
+  if (id?.officialSourceUrl && !d.includes(id.officialSourceUrl))
+    e('description must link the official source')
+  for (const [re, what] of [
+    [/\bN\/A\b/, 'an N/A rule for removal, cancellation or postponement'],
+    [/recount/i, 'recount handling'],
+    [/certif/i, 'certified-result handling'],
+    [/(invalidat|struck down|court)/i, 'treatment of later legal invalidation'],
+  ] as const)
+    if (!re.test(d)) e(`description must state ${what}`)
+  if (id?.secondVoteOf && !/2026/.test(d))
+    e('a second-vote measure must say the 2026 vote is the one that counts')
+  if (id?.advisory) {
+    if (!/advisory/i.test(d)) e('an advisory question must say it is advisory')
+    if (/becomes? law|takes? effect/i.test(p.question))
+      e('an advisory question must not promise it becomes law')
+  }
+  if (!(p.closeTime > now)) e('closeTime must be in the future')
+  if (!liquidityTiers.includes(p.liquidityTier as never))
+    e(`liquidityTier must be one of ${liquidityTiers.join(', ')}`)
+  if (
+    p.extraLiquidity !== undefined &&
+    (!Number.isFinite(p.extraLiquidity) || !(p.extraLiquidity >= 1))
+  )
+    e('extraLiquidity must be ≥ 1 when set')
+  if ((p.groupIds?.length ?? 0) > MAX_GROUPS_PER_MARKET)
+    e(`at most ${MAX_GROUPS_PER_MARKET} topics`)
+  if (p.visibility !== 'public')
+    e('visibility must be public for dashboard use')
+  if (!entry.searchTerms?.length)
+    e('needs searchTerms for the duplicate recheck')
+  if (!entry.seed?.basis) e('seed basis must be documented')
+  if (
+    entry.seed &&
+    p.initialProb === 50 &&
+    !entry.seed.needsReview &&
+    /unsupported|no basis/i.test(entry.seed.basis)
+  )
+    e('an unsupported 50% seed must be flagged needsReview')
+  return errors
+}
+
+export function validateEntry(entry: AnyManifestEntry, now = Date.now()) {
+  if (isMeasureEntry(entry)) return validateMeasureEntry(entry, now)
   const errors: string[] = []
   const e = (m: string) => errors.push(`${entry.raceKey}: ${m}`)
   if (!/^2026-(senate|governor|house)-[A-Z]{2}-/.test(entry.raceKey))
@@ -288,6 +522,21 @@ export function validateEntry(entry: ManifestEntry, now = Date.now()) {
 export function validateManifest(manifest: Manifest, now = Date.now()) {
   const errors: string[] = []
   if (!manifest.series) errors.push('manifest.series is required')
+  // Keep the two kinds of manifest (and their idempotency series) apart.
+  const measures = manifest.kind === 'ballot-measures'
+  for (const entry of manifest.entries)
+    if (isMeasureEntry(entry) !== measures)
+      errors.push(
+        `${entry.raceKey}: ${measures ? 'race' : 'ballot-measure'} entry in a ${
+          manifest.kind ?? 'races'
+        } manifest`
+      )
+  if (measures && !/ballot-measures/.test(manifest.series))
+    errors.push(
+      'a ballot-measures manifest needs its own *ballot-measures* series'
+    )
+  if (!measures && /ballot-measures/.test(manifest.series))
+    errors.push('a race manifest cannot use a ballot-measures series')
   const seen = new Set<string>()
   for (const entry of manifest.entries) {
     if (seen.has(entry.raceKey))
@@ -366,10 +615,250 @@ function mentionsDistrict(text: string, id: RaceIdentity) {
 
 export type Verdict = 'equivalent' | 'ambiguous' | 'unrelated'
 
-export function classifyExistingMarket(
-  entry: ManifestEntry,
+// ---------------------------------------------------------------------------
+// Equivalence of an existing market to a planned ballot measure
+// ---------------------------------------------------------------------------
+
+export const US_STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+}
+
+// States named in a text, longest names first so "West Virginia" is not also
+// read as "Virginia". Postal codes count only next to a measure label
+// ("CA Prop 50", "NV Q6").
+export function statesNamedIn(text: string) {
+  const found = new Set<string>()
+  let t = ` ${text} `
+  for (const [code, name] of Object.entries(US_STATE_NAMES).sort(
+    (a, b) => b[1].length - a[1].length
+  )) {
+    const re = new RegExp(`\\b${name}\\b`, 'gi')
+    if (re.test(t)) {
+      found.add(code)
+      t = t.replace(re, ' ')
+    }
+  }
+  for (const m of text.matchAll(
+    /\b([A-Z]{2})\s*(?:Prop(?:osition)?|Q(?:uestion)?|Amendment|Issue|Measure|SQ)\b/g
+  ))
+    if (US_STATE_NAMES[m[1]]) found.add(m[1])
+  return found
+}
+
+const MEASURE_ID_RES: [RegExp, MeasureDesignationKind][] = [
+  [/\bprop(?:osition)?\.?\s*#?\s*([0-9]{1,3}|[A-Z]{1,2})\b/gi, 'prop'],
+  [/\bquestion\s*(?:no\.?)?\s*#?\s*([0-9]{1,2})\b/gi, 'question'],
+  [/\bQ\s?([0-9]{1,2})\b/g, 'question'],
+  [/\bamendment\s*(?:no\.?)?\s*#?\s*([0-9]{1,3}|[A-Z])\b/gi, 'amendment'],
+  [/\bissue\s*#?\s*([0-9]{1,2})\b/gi, 'issue'],
+  [/\b(?:ballot\s+)?measure\s*(?:no\.?)?\s*#?\s*([0-9]{1,4})\b/gi, 'measure'],
+  [/\b(?:SQ|state question)\s*#?\s*([0-9]{3})\b/gi, 'sq'],
+  [/\bCI-?\s?([0-9]{2,3})\b/gi, 'ci'],
+  [/\b(?<![A-Z])I-\s?([0-9]{2,4})\b/g, 'i'],
+  [
+    /\binitiative\s*(?:measure)?\s*(?:no\.?)?\s*#?\s*([0-9]{1,4})\b/gi,
+    'initiative',
+  ],
+  [/\bIL26-?([0-9]{3})\b/gi, 'il26'],
+  [/\bHJR\s*([0-9]{1,3})\b/gi, 'hjr'],
+  [/\bproposal\s*#?\s*([0-9]{1,2})\b/gi, 'proposal'],
+  [/\breferendum\s*([A-Z0-9]{1,3})\b/g, 'referendum'],
+]
+export function measureIdsIn(text: string) {
+  const out = new Set<string>()
+  for (const [re, kind] of MEASURE_ID_RES)
+    for (const m of text.matchAll(re))
+      out.add(`${kind}:${m[1].toUpperCase().replace(/^0+(?=\d)/, '')}`)
+  return out
+}
+const designationKey = (d: MeasureIdentity['designation']) =>
+  d ? `${d.kind}:${d.value.toUpperCase().replace(/^0+(?=\d)/, '')}` : null
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function aliasHit(text: string, aliases: string[]) {
+  return aliases.find(
+    (a) =>
+      a.trim().length >= 4 &&
+      new RegExp(
+        `(^|[^A-Za-z0-9])${escapeRe(a.trim())}($|[^A-Za-z0-9])`,
+        'i'
+      ).test(text)
+  )
+}
+
+const APPROVAL_RE =
+  /\b(pass(es|ed)?|approv\w*|adopt\w*|ratif\w*|enact\w*|vote[sd]? yes|yes vote|succeed\w*)\b/i
+const OPPOSITE_RE =
+  /\b(fail(s|ed)?|be rejected|reject(ed|s)?|defeat(ed)?|voted? down|not pass)\b/i
+const QUALIFY_RE =
+  /\b(qualif\w*|make (it )?(on(to)? )?the ballot|appear on the ballot|be on the ballot|signatures?|certif(y|ied) (for|to) the ballot)\b/i
+const ON_BALLOT_CONDITION_RE =
+  /\bif (it|they)('s| is| are) on the ballot\b|\bif (it|they) (qualif\w*|make[s]? the ballot)\b/i
+const DERIVATIVE_RE =
+  /\b(if|conditional|given that|assuming|margin|by more than|by at least|vote share|percent|turnout|how many|both|all of|any of|court|struck|lawsuit|injunction|unconstitutional|take effect|implement\w*|go into effect|enforce\w*)\b|%/i
+const REPEAL_RE = /\b(repeal\w*|overturn\w*|strike down|veto\w*)\b/i
+
+export function classifyExistingMeasureMarket(
+  entry: MeasureManifestEntry,
   m: MarketLike
-): { verdict: Verdict; reason: string } {
+): { verdict: Verdict; reason: string; answerId?: string } {
+  const id = entry.measure
+  if (m.isResolved || m.resolution)
+    return { verdict: 'unrelated', reason: 'already resolved' }
+  if (entry.reviewedRejectedContractIds?.includes(m.id))
+    return {
+      verdict: 'unrelated',
+      reason: 'reviewed and rejected in the audit',
+    }
+  const year = (t: string) => {
+    const years: string[] = t.match(/\b20\d\d\b/g) ?? []
+    return years.length === 0
+      ? 'none'
+      : years.includes('2026')
+      ? '2026'
+      : 'other'
+  }
+  const key = designationKey(id.designation)
+  const identify = (t: string) =>
+    (key && measureIdsIn(t).has(key) ? id.designation!.label : undefined) ??
+    aliasHit(t, id.aliases)
+  // One textual unit (a binary's question, or a portfolio answer read with its
+  // question as context) against the planned measure.
+  const judge = (
+    unit: string,
+    context: string
+  ): { verdict: Verdict; reason: string } => {
+    const both = `${context} ${unit}`
+    const hit = identify(unit)
+    if (!hit)
+      return { verdict: 'unrelated', reason: 'does not name this measure' }
+    const states = statesNamedIn(both)
+    if (states.size && !states.has(id.state))
+      return { verdict: 'unrelated', reason: 'a different state' }
+    if (year(both) === 'other')
+      return { verdict: 'unrelated', reason: 'a different election year' }
+    if (QUALIFY_RE.test(both) && !APPROVAL_RE.test(both))
+      return {
+        verdict: 'unrelated',
+        reason: 'qualification only, not approval',
+      }
+    if (!states.size && !aliasHit(unit, id.aliases))
+      return {
+        verdict: 'ambiguous',
+        reason: `names ${hit} but no state`,
+      }
+    if (OPPOSITE_RE.test(both))
+      return {
+        verdict: 'ambiguous',
+        reason: 'opposite wording (YES would mean rejection); not equivalent',
+      }
+    if (REPEAL_RE.test(both) && !REPEAL_RE.test(id.officialTitle))
+      return {
+        verdict: 'ambiguous',
+        reason: 'repeal/overturn wording; YES orientation unclear',
+      }
+    const onBallotOnly = ON_BALLOT_CONDITION_RE.test(both)
+    const withoutPlacement = both.replace(
+      new RegExp(ON_BALLOT_CONDITION_RE.source, 'gi'),
+      ''
+    )
+    if (DERIVATIVE_RE.test(withoutPlacement))
+      return {
+        verdict: 'ambiguous',
+        reason:
+          'conditional, combined, margin, court or implementation wording',
+      }
+    if (!APPROVAL_RE.test(both))
+      return {
+        verdict: 'ambiguous',
+        reason: 'names the measure; approval unclear',
+      }
+    return {
+      verdict: 'equivalent',
+      reason: `approval of ${hit}${
+        onBallotOnly ? ' (conditional only on ballot placement)' : ''
+      }`,
+    }
+  }
+  const answers = m.answers ?? []
+  if (m.outcomeType === 'BINARY' || answers.length === 0)
+    return judge(m.question, m.question)
+  // Multi-answer: judge each open answer on its own (portfolios are
+  // independent answers; never treat the market as one proposition).
+  let best: { verdict: Verdict; reason: string; answerId?: string } = {
+    verdict: 'unrelated',
+    reason: 'no answer names this measure',
+  }
+  for (const a of answers) {
+    if (a.resolution) continue
+    if (entry.reviewedRejectedAnswers?.includes(`${m.id}#${a.id}`)) continue
+    const v = judge(a.text, m.question)
+    if (v.verdict === 'equivalent')
+      return { ...v, answerId: a.id, reason: `answer ${a.id}: ${v.reason}` }
+    if (v.verdict === 'ambiguous' && best.verdict === 'unrelated')
+      best = { ...v, answerId: a.id, reason: `answer ${a.id}: ${v.reason}` }
+  }
+  if (best.verdict === 'unrelated') {
+    const q = judge(m.question, m.question)
+    if (q.verdict !== 'unrelated') return q
+  }
+  return best
+}
+
+export function classifyExistingMarket(
+  entry: AnyManifestEntry,
+  m: MarketLike
+): { verdict: Verdict; reason: string; answerId?: string } {
+  if (isMeasureEntry(entry)) return classifyExistingMeasureMarket(entry, m)
   const id = entry.identity
   if (m.isResolved || m.resolution)
     return { verdict: 'unrelated', reason: 'already resolved' }
@@ -488,7 +977,7 @@ export function emptyState(manifest: Manifest): CreationState {
 }
 
 export async function findExisting(
-  entry: ManifestEntry,
+  entry: AnyManifestEntry,
   api: Pick<ElectionApi, 'searchMarkets'>
 ) {
   const found = new Map<string, MarketLike>()
@@ -739,6 +1228,7 @@ export async function applyManifest(
       slug: v.m.slug,
       question: v.m.question,
       verdict: `${v.verdict}: ${v.reason}`,
+      ...(v.answerId ? { answerId: v.answerId } : {}),
     }))
     if (found.equivalent.length) {
       await save(entry.raceKey, {
@@ -901,7 +1391,11 @@ const toMarketLike = (m: any): MarketLike => ({
   isResolved: m.isResolved,
   resolution: m.resolution,
   closeTime: m.closeTime,
-  answers: (m.answers ?? []).map((a: any) => ({ id: a.id, text: a.text })),
+  answers: (m.answers ?? []).map((a: any) => ({
+    id: a.id,
+    text: a.text,
+    resolution: a.resolution,
+  })),
 })
 
 // `allowWrites: false` (every dry run) makes createMarket throw before any
@@ -979,27 +1473,42 @@ export function makeHttpApi(opts: {
       return m ? toMarketLike(m) : undefined
     },
     searchMarkets: async (term) => {
-      const q = new URLSearchParams({
-        term,
-        filter: 'all',
-        contractType: 'ALL',
-        limit: '100',
-        sort: 'score',
-      })
+      // The API rejects offset > 1000, so page exhaustively by creation time
+      // (sort=newest + beforeTime cursor), as the API itself recommends.
+      const PAGE = 1000
+      const MAX_PAGES = 50
       const found = new Map<string, MarketLike>()
-      for (let offset = 0; offset < 10_000; offset += 100) {
-        q.set('offset', String(offset))
-        const rows = (await read(`v0/search-markets?${q}`)) ?? []
+      let before: number | undefined
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const q = new URLSearchParams({
+          term,
+          filter: 'all',
+          contractType: 'ALL',
+          limit: String(PAGE),
+          sort: 'newest',
+        })
+        if (before !== undefined) q.set('beforeTime', String(before))
+        const rows: any[] = (await read(`v0/search-markets?${q}`)) ?? []
         const previous = found.size
         for (const row of rows) found.set(row.id, toMarketLike(row))
-        if (rows.length < 100) return [...found.values()]
+        if (rows.length < PAGE) return [...found.values()]
         if (found.size === previous)
           throw new Error(
             `Duplicate search did not advance for ${term}; review before creating`
           )
+        const oldest = Math.min(...rows.map((r) => Number(r.createdTime)))
+        if (!Number.isFinite(oldest))
+          throw new Error(
+            `Duplicate search rows lack createdTime for ${term}; review before creating`
+          )
+        // +1 ms re-reads rows created in the same millisecond as this page's
+        // oldest row, so none is skipped at the boundary (ids de-duplicate).
+        before = oldest + 1
       }
       throw new Error(
-        `Duplicate search reached its page limit for ${term}; review before creating`
+        `Duplicate search exceeded ${
+          PAGE * MAX_PAGES
+        } results for ${term}; narrow the term or review before creating`
       )
     },
     me: async () => {
@@ -1044,15 +1553,27 @@ export function makeHttpApi(opts: {
 
 export type MappingRow = {
   raceKey: string
-  list: ManifestEntry['dashboard']['list']
+  list: AnyManifestEntry['dashboard']['list']
   key: string
   slug: string // real slug, or PENDING:<raceKey>
   contractId: string // real id, or PENDING:<raceKey>
   url: string | null
   preferOverPortfolio?: boolean
-  proposition: ManifestEntry['proposition']
+  proposition: AnyManifestEntry['proposition']
   answers: (AnswerMeta & { answerId: string })[]
   status: EntryState['status'] | 'planned' | 'unresolved'
+  // Ballot measures only: what the contract's YES means, for the map.
+  measure?: {
+    state: string
+    designation: string | null
+    officialTitle: string
+    yesMeaning: string
+    // A binary created by this manifest: YES = approved.
+    yesOrientation: 'approve'
+    answerId: null
+    approvalRule: string
+    officialSourceUrl: string
+  }
 }
 
 export function buildDashboardMapping(
@@ -1063,6 +1584,29 @@ export function buildDashboardMapping(
     const s = state.entries[entry.raceKey]
     const pending = `PENDING:${entry.raceKey}`
     const live = s?.status === 'created' && s.contractId
+    if (isMeasureEntry(entry))
+      return {
+        raceKey: entry.raceKey,
+        list: entry.dashboard.list,
+        key: entry.dashboard.key,
+        slug: live && s.slug ? s.slug : pending,
+        contractId: live ? s.contractId! : pending,
+        url: live ? s.url ?? null : null,
+        proposition: entry.proposition,
+        answers: [],
+        status:
+          s?.status ?? (entry.status === 'ready' ? 'planned' : 'unresolved'),
+        measure: {
+          state: entry.measure.state,
+          designation: entry.measure.designation?.label ?? null,
+          officialTitle: entry.measure.officialTitle,
+          yesMeaning: entry.yesMeaning,
+          yesOrientation: 'approve',
+          answerId: null,
+          approvalRule: entry.measure.approvalRule,
+          officialSourceUrl: entry.measure.officialSourceUrl,
+        },
+      }
     const byText = new Map((s?.answers ?? []).map((a) => [a.text, a.id]))
     return {
       raceKey: entry.raceKey,

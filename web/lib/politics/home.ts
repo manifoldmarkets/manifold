@@ -1,7 +1,8 @@
 import { uniqBy } from 'lodash'
 
 import { Contract } from 'common/contract'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
+import { MEASURE_CONTRACT_IDS } from 'web/components/usa-map/ballot-measures-model'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
   ElectionsPageProps,
@@ -92,6 +93,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     pollingPerpsRaw,
     redistrictingContractsRaw,
     additionalHouseEntries,
+    ballotContracts,
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
     getStateContracts(getContractFromSlugFunction, governors2026),
@@ -111,6 +113,10 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
         async (slug) => [slug, await getContractFromSlugFunction(slug)] as const
       )
     ),
+    getContracts(adminDb, MEASURE_CONTRACT_IDS, 'id', true).catch((e) => {
+      console.error('Ballot measure markets unavailable', e)
+      return [] as Contract[]
+    }),
   ])
 
   // Polling perps, open only — so a retired feed drops off the row by itself.
@@ -141,6 +147,9 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     senateControlContract,
     houseDistrictsContract,
     additionalHouseContracts: Object.fromEntries(additionalHouseEntries),
+    ballotMeasureContracts: Object.fromEntries(
+      ballotContracts.map((c) => [c.id, c])
+    ),
     tossUpContracts,
     pollingPerpContracts,
     redistrictingContracts,

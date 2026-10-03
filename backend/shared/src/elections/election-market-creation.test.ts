@@ -270,20 +270,31 @@ describe('http client', () => {
     text: async () => JSON.stringify(body),
   })
 
-  test('duplicate searches read beyond the first page', async () => {
+  test('duplicate searches page past 1,000 results with a creation-time cursor, not offset', async () => {
     const fetch = jest
       .fn()
       .mockResolvedValueOnce(
         okJson(
-          Array.from({ length: 100 }, (_, i) => ({
+          Array.from({ length: 1000 }, (_, i) => ({
             id: String(i),
             question: 'An unrelated market',
+            createdTime: 2_000_000 - i,
           }))
         )
       )
       .mockResolvedValueOnce(
         okJson([
-          { id: 'match', question: 'Alabama governor 2026: which party?' },
+          // the boundary row is re-read (same millisecond) and de-duplicated
+          {
+            id: '999',
+            question: 'An unrelated market',
+            createdTime: 1_999_001,
+          },
+          {
+            id: 'match',
+            question: 'Alabama governor 2026: which party?',
+            createdTime: 1_000,
+          },
         ])
       )
     const api = makeHttpApi({
@@ -292,9 +303,29 @@ describe('http client', () => {
       fetch,
     })
     const rows = await api.searchMarkets('Alabama governor 2026')
-    expect(rows).toHaveLength(101)
-    expect(rows[100].id).toBe('match')
-    expect(fetch.mock.calls[1][0]).toContain('offset=100')
+    expect(rows).toHaveLength(1001)
+    expect(rows.some((r) => r.id === 'match')).toBe(true)
+    const second = fetch.mock.calls[1][0] as string
+    expect(second).toContain('sort=newest')
+    expect(second).toContain('beforeTime=1999002')
+    expect(second).not.toContain('offset=')
+  })
+
+  test('a search that stops advancing fails closed', async () => {
+    const page = Array.from({ length: 1000 }, (_, i) => ({
+      id: String(i),
+      question: 'x',
+      createdTime: 5,
+    }))
+    const fetch = jest.fn().mockResolvedValue(okJson(page))
+    const api = makeHttpApi({
+      apiBase: 'https://api.example',
+      allowWrites: false,
+      fetch,
+    })
+    await expect(api.searchMarkets('Question 1')).rejects.toThrow(
+      /did not advance/
+    )
   })
 
   test('a dry-run client refuses to write before any request and sends no key on reads', async () => {

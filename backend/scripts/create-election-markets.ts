@@ -29,8 +29,10 @@ import {
   emptyState,
   findExisting,
   idempotencyKeyFor,
+  isMeasureEntry,
   makeHttpApi,
   Manifest,
+  MeasureManifestEntry,
   planOffline,
   validateManifest,
 } from 'shared/elections/election-market-creation'
@@ -111,6 +113,34 @@ function report(
   )
   for (const [o, v] of Object.entries(byOffice))
     lines.push(`- ${o}: ${v.n} markets, Ṁ${v.mana.toLocaleString('en-US')}`)
+  // Optional upgrades (ballot measures): the reviewer may raise these entries
+  // to their recommended tier; the payloads above use the baseline tier.
+  const upgrades = manifest.entries.filter(
+    (e): e is MeasureManifestEntry =>
+      isMeasureEntry(e) &&
+      e.status === 'ready' &&
+      by('create').some((p) => p.raceKey === e.raceKey) &&
+      (e.liquidityPlan?.enhancedTier ?? 0) > (e.payload?.liquidityTier ?? 0)
+  )
+  if (upgrades.length) {
+    const extra = upgrades.reduce(
+      (s, e) =>
+        s +
+        costOf({
+          ...e.payload!,
+          liquidityTier: e.liquidityPlan!.enhancedTier!,
+        }).total -
+        costOf(e.payload!).total,
+      0
+    )
+    lines.push(
+      `- optional enhanced liquidity: ${
+        upgrades.length
+      } measures raised to their recommended tier add Ṁ${extra.toLocaleString(
+        'en-US'
+      )} (total Ṁ${(total + extra).toLocaleString('en-US')})`
+    )
+  }
   lines.push('')
   lines.push(
     'Seed probabilities below are SEEDS for the initial pool, not observed market forecasts.'
@@ -127,6 +157,40 @@ function report(
     const pl = entry.payload!
     const c = costOf(pl)
     lines.push(`**${pl.question}**`)
+    if (isMeasureEntry(entry)) {
+      const m = entry.measure
+      lines.push(
+        `- ${m.stateName} · ${m.designation?.label ?? 'no official number'} · ${
+          m.measureType
+        }${m.advisory ? ' · advisory' : ''}${
+          m.secondVoteOf ? ` · second vote (${m.secondVoteOf})` : ''
+        }`
+      )
+      lines.push(`- YES means: ${entry.yesMeaning}`)
+      lines.push(`- approval rule: ${m.approvalRule}`)
+      lines.push(
+        `- BINARY · seed ${pl.initialProb}%${
+          entry.seed?.needsReview ? ' (REVIEW: unsupported seed)' : ''
+        } · close ${new Date(pl.closeTime).toISOString()} · tier ${
+          pl.liquidityTier
+        } → **Ṁ${c.total}**${
+          entry.liquidityPlan?.enhancedTier
+            ? ` · recommended upgrade: tier ${
+                entry.liquidityPlan.enhancedTier
+              } (${entry.liquidityPlan.enhancedRationale ?? ''})`
+            : ''
+        }`
+      )
+      lines.push(`- seed basis: ${entry.seed?.basis}`)
+      lines.push(`- official source: ${m.officialSourceUrl}`)
+      lines.push(
+        `- reserved idempotency key (not yet a contract): \`${p.idempotencyKey}\``
+      )
+      if (online?.[entry.raceKey]?.length)
+        lines.push(`- online recheck: ${online[entry.raceKey].join('; ')}`)
+      lines.push('')
+      continue
+    }
     lines.push(
       `- ${entry.proposition} · ${pl.outcomeType} · sum-to-one ${
         pl.shouldAnswersSumToOne

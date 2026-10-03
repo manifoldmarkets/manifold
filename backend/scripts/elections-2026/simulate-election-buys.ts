@@ -189,6 +189,34 @@ function simulateMarket(
 
 function syntheticMarket(entry: any) {
   const p = entry.payload
+  if (p.outcomeType === 'BINARY') {
+    // Ballot-measure binaries: the same pool the API builds for this tier and
+    // starting probability.
+    const binaryAnte =
+      getAnte('BINARY', undefined, p.liquidityTier) + (p.extraLiquidity ?? 0)
+    const b: any = getNewContract({
+      id: 'synthetic',
+      slug: 'synthetic',
+      question: p.question,
+      description: { type: 'doc', content: [] } as any,
+      closeTime: p.closeTime,
+      visibility: 'public',
+      isTwitchContract: false,
+      token: 'MANA',
+      creator: { id: 'u', name: 'u', username: 'u', avatarUrl: '' } as User,
+      outcomeType: 'BINARY',
+      initialProb: p.initialProb ?? 50,
+      ante: binaryAnte,
+      min: 0,
+      max: 0,
+      isLogScale: false,
+      answers: [],
+      unit: undefined,
+      midpoints: undefined,
+      timezone: undefined,
+    } as any)
+    return { id: entry.raceKey, outcomeType: 'BINARY', pool: b.pool, p: b.p }
+  }
   const ante =
     getAnte(p.outcomeType, p.answers.length, p.liquidityTier) +
     (p.extraLiquidity ?? 0)

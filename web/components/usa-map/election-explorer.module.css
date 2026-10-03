@@ -1,4 +1,5 @@
 .layout {
+  --measure-accent: #24665d;
   --paper: rgb(var(--color-canvas-0));
   --soft: rgb(var(--color-canvas-50));
   --line: rgb(var(--color-ink-200));
@@ -968,7 +969,7 @@
     width: 20px;
   }
 }
-@container mapheader (max-width: 540px) {
+@container mapheader (max-width: 640px) {
   .partyFull {
     display: none;
   }
@@ -1050,4 +1051,88 @@
   .zoomControls button {
     width: 24px;
   }
+}
+
+.measureOverview {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.measureOverview strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.measureCard {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  display: grid;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.measureHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.measureHeading h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.measureTopic {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+.measureCaveat {
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 11px;
+}
+.measureBets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.measureBets button {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.measureBets button:first-child {
+  color: var(--measure-accent);
+}
+.measureBets button:hover:not(:disabled) {
+  background: var(--soft);
+  border-color: currentColor;
+}
+.measureBets button:disabled {
+  opacity: 0.5;
+}
+.measureBets button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.measureRules {
+  color: var(--muted);
+  font-size: 11px;
+}
+.measureRules summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.measureRules p,
+.measureRules a {
+  display: block;
+  margin-top: 8px;
+}
+:global(.dark) .layout {
+  --measure-accent: #82cfc2;
 }

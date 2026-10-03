@@ -68,6 +68,7 @@ export function USElectionsPage(
     senateControlContract,
     houseDistrictsContract,
     additionalHouseContracts,
+    ballotMeasureContracts,
     pollingPerpContracts,
     redistrictingContracts,
     trendingContracts,
@@ -125,6 +126,7 @@ export function USElectionsPage(
           rawGovernorCandidateContracts={rawGovernorCandidateContracts}
           houseDistrictsContract={houseDistrictsContract}
           additionalHouseContracts={additionalHouseContracts}
+          ballotMeasureContracts={ballotMeasureContracts}
         />
       </SectionInView>
 
