@@ -11,13 +11,14 @@ The supplied audit report and JSON are preserved as evidence. This file records 
 
 ## Creation plan
 
-The ballot manifest retains its own `us-2026-ballot-measures-v1` idempotency series and **no approved budget or payload review**. The existing race manifest and its accepted 306,000 cap are unchanged. No creation, subsidy or bet was submitted.
+The ballot manifest retains its own `us-2026-ballot-measures-v1` idempotency series. The user selected **@ManifoldPolitics** and approved a **410,000 combined ceiling**, conditional on the independent audit passing. Allocations are 306,000 for races and 103,000 for ballots, with 1,000 unallocated. **Payload, criteria and seed review remain unapproved.** No creation, subsidy or bet was submitted.
 
 - 103 ready drafts at 1,000 each: **103,000 mana**.
 - 13 optional upgrades to 10,000 add 117,000: **220,000 mana** total.
 - 19 further creation drafts remain unresolved; they would add at least 19,000 if cleared. Three held mappings have no ready creation payload, including MA Q9 added during integration.
 - Combined with the existing race plan: **409,000 baseline**, or **526,000 with all 13 ballot upgrades**, excluding held drafts and proposed subsidies.
 - Change the proposed close time from November 3 23:59 UTC (before some US polls close) to **November 4 12:00 UTC**. Existing community market closing times are untouched. Seed probabilities and criteria still require review.
+- Seed review: the script submits the manifest probabilities unchanged. House seeds mainly use PVI and incumbency in a neutral national environment, usually with 2% for another party/independent. Of 103 ready ballot entries, 71 currently start at 50% and 91 are flagged for seed review. Poll support is not itself a passage probability; the audit must assess the conversion and each approval threshold before signoff. These per-entry flags are informational; the global review gate controls apply.
 - Preserve the handoff's search fix: paginate with `sort=newest` and `beforeTime`, overlapping the boundary millisecond and deduplicating IDs. The API rejects offsets above 1,000. Stalled/incomplete pagination fails closed.
 
 Validation: 41 election/ballot model tests and 39 mocked creation tests pass. Both offline manifests validate without errors: 103 ballot creations / 19 unresolved, and 225 race creations / 4 unresolved. Full web and focused CLI type checks pass. Browser checks include independent-answer and binary complements, disputed sources, no-measures states and responsive controls. No tests establish settlement equivalence beyond the reviewed source evidence.

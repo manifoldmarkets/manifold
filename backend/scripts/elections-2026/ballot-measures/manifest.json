@@ -1,16 +1,16 @@
 {
   "kind": "ballot-measures",
-  "manifestVersion": "2026-10-03.2",
+  "manifestVersion": "2026-10-03.3",
   "series": "us-2026-ballot-measures-v1",
   "generatedAt": "2026-10-03T08:17:40.897Z",
   "review": {
     "approved": false,
     "reviewedBy": null,
     "reviewedAt": null,
-    "notes": "Not reviewed. No funding approved; the 306,000 race budget does not cover these markets."
+    "notes": "On October 3, 2026 the user selected @ManifoldPolitics as creator and approved a combined ceiling of 410,000 mana, conditional on the independent audit passing before creation. This manifest is allocated 103,000 mana; the race and ballot allocations total 409,000, leaving 1,000 unallocated. Optional ballot liquidity upgrades, existing-market subsidies and held entries are not included. Payload, criteria and initial probability review remain unapproved; only set approved=true, reviewedBy and reviewedAt after that audit passes. Use --creator-username ManifoldPolitics; the script verifies the API key account."
   },
   "budget": {
-    "approvedMaxTotalMana": null
+    "approvedMaxTotalMana": 103000
   },
   "entries": [
     {

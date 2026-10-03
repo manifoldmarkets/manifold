@@ -2,7 +2,7 @@
 
 This creates one binary market per statewide ballot question that has no suitable existing market. It reuses the election creation script, but with its **own manifest and idempotency series** (`us-2026-ballot-measures-v1`). The House/Senate/governor manifest (`../manifest.json`, series `us-2026-general-v1`) is untouched. The validator refuses to mix the two.
 
-**No funding is approved.** The 306,000-mana race budget does **not** cover these markets. `review.approved` is false and `budget.approvedMaxTotalMana` is null.
+The user selected **@ManifoldPolitics** and approved a combined **410,000-mana ceiling**, conditional on the independent audit passing before creation. This manifest is allocated **103,000**, alongside **306,000** for races (409,000 total). Optional upgrades and subsidies are excluded. **Payload review remains unapproved:** `review.approved` is false. Include starting probabilities in that review: 71 of the 103 ready ballots are seeded at 50%, and 91 are flagged for seed review.
 
 Read [integration decisions](audit/INTEGRATION.md) first: the UI withholds Massachusetts Question 9 in addition to the audit's held mappings. Proposed new markets close November 4 at 12:00 UTC, after US polls close.
 
