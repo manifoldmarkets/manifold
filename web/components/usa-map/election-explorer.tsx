@@ -1,6 +1,16 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import Image from 'next/image'
+import {
+  MapIcon,
+  ViewGridIcon,
+  SearchIcon,
+  AnnotationIcon,
+} from '@heroicons/react/outline'
+import { CongressHouse } from 'web/public/custom-components/congress_house'
+import { CongressSenate } from 'web/public/custom-components/congress_senate'
+import { Governor } from 'web/public/custom-components/governor'
+import { ElectionBalance } from './election-balance'
 import { Contract, contractPath } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
@@ -10,8 +20,11 @@ import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/par
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
 import { RaceDetailsPanel } from './race-details-panel'
-import { getHeldOffice, HELD_COLORS } from './election-incumbents'
-import { senateHeldSeats2026 } from 'web/public/data/senate-state-data'
+import {
+  getHeldOffice,
+  getIncumbentGroups,
+  HELD_COLORS,
+} from './election-incumbents'
 import { DATA } from './usa-map-data'
 import {
   DEM_COLOR,
@@ -68,7 +81,8 @@ export function ElectionExplorer(props: Props) {
   const [attempt, setAttempt] = useState(0)
   const selectionOrigin = useRef<HTMLElement | SVGElement | null>(null)
   const explorerRef = useRef<HTMLElement>(null)
-  const headerRef = useRef<HTMLElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const [camera, setCamera] = useState({ x: 0, y: 0, k: 1 })
   const drag = useRef<{
@@ -111,17 +125,8 @@ export function ElectionExplorer(props: Props) {
         )
 
   useEffect(() => {
-    const header = headerRef.current
-    if (!header) return
-    const updateHeaderHeight = () => {
-      const height = `${header.getBoundingClientRect().height}px`
-      explorerRef.current?.style.setProperty('--header-height', height)
-    }
-    const observer = new ResizeObserver(updateHeaderHeight)
-    observer.observe(header)
-    updateHeaderHeight()
-    return () => observer.disconnect()
-  }, [])
+    if (searchOpen) searchRef.current?.focus()
+  }, [searchOpen])
 
   useEffect(() => {
     const abort = new AbortController()
@@ -159,6 +164,7 @@ export function ElectionExplorer(props: Props) {
   const choose = (id: string, element: HTMLElement | SVGElement) => {
     selectionOrigin.current = element
     setSelected(id)
+    setSearchOpen(false)
     setHovered(undefined)
   }
   const resetView = () => setCamera({ x: 0, y: 0, k: 1 })
@@ -267,100 +273,179 @@ export function ElectionExplorer(props: Props) {
         className={styles.explorer}
         aria-label="2026 election explorer"
       >
-        <header ref={headerRef} className={styles.header}>
-          <div
-            className={styles.tabs}
-            role="tablist"
-            aria-label="Election type"
-          >
-            {MODES.map((m, i) => (
-              <button
-                key={m}
-                role="tab"
-                aria-label={modeName(m)}
-                aria-selected={mode === m}
-                tabIndex={mode === m ? 0 : -1}
-                onClick={() => changeMode(m)}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-                    e.preventDefault()
-                    const next = (i + (e.key === 'ArrowRight' ? 1 : 2)) % 3
-                    changeMode(MODES[next])
-                    ;(
-                      e.currentTarget.parentElement?.children[
-                        next
-                      ] as HTMLButtonElement
-                    )?.focus()
-                  }
-                }}
+        <header className={styles.header}>
+          <ElectionBalance
+            summary={summary}
+            mode={mode}
+            filter={filter}
+            onFilter={(tier) => {
+              setFilter(filter === tier ? undefined : tier)
+              setSelected(undefined)
+            }}
+          />
+          <div className={styles.toolbar}>
+            <label className={styles.mobileMode}>
+              <ChamberIcon mode={mode} />
+              <select
+                aria-label="Election type"
+                value={mode}
+                onChange={(e) => changeMode(e.target.value as ElectionMode)}
               >
-                {modeName(m)}
+                {MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {modeName(m)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div
+              className={styles.tabs}
+              role="tablist"
+              aria-label="Election type"
+            >
+              {MODES.map((m, i) => (
+                <button
+                  key={m}
+                  role="tab"
+                  aria-label={modeName(m)}
+                  title={modeName(m)}
+                  aria-selected={mode === m}
+                  tabIndex={mode === m ? 0 : -1}
+                  onClick={() => changeMode(m)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                      e.preventDefault()
+                      const next = (i + (e.key === 'ArrowRight' ? 1 : 2)) % 3
+                      changeMode(MODES[next])
+                      ;(
+                        e.currentTarget.parentElement?.children[
+                          next
+                        ] as HTMLButtonElement
+                      )?.focus()
+                    }
+                  }}
+                >
+                  <ChamberIcon mode={m} />
+                  <span>{modeName(m)}</span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              className={styles.viewToggle}
+              aria-label={`Switch to ${
+                view === 'map' ? 'cartogram' : 'geographic map'
+              }`}
+              title={`Switch to ${
+                view === 'map' ? 'cartogram' : 'geographic map'
+              }`}
+              onClick={() => {
+                setView(view === 'map' ? 'cartogram' : 'map')
+                resetView()
+                setHovered(undefined)
+              }}
+            >
+              {view === 'map' ? (
+                <MapIcon aria-hidden />
+              ) : (
+                <ViewGridIcon aria-hidden />
+              )}
+              <span>{view === 'map' ? 'Map' : 'Cartogram'}</span>
+            </button>
+            <button
+              className={clsx(styles.toolButton, labels && styles.activeTool)}
+              aria-label="State labels"
+              title="State labels"
+              aria-pressed={labels}
+              onClick={() => setLabels(!labels)}
+            >
+              <AnnotationIcon aria-hidden />
+              <span>Labels</span>
+            </button>
+            <div className={styles.searchSlot}>
+              <button
+                className={clsx(
+                  styles.searchToggle,
+                  (searchOpen || query) && styles.activeTool
+                )}
+                aria-label="Search races"
+                aria-expanded={searchOpen}
+                title="Search races"
+                onClick={() => setSearchOpen(!searchOpen)}
+              >
+                <SearchIcon aria-hidden />
               </button>
-            ))}
+              <label className={styles.search} data-open={searchOpen}>
+                <SearchIcon aria-hidden />
+                <input
+                  ref={searchRef}
+                  aria-label="Find a state or district"
+                  placeholder="Find a race"
+                  value={query}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchOpen(false)
+                      e.currentTarget
+                        .closest('div')
+                        ?.querySelector('button')
+                        ?.focus()
+                    }
+                  }}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    setSelected(undefined)
+                  }}
+                />
+                {query && (
+                  <button
+                    aria-label="Clear search"
+                    onClick={() => setQuery('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+            </div>
+            <div
+              className={styles.zoomControls}
+              role="group"
+              aria-label="Map zoom controls"
+            >
+              <button
+                aria-label="Zoom in"
+                disabled={camera.k >= 6}
+                onClick={() => zoom(1.5)}
+              >
+                +
+              </button>
+              <button
+                aria-label="Zoom out"
+                disabled={camera.k <= 1}
+                onClick={() => zoom(1 / 1.5)}
+              >
+                −
+              </button>
+              <button
+                aria-label="Reset map view"
+                title="Reset view"
+                onClick={resetView}
+              >
+                ↺
+              </button>
+            </div>
           </div>
         </header>
-
-        <div className={styles.balance}>
-          <div className={styles.balanceLabels}>
-            <span style={{ color: DEM_COLOR }}>
-              <b>{summary.leaders.dem}</b> <span>Democratic</span>
-            </span>
-            <span className={styles.threshold}>
-              {mode === 'house'
-                ? '218 for a majority'
-                : mode === 'senate'
-                ? '51 D / 50 R for control'
-                : `${races.length} governorships`}
-            </span>
-            <span style={{ color: REP_COLOR }}>
-              <span>Republican</span> <b>{summary.leaders.rep}</b>
-            </span>
-          </div>
-          <div
-            className={styles.balanceTrack}
-            aria-label="Seats by market likelihood"
-          >
-            {TIERS.filter((t) => summary.counts[t.id] > 0).map((t) => (
-              <button
-                key={t.id}
-                title={`${summary.counts[t.id]} ${t.label}${
-                  mode === 'senate' && t.id.startsWith('safe')
-                    ? ' (includes seats not on the ballot)'
-                    : ''
-                }`}
-                aria-label={`Filter ${summary.counts[t.id]} ${t.label}`}
-                aria-pressed={filter === t.id}
-                style={{ flex: summary.counts[t.id], background: t.color }}
-                onClick={() => {
-                  setFilter(filter === t.id ? undefined : t.id)
-                  setSelected(undefined)
-                }}
-              >
-                {summary.counts[t.id] / summary.total > 0.055 &&
-                  summary.counts[t.id]}
-              </button>
-            ))}
-            {mode !== 'governor' && (
-              <span
-                className={styles.majorityLine}
-                style={{
-                  left: `${(mode === 'house' ? 218 / 435 : 0.5) * 100}%`,
-                }}
-              />
-            )}
-          </div>
-          <div className={styles.coverage}>
-            <span>
-              {races.length - summary.leaders.unpriced} of {races.length} races
-              priced{mode === 'senate' && ' · 65 seats not on the ballot'}
-            </span>
-            <span>
-              {summary.leaders.unpriced > 0 &&
-                `${summary.leaders.unpriced} unpriced`}
-              {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
-              {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
-            </span>
-          </div>
+        <div className={styles.coverage}>
+          <span>
+            {races.length - summary.leaders.unpriced} of {races.length} races
+            priced{mode === 'senate' && ' · 65 seats not on the ballot'}
+          </span>
+          <span>
+            {summary.leaders.unpriced > 0 &&
+              `${summary.leaders.unpriced} unpriced`}
+            {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
+            {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
+          </span>
         </div>
         {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
           <p className={styles.note}>
@@ -375,74 +460,6 @@ export function ElectionExplorer(props: Props) {
             . These outcomes are counted separately from party wins.
           </p>
         )}
-        <div className={styles.toolbar}>
-          <div className={styles.segment} aria-label="Map view">
-            {(['map', 'cartogram'] as const).map((v) => (
-              <button
-                key={v}
-                aria-pressed={view === v}
-                onClick={() => {
-                  setView(v)
-                  resetView()
-                  setHovered(undefined)
-                }}
-              >
-                {v === 'map' ? 'Map' : 'Cartogram'}
-              </button>
-            ))}
-          </div>
-          <button
-            className={clsx(styles.toolButton, labels && styles.activeTool)}
-            aria-pressed={labels}
-            onClick={() => setLabels(!labels)}
-          >
-            State labels
-          </button>
-          <label className={styles.search}>
-            <span aria-hidden>⌕</span>
-            <input
-              aria-label="Find a state or district"
-              placeholder="Find a state or district"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setSelected(undefined)
-              }}
-            />
-            {query && (
-              <button aria-label="Clear search" onClick={() => setQuery('')}>
-                ×
-              </button>
-            )}
-          </label>
-          <div
-            className={styles.zoomControls}
-            role="group"
-            aria-label="Map zoom controls"
-          >
-            <button
-              aria-label="Zoom in"
-              disabled={camera.k >= 6}
-              onClick={() => zoom(1.5)}
-            >
-              +
-            </button>
-            <button
-              aria-label="Zoom out"
-              disabled={camera.k <= 1}
-              onClick={() => zoom(1 / 1.5)}
-            >
-              −
-            </button>
-            <button
-              aria-label="Reset map view"
-              title="Reset view"
-              onClick={resetView}
-            >
-              ↺
-            </button>
-          </div>
-        </div>
         {(filter || query) && (
           <div className={styles.filterNotice} role="status">
             {filtered.length} matching races
@@ -729,6 +746,11 @@ export function ElectionExplorer(props: Props) {
               {hoverRace ? (
                 <>
                   <RaceQuote race={hoverRace} />
+                  <IncumbentDetails
+                    mode={mode}
+                    state={hoverRace.state}
+                    district={hoverRace.district}
+                  />
                   <span>Click to explore this race</span>
                 </>
               ) : (
@@ -813,6 +835,11 @@ export function ElectionExplorer(props: Props) {
         {selectedRace && (
           <RaceDetailsPanel
             title={selectedRace.label}
+            chartLink={
+              selectedRace.contract && (
+                <MarketDetailsLink contract={selectedRace.contract} />
+              )
+            }
             eyebrow={`${modeName(mode)} · ${selectedRace.shortLabel}`}
             label={`${selectedRace.label} details`}
             closeRef={closeRef}
@@ -827,7 +854,7 @@ export function ElectionExplorer(props: Props) {
               >
                 {TIERS.find((t) => t.id === raceTier(selectedRace))?.label}
               </span>
-              <RaceQuote race={selectedRace} />
+              {selectedRace.odds && <RaceQuote race={selectedRace} />}
             </div>
             {selectedRace.odds && (
               <div className={styles.raceBar}>
@@ -850,17 +877,11 @@ export function ElectionExplorer(props: Props) {
                 )}
               </div>
             )}
-            {mode === 'senate' && senateHeldSeats2026[selectedRace.state] && (
-              <div className={styles.incumbents}>
-                <span className={styles.eyebrow}>
-                  Other seat · not on the 2026 ballot
-                </span>
-                <span>
-                  {senateHeldSeats2026[selectedRace.state].name} (
-                  {senateHeldSeats2026[selectedRace.state].party[0]})
-                </span>
-              </div>
-            )}
+            <IncumbentDetails
+              mode={mode}
+              state={selectedRace.state}
+              district={selectedRace.district}
+            />
             {!selectedRace.contract ? (
               <p className={styles.empty}>
                 No Manifold market is linked to this race yet. It is excluded
@@ -880,7 +901,6 @@ export function ElectionExplorer(props: Props) {
                   label={selectedRace.label}
                   matchup={selectedRace.matchup}
                 />
-                <MarketDetailsLink contract={selectedRace.contract} />
               </>
             ) : (
               <RaceMarket contract={selectedRace.contract} />
@@ -894,7 +914,10 @@ export function ElectionExplorer(props: Props) {
                 )
               ) && (
                 <div className={styles.candidates}>
-                  <span className={styles.eyebrow}>Candidate market</span>
+                  <div className={styles.candidateHeading}>
+                    <span className={styles.eyebrow}>Candidate market</span>
+                    <MarketDetailsLink contract={candidate} />
+                  </div>
                   <RaceMarket contract={candidate} />
                 </div>
               )}
@@ -922,6 +945,40 @@ export function ElectionExplorer(props: Props) {
               split Senate delegation. Select or hover over a state to see its
               sitting officeholders; Senate control colors group independents
               with their caucus.
+            </p>
+            <p>
+              Held Senate seats are hatched at the ends of the balance bar; safe
+              forecasts are separate. All 435 House seats are up in 2026, so an
+              unpriced race is not a locked-in seat.
+            </p>
+            <p>
+              Officeholders were checked on October 3, 2026 against the{' '}
+              <a
+                href="https://clerk.house.gov/xml/lists/MemberData.xml"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                House Clerk
+              </a>
+              ,{' '}
+              <a
+                href="https://www.senate.gov/senators/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Senate
+              </a>{' '}
+              and{' '}
+              <a
+                href="https://www.nga.org/governors/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                National Governors Association
+              </a>
+              . House incumbents refer to current district numbers in the 119th
+              Congress; 2026 boundaries may differ. Incumbents are not
+              necessarily candidates for reelection.
             </p>
             <p>
               Candidate markets price the listed people. Their party colors come
@@ -979,39 +1036,57 @@ export function ElectionExplorer(props: Props) {
   )
 }
 
+function ChamberIcon({ mode }: { mode: ElectionMode }) {
+  return (
+    <span className={styles.tabIcon} aria-hidden>
+      {mode === 'house' ? (
+        <CongressHouse height={6} />
+      ) : mode === 'senate' ? (
+        <CongressSenate height={6} />
+      ) : (
+        <Governor height={6} />
+      )}
+    </span>
+  )
+}
+
 function IncumbentDetails({
   mode,
   state,
+  district,
 }: {
   mode: ElectionMode
   state: string
+  district?: number
 }) {
-  const held = getHeldOffice(mode, state)
-  if (!held) return null
+  const groups = getIncumbentGroups(mode, state, district)
   return (
-    <div className={styles.incumbents}>
-      <span className={styles.eyebrow}>
-        {mode === 'senate' ? 'Current senators' : 'Current governor'}
-      </span>
-      {held.members.map((member) => (
-        <span key={member.name}>
-          <i
-            style={{
-              background:
-                member.party === 'Democrat'
-                  ? DEM_COLOR
-                  : member.party === 'Republican'
-                  ? REP_COLOR
-                  : OTHER_COLOR,
-            }}
-          />
-          {member.name}{' '}
-          <small>
-            ({member.party === 'Independent' ? 'I' : member.party[0]})
-          </small>
-        </span>
+    <>
+      {groups.map((group) => (
+        <div key={group.label} className={styles.incumbents}>
+          <span className={styles.eyebrow}>{group.label}</span>
+          {group.members.length === 0 && <span>Vacant</span>}
+          {group.members.map((member) => (
+            <span key={member.name}>
+              <i
+                style={{
+                  background:
+                    member.party === 'Democrat'
+                      ? DEM_COLOR
+                      : member.party === 'Republican'
+                      ? REP_COLOR
+                      : OTHER_COLOR,
+                }}
+              />
+              {member.name}{' '}
+              <small>
+                ({member.party === 'Independent' ? 'I' : member.party[0]})
+              </small>
+            </span>
+          ))}
+        </div>
       ))}
-    </div>
+    </>
   )
 }
 
@@ -1049,7 +1124,6 @@ function RaceMarket({ contract }: { contract: Contract }) {
         contract.outcomeType === 'BINARY' ? (
         <StateBinaryPartyPanel contract={contract} />
       ) : null}
-      <MarketDetailsLink contract={contract} />
     </>
   )
 }
@@ -1057,13 +1131,13 @@ function RaceMarket({ contract }: { contract: Contract }) {
 function MarketDetailsLink({ contract }: { contract: Contract }) {
   return (
     <a
-      className={styles.marketLink}
+      className={styles.chartLink}
       href={contractPath(contract)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`Read description and comments: ${contract.question} (opens in a new tab)`}
     >
-      Market description & comments <span aria-hidden="true">↗</span>
+      chart →
     </a>
   )
 }

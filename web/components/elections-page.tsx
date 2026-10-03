@@ -107,7 +107,7 @@ export function USElectionsPage(
           tooltip="Share this page"
           color="gray-outline"
           size="sm"
-          className="ml-auto shrink-0 gap-1.5"
+          className="ml-auto shrink-0 gap-1.5 sm:ml-4"
         >
           Share
         </CopyLinkOrShareButton>

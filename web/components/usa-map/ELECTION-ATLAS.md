@@ -127,11 +127,12 @@ methodology; a missing atlas; and missing/cancelled market prices. The chamber
 cards and district choices open the existing betting dialogs. Polling cards
 open the existing perpetual trading flow, preserving position, oracle freshness,
 and risk checks. Chamber tabs stay sticky within the explorer on all screen
-sizes; the compact, centered switcher keeps the same height when pinned.
-Desktop map tools stay below
-that bar, with zoom at the top right, and the map height is capped to fit the
+sizes. The compact balance strip pins above a single row containing the original
+chamber icons, view toggle, labels, search and zoom. At narrow container widths,
+the chamber tabs become a labelled selector and search opens inline below the
+row. There is no scroll-triggered resizing. The map height is capped to fit the
 viewport. Compact chamber-control cards sit outside the map section and scroll
-away above the tabs. Their small top-right chart links open the market, while
+away above the tabs, aligned left. Their small top-right chart links open the market, while
 each party button opens an in-page trade. Labels default on; map guidance is
 available through the More info footnote. States with
 no Senate or gubernatorial election can be selected in either map view: they
@@ -139,12 +140,32 @@ highlight, show sitting officeholders on hover and selection, explain that the
 office is not on the ballot, and offer a shortcut to that state's House districts.
 Their colored crosshatching shows current party control (purple for a split
 Senate delegation), distinct from an unpriced race's gray hatching. White map
-borders remain visible in dark mode. The governor incumbent snapshot in
-`election-incumbents.ts` was checked against the National Governors Association
-directory and its linked roster on October 3, 2026: https://www.nga.org/governors/.
-Senate incumbents reuse the existing `currentSenate2026` data. These are static
-context snapshots to refresh when officeholders change, never assumed odds for
-unlinked races; they do not alter priced seat estimates.
+borders remain visible in dark mode, with dark borders in light mode. Race
+details retain dragging, keyboard movement and reset after moving; the collapse
+option is removed. Each source's small chart link sits in its heading.
+
+Incumbent context covers all 435 current House districts (including vacancies),
+all 100 senators and all 50 governors. Sources checked October 3, 2026:
+
+- House: https://clerk.house.gov/xml/lists/MemberData.xml, published October 1.
+  `election-house-incumbents.json` retains only the official name, party and
+  current district key from each voting-state member, with `null` for vacancies.
+  At-large seats use district zero; territories and DC are excluded. Current
+  district numbers refer to the 119th Congress, not a claim that the same member
+  is running within the atlas's redrawn 2026 boundaries.
+- Senate: https://www.senate.gov/senators/. Class II incumbents plus Florida and
+  Ohio's Class III special-election incumbents are recorded in
+  `election-incumbents.ts`; other seats reuse `currentSenate2026` and
+  `senateHeldSeats2026`. Actual independent affiliations remain visible.
+- Governors: https://www.nga.org/governors/ and its linked roster, recorded in
+  `election-incumbents.ts` for both scheduled and off-ballot states.
+
+These are static context snapshots to refresh when officeholders change, never
+assumed odds for unlinked races; they do not alter priced seat estimates.
+The balance bar separates held Senate seats (34 Democratic caucus, 31 Republican)
+from safe forecasts with hatching and a divider at each end. Forecast D tiers
+run left-to-right toward the uncertain middle, with R tiers toward the right.
+All 435 House seats are up in 2026: missing markets remain unpriced, never held.
 Duplicate race lists below the map have been removed.
 
 Answer and binary betting dialogs label the currently selected outcome's quote;

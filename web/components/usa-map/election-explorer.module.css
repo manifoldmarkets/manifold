@@ -6,6 +6,7 @@
   --ink: rgb(var(--color-ink-800));
   --accent: rgb(var(--color-primary-700));
   color: var(--ink);
+  --map-border: #161616;
 }
 .explorer {
   position: relative;
@@ -19,27 +20,31 @@
   top: 0;
   z-index: 10;
   margin: 0 -20px 12px;
-  padding: 12px 10px;
   background: var(--paper);
   border-radius: 12px 12px 0 0;
+  container: mapheader / inline-size;
+  padding: 8px 20px;
 }
 .tabs {
   display: flex;
   width: fit-content;
   max-width: 100%;
-  margin: 0 auto;
   padding: 3px;
   gap: 2px;
   border-radius: 9px;
   background: var(--soft);
+  flex-shrink: 0;
 }
 .tabs button {
   min-width: 0;
-  font-size: 14px;
   font-weight: 500;
   color: var(--muted);
-  padding: 7px 18px;
   border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 2px 8px;
 }
 .tabs button:hover {
   color: var(--accent);
@@ -53,9 +58,9 @@
 .controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 270px));
-  justify-content: center;
   gap: 16px;
   margin-bottom: 18px;
+  justify-content: start;
 }
 .controlCard {
   min-width: 0;
@@ -182,8 +187,7 @@
   border-radius: 6px;
   background: var(--soft);
 }
-.hint button:hover,
-.marketLink:hover {
+.hint button:hover {
   text-decoration: underline;
 }
 .balanceLabels {
@@ -191,12 +195,16 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 6px;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 .balanceLabels b {
-  font-size: 24px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-size: 15px;
+}
+.partyShort {
+  display: none;
 }
 .threshold {
   color: var(--muted);
@@ -206,17 +214,19 @@
 .balanceTrack {
   position: relative;
   display: flex;
-  gap: 2px;
-  height: 23px;
-  margin-top: 10px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 4px;
 }
 .balanceTrack button {
-  min-width: 3px;
-  border-radius: 3px;
   color: white;
-  font-size: 11px;
   font-weight: 600;
   line-height: 1;
+  min-width: 0;
+  font-size: 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: inset -1px 0 var(--paper);
 }
 .balanceTrack button:hover {
   opacity: 0.8;
@@ -227,12 +237,12 @@
 }
 .majorityLine {
   position: absolute;
-  top: -5px;
-  bottom: -5px;
   width: 2px;
   background: var(--ink);
   box-shadow: 0 0 0 2px var(--paper);
   pointer-events: none;
+  top: -3px;
+  bottom: -3px;
 }
 .coverage {
   display: flex;
@@ -246,35 +256,9 @@
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-.segment {
-  display: flex;
-  padding: 3px;
-  background: var(--soft);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-.segment button {
-  padding: 7px 13px;
-  font-size: 12px;
-  border-radius: 5px;
-  color: var(--muted);
-}
-.segment button[aria-pressed='true'] {
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: 0 1px 4px #00000014;
-  font-weight: 600;
-}
-.toolButton {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 9px 10px;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 .activeTool {
   color: var(--accent);
@@ -283,17 +267,13 @@
 .search {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  margin-left: auto;
   border: 1px solid var(--line);
   border-radius: 7px;
   color: var(--muted);
-  width: 205px;
-}
-.search > span {
-  font-size: 20px;
-  line-height: 1;
+  gap: 5px;
+  padding: 6px 8px;
+  height: 34px;
+  width: 100%;
 }
 .search input {
   font-size: 11px;
@@ -350,11 +330,11 @@
   border-radius: 8px;
 }
 .shape {
-  stroke: #fff;
   stroke-width: 0.8;
   vector-effect: non-scaling-stroke;
   cursor: pointer;
   transition: fill 180ms, opacity 150ms;
+  stroke: var(--map-border);
 }
 .shape:hover,
 .shape:focus-visible,
@@ -368,10 +348,10 @@
 }
 .stateOutline {
   fill: none;
-  stroke: #fff;
   stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
+  stroke: var(--map-border);
 }
 .hatchBase {
   fill: rgb(var(--color-ink-100));
@@ -528,9 +508,8 @@
 }
 .incumbents {
   display: grid;
-  gap: 6px;
-  font-size: 13px;
-  padding: 4px 0;
+  gap: 3px;
+  font-size: 12px;
 }
 .incumbents > span {
   display: flex;
@@ -598,6 +577,7 @@
 .detailActions {
   display: flex;
   gap: 3px;
+  align-items: center;
 }
 .detailActions button {
   flex-shrink: 0;
@@ -618,14 +598,11 @@
 .detailContent {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
   padding: 0 18px 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-.detailContent[hidden] {
-  display: none;
 }
 .detailDragHandle:focus-visible,
 .detailActions button:focus-visible {
@@ -666,17 +643,6 @@
 }
 .exploreState:hover {
   background: var(--soft);
-}
-.marketLink {
-  display: inline-block;
-  color: var(--accent);
-  font-size: 12px;
-  margin-top: 8px;
-  padding: 4px 0;
-}
-.marketLink:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 .candidates {
   border-top: 1px solid var(--line);
@@ -734,14 +700,6 @@
   .explorer {
     --map-height: clamp(280px, calc(100svh - 350px), 420px);
   }
-  .toolbar {
-    position: sticky;
-    top: var(--header-height, 60px);
-    z-index: 9;
-    margin: 8px -20px 0;
-    padding: 10px 20px;
-    background: var(--paper);
-  }
   .map {
     height: var(--map-height);
   }
@@ -770,11 +728,7 @@
   }
   .header {
     margin: 0 -12px 12px;
-    padding: 10px 8px;
-  }
-  .tabs button {
-    padding: 7px 14px;
-    font-size: 13px;
+    padding: 8px 12px;
   }
   .controls {
     gap: 10px;
@@ -814,51 +768,20 @@
     font-size: 10px;
   }
   .balanceLabels b {
-    font-size: 22px;
+    font-size: 15px;
   }
   .threshold {
     font-size: 8px;
-    max-width: 98px;
+    max-width: 130px;
   }
   .coverage {
     font-size: 9px;
-  }
-  .toolbar {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    margin-top: 12px;
-  }
-  .segment {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .segment button {
-    flex: 1;
-  }
-  .search {
-    grid-column: 1;
-    grid-row: 2;
-    width: 100%;
-    padding: 10px;
   }
   .search input {
     font-size: 12px;
   }
   .stage {
     margin: 18px -9px 0;
-  }
-  .zoomControls {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-  }
-  .zoomControls button {
-    width: 30px;
-    height: 30px;
-  }
-  .toolButton {
-    grid-column: 2;
-    grid-row: 2;
   }
   .legend {
     flex-direction: column;
@@ -882,5 +805,207 @@
   .shape,
   .controlCard {
     transition: none;
+  }
+}
+:global(.dark) .layout {
+  --map-border: #fff;
+}
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 26px;
+  fill: currentColor;
+}
+.mobileMode {
+  display: none;
+}
+.tabIcon svg {
+  width: 24px;
+  height: 26px;
+}
+.heldSeats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 3px,
+    #0004 3px 5px
+  );
+  border-right: 2px solid var(--paper);
+}
+.balanceTrack > :first-child {
+  border-radius: 4px 0 0 4px;
+}
+.balanceTrack[data-majority='true'] > :nth-last-child(2),
+.balanceTrack[data-majority='false'] > :last-child {
+  border-radius: 0 4px 4px 0;
+}
+.heldSeats:nth-last-child(2) {
+  border-right: 0;
+  border-left: 2px solid var(--paper);
+}
+.viewToggle,
+.toolButton,
+.searchToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  height: 34px;
+  padding: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.viewToggle svg,
+.toolButton svg,
+.search svg,
+.searchToggle svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.viewToggle:hover,
+.toolButton:hover,
+.searchToggle:hover {
+  background: var(--soft);
+  color: var(--accent);
+}
+.toolbar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.searchSlot {
+  flex: 1;
+  min-width: 85px;
+  margin-left: auto;
+}
+.searchToggle {
+  display: none;
+}
+.toolbar .activeTool {
+  color: var(--accent);
+  background: var(--soft);
+}
+.search:focus-within {
+  border-color: var(--accent);
+}
+.detailActions .chartLink {
+  margin-right: 6px;
+}
+.candidateHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+@container mapheader (max-width: 680px) {
+  .viewToggle span,
+  .toolButton span {
+    display: none;
+  }
+  .tabs button {
+    padding: 4px;
+    font-size: 11px;
+  }
+  .tabIcon,
+  .tabIcon svg {
+    width: 20px;
+  }
+}
+@container mapheader (max-width: 480px) {
+  .partyFull {
+    display: none;
+  }
+  .partyShort {
+    display: inline;
+  }
+  .balanceLabels > span {
+    white-space: nowrap;
+  }
+  .threshold {
+    font-size: 8px;
+    max-width: none;
+  }
+  .toolbar {
+    gap: 4px;
+  }
+  .tabs {
+    display: none;
+  }
+  .mobileMode {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 98px;
+    height: 34px;
+    border-radius: 7px;
+    background: var(--soft);
+    color: var(--accent);
+  }
+  .mobileMode .tabIcon {
+    position: absolute;
+    left: 3px;
+    pointer-events: none;
+    width: 20px;
+  }
+  .mobileMode select {
+    width: 100%;
+    padding: 7px 12px 7px 25px;
+    background-color: transparent;
+    background-position: right 0 center;
+    background-size: 12px;
+    border: 0;
+    font-size: 11px;
+    color: inherit;
+    cursor: pointer;
+  }
+  .tabIcon,
+  .tabIcon svg {
+    width: 24px;
+  }
+  .viewToggle,
+  .toolButton,
+  .searchToggle {
+    width: 28px;
+    padding: 4px;
+  }
+  .searchSlot {
+    flex: 1;
+    min-width: 28px;
+  }
+  .searchToggle {
+    display: flex;
+    margin-left: auto;
+  }
+  .search {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: var(--paper);
+    box-shadow: 0 4px 12px #0002;
+  }
+  .search[data-open='true'] {
+    display: flex;
+  }
+  .zoomControls button {
+    width: 24px;
   }
 }

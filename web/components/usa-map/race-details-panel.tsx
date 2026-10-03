@@ -8,12 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  RefreshIcon,
-  XIcon,
-} from '@heroicons/react/outline'
+import { RefreshIcon, XIcon } from '@heroicons/react/outline'
 import styles from './election-explorer.module.css'
 
 export function RaceDetailsPanel(props: {
@@ -22,17 +17,17 @@ export function RaceDetailsPanel(props: {
   label: string
   closeRef: Ref<HTMLButtonElement>
   onClose: () => void
+  chartLink?: ReactNode
   children: ReactNode
 }) {
-  const { title, eyebrow, label, closeRef, onClose, children } = props
+  const { title, eyebrow, label, closeRef, onClose, chartLink, children } =
+    props
   const panelRef = useRef<HTMLElement>(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const offsetRef = useRef(offset)
-  const [collapsed, setCollapsed] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [moved, setMoved] = useState(false)
   const drag = useRef<{ x: number; y: number; px: number; py: number }>()
-  const contentId = useId()
   const helpId = useId()
 
   const move = useCallback((x: number, y: number) => {
@@ -74,7 +69,6 @@ export function RaceDetailsPanel(props: {
   }, [offset])
 
   useLayoutEffect(() => {
-    setCollapsed(false)
     panelRef.current?.querySelector('[data-details-content]')?.scrollTo(0, 0)
     move(offsetRef.current.x, offsetRef.current.y)
   }, [title, move])
@@ -166,29 +160,16 @@ export function RaceDetailsPanel(props: {
           </button>
         </h3>
         <div className={styles.detailActions}>
-          <button
-            aria-label="Reset popup position"
-            title="Reset position"
-            disabled={!moved}
-            onClick={reset}
-          >
-            <RefreshIcon aria-hidden />
-          </button>
-          <button
-            aria-label={
-              collapsed ? 'Expand race details' : 'Collapse race details'
-            }
-            aria-expanded={!collapsed}
-            aria-controls={contentId}
-            title={collapsed ? 'Expand details' : 'Collapse details'}
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? (
-              <ChevronDownIcon aria-hidden />
-            ) : (
-              <ChevronUpIcon aria-hidden />
-            )}
-          </button>
+          {chartLink}
+          {moved && (
+            <button
+              aria-label="Reset popup position"
+              title="Reset position"
+              onClick={reset}
+            >
+              <RefreshIcon aria-hidden />
+            </button>
+          )}
           <button
             ref={closeRef}
             aria-label="Close race details"
@@ -203,12 +184,7 @@ export function RaceDetailsPanel(props: {
         Drag to move this popup, or use arrow keys. Press Home to reset its
         position.
       </span>
-      <div
-        id={contentId}
-        data-details-content
-        hidden={collapsed}
-        className={styles.detailContent}
-      >
+      <div data-details-content className={styles.detailContent}>
         {children}
       </div>
     </section>

@@ -10,6 +10,7 @@ import {
   Race,
   raceTier,
   seatSummary,
+  balanceSegments,
   outcomeLabel,
   raceColor,
   COMPLEMENT_COLOR,
@@ -88,6 +89,51 @@ test('missing markets do not erase scheduled races or manufacture prices', () =>
     unpriced: 35,
   })
   assert.equal(seatSummary(governor, 'governor').leaders.unpriced, 36)
+})
+
+test('balance separates held seats from forecasts and keeps unknown House races unpriced', () => {
+  const senate = seatSummary(buildRaces('senate', {}), 'senate')
+  assert.equal(senate.counts['safe-d'], 0)
+  assert.equal(senate.counts['safe-r'], 0)
+  const segments = balanceSegments(senate)
+  assert.deepEqual(
+    segments.map((s) => [s.id, s.count]),
+    [
+      ['held-dem', 34],
+      ['unpriced', 35],
+      ['held-rep', 31],
+    ]
+  )
+  assert.equal(
+    segments.reduce((sum, s) => sum + s.count, 0),
+    100
+  )
+  assert.equal(segments[0].tier, undefined)
+  const house = balanceSegments(seatSummary(buildRaces('house', {}), 'house'))
+  assert.deepEqual(
+    house.map((s) => [s.id, s.count]),
+    [['unpriced', 435]]
+  )
+  const mixed = balanceSegments(
+    seatSummary(
+      [
+        { odds: { dem: 0.99, rep: 0.01, other: 0 } },
+        { odds: { dem: 0.01, rep: 0.99, other: 0 } },
+        {},
+      ] as Race[],
+      'senate'
+    )
+  )
+  assert.deepEqual(
+    mixed.map((s) => [s.id, s.count]),
+    [
+      ['held-dem', 34],
+      ['safe-d', 1],
+      ['unpriced', 1],
+      ['safe-r', 1],
+      ['held-rep', 31],
+    ]
+  )
 })
 
 test('district labels, candidate suffixes, and at-large labels join reliably', () => {

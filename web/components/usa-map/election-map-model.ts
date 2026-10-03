@@ -306,8 +306,6 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
     Tier,
     number
   >
-  counts['safe-d'] = held.dem
-  counts['safe-r'] = held.rep
   const leaders = {
     dem: held.dem,
     rep: held.rep,
@@ -341,4 +339,40 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
     held,
     total: races.length + held.dem + held.rep,
   }
+}
+
+// Keep party forecasts at either end and uncertainty in the middle. Held seats
+// are distinct from safe forecasts and cannot filter races on this year's ballot.
+export function balanceSegments(summary: ReturnType<typeof seatSummary>) {
+  const tierOrder: Tier[] = [
+    'safe-d',
+    'likely-d',
+    'lean-d',
+    'tossup',
+    'other',
+    'not-d',
+    'not-r',
+    'unpriced',
+    'lean-r',
+    'likely-r',
+    'safe-r',
+  ]
+  const held = (party: 'dem' | 'rep') => ({
+    id: `held-${party}`,
+    label: `${
+      party === 'dem' ? 'Democratic caucus' : 'Republican'
+    } seats not on the ballot`,
+    count: summary.held[party],
+    color: party === 'dem' ? '#4a5fa8' : '#9d3336',
+    tier: undefined as Tier | undefined,
+  })
+  return [
+    held('dem'),
+    ...tierOrder.map((id) => ({
+      ...TIERS.find((t) => t.id === id)!,
+      count: summary.counts[id],
+      tier: id as Tier | undefined,
+    })),
+    held('rep'),
+  ].filter((segment) => segment.count > 0)
 }
