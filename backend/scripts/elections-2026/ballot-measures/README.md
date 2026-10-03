@@ -2,17 +2,17 @@
 
 This creates one binary market per statewide ballot question that has no suitable existing market. It reuses the election creation script, but with its **own manifest and idempotency series** (`us-2026-ballot-measures-v1`). The House/Senate/governor manifest (`../manifest.json`, series `us-2026-general-v1`) is untouched. The validator refuses to mix the two.
 
-The user selected **@ManifoldPolitics** and approved a combined **410,000-mana ceiling**, conditional on the independent audit passing before creation. This manifest is allocated **103,000**, alongside **306,000** for races (409,000 total). Optional upgrades and subsidies are excluded. **Payload review remains unapproved:** `review.approved` is false. Include starting probabilities in that review: 71 of the 103 ready ballots are seeded at 50%, and 91 are flagged for seed review.
+The user selected **@ManifoldPolitics** and approved a combined **410,000-mana ceiling**, conditional on the independent audit passing before creation. This manifest is allocated **103,000**, alongside **306,000** for races (409,000 total). Current planned spending is **408,000**: 225 races and 102 ballots, after holding Michigan Proposal 1. Optional upgrades and subsidies are excluded. **Payload review remains unapproved:** `review.approved` is false. Include starting probabilities in that review: 70 of the 102 ready ballots are seeded at 50%, and 90 are flagged for seed review.
 
 Read [integration decisions](audit/INTEGRATION.md) first: the UI withholds Massachusetts Question 9 in addition to the audit's held mappings. Proposed new markets close November 4 at 12:00 UTC, after US polls close.
 
-| File | What it is |
-|---|---|
-| `manifest.json` | One `ballot-measure` entry per genuine gap. Each entry holds:<br>• identity: state, official designation, title, aliases, approval rule, certifier and official source<br>• `yesMeaning`<br>• the exact binary payload<br>• seed and review flag<br>• baseline tier 1,000, plus `enhancedTier` 10,000 where recommended<br>• rejected markets and portfolio answers<br>• the dashboard row<br>Entries are `unresolved` (excluded from apply) when identity, threshold or source could not be confirmed. |
-| `audit/measure-inventory.json` | Every measure: verified identity and rules, sources, coverage status. |
-| `audit/recommended-mappings.json` | Every audited measure: recommended source (contract and answer IDs, YES orientation, rules, evidence, depth, simulated buys), alternatives, rejected answers, subsidies. |
-| `audit/INTEGRATION.md` | Integration decisions and current costs. |
-| `out/` (generated) | Dry-run report, payloads, plan and dashboard mapping. |
+| File                              | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest.json`                   | One `ballot-measure` entry per genuine gap. Each entry holds:<br>• identity: state, official designation, title, aliases, approval rule, certifier and official source<br>• `yesMeaning`<br>• the exact binary payload<br>• seed and review flag<br>• baseline tier 1,000, plus `enhancedTier` 10,000 where recommended<br>• rejected markets and portfolio answers<br>• the dashboard row<br>Entries are `unresolved` (excluded from apply) when identity, threshold or source could not be confirmed. |
+| `audit/measure-inventory.json`    | Every measure: verified identity and rules, sources, coverage status.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `audit/recommended-mappings.json` | Every audited measure: recommended source (contract and answer IDs, YES orientation, rules, evidence, depth, simulated buys), alternatives, rejected answers, subsidies.                                                                                                                                                                                                                                                                                                                                |
+| `audit/INTEGRATION.md`            | Integration decisions and current costs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `out/` (generated)                | Dry-run report, payloads, plan and dashboard mapping.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## Market shape and rules
 
@@ -44,16 +44,18 @@ MANIFOLD_API_KEY=… npx ts-node --transpile-only create-election-markets.ts \
   --manifest elections-2026/ballot-measures/manifest.json \
   --state elections-2026/ballot-measures/state.prod.json \
   --env prod --apply --creator-username <account> --max-mana <cap>
+# first run only: add --init-state
 ```
 
 Apply keeps every safeguard of the race manifest:
 
 - the reserved-ID read before any write;
 - a deterministic `idempotencyKey`;
-- paginated duplicate searches;
+- paginated duplicate searches that include portfolio answers, re-reading answers in full before judging them;
 - run, manifest and balance caps;
 - persisted state after every request;
-- a stop on any ambiguous outcome.
+- a stop on any ambiguous outcome or rejection;
+- a state file bound to one API base and creator, a lock against concurrent runs, and no silent fresh start.
 
 For measures, the duplicate check matches the official designation and aliases, and checks every open portfolio answer by answer ID. It treats a different state, a different year or a qualification-only question as unrelated. It holds opposite wording ("fail", "rejected"), repeal or overturn wording, and conditional, combined, margin, court or implementation questions for review.
 

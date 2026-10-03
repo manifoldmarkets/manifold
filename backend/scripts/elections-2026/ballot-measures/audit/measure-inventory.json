@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-03T08:01:47.470Z",
+ "generated": "2026-10-03T10:15:05.085Z",
  "auditTimestamp": {
   "candidatePull": "2026-10-03 05:11:01.640065+00",
   "allOpen": "2026-10-03 05:12:36.198479+00",
@@ -4013,8 +4013,8 @@
     "https://crcmich.org/?p=16166",
     "https://www.michiganpublic.org/politics-government/2026-09-04/michigans-november-2026-ballot-is-official-includes-two-questions-for-all-voters"
    ],
-   "coverage": "needs-creation",
-   "coverageNote": null,
+   "coverage": "needs-creation-held",
+   "coverageNote": "official source: michigan.gov and legislature.mi.gov block our network (403); only Citizens Research Council, Ballotpedia and Michigan Public confirm the Proposal 1 label. Identity is not in doubt (Mich. Const. art. XII §3 puts the convention question on the 2026 ballot automatically): swap in the Secretary of State / Board of State Canvassers page and release.",
    "creationKey": "2026-measure-MI-proposal-1"
   },
   {

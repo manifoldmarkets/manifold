@@ -1,5 +1,5 @@
 {
-  "manifestVersion": "2026-10-03.4",
+  "manifestVersion": "2026-10-03.5",
   "series": "us-2026-general-v1",
   "generatedAt": "2026-10-03T02:37:57.303Z",
   "review": {
@@ -7358,7 +7358,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": ["lfx0456b33"],
       "searchTerms": [
         "Maine 1st district 2026",
         "ME-1",
@@ -11044,7 +11044,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": ["Ih8AhPAILl"],
       "searchTerms": [
         "Missouri 7th district 2026",
         "MO-7",
@@ -13459,7 +13459,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": ["s2uNNQ2N5I"],
       "searchTerms": [
         "Ohio 2nd district 2026",
         "OH-2",
@@ -13543,7 +13543,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": ["s2uNNQ2N5I"],
       "searchTerms": [
         "Ohio 3rd district 2026",
         "OH-3",
@@ -13627,7 +13627,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": ["OqPNzZct2p", "Ochy0zp2sz"],
+      "reviewedRejectedContractIds": ["OqPNzZct2p", "Ochy0zp2sz", "s2uNNQ2N5I"],
       "searchTerms": [
         "Ohio 4th district 2026",
         "OH-4",
@@ -13892,7 +13892,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": ["s2uNNQ2N5I"],
       "searchTerms": [
         "Ohio 8th district 2026",
         "OH-8",
@@ -15519,7 +15519,7 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": ["dRIhl5gzpL"],
       "searchTerms": [
         "Pennsylvania 9th district 2026",
         "PA-9",

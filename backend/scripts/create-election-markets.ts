@@ -12,6 +12,8 @@
 //   MANIFOLD_API_KEY=<key of the creator account> npx ts-node create-election-markets.ts \
 //     --manifest elections-2026/manifest.json --state elections-2026/state.prod.json \
 //     --env prod --apply --creator-username <username> --max-mana <cap for this run>
+//   The first apply for a manifest and environment also needs --init-state;
+//   later runs must point at that same state file. --env has no default here.
 //
 // Apply re-checks the reserved ids and searches for equivalent markets before
 // every create, persists the state file after every request, stops on any
@@ -170,7 +172,11 @@ function report(
       lines.push(`- approval rule: ${m.approvalRule}`)
       lines.push(
         `- BINARY · seed ${pl.initialProb}%${
-          entry.seed?.needsReview ? ' (REVIEW: unsupported seed)' : ''
+          !entry.seed?.needsReview
+            ? ''
+            : /^unsupported/i.test(entry.seed.basis ?? '')
+            ? ' (REVIEW: unsupported default seed)'
+            : ' (REVIEW: judgement call on the cited evidence)'
         } · close ${new Date(pl.closeTime).toISOString()} · tier ${
           pl.liquidityTier
         } → **Ṁ${c.total}**${
@@ -230,7 +236,7 @@ async function main() {
     args.out ?? path.join(path.dirname(manifestFile), 'out')
   )
   const stateFile = args.state ? String(args.state) : undefined
-  const state: CreationState =
+  const loadState = (): CreationState =>
     stateFile && fs.existsSync(stateFile)
       ? readJson(stateFile)
       : emptyState(manifest)
@@ -240,9 +246,10 @@ async function main() {
     throw new Error(`--env must be one of ${Object.keys(API_BASES).join(', ')}`)
 
   const errors = validateManifest(manifest)
-  const plan = planOffline(manifest, state)
 
   if (!args.apply) {
+    const state = loadState()
+    const plan = planOffline(manifest, state)
     // Dry run: the client below cannot write, and no key is read or sent.
     let online: Record<string, string[]> | undefined
     if (args.online) {
@@ -322,35 +329,68 @@ async function main() {
   }
 
   // Apply.
+  if (!args.env)
+    throw new Error('--env prod|dev is required with --apply (no default)')
   if (!stateFile)
     throw new Error(
       '--state <file> is required with --apply (it records every request)'
     )
+  // The state file is the only record of earlier creations and spend; a
+  // mistyped path must not silently start from zero.
   const apiKey = process.env.MANIFOLD_API_KEY
   if (!apiKey)
     throw new Error(
       'MANIFOLD_API_KEY must be set in the environment for --apply'
     )
+  // One apply per state file: concurrent runs would overwrite each other's
+  // records and could each spend up to --max-mana. A crash leaves the lock
+  // behind on purpose; remove it once no run is active.
+  const lockFile = `${stateFile}.lock`
+  let lockFd: number
+  try {
+    lockFd = fs.openSync(lockFile, 'wx')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+    throw new Error(
+      `${lockFile} exists: another apply may be running on this state file. Delete it only if none is.`
+    )
+  }
   const api = makeHttpApi({ apiBase, apiKey, allowWrites: true })
-  const result = await applyManifest(
-    manifest,
-    state,
-    api,
-    {
-      apply: true,
-      creatorUsername: args['creator-username']
-        ? String(args['creator-username'])
-        : undefined,
-      maxTotalMana: args['max-mana'] ? Number(args['max-mana']) : undefined,
-      retryUnconfirmed: !!args['retry-unconfirmed'],
-      log: (l) => console.log(l),
-    },
-    (s) => writeAtomic(stateFile, s)
-  )
-  writeAtomic(
-    path.join(outDir, `dashboard-mapping.${env}.json`),
-    buildDashboardMapping(manifest, state)
-  )
+  let state: CreationState
+  let result
+  try {
+    fs.writeSync(lockFd, `pid ${process.pid} at ${new Date().toISOString()}\n`)
+    // Load only after taking the lock, so a just-finished run cannot leave
+    // this process holding an older snapshot of its spend and review blocks.
+    if (!fs.existsSync(stateFile) && !args['init-state'])
+      throw new Error(
+        `State file ${stateFile} does not exist. Check the path, or pass --init-state to start a new one for this manifest and environment.`
+      )
+    state = loadState()
+    result = await applyManifest(
+      manifest,
+      state,
+      api,
+      {
+        apply: true,
+        apiBase,
+        creatorUsername: args['creator-username']
+          ? String(args['creator-username'])
+          : undefined,
+        maxTotalMana: args['max-mana'] ? Number(args['max-mana']) : undefined,
+        retryUnconfirmed: !!args['retry-unconfirmed'],
+        log: (l) => console.log(l),
+      },
+      (s) => writeAtomic(stateFile, s)
+    )
+    writeAtomic(
+      path.join(outDir, `dashboard-mapping.${env}.json`),
+      buildDashboardMapping(manifest, state)
+    )
+  } finally {
+    fs.closeSync(lockFd)
+    fs.unlinkSync(lockFile)
+  }
   console.log(JSON.stringify({ mode: 'apply', env, ...result }, null, 2))
   if (result.stoppedReason || result.failed.length || result.pending.length)
     process.exitCode = 1

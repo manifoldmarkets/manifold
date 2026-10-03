@@ -1047,9 +1047,11 @@
   "title": "A proposal to convene a constitutional convention for the purpose of drafting a general revision of the state constitution",
   "verifyStatus": "on-ballot",
   "confidence": "secondary",
-  "coverage": "needs-creation",
+  "coverage": "needs-creation-held",
   "raceKey": "2026-measure-MI-proposal-1",
-  "unresolvedFields": [],
+  "unresolvedFields": [
+   "official source: michigan.gov and legislature.mi.gov block our network (403); only Citizens Research Council, Ballotpedia and Michigan Public confirm the Proposal 1 label. Identity is not in doubt (Mich. Const. art. XII §3 puts the convention question on the 2026 ballot automatically): swap in the Secretary of State / Board of State Canvassers page and release."
+  ],
   "enhanced": false
  },
  {

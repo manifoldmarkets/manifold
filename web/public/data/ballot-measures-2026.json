@@ -2322,7 +2322,7 @@
       "topic": "government",
       "officialSourceUrl": "https://crcmich.org/?p=16166",
       "approvalRule": "Majority of votes cast on the question (Mich. Const. art. XII, sec. 3)",
-      "coverage": "needs-creation",
+      "coverage": "needs-creation-held",
       "aliases": [
         "Michigan Proposal 1",
         "MI Proposal 1",
@@ -2335,7 +2335,7 @@
       "yesMeans": "Delegates would be elected and a convention convened (2027) to draft a revised constitution, which would then go to voters for approval or rejection.",
       "noMeans": "No constitutional convention is called.",
       "verification": "secondary",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet · ballot details or market criteria under review."
     },
     {
       "key": "MI-prop-2",

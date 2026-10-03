@@ -174,6 +174,32 @@ describe('ballot-measure validation', () => {
     )
   })
 
+  test('a binding amendment is never described as advisory (Idaho HJR 4)', () => {
+    const id: Partial<MeasureIdentity> = {
+      state: 'ID',
+      stateName: 'Idaho',
+      designation: { kind: 'hjr', value: '4', label: 'HJR 4' },
+      measureType: 'legislatively referred constitutional amendment',
+    }
+    const wronglyAdvisory = entry({}, { ...id, advisory: true })
+    expect(wronglyAdvisory.payload!.descriptionMarkdown).toMatch(/non-binding/)
+    expect(
+      validateManifest(manifest([wronglyAdvisory]), NOW).join('\n')
+    ).toMatch(/only an advisory measure type can be marked advisory/)
+    const binding = entry({}, id)
+    expect(validateManifest(manifest([binding]), NOW)).toEqual([])
+    binding.payload = {
+      ...binding.payload!,
+      descriptionMarkdown: binding.payload!.descriptionMarkdown.replace(
+        'Only the',
+        'This is a non-binding question. Only the'
+      ),
+    }
+    expect(validateManifest(manifest([binding]), NOW).join('\n')).toMatch(
+      /binding measure must not be described as advisory/
+    )
+  })
+
   test('ballot and race manifests (and their idempotency series) stay separate', () => {
     const m = {
       ...manifest([entry()]),
@@ -396,6 +422,30 @@ describe('ballot-measure apply, budget and resume', () => {
       state.entries['2026-measure-CA-prop-50'].existing?.[0]
     ).toMatchObject({ id: 'port', answerId: 'a1' })
     expect(api.createMarket).not.toHaveBeenCalled()
+  })
+
+  test('a portfolio hit is re-read in full, so a resolved answer seen as open in search does not block creation', async () => {
+    const full: MarketLike = {
+      id: 'port',
+      outcomeType: 'MULTIPLE_CHOICE',
+      question: 'Which 2026 California ballot measures will pass?',
+      answers: [{ id: 'a1', text: 'Proposition 50', resolution: 'CANCEL' }],
+    }
+    const api = mockApi([full])
+    // Search results carry lite answers: no resolution field.
+    api.searchMarkets = jest.fn(async () => [
+      { ...full, answers: [{ id: 'a1', text: 'Proposition 50' }] },
+    ])
+    const m = manifest([two()[0]])
+    const res = await applyManifest(
+      m,
+      emptyState(m),
+      api,
+      opts(),
+      () => undefined
+    )
+    expect(api.getMarket).toHaveBeenCalledWith('port')
+    expect(res.created).toEqual(['2026-measure-CA-prop-50'])
   })
 
   test('a cancelled existing market does not block creation', async () => {

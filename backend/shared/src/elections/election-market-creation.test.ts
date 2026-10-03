@@ -14,6 +14,8 @@ import {
   ManifestEntry,
   MarketLike,
   planOffline,
+  SEARCH_PAGE_SIZE,
+  seedMismatch,
   validateManifest,
 } from './election-market-creation'
 
@@ -89,6 +91,8 @@ type MockOpts = {
   existing?: MarketLike[]
   createFailures?: Record<number, Error> // by create-call index
   createdButHidden?: Set<number> // create succeeds server-side, then throws
+  ignoreSeeds?: boolean // an API that drops answerProbs (even split)
+  noIdOnSuccess?: Set<number> // 2xx whose body lacks the contract id
 }
 function mockApi(o: MockOpts = {}) {
   const store = new Map<string, MarketLike>()
@@ -125,6 +129,9 @@ function mockApi(o: MockOpts = {}) {
           answers: (body.answers ?? []).map((t, j) => ({
             id: `${body.idempotencyKey}a${j}`,
             text: t,
+            probability: o.ignoreSeeds
+              ? 1 / (body.answers?.length ?? 1)
+              : (body.answerProbs?.[j] ?? 0) / 100,
           })),
         })
       if (o.createdButHidden?.has(i)) {
@@ -133,6 +140,7 @@ function mockApi(o: MockOpts = {}) {
       }
       if (o.createFailures?.[i]) throw o.createFailures[i]
       make()
+      if (o.noIdOnSuccess?.has(i)) return { id: undefined as unknown as string }
       return { id: body.idempotencyKey }
     }),
   }
@@ -270,12 +278,12 @@ describe('http client', () => {
     text: async () => JSON.stringify(body),
   })
 
-  test('duplicate searches page past 1,000 results with a creation-time cursor, not offset', async () => {
+  test('duplicate searches page with a creation-time cursor (not offset) and ask for answers', async () => {
     const fetch = jest
       .fn()
       .mockResolvedValueOnce(
         okJson(
-          Array.from({ length: 1000 }, (_, i) => ({
+          Array.from({ length: SEARCH_PAGE_SIZE }, (_, i) => ({
             id: String(i),
             question: 'An unrelated market',
             createdTime: 2_000_000 - i,
@@ -286,9 +294,9 @@ describe('http client', () => {
         okJson([
           // the boundary row is re-read (same millisecond) and de-duplicated
           {
-            id: '999',
+            id: String(SEARCH_PAGE_SIZE - 1),
             question: 'An unrelated market',
-            createdTime: 1_999_001,
+            createdTime: 2_000_001 - SEARCH_PAGE_SIZE,
           },
           {
             id: 'match',
@@ -303,16 +311,17 @@ describe('http client', () => {
       fetch,
     })
     const rows = await api.searchMarkets('Alabama governor 2026')
-    expect(rows).toHaveLength(1001)
+    expect(rows).toHaveLength(SEARCH_PAGE_SIZE + 1)
     expect(rows.some((r) => r.id === 'match')).toBe(true)
     const second = fetch.mock.calls[1][0] as string
     expect(second).toContain('sort=newest')
-    expect(second).toContain('beforeTime=1999002')
+    expect(second).toContain(`beforeTime=${2_000_002 - SEARCH_PAGE_SIZE}`)
     expect(second).not.toContain('offset=')
+    expect(fetch.mock.calls[0][0]).toContain('includeLiteAnswers=true')
   })
 
   test('a search that stops advancing fails closed', async () => {
-    const page = Array.from({ length: 1000 }, (_, i) => ({
+    const page = Array.from({ length: SEARCH_PAGE_SIZE }, (_, i) => ({
       id: String(i),
       question: 'x',
       createdTime: 5,
@@ -385,6 +394,28 @@ describe('http client', () => {
       kind: 'rejected',
       status: 400,
     })
+  })
+
+  test('a 404 search and a success without an id both fail closed', async () => {
+    const fetch = jest
+      .fn()
+      .mockResolvedValueOnce(okJson({ message: 'not found' }, 404))
+      .mockResolvedValueOnce(okJson({ slug: 'no-id' }))
+    const api = makeHttpApi({
+      apiBase: 'https://api.example',
+      apiKey: 'k',
+      allowWrites: true,
+      fetch,
+    })
+    await expect(api.searchMarkets('Alabama governor 2026')).rejects.toThrow(
+      /no result list/
+    )
+    await expect(
+      api.createMarket({
+        ...partyEntry('AL', 'Alabama').payload!,
+        idempotencyKey: 'abcdefghij',
+      })
+    ).rejects.toMatchObject({ kind: 'ambiguous' })
   })
 })
 
@@ -486,6 +517,70 @@ describe('duplicate avoidance', () => {
     ).toBe('equivalent')
   })
 
+  test('answer lists that merely contain a candidate do not block a House race (live false positives)', () => {
+    const e = partyEntry('AL', 'Alabama')
+    const h: ManifestEntry = {
+      ...e,
+      identity: {
+        ...e.identity,
+        office: 'house',
+        district: 3,
+        candidateNames: ['Mike Rogers', 'Jane Doe'],
+      },
+    }
+    const v = (question: string, answers: string[]) =>
+      classifyExistingMarket(h, {
+        id: 'z',
+        question,
+        answers: answers.map((text, i) => ({ id: `a${i}`, text })),
+      }).verdict
+    // Another state's Senate race with a namesake candidate.
+    expect(
+      v('Who will win the Michigan Senate Race 2026?', [
+        'Mike Rogers',
+        'Haley Stevens',
+      ])
+    ).toBe('unrelated')
+    // Offices that are never ours, including "Speaker of the House".
+    expect(
+      v('Who will be the 30th US Secretary of Defense?', ['Mike Rogers'])
+    ).toBe('unrelated')
+    expect(
+      v('Who will be the next Speaker of the House?', ['Mike Rogers'])
+    ).toBe('unrelated')
+    // A bare surname inside an answer is not a candidate match.
+    expect(
+      v('🏅2026 NASCAR Head-to-Head (H2H) Driver Markets', [
+        'Rogers vs. Larson',
+      ])
+    ).toBe('unrelated')
+    // Still blocked: our race named by candidate, or our office in the question.
+    expect(v('Will Mike Rogers win re-election in 2026?', ['Yes'])).toBe(
+      'ambiguous'
+    )
+    expect(
+      v('Which US House districts in the South will a Democrat win?', [
+        'Alabama 3rd (Mike Rogers-R)',
+      ])
+    ).not.toBe('unrelated')
+    const g: ManifestEntry = {
+      ...e,
+      identity: {
+        ...e.identity,
+        candidateNames: ['Jocelyn Benson', 'John James'],
+        state: 'MI',
+        stateName: 'Michigan',
+      },
+    }
+    expect(
+      classifyExistingMarket(g, {
+        id: 'z',
+        question:
+          'Will Secretary of State Jocelyn Benson win the 2026 Michigan governor race?',
+      }).verdict
+    ).not.toBe('unrelated')
+  })
+
   test('never re-creates an entry recorded as created, and reconciles the reserved id first', async () => {
     const m = manifest([partyEntry('AL', 'Alabama')])
     const key = idempotencyKeyFor(m.series, '2026-governor-AL-regular-general')
@@ -555,7 +650,7 @@ describe('budget', () => {
 })
 
 describe('partial failure and resume', () => {
-  test('isolates a rejected entry, keeps going, persists after each request, and resumes', async () => {
+  test('stops at a rejected entry, persists after each request, and resumes without re-creating', async () => {
     const { api } = mockApi({
       createFailures: {
         1: new ApiError('Question too spammy', 'rejected', 400),
@@ -571,22 +666,25 @@ describe('partial failure and resume', () => {
     const res = await applyManifest(m, state, api, opts(), (s) => {
       snapshots.push(JSON.stringify(s))
     })
-    expect(res.created).toEqual([
-      '2026-governor-AL-regular-general',
-      '2026-governor-AZ-regular-general',
-    ])
+    // A schema or content rejection would likely repeat for every entry.
+    expect(res.created).toEqual(['2026-governor-AL-regular-general'])
     expect(res.failed).toEqual(['2026-governor-AK-regular-general'])
-    expect(snapshots.length).toBeGreaterThanOrEqual(6)
+    expect(res.stoppedReason).toMatch(/create rejected for 2026-governor-AK/)
+    expect(api.createMarket).toHaveBeenCalledTimes(2)
     expect(
-      JSON.parse(snapshots[1]).entries['2026-governor-AL-regular-general']
-        .status
-    ).toBe('created')
-    // Resume from the persisted state: nothing is re-created.
+      snapshots.some(
+        (x) =>
+          JSON.parse(x).entries['2026-governor-AL-regular-general']?.status ===
+          'created'
+      )
+    ).toBe(true)
+    // Resume from the persisted state: AL is not re-created, the failed AK is
+    // left for review, and AZ is created.
     const resumed = JSON.parse(snapshots[snapshots.length - 1]) as CreationState
     const { api: api2 } = mockApi()
     const res2 = await applyManifest(m, resumed, api2, opts(), () => undefined)
-    expect(res2.created).toEqual([])
-    expect(api2.createMarket).not.toHaveBeenCalled()
+    expect(res2.created).toEqual(['2026-governor-AZ-regular-general'])
+    expect(api2.createMarket).toHaveBeenCalledTimes(1)
     const mapping = buildDashboardMapping(m, resumed)
     expect(mapping[0].contractId).toBe(
       idempotencyKeyFor(m.series, '2026-governor-AL-regular-general')
@@ -595,6 +693,203 @@ describe('partial failure and resume', () => {
       mapping[0].answers.every((a) => !a.answerId.startsWith('PENDING'))
     ).toBe(true)
     expect(mapping[1].status).toBe('failed')
+  })
+
+  test('a failed entry whose market exists at the reserved id is recorded at full cost', async () => {
+    const m = manifest([partyEntry('AL', 'Alabama')])
+    const key = idempotencyKeyFor(m.series, '2026-governor-AL-regular-general')
+    const state: CreationState = {
+      ...emptyState(m),
+      entries: {
+        '2026-governor-AL-regular-general': {
+          raceKey: '2026-governor-AL-regular-general',
+          idempotencyKey: key,
+          payloadHash: 'x',
+          status: 'failed',
+          reservedMana: 0,
+          message: 'rate limited on every attempt',
+          updatedAt: '2026-10-04',
+        },
+      },
+    }
+    const { api } = mockApi({
+      existing: [{ id: key, question: 'Which party will win…?', answers: [] }],
+    })
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.created).toEqual(['2026-governor-AL-regular-general'])
+    expect(state.entries['2026-governor-AL-regular-general'].costMana).toBe(
+      costOf(partyEntry('AL', 'Alabama').payload!).total
+    )
+    expect(api.createMarket).not.toHaveBeenCalled()
+  })
+
+  test('a success without a contract id is reconciled by the reserved id, not marked failed', async () => {
+    const { api } = mockApi({ noIdOnSuccess: new Set([0]) })
+    const m = manifest([partyEntry('AL', 'Alabama')])
+    const state = emptyState(m)
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.created).toEqual(['2026-governor-AL-regular-general'])
+    expect(res.failed).toEqual([])
+    expect(state.entries['2026-governor-AL-regular-general']).toMatchObject({
+      status: 'created',
+      costMana: 1000,
+    })
+  })
+
+  test('stops after the first market if the API ignored the seeded answer probabilities', async () => {
+    const { api } = mockApi({ ignoreSeeds: true })
+    const m = manifest([
+      partyEntry('AL', 'Alabama'),
+      partyEntry('AK', 'Alaska'),
+    ])
+    const res = await applyManifest(
+      m,
+      emptyState(m),
+      api,
+      opts(),
+      () => undefined
+    )
+    expect(res.created).toEqual(['2026-governor-AL-regular-general'])
+    expect(res.stoppedReason).toMatch(/opened at 33.3%, not the seeded 40%/)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('a seed failure remains blocked on rerun even if that entry leaves the manifest', async () => {
+    const { api } = mockApi({ ignoreSeeds: true })
+    const first = partyEntry('AL', 'Alabama')
+    const second = partyEntry('AK', 'Alaska')
+    const m = manifest([first, second])
+    const state = emptyState(m)
+    const snapshots: string[] = []
+    await applyManifest(m, state, api, opts(), (s) => {
+      snapshots.push(JSON.stringify(s))
+    })
+    const resumed = JSON.parse(snapshots[snapshots.length - 1]) as CreationState
+    expect(resumed.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      costMana: 1000,
+      seedReviewRequired: expect.stringContaining('opened at 33.3%'),
+    })
+    const result = await applyManifest(
+      manifest([second]),
+      resumed,
+      api,
+      opts(),
+      () => undefined
+    )
+    expect(result.stoppedReason).toMatch(/requires seed review/)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('reconciliation records full spend and stops before more writes when seeds differ', async () => {
+    const first = partyEntry('AL', 'Alabama')
+    const m = manifest([first, partyEntry('AK', 'Alaska')])
+    const key = idempotencyKeyFor(m.series, first.raceKey)
+    const { api } = mockApi({
+      existing: [
+        {
+          id: key,
+          question: first.payload!.question,
+          answers: first.payload!.answers!.map((text, i) => ({
+            id: `a${i}`,
+            text,
+            probability: 1 / 3,
+          })),
+        },
+      ],
+    })
+    const state = emptyState(m)
+    const result = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(result.stoppedReason).toMatch(/review its opening prices/)
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      costMana: 1000,
+      seedReviewRequired: expect.stringContaining('opened at 33.3%'),
+    })
+    expect(api.createMarket).not.toHaveBeenCalled()
+  })
+
+  test('successful creation without readable seed prices records spend and blocks subsequent runs', async () => {
+    const { api } = mockApi()
+    api.getMarket = jest.fn(async () => undefined)
+    const first = partyEntry('AL', 'Alabama')
+    const m = manifest([first, partyEntry('AK', 'Alaska')])
+    const state = emptyState(m)
+    const result = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(result.spentThisRun).toBe(1000)
+    expect(result.stoppedReason).toMatch(/could not be read back/)
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      costMana: 1000,
+      seedReviewRequired: expect.stringContaining('could not be read back'),
+    })
+    const resumed = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(resumed.stoppedReason).toMatch(/requires seed review/)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('a state file is bound to one API base and creator account', async () => {
+    const m = manifest([partyEntry('AL', 'Alabama')])
+    const state = emptyState(m)
+    const { api } = mockApi()
+    await applyManifest(
+      m,
+      state,
+      api,
+      opts({ apiBase: 'https://api.dev.example' }),
+      () => undefined
+    )
+    expect(state).toMatchObject({
+      apiBase: 'https://api.dev.example',
+      creatorId: 'u1',
+    })
+    await expect(
+      applyManifest(
+        m,
+        state,
+        api,
+        opts({ apiBase: 'https://api.prod.example' }),
+        () => undefined
+      )
+    ).rejects.toThrow('State file was used against https://api.dev.example')
+    const other = mockApi().api
+    other.me = jest.fn(async () => ({
+      id: 'u2',
+      username: 'ElectionBot',
+      balance: 1e6,
+    }))
+    await expect(
+      applyManifest(
+        m,
+        state,
+        other,
+        opts({ apiBase: 'https://api.dev.example' }),
+        () => undefined
+      )
+    ).rejects.toThrow(/belongs to creator u1/)
+  })
+
+  test('seed read-back matches answers by text and tolerates rounding', () => {
+    const p = partyEntry('AL', 'Alabama').payload!
+    const answers = (probs: number[]) => ({
+      id: 'x',
+      question: 'q',
+      answers: p.answers!.map((text, i) => ({
+        id: `a${i}`,
+        text,
+        probability: probs[i],
+      })),
+    })
+    expect(seedMismatch(p, answers([0.401, 0.579, 0.02]))).toBeUndefined()
+    expect(seedMismatch(p, answers([1 / 3, 1 / 3, 1 / 3]))).toMatch(
+      /opened at 33.3%/
+    )
+    expect(seedMismatch(p, { id: 'x', question: 'q', answers: [] })).toMatch(
+      /no readable probability/
+    )
+    expect(
+      seedMismatch({ ...p, answerProbs: undefined }, answers([]))
+    ).toBeUndefined()
   })
 
   test('a 403 balance error stops the whole run', async () => {
@@ -651,23 +946,29 @@ describe('ambiguous timeouts', () => {
     expect(res.pending).toEqual(['2026-governor-AL-regular-general'])
     expect(res.stoppedReason).toMatch(/ambiguous/)
     expect(api.createMarket).toHaveBeenCalledTimes(1)
-    // Next run without --retry-unconfirmed: read-only check only, then moves on.
+    // Next run without --retry-unconfirmed: stop until the first is reconciled.
     const res2 = await applyManifest(m, state, api, opts(), () => undefined)
     expect(res2.pending).toEqual(['2026-governor-AL-regular-general'])
+    expect(res2.stoppedReason).toMatch(/unconfirmed create/)
     expect(
       (api.createMarket as jest.Mock).mock.calls.map((c) => c[0].question)
-    ).toEqual([
-      'Which party will win the 2026 Alabama governor election?',
-      'Which party will win the 2026 Alaska governor election?',
-    ])
+    ).toEqual(['Which party will win the 2026 Alabama governor election?'])
     // If the market later appears at the reserved id, a rerun records it.
     const key = idempotencyKeyFor(m.series, '2026-governor-AL-regular-general')
     store.set(key, {
       id: key,
       question: 'Which party will win the 2026 Alabama governor election?',
+      answers: m.entries[0].payload!.answers!.map((text, i) => ({
+        id: `a${i}`,
+        text,
+        probability: m.entries[0].payload!.answerProbs![i] / 100,
+      })),
     })
     const res3 = await applyManifest(m, state, api, opts(), () => undefined)
-    expect(res3.created).toEqual(['2026-governor-AL-regular-general'])
+    expect(res3.created).toEqual([
+      '2026-governor-AL-regular-general',
+      '2026-governor-AK-regular-general',
+    ])
     expect(api.createMarket).toHaveBeenCalledTimes(2)
   })
 

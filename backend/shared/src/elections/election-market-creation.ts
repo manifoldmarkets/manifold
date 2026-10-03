@@ -216,6 +216,9 @@ export type EntryState = {
   answers?: { id: string; text: string }[]
   costMana?: number
   reservedMana?: number
+  // Persist with the created record: a rerun must not skip a seed failure.
+  // Clear only after a person has reviewed the market and API seed support.
+  seedReviewRequired?: string
   existing?: {
     id: string
     slug?: string
@@ -230,6 +233,10 @@ export type EntryState = {
 export type CreationState = {
   series: string
   manifestVersion: string
+  // Bound on the first apply, so a state file is never reused against a
+  // different API (dev vs prod) or creator account.
+  apiBase?: string
+  creatorId?: string
   entries: Record<string, EntryState>
 }
 
@@ -243,7 +250,12 @@ export type MarketLike = {
   isResolved?: boolean
   resolution?: string
   closeTime?: number
-  answers?: { id: string; text: string; resolution?: string }[]
+  answers?: {
+    id: string
+    text: string
+    resolution?: string
+    probability?: number
+  }[]
 }
 
 export class ApiError extends Error {
@@ -422,7 +434,14 @@ export function validateMeasureEntry(
     if (!/advisory/i.test(d)) e('an advisory question must say it is advisory')
     if (/becomes? law|takes? effect/i.test(p.question))
       e('an advisory question must not promise it becomes law')
-  }
+    // A binding amendment, statute or bond described as non-binding would
+    // tell traders the opposite of what a YES vote does.
+    if (!/advisory/i.test(id.measureType ?? ''))
+      e(
+        `only an advisory measure type can be marked advisory (got "${id.measureType}")`
+      )
+  } else if (/non-binding|\badvisory\b/i.test(d))
+    e('a binding measure must not be described as advisory')
   if (!(p.closeTime > now)) e('closeTime must be in the future')
   if (!liquidityTiers.includes(p.liquidityTier as never))
     e(`liquidityTier must be one of ${liquidityTiers.join(', ')}`)
@@ -552,6 +571,8 @@ export type ApplyOptions = {
   creatorUsername?: string
   maxTotalMana?: number
   retryUnconfirmed?: boolean
+  // The API base this run writes to; recorded in (and checked against) state.
+  apiBase?: string
   now?: () => number
   sleep?: (ms: number) => Promise<void>
   log?: (line: string) => void
@@ -597,9 +618,15 @@ const EXCLUDE =
   /\b(primar(y|ies)|nominee|nomination|margin|by more than|vote share|turnout|percent|%|if |conditional|county|debate|endorse|poll(s|ing)?\b|how many|seats)\b/i
 const OFFICE_RE: Record<Office, RegExp> = {
   senate: /\bsenat/i,
-  governor: /\bgovern|gubernator/i,
+  // "governor(s|ship)", not "government".
+  governor: /\bgovernor|gubernator/i,
   house: /\bhouse\b|congress|\bdistrict\b|\bcd[- ]?\d|representative/i,
 }
+// Offices that are never one of ours ("Speaker of the House" included): a
+// market about them is a different proposition even when an answer names
+// one of our candidates.
+const OTHER_OFFICE_RE =
+  /\bpresiden|\bspeaker\b|\b(majority|minority) leader|\bmayor\b|\bsecretary\b|\battorney general\b|\bcabinet\b|\bsupreme court\b/i
 
 function mentionsDistrict(text: string, id: RaceIdentity) {
   if (id.office !== 'house' || id.district === undefined) return true
@@ -867,13 +894,23 @@ export function classifyExistingMarket(
       verdict: 'unrelated',
       reason: 'reviewed and rejected in the audit',
     }
-  const text = `${m.question} ${(m.answers ?? []).map((a) => a.text).join(' ')}`
+  const answerText = (m.answers ?? []).map((a) => a.text).join(' ')
+  const text = `${m.question} ${answerText}`
   const statePresent =
     new RegExp(`\\b${id.stateName}\\b`, 'i').test(text) ||
     new RegExp(`\\b${id.state}[- ]?(\\d{1,2}|AL)\\b`).test(text)
+  // A surname is enough in the question; an answer must carry the full name.
+  // Answers are long lists of people (drivers, cabinet picks, Speaker
+  // hopefuls), where bare surnames like "Carson" match unrelated markets.
   const names = id.candidateNames.filter((n) => {
     const last = n.trim().split(/\s+/).pop() ?? ''
-    return last.length > 2 && new RegExp(`\\b${last}\\b`, 'i').test(text)
+    if (last.length <= 2) return false
+    if (new RegExp(`\\b${last}\\b`, 'i').test(m.question)) return true
+    const full = n
+      .trim()
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\s+/g, '\\s+')
+    return new RegExp(`\\b${full}\\b`, 'i').test(answerText)
   })
   const office = OFFICE_RE[id.office].test(m.question)
   const year =
@@ -888,6 +925,24 @@ export function classifyExistingMarket(
     }
   if (otherYear)
     return { verdict: 'unrelated', reason: 'different election year' }
+  // A question that never names our office but names another one (Speaker,
+  // president, mayor…, or a Senate race for a House entry) is a different
+  // proposition. "Speaker of the House" does not count as naming the House;
+  // "Will Secretary X win the governor race?" still names our office.
+  const namesOurOffice = OFFICE_RE[id.office].test(
+    m.question.replace(/speaker of the house/gi, ' ')
+  )
+  if (
+    !namesOurOffice &&
+    (OTHER_OFFICE_RE.test(m.question) ||
+      Object.entries(OFFICE_RE).some(
+        ([o, re]) => o !== id.office && re.test(m.question)
+      ))
+  )
+    return { verdict: 'unrelated', reason: 'question is about another office' }
+  const questionStates = statesNamedIn(m.question)
+  if (questionStates.size && !questionStates.has(id.state))
+    return { verdict: 'unrelated', reason: 'question names only other states' }
   if (!office && names.length === 0)
     return { verdict: 'unrelated', reason: 'different office' }
   if (EXCLUDE.test(m.question))
@@ -978,16 +1033,30 @@ export function emptyState(manifest: Manifest): CreationState {
 
 export async function findExisting(
   entry: AnyManifestEntry,
-  api: Pick<ElectionApi, 'searchMarkets'>
+  api: Pick<ElectionApi, 'searchMarkets' | 'getMarket'>
 ) {
   const found = new Map<string, MarketLike>()
   for (const term of entry.searchTerms) {
     for (const m of await api.searchMarkets(term)) found.set(m.id, m)
   }
-  const verdicts = [...found.values()].map((m) => ({
-    m,
-    ...classifyExistingMarket(entry, m),
-  }))
+  const verdicts: (ReturnType<typeof classifyExistingMarket> & {
+    m: MarketLike
+  })[] = []
+  for (const m of found.values()) {
+    const first = { m, ...classifyExistingMarket(entry, m) }
+    // Search results carry lite answers without resolutions. Re-read (one
+    // at a time) any multi-answer hit that might block creation, so a
+    // resolved or cancelled answer is judged on the full market. A failed
+    // read throws and stops the run; a missing market keeps the verdict.
+    if (first.verdict === 'unrelated' || !m.answers?.length) {
+      verdicts.push(first)
+      continue
+    }
+    const full = await api.getMarket(m.id)
+    verdicts.push(
+      full ? { m: full, ...classifyExistingMarket(entry, full) } : first
+    )
+  }
   return {
     equivalent: verdicts.filter((v) => v.verdict === 'equivalent'),
     ambiguous: verdicts.filter((v) => v.verdict === 'ambiguous'),
@@ -1052,6 +1121,27 @@ export function planOffline(
   })
 }
 
+// The API silently drops unknown fields, so an API without answerProbs
+// support would open every multi-answer market at an even split. Compare the
+// created market's answer probabilities with the seeds (matched by text).
+export function seedMismatch(payload: CreatePayload, market: MarketLike) {
+  if (!payload.answerProbs?.length || !payload.answers?.length) return undefined
+  const byText = new Map(
+    (market.answers ?? []).map((a) => [a.text.trim(), a.probability])
+  )
+  for (let i = 0; i < payload.answers.length; i++) {
+    const want = payload.answerProbs[i] / 100
+    const got = byText.get(payload.answers[i].trim())
+    if (got === undefined || !Number.isFinite(got))
+      return `answer "${payload.answers[i]}" has no readable probability`
+    if (Math.abs(got - want) > 0.015)
+      return `answer "${payload.answers[i]}" opened at ${(got * 100).toFixed(
+        1
+      )}%, not the seeded ${payload.answerProbs[i]}%`
+  }
+  return undefined
+}
+
 export function spentSoFar(state: CreationState) {
   return Object.values(state.entries).reduce(
     (sum, e) =>
@@ -1097,6 +1187,21 @@ export async function applyManifest(
     throw new Error(
       `API key belongs to @${me.username}, not @${opts.creatorUsername}`
     )
+  if (!Number.isFinite(me.balance))
+    throw new Error('could not read the creator balance from /v0/me')
+  if (state.apiBase && opts.apiBase && state.apiBase !== opts.apiBase)
+    throw new Error(
+      `State file was used against ${state.apiBase}, not ${opts.apiBase}; use a separate state file per environment`
+    )
+  if (state.creatorId && state.creatorId !== me.id)
+    throw new Error(
+      `State file belongs to creator ${state.creatorId}, not @${me.username} (${me.id})`
+    )
+  if (!state.apiBase || !state.creatorId) {
+    state.apiBase = state.apiBase ?? opts.apiBase
+    state.creatorId = me.id
+    await persist(state)
+  }
 
   const result: ApplyResult = {
     created: [],
@@ -1105,6 +1210,14 @@ export async function applyManifest(
     failed: [],
     pending: [],
     spentThisRun: 0,
+  }
+  // Check all records, including entries since removed/held in the manifest.
+  const blockedSeed = Object.values(state.entries).find(
+    (entry) => entry.seedReviewRequired
+  )
+  if (blockedSeed) {
+    result.stoppedReason = `${blockedSeed.raceKey} requires seed review: ${blockedSeed.seedReviewRequired}; review before clearing seedReviewRequired in the state file`
+    return result
   }
   let balance = me.balance
   const cap = manifest.budget.approvedMaxTotalMana!
@@ -1147,16 +1260,8 @@ export async function applyManifest(
         )
       continue
     }
-    if (prior?.status === 'needs-review' || prior?.status === 'failed') {
-      log(
-        `${entry.raceKey}: ${prior.status} in an earlier run (${
-          prior.message ?? ''
-        }); clear it in the state file after review to retry`
-      )
-      continue
-    }
-
-    // 1) Read-only reconciliation of our reserved id, always first.
+    // 1) Read-only reconciliation of our reserved id, always first — also for
+    // entries that failed earlier, in case the failure hid a real create.
     let atKey: MarketLike | undefined
     try {
       atKey = await api.getMarket(key)
@@ -1167,6 +1272,7 @@ export async function applyManifest(
       break
     }
     if (atKey) {
+      const seedProblem = seedMismatch(entry.payload!, atKey)
       await save(entry.raceKey, {
         status: 'created',
         idempotencyKey: key,
@@ -1175,11 +1281,25 @@ export async function applyManifest(
         slug: atKey.slug,
         url: atKey.url,
         answers: atKey.answers,
-        costMana: prior?.reservedMana ?? costOf(entry.payload!).total,
+        // `||`, not `??`: a failed entry recorded 0 reserved, but it cost money.
+        costMana: prior?.reservedMana || costOf(entry.payload!).total,
         reservedMana: 0,
+        seedReviewRequired: seedProblem,
         message: 'reconciled read-only: market exists at the reserved id',
       })
       result.created.push(entry.raceKey)
+      if (seedProblem) {
+        result.stoppedReason = `${entry.raceKey} exists, but ${seedProblem}; review its opening prices before creating more (current prices may have moved)`
+        break
+      }
+      continue
+    }
+    if (prior?.status === 'needs-review' || prior?.status === 'failed') {
+      log(
+        `${entry.raceKey}: ${prior.status} in an earlier run (${
+          prior.message ?? ''
+        }); clear it in the state file after review to retry`
+      )
       continue
     }
     if (
@@ -1191,7 +1311,8 @@ export async function applyManifest(
       log(
         `${entry.raceKey}: earlier create is unconfirmed and no market exists at ${key}; rerun with --retry-unconfirmed to re-send (the reserved id still blocks duplicates)`
       )
-      continue
+      result.stoppedReason = `unconfirmed create for ${entry.raceKey}; reconcile before creating more`
+      break
     }
 
     // 2) Budget, before any write.
@@ -1267,7 +1388,9 @@ export async function applyManifest(
           ...entry.payload!,
           idempotencyKey: key,
         })
-        createdId = res.id
+        createdId = res?.id || undefined
+        // A success without an id is not a failure: reconcile by reserved id.
+        if (!createdId) ambiguous = 'create succeeded without returning an id'
         break
       } catch (err) {
         const ae =
@@ -1292,8 +1415,12 @@ export async function applyManifest(
             message: `${ae.status ?? ''} ${ae.message}`.trim(),
           })
           result.failed.push(entry.raceKey)
-          if (ae.status === 403 || ae.status === 401)
-            result.stoppedReason = `account/permission error: ${ae.message}`
+          // Stop on any rejection: a schema, path or permission problem
+          // would otherwise fail every remaining entry the same way.
+          result.stoppedReason =
+            ae.status === 403 || ae.status === 401
+              ? `account/permission error: ${ae.message}`
+              : `create rejected for ${entry.raceKey}: ${ae.message}`
           break
         }
         ambiguous = ae.message
@@ -1316,6 +1443,7 @@ export async function applyManifest(
     // 5) Read back (and, if ambiguous, reconcile) by the reserved id only.
     const market = await fetchAnswers(createdId ?? key)
     if (market) {
+      const seedProblem = seedMismatch(entry.payload!, market)
       await save(entry.raceKey, {
         status: 'created',
         contractId: market.id,
@@ -1324,25 +1452,38 @@ export async function applyManifest(
         answers: market.answers,
         costMana: cost.total,
         reservedMana: 0,
+        seedReviewRequired: seedProblem,
         message: ambiguous ? `reconciled after: ${ambiguous}` : undefined,
       })
       result.created.push(entry.raceKey)
       result.spentThisRun += cost.total
       balance -= cost.total
+      if (seedProblem) {
+        result.stoppedReason = `${entry.raceKey} was created, but ${seedProblem}; stopped before creating more`
+        break
+      }
       continue
     }
     if (createdId) {
       // Created, but answer ids not readable yet; keep the id, don't re-create.
+      const seedProblem = entry.payload!.answerProbs?.length
+        ? 'created market could not be read back to verify its starting probabilities'
+        : undefined
       await save(entry.raceKey, {
         status: 'created',
         contractId: createdId,
         costMana: cost.total,
         reservedMana: 0,
+        seedReviewRequired: seedProblem,
         message: 'created; answer ids not yet read back',
       })
       result.created.push(entry.raceKey)
       result.spentThisRun += cost.total
       balance -= cost.total
+      if (seedProblem) {
+        result.stoppedReason = `${entry.raceKey}: ${seedProblem}; stopped before creating more`
+        break
+      }
       continue
     }
     await save(entry.raceKey, {
@@ -1395,8 +1536,15 @@ const toMarketLike = (m: any): MarketLike => ({
     id: a.id,
     text: a.text,
     resolution: a.resolution,
+    probability: typeof a.probability === 'number' ? a.probability : undefined,
   })),
 })
+
+// Small pages keep each search query well inside the server's statement
+// timeout. The server answers a failed search with HTTP 200 and no rows, so
+// fewer, larger queries would make "no duplicates" more likely to be a lie.
+export const SEARCH_PAGE_SIZE = 100
+const SEARCH_MAX_PAGES = 200
 
 // `allowWrites: false` (every dry run) makes createMarket throw before any
 // request is made, and no API key is attached to reads.
@@ -1475,8 +1623,10 @@ export function makeHttpApi(opts: {
     searchMarkets: async (term) => {
       // The API rejects offset > 1000, so page exhaustively by creation time
       // (sort=newest + beforeTime cursor), as the API itself recommends.
-      const PAGE = 1000
-      const MAX_PAGES = 50
+      // includeLiteAnswers: without it every multi-answer hit has no
+      // answers, and a portfolio answer naming this race or measure is missed.
+      const PAGE = SEARCH_PAGE_SIZE
+      const MAX_PAGES = SEARCH_MAX_PAGES
       const found = new Map<string, MarketLike>()
       let before: number | undefined
       for (let page = 0; page < MAX_PAGES; page++) {
@@ -1486,9 +1636,14 @@ export function makeHttpApi(opts: {
           contractType: 'ALL',
           limit: String(PAGE),
           sort: 'newest',
+          includeLiteAnswers: 'true',
         })
         if (before !== undefined) q.set('beforeTime', String(before))
-        const rows: any[] = (await read(`v0/search-markets?${q}`)) ?? []
+        const rows = await read(`v0/search-markets?${q}`)
+        if (!Array.isArray(rows))
+          throw new Error(
+            `Duplicate search for ${term} returned no result list; review before creating`
+          )
         const previous = found.size
         for (const row of rows) found.set(row.id, toMarketLike(row))
         if (rows.length < PAGE) return [...found.values()]
@@ -1496,7 +1651,7 @@ export function makeHttpApi(opts: {
           throw new Error(
             `Duplicate search did not advance for ${term}; review before creating`
           )
-        const oldest = Math.min(...rows.map((r) => Number(r.createdTime)))
+        const oldest = Math.min(...rows.map((r: any) => Number(r.createdTime)))
         if (!Number.isFinite(oldest))
           throw new Error(
             `Duplicate search rows lack createdTime for ${term}; review before creating`
@@ -1541,7 +1696,14 @@ export function makeHttpApi(opts: {
         )
       }
       if (!res.ok) throw await classify(res, 'POST v0/market')
-      const m = await res.json()
+      const m = await res.json().catch(() => undefined)
+      // 2xx without a contract id: the market may exist; reconcile, don't fail.
+      if (!m?.id)
+        throw new ApiError(
+          'POST v0/market: success response without a contract id',
+          'ambiguous',
+          res.status
+        )
       return { id: m.id, slug: m.slug, url: m.url }
     },
   }

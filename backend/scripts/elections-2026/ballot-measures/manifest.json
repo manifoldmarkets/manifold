@@ -1,8 +1,8 @@
 {
   "kind": "ballot-measures",
-  "manifestVersion": "2026-10-03.3",
+  "manifestVersion": "2026-10-03.4",
   "series": "us-2026-ballot-measures-v1",
-  "generatedAt": "2026-10-03T08:17:40.897Z",
+  "generatedAt": "2026-10-03T10:15:04.810Z",
   "review": {
     "approved": false,
     "reviewedBy": null,
@@ -4833,7 +4833,7 @@
           "Idaho House Joint Resolution 4 (HJR 4)"
         ],
         "measureType": "legislatively referred constitutional amendment",
-        "advisory": true,
+        "advisory": false,
         "approvalRule": "Simple majority of votes cast on the question (Idaho Const. art. XX §1, 'majority of the electors')",
         "secondVoteOf": null,
         "certifyingAuthority": "Idaho Secretary of State / State Board of Canvassers",
@@ -4844,7 +4844,7 @@
       "shapeRationale": "One binary per measure: YES = approved at this election. No suitable existing market or portfolio answer was found.",
       "payload": {
         "question": "Will Idaho HJR 4 (legislative authority over psychoactive drugs) be approved in the November 3, 2026 election?",
-        "descriptionMarkdown": "This market resolves **YES** if Idaho HJR 4 (Amendment to Idaho Constitution - House Joint Resolution 4 (Section 26, Article III, psychoactive substances)) is **approved by voters at the November 3, 2026 general election** under its official approval rule:\n\n> Simple majority of votes cast on the question (Idaho Const. art. XX §1, 'majority of the electors')\n\nOnly the November 3, 2026 vote counts; earlier votes on similar proposals do not.\nThis is an **advisory** (non-binding) question. YES means voters approve the question at the ballot; it does not mean any law is enacted or takes effect.\n\n**What the votes mean (official summary):**\n- YES: Legislature gets exclusive authority to legalize marijuana, narcotics or psychoactive substances (pamphlet).\n- NO: No change; controlled-substance laws can still be changed by initiative (pamphlet).\n\n**Results:** resolves on the result certified by Idaho Secretary of State / State Board of Canvassers. It may resolve earlier once official returns or the Associated Press show the outcome cannot change and no recount is pending; if a recount or certified correction changes the outcome before resolution, the certified result controls.\n\n**No vote:** if the measure is removed from the ballot, a court orders its votes not to be counted, or the vote is postponed beyond November 3, 2026, the market resolves N/A.\n\n**Later legal challenges:** resolution follows voter approval as certified. A court later invalidating, enjoining or delaying the measure does not change the resolution.\n\n**Starting probability:** 50% is a starting seed, not a forecast. Basis: unsupported - no recent public poll or prior result found (web search 2026-10-03).\n\nOfficial source: https://archive.voteidaho.gov/download/2026_Voter_Pamphlet.pdf",
+        "descriptionMarkdown": "This market resolves **YES** if Idaho HJR 4 (Amendment to Idaho Constitution - House Joint Resolution 4 (Section 26, Article III, psychoactive substances)) is **approved by voters at the November 3, 2026 general election** under its official approval rule:\n\n> Simple majority of votes cast on the question (Idaho Const. art. XX §1, 'majority of the electors')\n\nOnly the November 3, 2026 vote counts; earlier votes on similar proposals do not.\nYES means voter approval at this election, not that the measure is later implemented.\n\n**What the votes mean (official summary):**\n- YES: Legislature gets exclusive authority to legalize marijuana, narcotics or psychoactive substances (pamphlet).\n- NO: No change; controlled-substance laws can still be changed by initiative (pamphlet).\n\n**Results:** resolves on the result certified by Idaho Secretary of State / State Board of Canvassers. It may resolve earlier once official returns or the Associated Press show the outcome cannot change and no recount is pending; if a recount or certified correction changes the outcome before resolution, the certified result controls.\n\n**No vote:** if the measure is removed from the ballot, a court orders its votes not to be counted, or the vote is postponed beyond November 3, 2026, the market resolves N/A.\n\n**Later legal challenges:** resolution follows voter approval as certified. A court later invalidating, enjoining or delaying the measure does not change the resolution.\n\n**Starting probability:** 50% is a starting seed, not a forecast. Basis: unsupported - no recent public poll or prior result found (web search 2026-10-03).\n\nOfficial source: https://archive.voteidaho.gov/download/2026_Voter_Pamphlet.pdf",
         "outcomeType": "BINARY",
         "initialProb": 50,
         "closeTime": 1793793600000,
@@ -5147,7 +5147,9 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": [
+        "YIydLTsKEdwHoIRmqkdc"
+      ],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Indiana Public Question 1",
@@ -5240,7 +5242,9 @@
         "tier": 1000,
         "rationale": "Default for a measure without evidence of a close or high-attention contest."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": [
+        "YIydLTsKEdwHoIRmqkdc"
+      ],
       "reviewedRejectedAnswers": [],
       "searchTerms": [
         "Indiana Public Question 2",
@@ -6778,7 +6782,10 @@
     {
       "kind": "ballot-measure",
       "raceKey": "2026-measure-MI-proposal-1",
-      "status": "ready",
+      "status": "unresolved",
+      "unresolvedFields": [
+        "official source: michigan.gov and legislature.mi.gov block our network (403); only Citizens Research Council, Ballotpedia and Michigan Public confirm the Proposal 1 label. Identity is not in doubt (Mich. Const. art. XII §3 puts the convention question on the 2026 ballot automatically): swap in the Secretary of State / Board of State Canvassers page and release."
+      ],
       "measure": {
         "cycle": 2026,
         "electionDate": "2026-11-03",

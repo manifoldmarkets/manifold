@@ -42,18 +42,22 @@ MANIFOLD_API_KEY=… npx ts-node --transpile-only create-election-markets.ts \
   --env prod --apply \
   --creator-username <account that will own the markets> \
   --max-mana <cap for this run>
+# first run for this manifest and environment only: add --init-state
 ```
+
+Before anything is read with the key, apply refuses unless `--env` is given explicitly and the `--state` file already exists (or `--init-state` is passed). On its first run the state file records the API base and creator account, and later runs refuse a mismatch, so a dev state file can never be reused on prod. A `<state>.lock` file blocks a second concurrent run. State is loaded only after acquiring the lock, so an older snapshot cannot overwrite a just-finished run. A crash leaves the lock in place on purpose; delete it only when no run is active.
 
 What apply does, per entry, in manifest order:
 
 1. **Reconcile.** It reads `GET /v0/market/<reserved id>`. The create API stores `idempotencyKey` as the contract ID and rejects a second create with the same key, so a market already at that ID gets recorded and is never re-sent.
 2. **Budget.** It stops before the next create would exceed `--max-mana` for this run, the approved manifest cap counting earlier runs, or the creator's balance. Cost is the API ante, `max(answers × per-answer cost, tier)`, plus any `extraLiquidity`. The API has no server-side spend cap, so this cap is enforced client-side.
-3. **Duplicate recheck.** It searches by race identity (office, state, district, year, round and candidate names), not by title. An equivalent market is recorded and skipped. An ambiguous one is held as `needs-review` and nothing is created. Markets the audit already rejected (`reviewedRejectedContractIds`) don't block.
-4. **Create.** It persists `in-flight` before the request and `created` afterwards, with the contract ID, slug, URL and answer IDs read back from the API.
+3. **Duplicate recheck.** It searches by race identity (office, state, district, year, round and candidate names), not by title. Searches request answers (`includeLiteAnswers`), and a multi-answer hit that might block creation is re-read in full, so resolved answers are judged correctly. A 404 or a malformed search result stops the run. The server returns HTTP 200 with no rows if a search query fails, so pages are kept small (100) to stay inside its statement timeout. An equivalent market is recorded and skipped. An ambiguous one is held as `needs-review` and nothing is created. Markets the audit already rejected (`reviewedRejectedContractIds`) don't block.
+4. **Create.** It persists `in-flight` before the request and `created` afterwards, with the contract ID, slug, URL and answer IDs read back from the API. For multi-answer markets it compares the opening answer probabilities with `answerProbs` and stops if they differ by more than 1.5 points or cannot be read. An API without `answerProbs` support would silently open every race at an even split. The created record retains its full cost and a `seedReviewRequired` reason; all later runs stop until a person reviews the market and API seed support, then clears that field. Reserved-ID reconciliation checks the seeds too; if trading has moved the current prices, inspect the opening prices manually before clearing the block.
 5. **Failure handling.**
    - Rate limits (429) wait and retry with the same key.
-   - Ambiguous outcomes (timeout, network error, 5xx) are reconciled read-only by the reserved ID. If the market isn't there, the entry becomes `pending-reconciliation` and the run stops. A later run checks that entry read-only again and only re-sends with `--retry-unconfirmed`; even then, the reserved ID still blocks duplicates.
-   - 4xx rejections isolate that entry. A 401 or 403 stops the run.
+   - Ambiguous outcomes (timeout, network error, 5xx) are reconciled read-only by the reserved ID. If the market isn't there, the entry becomes `pending-reconciliation` and the run stops. A later run checks that entry read-only again and stops if it is still unconfirmed. It only re-sends with `--retry-unconfirmed`; even then, the reserved ID still blocks duplicates.
+   - A 2xx reply without a contract ID is treated as ambiguous and reconciled by the reserved ID, not recorded as failed.
+   - Any 4xx rejection marks that entry `failed` and stops the run, since a schema or path problem would repeat for every entry. A later run reads a failed entry's reserved ID before skipping it, so a market that exists is recorded at its full cost.
 
 The state file is rewritten atomically after every request. Use one apply process and one state file per environment/series. Read the recorded status before resuming.
 
@@ -79,7 +83,7 @@ All requests are mocked. The tests cover:
 ## Limits that the API does not let this script enforce
 
 - No server-side spend cap, and no dry-run endpoint. Budget and validation are client-side, so the API may still reject a body this script accepts.
-- Search is best effort. A market whose title, answers and description avoid the state, office and candidate names will not be found. That is why the audit also did a database pass, and why an ambiguous match blocks creation.
+- Search is best effort. A market whose title, answers and description avoid the state, office and candidate names will not be found. Also, the current server converts database search failures into HTTP 200 empty lists, which this client cannot distinguish from a successful empty search. Smaller pages reduce timeout risk but do not fix this API limitation. That is why the audit also did a database pass, and why an ambiguous match blocks creation.
 - `idempotencyKey` protects against duplicates only from this manifest series. Changing `series` makes new keys.
 - The integrated manifest closes after election night, and Georgia/Louisiana entries cover the scheduled runoff dates. Postponements still require creator intervention.
 
