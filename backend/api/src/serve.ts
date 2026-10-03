@@ -4,9 +4,23 @@ import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { LOCAL_DEV, LOCAL_ONLY, log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 import { initCaches, scheduleDailyCacheRefresh } from 'shared/init-caches'
-import { listen as webSocketListen } from 'shared/websockets/server'
+import {
+  announceWebSocketShutdown,
+  listen as webSocketListen,
+  setWebSocketInstanceName,
+  watchWebSocketHandover,
+} from 'shared/websockets/server'
+import { readInstanceName } from 'shared/websockets/handover'
 import { app } from './app'
 import { markCachesLoaded } from './healthz'
+
+// PM2 stops its processes with SIGINT (after a container stop's SIGTERM). Tell
+// any writer overlapping this one during a deploy that its broadcasts ended.
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    announceWebSocketShutdown().finally(() => process.exit(0))
+  })
+}
 
 if (!LOCAL_ONLY) {
   // Normal mode: initialize Firebase and GCP services
@@ -46,9 +60,17 @@ const startupProcess = async () => {
     log.info(`Serving API on port ${PORT}.`)
   })
 
+  // Deploys identify writers and signal handovers through GCE instance
+  // metadata, which local runs lack.
+  if (!LOCAL_DEV) {
+    readInstanceName().then(setWebSocketInstanceName, (error) =>
+      log.warn('Could not read the VM instance name.', { error })
+    )
+  }
   if (!process.env.READ_ONLY) {
-    webSocketListen(httpServer, '/ws')
+    const wss = webSocketListen(httpServer, '/ws')
     log.info('Web socket server listening on /ws')
+    if (!LOCAL_DEV) watchWebSocketHandover(wss)
   }
 
   if (LOCAL_ONLY) {
