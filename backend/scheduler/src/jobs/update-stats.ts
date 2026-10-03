@@ -102,7 +102,7 @@ export const updateStatsCore = async (daysAgo: number) => {
 
   // Snapshot mana supply, then rebuild the /stats page, BEFORE the heavy
   // recalculateAllUserPortfolios pass below. That pass is slow and, on the
-  // scheduler (which deliberately runs without a statement_timeout), can stall
+  // scheduler (whose statements may each run for up to an hour), can stall
   // for hours during the saturated nightly maintenance window. Previously it
   // ran first, so when it stalled the job never reached insertLatestManaStats
   // OR revalidateStaticProps: the mana_supply_stats snapshot was skipped (the
@@ -363,7 +363,13 @@ const bufferDays = 61
 // moves whenever autoanalyze runs. And a per-statement deadline means no
 // single statement can absorb the whole run's time the way the 68-day fetch
 // did: it burned the full client hour and wrote nothing.
-const CHUNK_STATEMENT_TIMEOUT = '300s'
+//
+// 600s rather than the 300s first proposed: since mid-September, bot limit-order
+// churn puts ~250k–360k bet rows in a day (≈20k before), and every one is a heap
+// fetch. Measured on prod (2026-10-03): such a day's bets aggregate takes 12s
+// warm but ~150s cold, plus ~25s for the day's user_events, so a cold day in
+// the contended morning window sits too close to 300s.
+const CHUNK_STATEMENT_TIMEOUT = '600s'
 const CHUNK_RETRIES = 1
 const CHUNK_RETRY_DELAY_MS = 15 * 1000
 // A run that cannot get through its rebuild list inside the budget stops and
@@ -535,17 +541,10 @@ export const materializeActivityDays = async (
     }
   }
 
-  // Throw only after the loop: every day that succeeded stays committed, which
-  // is what lets the next run pick up where this one stopped. But do not let
-  // the caller compute over a holed window — the trailing-window maths below
-  // indexes by array position, so one missing day shifts wau/mau/m1 onto the
-  // wrong dates instead of failing.
-  if (failed.length || skipped.length) {
-    throw new Error(
-      `activity rollup incomplete — failed: [${failed.join(', ')}], ` +
-        `out of time: [${skipped.join(', ')}]`
-    )
-  }
+  // Reported, not thrown: every day that succeeded stays committed, which is
+  // what lets the next run pick up where this one stopped, and the caller
+  // decides whether what is left is usable (see updateActivityStats).
+  return { failed, skipped }
 }
 
 // The days this run must (re)build: everything it will write, plus any older
@@ -632,15 +631,30 @@ export const updateActivityStats = async (
     end
   )
   log(`Rebuilding ${daysToBuild.length} day(s) of activity`)
-  await materializeActivityDays(pg, daysToBuild)
+  const { failed, skipped } = await materializeActivityDays(pg, daysToBuild)
 
+  // Never compute over a holed window: the trailing-window maths below indexes
+  // by array position, so one missing day shifts wau/mau/m1 onto the wrong
+  // dates instead of failing. But a day that only failed its nightly
+  // *re*build still has last night's row, and that row is complete — a day's
+  // user set and bet_count are fixed once it ends; only bet_amount creeps up
+  // as resting limit orders fill. So a failed rebuild is a hole only if the
+  // day was never computed. Treating every failed rebuild as fatal would let
+  // one slow day blank the whole night's stats.
   const daily = await getDailyActivity(pg, startWithBuffer, end)
   const windowDays = listDays(startWithBuffer, end)
+  const stale = [...failed, ...skipped]
   if (daily.length !== windowDays.length) {
     throw new Error(
       `activity rollup covers ${daily.length} of ${windowDays.length} days ` +
         `in ${startWithBuffer}..${end}; refusing to compute trailing windows ` +
-        `over a gap`
+        `over a gap (failed: [${failed.join(', ')}], out of time: [${skipped.join(', ')}])`
+    )
+  }
+  if (stale.length) {
+    log.warn(
+      `[update-stats] kept the previous rollup for ${stale.length} day(s) it could not rebuild`,
+      { failed, skipped }
     )
   }
   logMemory()

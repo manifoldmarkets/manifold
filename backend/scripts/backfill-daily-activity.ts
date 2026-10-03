@@ -1,3 +1,9 @@
+import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
 import { runScript } from './run-script'
 import { log } from 'shared/utils'
 import { materializeActivityDays } from '../scheduler/src/jobs/update-stats'
@@ -10,7 +16,12 @@ import { materializeActivityDays } from '../scheduler/src/jobs/update-stats'
 // Safe to interrupt and rerun: each day is its own transaction and rebuilding a
 // day that already exists replaces it with the same values.
 //
-//   yarn ts-node backend/scripts/backfill-daily-activity.ts 2026-04-20 2026-08-16
+// Expect roughly 15–150s a day, serially: bot limit-order churn puts up to
+// ~360k bet rows in a day since mid-September 2026, and cold pages dominate.
+// 91 days is therefore an hour or two, not minutes. Run it outside the
+// 10:00–15:00 UTC batch window.
+//
+//   yarn ts-node backend/scripts/backfill-daily-activity.ts 2026-07-04 2026-10-03
 //
 // The range is [start, end) — the end day is not built.
 if (require.main === module)
@@ -30,8 +41,10 @@ if (require.main === module)
 
     // Never build today or later. A partial day would be stored as if it were
     // complete, and a future day would be an all-zero row that gap-filling then
-    // treats as computed.
-    const today = new Date().toISOString().slice(0, 10)
+    // treats as computed. "Today" is the America/Los_Angeles day the rollup is
+    // keyed on: the UTC date runs a day ahead from 5pm Pacific, which would let
+    // an evening run build the Pacific day still in progress.
+    const today = dayjs().tz('America/Los_Angeles').format('YYYY-MM-DD')
     const cappedEnd = end > today ? today : end
     if (cappedEnd !== end) {
       log(`Capping end at ${cappedEnd}: only complete days can be built`)
@@ -43,14 +56,28 @@ if (require.main === module)
     )
 
     // No budget: this is run by hand in a quiet window, and stopping halfway
-    // through a deliberate backfill would just mean running it again.
+    // through a deliberate backfill would just mean running it again. A day
+    // that fails (after its retry) is reported and skipped rather than ending
+    // the run; rerunning over the same range rebuilds it.
+    const failedDays: string[] = []
     for (let i = 0; i < days.length; i++) {
-      await materializeActivityDays(pg, [days[i]], Number.MAX_SAFE_INTEGER)
+      const { failed } = await materializeActivityDays(
+        pg,
+        [days[i]],
+        Number.MAX_SAFE_INTEGER
+      )
+      failedDays.push(...failed)
       if ((i + 1) % 10 === 0 || i === days.length - 1) {
         log(`  ${i + 1}/${days.length} days`)
       }
     }
 
+    if (failedDays.length) {
+      log.error(
+        `Done, but ${failedDays.length} day(s) failed — rerun over them: ${failedDays.join(', ')}`
+      )
+      process.exit(1)
+    }
     log('Done')
   })
 

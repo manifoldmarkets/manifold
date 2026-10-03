@@ -22,6 +22,12 @@ begin;
 -- succeeded. The failure is buffer-cache eviction, so the durable fix is to
 -- stop re-reading the same 68 days — not to read them faster.
 --
+-- It got worse, not better. From mid-September bot limit-order churn put
+-- ~250k–360k contract_bets rows in each day (≈20k before), and the 68-day bets
+-- query has timed out at the hour night after night since 2026-09-20:
+-- daily_stats has no row after 2026-09-21. (First proposed as 2026081501 in #4006; renumbered so
+-- it sorts after the migrations that landed while that PR was open.)
+--
 -- With these tables the job rebuilds only the days it actually writes and
 -- reads the rest of the window from here: ~650 rows/day instead of ~220k.
 --
