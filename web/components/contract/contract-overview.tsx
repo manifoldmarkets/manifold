@@ -1037,7 +1037,7 @@ const BinaryChoiceOverview = (props: {
 }
 
 export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
-  const contract = useLiveContract(props.contract)
+  const contract = useLiveContract(props.contract, { fresh: true })
   const user = useUser()
   const defaultSort = getDefaultSort(contract)
 

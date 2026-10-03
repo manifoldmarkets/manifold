@@ -56,7 +56,7 @@ export const NumericBetPanel = (props: {
       higher: 'Higher',
     },
   } = props
-  const contract = useLiveContract(props.contract)
+  const contract = useLiveContract(props.contract, { fresh: true })
   const user = useUser()
   const isCreatorBanned =
     !!user &&
