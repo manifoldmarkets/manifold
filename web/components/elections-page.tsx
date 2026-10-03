@@ -113,8 +113,7 @@ export function USElectionsPage(
         </CopyLinkOrShareButton>
       </Row>
 
-      {/* 2026 Midterms — the balance-of-power levers and the race map together
-          in a single card so the section reads as one unit. */}
+      {/* Chamber controls sit above the map's own surface. */}
       <SectionInView section="midterms map" className="gap-3">
         <SectionHeader>2026 Midterms</SectionHeader>
         <LiveElectionMap

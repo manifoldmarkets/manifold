@@ -9,13 +9,15 @@ import { PartyPanel } from 'web/components/us-elections/contracts/party-panel/pa
 import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/party-panel/binary-party-panel'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
-import { ChamberIllustration } from './chamber-illustration'
 import { RaceDetailsPanel } from './race-details-panel'
+import { getHeldOffice, HELD_COLORS } from './election-incumbents'
+import { senateHeldSeats2026 } from 'web/public/data/senate-state-data'
 import { DATA } from './usa-map-data'
 import {
   DEM_COLOR,
   REP_COLOR,
   isCandidateLabelledAnswer,
+  isColorLight,
 } from './state-election-map'
 import {
   Atlas,
@@ -55,7 +57,7 @@ const pct = (p: number) => formatPercent(p)
 export function ElectionExplorer(props: Props) {
   const [mode, setMode] = useState<ElectionMode>('senate')
   const [view, setView] = useState<'map' | 'cartogram'>('map')
-  const [labels, setLabels] = useState(false)
+  const [labels, setLabels] = useState(true)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Tier>()
   const [selected, setSelected] = useState<string>()
@@ -67,8 +69,6 @@ export function ElectionExplorer(props: Props) {
   const selectionOrigin = useRef<HTMLElement | SVGElement | null>(null)
   const explorerRef = useRef<HTMLElement>(null)
   const headerRef = useRef<HTMLElement>(null)
-  const headerSentinelRef = useRef<HTMLDivElement>(null)
-  const [headerStuck, setHeaderStuck] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const [camera, setCamera] = useState({ x: 0, y: 0, k: 1 })
   const drag = useRef<{
@@ -111,26 +111,11 @@ export function ElectionExplorer(props: Props) {
         )
 
   useEffect(() => {
-    const sentinel = headerSentinelRef.current
-    if (!sentinel) return
-    const observer = new IntersectionObserver(([entry]) =>
-      setHeaderStuck(!entry.isIntersecting && entry.boundingClientRect.top < 0)
-    )
-    observer.observe(sentinel)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
     const header = headerRef.current
     if (!header) return
     const updateHeaderHeight = () => {
       const height = `${header.getBoundingClientRect().height}px`
       explorerRef.current?.style.setProperty('--header-height', height)
-      if (header.dataset.stuck !== 'true')
-        explorerRef.current?.style.setProperty(
-          '--expanded-header-height',
-          height
-        )
     }
     const observer = new ResizeObserver(updateHeaderHeight)
     observer.observe(header)
@@ -201,11 +186,16 @@ export function ElectionExplorer(props: Props) {
     const race = raceById.get(id)
     const noElection = mode !== 'house' && !race && !!DATA[id] && id !== 'DC'
     const selectable = !!race || noElection
+    const held = noElection ? getHeldOffice(mode, id) : undefined
     return {
-      fill: race ? raceColor(race) ?? `url(#${patternId})` : undefined,
+      fill: race
+        ? raceColor(race) ?? `url(#${patternId})`
+        : held
+        ? `url(#${patternId}-${held.control})`
+        : undefined,
       className: clsx(
         styles.shape,
-        !race && styles.noRace,
+        !race && !held && styles.noRace,
         selected === id && styles.selected
       ),
       opacity: race && !matches(race) ? 0.15 : 1,
@@ -221,7 +211,13 @@ export function ElectionExplorer(props: Props) {
                 }`
               : 'unpriced'
           }`
-        : `${DATA[id]?.name ?? id}: no ${modeName(mode)} election in 2026`,
+        : `${DATA[id]?.name ?? id}: no ${modeName(mode)} election in 2026${
+            held
+              ? `. ${held.members
+                  .map((m) => `${m.name}, ${m.party}`)
+                  .join('; ')}`
+              : ''
+          }`,
       'aria-pressed': selectable ? selected === id : undefined,
       onPointerEnter: (e: React.PointerEvent<SVGElement>) => {
         if (e.pointerType === 'mouse' && selectable) setHovered(id)
@@ -237,6 +233,12 @@ export function ElectionExplorer(props: Props) {
         }
       },
     }
+  }
+  const labelColor = (state: string) => {
+    if (getHeldOffice(mode, state)) return '#fff'
+    const race = raceById.get(state)
+    const color = race && raceColor(race)
+    return color ? (isColorLight(color) ? '#1e293b' : '#fff') : undefined
   }
   const hex = atlas?.hex
   const hexScale = hex ? Math.min(900 / hex.width, 530 / hex.height) : 1
@@ -255,22 +257,17 @@ export function ElectionExplorer(props: Props) {
       : null
 
   return (
-    <section
-      ref={explorerRef}
-      className={styles.explorer}
-      aria-label="2026 election explorer"
-    >
-      <div className={styles.controls}>
-        <ControlCard label="House" contract={props.houseControl} />
+    <div className={styles.layout}>
+      <div className={styles.controls} aria-label="Chamber control">
         <ControlCard label="Senate" contract={props.senateControl} />
+        <ControlCard label="House" contract={props.houseControl} />
       </div>
-      <div ref={headerSentinelRef} className={styles.headerSentinel} />
-      <div className={styles.headerSlot}>
-        <header
-          ref={headerRef}
-          className={styles.header}
-          data-stuck={headerStuck}
-        >
+      <section
+        ref={explorerRef}
+        className={styles.explorer}
+        aria-label="2026 election explorer"
+      >
+        <header ref={headerRef} className={styles.header}>
           <div
             className={styles.tabs}
             role="tablist"
@@ -297,638 +294,724 @@ export function ElectionExplorer(props: Props) {
                   }
                 }}
               >
-                <span className={styles.tabArt}>
-                  <ChamberIllustration mode={m} />
-                </span>
-                <span className={styles.tabText}>
-                  {modeName(m)}
-                  <small>
-                    {m === 'house'
-                      ? '435 districts'
-                      : m === 'senate'
-                      ? '35 elections'
-                      : '36 elections'}
-                  </small>
-                </span>
+                {modeName(m)}
               </button>
             ))}
           </div>
         </header>
-      </div>
-      <div className={styles.meta}>
-        <span>
-          <span className={styles.liveDot} /> Manifold market odds
-        </span>
-        <button onClick={() => setSources(true)}>How to read the map ↗</button>
-      </div>
 
-      <div className={styles.balance}>
-        <div className={styles.balanceLabels}>
-          <span style={{ color: DEM_COLOR }}>
-            <b>{summary.leaders.dem}</b> <span>Democratic</span>
-          </span>
-          <span className={styles.threshold}>
-            {mode === 'house'
-              ? '218 for a majority'
-              : mode === 'senate'
-              ? '51 D / 50 R for control'
-              : `${races.length} governorships`}
-          </span>
-          <span style={{ color: REP_COLOR }}>
-            <span>Republican</span> <b>{summary.leaders.rep}</b>
-          </span>
-        </div>
-        <div
-          className={styles.balanceTrack}
-          aria-label="Seats by market likelihood"
-        >
-          {TIERS.filter((t) => summary.counts[t.id] > 0).map((t) => (
-            <button
-              key={t.id}
-              title={`${summary.counts[t.id]} ${t.label}${
-                mode === 'senate' && t.id.startsWith('safe')
-                  ? ' (includes seats not on the ballot)'
-                  : ''
-              }`}
-              aria-label={`Filter ${summary.counts[t.id]} ${t.label}`}
-              aria-pressed={filter === t.id}
-              style={{ flex: summary.counts[t.id], background: t.color }}
-              onClick={() => {
-                setFilter(filter === t.id ? undefined : t.id)
-                setSelected(undefined)
-              }}
-            >
-              {summary.counts[t.id] / summary.total > 0.055 &&
-                summary.counts[t.id]}
-            </button>
-          ))}
-          {mode !== 'governor' && (
-            <span
-              className={styles.majorityLine}
-              style={{ left: `${(mode === 'house' ? 218 / 435 : 0.5) * 100}%` }}
-            />
-          )}
-        </div>
-        <div className={styles.coverage}>
-          <span>
-            {races.length - summary.leaders.unpriced} of {races.length} races
-            priced{mode === 'senate' && ' · 65 seats not on the ballot'}
-          </span>
-          <span>
-            {summary.leaders.unpriced > 0 &&
-              `${summary.leaders.unpriced} unpriced`}
-            {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
-            {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
-          </span>
-        </div>
-      </div>
-      {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
-        <p className={styles.note}>
-          {[
-            summary.leaders.notDem > 0 &&
-              `${summary.leaders.notDem} races favor a non-Democratic winner`,
-            summary.leaders.notRep > 0 &&
-              `${summary.leaders.notRep} races favor a non-Republican winner`,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-          . These outcomes are counted separately from party wins.
-        </p>
-      )}
-      <div className={styles.toolbar}>
-        <div className={styles.segment} aria-label="Map view">
-          {(['map', 'cartogram'] as const).map((v) => (
-            <button
-              key={v}
-              aria-pressed={view === v}
-              onClick={() => {
-                setView(v)
-                resetView()
-                setHovered(undefined)
-              }}
-            >
-              {v === 'map' ? 'Map' : 'Cartogram'}
-            </button>
-          ))}
-        </div>
-        <button
-          className={clsx(styles.toolButton, labels && styles.activeTool)}
-          aria-pressed={labels}
-          onClick={() => setLabels(!labels)}
-        >
-          State labels
-        </button>
-        <label className={styles.search}>
-          <span aria-hidden>⌕</span>
-          <input
-            aria-label="Find a state or district"
-            placeholder="Find a state or district"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value)
-              setSelected(undefined)
-            }}
-          />
-          {query && (
-            <button aria-label="Clear search" onClick={() => setQuery('')}>
-              ×
-            </button>
-          )}
-        </label>
-        <div
-          className={styles.zoomControls}
-          role="group"
-          aria-label="Map zoom controls"
-        >
-          <button
-            aria-label="Zoom in"
-            disabled={camera.k >= 6}
-            onClick={() => zoom(1.5)}
+        <div className={styles.balance}>
+          <div className={styles.balanceLabels}>
+            <span style={{ color: DEM_COLOR }}>
+              <b>{summary.leaders.dem}</b> <span>Democratic</span>
+            </span>
+            <span className={styles.threshold}>
+              {mode === 'house'
+                ? '218 for a majority'
+                : mode === 'senate'
+                ? '51 D / 50 R for control'
+                : `${races.length} governorships`}
+            </span>
+            <span style={{ color: REP_COLOR }}>
+              <span>Republican</span> <b>{summary.leaders.rep}</b>
+            </span>
+          </div>
+          <div
+            className={styles.balanceTrack}
+            aria-label="Seats by market likelihood"
           >
-            +
-          </button>
-          <button
-            aria-label="Zoom out"
-            disabled={camera.k <= 1}
-            onClick={() => zoom(1 / 1.5)}
-          >
-            −
-          </button>
-          <button
-            aria-label="Reset map view"
-            title="Reset view"
-            onClick={resetView}
-          >
-            ↺
-          </button>
-        </div>
-      </div>
-      {(filter || query) && (
-        <div className={styles.filterNotice} role="status">
-          {filtered.length} matching races
-          {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
-          {noElectionMatches.length > 0 &&
-            ` · ${noElectionMatches.length} with no election`}
-          <button
-            onClick={() => {
-              setQuery('')
-              setFilter(undefined)
-            }}
-          >
-            Clear filters ×
-          </button>
-        </div>
-      )}
-      {query.trim() && (
-        <div
-          className={styles.results}
-          role="region"
-          aria-label="Race search results"
-        >
-          {filtered.map((r) => (
-            <button key={r.id} onClick={(e) => choose(r.id, e.currentTarget)}>
-              {r.label} <RaceQuote race={r} />
-            </button>
-          ))}
-          {noElectionMatches.map(([state, data]) => (
-            <button key={state} onClick={(e) => choose(state, e.currentTarget)}>
-              {data.name} <span>No {modeName(mode)} election</span>
-            </button>
-          ))}
-          {filtered.length === 0 && noElectionMatches.length === 0 && (
-            <span>No matching races. Try a state name or TX-15.</span>
-          )}
-        </div>
-      )}
-
-      <div className={styles.stage}>
-        {!atlas ? (
-          <div className={styles.mapLoading} role="status">
-            {mapError ? (
-              <>
-                The map couldn’t load.{' '}
-                <button onClick={() => setAttempt((a) => a + 1)}>
-                  Try again
-                </button>
-              </>
-            ) : (
-              'Loading election map…'
+            {TIERS.filter((t) => summary.counts[t.id] > 0).map((t) => (
+              <button
+                key={t.id}
+                title={`${summary.counts[t.id]} ${t.label}${
+                  mode === 'senate' && t.id.startsWith('safe')
+                    ? ' (includes seats not on the ballot)'
+                    : ''
+                }`}
+                aria-label={`Filter ${summary.counts[t.id]} ${t.label}`}
+                aria-pressed={filter === t.id}
+                style={{ flex: summary.counts[t.id], background: t.color }}
+                onClick={() => {
+                  setFilter(filter === t.id ? undefined : t.id)
+                  setSelected(undefined)
+                }}
+              >
+                {summary.counts[t.id] / summary.total > 0.055 &&
+                  summary.counts[t.id]}
+              </button>
+            ))}
+            {mode !== 'governor' && (
+              <span
+                className={styles.majorityLine}
+                style={{
+                  left: `${(mode === 'house' ? 218 / 435 : 0.5) * 100}%`,
+                }}
+              />
             )}
           </div>
-        ) : (
-          <svg
-            viewBox="0 0 960 600"
-            aria-label={`${modeName(mode)} ${
-              view === 'map' ? 'geographic map' : 'equal-seat cartogram'
-            }`}
-            className={styles.map}
-            style={{ touchAction: camera.k > 1 ? 'none' : 'pan-y' }}
-            onPointerDown={(e) => {
-              drag.current = {
-                x: e.clientX,
-                y: e.clientY,
-                px: camera.x,
-                py: camera.y,
-                moved: false,
-              }
-            }}
-            onPointerMove={(e) => {
-              if (!drag.current || !e.buttons || camera.k === 1) return
-              const d = drag.current
-              const bounds = e.currentTarget.getBoundingClientRect()
-              const ratio =
-                1 / Math.min(bounds.width / 960, bounds.height / 600)
-              if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) {
-                d.moved = true
-                e.currentTarget.setPointerCapture(e.pointerId)
-              }
-              if (d.moved) {
-                setHovered(undefined)
-                setCamera((c) => ({
-                  ...c,
-                  x: Math.max(
-                    960 * (1 - c.k),
-                    Math.min(0, d.px + (e.clientX - d.x) * ratio)
-                  ),
-                  y: Math.max(
-                    600 * (1 - c.k),
-                    Math.min(0, d.py + (e.clientY - d.y) * ratio)
-                  ),
-                }))
-              }
-            }}
-            onPointerUp={(e) => {
-              if (e.currentTarget.hasPointerCapture(e.pointerId))
-                e.currentTarget.releasePointerCapture(e.pointerId)
-            }}
-            onPointerCancel={() => {
-              drag.current = undefined
-            }}
-          >
-            <defs>
-              <pattern
-                id={patternId}
-                width="6"
-                height="6"
-                patternUnits="userSpaceOnUse"
-                patternTransform="rotate(35)"
+          <div className={styles.coverage}>
+            <span>
+              {races.length - summary.leaders.unpriced} of {races.length} races
+              priced{mode === 'senate' && ' · 65 seats not on the ballot'}
+            </span>
+            <span>
+              {summary.leaders.unpriced > 0 &&
+                `${summary.leaders.unpriced} unpriced`}
+              {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
+              {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
+            </span>
+          </div>
+        </div>
+        {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+          <p className={styles.note}>
+            {[
+              summary.leaders.notDem > 0 &&
+                `${summary.leaders.notDem} races favor a non-Democratic winner`,
+              summary.leaders.notRep > 0 &&
+                `${summary.leaders.notRep} races favor a non-Republican winner`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            . These outcomes are counted separately from party wins.
+          </p>
+        )}
+        <div className={styles.toolbar}>
+          <div className={styles.segment} aria-label="Map view">
+            {(['map', 'cartogram'] as const).map((v) => (
+              <button
+                key={v}
+                aria-pressed={view === v}
+                onClick={() => {
+                  setView(v)
+                  resetView()
+                  setHovered(undefined)
+                }}
               >
-                <rect width="6" height="6" className={styles.hatchBase} />
-                <path d="M0 0V6" className={styles.hatchLine} strokeWidth="2" />
-              </pattern>
-            </defs>
-            <g
-              transform={`translate(${camera.x} ${camera.y}) scale(${camera.k})`}
+                {v === 'map' ? 'Map' : 'Cartogram'}
+              </button>
+            ))}
+          </div>
+          <button
+            className={clsx(styles.toolButton, labels && styles.activeTool)}
+            aria-pressed={labels}
+            onClick={() => setLabels(!labels)}
+          >
+            State labels
+          </button>
+          <label className={styles.search}>
+            <span aria-hidden>⌕</span>
+            <input
+              aria-label="Find a state or district"
+              placeholder="Find a state or district"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setSelected(undefined)
+              }}
+            />
+            {query && (
+              <button aria-label="Clear search" onClick={() => setQuery('')}>
+                ×
+              </button>
+            )}
+          </label>
+          <div
+            className={styles.zoomControls}
+            role="group"
+            aria-label="Map zoom controls"
+          >
+            <button
+              aria-label="Zoom in"
+              disabled={camera.k >= 6}
+              onClick={() => zoom(1.5)}
             >
-              {view === 'map' ? (
+              +
+            </button>
+            <button
+              aria-label="Zoom out"
+              disabled={camera.k <= 1}
+              onClick={() => zoom(1 / 1.5)}
+            >
+              −
+            </button>
+            <button
+              aria-label="Reset map view"
+              title="Reset view"
+              onClick={resetView}
+            >
+              ↺
+            </button>
+          </div>
+        </div>
+        {(filter || query) && (
+          <div className={styles.filterNotice} role="status">
+            {filtered.length} matching races
+            {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
+            {noElectionMatches.length > 0 &&
+              ` · ${noElectionMatches.length} with no election`}
+            <button
+              onClick={() => {
+                setQuery('')
+                setFilter(undefined)
+              }}
+            >
+              Clear filters ×
+            </button>
+          </div>
+        )}
+        {query.trim() && (
+          <div
+            className={styles.results}
+            role="region"
+            aria-label="Race search results"
+          >
+            {filtered.map((r) => (
+              <button key={r.id} onClick={(e) => choose(r.id, e.currentTarget)}>
+                {r.label} <RaceQuote race={r} />
+              </button>
+            ))}
+            {noElectionMatches.map(([state, data]) => (
+              <button
+                key={state}
+                onClick={(e) => choose(state, e.currentTarget)}
+              >
+                {data.name} <span>No {modeName(mode)} election</span>
+              </button>
+            ))}
+            {filtered.length === 0 && noElectionMatches.length === 0 && (
+              <span>No matching races. Try a state name or TX-15.</span>
+            )}
+          </div>
+        )}
+
+        <div className={styles.stage}>
+          {!atlas ? (
+            <div className={styles.mapLoading} role="status">
+              {mapError ? (
                 <>
-                  {mode === 'house' ? (
-                    <>
-                      {atlas.districts.map((d) => (
-                        <path
-                          key={districtId(d.state, d.district)}
-                          d={d.path}
-                          {...shapeProps(districtId(d.state, d.district))}
-                        />
-                      ))}
-                      {atlas.states.map((s) => (
+                  The map couldn’t load.{' '}
+                  <button onClick={() => setAttempt((a) => a + 1)}>
+                    Try again
+                  </button>
+                </>
+              ) : (
+                'Loading election map…'
+              )}
+            </div>
+          ) : (
+            <svg
+              viewBox="0 0 960 600"
+              aria-label={`${modeName(mode)} ${
+                view === 'map' ? 'geographic map' : 'equal-seat cartogram'
+              }`}
+              className={styles.map}
+              data-mode={mode}
+              style={{ touchAction: camera.k > 1 ? 'none' : 'pan-y' }}
+              onPointerDown={(e) => {
+                drag.current = {
+                  x: e.clientX,
+                  y: e.clientY,
+                  px: camera.x,
+                  py: camera.y,
+                  moved: false,
+                }
+              }}
+              onPointerMove={(e) => {
+                if (!drag.current || !e.buttons || camera.k === 1) return
+                const d = drag.current
+                const bounds = e.currentTarget.getBoundingClientRect()
+                const ratio =
+                  1 / Math.min(bounds.width / 960, bounds.height / 600)
+                if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) {
+                  d.moved = true
+                  e.currentTarget.setPointerCapture(e.pointerId)
+                }
+                if (d.moved) {
+                  setHovered(undefined)
+                  setCamera((c) => ({
+                    ...c,
+                    x: Math.max(
+                      960 * (1 - c.k),
+                      Math.min(0, d.px + (e.clientX - d.x) * ratio)
+                    ),
+                    y: Math.max(
+                      600 * (1 - c.k),
+                      Math.min(0, d.py + (e.clientY - d.y) * ratio)
+                    ),
+                  }))
+                }
+              }}
+              onPointerUp={(e) => {
+                if (e.currentTarget.hasPointerCapture(e.pointerId))
+                  e.currentTarget.releasePointerCapture(e.pointerId)
+              }}
+              onPointerCancel={() => {
+                drag.current = undefined
+              }}
+            >
+              <defs>
+                {Object.entries(HELD_COLORS).map(([party, colors]) => (
+                  <pattern
+                    key={party}
+                    id={`${patternId}-${party}`}
+                    width="8"
+                    height="8"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <rect width="8" height="8" fill={colors.background} />
+                    <path
+                      d="M0 0L8 8M8 0L0 8"
+                      stroke={colors.hatch}
+                      strokeWidth="2"
+                    />
+                  </pattern>
+                ))}
+                <pattern
+                  id={patternId}
+                  width="6"
+                  height="6"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(35)"
+                >
+                  <rect width="6" height="6" className={styles.hatchBase} />
+                  <path
+                    d="M0 0V6"
+                    className={styles.hatchLine}
+                    strokeWidth="2"
+                  />
+                </pattern>
+              </defs>
+              <g
+                transform={`translate(${camera.x} ${camera.y}) scale(${camera.k})`}
+              >
+                {view === 'map' ? (
+                  <>
+                    {mode === 'house' ? (
+                      <>
+                        {atlas.districts.map((d) => (
+                          <path
+                            key={districtId(d.state, d.district)}
+                            d={d.path}
+                            {...shapeProps(districtId(d.state, d.district))}
+                          />
+                        ))}
+                        {atlas.states.map((s) => (
+                          <path
+                            key={s.state}
+                            d={s.path}
+                            className={styles.stateOutline}
+                          />
+                        ))}
+                      </>
+                    ) : (
+                      atlas.states.map((s) => (
                         <path
                           key={s.state}
                           d={s.path}
-                          className={styles.stateOutline}
+                          {...shapeProps(s.state)}
                         />
-                      ))}
-                    </>
-                  ) : (
-                    atlas.states.map((s) => (
-                      <path key={s.state} d={s.path} {...shapeProps(s.state)} />
-                    ))
-                  )}
-                  {labels &&
-                    atlas.states
-                      .filter(
-                        (s) =>
-                          !['DC', 'RI', 'DE', 'CT', 'MA', 'MD', 'NJ'].includes(
-                            s.state
-                          )
-                      )
-                      .map((s) => (
-                        <text
-                          key={s.state}
-                          x={s.center[0]}
-                          y={s.center[1]}
-                          className={styles.stateLabel}
-                        >
-                          {s.state}
-                        </text>
-                      ))}
-                  {labels &&
-                    ['MA', 'RI', 'CT', 'NJ', 'DE', 'MD'].map((state, i) => {
-                      const s = atlas.states.find((s) => s.state === state)!
-                      return (
-                        <g key={state}>
-                          <path
-                            d={`M${s.center[0]} ${s.center[1]}L916 ${
-                              245 + i * 29
-                            }`}
-                            className={styles.labelLine}
-                          />
-                          <text
-                            x="930"
-                            y={249 + i * 29}
-                            className={styles.stateLabel}
-                          >
-                            {state}
-                          </text>
-                        </g>
-                      )
-                    })}
-                </>
-              ) : mode === 'house' && hex ? (
-                <g
-                  transform={`translate(${
-                    (960 - hex.width * hexScale) / 2
-                  } 35) scale(${hexScale})`}
-                >
-                  {hex.hexes.map((h) => (
-                    <path
-                      key={districtId(h.state, h.district)}
-                      d={hexPath(h.x, h.y, hex.size * 0.92)}
-                      {...shapeProps(districtId(h.state, h.district))}
-                    />
-                  ))}
-                  {labels &&
-                    atlas.states
-                      .filter((s) => s.state !== 'DC')
-                      .map((s) => {
-                        const seats = hex.hexes.filter(
-                          (h) => h.state === s.state
+                      ))
+                    )}
+                    {labels &&
+                      atlas.states
+                        .filter(
+                          (s) =>
+                            ![
+                              'DC',
+                              'RI',
+                              'DE',
+                              'CT',
+                              'MA',
+                              'MD',
+                              'NJ',
+                            ].includes(s.state)
                         )
-                        const top = seats.reduce((a, b) => (a.y < b.y ? a : b))
-                        return (
+                        .map((s) => (
                           <text
                             key={s.state}
-                            x={top.x}
-                            y={top.y - 14}
-                            className={styles.hexLabel}
+                            x={s.center[0]}
+                            y={s.center[1]}
+                            className={styles.stateLabel}
+                            style={{ fill: labelColor(s.state) }}
                           >
                             {s.state}
                           </text>
+                        ))}
+                    {labels &&
+                      ['MA', 'RI', 'CT', 'NJ', 'DE', 'MD'].map((state, i) => {
+                        const s = atlas.states.find((s) => s.state === state)!
+                        return (
+                          <g key={state}>
+                            <path
+                              d={`M${s.center[0]} ${s.center[1]}L916 ${
+                                245 + i * 29
+                              }`}
+                              className={styles.labelLine}
+                            />
+                            <text
+                              x="930"
+                              y={249 + i * 29}
+                              className={styles.stateLabel}
+                            >
+                              {state}
+                            </text>
+                          </g>
                         )
                       })}
-                </g>
-              ) : (
-                <g transform="translate(76 20)">
-                  {atlas.tiles
-                    .filter((t) => t.state !== 'DC')
-                    .map((t) => (
-                      <g key={t.state}>
-                        <rect
-                          x={t.col * 73}
-                          y={t.row * 70}
-                          width="65"
-                          height="62"
-                          rx="6"
-                          {...shapeProps(t.state)}
-                        />
-                        <text
-                          x={t.col * 73 + 32.5}
-                          y={t.row * 70 + 36}
-                          className={styles.tileLabel}
-                        >
-                          {t.state}
-                        </text>
-                      </g>
+                  </>
+                ) : mode === 'house' && hex ? (
+                  <g
+                    transform={`translate(${
+                      (960 - hex.width * hexScale) / 2
+                    } 35) scale(${hexScale})`}
+                  >
+                    {hex.hexes.map((h) => (
+                      <path
+                        key={districtId(h.state, h.district)}
+                        d={hexPath(h.x, h.y, hex.size * 0.92)}
+                        {...shapeProps(districtId(h.state, h.district))}
+                      />
                     ))}
-                </g>
-              )}
-            </g>
-          </svg>
-        )}
-        {(hoverRace || hoveredNoRace) && !selected && (
-          <div className={styles.hoverCard}>
-            <strong>{hoverRace?.label ?? hoveredNoRace?.name}</strong>
-            {hoverRace ? (
-              <>
-                <RaceQuote race={hoverRace} />
-                <span>Click to explore this race</span>
-              </>
-            ) : (
-              <span>No {modeName(mode)} election in 2026</span>
-            )}
-          </div>
-        )}
-      </div>
-      <div className={styles.legend}>
-        <div className={styles.ramp}>
-          <div>
-            <span>Republican</span>
-            <span>50 / 50</span>
-            <span>Democratic</span>
-          </div>
-          <div className={styles.gradient} />
-        </div>
-        <div className={styles.legendKeys}>
-          <span>
-            <i style={{ background: OTHER_COLOR }} />
-            Other leads
-          </span>
-          {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
-            <span>
-              <i style={{ background: COMPLEMENT_COLOR }} />
-              Any other winner
-            </span>
+                    {labels &&
+                      atlas.states
+                        .filter((s) => s.state !== 'DC')
+                        .map((s) => {
+                          const seats = hex.hexes.filter(
+                            (h) => h.state === s.state
+                          )
+                          const top = seats.reduce((a, b) =>
+                            a.y < b.y ? a : b
+                          )
+                          return (
+                            <text
+                              key={s.state}
+                              x={top.x}
+                              y={top.y - 14}
+                              className={styles.hexLabel}
+                            >
+                              {s.state}
+                            </text>
+                          )
+                        })}
+                  </g>
+                ) : (
+                  <g transform="translate(76 20)">
+                    {atlas.tiles
+                      .filter((t) => t.state !== 'DC')
+                      .map((t) => (
+                        <g key={t.state}>
+                          <rect
+                            x={t.col * 73}
+                            y={t.row * 70}
+                            width="65"
+                            height="62"
+                            rx="6"
+                            {...shapeProps(t.state)}
+                          />
+                          <text
+                            x={t.col * 73 + 32.5}
+                            y={t.row * 70 + 36}
+                            className={styles.tileLabel}
+                            style={{ fill: labelColor(t.state) }}
+                          >
+                            {t.state}
+                          </text>
+                        </g>
+                      ))}
+                  </g>
+                )}
+              </g>
+            </svg>
           )}
-          <span>
-            <i className={styles.hatchSwatch} />
-            Unpriced
-          </span>
-          <span>
-            <i className={styles.noRaceSwatch} />
-            No race
-          </span>
-        </div>
-      </div>
-      <p className={styles.hint}>
-        {view === 'cartogram'
-          ? `Each ${
-              mode === 'house'
-                ? 'hexagon is one House seat'
-                : 'tile is one state'
-            }. `
-          : ''}
-        Select a race to explore the odds. Zoom in to drag the map.
-      </p>
-
-      {selectedNoRace && (
-        <RaceDetailsPanel
-          title={selectedNoRace.name}
-          eyebrow={`2026 · ${modeName(mode)}`}
-          label={`${selectedNoRace.name} election details`}
-          closeRef={closeRef}
-          onClose={closeDetails}
-        >
-          <p className={styles.empty}>
-            No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
-            2026. This office is not on the ballot here.
-          </p>
-          <button
-            className={styles.exploreState}
-            onClick={() => {
-              const name = selectedNoRace.name
-              changeMode('house')
-              setQuery(name)
-            }}
-          >
-            Explore {selectedNoRace.name} House districts →
-          </button>
-        </RaceDetailsPanel>
-      )}
-
-      {selectedRace && (
-        <RaceDetailsPanel
-          title={selectedRace.label}
-          eyebrow={`${modeName(mode)} · ${selectedRace.shortLabel}`}
-          label={`${selectedRace.label} details`}
-          closeRef={closeRef}
-          onClose={closeDetails}
-        >
-          <div className={styles.detailSummary}>
-            <span
-              style={{
-                color: TIERS.find((t) => t.id === raceTier(selectedRace))
-                  ?.color,
-              }}
-            >
-              {TIERS.find((t) => t.id === raceTier(selectedRace))?.label}
-            </span>
-            <RaceQuote race={selectedRace} />
-          </div>
-          {selectedRace.odds && (
-            <div className={styles.raceBar}>
-              {(['dem', 'rep', 'other', 'notDem', 'notRep'] as const).map(
-                (p, i) => (
-                  <span
-                    key={p}
-                    style={{
-                      width: `${(selectedRace.odds![p] ?? 0) * 100}%`,
-                      background: [
-                        DEM_COLOR,
-                        REP_COLOR,
-                        OTHER_COLOR,
-                        COMPLEMENT_COLOR,
-                        COMPLEMENT_COLOR,
-                      ][i],
-                    }}
-                  />
-                )
+          {(hoverRace || hoveredNoRace) && !selected && (
+            <div className={styles.hoverCard}>
+              <strong>{hoverRace?.label ?? hoveredNoRace?.name}</strong>
+              {hoverRace ? (
+                <>
+                  <RaceQuote race={hoverRace} />
+                  <span>Click to explore this race</span>
+                </>
+              ) : (
+                <>
+                  <span>No {modeName(mode)} election in 2026</span>
+                  <IncumbentDetails mode={mode} state={hovered!} />
+                </>
               )}
             </div>
           )}
-          {!selectedRace.contract ? (
+        </div>
+        <div className={styles.legend}>
+          <div className={styles.ramp}>
+            <div>
+              <span>Republican</span>
+              <span>50 / 50</span>
+              <span>Democratic</span>
+            </div>
+            <div className={styles.gradient} />
+          </div>
+          <div className={styles.legendKeys}>
+            <span>
+              <i style={{ background: OTHER_COLOR }} />
+              Other leads
+            </span>
+            {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+              <span>
+                <i style={{ background: COMPLEMENT_COLOR }} />
+                Any other winner
+              </span>
+            )}
+            <span>
+              <i className={styles.hatchSwatch} />
+              Unpriced
+            </span>
+            {mode !== 'house' && (
+              <span>
+                <i className={styles.noRaceSwatch} />
+                Not on ballot · current party
+              </span>
+            )}
+          </div>
+        </div>
+        <p className={styles.hint}>
+          {view === 'cartogram'
+            ? `Each ${
+                mode === 'house'
+                  ? 'hexagon is one House seat'
+                  : 'tile is one state'
+              }. `
+            : ''}
+          Select a race to explore the odds. Zoom in to drag the map.{' '}
+          <button onClick={() => setSources(true)}>More info</button>
+        </p>
+
+        {selectedNoRace && (
+          <RaceDetailsPanel
+            title={selectedNoRace.name}
+            eyebrow={`2026 · ${modeName(mode)}`}
+            label={`${selectedNoRace.name} election details`}
+            closeRef={closeRef}
+            onClose={closeDetails}
+          >
             <p className={styles.empty}>
-              No Manifold market is linked to this race yet. It is excluded from
-              priced seat estimates.
+              No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
+              2026. This office is not on the ballot here.
             </p>
-          ) : selectedRace.answerId &&
-            selectedRace.contract.mechanism === 'cpmm-multi-1' &&
-            selectedRace.contract.outcomeType === 'MULTIPLE_CHOICE' ? (
-            <>
-              <DistrictBetButtons
-                contract={selectedRace.contract}
-                answer={
-                  selectedRace.contract.answers.find(
-                    (a) => a.id === selectedRace.answerId
-                  )!
-                }
-                label={selectedRace.label}
-                matchup={selectedRace.matchup}
-              />
-              <MarketDetailsLink contract={selectedRace.contract} />
-            </>
-          ) : (
-            <RaceMarket contract={selectedRace.contract} />
-          )}
-          {candidate &&
-            candidate.id !== selectedRace.contract?.id &&
-            !(
-              selectedRace.contract?.mechanism === 'cpmm-multi-1' &&
-              selectedRace.contract.answers.some((a) =>
-                isCandidateLabelledAnswer(a.text)
-              )
-            ) && (
-              <div className={styles.candidates}>
-                <span className={styles.eyebrow}>Candidate market</span>
-                <RaceMarket contract={candidate} />
+            <IncumbentDetails mode={mode} state={selected!} />
+            <button
+              className={styles.exploreState}
+              onClick={() => {
+                const name = selectedNoRace.name
+                changeMode('house')
+                setQuery(name)
+              }}
+            >
+              Explore {selectedNoRace.name} House districts →
+            </button>
+          </RaceDetailsPanel>
+        )}
+
+        {selectedRace && (
+          <RaceDetailsPanel
+            title={selectedRace.label}
+            eyebrow={`${modeName(mode)} · ${selectedRace.shortLabel}`}
+            label={`${selectedRace.label} details`}
+            closeRef={closeRef}
+            onClose={closeDetails}
+          >
+            <div className={styles.detailSummary}>
+              <span
+                style={{
+                  color: TIERS.find((t) => t.id === raceTier(selectedRace))
+                    ?.color,
+                }}
+              >
+                {TIERS.find((t) => t.id === raceTier(selectedRace))?.label}
+              </span>
+              <RaceQuote race={selectedRace} />
+            </div>
+            {selectedRace.odds && (
+              <div className={styles.raceBar}>
+                {(['dem', 'rep', 'other', 'notDem', 'notRep'] as const).map(
+                  (p, i) => (
+                    <span
+                      key={p}
+                      style={{
+                        width: `${(selectedRace.odds![p] ?? 0) * 100}%`,
+                        background: [
+                          DEM_COLOR,
+                          REP_COLOR,
+                          OTHER_COLOR,
+                          COMPLEMENT_COLOR,
+                          COMPLEMENT_COLOR,
+                        ][i],
+                      }}
+                    />
+                  )
+                )}
               </div>
             )}
-        </RaceDetailsPanel>
-      )}
+            {mode === 'senate' && senateHeldSeats2026[selectedRace.state] && (
+              <div className={styles.incumbents}>
+                <span className={styles.eyebrow}>
+                  Other seat · not on the 2026 ballot
+                </span>
+                <span>
+                  {senateHeldSeats2026[selectedRace.state].name} (
+                  {senateHeldSeats2026[selectedRace.state].party[0]})
+                </span>
+              </div>
+            )}
+            {!selectedRace.contract ? (
+              <p className={styles.empty}>
+                No Manifold market is linked to this race yet. It is excluded
+                from priced seat estimates.
+              </p>
+            ) : selectedRace.answerId &&
+              selectedRace.contract.mechanism === 'cpmm-multi-1' &&
+              selectedRace.contract.outcomeType === 'MULTIPLE_CHOICE' ? (
+              <>
+                <DistrictBetButtons
+                  contract={selectedRace.contract}
+                  answer={
+                    selectedRace.contract.answers.find(
+                      (a) => a.id === selectedRace.answerId
+                    )!
+                  }
+                  label={selectedRace.label}
+                  matchup={selectedRace.matchup}
+                />
+                <MarketDetailsLink contract={selectedRace.contract} />
+              </>
+            ) : (
+              <RaceMarket contract={selectedRace.contract} />
+            )}
+            {candidate &&
+              candidate.id !== selectedRace.contract?.id &&
+              !(
+                selectedRace.contract?.mechanism === 'cpmm-multi-1' &&
+                selectedRace.contract.answers.some((a) =>
+                  isCandidateLabelledAnswer(a.text)
+                )
+              ) && (
+                <div className={styles.candidates}>
+                  <span className={styles.eyebrow}>Candidate market</span>
+                  <RaceMarket contract={candidate} />
+                </div>
+              )}
+          </RaceDetailsPanel>
+        )}
 
-      <Modal
-        open={sources}
-        setOpen={setSources}
-        ariaLabel="How to read the election map"
-      >
-        <div className={styles.sources}>
-          <h2>How to read the map</h2>
-          <p>
-            Colors show the chance of winning implied by Manifold markets, not
-            vote share. Darker colors mean a stronger favorite. Teal means an
-            independent or other outcome leads; hatching means no usable market
-            odds. A gray “any other winner” quote is the NO side of a party-win
-            question, including all other parties. It is counted separately from
-            Democratic and Republican wins.
-          </p>
-          <p>
-            Candidate markets price the listed people. Their party colors come
-            from the answer labels; check the market description for how other
-            winners or replacement candidates are handled.
-          </p>
-          <p>
-            The seat bar counts each seat once for its leading outcome. Exact
-            ties and unpriced races stay separate. Senate totals include 34
-            Democratic-caucus and 31 Republican seats not on the ballot.
-            Republicans control a 50–50 Senate through the Vice President’s
-            tie-breaking vote.
-          </p>
-          <p>
-            Safe: 90% or higher. Likely: 75–90%. Lean: 60–75%. Toss-up: neither
-            side reaches 60%. Select a segment to filter races.
-          </p>
-          <p>
-            House coverage combines the curated competitive-district market with
-            reviewed state-wide district and individual winner markets. Unlinked
-            districts are unpriced, including safe seats; that does not mean
-            there is no market anywhere on Manifold. Chamber-control odds are
-            separate markets, not derived from the seat totals.
-          </p>
-          <p>
-            District boundaries reflect a September 24, 2026 snapshot based on
-            Census geography and redistricting research. Missouri uses its 2022
-            map pending litigation.
-          </p>
-          <p>
-            Prices update through Manifold’s subscriptions. Community markets
-            may be thinly traded; an unchanged price is not a new forecast.
-            Outcomes are normalized within each race for map colors.
-          </p>
-          <p className={styles.sourceCredit}>
-            Map data:{' '}
-            <a
-              href="https://drops.mts.now/midterms/"
-              target="_blank"
-              rel="noreferrer"
+        <Modal
+          open={sources}
+          setOpen={setSources}
+          ariaLabel="How to read the election map"
+        >
+          <div className={styles.sources}>
+            <h2>How to read the map</h2>
+            <p>
+              Colors show the chance of winning implied by Manifold markets, not
+              vote share. Darker colors mean a stronger favorite. Teal means an
+              independent or other outcome leads; gray hatching means no usable
+              market odds. A gray “any other winner” quote is the NO side of a
+              party-win question, including all other parties. It is counted
+              separately from Democratic and Republican wins.
+            </p>
+            <p>
+              Colored crosshatching marks offices not on the 2026 ballot and
+              shows their current party, not election odds. Purple indicates a
+              split Senate delegation. Select or hover over a state to see its
+              sitting officeholders; Senate control colors group independents
+              with their caucus.
+            </p>
+            <p>
+              Candidate markets price the listed people. Their party colors come
+              from the answer labels; check the market description for how other
+              winners or replacement candidates are handled.
+            </p>
+            <p>
+              The seat bar counts each seat once for its leading outcome. Exact
+              ties and unpriced races stay separate. Senate totals include 34
+              Democratic-caucus and 31 Republican seats not on the ballot.
+              Republicans control a 50–50 Senate through the Vice President’s
+              tie-breaking vote.
+            </p>
+            <p>
+              Safe: 90% or higher. Likely: 75–90%. Lean: 60–75%. Toss-up:
+              neither side reaches 60%. Select a segment to filter races.
+            </p>
+            <p>
+              House coverage combines the curated competitive-district market
+              with reviewed state-wide district and individual winner markets.
+              Unlinked districts are unpriced, including safe seats; that does
+              not mean there is no market anywhere on Manifold. Chamber-control
+              odds are separate markets, not derived from the seat totals.
+            </p>
+            <p>
+              District boundaries reflect a September 24, 2026 snapshot based on
+              Census geography and redistricting research. Missouri uses its
+              2022 map pending litigation.
+            </p>
+            <p>
+              Prices update through Manifold’s subscriptions. Community markets
+              may be thinly traded; an unchanged price is not a new forecast.
+              Outcomes are normalized within each race for map colors.
+            </p>
+            <p className={styles.sourceCredit}>
+              Map data:{' '}
+              <a
+                href="https://drops.mts.now/midterms/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                MTS
+              </a>
+            </p>
+            <button
+              className={styles.dismiss}
+              onClick={() => setSources(false)}
             >
-              MTS
-            </a>
-          </p>
-          <button className={styles.dismiss} onClick={() => setSources(false)}>
-            Got it
-          </button>
-        </div>
-      </Modal>
-    </section>
+              Got it
+            </button>
+          </div>
+        </Modal>
+      </section>
+    </div>
+  )
+}
+
+function IncumbentDetails({
+  mode,
+  state,
+}: {
+  mode: ElectionMode
+  state: string
+}) {
+  const held = getHeldOffice(mode, state)
+  if (!held) return null
+  return (
+    <div className={styles.incumbents}>
+      <span className={styles.eyebrow}>
+        {mode === 'senate' ? 'Current senators' : 'Current governor'}
+      </span>
+      {held.members.map((member) => (
+        <span key={member.name}>
+          <i
+            style={{
+              background:
+                member.party === 'Democrat'
+                  ? DEM_COLOR
+                  : member.party === 'Republican'
+                  ? REP_COLOR
+                  : OTHER_COLOR,
+            }}
+          />
+          {member.name}{' '}
+          <small>
+            ({member.party === 'Independent' ? 'I' : member.party[0]})
+          </small>
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -1006,36 +1089,37 @@ function ControlCard({
         <Image
           src={`/politics-party/${rep ? 'republican' : 'democrat'}_symbol.png`}
           alt={rep ? 'Republican elephant' : 'Democratic donkey'}
-          width={64}
-          height={64}
+          width={32}
+          height={32}
         />
-      </span>
-      <span className={styles.controlTitle}>
-        {label} control
-        <small>
-          {odds
-            ? `${rep ? 'Republicans' : 'Democrats'} favored`
-            : 'Market unavailable'}
-        </small>
       </span>
       <span className={styles.controlLeader}>
         <strong style={{ color: rep ? REP_COLOR : DEM_COLOR }}>
           {odds ? pct(rep ? odds.rep : odds.dem) : '—'}
         </strong>
       </span>
-      <div className={styles.controlBar}>
-        {odds && (
-          <>
-            <i style={{ width: `${odds.dem * 100}%`, background: DEM_COLOR }} />
-            <i style={{ width: `${odds.rep * 100}%`, background: REP_COLOR }} />
-          </>
-        )}
-      </div>
+      <span className={styles.controlParty}>
+        {odds ? (rep ? 'Republican' : 'Democratic') : 'Unavailable'}
+      </span>
     </>
   )
   return (
     <>
       <div className={styles.controlCard}>
+        <div className={styles.controlTop}>
+          <span>{label} control</span>
+          {contract && (
+            <a
+              className={styles.chartLink}
+              href={contractPath(contract)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${label} control chart, description and comments (opens in a new tab)`}
+            >
+              chart →
+            </a>
+          )}
+        </div>
         <button
           className={styles.controlMain}
           aria-label={`Bet on ${label} control`}
@@ -1045,6 +1129,18 @@ function ControlCard({
         >
           {content}
         </button>
+        <div className={styles.controlBar}>
+          {odds && (
+            <>
+              <i
+                style={{ width: `${odds.dem * 100}%`, background: DEM_COLOR }}
+              />
+              <i
+                style={{ width: `${odds.rep * 100}%`, background: REP_COLOR }}
+              />
+            </>
+          )}
+        </div>
         {odds && (
           <div className={styles.controlBets}>
             <button
@@ -1054,7 +1150,7 @@ function ControlCard({
               onClick={() => setOutcome('NO')}
               style={{ color: DEM_COLOR }}
             >
-              <span>Democratic</span> <strong>{pct(odds.dem)}</strong>
+              <span>Dem</span> <strong>{pct(odds.dem)}</strong>
             </button>
             <button
               disabled={!tradable}
@@ -1063,11 +1159,10 @@ function ControlCard({
               onClick={() => setOutcome('YES')}
               style={{ color: REP_COLOR }}
             >
-              <span>Republican</span> <strong>{pct(odds.rep)}</strong>
+              <span>Rep</span> <strong>{pct(odds.rep)}</strong>
             </button>
           </div>
         )}
-        {contract && <MarketDetailsLink contract={contract} />}
       </div>
       {outcome &&
         contract?.mechanism === 'cpmm-1' &&

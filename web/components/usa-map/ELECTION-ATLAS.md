@@ -117,7 +117,7 @@ and `tsconfig-paths` already present in the repository. Set
 then run:
 
 ```
-node -r ts-node/register/transpile-only -r tsconfig-paths/register --test web/components/usa-map/election-map-model.test.ts
+node -r ts-node/register/transpile-only -r tsconfig-paths/register --test web/components/usa-map/election-map-model.test.ts web/components/usa-map/election-incumbents.test.ts
 ```
 
 Visual checks: desktop and narrow widths; House geographic/hex maps; Senate
@@ -127,12 +127,24 @@ methodology; a missing atlas; and missing/cancelled market prices. The chamber
 cards and district choices open the existing betting dialogs. Polling cards
 open the existing perpetual trading flow, preserving position, oracle freshness,
 and risk checks. Chamber tabs stay sticky within the explorer on all screen
-sizes; their illustrations disappear when pinned. Desktop map tools stay below
+sizes; the compact, centered switcher keeps the same height when pinned.
+Desktop map tools stay below
 that bar, with zoom at the top right, and the map height is capped to fit the
-viewport. Larger chamber-control cards scroll away above the tabs. States with
+viewport. Compact chamber-control cards sit outside the map section and scroll
+away above the tabs. Their small top-right chart links open the market, while
+each party button opens an in-page trade. Labels default on; map guidance is
+available through the More info footnote. States with
 no Senate or gubernatorial election can be selected in either map view: they
-highlight, explain that the office is not on the ballot, and offer a shortcut
-to that state's House districts. This is distinct from an unpriced race.
+highlight, show sitting officeholders on hover and selection, explain that the
+office is not on the ballot, and offer a shortcut to that state's House districts.
+Their colored crosshatching shows current party control (purple for a split
+Senate delegation), distinct from an unpriced race's gray hatching. White map
+borders remain visible in dark mode. The governor incumbent snapshot in
+`election-incumbents.ts` was checked against the National Governors Association
+directory and its linked roster on October 3, 2026: https://www.nga.org/governors/.
+Senate incumbents reuse the existing `currentSenate2026` data. These are static
+context snapshots to refresh when officeholders change, never assumed odds for
+unlinked races; they do not alter priced seat estimates.
 Duplicate race lists below the map have been removed.
 
 Answer and binary betting dialogs label the currently selected outcome's quote;
