@@ -924,7 +924,7 @@ export function ElectionExplorer(props: Props) {
                 <span key={n}>
                   <i
                     style={{
-                      background: measureColor(n) ?? 'var(--soft)',
+                      background: measureColor(n) ?? 'var(--no-measures)',
                       border: '1px solid var(--line)',
                     }}
                   />

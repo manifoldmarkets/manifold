@@ -1,5 +1,6 @@
 .layout {
   --measure-accent: #24665d;
+  --no-measures: #d4d4d4;
   --paper: rgb(var(--color-canvas-0));
   --soft: rgb(var(--color-canvas-50));
   --line: rgb(var(--color-ink-200));
@@ -66,7 +67,7 @@
 .controlCard {
   min-width: 0;
   padding: 14px;
-  background: var(--paper);
+  background: var(--soft);
   border-radius: 10px;
 }
 .controlTop {
@@ -97,7 +98,7 @@
   transition: background 150ms;
 }
 .controlMain:hover:not(:disabled) {
-  background: var(--soft);
+  background: var(--paper);
   border-radius: 6px;
 }
 .controlMain:focus-visible,
@@ -346,6 +347,9 @@
 }
 .noRace {
   fill: rgb(var(--color-ink-100));
+}
+.map[data-mode='measures'] .noRace {
+  fill: var(--no-measures);
 }
 .stateOutline {
   fill: none;
@@ -810,6 +814,7 @@
 }
 :global(.dark) .layout {
   --map-border: #161616;
+  --no-measures: #666;
 }
 .capitolTabs {
   display: flex;
