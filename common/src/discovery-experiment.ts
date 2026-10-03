@@ -1,8 +1,3 @@
-import {
-  getDeterministicABTestVariant,
-  getForcedABTestVariant,
-} from './ab-test'
-
 export const DISCOVERY_EXPERIMENT_NAME = 'discovery-v1'
 export const DISCOVERY_EXPERIMENT_VARIANTS = ['control', 'treatment'] as const
 export type DiscoveryExperimentVariant =
@@ -12,6 +7,19 @@ export type DiscoveryExperimentAssignmentSource =
   | 'user-hash'
   | 'device-hash'
 export type DiscoveryExperimentSurface = 'for-you' | 'text-search' | 'browse'
+
+// The discovery-v1 experiment concluded on 2026-09-26. Over the clean
+// 2026-09-15 to 2026-09-29 window, treatment lowered the For You
+// meaningful-action rate (−2.2 pp, 95% CI −4.3 to −0.1) and did not move
+// text-search CTR (−0.3 pp, CI −2.9 to +2.3), so every user now receives the
+// control experience. The assignment plumbing and the discovery_v1 events are
+// kept so Browse keeps producing the same baseline telemetry for the next
+// test; the treatment code paths are dormant until then.
+export const DISCOVERY_EXPERIMENT_CONCLUDED_VARIANT: DiscoveryExperimentVariant &
+  'control' = 'control'
+export const DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS = [
+  DISCOVERY_EXPERIMENT_CONCLUDED_VARIANT,
+] as const
 
 export type DiscoveryResultTracking = DiscoveryExperimentAssignment & {
   assignmentKey: string
@@ -38,42 +46,29 @@ export type DiscoveryExperimentAssignment = {
   source: DiscoveryExperimentAssignmentSource
 }
 
+// Everyone is in control now that the experiment has concluded. The
+// assignment unit is still reported so the exposure telemetry keeps the same
+// shape it had during the test.
 export const getDiscoveryExperimentAssignment = (args: {
   userId?: string
   deviceId?: string
 }): DiscoveryExperimentAssignment | undefined => {
   const { userId, deviceId } = args
-  const assignmentId = userId ?? deviceId
-  if (!assignmentId) return undefined
+  if (!userId && !deviceId) return undefined
 
-  const forcedVariant = getForcedABTestVariant(
-    userId,
-    DISCOVERY_EXPERIMENT_VARIANTS
-  )
   return {
-    variant: getDeterministicABTestVariant(
-      DISCOVERY_EXPERIMENT_NAME,
-      `${userId ? 'user' : 'device'}:${assignmentId}`,
-      DISCOVERY_EXPERIMENT_VARIANTS,
-      forcedVariant
-    ),
-    source: forcedVariant ? 'forced' : userId ? 'user-hash' : 'device-hash',
+    variant: DISCOVERY_EXPERIMENT_CONCLUDED_VARIANT,
+    source: userId ? 'user-hash' : 'device-hash',
   }
 }
 
-// Omitted means control so older clients do not enter the experiment merely
-// because the API deployed first. When a current signed-in client opts in,
-// independently reproduce its immutable-user assignment on the server rather
-// than trusting the arm in the request.
-export const getEffectiveDiscoveryExperimentVariant = (args: {
+// The server never trusts the arm in the request. With the experiment
+// concluded there is nothing to reproduce either: every caller, signed in or
+// anonymous, current client or old, gets control.
+export const getEffectiveDiscoveryExperimentVariant = (_args: {
   userId?: string
   requestedVariant?: DiscoveryExperimentVariant
-}): DiscoveryExperimentVariant => {
-  const { userId, requestedVariant } = args
-  if (requestedVariant === undefined) return 'control'
-  if (!userId) return requestedVariant
-  return getDiscoveryExperimentAssignment({ userId })!.variant
-}
+}): DiscoveryExperimentVariant => DISCOVERY_EXPERIMENT_CONCLUDED_VARIANT
 
 export type DiscoveryQueryLengthBucket =
   | '0'

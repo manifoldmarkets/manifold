@@ -6,15 +6,14 @@ import clsx from 'clsx'
 import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
 import { APIError } from 'common/api/utils'
-import { getForcedABTestVariant } from 'common/ab-test'
 import { Contract } from 'common/contract'
 import {
   BrowseMode,
   normalizeBrowseChange,
 } from 'common/browse-personalization'
 import {
+  DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
   DISCOVERY_EXPERIMENT_NAME,
-  DISCOVERY_EXPERIMENT_VARIANTS,
   DISCOVERY_EXPOSURE_EVENT,
   DISCOVERY_RESULTS_EVENT,
   DISCOVERY_SEARCH_ABORT_EVENT,
@@ -360,25 +359,25 @@ export function Search(props: SearchProps) {
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
   const user = useUser()
   const isAuthorized = useIsAuthorized()
-  const forcedDiscoveryVariant = getForcedABTestVariant(
-    user?.id,
-    DISCOVERY_EXPERIMENT_VARIANTS
-  )
+  // The discovery-v1 experiment has concluded; only control is offered, so
+  // every account and device lands there. The assignment unit is kept so the
+  // discovery_v1 telemetry keeps its shape for the next test.
   const discoveryAssignment = useABTestAssignment(
     DISCOVERY_EXPERIMENT_NAME,
-    DISCOVERY_EXPERIMENT_VARIANTS,
+    DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
     {
       isReady: isAuthorized !== undefined,
       userId: user?.id,
-      forcedVariant: forcedDiscoveryVariant,
     }
   )
-  const discoveryVariant = discoveryAssignment?.variant
+  const discoveryVariant: DiscoveryExperimentVariant | undefined =
+    discoveryAssignment?.variant
   const discoveryAssignmentKey = discoveryAssignment
     ? `${discoveryAssignment.assignmentUnit}:${discoveryAssignment.assignmentId}`
     : undefined
-  const discoveryAssignmentSource: DiscoveryExperimentAssignmentSource =
-    forcedDiscoveryVariant ? 'forced' : user ? 'user-hash' : 'device-hash'
+  const discoveryAssignmentSource: DiscoveryExperimentAssignmentSource = user
+    ? 'user-hash'
+    : 'device-hash'
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -885,14 +884,6 @@ export function Search(props: SearchProps) {
             hideSweepsToggle={hideSweepsToggle}
             extraFilterPills={extraFilterPills}
           />
-        )}
-        {isWholePage && forcedDiscoveryVariant && discoveryVariant && (
-          <div
-            className="text-ink-400 px-2 text-right text-xs"
-            title="This QA account has a fixed discovery experiment assignment."
-          >
-            Discovery v1 · {capitalize(discoveryVariant)}
-          </div>
         )}
       </Col>
       <Spacer h={1} />
