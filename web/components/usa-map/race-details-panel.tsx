@@ -1,4 +1,5 @@
 import {
+  CSSProperties,
   ReactNode,
   Ref,
   useCallback,
@@ -8,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { RefreshIcon, XIcon } from '@heroicons/react/outline'
 import styles from './election-explorer.module.css'
 
@@ -23,12 +25,49 @@ export function RaceDetailsPanel(props: {
   const { title, eyebrow, label, closeRef, onClose, chartLink, children } =
     props
   const panelRef = useRef<HTMLElement>(null)
+  const anchorRef = useRef<HTMLSpanElement>(null)
+  const [layer, setLayer] = useState<CSSProperties>()
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const offsetRef = useRef(offset)
   const [dragging, setDragging] = useState(false)
   const [moved, setMoved] = useState(false)
   const drag = useRef<{ x: number; y: number; px: number; py: number }>()
   const helpId = useId()
+  const hasLayer = !!layer
+
+  useLayoutEffect(() => {
+    const container = anchorRef.current?.parentElement
+    if (!container) return
+    let frame = 0
+    const position = () => {
+      const bounds = container.getBoundingClientRect()
+      // Keep the desktop popup anchored to the map while rendering outside
+      // the page's stacking contexts. The mobile sheet remains viewport-fixed.
+      setLayer({
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+        '--map-height':
+          getComputedStyle(container).getPropertyValue('--map-height'),
+      } as CSSProperties)
+    }
+    const schedule = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(position)
+    }
+    position()
+    const observer = new ResizeObserver(schedule)
+    observer.observe(container)
+    window.addEventListener('scroll', schedule, true)
+    window.addEventListener('resize', schedule)
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', schedule, true)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [])
 
   const move = useCallback((x: number, y: number) => {
     const bounds = panelRef.current?.getBoundingClientRect()
@@ -37,7 +76,7 @@ export function RaceDetailsPanel(props: {
     const baseY = bounds.top - offsetRef.current.y
     const viewportWidth = document.documentElement.clientWidth
     const mobile = window.innerWidth <= 850
-    const container = panelRef.current?.parentElement?.getBoundingClientRect()
+    const container = anchorRef.current?.parentElement?.getBoundingClientRect()
     const leftEdge = !mobile && container ? Math.max(8, container.left + 8) : 8
     const rightEdge =
       !mobile && container
@@ -71,7 +110,10 @@ export function RaceDetailsPanel(props: {
   useLayoutEffect(() => {
     panelRef.current?.querySelector('[data-details-content]')?.scrollTo(0, 0)
     move(offsetRef.current.x, offsetRef.current.y)
-  }, [title, move])
+    panelRef.current
+      ?.querySelector<HTMLButtonElement>('[aria-label="Close race details"]')
+      ?.focus({ preventScroll: true })
+  }, [title, move, hasLayer])
 
   useEffect(() => {
     // A resize can switch between the desktop card and mobile bottom sheet.
@@ -89,9 +131,9 @@ export function RaceDetailsPanel(props: {
     observer.observe(panel)
     if (panel.parentElement) observer.observe(panel.parentElement)
     return () => observer.disconnect()
-  }, [move])
+  }, [move, hasLayer])
 
-  return (
+  const panel = (
     <section
       ref={panelRef}
       className={styles.details}
@@ -188,5 +230,17 @@ export function RaceDetailsPanel(props: {
         {children}
       </div>
     </section>
+  )
+  return (
+    <>
+      <span ref={anchorRef} hidden aria-hidden />
+      {layer &&
+        createPortal(
+          <div className={styles.detailsLayer} style={layer}>
+            {panel}
+          </div>,
+          document.body
+        )}
+    </>
   )
 }

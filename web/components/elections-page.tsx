@@ -90,7 +90,7 @@ export function USElectionsPage(
   }`
 
   return (
-    <Col className="mb-8 gap-6 px-1 sm:px-2">
+    <Col className="isolate mb-8 gap-6 px-1 sm:px-2">
       {/* Hero with back navigation, left-aligned (back sits left of the title). */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
         <BackButton />

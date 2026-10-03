@@ -1,6 +1,9 @@
 .layout {
   position: relative;
   z-index: 30;
+}
+.layout,
+.detailsLayer {
   --measure-accent: #24665d;
   --no-measures: #d4d4d4;
   --paper: rgb(var(--color-canvas-0));
@@ -11,6 +14,14 @@
   --accent: rgb(var(--color-primary-700));
   color: var(--ink);
   --map-border: #fff;
+}
+.detailsLayer {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+}
+.detailsLayer .details {
+  pointer-events: auto;
 }
 .explorer {
   position: relative;
@@ -905,7 +916,8 @@
     transition: none;
   }
 }
-:global(.dark) .layout {
+:global(.dark) .layout,
+:global(.dark) .detailsLayer {
   --map-border: #161616;
   --no-measures: #666;
 }
@@ -1231,6 +1243,7 @@
   display: block;
   margin-top: 8px;
 }
-:global(.dark) .layout {
+:global(.dark) .layout,
+:global(.dark) .detailsLayer {
   --measure-accent: #82cfc2;
 }
