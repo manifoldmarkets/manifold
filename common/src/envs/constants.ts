@@ -241,6 +241,7 @@ export const MOD_IDS = [
   'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'sCOvPc5J2sOacn0DYjwL7OAMzcV2', // bens
+  '9pduED6AAYSDeHBRRvMNxONVzMJ2', // Quroe
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
@@ -569,6 +570,7 @@ export const RESERVED_PATHS = [
   'create-post',
   'date-docs',
   'dashboard',
+  'data',
   'discord',
   'discord-bot',
   'dream',

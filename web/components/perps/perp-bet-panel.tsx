@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -8,29 +9,49 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
-  getPerpOpenInterestCapacity,
+  assertPerpPositionNumbers,
+  getPerpBackingPool,
+  getPerpOpenInterestCapacityForOpen,
+  getPositionValue,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
   mergedEntryPrice,
-  PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
-import { calcPerpTakerFee, getPerpTakerFeeBps } from 'common/perps/fees'
+import {
+  assertPerpTakerFeeConfig,
+  calculatePerpOpenCashFlow,
+  getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
+  perpMaxFeeFor,
+  perpOpenFeeQuote,
+  perpOwnContributionInputs,
+  PERP_MAX_FEE_SHARE_OF_MARGIN,
+} from 'common/perps/fees'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { fundingPerPeriod } from 'common/perps/pnl'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import {
+  fundingPerPeriod,
+  getPerpPositionTotalCost,
+  getPerpProfitScenarios,
+  PerpPnlPositionInput,
+} from 'common/perps/pnl'
+import { formatFeePct, inferPriceDecimals } from 'common/perps/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  MONEY_PRECISE_DUST,
+} from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Slider, sliderColors } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -66,9 +87,20 @@ export const PerpBetPanel = (props: {
   // open direction derives from these, so this panel stays consistent with
   // actions taken anywhere without its own fetch. Null while loading.
   positions?: PerpPositionRow[] | null
+  // Rows for this contract that failed row-level sanity. They are excluded
+  // from `positions` (nothing can render or price against them), but the
+  // engine refuses to trade at all for a user who holds one, so the preview
+  // must fail closed rather than quote a fresh open.
+  unsoundPositions?: PerpPositionRow[]
   oracleTradingPaused?: boolean
 }) => {
-  const { contract, onTrade, positions, oracleTradingPaused = false } = props
+  const {
+    contract,
+    onTrade,
+    positions,
+    unsoundPositions,
+    oracleTradingPaused = false,
+  } = props
   const user = useUser()
 
   const [direction, setDirection] = useState<'long' | 'short'>('long')
@@ -173,24 +205,186 @@ export const PerpBetPanel = (props: {
   // auto-close it before opening the new one (engine does this atomically).
   const isFlip = !!openDirection && openDirection !== direction
 
-  // Open-side taker fee on notional — closing is free, so this is the whole
-  // round-trip cost, shown up front. Mirrors the engine exactly (fee on
-  // deltaSize = margin × leverage); a flip pays it on the new leg only.
+  // Open-side taker fee — closing is free, so this is the whole round-trip
+  // cost, shown up front. perpOpenFeeQuote is the same input assembly the
+  // engine charges from: an ADD is priced at the cumulative share against a
+  // depth net of the trader's own contribution, and a flip pays on the new
+  // leg only, against the post-flip-close pool depth (the close payout —
+  // exactly getPositionValue — leaves the pool before the new leg is
+  // priced). An ADD's netted contribution is marked to market at the same
+  // price the engine uses, so a losing holder is not charged for margin that
+  // has already left the pool. Accuracy of this preview needs a loaded
+  // position (myPosition), which is why submit is gated on `positions`
+  // below.
   const takerFeeBps = getPerpTakerFeeBps(contract)
-  const openFee = calcPerpTakerFee(notional, takerFeeBps)
+  const takerFeeImpact = getPerpTakerFeeImpact(contract)
+  const grossPoolDepth = getPerpBackingPool(
+    contract.poolLong,
+    contract.poolShort
+  )
+  // Current value of the held position at the trade mark — the SAME quantity
+  // the engine reads under its lock. It plays two different roles depending
+  // on the action, and never both at once:
+  //   - FLIP: it is the payout that leaves the pool before the new leg is
+  //     priced, so it comes off the gross depth.
+  //   - ADD: it caps the trader's own standing contribution that gets netted
+  //     out of that depth (min with costBasis), so margin already paid out to
+  //     winners is not deducted twice over.
+  const myPositionValue = myPosition
+    ? getPositionValue({ ...myPosition, contractId: contract.id }, price)
+    : 0
+  const feeGrossDepth =
+    isFlip && myPosition
+      ? Math.max(grossPoolDepth - myPositionValue, 0)
+      : grossPoolDepth
+  const feeDetails = perpOpenFeeQuote({
+    grossPoolDepth: feeGrossDepth,
+    // Shared with the engine so the preview cannot derive the trader's own
+    // contribution differently from the charge.
+    ...perpOwnContributionInputs(
+      isAdd && myPosition
+        ? { ...myPosition, contractId: contract.id }
+        : undefined,
+      price
+    ),
+    addedNotional: notional,
+    baseBps: takerFeeBps,
+    impact: takerFeeImpact,
+  })
+  const openFee = feeDetails.fee
+  // Refuse to preview a fee we don't trust, rather than showing a
+  // plausible-looking number the engine will not charge (and a maxFee derived
+  // from it, which then rejects the trade with an opaque server string).
+  //
+  // The check runs on the RAW contract/position fields, not on the derived
+  // values, because every helper in this path is deliberately TOTAL and
+  // launders bad input into a finite-looking result: getPerpBackingPool
+  // returns 0 for non-finite or negative pools, getPerpTakerFeeBps /
+  // getPerpTakerFeeImpact substitute the platform defaults for out-of-range
+  // config, and getPositionValue returns the raw cost basis when entryPrice
+  // is non-positive (getUnrealizedEquity short-circuits to 0). Checking
+  // Number.isFinite on their OUTPUTS therefore passes in exactly the cases
+  // that matter. The engine, by contrast, throws on all three
+  // (assertPerpTakerFeeConfig, assertUserPerpRowsSound), so previewing them
+  // would promise a trade that cannot succeed.
+  //
+  // The two asserts are the same ones the engine runs, called here rather
+  // than reimplemented so the panel's notion of "valid" cannot drift from the
+  // charging path's.
+  const rawFeeInputsInvalid = useMemo(() => {
+    try {
+      assertPerpTakerFeeConfig(contract)
+      if (myPosition)
+        assertPerpPositionNumbers({ ...myPosition, contractId: contract.id })
+    } catch {
+      return true
+    }
+    // A row the hook filtered out of `positions` is invisible to myPosition,
+    // but the engine still refuses to trade for its owner.
+    if (user && unsoundPositions?.some((r) => r.userId === user.id)) return true
+    return (
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      !Number.isFinite(contract.poolLong) ||
+      contract.poolLong < 0 ||
+      !Number.isFinite(contract.poolShort) ||
+      contract.poolShort < 0
+    )
+  }, [
+    contract.id,
+    contract.poolLong,
+    contract.poolShort,
+    contract.takerFeeBps,
+    contract.takerFeeImpact,
+    myPosition,
+    price,
+    unsoundPositions,
+    user?.id,
+  ])
+  // Raw-field checks are necessary but NOT sufficient: individually finite
+  // inputs can still overflow when combined (two ~1e308 pools sum to
+  // Infinity, which getPerpBackingPool then launders to 0; costBasis plus
+  // equity can do the same). Keep the derived checks alongside them.
+  const feePreviewInvalid =
+    rawFeeInputsInvalid ||
+    !Number.isFinite(contract.poolLong + contract.poolShort) ||
+    !Number.isFinite(grossPoolDepth) ||
+    !Number.isFinite(feeGrossDepth) ||
+    (!!myPosition && !Number.isFinite(myPositionValue)) ||
+    !Number.isFinite(openFee)
+  // The position this trade RESULTS in — the row the position card will show
+  // once it lands — which the profit ladder is built on. A fresh open (or a
+  // flip's new leg) is just this tranche at the mark. An add merges the
+  // tranche into the held row exactly as the engine does (openPosition, then
+  // accruePerpPositionTakerFee): size and both cost bases sum, the entry
+  // price is the merged one previewed above, and the fee accrues onto the
+  // fee basis. The ladder describes this row rather than the tranche because
+  // the card can only ever show the merged position — a "+25% on the
+  // tranche" target would mix the tranche's cash with the merged entry
+  // price, which is why adds used to get no ladder at all.
+  const heldForAdd = isAddPreview && notional > 0 ? myPosition : null
+  const resultingPosition: PerpPnlPositionInput = {
+    direction,
+    size: (heldForAdd?.size ?? 0) + notional,
+    costBasis: (heldForAdd?.costBasis ?? 0) + marginAmount,
+    originalCostBasis: (heldForAdd?.originalCostBasis ?? 0) + marginAmount,
+    takerFeeCostBasis: (heldForAdd?.takerFeeCostBasis ?? 0) + openFee,
+    entryPrice: preview.entryPrice,
+  }
+  // Price protection sent with the trade: the engine rejects rather than
+  // charges if the authoritative fee exceeds this. The band is the DISPLAYED
+  // fee plus PERP_FEE_SLIPPAGE_BPS of notional — see perpMaxFeeFor for why it
+  // is sized in bps of size rather than as a percentage of the fee.
+  const maxFee = perpMaxFeeFor(openFee, notional)
+
+  // Affordability, through the same helper the engine's 403 runs: the debit
+  // is margin PLUS the fee quoted above, and a flip's free close payout —
+  // myPositionValue, the same amount that leaves the pool — may fund it.
+  // BuyAmountInput's own check (margin ≤ raw balance) is switched off via
+  // disregardUserBalance because it is wrong in both directions here: it
+  // passes a max-balance open the fee makes unaffordable (server 403), and
+  // blocks a payout-funded flip the engine accepts.
+  const flipPayout = isFlip && myPosition ? myPositionValue : 0
+  const cashFlow =
+    marginAmount > 0
+      ? calculatePerpOpenCashFlow({
+          balance: user?.balance ?? 0,
+          margin: marginAmount,
+          openFee,
+          closePayout: flipPayout,
+        })
+      : undefined
+  // Judged only once positions are loaded — before that a flip previews as a
+  // fresh open with no payout to fund it, which would flash "Insufficient
+  // balance" at exactly the trader it should not (submit is separately gated
+  // on positions == null). An unpriceable fee already blocks submit with its
+  // own message, so it is not double-reported here.
+  const affordabilityError =
+    user && positions != null && marginAmount > 0 && !feePreviewInvalid
+      ? !cashFlow
+        ? 'Unable to calculate trade cost'
+        : !cashFlow.isAffordable
+        ? 'Insufficient balance'
+        : undefined
+      : undefined
+  const displayedAmountError = amountError ?? affordabilityError
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
-      return getPerpOpenInterestCapacity(
+      const state = {
+        pool: { L: contract.poolLong, S: contract.poolShort },
+        positions: positions.map((position) => ({
+          ...position,
+          contractId: contract.id,
+        })),
+      }
+      return getPerpOpenInterestCapacityForOpen(
         direction,
-        {
-          pool: { L: contract.poolLong, S: contract.poolShort },
-          positions: positions.map((position) => ({
-            ...position,
-            contractId: contract.id,
-          })),
-        },
-        price
+        state,
+        price,
+        isFlip && myPosition
+          ? { ...myPosition, contractId: contract.id }
+          : undefined
       )
     } catch {
       // The engine remains authoritative. Avoid turning corrupt or transiently
@@ -202,6 +396,8 @@ export const PerpBetPanel = (props: {
     contract.poolLong,
     contract.poolShort,
     direction,
+    isFlip,
+    myPosition,
     positions,
     price,
   ])
@@ -223,6 +419,13 @@ export const PerpBetPanel = (props: {
       toast.error('Sign in to trade')
       return
     }
+    if (positions == null) {
+      // The fee (and add/flip detection) is previewed from the shared
+      // positions; before they load, an add would be previewed as a fresh
+      // open and the confirmed fee could be a fraction of the charged one.
+      toast.error('Still loading positions — try again in a moment')
+      return
+    }
     if (!margin || margin <= 0 || effectiveLeverage <= 0) {
       toast.error('Enter a positive margin and leverage')
       return
@@ -236,6 +439,46 @@ export const PerpBetPanel = (props: {
         `Only ${formatMoney(
           capacity.headroom
         )} of additional ${direction} notional is available`
+      )
+      return
+    }
+    if (openFee >= marginAmount * PERP_MAX_FEE_SHARE_OF_MARGIN) {
+      // Mirrors the engine's hard reject.
+      toast.error(
+        `Fee would consume ${Math.round(
+          (openFee / marginAmount) * 100
+        )}% of your margin — reduce position size or leverage`
+      )
+      return
+    }
+    if (feePreviewInvalid) {
+      // Mirrors the engine's fail-closed reject on an unpriceable position.
+      toast.error(
+        "Cannot price this trade right now — this market's data can't be read"
+      )
+      return
+    }
+    if (feeDetails.depthExhausted) {
+      // Mirrors the engine's fail-closed reject: the size fee has no valid
+      // depth to price against, so adding is blocked.
+      toast.error(
+        'Market backing is exhausted relative to your position — close or reduce instead'
+      )
+      return
+    }
+    if (!cashFlow || !cashFlow.isAffordable) {
+      // Mirrors the engine's 403 (same helper, same inputs), itemised the
+      // same way so the two messages can never tell different stories.
+      toast.error(
+        cashFlow
+          ? `Insufficient balance: need ${formatMoneyPrecise(
+              cashFlow.totalDebit
+            )} (${formatMoney(marginAmount)} margin${
+              openFee > 0 ? ` + ${formatMoneyPrecise(openFee)} fee` : ''
+            }), have ${formatMoneyPrecise(cashFlow.spendableBalance)}${
+              flipPayout > 0 ? ' including the flipped position' : ''
+            }`
+          : 'Unable to calculate trade cost'
       )
       return
     }
@@ -258,10 +501,12 @@ export const PerpBetPanel = (props: {
         mana: margin,
         leverage: effectiveLeverage,
         idempotencyKey: request.idempotencyKey,
+        maxFee,
       })
       const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
       toast.success(
-        `${verb} ${direction} at ${formatPrice(
+        `${verb} ${direction} at ${formatOraclePrice(
+          contract.oracleFeedId,
           res.position.entryPrice,
           priceDecimals
         )}`
@@ -279,6 +524,16 @@ export const PerpBetPanel = (props: {
         leverage: effectiveLeverage,
         notional,
         perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
+        // Fee distribution telemetry: what rate people actually pay and how
+        // big they trade relative to the pool, for tuning takerFeeImpact.
+        // ALWAYS the engine's charged values from the trade response, never
+        // the client preview — the preview can lag pools/positions, and this
+        // dataset calibrates the impact coefficient.
+        fee: res.fee,
+        feeBps:
+          res.feeBps ??
+          (notional > 0 && res.fee > 0 ? (res.fee / notional) * 10_000 : 0),
+        poolShareAfter: res.poolShareAfter ?? feeDetails.poolShareAfter,
       })
       // Reflect the trade everywhere on the page (position panel, pools,
       // funding, this panel's open direction) immediately — onTrade bumps
@@ -372,8 +627,11 @@ export const PerpBetPanel = (props: {
           parentClassName="max-w-full"
           amount={margin}
           onChange={setMargin}
-          error={amountError}
+          error={displayedAmountError}
           setError={setAmountError}
+          // Balance is validated against margin + fee (and a flip's payout)
+          // above, not against margin alone.
+          disregardUserBalance
           disabled={submitting}
           showSlider
           showSliderMarks
@@ -400,10 +658,11 @@ export const PerpBetPanel = (props: {
       </Col>
 
       <StatsGrid
-        direction={direction}
+        feedId={contract.oracleFeedId}
+        resultingPosition={resultingPosition}
+        markPrice={price}
         notional={notional}
         margin={marginAmount}
-        leverage={preview.leverage}
         entryPrice={preview.entryPrice}
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
@@ -411,8 +670,13 @@ export const PerpBetPanel = (props: {
         fundingManaPerPeriod={fundingManaPerPeriod}
         fundingPeriodMs={getFundingPeriodMs(contract)}
         isAddPreview={isAddPreview}
-        takerFeeBps={takerFeeBps}
+        feeBaseBps={takerFeeBps}
         fee={openFee}
+        feeEffectiveBps={feeDetails.effectiveBps}
+        feeSizeBps={feeDetails.sizeBps}
+        feeDepthExhausted={feeDetails.depthExhausted}
+        feePreviewInvalid={feePreviewInvalid}
+        poolShareAfter={feeDetails.poolShareAfter}
       />
 
       {capacity && (
@@ -432,8 +696,7 @@ export const PerpBetPanel = (props: {
           ) : (
             <>
               {formatMoney(capacity.headroom)} additional {direction} notional
-              capacity at the {PERP_OPEN_INTEREST_COVER_MULTIPLE}× backing
-              limit.
+              capacity at the backing limit.
             </>
           )}
         </div>
@@ -446,10 +709,22 @@ export const PerpBetPanel = (props: {
         disabled={
           submitting ||
           !user ||
-          !!amountError ||
+          // Positions must be loaded before the previewed fee (and add/flip
+          // detection) can be trusted — see the onSubmit gate.
+          positions == null ||
+          !!displayedAmountError ||
           !margin ||
           margin <= 0 ||
           exceedsCapacity ||
+          // Engine hard-rejects a fee at or above this share of margin.
+          (marginAmount > 0 &&
+            openFee >= marginAmount * PERP_MAX_FEE_SHARE_OF_MARGIN) ||
+          // Engine fail-closes when the size fee has no depth to price
+          // against (backing exhausted relative to the position).
+          feeDetails.depthExhausted ||
+          // The previewed fee cannot be trusted (non-finite mark, pools, or
+          // position value), so there is nothing for the user to consent to.
+          feePreviewInvalid ||
           oracleTradingPaused
         }
         size="lg"
@@ -552,26 +827,39 @@ const LeverageSlider = (props: {
   )
 }
 
-// Profit tiers shown in the scenario ladder: each is a +r return on margin.
+// Profit tiers shown in the scenario ladder: each is a +r NET return on the
+// cash committed to the position the trade results in (margin + opening/add
+// fees; the whole merged row on an add) — the same base the position card's
+// percentage uses, so the two agree at the target price.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
 
-// Adaptive precision so sub-cent per-period funding amounts don't collapse
-// to "0.00". Shared with the position card's funding row.
-export const formatFundingMana = (absAmount: number) => {
-  const m = ENV_CONFIG.moneyMoniker
-  if (!(absAmount > 0)) return `${m}0`
-  const body =
-    absAmount >= 0.01
-      ? absAmount.toFixed(2)
-      : `${Number(absAmount.toPrecision(2))}`
-  return `${m}${body}`
+const formatPoolShare = (share: number) => {
+  if (!Number.isFinite(share) || share <= 0) return '0%'
+  const pct = share * 100
+  return `${pct >= 10 ? Math.round(pct) : Number(pct.toFixed(1))}%`
 }
 
+// The fee line turns amber once the position would be half the backing pool —
+// well before the convex part of the curve really bites (≥ 100% of pool).
+const LARGE_POOL_SHARE_WARNING = 0.5
+
+const SizeFeeWhyTooltip = () => (
+  <InfoTooltip text="Fees scale with your position's share of this market's backing pool — like price impact on an order book, but shown exactly before you trade. Small positions pay just the base rate. Reduce size or leverage to pay less; closing is always free.">
+    <span className="text-xs font-medium">why?</span>
+  </InfoTooltip>
+)
+
 const StatsGrid = (props: {
-  direction: 'long' | 'short'
+  feedId: string
+  // The position this trade results in — the row the position card will
+  // show once it lands — which the profit ladder is built on. Just the
+  // tranche on an open or flip; the merged row on an add.
+  resultingPosition: PerpPnlPositionInput
+  // Current oracle price. A tier only counts as a profit scenario when it
+  // takes a favourable move from here.
+  markPrice: number
   notional: number
   margin: number
-  leverage: number
   entryPrice: number
   liqPrice: number
   priceDecimals: number
@@ -584,19 +872,30 @@ const StatsGrid = (props: {
   // The contract's frozen funding period — labels are per-hour on fast
   // feeds, per-day on daily ones.
   fundingPeriodMs: number
-  // True when adding to a held position: entryPrice/leverage/liqPrice
-  // describe the merged result, so the labels say so.
+  // True when adding to a held position: entryPrice/leverage/liqPrice and
+  // the profit ladder describe the merged result, so the labels say so.
   isAddPreview?: boolean
-  // Open-side taker fee (bps of notional) and the mana fee for THIS trade.
-  // Closing is free, so this is the whole round-trip cost.
-  takerFeeBps: number
+  // Open-side taker fee for THIS trade. Closing is free, so this is the
+  // whole round-trip cost. The effective rate is base + size: positions
+  // large relative to the pool pay more (feeSizeBps > 0), and poolShareAfter
+  // says how large — the breakdown line shows all three once the size term
+  // is visible at display precision.
+  feeBaseBps: number
   fee: number
+  feeEffectiveBps: number
+  feeSizeBps: number
+  poolShareAfter: number
+  // The size fee could not be priced (net depth exhausted) — the engine will
+  // reject this trade, so surface why while submit is disabled.
+  feeDepthExhausted: boolean
+  // A fee input was non-finite, so the quote shown would be meaningless.
+  feePreviewInvalid: boolean
 }) => {
   const {
-    direction,
+    resultingPosition,
+    markPrice,
     notional,
     margin,
-    leverage,
     entryPrice,
     liqPrice,
     priceDecimals,
@@ -604,34 +903,53 @@ const StatsGrid = (props: {
     fundingManaPerPeriod,
     fundingPeriodMs,
     isAddPreview,
-    takerFeeBps,
+    feeBaseBps,
     fee,
+    feeEffectiveBps,
+    feeSizeBps,
+    poolShareAfter,
+    feeDepthExhausted,
+    feePreviewInvalid,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
 
-  const canShowScenarios =
-    Number.isFinite(entryPrice) && margin > 0 && leverage > 0
+  // Show the base/size breakdown only once the size term is visible at
+  // display precision (0.01% at two decimals) — small trades read as just
+  // the base.
+  const showFeeBreakdown = feeSizeBps >= 1
+  const isLargeShareFee =
+    feeSizeBps > 0 && poolShareAfter >= LARGE_POOL_SHARE_WARNING
+  // Mirrors the engine's hard reject.
+  const feeExceedsMargin =
+    margin > 0 && fee >= margin * PERP_MAX_FEE_SHARE_OF_MARGIN
 
-  // At leverage ℓ a +r return on margin needs a price move of r/ℓ, so the
-  // target price is entry·(1 ± r/ℓ) and the mana P&L is just r·margin.
+  // Hidden while the fee cannot be quoted (every tier is net of it) and until
+  // a trade is configured; getPerpProfitScenarios fails closed on the rest.
+  const canShowScenarios = !feePreviewInvalid && margin > 0 && notional > 0
+
+  // Each tier is the price at which the position's user-facing PnL — the
+  // number the position card will show, net of the opening fee — reaches +r
+  // of the cash committed to the position this trade results in. That base
+  // (margin + fees) is the same denominator the card's percentage uses
+  // (getUserFacingPnlPercent), so at the solved price the card reads exactly
+  // "+r%" and exactly this mana profit. Without the fee this is the familiar
+  // entry·(1 ± r/ℓ); with it the target sits further out, so the ladder
+  // never promises a profit the card would then report as smaller. On an add
+  // the row is the merged position (see resultingPosition), so the ladder
+  // covers the whole position and is captioned as such below. Closing is
+  // free; future funding remains unknowable here (and is called out below).
   const scenarios = canShowScenarios
-    ? RETURN_TIERS.map((ret) => ({
-        ret,
-        price:
-          direction === 'long'
-            ? entryPrice * (1 + ret / leverage)
-            : entryPrice * (1 - ret / leverage),
-        pnl: ret * margin,
-      })).filter((s) => Number.isFinite(s.price) && s.price > 0)
+    ? getPerpProfitScenarios(resultingPosition, markPrice, RETURN_TIERS)
     : []
 
   const periodPct = marketFundingRate * 100
-  const paysFunding = fundingManaPerPeriod < 0
-  const earnsFunding = fundingManaPerPeriod > 0
+  // Dust from a near-balanced pool would otherwise read "-Ṁ0/hr".
+  const paysFunding = fundingManaPerPeriod <= -MONEY_PRECISE_DUST
+  const earnsFunding = fundingManaPerPeriod >= MONEY_PRECISE_DUST
   const fundingValue = `${
     paysFunding ? '-' : earnsFunding ? '+' : ''
-  }${formatFundingMana(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
+  }${formatMoneyPrecise(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
     fundingPeriodMs
   )} · ${periodPct >= 0 ? '+' : ''}${periodPct.toFixed(3)}%`
 
@@ -640,11 +958,11 @@ const StatsGrid = (props: {
       <StatRow label="Notional" value={formatMoney(notional)} bold />
       <StatRow
         label={isAddPreview ? 'New avg. entry' : 'Entry price'}
-        value={formatPrice(entryPrice, priceDecimals)}
+        value={formatOraclePrice(props.feedId, entryPrice, priceDecimals)}
       />
       <StatRow
         label={isAddPreview ? 'New liquidation' : 'Liquidation'}
-        value={formatPrice(liqPrice, priceDecimals)}
+        value={formatOraclePrice(props.feedId, liqPrice, priceDecimals)}
         valueClass="text-scarlet-600"
       />
       <StatRow
@@ -658,11 +976,73 @@ const StatsGrid = (props: {
             : undefined
         }
       />
-      {takerFeeBps > 0 && (
-        <StatRow
-          label={`Fee (${(takerFeeBps / 100).toFixed(2)}%, free to close)`}
-          value={formatMoneyWithDecimals(fee)}
-        />
+      {/* feeDepthExhausted must force the block open: with base = 0 both
+          fee components read zero exactly when the explanation for the
+          disabled submit lives here. */}
+      {(feeBaseBps > 0 ||
+        feeSizeBps > 0 ||
+        feeDepthExhausted ||
+        feePreviewInvalid) && (
+        <Col className="gap-0.5">
+          <StatRow
+            label="Fee (free to close)"
+            // Never render a number we don't trust — the scarlet line below
+            // is the whole message in that case.
+            value={
+              feePreviewInvalid
+                ? '—'
+                : `${formatMoneyPrecise(fee)} (${formatFeePct(
+                    notional > 0 ? feeEffectiveBps : feeBaseBps
+                  )})`
+            }
+            valueClass={
+              isLargeShareFee && !feePreviewInvalid
+                ? 'font-semibold text-amber-700 dark:text-amber-400'
+                : undefined
+            }
+          />
+          {/* ONE compact breakdown line for both severities — only the color
+              changes with isLargeShareFee, so copy and formats cannot fork
+              across the threshold. The full explanation lives in the "why?"
+              hover to keep the panel small. */}
+          {!feePreviewInvalid && (showFeeBreakdown || isLargeShareFee) && (
+            <Row
+              className={clsx(
+                'items-center gap-1 text-xs leading-tight',
+                // amber-700 in light mode: amber-600 on canvas-50 is ~2.9:1,
+                // below the 4.5:1 required for text this size.
+                isLargeShareFee
+                  ? 'font-medium text-amber-700 dark:text-amber-400'
+                  : 'text-ink-400'
+              )}
+            >
+              <span>
+                {formatFeePct(feeBaseBps)} base + {formatFeePct(feeSizeBps)}{' '}
+                size — position is {formatPoolShare(poolShareAfter)} of pool
+              </span>
+              <SizeFeeWhyTooltip />
+            </Row>
+          )}
+          {feeExceedsMargin && !feePreviewInvalid && (
+            <span className="text-scarlet-600 text-xs font-medium leading-tight">
+              Fee would consume over{' '}
+              {Math.round(PERP_MAX_FEE_SHARE_OF_MARGIN * 100)}% of your margin —
+              reduce position size or leverage.
+            </span>
+          )}
+          {feeDepthExhausted && !feePreviewInvalid && (
+            <span className="text-scarlet-600 text-xs font-medium leading-tight">
+              This market's backing is exhausted relative to your position —
+              close or reduce instead of adding.
+            </span>
+          )}
+          {feePreviewInvalid && (
+            <span className="text-scarlet-600 text-xs font-medium leading-tight">
+              This market's data can't be read right now, so the fee can't be
+              quoted and trading is blocked.
+            </span>
+          )}
+        </Col>
       )}
 
       {scenarios.length > 0 && (
@@ -686,7 +1066,7 @@ const StatsGrid = (props: {
           {scenariosOpen && (
             <>
               <Row className="text-ink-400 items-baseline text-xs">
-                <span className="flex-1">gain</span>
+                <span className="flex-1">return</span>
                 <span className="w-20 text-right">at price</span>
                 <span className="w-20 text-right">profit</span>
               </Row>
@@ -696,13 +1076,23 @@ const StatsGrid = (props: {
                     +{Math.round(s.ret * 100)}%
                   </span>
                   <span className="text-ink-700 w-20 text-right">
-                    {formatPrice(s.price, priceDecimals)}
+                    {formatOraclePrice(props.feedId, s.price, priceDecimals)}
                   </span>
                   <span className="w-20 text-right font-medium text-teal-600">
-                    +{formatMoneyWithDecimals(s.pnl)}
+                    +{formatMoneyPrecise(s.pnl)}
                   </span>
                 </Row>
               ))}
+              {isAddPreview && (
+                <span className="text-ink-400 text-xs leading-tight">
+                  Whole {resultingPosition.direction} position after this add —{' '}
+                  {formatMoneyPrecise(
+                    getPerpPositionTotalCost(resultingPosition)
+                  )}{' '}
+                  committed including what you already hold — so it matches what
+                  the position card will show.
+                </span>
+              )}
               {(paysFunding || earnsFunding) && (
                 <span className="text-ink-400 text-xs leading-tight">
                   {paysFunding

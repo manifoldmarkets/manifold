@@ -1,5 +1,4 @@
 import {
-  hasTrumpApprovalPointForDay,
   publishTrumpApprovalPoint,
   trumpApprovalDay,
 } from 'shared/perps/publish-trump-approval'
@@ -16,11 +15,16 @@ import { runScript } from './run-script'
 // liquidations and ADL the new price implies happen immediately, as they
 // would on a normal publication.
 //
-// Refuses to run when the Pacific day already has a point, because the
-// scheduled job is hourly: without the guard, an operator running this while
-// the cron fires appends two points for one day and breaks the daily cadence
-// that the market's funding period is anchored to. Pass --force to append a
-// correction deliberately.
+// Without --force this respects the same gate the scheduled job uses, so it
+// declines when VoteHub's value has not moved and the feed already carries a
+// recent point — there is nothing to publish and saying so is more useful
+// than appending a duplicate. Pass --force during an incident to stamp the
+// current value regardless, which is the whole point of the escape hatch.
+//
+// Multiple points in one Pacific day are expected now that the job publishes
+// on change rather than once daily. Funding is gated on elapsed time since
+// the last funding event, not on one point per day, so extra points do not
+// disturb its cadence.
 //
 // It does NOT backfill missed days. A value is stamped when it became
 // available to the market and is never backdated into a window where funding
@@ -37,12 +41,7 @@ if (require.main === module)
     const force = process.argv.includes('--force')
     const today = trumpApprovalDay()
 
-    if (!force && (await hasTrumpApprovalPointForDay(pg, today)))
-      throw new Error(
-        `${today} already has a published point; pass --force to append another`
-      )
-
-    const result = await publishTrumpApprovalPoint(pg)
+    const result = await publishTrumpApprovalPoint(pg, { force })
     if (result.status !== 'published')
       throw new Error(
         `nothing published for ${today} (${result.status}): ${result.reason}`

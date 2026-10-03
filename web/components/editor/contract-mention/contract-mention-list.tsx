@@ -66,7 +66,7 @@ const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
               key={contract.id}
             >
               <Avatar avatarUrl={contract.creatorAvatarUrl} size="xs" />
-              {isPerp && <PerpMarketBadge />}
+              {isPerp && <PerpMarketBadge contract={contract} />}
               <span className="min-w-0 flex-1 truncate text-left">
                 {contract.question}
               </span>

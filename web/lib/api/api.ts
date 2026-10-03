@@ -2,6 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import { apiWithAuth, callWithAuth } from 'client-common/lib/api'
 import { APIParams, APIPath } from 'common/api/schema'
 import { getApiUrl } from 'common/api/utils'
+import { BaseApiCallOptions } from 'common/util/api'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
@@ -21,7 +22,7 @@ export async function call(
 export async function api<P extends APIPath>(
   path: P,
   params: APIParams<P> = {},
-  options?: { cache?: RequestCache }
+  options?: BaseApiCallOptions
 ) {
   return apiWithAuth(path, auth, params, options)
 }

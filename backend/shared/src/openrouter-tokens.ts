@@ -123,6 +123,15 @@ export type OpenRouterCatalogEntry = {
   name: string
   /** Publisher-declared weights repo. A HINT ONLY — see huggingface.ts. */
   huggingFaceId: string | null
+  /**
+   * OpenRouter's prose blurb. Also a hint only, but an independent one: it
+   * routinely states openness in words when `hugging_face_id` is empty
+   * ("a 2.8T parameter open-weight model", "released under the Apache 2.0
+   * license"). Two of the four misclassifications found in the 2026-08-24
+   * re-audit were visible here and nowhere else in the metadata, so the audit
+   * job reads it as a second, cheap signal.
+   */
+  description: string | null
   /** When OpenRouter listed it; the head start a watcher gets. */
   listedAt: number | null
 }
@@ -180,6 +189,10 @@ export const fetchOpenRouterCatalog = async (): Promise<
       name:
         'name' in row && typeof row.name === 'string' ? row.name : permaslug,
       huggingFaceId: hf.length > 0 ? hf : null,
+      description:
+        'description' in row && typeof row.description === 'string'
+          ? row.description
+          : null,
       listedAt: created ? created * 1000 : null,
     })
   }

@@ -11,6 +11,7 @@ import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { sliderColors } from 'web/components/widgets/slider'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { track } from 'web/lib/service/analytics'
 
 const DEM_LOGO = '/politics-party/democrat_symbol.png'
 const REP_LOGO = '/politics-party/republican_symbol.png'
@@ -125,12 +126,18 @@ function PowerLever(props: {
         <BetChip
           label={`Dem ${formatPercent(dem)}`}
           color={DEM_COLOR}
-          onClick={() => setBetOutcome('NO')}
+          onClick={() => {
+            track('click bop lever', { lever: title, party: 'Democratic' })
+            setBetOutcome('NO')
+          }}
         />
         <BetChip
           label={`Rep ${formatPercent(rep)}`}
           color={REP_COLOR}
-          onClick={() => setBetOutcome('YES')}
+          onClick={() => {
+            track('click bop lever', { lever: title, party: 'Republican' })
+            setBetOutcome('YES')
+          }}
         />
       </Row>
 

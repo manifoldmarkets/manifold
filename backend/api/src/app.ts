@@ -29,6 +29,7 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 const ignoredEndpoints = [
+  '/internal-perp-broadcast',
   '/get-channel-messages',
   '/v0/user/by-id/',
   '/get-channel-memberships',

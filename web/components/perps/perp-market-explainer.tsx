@@ -1,103 +1,308 @@
-import { InformationCircleIcon } from '@heroicons/react/outline'
+import { InformationCircleIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { PerpContract } from 'common/contract'
+import {
+  formatFeePct,
+  formatFeePctApprox,
+  perpFeeScheduleSummary,
+} from 'common/perps/format'
+import { getPerpTicker } from 'common/perps/ticker'
+import { formatNumber } from 'common/util/format'
+import Link from 'next/link'
 import { ReactNode, useState } from 'react'
+import { useUser } from 'web/hooks/use-user'
 
 import { Col } from '../layout/col'
-import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { PERP_MARKET_BADGE_CLASS } from './perp-market-badge'
+import { Row } from '../layout/row'
+import { Modal } from '../layout/modal'
+import { Tooltip } from '../widgets/tooltip'
+import { PERP_TICKER_CLASS } from './perp-market-badge'
 
-export function PerpMarketExplainer(props: { className?: string }) {
-  const { className } = props
+export function PerpMarketExplainer(props: {
+  // The explainer quotes THIS market's live settings (fees, leverage cap)
+  // rather than only describing the mechanism — only admins can change them,
+  // but every trader needs to be able to read them. Required: there is one
+  // call site and it always has the contract, so an optional prop would only
+  // buy an unreachable, fee-less rendering of the modal.
+  contract: PerpContract
+  className?: string
+}) {
+  const { contract, className } = props
   const [open, setOpen] = useState(false)
+  // The button reads "[TICKER] (i)": the ticker is the market's handle on
+  // /perps and in search, and the (i) is the invitation to learn what a
+  // perpetual market is. The word itself moved into the label and the modal.
+  const ticker = getPerpTicker(contract)
 
   return (
     <>
-      <button
-        type="button"
-        className={clsx(
-          PERP_MARKET_BADGE_CLASS,
-          'hover:bg-primary-200 focus-visible:ring-primary-500 dark:hover:bg-primary-900/70 h-7 cursor-pointer gap-1 px-2.5 text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-          className
-        )}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label="What are perpetual markets?"
-        onClick={() => setOpen(true)}
+      {/* Elsewhere the ticker only names the market type on hover; here it is
+          also a button, so the hover says so — the (i) alone is easy to read
+          as decoration next to a title. */}
+      <Tooltip
+        text="Perpetual market — click for info"
+        placement="bottom"
+        noTap
       >
-        Perpetual
-        <InformationCircleIcon aria-hidden className="h-4 w-4" />
-      </button>
-      <Modal
-        open={open}
-        setOpen={setOpen}
-        size="md"
-        ariaLabel="How perpetual markets work"
-      >
-        <Col
+        <button
+          type="button"
           className={clsx(
-            MODAL_CLASS,
-            SCROLLABLE_MODAL_CLASS,
-            '!items-stretch text-left'
+            PERP_TICKER_CLASS,
+            // Title-sized like the label everywhere else; the (i) scales with it.
+            'hover:text-primary-500 focus-visible:ring-primary-500 inline-flex cursor-pointer items-center gap-1 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+            className
           )}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={`${ticker}: how this perpetual market works`}
+          onClick={() => setOpen(true)}
         >
-          <div>
-            <h2 className="text-primary-700 text-xl font-semibold">
-              How perpetual markets work
-            </h2>
-            <p className="text-ink-600 mt-1">
-              Perpetual markets let you take a leveraged long or short position
-              on a price or metric. Unlike a typical prediction market, they
-              have no scheduled expiry.
-            </p>
-          </div>
-
-          <ExplainerItem title="Oracle price">
-            This market uses Manifold's latest accepted update from the source
-            shown below the chart. Long positions benefit when the value rises;
-            short positions benefit when it falls. Oracle updates can lag the
-            source.
-          </ExplainerItem>
-
-          <ExplainerItem title="Leverage and liquidation">
-            Leverage multiplies both gains and losses. For example, M$100 at 5×
-            gives M$500 of exposure. If the oracle reaches your liquidation
-            price, your position closes and you can lose all the margin you
-            posted. Profitable positions may also be auto-deleveraged if market
-            backing becomes insufficient.
-          </ExplainerItem>
-
-          <ExplainerItem title="Funding while you hold">
-            At each funding interval, the more crowded side pays the other side.
-            Funding can reduce or increase your margin; the current rate and
-            next funding time are shown above the chart.
-          </ExplainerItem>
-
-          <ExplainerItem title="No expiry">
-            Your position stays open until you close it, it is liquidated or
-            auto-deleveraged, or Manifold settles the market.
-          </ExplainerItem>
-
-          <ExplainerItem title="Stale feeds">
-            If the oracle is stale or unavailable, opening and closing pause
-            until a fresh, valid update arrives.
-          </ExplainerItem>
-
-          <div className="border-primary-200 bg-primary-50 text-ink-700 dark:border-primary-800 dark:bg-primary-900/20 rounded-md border p-3 text-sm">
-            <span className="font-semibold">League scoring:</span> For now,
-            perpetual-market profit and loss appear in your portfolio but do not
-            count toward league standings.
-          </div>
-        </Col>
-      </Modal>
+          {ticker}
+          <InformationCircleIcon aria-hidden className="h-[0.8em] w-[0.8em]" />
+        </button>
+      </Tooltip>
+      <PerpExplainerModal contract={contract} open={open} setOpen={setOpen} />
     </>
   )
 }
 
-function ExplainerItem(props: { title: string; children: ReactNode }) {
-  const { title, children } = props
+/** The title and close controls stay outside the scrolling reading area. */
+export function PerpExplainerModal(props: {
+  contract?: PerpContract
+  open: boolean
+  setOpen: (open: boolean) => void
+  children?: ReactNode
+  showHubLink?: boolean
+}) {
+  const { contract, open, setOpen, children, showHubLink = true } = props
+  return (
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      size={children ? 'xl' : 'lg'}
+      ariaLabel="How perps work"
+      hideCloseButton
+    >
+      <Col className="bg-canvas-0 text-ink-1000 max-h-[calc(100dvh-6rem)] overflow-hidden rounded-t-xl text-left sm:max-h-[85dvh] sm:rounded-xl">
+        <Row className="border-ink-200 dark:border-ink-300 shrink-0 items-center justify-between gap-3 border-b px-4 py-2 sm:px-6">
+          <h2 className="text-ink-900 text-lg font-semibold">How perps work</h2>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close explainer"
+            className="text-ink-600 hover:bg-canvas-50 hover:text-ink-900 focus-visible:ring-primary-500 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:ring-2"
+          >
+            <XIcon className="h-5 w-5" aria-hidden />
+          </button>
+        </Row>
+        <Col className="min-h-0 gap-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
+          {children ?? <PerpExplainerContent contract={contract} hideHeading />}
+        </Col>
+        <Row className="border-ink-200 dark:border-ink-300 shrink-0 items-center justify-between gap-3 border-t px-4 py-3 sm:px-6">
+          {showHubLink && (
+            <Link
+              href="/perps"
+              className="text-primary-600 dark:text-primary-400 text-sm hover:underline"
+            >
+              All perpetual markets →
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 ml-auto min-h-[44px] rounded-lg px-5 text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            Back to market
+          </button>
+        </Row>
+      </Col>
+    </Modal>
+  )
+}
+
+/**
+ * The explainer body, shared by the market-page modal and the /perps hub so
+ * the generic copy can't drift. With a contract it also quotes that
+ * market's own settings — leverage cap, the full fee schedule, and where
+ * to find the rest; without one (the hub, which shows the selected
+ * market's parameters in its own card) it is the mechanism only. Renders
+ * as a flex column's children — put it inside a Col with the gap you want.
+ */
+export function PerpExplainerContent(props: {
+  contract?: PerpContract
+  hideHeading?: boolean
+}) {
+  const { contract, hideHeading } = props
+  const user = useUser()
+  return (
+    <>
+      <div>
+        {!hideHeading && (
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-primary-700 text-xl font-semibold">
+              How perpetual markets work
+            </h2>
+            <Link
+              href="/perps"
+              className="text-primary-600 hover:text-primary-500 dark:text-primary-400 shrink-0 text-sm"
+            >
+              All perpetual markets →
+            </Link>
+          </div>
+        )}
+        <p className={clsx('text-ink-600', !hideHeading && 'mt-1')}>
+          Perpetual markets let you take a leveraged long or short position on a
+          price or metric. Unlike a typical prediction market, they have no
+          scheduled expiry.
+        </p>
+      </div>
+
+      <ExplainerItem title="Oracle price">
+        {contract ? 'This market uses' : 'Each market uses'} Manifold's latest
+        accepted update from the source shown below the chart. Long positions
+        benefit when the value rises; short positions benefit when it falls.
+        Oracle updates can lag the source.
+      </ExplainerItem>
+
+      <ExplainerItem title="Leverage and liquidation">
+        Leverage multiplies both gains and losses. For example, M$100 at 5×
+        gives M$500 of exposure. If the oracle reaches your liquidation price,
+        your position closes and you can lose all the margin you posted.
+        Profitable positions may also be auto-deleveraged if market backing
+        becomes insufficient.
+        {contract && Number.isFinite(contract.maxLeverage) && (
+          <>
+            {' '}
+            This market allows up to{' '}
+            {formatNumber(contract.maxLeverage, {
+              maximumFractionDigits: 2,
+            })}
+            × leverage.
+          </>
+        )}
+      </ExplainerItem>
+
+      {contract && <PerpFeesItem contract={contract} />}
+
+      <ExplainerItem title="Funding while you hold">
+        At each funding interval, the more crowded side pays the other side.
+        Funding can reduce or increase your margin; the current rate and next
+        funding time are shown above the chart.
+      </ExplainerItem>
+
+      <ExplainerItem title="No expiry">
+        Your position stays open until you close it, it is liquidated or
+        auto-deleveraged, or Manifold settles the market.
+      </ExplainerItem>
+
+      <ExplainerItem title="Stale feeds">
+        If the oracle is stale or unavailable, opening and closing pause until a
+        fresh, valid update arrives.
+      </ExplainerItem>
+
+      {contract && (
+        <p className="text-ink-500 text-xs">
+          Every setting for this market — leverage cap, funding cap, and fees —
+          is set per market, and only Manifold admins can change them.
+          {/* ContractInfoDialog is reachable ONLY through HeaderActions, and
+              both of its containers are `!user && 'hidden md:flex'` — so a
+              signed-out reader on a phone has no route to that panel at all.
+              Point at it only under the exact condition that renders it;
+              the sentence above is complete and true without this. */}
+          <span className={clsx(!user && 'hidden md:inline')}>
+            {' '}
+            The full list is in the market info panel, under the ··· menu → See
+            info.
+          </span>
+        </p>
+      )}
+
+      <div className="border-primary-200 bg-primary-50 text-ink-700 dark:border-primary-800 dark:bg-primary-900/20 rounded-md border p-3 text-sm">
+        <span className="font-semibold">League scoring:</span> For now,
+        perpetual-market profit and loss appear in your portfolio but do not
+        count toward league standings.
+      </div>
+    </>
+  )
+}
+
+// The fee schedule in a trader's terms: what opening costs on the web and via
+// the API, that closing is free, and — when the size term is on — what a
+// pool-sized entry actually pays, so `takerFeeImpact` is never just a bare
+// coefficient. Every figure comes from perpFeeScheduleSummary, which reads the
+// same math the engine charges and is shared with the market info dialog.
+function PerpFeesItem(props: { contract: PerpContract }) {
+  const {
+    baseBps,
+    apiBps,
+    apiBaseDiffers,
+    apiSizeExamplesDiffer,
+    hasSizeTerm,
+    poolSizedBps,
+    fourTimesPoolBps,
+    apiPoolSizedBps,
+    apiFourTimesPoolBps,
+  } = perpFeeScheduleSummary(props.contract)
+
+  return (
+    <ExplainerItem title="Fees" scope="this market only">
+      In this market, opening a position costs {formatFeePct(baseBps)} of its
+      notional (margin × leverage), paid into the market's backing pool rather
+      than to Manifold. Closing is free.{' '}
+      {/* The surcharge is selected by auth channel — the server checks
+          `auth.creds.kind === 'key'`, not whether the caller is a bot — so
+          session-authenticated automation pays the web rate and any API-key
+          caller pays this one. Say what is actually true of the reader.
+          Suppressed entirely when the two rates are equal: announcing a
+          separate rate identical to the one just quoted reads as a bug. */}
+      {apiBaseDiffers && (
+        <>Positions opened with an API key pay {formatFeePct(apiBps)}. </>
+      )}
+      {hasSizeTerm ? (
+        <>
+          Large positions pay more, like price impact on an exchange: one the
+          size of this market's whole backing pool pays{' '}
+          {formatFeePctApprox(poolSizedBps)}, and one four times the pool{' '}
+          {formatFeePctApprox(fourTimesPoolBps)}.{' '}
+          {/* The size term stacks on whichever base the CHANNEL selected, so
+              the web figures understate an API open — on BTC at base 10 / API
+              30 / impact 10 a pool-sized API entry pays 0.33%, not 0.13%. */}
+          {apiSizeExamplesDiffer && (
+            <>
+              Through the API those are {formatFeePctApprox(apiPoolSizedBps)}{' '}
+              and {formatFeePctApprox(apiFourTimesPoolBps)}.{' '}
+            </>
+          )}
+          Small positions pay just the base rate.{' '}
+        </>
+      ) : (
+        <>The rate is flat — position size does not change it. </>
+      )}
+      The exact fee is quoted before you confirm a trade. Fees are set per
+      market, so other perpetuals may differ.
+    </ExplainerItem>
+  )
+}
+
+function ExplainerItem(props: {
+  title: string
+  // Always-visible qualifier beside the heading (e.g. "this market only") for
+  // sections whose figures are per-market, not platform rules. Inline rather
+  // than a hover tooltip so it cannot be missed and exists on touch devices.
+  scope?: string
+  children: ReactNode
+}) {
+  const { title, scope, children } = props
   return (
     <div>
-      <h3 className="text-ink-800 font-semibold">{title}</h3>
+      <h3 className="text-ink-800 font-semibold">
+        {title}
+        {scope && (
+          <span className="text-ink-500 ml-2 text-xs font-normal italic">
+            — {scope}
+          </span>
+        )}
+      </h3>
       <p className="text-ink-600 mt-0.5 text-sm">{children}</p>
     </div>
   )

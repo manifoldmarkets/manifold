@@ -1,3 +1,6 @@
+import { ORACLE_HEALTH_MAX_AGE_MS } from 'common/perps/oracle-health'
+import { getMnxInstrument } from 'common/perps/mnx'
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { fromNow } from 'client-common/lib/time'
@@ -10,12 +13,8 @@ import {
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import {
-  formatCountdown,
-  formatPrice,
-  inferPriceDecimals,
-} from 'common/perps/format'
-import { getOracleFreshness } from 'common/perps/oracle'
+import { formatCountdown, inferPriceDecimals } from 'common/perps/format'
+import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -28,10 +27,11 @@ import { PerpPositionPanel } from './perp-position-panel'
 import { useLivePerpContract } from './use-live-perp-contract'
 import { usePerpPositions } from './use-perp-positions'
 
-// Poll cadence for live market data. Matches the scheduler's fast tick;
-// there are no websocket broadcasts for oracle updates (the engine runs in
-// the scheduler process, not the API's socket server), so the page polls.
-const POLL_MS = 15_000
+// Re-render cadence for the "last update arrived N ago" freshness label. This
+// is a clock tick, not a data fetch — price itself arrives by websocket push
+// (see useLivePerpContract), so this only needs to be often enough that the
+// relative timestamp does not visibly lag.
+const FRESHNESS_CLOCK_MS = 15_000
 const MAX_TIMEOUT_MS = 2_147_483_647
 
 // Exchange-style tick flash: returns 'up' | 'down' for ~700ms after the
@@ -55,27 +55,34 @@ const useOracleFreshness = (contract: PerpContract) => {
   useEffect(() => {
     const update = () => setNow(Date.now())
     update()
-    const staleAt =
+    const sourceStaleAt =
       (contract.oraclePriceTime ?? Number.NaN) + contract.maxOraclePriceAgeMs
+    const staleAt = contract.oracleFeedHealth
+      ? Math.min(
+          sourceStaleAt,
+          contract.oracleFeedHealth.checkedAt + ORACLE_HEALTH_MAX_AGE_MS,
+          contract.oracleFeedHealth.expiresAt ?? 0
+        )
+      : sourceStaleAt
     const delay = staleAt - Date.now()
     const timeout =
       Number.isFinite(delay) && delay >= 0
         ? setTimeout(update, Math.min(delay + 1, MAX_TIMEOUT_MS))
         : undefined
-    const interval = setInterval(update, POLL_MS)
+    const interval = setInterval(update, FRESHNESS_CLOCK_MS)
     return () => {
       if (timeout !== undefined) clearTimeout(timeout)
       clearInterval(interval)
     }
-  }, [contract.oraclePriceTime, contract.maxOraclePriceAgeMs])
+  }, [
+    contract.oraclePriceTime,
+    contract.maxOraclePriceAgeMs,
+    contract.oracleFeedId,
+    contract.oracleFeedHealth?.checkedAt,
+    contract.oracleFeedHealth?.expiresAt,
+  ])
 
-  return now == null
-    ? null
-    : getOracleFreshness(
-        contract.oraclePriceTime,
-        contract.maxOraclePriceAgeMs,
-        now
-      )
+  return now == null ? null : getPerpOracleFreshness(contract, now)
 }
 
 export const PerpOverview = (props: { contract: PerpContract }) => {
@@ -84,7 +91,10 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // Single polled positions source shared by the chart overlays, position
   // panel, and bet panel — one request instead of three, and every consumer
   // sees cross-user changes on the poll rather than only on own-trades.
-  const positions = usePerpPositions(contract.id, refreshKey)
+  const { positions, unsound: unsoundPositions } = usePerpPositions(
+    contract.id,
+    refreshKey
+  )
 
   const price = Number(
     contract.isResolved
@@ -103,18 +113,33 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // sign — until the next funding tick, which reads as "backwards".
   const liveFundingRate = getPerpFundingRate(contract)
   const oracleFreshness = useOracleFreshness(contract)
+  // A solvency halt keeps the mark FRESH on purpose (see runOracleUpdate), so
+  // freshness alone no longer tells you whether the engine will accept a trade.
+  // Fold it into the same flag the panels already gate on, or the controls stay
+  // live until the API answers 503.
+  const solvencyHalted = contract.solvencyHaltTime != null
   const oracleTradingPaused =
-    !PERPS_SKIP_ORACLE_FRESHNESS &&
-    oracleFreshness != null &&
-    oracleFreshness.status !== 'fresh'
+    solvencyHalted ||
+    (!PERPS_SKIP_ORACLE_FRESHNESS &&
+      oracleFreshness != null &&
+      oracleFreshness.status !== 'fresh')
 
   return (
     <Col className="gap-4">
       <Row className="flex-wrap items-baseline justify-between gap-2">
-        <Row className="min-w-0 items-baseline gap-4 sm:gap-8">
+        {/* Wraps so Funding drops under the price on 320px phones instead
+            of the pair overflowing the viewport. */}
+        <Row className="min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2 sm:gap-x-8">
           <Col>
             <div className="text-ink-500 text-sm">
-              {contract.isResolved ? 'Final oracle price' : 'Oracle price'}
+              {contract.isResolved
+                ? 'Final oracle price'
+                : getMnxInstrument(contract.oracleFeedId)?.category ===
+                  'valuation'
+                ? 'MNX valuation futures price'
+                : getMnxInstrument(contract.oracleFeedId)
+                ? 'MNX mark price'
+                : 'Oracle price'}
             </div>
             <div
               className={clsx(
@@ -123,7 +148,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
                 flash === 'down' && 'text-scarlet-500 duration-0'
               )}
             >
-              {formatPrice(price, priceDecimals)}
+              {formatOraclePrice(contract.oracleFeedId, price, priceDecimals)}
             </div>
           </Col>
           {contract.isResolved ? (
@@ -171,17 +196,35 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
         >
           <div className="font-semibold">
-            {oracleFreshness.status === 'stale'
+            {solvencyHalted
+              ? 'Trading paused for a risk check'
+              : oracleFreshness?.status === 'stale'
               ? 'Oracle update delayed'
               : 'Oracle update unavailable'}
           </div>
-          Trading and position closes are paused to prevent execution at an
-          outdated price.{' '}
-          {oracleFreshness.ageMs != null &&
-          typeof contract.oraclePriceTime === 'number'
-            ? `The last update arrived ${fromNow(contract.oraclePriceTime)}. `
-            : 'No valid update timestamp is available. '}
-          They resume automatically after the next valid update.
+          {solvencyHalted ? (
+            <>
+              A risk update could not be applied to this market, so trading and
+              position closes are paused while it is looked at. Open positions
+              are unaffected and still settle. Trading resumes automatically
+              once the market processes its next update.
+            </>
+          ) : (
+            <>
+              {oracleFreshness?.reason && (
+                <span>{oracleFreshness.reason}. </span>
+              )}
+              Trading and position closes are paused to prevent execution at an
+              outdated price.{' '}
+              {oracleFreshness?.ageMs != null &&
+              typeof contract.oraclePriceTime === 'number'
+                ? `The last update arrived ${fromNow(
+                    contract.oraclePriceTime
+                  )}. `
+                : 'No valid update timestamp is available. '}
+              They resume automatically after the next valid update.
+            </>
+          )}
         </div>
       )}
 
@@ -197,6 +240,8 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
         asOfTime={contract.oracleSourceTime}
+        mnxLinkLocation="market page credit"
+        contractId={contract.id}
       />
 
       {contract.isResolved ? (
@@ -204,7 +249,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           <div className="text-ink-900 font-semibold">Market settled</div>
           All open positions were closed at the final oracle price of{' '}
           <span className="font-semibold tabular-nums">
-            {formatPrice(price, priceDecimals)}
+            {formatOraclePrice(contract.oracleFeedId, price, priceDecimals)}
           </span>
           . Funding and trading have stopped.
         </div>
@@ -213,6 +258,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           contract={contract}
           onTrade={refresh}
           positions={positions}
+          unsoundPositions={unsoundPositions}
           oracleTradingPaused={oracleTradingPaused}
         />
       )}

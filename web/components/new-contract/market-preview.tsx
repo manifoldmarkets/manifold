@@ -9,11 +9,18 @@ import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { MAX_ANSWERS } from 'common/answer'
+import {
+  roundAnswerProbs,
+  withAnswerProbRemoved,
+  withAnswerProbSet,
+} from 'common/answer-probs'
+import { getAnswerProbsError } from 'common/new-contract'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
+import { sum } from 'lodash'
 import dayjs from 'dayjs'
 import { getLocalTimezoneShort } from 'client-common/lib/time'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -30,7 +37,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { api } from 'web/lib/api/api'
 import { ValidationErrors } from 'web/lib/validation/contract-validation'
 import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
-import { AnswerInput } from '../answers/multiple-choice-answers'
+import {
+  AnswerInput,
+  AnswerProbInput,
+} from '../answers/multiple-choice-answers'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { ContractTopicsList } from '../topics/contract-topics-list'
@@ -78,6 +88,8 @@ export type PreviewContractData = {
   // Multiple choice specific
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  // Starting probability of each answer, in percent. Undefined means an even split.
+  answerProbs?: number[]
 
   // Poll specific
   includeSeeResults?: boolean
@@ -100,6 +112,7 @@ export function MarketPreview(props: {
   onUpdateGroups?: (groups: Group[]) => void
   onToggleVisibility?: () => void
   onEditAnswers?: (answers: string[]) => void
+  onEditAnswerProbs?: (answerProbs: number[] | undefined) => void
   onOpenTopicsModal?: (open: boolean) => void
   triggerTopicsModalOpen?: boolean
   className?: string
@@ -146,6 +159,7 @@ export function MarketPreview(props: {
     onUpdateGroups,
     onToggleVisibility,
     onEditAnswers,
+    onEditAnswerProbs,
     onOpenTopicsModal,
     triggerTopicsModalOpen,
     className,
@@ -211,6 +225,7 @@ export function MarketPreview(props: {
     const errorElementMap: Record<string, string> = {
       question: '#market-preview-title-input',
       answers: '#answers-section',
+      answerProbs: '#answers-section',
       range: '#date-range-section, #numeric-range-section',
     }
 
@@ -361,9 +376,16 @@ export function MarketPreview(props: {
     const hasOther =
       mockContract.addAnswersMode !== 'DISABLED' && data.shouldAnswersSumToOne
 
-    // If shouldAnswersSumToOne is true, distribute equally (100/numAnswers)
-    // Otherwise show 50% for independent answers
-    if (data.shouldAnswersSumToOne) {
+    // Use the creator's starting probabilities if they set them. Otherwise
+    // distribute equally (100/numAnswers) when answers sum to one, or show 50%
+    // for independent answers.
+    if (data.answerProbs) {
+      // A blank answer slot isn't an answer yet, so it holds no probability —
+      // its share belongs to 'Other' until it's given some text.
+      mcProbs = answers.map((answer, i) =>
+        answer.text.trim() ? (data.answerProbs?.[i] ?? 0) / 100 : 0
+      )
+    } else if (data.shouldAnswersSumToOne) {
       const totalAnswers = answers.length + (hasOther ? 1 : 0)
       const equalProb = 1 / totalAnswers
       mcProbs = answers.map(() => equalProb)
@@ -437,6 +459,71 @@ export function MarketPreview(props: {
       : hasOtherAnswer
       ? answers.length > 0
       : answers.length > 1)
+
+  // Starting probabilities are only editable once the creator turns them on.
+  const editableAnswerProbs =
+    isEditable && onEditAnswerProbs && data.answerProbs
+      ? data.answerProbs
+      : undefined
+  const setAnswerProb = (i: number, prob: number) =>
+    onEditAnswerProbs?.(
+      (data.answerProbs ?? []).map((p, index) => (index === i ? prob : p))
+    )
+  // A blank answer slot isn't an answer yet — it gets dropped on submit, so it
+  // holds no starting probability until it's named.
+  const isNamedAnswer = (i: number) => !!answers[i]?.text.trim()
+  const namedAnswerCount = answers.filter((a) => !!a.text.trim()).length
+  const namedAnswerProbs = (data.answerProbs ?? []).filter((_, i) =>
+    isNamedAnswer(i)
+  )
+  const answerProbsTotal = sum(namedAnswerProbs)
+  // What one answer gets when `namedCount` named answers split evenly. For
+  // answers that sum to one that's a slice of whatever the named ones add up
+  // to, so Other's share stays put; with nothing named yet, of the whole 100%.
+  const evenAnswerProb = (namedCount: number) =>
+    !shouldAnswersSumToOne
+      ? 50
+      : answerProbsTotal > 0
+      ? answerProbsTotal / namedCount
+      : 100 / (namedCount + (hasOtherAnswer ? 1 : 0))
+  // Answers and their starting probabilities move together, otherwise the
+  // percentages end up against the wrong answers.
+  const addMCAnswer = () => {
+    onEditAnswers?.([...answers.map((a) => a.text), ''])
+    // The new slot is blank, so it holds nothing until it's named.
+    if (data.answerProbs) onEditAnswerProbs?.([...data.answerProbs, 0])
+  }
+  const removeMCAnswer = (i: number) => {
+    onEditAnswers?.(answers.filter((_, idx) => idx !== i).map((a) => a.text))
+    if (data.answerProbs)
+      onEditAnswerProbs?.(
+        shouldAnswersSumToOne
+          ? withAnswerProbRemoved(data.answerProbs, i)
+          : data.answerProbs.filter((_, idx) => idx !== i)
+      )
+  }
+  const setMCAnswerText = (i: number, text: string) => {
+    onEditAnswers?.(answers.map((a, idx) => (idx === i ? text : a.text)))
+    const nowNamed = !!text.trim()
+    if (!data.answerProbs || isNamedAnswer(i) === nowNamed) return
+    // The slot just became an answer, or stopped being one: it takes an even
+    // share of the named answers, or hands its share back. Independent answers
+    // don't share a pie, so one simply starts at 50%.
+    const prob = nowNamed ? evenAnswerProb(namedAnswerCount + 1) : 0
+    onEditAnswerProbs?.(
+      shouldAnswersSumToOne
+        ? withAnswerProbSet(data.answerProbs, i, prob)
+        : data.answerProbs.map((p, idx) => (idx === i ? prob : p))
+    )
+  }
+  const answerProbsError = data.answerProbs
+    ? getAnswerProbsError({
+        answerProbs: namedAnswerProbs,
+        numAnswers: namedAnswerCount,
+        shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
+        hasOtherAnswer: !!hasOtherAnswer,
+      })
+    : undefined
 
   return (
     <Col
@@ -882,7 +969,7 @@ export function MarketPreview(props: {
             id="answers-section"
             className={clsx(
               'gap-2 rounded-lg transition-all',
-              fieldErrors.answers
+              fieldErrors.answers || fieldErrors.answerProbs
                 ? 'p-3 ring-2 ring-red-500 focus-within:ring-2 focus-within:ring-red-500 dark:ring-red-600 dark:focus-within:ring-red-600'
                 : ''
             )}
@@ -897,9 +984,21 @@ export function MarketPreview(props: {
                     {/* Desktop layout: horizontal */}
                     <Row className="hidden items-center gap-3 sm:flex">
                       {/* Probability - Prominent on left like real markets */}
-                      <span className="text-ink-700 min-w-[3rem] text-lg font-semibold">
-                        {Math.round(mcProbs[i] * 100)}%
-                      </span>
+                      {editableAnswerProbs ? (
+                        isNamedAnswer(i) ? (
+                          <AnswerProbInput
+                            className="min-w-[3rem] py-1 text-lg"
+                            prob={editableAnswerProbs[i] ?? 0}
+                            onChange={(prob) => setAnswerProb(i, prob)}
+                          />
+                        ) : (
+                          <span className="min-w-[3rem]" />
+                        )
+                      ) : (
+                        <span className="text-ink-700 min-w-[3rem] text-lg font-semibold">
+                          {Math.round(mcProbs[i] * 100)}%
+                        </span>
+                      )}
 
                       {/* Answer text/input - grows to fill space */}
                       {isEditable && onEditAnswers ? (
@@ -908,14 +1007,7 @@ export function MarketPreview(props: {
                           className="min-w-0 flex-1"
                           placeholder={`Answer ${i + 1}`}
                           value={answer.text}
-                          onChange={(e) => {
-                            const newAnswers = [...answers]
-                            newAnswers[i] = {
-                              ...newAnswers[i],
-                              text: e.target.value,
-                            }
-                            onEditAnswers(newAnswers.map((a) => a.text))
-                          }}
+                          onChange={(e) => setMCAnswerText(i, e.target.value)}
                           onUp={() => {
                             // Focus previous answer
                             if (i > 0) {
@@ -930,7 +1022,7 @@ export function MarketPreview(props: {
                               i === answers.length - 1 &&
                               answers.length < MAX_ANSWERS
                             ) {
-                              onEditAnswers([...answers.map((a) => a.text), ''])
+                              addMCAnswer()
                               setTimeout(
                                 () =>
                                   document
@@ -946,12 +1038,7 @@ export function MarketPreview(props: {
                             }
                           }}
                           onDelete={() => {
-                            if (canRemoveMCAnswer) {
-                              const newAnswers = answers.filter(
-                                (_, idx) => idx !== i
-                              )
-                              onEditAnswers(newAnswers.map((a) => a.text))
-                            }
+                            if (canRemoveMCAnswer) removeMCAnswer(i)
                           }}
                         />
                       ) : (
@@ -982,10 +1069,7 @@ export function MarketPreview(props: {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            const newAnswers = answers.filter(
-                              (_, idx) => idx !== i
-                            )
-                            onEditAnswers(newAnswers.map((a) => a.text))
+                            removeMCAnswer(i)
                             // Focus previous answer after deletion
                             setTimeout(
                               () =>
@@ -1007,9 +1091,19 @@ export function MarketPreview(props: {
                     {/* Mobile layout: stacked */}
                     <Row className="items-center gap-2 sm:hidden">
                       {/* Probability - on the left, smaller */}
-                      <span className="text-ink-700 shrink-0 text-sm font-semibold">
-                        {Math.round(mcProbs[i] * 100)}%
-                      </span>
+                      {editableAnswerProbs ? (
+                        isNamedAnswer(i) ? (
+                          <AnswerProbInput
+                            className="shrink-0 py-1 text-sm"
+                            prob={editableAnswerProbs[i] ?? 0}
+                            onChange={(prob) => setAnswerProb(i, prob)}
+                          />
+                        ) : null
+                      ) : (
+                        <span className="text-ink-700 shrink-0 text-sm font-semibold">
+                          {Math.round(mcProbs[i] * 100)}%
+                        </span>
+                      )}
 
                       {/* Answer text/input - with relative positioning for X button */}
                       <div className="relative flex-1">
@@ -1019,14 +1113,7 @@ export function MarketPreview(props: {
                             className="w-full"
                             placeholder={`Answer ${i + 1}`}
                             value={answer.text}
-                            onChange={(e) => {
-                              const newAnswers = [...answers]
-                              newAnswers[i] = {
-                                ...newAnswers[i],
-                                text: e.target.value,
-                              }
-                              onEditAnswers(newAnswers.map((a) => a.text))
-                            }}
+                            onChange={(e) => setMCAnswerText(i, e.target.value)}
                             onUp={() => {
                               // Focus previous answer
                               if (i > 0) {
@@ -1041,10 +1128,7 @@ export function MarketPreview(props: {
                                 i === answers.length - 1 &&
                                 answers.length < MAX_ANSWERS
                               ) {
-                                onEditAnswers([
-                                  ...answers.map((a) => a.text),
-                                  '',
-                                ])
+                                addMCAnswer()
                                 setTimeout(
                                   () =>
                                     document
@@ -1062,12 +1146,7 @@ export function MarketPreview(props: {
                               }
                             }}
                             onDelete={() => {
-                              if (canRemoveMCAnswer) {
-                                const newAnswers = answers.filter(
-                                  (_, idx) => idx !== i
-                                )
-                                onEditAnswers(newAnswers.map((a) => a.text))
-                              }
+                              if (canRemoveMCAnswer) removeMCAnswer(i)
                             }}
                           />
                         ) : (
@@ -1082,10 +1161,7 @@ export function MarketPreview(props: {
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
-                              const newAnswers = answers.filter(
-                                (_, idx) => idx !== i
-                              )
-                              onEditAnswers(newAnswers.map((a) => a.text))
+                              removeMCAnswer(i)
                               // Focus previous answer after deletion
                               setTimeout(
                                 () =>
@@ -1154,6 +1230,59 @@ export function MarketPreview(props: {
                     </div>
                   )}
 
+                {/* Starting probabilities. Once they're on, the toggle stays even
+                    with nothing named, so they can be turned off again and the
+                    error explaining why creation is blocked stays in view. */}
+                {isEditable &&
+                  onEditAnswerProbs &&
+                  (namedAnswerCount > 0 || !!data.answerProbs) && (
+                    <Col className="gap-1">
+                      <Row className="flex-wrap items-center gap-2">
+                        <ShortToggle
+                          on={!!data.answerProbs}
+                          setOn={(on) =>
+                            onEditAnswerProbs(
+                              on
+                                ? roundAnswerProbs(
+                                    answers.map((a) =>
+                                      a.text.trim()
+                                        ? evenAnswerProb(namedAnswerCount)
+                                        : 0
+                                    )
+                                  )
+                                : undefined
+                            )
+                          }
+                        />
+                        <span className="text-ink-700 text-sm">
+                          Set starting probabilities
+                        </span>
+                        <InfoTooltip text="Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them." />
+                        {data.answerProbs && shouldAnswersSumToOne && (
+                          <span
+                            className={clsx(
+                              'text-sm',
+                              answerProbsError ? 'text-red-500' : 'text-ink-500'
+                            )}
+                          >
+                            {hasOtherAnswer
+                              ? `${
+                                  Math.round((100 - answerProbsTotal) * 10) / 10
+                                }% left for Other`
+                              : `Total ${
+                                  Math.round(answerProbsTotal * 10) / 10
+                                }%`}
+                          </span>
+                        )}
+                      </Row>
+                      {answerProbsError && (
+                        <span className="text-sm text-red-500">
+                          {answerProbsError}
+                        </span>
+                      )}
+                    </Col>
+                  )}
+
                 {/* Action buttons row */}
                 {isEditable && onEditAnswers && (
                   <Row className="gap-3">
@@ -1181,7 +1310,7 @@ export function MarketPreview(props: {
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          onEditAnswers([...answers.map((a) => a.text), ''])
+                          addMCAnswer()
                         }}
                         className="text-primary-600 hover:text-primary-700 disabled:text-ink-400 flex items-center gap-1 text-sm font-medium disabled:cursor-not-allowed"
                       >

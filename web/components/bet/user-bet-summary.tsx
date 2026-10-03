@@ -14,11 +14,15 @@ import { noFees } from 'common/fees'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { useState } from 'react'
-import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
+import { VersusSellRows } from 'web/components/answers/answer-components'
+import { getVersusAnswers, getVersusShares } from 'common/versus'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { SellRow } from 'web/components/bet/sell-row'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import {
+  useAllSavedContractMetrics,
+  useSavedContractMetrics,
+} from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { Button } from '../buttons/button'
@@ -78,6 +82,20 @@ export function BetsSummary(props: {
   const isBinary = outcomeType === 'BINARY'
   const isStonk = outcomeType === 'STONK'
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  // On a versus market the summary metric adds up YES shares on both answers,
+  // which back opposite sides. Derive the position from the per-answer
+  // metrics instead, relative to the main answer.
+  const versusAnswers = getVersusAnswers(contract)
+  const myAnswerMetrics = useAllSavedContractMetrics(contract)
+  const versusShares =
+    versusAnswers && areYourBets
+      ? getVersusShares(contract, myAnswerMetrics)
+      : undefined
+  const versusWinAmount = versusShares
+    ? versusShares.sharesOutcome === 'NO'
+      ? versusShares.noShares
+      : versusShares.yesShares
+    : 0
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
   const user = useUser()
@@ -269,14 +287,29 @@ export function BetsSummary(props: {
             questionText={contract.question}
             outcome={mainBinaryMCAnswer ? 'YES' : maxSharesOutcome}
             answer={
-              getPseudonym(contract)?.[maxSharesOutcome as 'YES' | 'NO']
-                ?.pseudonymName
+              versusShares && versusAnswers
+                ? (versusShares.sharesOutcome === 'NO'
+                    ? versusAnswers.other
+                    : versusAnswers.main
+                  ).text
+                : getPseudonym(contract)?.[maxSharesOutcome as 'YES' | 'NO']
+                    ?.pseudonymName
             }
             avgPrice={formatPercent(
-              maxSharesOutcome === 'YES' ? avgPrice : 1 - avgPrice
+              versusShares
+                ? versusWinAmount > 0
+                  ? metric.invested / versusWinAmount
+                  : 0
+                : maxSharesOutcome === 'YES'
+                ? avgPrice
+                : 1 - avgPrice
             )}
             betAmount={metric.invested}
-            winAmount={metric.totalShares[maxSharesOutcome]}
+            winAmount={
+              versusShares
+                ? versusWinAmount
+                : metric.totalShares[maxSharesOutcome]
+            }
             resolution={resolution}
             profit={metric.profit}
             bettor={{
@@ -331,10 +364,7 @@ export function BetsSummary(props: {
       </Row>
       {mainBinaryMCAnswer &&
         !(contract.creatorBannedFromBetting && areYourBets) && (
-          <BinaryMultiSellRow
-            answer={mainBinaryMCAnswer}
-            contract={contract as CPMMMultiContract}
-          />
+          <VersusSellRows contract={contract as CPMMMultiContract} />
         )}
       {includeSellButton &&
         contract.outcomeType === 'NUMBER' &&

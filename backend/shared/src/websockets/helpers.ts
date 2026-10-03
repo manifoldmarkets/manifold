@@ -4,6 +4,7 @@ import { ContractComment, PostComment } from 'common/comment'
 import { Contract, Visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PendingClarification } from 'common/pending-clarification'
+import { PerpQuote } from 'common/perps/quote'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { User } from 'common/user'
 import { groupBy } from 'lodash'
@@ -136,6 +137,17 @@ export function broadcastSportsLiveScore(
   }
 ) {
   broadcast(`contract/${contractId}/sports-live`, score)
+}
+
+// Live oracle price/pool state for a perp market, pushed on every tick. Its
+// own topic so only open perp pages pay for it — a 5s tick on the generic
+// contract/global topics would spam every feed and watchlist subscriber.
+//
+// Only the process that owns the websocket server can deliver this (see the
+// note in perps/publish-perp-quote.ts): the scheduler applies the tick, then
+// hands the quote to the API over `internal-perp-broadcast`, which calls this.
+export function broadcastPerpQuote(quote: PerpQuote) {
+  broadcast(`contract/${quote.contractId}/perp-quote`, { quote })
 }
 
 export function broadcastNewAnswer(answer: Answer) {

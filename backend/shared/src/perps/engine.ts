@@ -17,20 +17,26 @@ import {
   applyADL,
   applyFundingWithSolvency,
   assertPerpFundingConfig,
+  assertPerpPositionNumbers,
+  assertPerpStateNumbers,
   assertPerpStateSolvent,
   closePosition as closePositionMath,
   computeFundingRate,
   getLeverage,
+  getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPositionValue,
   liquidationPrice as computeLiquidationPrice,
   MIN_PERP_LEVERAGE,
   openPosition as openPositionMath,
+  PERP_MIN_CLOSE_FRACTION,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
+  perpSizeMatchesExpectation,
   PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   processLiquidations,
+  resolvePerpCloseFraction,
   solvencyFactor,
 } from 'common/perps/amm'
 import {
@@ -42,15 +48,23 @@ import {
 import {
   accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
-  calcPerpTakerFee,
+  calculatePerpOpenCashFlow,
   creditPerpPoolFee,
-  getPerpTakerFeeBps,
+  getPerpEffectiveTakerFeeBps,
+  getPerpTakerFeeImpact,
+  perpOpenFeeQuote,
+  perpOwnContributionInputs,
+  PERP_MAX_FEE_SHARE_OF_MARGIN,
 } from 'common/perps/fees'
 import { noFees } from 'common/fees'
 import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
 import {
+  OracleFeedHealth,
+  shouldRefreshOracleHealth,
+} from 'common/perps/oracle-health'
+import {
   decideOracleTransition,
-  getOracleFreshness,
+  getPerpOracleFreshness,
   OraclePoint,
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
@@ -63,7 +77,16 @@ import {
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import {
+  runTransactionWithRetries,
+  TransactionRetryOptions,
+} from 'shared/transact-with-retries'
+import {
+  FAST_TICK_TX_TAG,
+  isOracleTickTimeout,
+  OracleUpdateBounds,
+  oracleTickTimeoutsQuery,
+} from 'shared/perps/oracle-tick-bounds'
 import {
   advisoryLockQuery,
   deleteContractPositionsQuery,
@@ -93,34 +116,58 @@ type LoadedState = {
 
 const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
   if (PERPS_SKIP_ORACLE_FRESHNESS) return
-  const freshness = getOracleFreshness(
-    contract.oraclePriceTime,
-    contract.maxOraclePriceAgeMs,
-    now
-  )
+  const freshness = getPerpOracleFreshness(contract, now)
   if (freshness.status === 'fresh') return
 
   const detail =
-    freshness.status === 'stale' && freshness.ageMs != null
+    freshness.reason ??
+    (freshness.status === 'stale' && freshness.ageMs != null
       ? `Oracle feed is stale (age ${freshness.ageMs}ms > ${contract.maxOraclePriceAgeMs}ms)`
-      : 'Oracle feed freshness is unavailable'
+      : 'Oracle feed freshness is unavailable')
   throw new APIError(
     400,
     `${detail} — trading is paused until the next valid update`
   )
 }
 
+/**
+ * Explicit trading halt set by a tick that could not represent its own result.
+ *
+ * Normally a book that cannot take a price update is protected implicitly: the
+ * mark stops advancing and `assertFreshOracleForTrading` closes the market at
+ * `maxOraclePriceAgeMs`. That protection is an accident of the failure, not a
+ * decision, and it is a bad one — it leaves the market OPEN at a dead price for
+ * a whole freshness budget (5 hours of it on 2026-08-29, during which a trader
+ * added to a position at a mark that had been frozen for four).
+ *
+ * `runOracleUpdate` now always commits the price, so that implicit protection
+ * is gone by construction and this takes its place. Closes are gated too: the
+ * book is known-inconsistent, and letting one side exit against it at a price
+ * the engine could not validate is exactly the drain the halt exists to stop.
+ * Scheduler-driven exits (liquidation, ADL, resolution) call the internal paths
+ * and are unaffected, so positions still settle.
+ */
+const assertPerpNotSolvencyHalted = (contract: PerpContract) => {
+  if (contract.solvencyHaltTime == null) return
+  throw new APIError(
+    503,
+    `Trading is paused on this market: a risk update could not be applied, and an operator has been alerted. Open positions are unaffected and still settle.`
+  )
+}
+
 // All engine writers on one contract serialize on the advisory lock, but each
 // waiter's SERIALIZABLE snapshot predates the winner's commit, so contended
 // transactions abort with 40001 on wake-up and must retry. Under a burst
-// (concurrent trades + the 15s tick) the default 3 attempts demonstrably
+// (concurrent trades + the 5s tick) the default 3 attempts demonstrably
 // exhaust: the QA drill lost 2 of 6 parallel ops. 8 attempts with the
 // jittered backoff in transactWithRetries absorbs bursts; integrity is
 // unaffected either way (failed attempts write nothing).
 const PERP_TX_MAX_ATTEMPTS = 8
 const runPerpTransaction = <T>(
-  fn: (pgTrans: SupabaseTransaction) => Promise<T>
-): Promise<T> => runTransactionWithRetries(fn, PERP_TX_MAX_ATTEMPTS)
+  fn: (pgTrans: SupabaseTransaction) => Promise<T>,
+  maxAttempts = PERP_TX_MAX_ATTEMPTS,
+  options?: TransactionRetryOptions
+): Promise<T> => runTransactionWithRetries(fn, maxAttempts, options)
 
 const buildState = (
   contract: PerpContract,
@@ -132,7 +179,8 @@ const buildState = (
 
 const loadStateForUpdate = async (
   pgTrans: SupabaseTransaction,
-  contractId: string
+  contractId: string,
+  allowResolved = false
 ): Promise<LoadedState> => {
   // `select pg_advisory_xact_lock(...)` returns a row (void column), so
   // .none() would throw "No return data was expected". .one() is correct.
@@ -162,7 +210,7 @@ const loadStateForUpdate = async (
   }
   if (contract.mechanism !== 'perp')
     throw new APIError(400, `Contract ${contractId} is not a perp`)
-  if (contract.isResolved)
+  if (contract.isResolved && !allowResolved)
     throw new APIError(400, `Contract ${contractId} is resolved`)
 
   const positionRows = await pgTrans.any(
@@ -409,6 +457,45 @@ const diffForWrite = (
   return { upserts, deletes }
 }
 
+/**
+ * Fail closed on a corrupt row belonging to this user BEFORE any code path
+ * reads, closes, or replaces it.
+ *
+ * Scans EVERY row the user holds on this contract, deliberately ignoring the
+ * `size > 0` predicate the callers select with. A row whose size is NaN,
+ * negative, or zero-with-margin does not match that predicate, so it would
+ * slip past a guard applied to the selected rows alone — and then
+ * `openPosition` replaces same-(user, direction) rows WITHOUT re-checking
+ * size, so the malformed row would be silently overwritten and its margin
+ * lost from the position table while the pool still held it.
+ *
+ * Corruption also has to be caught before the position is CLOSED, not after.
+ * Both the close math and the fee quote read entryPrice through
+ * getUnrealizedEquity, which silently returns 0 when entryPrice <= 0: a
+ * corrupt row therefore marks as FLAT and pays out its entire cost basis
+ * wherever the oracle actually is. The post-close assertPerpStateSolvent
+ * cannot save us either, because closePosition has already removed the row
+ * from the state it inspects.
+ *
+ * Rules are shared with assertPerpStateNumbers via assertPerpPositionNumbers
+ * so the two can never drift apart.
+ */
+const assertUserPerpRowsSound = (state: PerpState, userId: string) => {
+  for (const row of state.positions) {
+    if (row.userId !== userId) continue
+    try {
+      assertPerpPositionNumbers(row, `your stored ${row.direction} position`)
+    } catch (error) {
+      throw new APIError(
+        500,
+        `${
+          error instanceof Error ? error.message : String(error)
+        } — refusing to trade against a corrupt position row`
+      )
+    }
+  }
+}
+
 // -----------------------------------------------------------------------
 // open / add
 // -----------------------------------------------------------------------
@@ -424,7 +511,14 @@ export const openOrAddPosition = async (
    * event so readers can filter bot flow out of the Trades tab, matching
    * `bets.is_api`. Lives in `data` so no migration is needed; events written
    * before this shipped carry no flag and read as manual. */
-  isApi = false
+  isApi = false,
+  /** Price protection: reject (400) rather than charge when the fee computed
+   * inside the locked transaction exceeds this. The fee is state-dependent
+   * (pools move, config is live-tunable), so the previewed fee is not a
+   * promise — this bound is how a caller makes their consent explicit. Not
+   * part of the idempotency fingerprint: a replay returns the stored result
+   * of a trade that already happened. */
+  maxFee?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
@@ -434,6 +528,8 @@ export const openOrAddPosition = async (
       400,
       `leverage must be a finite number of at least ${MIN_PERP_LEVERAGE}`
     )
+  if (maxFee !== undefined && (!Number.isFinite(maxFee) || maxFee < 0))
+    throw new APIError(400, 'maxFee must be a finite non-negative number')
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -461,11 +557,22 @@ export const openOrAddPosition = async (
         return {
           position: parseStoredPosition(response?.position),
           event: rowToStoredEvent(stored),
-          // Events stored before the taker fee existed have no fee field.
+          // Events stored before the taker fee existed have no fee field;
+          // ones stored before the size fee lack the rate/share stamps.
           fee:
             typeof response?.fee === 'number' && Number.isFinite(response.fee)
               ? response.fee
               : 0,
+          feeBps:
+            typeof response?.feeBps === 'number' &&
+            Number.isFinite(response.feeBps)
+              ? response.feeBps
+              : undefined,
+          poolShareAfter:
+            typeof response?.poolShareAfter === 'number' &&
+            Number.isFinite(response.poolShareAfter)
+              ? response.poolShareAfter
+              : undefined,
           isNewUniqueBettor: false,
           // Callers must not re-run trade side effects (bonuses, streaks)
           // for a replay — no trade happened on this request.
@@ -548,6 +655,7 @@ export const openOrAddPosition = async (
       )
 
     assertFreshOracleForTrading(contract, now)
+    assertPerpNotSolvencyHalted(contract)
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
@@ -556,6 +664,11 @@ export const openOrAddPosition = async (
     // throw a "close your long first" error; the parimutuel AMM doesn't need
     // the one-way restriction, and forcing a separate round-trip is just
     // friction for a flip.
+    // Before the `size > 0` selection below, not after: a malformed size does
+    // not match that predicate but openPositionMath would still replace the
+    // row. See assertUserPerpRowsSound.
+    assertUserPerpRowsSound(state, userId)
+
     const existingOpposite = state.positions.find(
       (p) => p.userId === userId && p.direction !== direction && p.size > 0
     )
@@ -577,17 +690,44 @@ export const openOrAddPosition = async (
 
     const price = contract.oraclePrice
 
-    // Taker fee: bps of NOTIONAL when opening or adding, credited to the
-    // trader's side backing pool (subsidy, not platform revenue). Closing is
-    // free — the whole round-trip cost is visible up front, and the position
-    // starts at PnL = −fee via takerFeeCostBasis. Execution happens at the
-    // cached oracle price, and with zero fees that price was a free option
-    // for tick-sniping bots (2026-08-07: ~M$70k drained from the BTC perp
-    // pools at a measured edge of ~1.5 bps of notional per round trip; every
-    // snipe needs an entry, so an open-only fee taxes each round trip once).
-    // The fee mana enters escrow with the margin, so ledger = L + S holds.
-    assertPerpTakerFeeConfig(contract)
-    const takerFeeBps = getPerpTakerFeeBps(contract)
+    // Taker fee: size-dependent bps of NOTIONAL when opening or adding,
+    // credited to the trader's side backing pool (subsidy, not platform
+    // revenue). Closing is free — the whole round-trip cost is visible up
+    // front, and the position starts at PnL = −fee via takerFeeCostBasis.
+    // Execution happens at the cached oracle price, and with zero fees that
+    // price was a free option for tick-sniping bots (2026-08-07: ~M$70k
+    // drained from the BTC perp pools at a measured edge of ~1.5 bps of
+    // notional per round trip; every snipe needs an entry, so an open-only
+    // fee taxes each round trip once). The flat base could not tell honest
+    // flow (median ~1% of pool) from pool-sized informed entries (median
+    // ~142% of pool, 2026-08-19), so the marginal rate scales with the
+    // position's share of the backing pool: base + takerFeeImpact·share²,
+    // charged as its integral over the added notional (calcPerpSizeFee) so
+    // chopping one big add into many small ones costs the same. The fee mana
+    // enters escrow with the margin, so ledger = L + S holds.
+    //
+    // Two independent dials feed this, and they compose: the CHANNEL picks
+    // which base rate applies (API-key opens pay max(takerFeeBps,
+    // takerFeeApiBps) when the API rate is set — the 2026-08-19/20 BTC drain
+    // was 100% API-key flow, see getPerpEffectiveTakerFeeBps), and the SIZE
+    // term then scales on top of whichever base was selected. The event's
+    // feeBps stamp records the effective rate actually charged and its isApi
+    // flag says which channel selected the base.
+    assertPerpTakerFeeConfig(contract, isApi)
+    const takerFeeBps = getPerpEffectiveTakerFeeBps(contract, isApi)
+    const takerFeeImpact = getPerpTakerFeeImpact(contract)
+
+    // On a market with a size-dependent fee, consent is MANDATORY: the fee
+    // varies with live pool state, so a caller who never states a bound can
+    // be charged up to their whole margin by state they never saw (a cached
+    // client, a bot coded against the flat fee). Mirrors the close path's
+    // required expectedOpenedTime. Flat-fee markets stay compatible with
+    // older callers — the fee there is knowable from config alone.
+    if (takerFeeImpact > 0 && maxFee === undefined)
+      throw new APIError(
+        400,
+        'This market charges a size-dependent fee: pass maxFee (in mana) — the most you accept paying — computed from takerFeeBps, takerFeeImpact, and the pools on the market object.'
+      )
 
     // Auto-close opposite side first, then open on top of the resulting state.
     let workingState: PerpState = state
@@ -638,10 +778,121 @@ export const openOrAddPosition = async (
     // trader whose mana is all in the position they are flipping out of).
     // The user row is locked FOR UPDATE above, so the balance cannot move
     // between here and the debit.
-    const openFee = calcPerpTakerFee(mana * leverage, takerFeeBps)
-    const totalDebit = mana + openFee
-    const spendableBalance = trader.balance + closePayout
-    if (spendableBalance < totalDebit)
+    // Fee inputs: N0 is the user's standing same-direction notional (a flip
+    // close removes only the OPPOSITE row, so existingSame is unaffected by
+    // it), and the depth is the PRE-trade pool — post flip-close for a flip,
+    // since that is the depth the new leg actually consumes against, but
+    // before this trade's own margin/fee credits. perpOpenFeeQuote then nets
+    // out the trader's own standing contribution, so sequential adds cannot
+    // self-deepen the depth they are priced against (see its doc).
+    //
+    // (Row sanity for both held positions was asserted above, before the flip
+    // close — including the entryPrice this mark-to-market read depends on.)
+    // The trader's own standing contribution is netted out of the depth at
+    // the SAME mark this trade executes against, read inside the advisory
+    // lock (`price` is contract.oraclePrice from loadStateForUpdate). Netting
+    // the raw costBasis instead deducts margin that has already been paid out
+    // to closing counterparties, which collapses the denominator for an
+    // underwater holder and — the fee being quadratic in 1/depth — squares
+    // the error. Computed here rather than inside perpOpenFeeQuote so the
+    // authoritative mark can never be a client-supplied or stale one.
+    // Shared with the bet panel's preview so the two cannot derive these
+    // differently. A flip has no standing SAME-side row, so every field is 0
+    // and the opposite leg's payout — already out of workingState.pool — is
+    // never subtracted twice.
+    const ownContribution = perpOwnContributionInputs(existingSame, price)
+    // getPositionValue floors at 0, so the only reachable failure is a
+    // non-finite mark; the message says exactly that rather than implying a
+    // negative value is possible.
+    if (!Number.isFinite(ownContribution.existingPositionValue))
+      throw new APIError(
+        500,
+        'Existing position value is not a finite number; refusing to price the taker fee'
+      )
+    const openFeeDetails = perpOpenFeeQuote({
+      grossPoolDepth: getPerpBackingPool(
+        workingState.pool.L,
+        workingState.pool.S
+      ),
+      ...ownContribution,
+      addedNotional: mana * leverage,
+      baseBps: takerFeeBps,
+      impact: takerFeeImpact,
+    })
+    const openFee = openFeeDetails.fee
+    // Fail closed when the size fee cannot be priced: the trader's own
+    // standing claim (margin still in the pool, marked to market, plus fees
+    // paid) exhausts the valid gross pool — the margin-cover incident
+    // pattern — so the quote fell back to base-only. Charging base there
+    // would hand the largest holder in a devastated market the CHEAPEST
+    // rate, bypassing the size protection entirely.
+    if (openFeeDetails.depthExhausted)
+      throw new APIError(
+        400,
+        'This market’s backing is exhausted relative to your position — the size fee cannot be priced. Close or reduce instead of adding.'
+      )
+    // Price protection: the fee is state-dependent (pools move, config is
+    // live-tunable), so a caller may bound what they consent to pay; the
+    // check runs on the authoritative fee inside the locked transaction.
+    if (maxFee !== undefined && openFee > maxFee) {
+      // Speak bps of size, not mana: that is the unit the caller set the bound
+      // in, and it is what makes "the fee moved" legible next to the fee they
+      // were quoted. Measured drift on BTC: pool outflow puts ~0.15% of the
+      // week inside a window that can move a large trade's fee, and only
+      // 0.023% of 5s ticks move the mark more than 30 bps — so this should be
+      // a rare "click again", not a routine wall.
+      const notional = mana * leverage
+      const overageBps =
+        notional > 0 ? ((openFee - maxFee) / notional) * 10_000 : 0
+      throw new APIError(
+        400,
+        `The fee moved while you were deciding: this trade costs M$${openFee.toFixed(
+          2
+        )} (${openFeeDetails.effectiveBps.toFixed(
+          1
+        )} bps of size), which is ${overageBps.toFixed(
+          1
+        )} bps more than the M$${maxFee.toFixed(
+          2
+        )} you approved. Retry to accept the current fee.`
+      )
+    }
+    // Hard consent floor: an opening fee that eats a large share of the
+    // trade's own margin is always a mistake or an attack, never intent, so
+    // reject rather than charge. Two ways in: extreme leverage × extreme pool
+    // share, and a fat-fingered CHANNEL rate — the fee is charged on NOTIONAL,
+    // so fee/margin = effectiveBps × leverage / 10_000 and the rate domains
+    // are validated independently of maxLeverage. This floor is what keeps
+    // both survivable. See PERP_MAX_FEE_SHARE_OF_MARGIN for why the bound is
+    // half the margin rather than all of it.
+    const feeCeiling = mana * PERP_MAX_FEE_SHARE_OF_MARGIN
+    if (openFee >= feeCeiling)
+      throw new APIError(
+        400,
+        `This trade's fee (M$${openFee.toFixed(
+          2
+        )}) would immediately consume ${((openFee / mana) * 100).toFixed(
+          0
+        )}% of its M$${mana.toFixed(
+          2
+        )} margin. Reduce your position size or leverage.`
+      )
+    // Shared with the bet panel's preview (calculatePerpOpenCashFlow), so the
+    // client's affordability check is exactly this one: margin plus the fee
+    // as priced above, funded by balance plus a flip's free close payout.
+    const cashFlow = calculatePerpOpenCashFlow({
+      balance: trader.balance,
+      margin: mana,
+      openFee,
+      closePayout,
+    })
+    if (!cashFlow)
+      throw new APIError(
+        500,
+        'Perp trade cash flow is invalid; refusing to debit the trader'
+      )
+    const { totalDebit, spendableBalance } = cashFlow
+    if (!cashFlow.isAffordable)
       throw new APIError(
         403,
         `Insufficient balance: needed ${totalDebit.toFixed(2)} (${mana} margin${
@@ -663,8 +914,9 @@ export const openOrAddPosition = async (
       now
     )
     // openPositionMath always computes deltaSize = mana * leverage, so the
-    // fee credited here is exactly bps × deltaSize. Checks below run on the
-    // fee-credited state — the one that gets persisted.
+    // fee credited here was priced on exactly this deltaSize (the N0 → N1
+    // integral above). Checks below run on the fee-credited state — the one
+    // that gets persisted.
     const feeAccrued = accruePerpPositionTakerFee(
       openRes.state,
       openRes.position,
@@ -682,9 +934,10 @@ export const openOrAddPosition = async (
     // over-cap positions can always close, but cannot add further exposure.
     const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
     if (!capacity.isWithinLimit) {
-      // The limit depends only on the opposing pool, which an open never
-      // touches, so pre-trade headroom is exact — tell the user the largest
-      // trade that fits instead of making them reverse-engineer the cap.
+      // The limit depends only on the opposing SIDE (its pool and its own
+      // exposure), which an open on this side never touches, so pre-trade
+      // headroom is exact — tell the user the largest trade that fits instead
+      // of making them reverse-engineer the cap.
       const headroom = Math.max(
         capacity.limit - (capacity.openInterest - open.deltaSize),
         0
@@ -696,7 +949,7 @@ export const openOrAddPosition = async (
           2
         )} more ${direction} exposure right now, but this trade adds M$${open.deltaSize.toFixed(
           2
-        )} (margin × leverage). Reduce your margin or leverage so their product fits, or wait for more ${opposite} interest to raise the cap (${direction} exposure is limited to ${PERP_OPEN_INTEREST_COVER_MULTIPLE}× the unreserved ${opposite}-side pool).`
+        )} (margin × leverage). Reduce your margin or leverage so their product fits, or wait for more ${opposite} interest to raise the cap (${direction} exposure is limited to ${PERP_OPEN_INTEREST_COVER_MULTIPLE}× the unreserved ${opposite}-side pool, plus the notional the ${opposite} side already has at risk).`
       )
     }
 
@@ -732,13 +985,25 @@ export const openOrAddPosition = async (
         mana,
         leverage,
         fee: openFee,
-        feeBps: takerFeeBps,
+        // The EFFECTIVE (average) rate this add actually paid — base plus the
+        // integrated size term — not the configured base alone. feeBase and
+        // feeImpact snapshot the config at trade time; poolShareAfter is the
+        // position's share of the (net-of-own) depth it was priced against.
+        feeBps: openFeeDetails.effectiveBps,
+        feeBase: takerFeeBps,
+        feeImpact: takerFeeImpact,
+        poolShareAfter: openFeeDetails.poolShareAfter,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,
               request: { direction, mana, leverage },
-              response: { position: open.position, fee: openFee },
+              response: {
+                position: open.position,
+                fee: openFee,
+                feeBps: openFeeDetails.effectiveBps,
+                poolShareAfter: openFeeDetails.poolShareAfter,
+              },
             }
           : {}),
       },
@@ -846,7 +1111,10 @@ export const openOrAddPosition = async (
           token: 'M$',
           data: {
             direction,
-            feeBps: takerFeeBps,
+            // Effective rate actually paid; feeBase is the configured flat
+            // component (they differ once takerFeeImpact > 0 and size matters).
+            feeBps: openFeeDetails.effectiveBps,
+            feeBase: takerFeeBps,
             sizeDelta: open.deltaSize,
           },
         },
@@ -884,6 +1152,8 @@ export const openOrAddPosition = async (
       position: open.position,
       event,
       fee: feesCollected,
+      feeBps: openFeeDetails.effectiveBps,
+      poolShareAfter: openFeeDetails.poolShareAfter,
       isNewUniqueBettor,
       replayed: false,
     }
@@ -901,7 +1171,14 @@ export const closePosition = async (
   idempotencyKey?: string,
   expectedOpenedTime?: number,
   /** See `openOrAddPosition`. */
-  isApi = false
+  isApi = false,
+  /** Fraction of the position to close; 1 (the default) closes all of it.
+   * The engine may still close the whole position when the remainder would
+   * be dust — the returned `fraction` is what actually happened. */
+  requestedFraction = 1,
+  /** Optimistic-concurrency token for a PARTIAL close: the notional the
+   * caller believed it was taking a fraction OF. See the check below. */
+  expectedSize?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (
@@ -912,6 +1189,33 @@ export const closePosition = async (
   ) {
     throw new APIError(400, 'Invalid expected PERP position opening time')
   }
+  // Mirrors resolvePerpCloseFraction's own bounds, but as a 400 and before
+  // any I/O: the pure helper throws plain Errors because it is also reached
+  // from paths where a bad fraction is an invariant violation, not a request.
+  if (
+    !Number.isFinite(requestedFraction) ||
+    requestedFraction <= 0 ||
+    requestedFraction > 1
+  )
+    throw new APIError(400, 'Close fraction must be a number in (0, 1]')
+  if (requestedFraction < 1 && requestedFraction < PERP_MIN_CLOSE_FRACTION)
+    throw new APIError(
+      400,
+      `Close fraction must be at least ${PERP_MIN_CLOSE_FRACTION} (or exactly 1 to close the whole position)`
+    )
+  if (
+    expectedSize !== undefined &&
+    (!Number.isFinite(expectedSize) || expectedSize <= 0)
+  )
+    throw new APIError(400, 'Expected position size must be a positive number')
+  const fractionRequestsPartialClose = requestedFraction < 1
+  // The schema already requires it; this is the same rule stated where the
+  // trade is actually executed, so a non-HTTP caller cannot skip the guard.
+  if (fractionRequestsPartialClose && expectedSize === undefined)
+    throw new APIError(
+      400,
+      'Closing part of a position requires the expected position size'
+    )
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -933,9 +1237,21 @@ export const closePosition = async (
                 request.expectedOpenedTime,
                 'expected position opening time'
               )
+        // Closes stored before partial closes existed carry no fraction and
+        // were necessarily whole-position ones.
+        const storedRequestedFraction =
+          request?.fraction === undefined
+            ? 1
+            : finiteNumber(request.fraction, 'close fraction')
+        const storedExpectedSize =
+          request?.expectedSize === undefined
+            ? undefined
+            : finiteNumber(request.expectedSize, 'expected position size')
         if (
           request?.direction !== direction ||
-          storedExpectedOpenedTime !== expectedOpenedTime
+          storedExpectedOpenedTime !== expectedOpenedTime ||
+          storedRequestedFraction !== requestedFraction ||
+          storedExpectedSize !== expectedSize
         ) {
           throw new APIError(
             409,
@@ -943,6 +1259,16 @@ export const closePosition = async (
           )
         }
         const payout = finiteNumber(response?.payout, 'close payout')
+        // The fraction actually closed, which the dust-promotion rule can
+        // lift above the requested one.
+        const closedFraction =
+          response?.fraction === undefined
+            ? 1
+            : finiteNumber(response.fraction, 'closed fraction')
+        const remainingSize =
+          response?.remainingSize === undefined
+            ? 0
+            : finiteNumber(response.remainingSize, 'remaining position size')
         const originalCostBasis =
           typeof data?.originalCostBasis === 'number' &&
           Number.isFinite(data.originalCostBasis) &&
@@ -968,6 +1294,8 @@ export const closePosition = async (
                   originalCostBasis,
                   takerFeeCostBasis
                 ),
+          fraction: closedFraction,
+          remainingSize,
           // Callers must not re-run trade side effects (streaks) for a
           // replay — no trade happened on this request.
           replayed: true,
@@ -1025,6 +1353,13 @@ export const closePosition = async (
       )
     }
 
+    // Same fail-closed guard as the open path, and for the same reason: the
+    // close math reads entryPrice through getUnrealizedEquity, and
+    // assertPerpStateSolvent below runs on state the row has already left.
+    // Ahead of the `size > 0` selection so a malformed row reports as corrupt
+    // rather than as "no open position".
+    assertUserPerpRowsSound(state, userId)
+
     const position = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
     )
@@ -1038,50 +1373,104 @@ export const closePosition = async (
         'This position changed after the page loaded. Refresh before closing it.'
       )
     }
+    // A partial close is a fraction OF something, and `expectedOpenedTime`
+    // cannot police what that something was: the survivor of a partial close
+    // keeps its openedTime, so a second request sized against the pre-close
+    // row passes that check and then applies its fraction to the smaller row —
+    // closing far less than was previewed, silently. (Two tabs both showing
+    // 400 and both sending 75%: the first leaves 100, the second takes 75 of
+    // that instead of the 300 it displayed.) Funding and ADL move `size` the
+    // same way, and invalidate the preview for the same reason.
+    //
+    // Full closes deliberately skip this. "Close everything" is unambiguous at
+    // any size, and a spurious 409 on the one operation a trader may urgently
+    // need is a worse failure than any it would prevent.
+    if (
+      fractionRequestsPartialClose &&
+      expectedSize !== undefined &&
+      !perpSizeMatchesExpectation(position.size, expectedSize)
+    ) {
+      throw new APIError(
+        409,
+        'This position changed after the page loaded. Refresh before closing part of it.'
+      )
+    }
 
     // A stale feed would let a user cherry-pick a favorable cached price after
     // watching the real market move. Opens and closes share one predicate.
     const now = Date.now()
     assertFreshOracleForTrading(contract, now)
+    assertPerpNotSolvencyHalted(contract)
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
     const price = contract.oraclePrice
+    // The requested fraction is resolved against the row the transaction
+    // actually loaded, so a close sized off a stale page still promotes to a
+    // full one rather than stranding dust.
+    const fraction = resolvePerpCloseFraction(position, requestedFraction)
     // No fee on close: the taker fee is charged in full at open (see
     // openOrAddPosition), so exits pay out untouched. The opening fees the
     // position accumulated still land in this close's user-facing pnl via
-    // takerFeeCostBasis.
-    const result = closePositionMath(state, position, price)
+    // takerFeeCostBasis — a partial close realizes its own share of them.
+    const result = closePositionMath(state, position, price, fraction, now)
     const payout = result.payout
+    // Defence in depth: PERP_MIN_CLOSE_FRACTION and the row soundness check
+    // above already make this unreachable. A close that moves nothing must
+    // not write an event or earn a streak.
+    if (!(result.closedSize > 0) || !(result.closedCostBasis > 0))
+      throw new APIError(
+        400,
+        'That fraction is too small to change this position'
+      )
     assertPerpStateSolvent(result.state, price)
     const userPnl = getUserFacingPnlFromPayout(
       payout,
-      position.originalCostBasis,
-      position.takerFeeCostBasis
+      result.closedOriginalCostBasis,
+      result.closedTakerFeeCostBasis
     )
+    const remainingSize = result.remainingPosition?.size ?? 0
 
     const event: PerpEvent = asEvent(contract, {
       userId,
       eventType: 'close',
       direction,
-      leverage: 0,
-      sizeDelta: -position.size,
-      costBasisDelta: -position.costBasis,
-      originalCostBasisDelta: -position.originalCostBasis,
+      // The survivor's leverage, which the split leaves unchanged; 0 when the
+      // whole position went.
+      leverage: result.remainingPosition?.leverage ?? 0,
+      sizeDelta: -result.closedSize,
+      costBasisDelta: -result.closedCostBasis,
+      originalCostBasisDelta: -result.closedOriginalCostBasis,
       data: {
         payout,
         pnl: userPnl,
         pricePnl: result.pnl,
         entryPrice: position.entryPrice,
         closePrice: price,
-        originalCostBasis: position.originalCostBasis,
-        takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
+        originalCostBasis: result.closedOriginalCostBasis,
+        takerFeeCostBasis: result.closedTakerFeeCostBasis,
+        // Stamped on every close, so a reader never has to infer "whole
+        // position" from the absence of a field.
+        fraction: result.fraction,
+        remainingSize,
         ...(isApi ? { isApi: true } : {}),
         ...(idempotencyKey
           ? {
               idempotencyKey,
-              request: { direction, expectedOpenedTime },
-              response: { payout, pnl: userPnl },
+              // The REQUESTED fraction: it is what a replay is compared
+              // against, and it can differ from the one actually closed.
+              request: {
+                direction,
+                expectedOpenedTime,
+                fraction: requestedFraction,
+                ...(expectedSize === undefined ? {} : { expectedSize }),
+              },
+              response: {
+                payout,
+                pnl: userPnl,
+                fraction: result.fraction,
+                remainingSize,
+              },
             }
           : {}),
       },
@@ -1096,8 +1485,10 @@ export const closePosition = async (
       ...openInterestPatch(result.state.positions),
       lastBetTime: now,
       lastUpdatedTime: now,
-      volume: (contract.volume ?? 0) + position.originalCostBasis,
-      volume24Hours: (contract.volume24Hours ?? 0) + position.originalCostBasis,
+      // Only the margin this close actually realized counts as volume.
+      volume: (contract.volume ?? 0) + result.closedOriginalCostBasis,
+      volume24Hours:
+        (contract.volume24Hours ?? 0) + result.closedOriginalCostBasis,
     })
 
     // Credit user balance.
@@ -1118,7 +1509,7 @@ export const closePosition = async (
             pricePnl: result.pnl,
             entryPrice: position.entryPrice,
             closePrice: price,
-            reason: 'close',
+            reason: result.remainingPosition ? 'partial-close' : 'close',
           },
         },
         true
@@ -1136,14 +1527,25 @@ export const closePosition = async (
 
     await pgTrans.multi(
       [
-        deletePositionsQuery(contractId, [{ userId, direction }]),
+        // A partial close leaves the row open — same entry price, same
+        // leverage, same liquidation price, smaller — so it is an upsert, not
+        // a delete.
+        result.remainingPosition
+          ? upsertPositionsQuery([result.remainingPosition])
+          : deletePositionsQuery(contractId, [{ userId, direction }]),
         insertPerpEventsQuery([event]),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')
     )
 
-    return { payout, pnl: userPnl, replayed: false }
+    return {
+      payout,
+      pnl: userPnl,
+      fraction: result.fraction,
+      remainingSize,
+      replayed: false,
+    }
   })
 }
 
@@ -1169,26 +1571,70 @@ export const closePosition = async (
 export const addPerpPoolSubsidy = async (
   contractId: string,
   funderId: string,
-  side: PerpDirection,
-  amount: number
+  side: PerpDirection | 'both',
+  amount: number,
+  options?: {
+    idempotencyKey?: string
+    authorize?: (
+      tx: SupabaseTransaction,
+      contract: PerpContract
+    ) => Promise<void>
+  }
 ) => {
   if (!Number.isFinite(amount) || amount <= 0)
     throw new APIError(400, 'amount must be a finite positive number')
 
+  assertIdempotencyKey(options?.idempotencyKey)
+  const total = amount * (side === 'both' ? 2 : 1)
+
   return runPerpTransaction(async (pgTrans) => {
-    // Rejects resolved markets and non-MANA tokens, and serializes against
-    // every other engine writer on this contract.
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    // Serialize against every other engine writer. Permit reading a resolved
+    // contract only to recover a committed request; new payments are refused
+    // below, before any debit. Non-MANA tokens are always rejected.
+    const { contract, state } = await loadStateForUpdate(
+      pgTrans,
+      contractId,
+      true
+    )
+
+    await options?.authorize?.(pgTrans, contract)
+    // The contract lock serializes duplicate requests. The ledger entry and
+    // pool change commit together; txns.data has a legacy extra data level.
+    if (options?.idempotencyKey) {
+      const prior = await pgTrans.oneOrNone<{ amount: number; side: string }>(
+        `select amount, data->'data'->>'side' as side from txns
+          where from_id = $1 and to_id = $2 and category = 'ADD_SUBSIDY'
+            and token = 'M$' and from_type = 'USER' and to_type = 'CONTRACT'
+            and data->'data'->>'idempotencyKey' = $3 limit 1`,
+        [funderId, contractId, options.idempotencyKey]
+      )
+      if (prior) {
+        if (Number(prior.amount) !== total || prior.side !== side)
+          throw new APIError(
+            409,
+            'This subsidy request key was already used for a different amount or side.'
+          )
+        return {
+          contract,
+          poolLong: state.pool.L,
+          poolShort: state.pool.S,
+          replayed: true,
+        }
+      }
+    }
+
+    if (contract.isResolved)
+      throw new APIError(400, `Contract ${contractId} is resolved`)
 
     const funder = await pgTrans.oneOrNone<{ id: string; balance: number }>(
       `select id, balance from users where id = $1 for update`,
       [funderId]
     )
     if (!funder) throw new APIError(404, `User ${funderId} not found`)
-    if (!Number.isFinite(funder.balance) || funder.balance < amount)
+    if (!Number.isFinite(funder.balance) || funder.balance < total)
       throw new APIError(
         403,
-        `Insufficient balance: needed ${amount}, have ${funder.balance}`
+        `Insufficient balance: needed ${total}, have ${funder.balance}`
       )
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
@@ -1199,14 +1645,20 @@ export const addPerpPoolSubsidy = async (
       fromType: 'USER',
       toId: contractId,
       toType: 'CONTRACT',
-      amount,
+      amount: total,
       token: 'M$',
-      data: { side, reason: 'perp-pool-subsidy' },
+      data: {
+        side,
+        reason: 'perp-pool-subsidy',
+        ...(options?.idempotencyKey
+          ? { idempotencyKey: options.idempotencyKey }
+          : {}),
+      },
     })
 
     const pool = {
-      L: state.pool.L + (side === 'long' ? amount : 0),
-      S: state.pool.S + (side === 'short' ? amount : 0),
+      L: state.pool.L + (side === 'long' || side === 'both' ? amount : 0),
+      S: state.pool.S + (side === 'short' || side === 'both' ? amount : 0),
     }
     await assertPerpEscrowBalance(pgTrans, contractId, pool)
 
@@ -1220,7 +1672,7 @@ export const addPerpPoolSubsidy = async (
       })
     )
 
-    return { contract, poolLong: pool.L, poolShort: pool.S }
+    return { contract, poolLong: pool.L, poolShort: pool.S, replayed: false }
   })
 }
 
@@ -1242,6 +1694,7 @@ export type AdlNotificationResult = {
 }
 
 export type OracleUpdateResult = {
+  oracleFeedHealth?: OracleFeedHealth
   liquidated: PerpPosition[]
   adlAdjusted: AdlNotificationResult['adlAdjusted']
   adlSettled: AdlNotificationResult['adlSettled']
@@ -1251,6 +1704,12 @@ export type OracleUpdateResult = {
   poolLongAfter: number
   poolShortBefore: number
   poolShortAfter: number
+  /**
+   * Present only when the tick committed its price but NOT its state, because
+   * the post-transition book could not be made solvent. Callers log this with
+   * their own prefix so the existing alert policies still fire.
+   */
+  solvencyHalt?: { reason: string }
 }
 
 const collectAdlAdjusted = (
@@ -1409,13 +1868,23 @@ const payAdlSettlements = async (
  * `runOracleUpdate` (scheduler path) and the pre-settlement pass inside
  * `resolvePerp`, so sharing it means we don't commit twice during resolution.
  */
-const applyOracleUpdate = (
+export const applyOracleUpdate = (
   contract: PerpContract,
   state: PerpState,
   newPrice: number,
   ts: number,
   appliedTime: number
 ) => {
+  // Structure first, on the INPUT. Liquidation and ADL both drop or zero
+  // rows, so a malformed row that reaches them is gone by the time the
+  // post-transition assert runs — and that assert then passes on a state the
+  // corrupt row has already left, exactly as it did on the close paths.
+  // Deliberately the numbers-only check, NOT assertPerpStateSolvent: these
+  // two transitions exist to repair legitimate insolvency, so asserting
+  // solvency on their input would fail closed on the states they are here to
+  // fix. Solvency is still asserted on the OUTPUT below.
+  assertPerpStateNumbers(state, newPrice)
+
   const liqRes = processLiquidations(state, newPrice)
   const adlRes = applyADL(liqRes.state, newPrice)
   const finalState = adlRes.state
@@ -1485,135 +1954,282 @@ export const runOracleUpdate = async (
   contractId: string,
   newPrice: number,
   ts: number,
-  sourceTs?: number
+  sourceTs?: number,
+  /** Fast tick only. Omit to wait; see OracleUpdateBounds. */
+  bounds?: OracleUpdateBounds,
+  oracleFeedHealth?: OracleFeedHealth
 ): Promise<OracleUpdateResult | null> => {
-  return runPerpTransaction(async (pgTrans) => {
-    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+  return runPerpTransaction(
+    async (pgTrans) => {
+      // Bounded callers fail fast rather than queue behind whoever holds the
+      // contract lock. Unbounded ones keep the pre-existing behaviour exactly:
+      // no SET LOCAL, no change to how long they may wait.
+      if (bounds)
+        await pgTrans.none(
+          oracleTickTimeoutsQuery(
+            bounds.lockTimeoutMs,
+            bounds.statementTimeoutMs
+          )
+        )
+      const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
-    const incomingPoint = { price: newPrice, ts, sourceTs }
-    const currentPoint =
-      contract.oraclePriceTime == null
-        ? null
-        : {
-            price: contract.oraclePrice,
-            ts: contract.oraclePriceTime,
-            sourceTs: contract.oracleSourceTime ?? undefined,
-          }
-    const decision = decideOracleTransition(currentPoint, incomingPoint)
-    if (decision.action === 'reject')
-      throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
-    // Delivery can race even though state writes cannot. Once the contract
-    // lock is held, an older point or exact retry must not touch price, pools,
-    // positions, metrics, or event history.
-    if (decision.action === 'ignore') return null
+      // An older successful fetch must not clear a newer freeze/recovery.
+      if (
+        oracleFeedHealth &&
+        oracleFeedHealth.checkedAt <=
+          (contract.oracleFeedHealth?.checkedAt ?? 0)
+      )
+        return null
+      if (
+        oracleFeedHealth &&
+        (oracleFeedHealth.status !== 'available' ||
+          getPerpOracleFreshness({
+            ...contract,
+            oraclePrice: newPrice,
+            oraclePriceTime: ts,
+            oracleFeedHealth,
+          }).status !== 'fresh')
+      )
+        return null
+      // The hourly fallback has no new provider observation. It must not apply
+      // a row that outlived its source health while waiting for the tick lock.
+      if (
+        !oracleFeedHealth &&
+        contract.oracleFeedHealth &&
+        getPerpOracleFreshness({
+          ...contract,
+          oraclePrice: newPrice,
+          oraclePriceTime: ts,
+        }).status !== 'fresh'
+      )
+        return null
+      const healthPatch = oracleFeedHealth ? { oracleFeedHealth } : {}
+      const resultHealth = oracleFeedHealth ?? contract.oracleFeedHealth
+      const incomingPoint = { price: newPrice, ts, sourceTs }
+      const currentPoint =
+        contract.oraclePriceTime == null
+          ? null
+          : {
+              price: contract.oraclePrice,
+              ts: contract.oraclePriceTime,
+              sourceTs: contract.oracleSourceTime ?? undefined,
+            }
+      const decision = decideOracleTransition(currentPoint, incomingPoint)
+      if (decision.action === 'reject')
+        throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
 
-    const poolLongBefore = state.pool.L
-    const poolShortBefore = state.pool.S
+      // A halted contract MUST be allowed to re-run the same point. The halt
+      // committed the price without the transition, so from here on that point
+      // reads as a duplicate and is ignored — which would strand the contract
+      // permanently: the pending liquidations/ADL would never be applied and
+      // the halt would never clear, no matter how much subsidy an operator
+      // added. This retry is what makes recovery converge. Restricted to an
+      // exact duplicate; a genuinely stale (older) point stays ignored.
+      const retryingHalt =
+        decision.action === 'ignore' &&
+        decision.reason === 'duplicate' &&
+        contract.solvencyHaltTime != null
 
-    const appliedTime = Date.now()
-    const applied = applyOracleUpdate(
-      contract,
-      state,
-      newPrice,
-      ts,
-      appliedTime
-    )
+      // Delivery can race even though state writes cannot. Once the contract
+      // lock is held, an older point or exact retry must not touch price, pools,
+      // positions, metrics, or event history.
+      if (decision.action === 'ignore' && !retryingHalt) {
+        if (
+          decision.reason !== 'duplicate' ||
+          !oracleFeedHealth ||
+          !shouldRefreshOracleHealth(
+            contract.oracleFeedHealth,
+            oracleFeedHealth
+          )
+        )
+          return null
+        // A flat mark still needs a provider heartbeat, including recovery from
+        // a frozen flag. No liquidation or funding event is replayed here.
+        await pgTrans.one(mergeContractDataQuery(contractId, healthPatch))
+        return {
+          oracleFeedHealth: resultHealth,
+          liquidated: [],
+          adlAdjusted: [],
+          adlSettled: [],
+          adlFactorLong: 1,
+          adlFactorShort: 1,
+          poolLongBefore: state.pool.L,
+          poolLongAfter: state.pool.L,
+          poolShortBefore: state.pool.S,
+          poolShortAfter: state.pool.S,
+        }
+      }
 
-    const { upserts, deletes } = diffForWrite(
-      state.positions,
-      applied.finalState.positions
-    )
+      const poolLongBefore = state.pool.L
+      const poolShortBefore = state.pool.S
 
-    const contractPatch = removeUndefinedProps({
-      poolLong: applied.finalState.pool.L,
-      poolShort: applied.finalState.pool.S,
-      ...openInterestPatch(applied.finalState.positions),
-      oraclePrice: newPrice,
-      oraclePriceTime: ts,
-      // null deliberately clears metadata if a newer point does not carry it;
-      // retaining the previous point's source time would misattribute data.
-      oracleSourceTime: sourceTs ?? null,
-      // Price polling is infrastructure activity, not user activity. Only a
-      // liquidation/ADL transition should refresh discovery freshness.
-      lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
-    })
+      const appliedTime = Date.now()
+      let applied: ReturnType<typeof applyOracleUpdate>
+      try {
+        applied = applyOracleUpdate(contract, state, newPrice, ts, appliedTime)
+      } catch (error) {
+        // LIVENESS. An accounting assert must never be able to take out price
+        // discovery. Before this, a post-transition state that failed
+        // assertPerpStateSolvent rolled the whole transaction back, so the
+        // cached mark never moved again and EVERY subsequent tick re-derived
+        // the same failure from the same state — a permanent wedge that only
+        // an operator could clear (UK carbon 2026-08-07, 12h; OpenRouter
+        // open-weight share 2026-08-29, 12h).
+        //
+        // A frozen mark is strictly worse than the state it refuses to write:
+        // it is wrong on the screen, it keeps trading open against a dead
+        // price until the freshness budget expires, and it grows the very
+        // deficit it is failing on. So commit the price and halt trading
+        // explicitly instead.
+        //
+        // Deliberately NOT written: pools, positions, metrics, events. The
+        // pending liquidations and ADL stay pending and are re-derived by the
+        // next tick against the newer price — a position whose liquidation is
+        // deferred this way can escape it if the price rebounds, which is a
+        // real but small transfer, and the alternative on the table is a
+        // market that is dark for hours. Trading is halted throughout, so
+        // nobody can act on the gap.
+        const reason = error instanceof Error ? error.message : String(error)
+        await pgTrans.one(
+          mergeContractDataQuery(contractId, {
+            ...healthPatch,
+            oraclePrice: newPrice,
+            oraclePriceTime: ts,
+            oracleSourceTime: sourceTs ?? null,
+            // Keep the ORIGINAL halt time across retries so an operator can
+            // see how long this book has been wedged, not how long ago the
+            // last retry ran.
+            solvencyHaltTime: contract.solvencyHaltTime ?? appliedTime,
+            solvencyHaltReason: reason,
+          })
+        )
+        return {
+          oracleFeedHealth: resultHealth,
+          liquidated: [],
+          adlAdjusted: [],
+          adlSettled: [],
+          adlFactorLong: 1,
+          adlFactorShort: 1,
+          poolLongBefore,
+          poolLongAfter: poolLongBefore,
+          poolShortBefore,
+          poolShortAfter: poolShortBefore,
+          solvencyHalt: { reason },
+        }
+      }
 
-    // Fast path: no liquidations and no ADL means no position changed, so
-    // only the contract's cached price needs writing. Without this, a
-    // sub-minute oracle tick rebuilds user_contract_metrics for every holder
-    // on every price move. Metric rows DO embed unrealized PnL at the oracle
-    // price, but runFunding rebuilds them for all holders unconditionally, so
-    // they stay at worst one funding period stale — the pre-fast-tick cadence.
-    if (
-      upserts.length === 0 &&
-      deletes.length === 0 &&
-      applied.events.length === 0
-    ) {
-      // mergeContractDataQuery ends in `returning *`, so exactly one row comes
-      // back — .none() would throw QueryResultError(notEmpty) and roll back
-      // the whole tick (froze every fast-feed perp at its creation price).
-      await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
+      const { upserts, deletes } = diffForWrite(
+        state.positions,
+        applied.finalState.positions
+      )
+
+      const contractPatch = removeUndefinedProps({
+        ...healthPatch,
+        poolLong: applied.finalState.pool.L,
+        poolShort: applied.finalState.pool.S,
+        ...openInterestPatch(applied.finalState.positions),
+        oraclePrice: newPrice,
+        oraclePriceTime: ts,
+        // null deliberately clears metadata if a newer point does not carry it;
+        // retaining the previous point's source time would misattribute data.
+        oracleSourceTime: sourceTs ?? null,
+        // Price polling is infrastructure activity, not user activity. Only a
+        // liquidation/ADL transition should refresh discovery freshness.
+        lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
+        // This tick represented its own result, so whatever wedged the book is
+        // gone (typically an add-perp-subsidy top-up). Self-heal rather than
+        // needing a second operator action. `undefined` when not halted so the
+        // common path writes nothing extra.
+        ...(contract.solvencyHaltTime == null
+          ? {}
+          : { solvencyHaltTime: null, solvencyHaltReason: null }),
+      })
+
+      // Fast path: no liquidations and no ADL means no position changed, so
+      // only the contract's cached price needs writing. Without this, a
+      // sub-minute oracle tick rebuilds user_contract_metrics for every holder
+      // on every price move. Metric rows DO embed unrealized PnL at the oracle
+      // price, but runFunding rebuilds them for all holders unconditionally, so
+      // they stay at worst one funding period stale — the pre-fast-tick cadence.
+      if (
+        upserts.length === 0 &&
+        deletes.length === 0 &&
+        applied.events.length === 0
+      ) {
+        // mergeContractDataQuery ends in `returning *`, so exactly one row comes
+        // back — .none() would throw QueryResultError(notEmpty) and roll back
+        // the whole tick (froze every fast-feed perp at its creation price).
+        await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
+        return {
+          oracleFeedHealth: resultHealth,
+          liquidated: [],
+          adlAdjusted: [],
+          adlSettled: [],
+          adlFactorLong: 1,
+          adlFactorShort: 1,
+          poolLongBefore,
+          poolLongAfter: applied.finalState.pool.L,
+          poolShortBefore,
+          poolShortAfter: applied.finalState.pool.S,
+        }
+      }
+
+      const affectedUsers = Array.from(
+        new Set<string>([
+          ...state.positions.map((p) => p.userId),
+          ...applied.finalState.positions.map((p) => p.userId),
+        ])
+      )
+
+      if (applied.adlSettled.length > 0) {
+        await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+      }
+      await payAdlSettlements(pgTrans, contractId, newPrice, applied.adlSettled)
+      if (applied.adlSettled.length > 0) {
+        await assertPerpEscrowBalance(
+          pgTrans,
+          contractId,
+          applied.finalState.pool
+        )
+      }
+
+      const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
+        contract: { ...contract, ...contractPatch } as PerpContract,
+        userIds: affectedUsers,
+        newEvents: applied.events,
+        finalPositions: applied.finalState.positions,
+      })
+
+      await pgTrans.multi(
+        [
+          upsertPositionsQuery(upserts),
+          deletePositionsQuery(contractId, deletes),
+          insertPerpEventsQuery(applied.events),
+          mergeContractDataQuery(contractId, contractPatch),
+          metricsQuery,
+        ].join(';\n')
+      )
+
       return {
-        liquidated: [],
-        adlAdjusted: [],
-        adlSettled: [],
-        adlFactorLong: 1,
-        adlFactorShort: 1,
+        oracleFeedHealth: resultHealth,
+        liquidated: applied.liquidated,
+        adlAdjusted: applied.adlAdjusted,
+        adlSettled: applied.adlSettled,
+        adlFactorLong: applied.adlFactorLong,
+        adlFactorShort: applied.adlFactorShort,
         poolLongBefore,
         poolLongAfter: applied.finalState.pool.L,
         poolShortBefore,
         poolShortAfter: applied.finalState.pool.S,
       }
-    }
-
-    const affectedUsers = Array.from(
-      new Set<string>([
-        ...state.positions.map((p) => p.userId),
-        ...applied.finalState.positions.map((p) => p.userId),
-      ])
-    )
-
-    if (applied.adlSettled.length > 0) {
-      await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
-    }
-    await payAdlSettlements(pgTrans, contractId, newPrice, applied.adlSettled)
-    if (applied.adlSettled.length > 0) {
-      await assertPerpEscrowBalance(
-        pgTrans,
-        contractId,
-        applied.finalState.pool
-      )
-    }
-
-    const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
-      contract: { ...contract, ...contractPatch } as PerpContract,
-      userIds: affectedUsers,
-      newEvents: applied.events,
-      finalPositions: applied.finalState.positions,
-    })
-
-    await pgTrans.multi(
-      [
-        upsertPositionsQuery(upserts),
-        deletePositionsQuery(contractId, deletes),
-        insertPerpEventsQuery(applied.events),
-        mergeContractDataQuery(contractId, contractPatch),
-        metricsQuery,
-      ].join(';\n')
-    )
-
-    return {
-      liquidated: applied.liquidated,
-      adlAdjusted: applied.adlAdjusted,
-      adlSettled: applied.adlSettled,
-      adlFactorLong: applied.adlFactorLong,
-      adlFactorShort: applied.adlFactorShort,
-      poolLongBefore,
-      poolLongAfter: applied.finalState.pool.L,
-      poolShortBefore,
-      poolShortAfter: applied.finalState.pool.S,
-    }
-  })
+    },
+    bounds?.maxAttempts,
+    // Only a bounded caller can produce these, and it handles them itself.
+    // Unbounded callers keep ERROR for every failure.
+    bounds
+      ? { isExpectedError: isOracleTickTimeout, tag: FAST_TICK_TX_TAG }
+      : undefined
+  )
 }
 
 // -----------------------------------------------------------------------
@@ -1637,6 +2253,42 @@ export const runFunding = async (
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const appliedTime = Date.now()
+
+    // Read health from the locked contract, not the scheduler's earlier
+    // snapshot. A long source allowance must not extend a provider outage
+    // or a frozen flag into hours of funding while users cannot close.
+    if (!PERPS_SKIP_ORACLE_FRESHNESS && contract.oracleFeedHealth != null) {
+      const freshness = getPerpOracleFreshness(contract, appliedTime)
+      if (freshness.status !== 'fresh') {
+        log(
+          `[perps] skipping funding for ${contract.slug}: ${
+            freshness.reason ?? 'Oracle price is stale'
+          }`
+        )
+        return null
+      }
+    }
+
+    // Halt gate, read from the PERSISTED contract under the lock rather than
+    // from the caller's oracle result.
+    //
+    // Once a tick has halted, it has already committed its price, so replaying
+    // that same point returns `ignore`/null and the scheduler's per-run check
+    // sees nothing to skip on. Funding would then run against positions whose
+    // liquidation and ADL are still pending — and unlike the tick that refused
+    // to write them, funding DOES persist pools, positions, and events. Before
+    // the halt existed this was covered incidentally: the tick threw, and the
+    // throw took funding down with it.
+    //
+    // Subsidy recovery is not blocked by this. The retried oracle tick applies
+    // the pending transition and clears the halt; funding resumes on the next
+    // pass, against a book that has caught up.
+    if (contract.solvencyHaltTime != null) {
+      log(
+        `[perps] skipping funding for ${contract.slug}: solvency halt in effect since ${contract.solvencyHaltTime}`
+      )
+      return null
+    }
 
     // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
     // runs unlocked, so two overlapping ticks (fine hourly, likely at fast

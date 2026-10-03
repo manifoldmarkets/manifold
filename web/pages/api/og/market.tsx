@@ -2,9 +2,10 @@ import { ImageResponse } from '@vercel/og'
 
 type ImageResponseOptions = ConstructorParameters<typeof ImageResponse>[1]
 import { OgCardProps } from 'common/contract-seo'
+import { OG_CARD_HEIGHT, OG_CARD_WIDTH, OG_MARKET_SCALE } from 'common/edge/og'
 import { NextRequest } from 'next/server'
 import { OgMarket } from 'web/components/og/og-market'
-import { classToTw } from 'web/components/og/utils'
+import { classToTw, scaleCard } from 'web/components/og/utils'
 // to add a font run `base64 -i font.ttf -o output.txt`
 // then copy and paste it as a new entry in the fonts.json file
 import { figtreeLight, figtreeMedium } from './fonts.json'
@@ -12,10 +13,10 @@ import { figtreeLight, figtreeMedium } from './fonts.json'
 export const config = { runtime: 'edge' }
 const UNSUPPORTED_OG_IMAGE_EXTENSIONS = ['.webp']
 
-export const getCardOptions = async () => {
+export const getCardOptions = async (scale = 1) => {
   return {
-    width: 600,
-    height: 315,
+    width: OG_CARD_WIDTH * scale,
+    height: OG_CARD_HEIGHT * scale,
     fonts: [
       {
         name: 'Figtree',
@@ -67,14 +68,17 @@ function getSafeOgAvatarUrl(avatarUrl?: string) {
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const options = await getCardOptions()
+    const options = await getCardOptions(OG_MARKET_SCALE)
     const ogMarketProps = Object.fromEntries(
       searchParams.entries()
     ) as OgCardProps
-    const image = OgMarket({
-      ...ogMarketProps,
-      creatorAvatarUrl: getSafeOgAvatarUrl(ogMarketProps.creatorAvatarUrl),
-    })
+    const image = scaleCard(
+      OgMarket({
+        ...ogMarketProps,
+        creatorAvatarUrl: getSafeOgAvatarUrl(ogMarketProps.creatorAvatarUrl),
+      }),
+      OG_MARKET_SCALE
+    )
 
     return new ImageResponse(classToTw(image), options as ImageResponseOptions)
   } catch (e: any) {

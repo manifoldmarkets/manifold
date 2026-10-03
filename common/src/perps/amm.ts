@@ -376,8 +376,52 @@ export const applyADL = (state: PerpState, price: number) => {
     0
   )
 
-  const sL = EL > 0 ? (S - CS) / EL : 1
-  const sS = ES > 0 ? (L - CL) / ES : 1
+  // Cross-side deficit transfer. Margin refunds are senior to unrealized
+  // profits, and the two pools sit behind ONE escrow balance.
+  //
+  // A side's pool can fall below that side's own refundable margin when
+  // realized profits were paid to the opposing side against unrealized
+  // losses that later recovered (UK carbon 2026-08-07, and the OpenRouter
+  // open-weight share market 2026-08-29). ADL alone cannot repair that
+  // state: it scales profits and never cost bases, so the factor clamps to
+  // 0, every winner is settled and removed, and the deficit is still there
+  // with no profit left to scale against. assertPerpStateSolvent then sees
+  // -Infinity and the oracle apply fail-closes — forever, at a stale price.
+  //
+  // assertPerpEscrowBalance checks L + S against one contract balance, so
+  // the L/S split is an accounting convention rather than a custody
+  // boundary. Before pricing ADL, if one side is short of its own reserve and
+  // the other holds at least that much above its reserve, move the deficit
+  // across. At most one direction is non-zero — a side in deficit has no
+  // surplus by construction. Total escrow is unchanged and no user balance
+  // moves. A book that was already covered transfers exactly zero, so this is
+  // inert on every market that was not wedged.
+  //
+  // All-or-nothing on purpose. A partial transfer cannot make the book
+  // representable — the recipient's cover is still negative afterwards, so the
+  // assert throws either way — but it DOES change the ADL factors on the way
+  // there, and a donor drained to exactly zero pushes the opposing factor to 0,
+  // which settles that side and overdraws its pool. Transferring only when the
+  // donor fully covers the deficit means this can turn a throw into a success
+  // and can never reshape a path that was going to throw regardless.
+  const surplusL = L - CL
+  const surplusS = S - CS
+  const transferToL = surplusL < 0 && surplusS >= -surplusL ? -surplusL : 0
+  const transferToS = surplusS < 0 && surplusL >= -surplusS ? -surplusS : 0
+  /** Positive = moved S -> L, negative = moved L -> S. */
+  const crossSideTransfer = transferToL - transferToS
+  // Assign the RECIPIENT its reserve exactly rather than computing
+  // `L + (CL - L)`, which is not exactly CL in float and can leave cover one
+  // ULP negative. That is not a rounding nuisance here: the -Infinity branch of
+  // solvencyFactor has no tolerance, so a single ULP of negative cover on a
+  // side with no profit left is the difference between unwedging and staying
+  // wedged. The donor absorbs the same value, so escrow moves by at most one
+  // ULP, which assertPerpEscrowBalance tolerates.
+  const adjustedL = transferToL > 0 ? CL : L - transferToS
+  const adjustedS = transferToS > 0 ? CS : S - transferToL
+
+  const sL = EL > 0 ? (adjustedS - CS) / EL : 1
+  const sS = ES > 0 ? (adjustedL - CL) / ES : 1
 
   const adlFactorLong = sL < 1 ? Math.max(sL, 0) : 1
   const adlFactorShort = sS < 1 ? Math.max(sS, 0) : 1
@@ -432,14 +476,15 @@ export const applyADL = (state: PerpState, price: number) => {
   return {
     state: {
       pool: {
-        L: poolAfterDebit(L, longSettlementPayout),
-        S: poolAfterDebit(S, shortSettlementPayout),
+        L: poolAfterDebit(adjustedL, longSettlementPayout),
+        S: poolAfterDebit(adjustedS, shortSettlementPayout),
       },
       positions,
     },
     adlFactorLong,
     adlFactorShort,
     settled,
+    crossSideTransfer,
   }
 }
 
@@ -553,43 +598,209 @@ export const openPosition = (
 export type CloseResult = {
   state: PerpState
   payout: number // mana paid to user
-  pnl: number // π at close
+  pnl: number // π realized on the closed leg
   poolLongDelta: number
   poolShortDelta: number
+  /** Fraction actually closed — 1 for a full close, including a partial one
+   * promoted to a full close because its remainder would have been dust. */
+  fraction: number
+  /** The closed leg's share of the row. Equals the row's own values on a
+   * full close, so callers can stamp events from these unconditionally. */
+  closedSize: number
+  closedCostBasis: number
+  closedOriginalCostBasis: number
+  closedTakerFeeCostBasis: number
+  /** The surviving row, or null when the whole position was closed. */
+  remainingPosition: PerpPosition | null
 }
 
 /**
- * Close a long or short position at the oracle price (paper §2.5, eq. 13–15).
- * Solvency invariant guarantees the opposing pool can cover π > 0.
+ * Smallest fraction of a position a partial close may take.
+ *
+ * Below this the close is not worth the row it writes: it mints an event (and
+ * its streak credit) for a change the trader cannot see, and on a small
+ * position the payout rounds to nothing. A caller wanting less should not
+ * close at all.
+ */
+export const PERP_MIN_CLOSE_FRACTION = 0.01
+
+/**
+ * Margin below which a partial close's REMAINDER is not worth keeping open,
+ * so the close is promoted to a full one.
+ *
+ * Without this, `fraction = 0.9999` leaves a row of a few thousandths of a
+ * mana that still accrues funding every period, still shows on the market
+ * page, and still has to be closed by hand. The bound is on the remaining
+ * COST BASIS rather than on `1 - fraction` because that is the quantity that
+ * has to stay meaningful: a fractional rule would strand dust on a large
+ * position and delete real margin on a small one.
+ */
+export const PERP_MIN_REMAINDER_COST_BASIS = 0.01
+
+/**
+ * Relative slack between the notional a partial close was sized against and
+ * the row the transaction actually locked.
+ *
+ * Representation dust only — NOT semantic drift. `size` round-trips through a
+ * postgres `numeric` and back, and that is the only difference this is here to
+ * forgive. Anything that genuinely moved the row (funding scaling it, an ADL
+ * haircut, another partial close landing first) must fail the check, because
+ * in every one of those cases the fraction the caller chose was chosen against
+ * a position that no longer exists, and applying it to the survivor silently
+ * executes a different trade than the one they consented to.
+ */
+export const PERP_EXPECTED_SIZE_TOLERANCE = 1e-9
+
+/**
+ * Whether a partial close's `expectedSize` still describes the locked row.
+ *
+ * Relative, so it means the same thing on an M$10 position and an M$10m one.
+ */
+export const perpSizeMatchesExpectation = (
+  actualSize: number,
+  expectedSize: number
+) => {
+  if (!Number.isFinite(actualSize) || !Number.isFinite(expectedSize))
+    return false
+  const scale = Math.max(Math.abs(actualSize), Math.abs(expectedSize), 1)
+  return (
+    Math.abs(actualSize - expectedSize) <= PERP_EXPECTED_SIZE_TOLERANCE * scale
+  )
+}
+
+/**
+ * The fraction a close will ACTUALLY take, given what the caller asked for.
+ *
+ * Separate from `closePosition` so a caller can price and describe the close
+ * ("this closes your whole position") before committing to it, and so the
+ * promotion rule has exactly one definition.
+ */
+export const resolvePerpCloseFraction = (
+  position: Pick<PerpPosition, 'size' | 'costBasis'>,
+  requested: number
+) => {
+  if (!Number.isFinite(requested) || requested <= 0 || requested > 1)
+    throw new Error('close fraction must be a finite number in (0, 1]')
+  if (requested >= 1) return 1
+  if (requested < PERP_MIN_CLOSE_FRACTION)
+    throw new Error(
+      `close fraction must be at least ${PERP_MIN_CLOSE_FRACTION} or exactly 1`
+    )
+  const remainingSize = position.size - requested * position.size
+  const remainingCostBasis = position.costBasis - requested * position.costBasis
+  if (remainingSize <= 0 || remainingCostBasis < PERP_MIN_REMAINDER_COST_BASIS)
+    return 1
+  return requested
+}
+
+/**
+ * Close all or part of a long or short position at the oracle price (paper
+ * §2.5, eq. 13–15). Solvency invariant guarantees the opposing pool can
+ * cover π > 0.
+ *
+ * A partial close is exactly `fraction` of the full one. π is linear in `q`,
+ * and the payout and both pool debits are linear in π and `c`, so closing
+ * `z` of a row leaves the book in precisely the state it would have been in
+ * had the trader opened `1 - z` of that position and closed a separate `z`
+ * one — which is why the survivor keeps its entry price, its leverage
+ * (ℓ = q/c is invariant under the split) and therefore its liquidation price.
+ * Nothing about the risk of the remaining exposure changes.
  */
 export const closePosition = (
   state: PerpState,
   position: PerpPosition,
-  price: number
+  price: number,
+  /** Fraction of the position to close; 1 (the default) closes all of it.
+   * A fraction whose remainder would be dust is promoted to a full close, so
+   * read `fraction` off the result for what actually happened. */
+  requestedFraction = 1,
+  now = Date.now()
 ): CloseResult => {
-  const π = getUnrealizedEquity(position, price)
+  const fraction = resolvePerpCloseFraction(position, requestedFraction)
+  const isFull = fraction === 1
+
+  const positionFeeBasis = position.takerFeeCostBasis ?? 0
+  const closedSize = isFull ? position.size : fraction * position.size
+  const closedCostBasis = isFull
+    ? position.costBasis
+    : fraction * position.costBasis
+  const closedOriginalCostBasis = isFull
+    ? position.originalCostBasis
+    : fraction * position.originalCostBasis
+  const closedTakerFeeCostBasis = isFull
+    ? positionFeeBasis
+    : fraction * positionFeeBasis
+
+  // Priced on the CLOSED leg. On a full close this is the row itself, so the
+  // arithmetic below is bit-for-bit what it was before partial closes existed.
+  const closedLeg: PerpPosition = isFull
+    ? position
+    : { ...position, size: closedSize, costBasis: closedCostBasis }
+
+  const π = getUnrealizedEquity(closedLeg, price)
   let poolLongDelta = 0
   let poolShortDelta = 0
   let payout = 0
 
   if (π <= 0) {
-    payout = Math.max(position.costBasis + π, 0)
+    payout = Math.max(closedCostBasis + π, 0)
     if (position.direction === 'long') poolLongDelta = -payout
     else poolShortDelta = -payout
   } else {
-    payout = position.costBasis + π
+    payout = closedCostBasis + π
     if (position.direction === 'long') {
-      poolLongDelta = -position.costBasis
+      poolLongDelta = -closedCostBasis
       poolShortDelta = -π
     } else {
-      poolShortDelta = -position.costBasis
+      poolShortDelta = -closedCostBasis
       poolLongDelta = -π
     }
   }
 
-  const positions = state.positions.filter(
-    (p) => !(p.userId === position.userId && p.direction === position.direction)
-  )
+  // The survivor is the row MINUS the closed leg, by subtraction rather than
+  // by scaling with (1 - fraction): the two halves must add back up to the
+  // original exactly, because metric-periods reconstructs the pre-close row
+  // by adding this event's deltas onto the surviving one, and a split that
+  // does not conserve leaves that replay drifting on every partial close.
+  const remainingPosition: PerpPosition | null = isFull
+    ? null
+    : (() => {
+        const size = position.size - closedSize
+        const costBasis = position.costBasis - closedCostBasis
+        // Recomputed rather than carried over: ℓ = q/c is invariant under the
+        // split in exact arithmetic but can move an ulp in float, and the row
+        // has to stay self-consistent for the liquidation scan and for
+        // assertPerpPositionNumbers.
+        const leverage = getLeverage(size, costBasis)
+        return {
+          ...position,
+          size,
+          costBasis,
+          originalCostBasis:
+            position.originalCostBasis - closedOriginalCostBasis,
+          takerFeeCostBasis: positionFeeBasis - closedTakerFeeCostBasis,
+          leverage,
+          liquidationPrice: liquidationPrice(
+            position.direction,
+            position.entryPrice,
+            leverage
+          ),
+          updatedTime: now,
+        }
+      })()
+
+  // Replaced in place rather than filtered and re-appended, so a partial
+  // close does not reorder the book.
+  const positions = remainingPosition
+    ? state.positions.map((p) =>
+        p.userId === position.userId && p.direction === position.direction
+          ? remainingPosition
+          : p
+      )
+    : state.positions.filter(
+        (p) =>
+          !(p.userId === position.userId && p.direction === position.direction)
+      )
 
   return {
     state: {
@@ -609,6 +820,12 @@ export const closePosition = (
     pnl: π,
     poolLongDelta,
     poolShortDelta,
+    fraction,
+    closedSize,
+    closedCostBasis,
+    closedOriginalCostBasis,
+    closedTakerFeeCostBasis,
+    remainingPosition,
   }
 }
 
@@ -616,17 +833,23 @@ export const closePosition = (
 
 /**
  * Launch guardrail beyond the ManiPerp paper: aggregate exposure on either
- * side may not exceed this multiple of unreserved opposing-pool cover.
+ * side may not exceed this multiple of the backing the opposing side provides.
  *
  * This still permits high leverage for small positions, while preventing a
  * freshly opened position (which has no unrealized profit yet) from creating
  * effectively unlimited future claims against a finite pool.
+ *
+ * Read it as an adverse move of 1/M where M is this multiple: the cap is sized
+ * so this side's profit over a 10% move still fits the backing available for
+ * it. See `calculateMatchedCredit` for the derivation.
  */
 export const PERP_OPEN_INTEREST_COVER_MULTIPLE = 10
 
 export type PerpOpenInterestCapacity = {
   openInterest: number
   availableCover: number
+  /** Notional the opposing book funds out of its own losses. */
+  matchedCredit: number
   limit: number
   headroom: number
   isWithinLimit: boolean
@@ -667,12 +890,93 @@ const calculateAvailableCover = (
 }
 
 /**
+ * Notional the OPPOSING book can fund out of its own losses.
+ *
+ * The cap exists to bound the drain on the opposing pool from this side's
+ * profits over an adverse move of x = 1 / PERP_OPEN_INTEREST_COVER_MULTIPLE.
+ * Over such a move:
+ *
+ *   this side's profit ≈ x · OI(side)
+ *   released           = R(opp, P) − R(opp, P'), the opposing reserve that
+ *                        actually stops being reserved as the move goes
+ *                        against them — and it is released INTO the very pool
+ *                        that pays this side.
+ *   net drain          ≈ x · OI(side) − released
+ *
+ * Requiring `net drain ≤ availableCover` and multiplying through by the
+ * multiple M = 1/x gives
+ *
+ *   OI(side) ≤ M · availableCover + M · released
+ *
+ * and the second term is this credit.
+ *
+ * ⚠️ `released` must be evaluated at BOTH prices. R is
+ * `min(costBasis, positionValue)`, which is FLAT in price wherever the
+ * opposing position is in profit — value exceeds cost basis, the `min` clamps
+ * to cost basis, and an adverse move releases nothing at all. Crediting
+ * `M · R(opp, P)` instead (the first version of this) hands out capacity
+ * against margin that the move never frees: mark 100, a short of size 1000 at
+ * entry 200 with 100 of basis against a 100 short pool reserves its whole 100,
+ * so the naive form credits 1000 of long notional — and at mark 110 that short
+ * is still deeply profitable, still reserves the entire pool, and the new long
+ * has zero cover and is factor-zero ADL'd on its first profitable tick.
+ *
+ * Because R is non-increasing over an adverse move and can fall by at most the
+ * position's own loss, `released ≤ x · OI(opp)`, so `M · released ≤ OI(opp)`;
+ * the explicit `min` against opposing OI below is therefore belt-and-braces
+ * against float, not the binding constraint. And since `released ≤ R(opp, P)`,
+ * the two terms telescope wherever cover is non-negative:
+ *
+ *   M · (pool − R) + M · released  ≤  M · pool
+ *
+ * so the cap can never promise more than the whole opposing pool over the move
+ * it is sized for.
+ *
+ * Without this term the cap compares a NOTIONAL quantity against a MARGIN one
+ * and never looks at opposing notional at all, so a market can refuse the
+ * trade that would balance it while still accepting the trade that worsens
+ * the imbalance. Measured on prod 2026-08-31: the BTC market held 734,349
+ * long vs 928,994 short of notional — a short-heavy book — with 1,129 of long
+ * headroom against 544,752 of short headroom, and was rejecting M$110 longs.
+ */
+const calculateMatchedCredit = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+) => {
+  const oppositeDirection = side === 'long' ? 'short' : 'long'
+  const opposing = state.positions.filter(
+    (p) => p.direction === oppositeDirection && p.size > 0
+  )
+  // The move this cap is sized for, in the direction that hurts the opposing
+  // side: up for a long book, down for a short one.
+  const x = 1 / PERP_OPEN_INTEREST_COVER_MULTIPLE
+  const movedPrice = side === 'long' ? price * (1 + x) : price * (1 - x)
+
+  const openInterest = opposing.reduce((sum, p) => sum + p.size, 0)
+  // Per position, and floored at zero: one holder whose reserve does not move
+  // must not have another's release netted away against it.
+  const released = opposing.reduce(
+    (sum, p) =>
+      sum +
+      Math.max(
+        Math.min(p.costBasis, getPositionValue(p, price)) -
+          Math.min(p.costBasis, getPositionValue(p, movedPrice)),
+        0
+      ),
+    0
+  )
+  return Math.min(openInterest, released * PERP_OPEN_INTEREST_COVER_MULTIPLE)
+}
+
+/**
  * Aggregate side capacity at the current oracle price.
  *
  * `availableCover` deliberately deducts each opposite-side position's current
  * refundable value, capped at its cost basis. This is the same reserve used by
  * the ADL solvency calculation, so committed trader margin is not counted as
- * free backing for new exposure.
+ * free backing for new exposure. `matchedCredit` then adds back the exposure
+ * the opposing book funds out of its own losses — see above.
  */
 export const getPerpOpenInterestCapacity = (
   side: PerpDirection,
@@ -689,16 +993,56 @@ export const getPerpOpenInterestCapacity = (
   const availableCover = calculateAvailableCover(side, state, price)
   assertFiniteNumber(`${side} available cover`, availableCover)
 
-  const limit = Math.max(availableCover, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE
+  const matchedCredit = calculateMatchedCredit(side, state, price)
+  assertFiniteNumber(`${side} matched credit`, matchedCredit)
+
+  // The telescoping above holds only where cover is non-negative. On a book
+  // that is already short of its own reserve, cover floors at 0 while the
+  // credit keeps counting reserved value the pool does not actually hold, so
+  // bound the result explicitly: over a 1/M move this side's profit is OI/M,
+  // and the most the opposing side can ever fund is its entire pool. This is a
+  // no-op on every healthy book.
+  const opposingPool = side === 'long' ? state.pool.S : state.pool.L
+  const limit = Math.min(
+    Math.max(availableCover, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE +
+      matchedCredit,
+    Math.max(opposingPool, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE
+  )
   assertFiniteNumber(`${side} open interest limit`, limit)
 
   return {
     openInterest,
     availableCover,
+    matchedCredit,
     limit,
     headroom: Math.max(limit - openInterest, 0),
     isWithinLimit: isPerpOpenInterestWithinLimit(openInterest, limit),
   }
+}
+
+/**
+ * Capacity seen by the opening leg of a trade.
+ *
+ * A flip closes the trader's opposite-side position first. That close changes
+ * both the opposing pool and the opposing open interest used by the cap, so a
+ * client preview against the unmodified book can promise headroom that the
+ * atomic engine correctly rejects after performing the close.
+ */
+export const getPerpOpenInterestCapacityForOpen = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number,
+  positionToClose?: PerpPosition
+): PerpOpenInterestCapacity => {
+  // Validate before closing so a malformed row cannot disappear during the
+  // simulated transition and turn into a plausible-looking preview.
+  assertPerpStateNumbers(state, price)
+  if (positionToClose?.direction === side)
+    throw new Error('capacity preview may only close the opposite side')
+  const stateBeforeOpen = positionToClose
+    ? closePosition(state, positionToClose, price).state
+    : state
+  return getPerpOpenInterestCapacity(side, stateBeforeOpen, price)
 }
 
 /**
@@ -728,7 +1072,64 @@ const assertFiniteNumber = (label: string, value: number) => {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite`)
 }
 
-const assertPerpStateNumbers = (state: PerpState, price: number) => {
+/**
+ * Row-level sanity for one stored position. Extracted from
+ * assertPerpStateNumbers (which still calls it, so the two can never drift)
+ * because callers that touch a SINGLE row need the same rules before they act
+ * on it — notably the engine, which must reject a corrupt row BEFORE closing
+ * it or pricing a fee against it. Both operations read entryPrice through
+ * getUnrealizedEquity, which silently returns 0 for a non-positive entry
+ * price: a corrupt row would otherwise mark as flat and pay out its full
+ * cost basis no matter where the oracle actually is.
+ */
+export const assertPerpPositionNumbers = (
+  position: PerpPosition,
+  label = 'position'
+) => {
+  assertFiniteNumber(`${label} size`, position.size)
+  assertFiniteNumber(`${label} cost basis`, position.costBasis)
+  assertFiniteNumber(`${label} original cost basis`, position.originalCostBasis)
+  const takerFeeCostBasis = position.takerFeeCostBasis ?? 0
+  assertFiniteNumber(`${label} taker fee cost basis`, takerFeeCostBasis)
+  assertFiniteNumber(`${label} entry price`, position.entryPrice)
+  assertFiniteNumber(`${label} leverage`, position.leverage)
+  assertFiniteNumber(`${label} liquidation price`, position.liquidationPrice)
+  assertFiniteNumber(`${label} opened time`, position.openedTime)
+  assertFiniteNumber(`${label} updated time`, position.updatedTime)
+
+  if (
+    position.size < 0 ||
+    position.costBasis < 0 ||
+    position.originalCostBasis < 0 ||
+    takerFeeCostBasis < 0
+  )
+    throw new Error(`${label} amounts must be non-negative`)
+  if (position.entryPrice <= 0)
+    throw new Error(`${label} entry price must be positive`)
+
+  if (position.size === 0) {
+    if (position.costBasis !== 0 || position.leverage !== 0)
+      throw new Error(`${label} has margin without active exposure`)
+  } else if (position.costBasis <= 0 || position.leverage <= 0) {
+    throw new Error(`${label} active exposure must have positive margin`)
+  }
+}
+
+/**
+ * Structural / numeric sanity for a whole state: finite non-negative pools, a
+ * positive price, and every row passing assertPerpPositionNumbers.
+ *
+ * Exported separately from assertPerpStateSolvent because the two answer
+ * different questions and belong at different points in a transition.
+ * SOLVENCY is a property the risk transitions are allowed to REPAIR —
+ * processLiquidations and applyADL exist precisely to bring an insolvent book
+ * back to factor 1, so asserting it on their input would fail closed on the
+ * exact states they are there to fix. STRUCTURE is not repairable and must
+ * hold going IN: a malformed row that reaches processLiquidations/applyADL
+ * can be zeroed or removed by them, after which the post-transition assert
+ * inspects a state the corrupt row has already left and passes.
+ */
+export const assertPerpStateNumbers = (state: PerpState, price: number) => {
   assertFiniteNumber('oracle price', price)
   if (price <= 0) throw new Error('oracle price must be positive')
 
@@ -738,39 +1139,9 @@ const assertPerpStateNumbers = (state: PerpState, price: number) => {
   if (L < 0 || S < 0) throw new Error('perp pools must be non-negative')
   assertFiniteNumber('total pool', L + S)
 
-  state.positions.forEach((position, index) => {
-    const prefix = `position ${index}`
-    assertFiniteNumber(`${prefix} size`, position.size)
-    assertFiniteNumber(`${prefix} cost basis`, position.costBasis)
-    assertFiniteNumber(
-      `${prefix} original cost basis`,
-      position.originalCostBasis
-    )
-    const takerFeeCostBasis = position.takerFeeCostBasis ?? 0
-    assertFiniteNumber(`${prefix} taker fee cost basis`, takerFeeCostBasis)
-    assertFiniteNumber(`${prefix} entry price`, position.entryPrice)
-    assertFiniteNumber(`${prefix} leverage`, position.leverage)
-    assertFiniteNumber(`${prefix} liquidation price`, position.liquidationPrice)
-    assertFiniteNumber(`${prefix} opened time`, position.openedTime)
-    assertFiniteNumber(`${prefix} updated time`, position.updatedTime)
-
-    if (
-      position.size < 0 ||
-      position.costBasis < 0 ||
-      position.originalCostBasis < 0 ||
-      takerFeeCostBasis < 0
-    )
-      throw new Error(`${prefix} amounts must be non-negative`)
-    if (position.entryPrice <= 0)
-      throw new Error(`${prefix} entry price must be positive`)
-
-    if (position.size === 0) {
-      if (position.costBasis !== 0 || position.leverage !== 0)
-        throw new Error(`${prefix} has margin without active exposure`)
-    } else if (position.costBasis <= 0 || position.leverage <= 0) {
-      throw new Error(`${prefix} active exposure must have positive margin`)
-    }
-  })
+  state.positions.forEach((position, index) =>
+    assertPerpPositionNumbers(position, `position ${index}`)
+  )
 }
 
 /**

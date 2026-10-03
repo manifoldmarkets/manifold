@@ -1,3 +1,4 @@
+import type { OracleFeedHealth } from '../perps/oracle-health'
 import { JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -12,8 +13,21 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
-import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
-import { getPerpTakerFeeBps } from 'common/perps/fees'
+import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
+import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
+import { PERP_CREATOR_ACCOUNTS } from 'common/perps/creator-accounts'
+import {
+  PERP_TICKER_MAX_LENGTH,
+  PERP_TICKER_PATTERN,
+  getPerpTicker,
+} from 'common/perps/ticker'
+import {
+  getPerpEffectiveTakerFeeBps,
+  getPerpTakerFeeBps,
+  getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_API_BPS_MAX,
+  PERP_TAKER_FEE_IMPACT_MAX,
+} from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
 import {
   getTierIndexFromLiquidityAndAnswers,
@@ -76,9 +90,11 @@ export type LiteMarket = {
 
   // Perp markets only (mechanism 'perp'). Exposed so clients (and the perp
   // market page's live poll) can track price/pools without bespoke endpoints.
+  oracleFeedId?: string
   oraclePrice?: number
   oraclePriceTime?: number
   oracleSourceTime?: number | null
+  oracleFeedHealth?: OracleFeedHealth
   poolLong?: number
   poolShort?: number
   // Drives the live funding rate (getPerpFundingRate) — must travel with the
@@ -89,7 +105,20 @@ export type LiteMarket = {
   lastFundingTime?: number
   maxLeverage?: number
   takerFeeBps?: number
+  // Size-impact coefficient of the taker fee. Travels with the pools so a
+  // client can price its own fee: the marginal rate is
+  // takerFeeBps + takerFeeImpact·(share of pool)² bps (see calcPerpSizeFee).
+  takerFeeImpact?: number
+  // What an API-key open is charged, in bps of notional. Equal to
+  // takerFeeBps unless this market prices the API channel separately. The
+  // channel that pays this rate is the one that reads the market over the
+  // API, so publishing only takerFeeBps would tell every bot the wrong
+  // number — and it is the input a client needs to size a trade.
+  takerFeeApiBps?: number
   resolvedOraclePrice?: number
+  // The market's short on-site identifier ("BTC", "TRUMP"): the label the
+  // /perps hub and the title badge show, and what search matches on.
+  ticker?: string
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -223,9 +252,11 @@ export function toLiteMarket(
     // Perp props (only present on perp markets).
     ...(contract.mechanism === 'perp'
       ? {
+          oracleFeedId: contract.oracleFeedId,
           oraclePrice: contract.oraclePrice,
           oraclePriceTime: contract.oraclePriceTime,
           oracleSourceTime: contract.oracleSourceTime,
+          oracleFeedHealth: contract.oracleFeedHealth,
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
           openInterestLong: contract.openInterestLong,
@@ -234,7 +265,10 @@ export function toLiteMarket(
           lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,
           takerFeeBps: getPerpTakerFeeBps(contract),
+          takerFeeImpact: getPerpTakerFeeImpact(contract),
+          takerFeeApiBps: getPerpEffectiveTakerFeeBps(contract, true),
           resolvedOraclePrice: contract.resolvedOraclePrice,
+          ticker: getPerpTicker(contract),
         }
       : {}),
 
@@ -316,6 +350,7 @@ export type UltraLiteMarket = {
   probability?: number
   liquidityTier?: string
   // Perp markets only. Omitted when the source value is not finite.
+  oracleFeedId?: string
   oraclePrice?: number
   // Current perp backing capital (poolLong + poolShort).
   backingPool?: number
@@ -401,6 +436,9 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     probability,
     ...(isPerp
       ? {
+          ...(liteMarket.oracleFeedId
+            ? { oracleFeedId: liteMarket.oracleFeedId }
+            : {}),
           ...(oraclePrice === undefined ? {} : { oraclePrice }),
           ...(backingPool === undefined ? {} : { backingPool }),
         }
@@ -473,6 +511,14 @@ export const createMultiSchema = z.object({
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
+  // Starting probability of each answer, in percent, in the same order as
+  // `answers`. Defaults to an even split. For answers that sum to one these
+  // must add up to 100 — or to less than 100 when the market has an 'Other'
+  // answer, which takes the remainder.
+  answerProbs: z
+    .array(z.number().gte(MIN_ANSWER_PROB).lte(MAX_ANSWER_PROB))
+    .max(MAX_ANSWERS)
+    .optional(),
 })
 
 export const createNumberSchema = z.object({
@@ -574,6 +620,16 @@ export const updateMarketProps = z
     homePageScoreAdjustment: z.number().gte(-1).lte(1).nullable().optional(),
     homePageScoreAdjustmentDays: z.number().int().positive().optional(),
     creatorBannedFromBetting: z.boolean().optional(),
+    // Perp markets only, admin only; a feed named in PERP_FEED_TICKERS
+    // accepts only its canonical ticker (see update-market).
+    ticker: z
+      .string()
+      .max(PERP_TICKER_MAX_LENGTH)
+      .regex(
+        PERP_TICKER_PATTERN,
+        'A ticker is one alphanumeric token that starts with a letter'
+      )
+      .optional(),
   })
   .strict()
 
@@ -646,6 +702,18 @@ export const createPerpSchema = z.object({
   visibility: z.enum(VISIBILITIES).optional(),
   groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   oracleFeedId: z.string().min(1).max(200),
+  // Short on-site identifier shown in place of the market type ("BTC").
+  // Omitted = the feed's canonical ticker (PERP_FEED_TICKERS), else one
+  // derived from the feed id; a feed that has a canonical ticker rejects any
+  // other value, so the label can't drift between markets on one feed.
+  ticker: z
+    .string()
+    .max(PERP_TICKER_MAX_LENGTH)
+    .regex(
+      PERP_TICKER_PATTERN,
+      'A ticker is one alphanumeric token that starts with a letter'
+    )
+    .optional(),
   maxLeverage: z.number().gt(1).lte(100),
   maxFundingRate: z.number().gt(0).lt(1),
   fundingSensitivity: z.number().gt(0).lte(100),
@@ -653,10 +721,25 @@ export const createPerpSchema = z.object({
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),
   // Open-side taker fee in bps of notional (closing is free). Omitted = the
-  // platform default (see PERP_TAKER_FEE_BPS_DEFAULT); the handler stamps
+  // feed default (MNX_DEFAULT_FEES for MNX, PERP_TAKER_FEE_BPS_DEFAULT
+  // otherwise); the handler stamps
   // the resolved value so later default changes cannot rewrite an existing
   // market's economics.
   takerFeeBps: z.number().min(0).max(100).optional(),
+  // API-key opens use max(web base, API base). MNX defaults to 20 bps;
+  // other feeds inherit the web base when this is omitted.
+  takerFeeApiBps: z.number().min(0).max(PERP_TAKER_FEE_API_BPS_MAX).optional(),
+  // Size-impact coefficient of the taker fee (marginal rate is
+  // takerFeeBps + takerFeeImpact·(share of pool)² bps). Omitted = the
+  // feed default (10 on MNX, PERP_TAKER_FEE_IMPACT_DEFAULT otherwise); stamped like
+  // takerFeeBps above.
+  takerFeeImpact: z.number().min(0).max(PERP_TAKER_FEE_IMPACT_MAX).optional(),
+  // Which account owns the market. The owner pays the backing now and is paid
+  // the residual pool at settlement, so the caller must be the official
+  // Manifold account either way (it spends its own balance or acts for the
+  // partner). Omitted = 'manifold' (the handler owns the default, as with
+  // visibility); a partner is accepted only on its own feeds.
+  creatorAccount: z.enum(PERP_CREATOR_ACCOUNTS).optional(),
 })
 
 export const placePerpTradeSchema = z.object({
@@ -665,11 +748,54 @@ export const placePerpTradeSchema = z.object({
   mana: z.number().gt(0),
   leverage: z.number().min(MIN_PERP_LEVERAGE),
   idempotencyKey: z.string().regex(randomStringRegex).length(10),
+  // Price protection: reject rather than charge when the fee computed at
+  // execution exceeds this (mana). The fee is state-dependent — pools move
+  // and config is live-tunable — so the previewed fee is not a promise;
+  // this bound is how a caller makes their consent explicit. Optional here
+  // for flat-fee markets, but the ENGINE requires it whenever the market's
+  // takerFeeImpact is nonzero (mirroring the close path's mandatory
+  // expectedOpenedTime); the web panel always sends it.
+  maxFee: z.number().min(0).optional(),
 })
 
-export const closePerpPositionSchema = z.object({
-  contractId: z.string().min(1),
-  direction: z.enum(['long', 'short']),
-  idempotencyKey: z.string().regex(randomStringRegex).length(10),
-  expectedOpenedTime: z.number().int().nonnegative(),
-})
+export const closePerpPositionSchema = z
+  .object({
+    contractId: z.string().min(1),
+    direction: z.enum(['long', 'short']),
+    idempotencyKey: z.string().regex(randomStringRegex).length(10),
+    expectedOpenedTime: z.number().int().nonnegative(),
+    // Fraction of the position to close; omitted = the whole position. Either
+    // exactly 1 or at least PERP_MIN_CLOSE_FRACTION — a smaller close cannot
+    // change the position and would only mint an event and streak credit. A
+    // fraction whose remainder would be dust closes the whole position instead;
+    // the response's `fraction` says what actually happened.
+    fraction: z
+      .number()
+      .lte(1)
+      .refine((f) => f === 1 || f >= PERP_MIN_CLOSE_FRACTION, {
+        message: `fraction must be 1 or at least ${PERP_MIN_CLOSE_FRACTION}`,
+      })
+      .optional(),
+    // The notional the caller sized `fraction` against. Checked against the
+    // locked row on a partial close and rejected with a 409 if it has moved,
+    // because `expectedOpenedTime` cannot see an intervening partial close: the
+    // survivor keeps its openedTime. Ignored on a full close, which is
+    // unambiguous at any size.
+    expectedSize: z.number().positive().finite().optional(),
+  })
+  // Required, not optional, for a partial close: without it the race is
+  // simply unguarded, and "close half of whatever happens to be there" is
+  // never what a caller means when they previewed a number. A caller has to
+  // read the position to know it exists, so it always has a size to send; if
+  // it raced, the 409 tells it to re-read rather than executing a trade it
+  // did not preview.
+  .refine(
+    (p) =>
+      p.fraction === undefined ||
+      p.fraction >= 1 ||
+      p.expectedSize !== undefined,
+    {
+      message: 'expectedSize is required when closing part of a position',
+      path: ['expectedSize'],
+    }
+  )

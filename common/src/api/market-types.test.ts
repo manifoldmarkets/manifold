@@ -1,6 +1,13 @@
+import { z } from 'zod'
+
+import { API } from 'common/api/schema'
 import { PerpContract } from 'common/contract'
 import { MIN_PERP_LEVERAGE } from 'common/perps/amm'
-import { PERP_TAKER_FEE_BPS_DEFAULT } from 'common/perps/fees'
+import {
+  PERP_TAKER_FEE_IMPACT_DEFAULT,
+  PERP_TAKER_FEE_IMPACT_MAX,
+  PERP_TAKER_FEE_BPS_DEFAULT,
+} from 'common/perps/fees'
 import {
   createPerpSchema,
   LiteMarket,
@@ -59,6 +66,21 @@ describe('placePerpTradeSchema', () => {
         placePerpTradeSchema.safeParse({ ...base, leverage }).success
       ).toBe(false)
     }
+  })
+
+  it('accepts an optional maxFee price-protection bound, rejecting a negative one', () => {
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: 12.5 })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: 0 })
+        .success
+    ).toBe(true)
+    expect(
+      placePerpTradeSchema.safeParse({ ...base, leverage: 2, maxFee: -1 })
+        .success
+    ).toBe(false)
   })
 })
 
@@ -179,6 +201,7 @@ describe('toLiteMarket', () => {
       lastFundingTime: 1_700_000_080_000,
       maxLeverage: 10,
       takerFeeBps: 12,
+      takerFeeImpact: 90,
       resolvedOraclePrice: 42,
       description: '',
     } as unknown as PerpContract
@@ -197,10 +220,15 @@ describe('toLiteMarket', () => {
         fundingRate: 0.001,
         lastFundingTime: 1_700_000_080_000,
         takerFeeBps: 12,
+        takerFeeImpact: 90,
         resolvedOraclePrice: 42,
       })
     )
+    expect(
+      toLiteMarket({ ...contract, searchMatchType: 'semantic' } as PerpContract)
+    ).not.toHaveProperty('searchMatchType')
     expect(toFullMarket(contract).takerFeeBps).toBe(12)
+    expect(toFullMarket(contract).takerFeeImpact).toBe(90)
   })
 
   it('projects the effective legacy default while preserving explicit zero', () => {
@@ -233,6 +261,61 @@ describe('toLiteMarket', () => {
     expect(
       toLiteMarket({ ...legacyContract, takerFeeBps: 0 }).takerFeeBps
     ).toBe(0)
+    expect(toLiteMarket(legacyContract).takerFeeImpact).toBe(
+      PERP_TAKER_FEE_IMPACT_DEFAULT
+    )
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeImpact: 0 }).takerFeeImpact
+    ).toBe(0)
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeImpact: 90 }).takerFeeImpact
+    ).toBe(90)
+  })
+
+  it('publishes the rate an API-key open actually pays', () => {
+    // The cohort that reads a market over the API is the cohort charged the
+    // API rate, so the payload must carry it. Publishing only takerFeeBps
+    // told every bot the wrong number.
+    const perp = {
+      id: 'p',
+      creatorId: 'c',
+      creatorUsername: 't',
+      creatorName: 'T',
+      createdTime: 1_700_000_000_000,
+      question: 'Q',
+      slug: 'q',
+      outcomeType: 'PERP',
+      mechanism: 'perp',
+      volume: 0,
+      volume24Hours: 0,
+      isResolved: false,
+      uniqueBettorCount: 0,
+      oraclePrice: 42,
+      poolLong: 100,
+      poolShort: 100,
+      description: '',
+    } as unknown as PerpContract
+
+    // Unset: API pays the web base, and the field mirrors it rather than
+    // going missing — a client should never have to infer the rate.
+    expect(toLiteMarket({ ...perp, takerFeeBps: 10 }).takerFeeApiBps).toBe(10)
+    expect(toFullMarket({ ...perp, takerFeeBps: 10 }).takerFeeApiBps).toBe(10)
+
+    // Set above the base: the published rate is what the engine charges.
+    expect(
+      toLiteMarket({ ...perp, takerFeeBps: 10, takerFeeApiBps: 30 })
+        .takerFeeApiBps
+    ).toBe(30)
+
+    // Set at or below the base: max() means the base still wins, and the
+    // payload must say so rather than echoing a rate nobody is charged.
+    expect(
+      toLiteMarket({ ...perp, takerFeeBps: 50, takerFeeApiBps: 30 })
+        .takerFeeApiBps
+    ).toBe(50)
+
+    // Legacy row with no base: both channels fall back to the default.
+    expect(toLiteMarket(perp).takerFeeApiBps).toBe(PERP_TAKER_FEE_BPS_DEFAULT)
   })
 })
 
@@ -257,3 +340,86 @@ function getLiteMarket(overrides: Partial<LiteMarket> = {}): LiteMarket {
     ...overrides,
   }
 }
+
+describe('update-perp-config props', () => {
+  // The schema lives in schema.ts, but its refine is the kind of guard that
+  // silently rots: every tunable field has to count, and forgetting one
+  // makes a request that sets ONLY that field fail as "nothing to update".
+  // maxOraclePriceAgeMs shipped that way and would have rejected the exact
+  // call the change existed to enable.
+  const props = API['update-perp-config'].props
+  const shape = (
+    props as unknown as { _def: { schema: z.ZodObject<z.ZodRawShape> } }
+  )._def.schema.shape
+  // Optimistic checks of what the operator reviewed. They change nothing, so
+  // a request carrying only these must still count as "nothing to update".
+  const previewFields = ['expectedConfig', 'expectedManagerId']
+  const tunableFields = Object.keys(shape).filter(
+    (k) => k !== 'contractId' && !previewFields.includes(k)
+  )
+
+  it('enumerates the tunable fields, so the loop below cannot pass vacuously', () => {
+    expect(tunableFields.sort()).toEqual([
+      'fundingSensitivity',
+      'maxFundingRate',
+      'maxLeverage',
+      'maxOraclePriceAgeMs',
+      'takerFeeApiBps',
+      'takerFeeBps',
+      'takerFeeImpact',
+    ])
+    // A new field must be classified as tunable or preview, never ignored.
+    expect(Object.keys(shape).filter((k) => previewFields.includes(k))).toEqual(
+      previewFields
+    )
+  })
+
+  it('accepts each tunable field on its own', () => {
+    const sample: Record<string, number> = {
+      maxLeverage: 10,
+      maxFundingRate: 0.02,
+      fundingSensitivity: 5,
+      takerFeeBps: 10,
+      takerFeeImpact: 90,
+      takerFeeApiBps: 30,
+      maxOraclePriceAgeMs: 10_000,
+    }
+    for (const field of tunableFields) {
+      expect(sample[field]).toBeDefined() // keeps this test honest as fields are added
+      const parsed = props.safeParse({
+        contractId: 'c1',
+        [field]: sample[field],
+      })
+      expect([field, parsed.success]).toEqual([field, true])
+    }
+  })
+
+  it('still rejects a request that changes nothing', () => {
+    expect(props.safeParse({ contractId: 'c1' }).success).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        expectedConfig: { maxLeverage: 10 },
+        expectedManagerId: 'u1',
+      }).success
+    ).toBe(false)
+  })
+
+  it('rejects an out-of-bounds takerFeeImpact at the schema', () => {
+    expect(
+      props.safeParse({ contractId: 'c1', takerFeeImpact: -1 }).success
+    ).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX + 1,
+      }).success
+    ).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        takerFeeImpact: PERP_TAKER_FEE_IMPACT_MAX,
+      }).success
+    ).toBe(true)
+  })
+})

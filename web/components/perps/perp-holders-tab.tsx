@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
@@ -6,13 +7,17 @@ import { useEffect } from 'react'
 import { PerpContract } from 'common/contract'
 import { getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import {
   fundingPeriodUnit,
   getFundingPeriodMs,
   getPerpFundingRate,
 } from 'common/perps/funding'
-import { formatMoney, formatMoneyShort } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  formatMoneyShort,
+} from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
@@ -46,7 +51,7 @@ export const PerpHoldersTab = (props: {
   // poll here too so mark price / PnL / positions track the market instead
   // of freezing at page-load values (they used to fetch exactly once).
   const { contract } = useLivePerpContract(props.contract)
-  const holders = usePerpPositions(contract.id)
+  const { positions: holders, unsound } = usePerpPositions(contract.id)
   const [sortKey, setSortKey] = usePersistentInMemoryState<SortKey>(
     'profit',
     `perp-holders-sort-${contract.id}`
@@ -81,8 +86,22 @@ export const PerpHoldersTab = (props: {
   // per side is the market's open interest — the same quantity funding is
   // now derived from. Computed from the rows on screen rather than the
   // contract's denormalized copy so the header always agrees with the list.
-  const longNotional = sumBy(longs, (h) => h.size)
-  const shortNotional = sumBy(shorts, (h) => h.size)
+  //
+  // Rows that failed row-level sanity are excluded from the LIST (nothing can
+  // safely render them) but must still count toward these SUMS:
+  // getPerpOpenInterest sums every row with size > 0 regardless of soundness,
+  // so dropping them here would silently understate open interest and could
+  // flip the summary to "longs only, so no funding is flowing" on a market
+  // that does have shorts.
+  const exposure = [...holders, ...unsound.filter((h) => h.size > 0)]
+  const longNotional = sumBy(
+    exposure.filter((h) => h.direction === 'long'),
+    (h) => h.size
+  )
+  const shortNotional = sumBy(
+    exposure.filter((h) => h.direction === 'short'),
+    (h) => h.size
+  )
 
   // Sorters are descending "most interesting first" except liquidation
   // distance, where the nearest position is the interesting one.
@@ -153,6 +172,7 @@ export const PerpHoldersTab = (props: {
           </Row>
           {sortHolders(longs).map((h) => (
             <HolderRow
+              feedId={contract.oracleFeedId}
               key={h.userId + h.direction}
               holder={h}
               oraclePrice={price}
@@ -171,6 +191,7 @@ export const PerpHoldersTab = (props: {
           </Row>
           {sortHolders(shorts).map((h) => (
             <HolderRow
+              feedId={contract.oracleFeedId}
               key={h.userId + h.direction}
               holder={h}
               oraclePrice={price}
@@ -306,6 +327,7 @@ const getUserFacingPnlForHolder = (
   )
 
 const HolderRow = (props: {
+  feedId: string
   holder: Holder
   oraclePrice: number
   contractId: string
@@ -337,14 +359,18 @@ const HolderRow = (props: {
         </div>
         <Col className="items-end">
           <span className={pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'}>
-            {formatMoney(pnl)}
+            {formatMoneyPrecise(pnl)}
           </span>
           <span className="text-ink-500 text-xs">
             {formatMoney(holder.size)} notional · {holder.leverage.toFixed(2)}×
           </span>
           <span className="text-ink-500 text-xs">
             {formatMoney(holder.originalCostBasis)} margin · liq{' '}
-            {formatPrice(holder.liquidationPrice, priceDecimals)}
+            {formatOraclePrice(
+              props.feedId,
+              holder.liquidationPrice,
+              priceDecimals
+            )}
           </span>
         </Col>
       </Row>

@@ -3,6 +3,8 @@ import {
   OPEN_WEIGHT_MODELS,
   UNCLASSIFIED_GRACE_WINDOW_MS,
   basePermaslug,
+  isCompositeSlug,
+  isValidPermaslug,
 } from 'common/perps/open-weight-models'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
@@ -65,6 +67,10 @@ export const resolveModelClassifications = async (
 
   for (const row of rows) {
     const slug = basePermaslug(row.permaslug)
+    // Rows predating the composite rule can still carry a verdict. Ignore it
+    // on read too, so the DB and computeOpenWeightShare cannot disagree about
+    // whether a router counts.
+    if (isCompositeSlug(slug)) continue
     if (row.open === null) {
       // A pending row for a model the seed already classifies is inert — the
       // seed verdict stands and there is nothing to wait for.
@@ -80,11 +86,20 @@ export const resolveModelClassifications = async (
       else pendingUnclassified.push(slug)
       continue
     }
-    // The seed list is the published methodology and is version-stamped onto
-    // every point the oracle writes, so an override of a seeded model would
-    // make that stamp a lie. `setModelClassification` refuses to write one;
-    // this enforces the same invariant on read, which also covers the rows
-    // `upsertClassification` wrote automatically before the seed caught up.
+    // The seed list is the published methodology, so an override of a seeded
+    // model would change what the index means without going through the file
+    // where the reasoning is recorded. `setModelClassification` refuses to
+    // write one; this enforces the same invariant on read, which also covers
+    // the rows `upsertClassification` wrote automatically before the seed
+    // caught up.
+    //
+    // NB: `OPEN_WEIGHT_LIST_VERSION` is NOT stored with the points. It goes
+    // into the insert log line only — `oracle_prices` is
+    // (feed_id, ts, price, source_ts, published_at). So there is no per-point
+    // record of which list version priced it, and a published point cannot be
+    // attributed to a version after the fact. Do not reason as if there were
+    // one; it matters most when deciding whether a corrected classification
+    // should cause historical points to be recomputed.
     if (OPEN_WEIGHT_MODELS[slug]) continue
     classifications[slug] = row.open
       ? { open: true, weights: row.weights ?? undefined }
@@ -123,6 +138,10 @@ export const recordPendingModels = async (
   const rows: { slug: string; evidence: string }[] = []
   for (const model of models) {
     const slug = basePermaslug(model.permaslug)
+    // Routers and floating aliases are excluded from the index by
+    // construction, so queueing them asks an operator for a boolean that will
+    // be ignored whichever way they answer.
+    if (isCompositeSlug(slug)) continue
     if (OPEN_WEIGHT_MODELS[slug] || seen.has(slug)) continue
     seen.add(slug)
     rows.push({
@@ -145,9 +164,7 @@ export const recordPendingModels = async (
      on conflict (permaslug) do nothing`,
     [
       rows.map((r) => r.slug),
-      firstSeen
-        ? new Date(firstSeen).toISOString()
-        : new Date().toISOString(),
+      firstSeen ? new Date(firstSeen).toISOString() : new Date().toISOString(),
       rows.map((r) => r.evidence),
     ]
   )
@@ -171,9 +188,9 @@ export const recordUnclassifiedInRankings = async (
   permaslugs: string[],
   rankedAt = Date.now()
 ) => {
-  const slugs = Array.from(
-    new Set(permaslugs.map(basePermaslug))
-  ).filter((slug) => !OPEN_WEIGHT_MODELS[slug])
+  const slugs = Array.from(new Set(permaslugs.map(basePermaslug))).filter(
+    (slug) => !OPEN_WEIGHT_MODELS[slug] && !isCompositeSlug(slug)
+  )
   if (slugs.length === 0) return 0
 
   await pg.none(
@@ -211,12 +228,35 @@ export const upsertClassification = async (
   }
 ) => {
   const { permaslug, open, source, classifiedBy } = params
+  const slug = basePermaslug(permaslug)
+  // Enforced at the single write path, so no caller can insert a key the index
+  // could never match — `/x`, `x/`, `x//y` all previously passed an
+  // includes('/') check.
+  if (!isValidPermaslug(slug))
+    throw new Error(
+      `refusing malformed permaslug: ${JSON.stringify(permaslug)}`
+    )
   const weights = open ? params.weights ?? null : null
   if (open && !weights)
     throw new Error(
       `refusing to classify ${permaslug} open without a weights repo`
     )
 
+  // The prior decision is APPENDED to evidence.history rather than replaced.
+  //
+  // This upsert used to overwrite evidence, classified_at and classified_by
+  // outright, so every correction destroyed the record of what it corrected.
+  // That is not hypothetical: GLM 5.3's original agent recommendation and
+  // the searches behind it were lost the moment a human adjudicated it, and
+  // when the verdict later turned out to need reversing there was nothing
+  // left showing why it had been made. A classification that moves a money
+  // market should be able to answer "who decided this, when, on what
+  // evidence" for every verdict it has ever held, not just the current one.
+  //
+  // Built in SQL so it is atomic and applies to every caller — the admin
+  // endpoint, the CLI, and the automatic watcher alike. The nested copy has
+  // its own `history` stripped so repeated corrections cannot nest
+  // exponentially.
   await pg.none(
     `insert into model_classifications
        (permaslug, open, weights, source, evidence, classified_at, classified_by, updated_time)
@@ -225,12 +265,24 @@ export const upsertClassification = async (
        open = excluded.open,
        weights = excluded.weights,
        source = excluded.source,
-       evidence = excluded.evidence,
+       evidence = excluded.evidence || jsonb_build_object(
+         'history',
+         coalesce(model_classifications.evidence->'history', '[]'::jsonb) ||
+           jsonb_build_array(jsonb_build_object(
+             'open', model_classifications.open,
+             'weights', model_classifications.weights,
+             'source', model_classifications.source,
+             'classifiedAt', model_classifications.classified_at,
+             'classifiedBy', model_classifications.classified_by,
+             'supersededAt', now(),
+             'evidence', model_classifications.evidence - 'history'
+           ))
+       ),
        classified_at = excluded.classified_at,
        classified_by = excluded.classified_by,
        updated_time = now()`,
     [
-      basePermaslug(permaslug),
+      slug,
       open,
       weights,
       source,
@@ -239,7 +291,6 @@ export const upsertClassification = async (
     ]
   )
 }
-
 /**
  * Attach the research agent's findings to a PENDING row without adjudicating
  * it.
@@ -286,17 +337,25 @@ export const recordAgentRecommendation = async (
   )
 }
 
-/** Pending rows for the admin tool, oldest first — the review queue. */
+/**
+ * Pending rows for the admin tool, oldest first — the review queue.
+ *
+ * Composites are filtered here as well as at candidate creation, because rows
+ * written before that rule existed are still in the table and would otherwise
+ * keep inflating queue counts and summaries with work nobody can usefully do.
+ */
 export const getPendingClassifications = async (
   pg: SupabaseDirectClient
-): Promise<ClassificationRow[]> =>
-  pg.manyOrNone<ClassificationRow>(
+): Promise<ClassificationRow[]> => {
+  const rows = await pg.manyOrNone<ClassificationRow>(
     `select permaslug, open, weights, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by
      from model_classifications
      where open is null
      order by first_ranked_at asc nulls last, first_seen asc`
   )
+  return rows.filter((row) => !isCompositeSlug(basePermaslug(row.permaslug)))
+}
 
 /**
  * How long a researched-but-unsettled model is left alone before a re-run.

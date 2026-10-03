@@ -15,6 +15,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { Fees, getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
+import { getSellPreviewAmounts } from 'common/sell-preview'
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import {
@@ -92,18 +93,19 @@ export function SellPanel(props: {
       : allUnfilledBets
 
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
+    const sellableShares = getSellPreviewAmounts(shares, shares).sellQuantity
     const probChange = isMultiSumsToOne
       ? getSaleResultMultiSumsToOne(
           contract,
           answerId!,
-          shares,
+          sellableShares,
           sharesOutcome,
           unfilledBets,
           balanceByUserId
         ).probChange
       : getSaleResult(
           contract,
-          shares,
+          sellableShares,
           sharesOutcome,
           unfilledBets,
           balanceByUserId,
@@ -112,8 +114,8 @@ export function SellPanel(props: {
     return probChange > 0.2
       ? undefined
       : isStonk
-      ? getStonkDisplayShares(contract, shares)
-      : shares
+      ? getStonkDisplayShares(contract, sellableShares)
+      : sellableShares
   })
   const [amount, setAmount] = useState<number | undefined>(
     isStonk
@@ -126,21 +128,18 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
+  const { isSellingAllShares, sellQuantity, saleFrac } = getSellPreviewAmounts(
+    shares,
+    amount
+  )
   const betDisabled =
     isSubmitting ||
-    !amount ||
+    sellQuantity === 0 ||
     (error && error.includes('Maximum')) ||
     isCreatorBanned
 
-  // Sell all shares if remaining shares would be < 1
-  const isSellingAllShares = amount === Math.floor(shares)
-
-  const sellQuantity = isSellingAllShares ? shares : amount ?? 0
-
   // Include both free loans and margin loans in total loan amount
   const loanAmount = (metric?.loan ?? 0) + (metric?.marginLoan ?? 0)
-  const soldShares = Math.min(sellQuantity, shares)
-  const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
   const isLoadPaid = loanPaid === 0
 
@@ -149,7 +148,7 @@ export function SellPanel(props: {
   const betDeps = useRef<LimitBet[]>()
 
   async function submitSell() {
-    if (!user || !amount) return
+    if (!user || betDisabled) return
 
     setError(undefined)
     setIsSubmitting(true)

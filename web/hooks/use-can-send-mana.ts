@@ -3,12 +3,13 @@ import { canSendMana } from 'common/can-send-mana'
 import { User, UserBan } from 'common/user'
 import { api } from 'web/lib/api/api'
 
-export const useCanSendMana = (user: User) => {
+export const useCanSendMana = (user: User | null | undefined) => {
   const [canSend, setCanSend] = useState({
     canSend: false,
     message: '',
   })
   useEffect(() => {
+    if (!user) return
     api('get-user-bans', { userId: user.id })
       .then((res) => canSendMana(user, res.bans as UserBan[]))
       .then(setCanSend)

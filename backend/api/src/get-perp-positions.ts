@@ -1,15 +1,24 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { APIHandler } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
 
 // Joins to the `users` table so the holders tab can render avatars + names
 // without a follow-up round-trip. Positions with a missing user (shouldn't
 // happen — FK would normally prevent it) fall through as nulls.
+//
+// Three shapes, one query: a market's whole book (contractId), one user in
+// one market (both), or a user's book across every perp (userId alone —
+// the /perps hub polls that as a single request rather than one per
+// market). The schema refuses a call with neither.
 export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
   body
 ) => {
   const { contractId, userId } = body
+  if (!contractId && !userId) {
+    throw new APIError(400, 'contractId or userId is required')
+  }
   const pg = createSupabaseDirectClient()
   const rows = await pg.manyOrNone<{
+    contract_id: string
     user_id: string
     direction: string
     size: number | string
@@ -25,28 +34,20 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
     username: string | null
     avatar_url: string | null
   }>(
-    userId
-      ? `select p.user_id, p.direction, p.size, p.cost_basis,
-                p.original_cost_basis, p.taker_fee_cost_basis,
-                p.entry_price, p.leverage,
-                p.liquidation_price, p.opened_time, p.updated_time,
-                u.name as user_name, u.username, u.data->>'avatarUrl' as avatar_url
-           from contract_perp_positions p
-           left join users u on u.id = p.user_id
-          where p.contract_id = $1 and p.user_id = $2
-          order by p.opened_time desc`
-      : `select p.user_id, p.direction, p.size, p.cost_basis,
-                p.original_cost_basis, p.taker_fee_cost_basis,
-                p.entry_price, p.leverage,
-                p.liquidation_price, p.opened_time, p.updated_time,
-                u.name as user_name, u.username, u.data->>'avatarUrl' as avatar_url
-           from contract_perp_positions p
-           left join users u on u.id = p.user_id
-          where p.contract_id = $1
-          order by p.opened_time desc`,
-    userId ? [contractId, userId] : [contractId]
+    `select p.contract_id, p.user_id, p.direction, p.size, p.cost_basis,
+            p.original_cost_basis, p.taker_fee_cost_basis,
+            p.entry_price, p.leverage,
+            p.liquidation_price, p.opened_time, p.updated_time,
+            u.name as user_name, u.username, u.data->>'avatarUrl' as avatar_url
+       from contract_perp_positions p
+       left join users u on u.id = p.user_id
+      where ($1::text is null or p.contract_id = $1::text)
+        and ($2::text is null or p.user_id = $2::text)
+      order by p.opened_time desc`,
+    [contractId ?? null, userId ?? null]
   )
   return rows.map((r) => ({
+    contractId: r.contract_id,
     userId: r.user_id,
     direction: r.direction as 'long' | 'short',
     size: Number(r.size),

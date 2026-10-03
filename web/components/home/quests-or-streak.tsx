@@ -28,6 +28,7 @@ import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
 import { ReducedBonusNotice } from 'web/components/upsell/reduced-bonus-notice'
+import { AddWidgetPrompt } from 'web/components/home/add-widget-prompt'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -212,6 +213,7 @@ export function QuestsModal(props: {
             href={'/referrals'}
           /> */}
         </Col>
+        <AddWidgetPrompt />
       </div>
       <BettingStreakModal
         isOpen={showStreakModal}

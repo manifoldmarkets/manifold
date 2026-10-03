@@ -2,7 +2,7 @@ import { PerpContract } from '../contract'
 import { YEAR_MS } from '../util/time'
 import { getPerpBackingPool } from './amm'
 import { getFundingPeriodMs, getPerpFundingRate } from './funding'
-import { getOracleFreshness } from './oracle'
+import { getPerpOracleFreshness } from './oracle'
 
 export type PerpEmbedStatus =
   | 'live'
@@ -28,7 +28,8 @@ export type PerpEmbedContract = Pick<
   | 'poolShort'
   | 'resolution'
   | 'resolvedOraclePrice'
->
+> &
+  Partial<Pick<PerpContract, 'oracleFeedId' | 'oracleFeedHealth'>>
 
 export type PerpEmbedSummary = {
   status: PerpEmbedStatus
@@ -97,9 +98,8 @@ export const getPerpEmbedSummary = (
     }
   }
 
-  const freshness = getOracleFreshness(
-    contract.oraclePriceTime,
-    contract.maxOraclePriceAgeMs,
+  const freshness = getPerpOracleFreshness(
+    { ...contract, oracleFeedId: contract.oracleFeedId ?? '' },
     now
   )
   const status: PerpEmbedStatus = skipOracleFreshness

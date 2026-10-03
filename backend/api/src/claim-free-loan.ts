@@ -1,18 +1,24 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  pgp,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
-import { hasFullBonusAccess } from 'common/user'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
   calculateMarketLoanMax,
   calculatePositionFreeLoan,
   canClaimDailyFreeLoan,
+  canTakeLoans,
   filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
 } from 'common/loans'
 import { Contract } from 'common/contract'
+import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
+import { UserBan } from 'common/user'
 import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
@@ -28,7 +34,7 @@ import {
   UserUpdate,
 } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
+import { incrementLoanFieldsQuery } from 'shared/helpers/user-contract-loans'
 import {
   getFreeLoanRate,
   getMaxLoanNetWorthPercent,
@@ -44,12 +50,37 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     throw new APIError(404, `User ${userId} not found`)
   }
 
-  // Daily free loans are a full-bonus perk: identity-verified/grandfathered
-  // users and purchase/admin-granted users can claim them.
-  if (!hasFullBonusAccess(user)) {
+  // Daily free loans are open to everyone, verified or not — they're borrowed
+  // against the user's own positions, and the membership page has always
+  // advertised the 1% daily free loan to unverified users. Accounts under an
+  // admin hold ('requires_verification') or explicitly blocked ('ineligible',
+  // which includes superbans and expired/denied verification) are held back.
+  if (!canTakeLoans(user)) {
     throw new APIError(
       403,
-      'Complete identity verification to access daily free loans'
+      'Your account is not eligible for daily free loans. Complete identity verification, or contact info@manifold.markets if you think this is a mistake.'
+    )
+  }
+
+  // Bans are tracked in user_bans, NOT in bonusEligibility, so this check is
+  // independent of the one above rather than redundant with it: a trading ban
+  // can exist on an account whose bonusEligibility looks fine, and borrowing is
+  // a trading action. Same active-ban predicate used by the bet path.
+  const userBans = await pg.manyOrNone<UserBan>(
+    `select *
+     from user_bans
+     where user_id = $1
+       and ended_at is null
+       and (end_time is null or end_time > now())`,
+    [userId]
+  )
+  if (isUserBanned(userBans, 'trading')) {
+    const banMessage = getUserBanMessage(userBans, 'trading')
+    throw new APIError(
+      403,
+      banMessage
+        ? `You are banned from trading. Reason: ${banMessage}`
+        : 'You are banned from trading'
     )
   }
 
@@ -81,9 +112,112 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     )
   }
 
+  const midnightPT = getMidnightPacific()
+
+  const { userUpdates, amount, distributions } =
+    await betsQueue.enqueueFn(async () => {
+      return pg.tx(async (tx) => {
+        // Lock the user row to serialize concurrent loan operations for this
+        // user. Every loan input is read after this lock, so the amount and
+        // distribution can't be computed from state another request is about
+        // to change.
+        await tx.oneOrNone('select 1 from users where id = $1 for update', [
+          userId,
+        ])
+
+        // Re-check claim availability under the lock.
+        const lockedRow = await tx.oneOrNone<{
+          last_free_loan_claim: Date | null
+        }>(`SELECT last_free_loan_claim FROM users WHERE id = $1`, [userId])
+        if (!canClaimDailyFreeLoan(lockedRow?.last_free_loan_claim ?? null)) {
+          throw new APIError(
+            400,
+            'You have already claimed your daily free loan today'
+          )
+        }
+
+        const { amount, distributions } = await planFreeLoan(
+          tx,
+          userId,
+          freeLoanRate,
+          maxLoanPercent,
+          midnightPT
+        )
+
+        // Create transaction for the loan
+        const txn: Omit<Txn, 'id' | 'createdTime'> = {
+          category: 'LOAN',
+          fromType: 'BANK',
+          fromId: 'BANK',
+          toType: 'USER',
+          toId: userId,
+          amount,
+          token: 'M$',
+          data: {
+            distributions: distributions.map((d) => ({
+              contractId: d.contractId,
+              answerId: d.answerId,
+              amount: d.loanAmount,
+            })),
+          },
+          description: 'Daily free loan claim',
+        }
+
+        const txnQuery = getInsertQuery('txns', txnToRow(txn))
+        const balanceUpdateQuery = bulkIncrementBalancesQuery([
+          { id: userId, balance: amount },
+        ])
+        // Increment loan field (NOT marginLoan) relative to the stored value
+        const incrementLoansQ = incrementLoanFieldsQuery(
+          userId,
+          distributions.map((d) => ({
+            contractId: d.contractId,
+            answerId: d.answerId,
+            loanDelta: d.loanAmount,
+          }))
+        )
+        const updateLastClaimQuery = pgp.as.format(
+          `UPDATE users SET last_free_loan_claim = NOW() WHERE id = $1`,
+          [userId]
+        )
+
+        const res = await tx.multi(
+          `${balanceUpdateQuery};
+           ${txnQuery};
+           ${incrementLoansQ};
+           ${updateLastClaimQuery}`
+        )
+        const userUpdates = res[0] as UserUpdate[]
+        return { userUpdates, amount, distributions }
+      })
+    }, [userId])
+
+  broadcastUserUpdates(userUpdates)
+  log(`User ${userId} claimed daily free loan of ${amount}`)
+
+  return {
+    success: true,
+    amount,
+    distributed: distributions.map((d) => ({
+      contractId: d.contractId,
+      answerId: d.answerId,
+      amount: d.loanAmount,
+    })),
+  }
+}
+
+// Must be called with the user row locked: the limits and the distribution
+// are only valid against loan state no other request can change.
+const planFreeLoan = async (
+  tx: SupabaseTransaction,
+  userId: string,
+  freeLoanRate: number,
+  maxLoanPercent: number,
+  midnightPT: Date
+) => {
   // Get all unresolved contract metrics and contracts
   const { metrics, contracts } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
+    await getUnresolvedContractMetricsContractsAnswers(tx, [userId])
   const contractsById = keyBy(contracts, 'id')
 
   // Calculate portfolio value (net of loans) and loan totals.
@@ -104,9 +238,8 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   const dailyLimit = calculateDailyLoanLimit(equity)
 
   // Get today's loans (since midnight PT)
-  const midnightPT = getMidnightPacific()
-  const todayLoansResult = await pg.oneOrNone<{ total: number }>(
-    `select coalesce(sum(amount), 0) as total
+  const todayLoansResult = await tx.oneOrNone<{ total: number }>(
+    `select coalesce(sum(amount), 0)::float as total
      from txns
      where to_id = $1
      and category IN ('MARGIN_LOAN', 'LOAN')
@@ -275,94 +408,5 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     })
   )
 
-  // Update metrics - increment loan field (NOT marginLoan)
-  const metricsById = keyBy(
-    eligibleMetrics,
-    (m) => `${m.contractId}-${m.answerId ?? ''}`
-  )
-  const updatedMetrics = filterDefined(
-    distributions.map((dist) => {
-      const key = `${dist.contractId}-${dist.answerId ?? ''}`
-      const metric = metricsById[key]
-      if (!metric) return undefined
-      return {
-        ...metric,
-        loan: (metric.loan ?? 0) + dist.loanAmount,
-        // marginLoan stays unchanged
-      }
-    })
-  )
-
-  // Create transaction for the loan
-  const txn: Omit<Txn, 'id' | 'createdTime'> = {
-    category: 'LOAN',
-    fromType: 'BANK',
-    fromId: 'BANK',
-    toType: 'USER',
-    toId: userId,
-    amount,
-    token: 'M$',
-    data: {
-      distributions: distributions.map((d) => ({
-        contractId: d.contractId,
-        answerId: d.answerId,
-        amount: d.loanAmount,
-      })),
-    },
-    description: 'Daily free loan claim',
-  }
-
-  const txnQuery = getInsertQuery('txns', txnToRow(txn))
-  const balanceUpdateQuery = bulkIncrementBalancesQuery([
-    { id: userId, balance: amount },
-  ])
-  const bulkUpdateMetricsQ = bulkUpdateContractMetricsQuery(updatedMetrics)
-  const updateLastClaimQuery = pgp.as.format(
-    `UPDATE users SET last_free_loan_claim = NOW() WHERE id = $1`,
-    [userId]
-  )
-
-  const { userUpdates } = await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
-      // Lock the user row to serialize concurrent free-loan claims for this
-      // user. Eligibility was checked before entering the queue; under the lock
-      // we re-check the once-per-day claim state.
-      await tx.oneOrNone('select 1 from users where id = $1 for update', [
-        userId,
-      ])
-
-      // Re-check claim availability under the lock.
-      const lockedRow = await tx.oneOrNone<{
-        last_free_loan_claim: Date | null
-      }>(`SELECT last_free_loan_claim FROM users WHERE id = $1`, [userId])
-      if (!canClaimDailyFreeLoan(lockedRow?.last_free_loan_claim ?? null)) {
-        throw new APIError(
-          400,
-          'You have already claimed your daily free loan today'
-        )
-      }
-
-      const res = await tx.multi(
-        `${balanceUpdateQuery};
-         ${txnQuery};
-         ${bulkUpdateMetricsQ};
-         ${updateLastClaimQuery}`
-      )
-      const userUpdates = res[0] as UserUpdate[]
-      return { userUpdates }
-    })
-  }, [userId])
-
-  broadcastUserUpdates(userUpdates)
-  log(`User ${userId} claimed daily free loan of ${amount}`)
-
-  return {
-    success: true,
-    amount,
-    distributed: distributions.map((d) => ({
-      contractId: d.contractId,
-      answerId: d.answerId,
-      amount: d.loanAmount,
-    })),
-  }
+  return { amount, distributions }
 }

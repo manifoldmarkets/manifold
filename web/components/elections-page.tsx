@@ -12,6 +12,9 @@ import { ContractsTable } from './contract/contracts-table'
 import { Search } from './search'
 import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
+import { SectionInView } from './us-elections/section-in-view'
+import { PollingPerpsRow } from './us-elections/polling-perps-row'
+import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
@@ -65,7 +68,8 @@ export function USElectionsPage(
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
-    primaryContracts,
+    tossUpContracts,
+    pollingPerpContracts,
     redistrictingContracts,
     trendingContracts,
     hideTitle,
@@ -110,31 +114,9 @@ export function USElectionsPage(
         </CopyLinkOrShareButton>
       </Row>
 
-      {/* Trending — the hottest open midterm markets right now, auto-selected
-          by daily score server-side (getTrendingMidtermContracts) and
-          refreshed on every revalidation, so the top of the page always shows
-          today's action with zero curation. */}
-      {trendingContracts.length > 0 && (
-        <Col className="gap-2">
-          <Col className="gap-0.5">
-            <Row className="text-primary-700 w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
-              <span className="relative h-4 w-4">
-                <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-                <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
-              </span>
-              Trending
-            </Row>
-            <div className="text-ink-500 text-sm">
-              The hottest midterm markets right now
-            </div>
-          </Col>
-          <TrendingMidtermsCarousel contracts={trendingContracts} />
-        </Col>
-      )}
-
       {/* 2026 Midterms — the balance-of-power levers and the race map together
           in a single card so the section reads as one unit. */}
-      <Col className="gap-3">
+      <SectionInView section="midterms map" className="gap-3">
         <SectionHeader subtitle="Who controls Washington after the 2026 midterms">
           2026 Midterms
         </SectionHeader>
@@ -152,52 +134,102 @@ export function USElectionsPage(
             houseDistrictsContract={houseDistrictsContract}
           />
         </Col>
-      </Col>
+      </SectionInView>
 
-      {/* Notable 2026 primaries — a compact, scannable watch-list. */}
-      {primaryContracts.length > 0 && (
-        <Col className="gap-3">
-          <SectionHeader>2026 Primaries to watch</SectionHeader>
-          <ContractsTable contracts={primaryContracts} hideAvatar />
-        </Col>
+      {/* Polling averages - the continuously-updating numbers (approval,
+          generic ballot, favorability) that frame every midterm race. Perps,
+          so they keep moving instead of settling like a binary market. */}
+      {pollingPerpContracts.length > 0 && (
+        <SectionInView section="polling" className="gap-3">
+          <SectionHeader subtitle="Live VoteHub polling averages, traded as perpetuals">
+            Polling averages
+          </SectionHeader>
+          <PollingPerpsRow contracts={pollingPerpContracts} />
+        </SectionInView>
+      )}
+
+      {/* Closest races - replaces the retired hand-curated primaries list
+          (six of its seven markets had resolved by Sept 2026). Derived from
+          the map markets in getTossUpRaces, so it re-ranks itself as the races
+          move and can never go stale. */}
+      {tossUpContracts.length > 0 && (
+        <SectionInView section="toss-ups" className="gap-3">
+          <SectionHeader subtitle="The tightest Senate and Governor races on the board">
+            Closest races
+          </SectionHeader>
+          <ContractsTable
+            contracts={tossUpContracts}
+            hideAvatar
+            trackingPostfix="election toss-ups"
+          />
+        </SectionInView>
       )}
 
       {/* Mid-decade redistricting — its own watch-list so these don't crowd the
           Trending block. Shown once a few are live. */}
       {redistrictingContracts.length > 0 && (
-        <Col className="gap-3">
+        <SectionInView section="redistricting" className="gap-3">
           <SectionHeader subtitle="Mid-decade map fights that could swing House seats">
             Redistricting
           </SectionHeader>
-          <ContractsTable contracts={redistrictingContracts} hideAvatar />
-        </Col>
+          <ContractsTable
+            contracts={redistrictingContracts}
+            hideAvatar
+            trackingPostfix="election redistricting"
+          />
+        </SectionInView>
       )}
 
       {/* The full joint-distribution market, for trading the exact split. */}
       {balanceOfPowerContract && (
-        <Col className="gap-3">
+        <SectionInView section="balance of power" className="gap-3">
           <SectionHeader>Balance of Power</SectionHeader>
           <FeedContractCard
             contract={balanceOfPowerContract}
             trackingPostfix="midterms balance of power"
             showGraph
           />
-        </Col>
+        </SectionInView>
+      )}
+
+      {/* Trending — the hottest open midterm markets right now, auto-selected
+          by daily score server-side (getTrendingMidtermContracts) and
+          refreshed on every revalidation, so it needs no curation. It sits
+          below the midterms sections: the map and the control markets are
+          what this page is uniquely for. */}
+      {trendingContracts.length > 0 && (
+        <SectionInView section="trending" className="gap-2">
+          <Col className="gap-0.5">
+            <Row className="text-primary-700 w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
+              <span className="relative h-4 w-4">
+                <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
+                <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
+              </span>
+              Trending
+            </Row>
+            <div className="text-ink-500 text-sm">
+              The hottest midterm markets right now
+            </div>
+          </Col>
+          <TrendingMidtermsCarousel contracts={trendingContracts} />
+        </SectionInView>
       )}
 
       {/* 2028 outlook — one collapsible card (party split + candidate field).
           Sits below the midterms sections so the 2026 races (the page's focus)
           lead, with the longer-range 2028 outlook just above the general feed. */}
       {presidency2028Contract && (
-        <Presidency2028Section
-          contract={presidency2028Contract}
-          partyContract={presidency2028PartyContract}
-        />
+        <SectionInView section="2028">
+          <Presidency2028Section
+            contract={presidency2028Contract}
+            partyContract={presidency2028PartyContract}
+          />
+        </SectionInView>
       )}
 
       {/* Infinite-scroll feed of election markets; topic bubbles sit in their
           own row below the sort/filter controls (Search's extraFilterPills). */}
-      <Col className="gap-3">
+      <SectionInView section="feed" className="gap-3">
         <SectionHeader>More election markets</SectionHeader>
         <Search
           key={feedTopic.slug}
@@ -212,13 +244,16 @@ export function USElectionsPage(
             <FilterPill
               key={t.slug}
               selected={t.slug === feedTopic.slug}
-              onSelect={() => setFeedTopic(t)}
+              onSelect={() => {
+                track('select election feed topic', { topic: t.slug })
+                setFeedTopic(t)
+              }}
             >
               {t.label}
             </FilterPill>
           ))}
         />
-      </Col>
+      </SectionInView>
     </Col>
   )
 }

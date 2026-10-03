@@ -32,14 +32,28 @@ export async function getLikedContracts(userId: string) {
   const contracts = await run(
     db
       .from('contracts')
-      .select('id, question, slug, outcome_type')
+      // The perp badge needs the ticker (and the feed id it falls back on);
+      // pulled as scalar JSON paths rather than loading every liked
+      // contract's full data blob for the sake of a few perps.
+      .select(
+        'id, question, slug, outcome_type, ticker:data->>ticker, oracle_feed_id:data->>oracleFeedId'
+      )
       .in(
         'id',
         reacts.data.map((r) => r.content_id)
       )
   )
 
-  return contracts.data
+  return contracts.data as unknown as LikedContractRow[]
+}
+
+export type LikedContractRow = {
+  id: string
+  question: string | null
+  slug: string | null
+  outcome_type: string | null
+  ticker: string | null
+  oracle_feed_id: string | null
 }
 
 export async function getLikedContractsCount(userId: string) {

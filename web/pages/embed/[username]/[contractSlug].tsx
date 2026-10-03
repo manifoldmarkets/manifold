@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import { getBetPoints, getBetPointsBetween } from 'common/bets'
 import {
@@ -22,7 +23,7 @@ import {
 } from 'common/envs/constants'
 import { getPerpEmbedSummary } from 'common/perps/embed'
 import { fundingPeriodUnit } from 'common/perps/funding'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import { pointsToBase64 } from 'common/util/og'
@@ -565,7 +566,7 @@ function PerpContractSmolView(props: {
         rel="noreferrer"
         className="hover:text-primary-700 mt-1 flex min-w-0 items-start gap-2 text-lg font-semibold leading-tight transition-colors"
       >
-        <PerpMarketBadge className="mt-0.5" />
+        <PerpMarketBadge contract={contract} />
         <span className="line-clamp-2">{contract.question}</span>
       </a>
 
@@ -573,7 +574,11 @@ function PerpContractSmolView(props: {
         <Col className="gap-0">
           <span className="text-ink-500 text-[11px]">{summary.priceLabel}</span>
           <span className="text-ink-1000 text-2xl font-semibold tabular-nums">
-            {formatPrice(summary.displayPrice, priceDecimals)}
+            {formatOraclePrice(
+              contract.oracleFeedId,
+              summary.displayPrice,
+              priceDecimals
+            )}
           </span>
         </Col>
         <Col className="text-ink-500 items-end gap-0 text-right text-[11px]">

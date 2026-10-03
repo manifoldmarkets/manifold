@@ -14,6 +14,8 @@ import { getLocalEnv } from 'shared/init-admin'
 import {
   PERP_LAUNCH_EXCLUDED_FEED_IDS,
   PERP_LAUNCH_MARKETS,
+  ALL_PERP_LAUNCH_MARKETS,
+  MNX_LAUNCH_MARKETS,
   PerpLaunchMarketDefinition,
   getPerpLaunchManifestErrors,
   getPerpLaunchTopicSlug,
@@ -61,7 +63,8 @@ type DiscoveryPlan = {
 
 type LaunchEnvironment = ReturnType<typeof getLocalEnv>
 
-const usage = 'Usage: yarn ts-node backfill-perp-launch-discovery.ts [--apply]'
+const usage =
+  'Usage: yarn ts-node backfill-perp-launch-discovery.ts [--cohort=mnx] [--apply]'
 
 const readDiscoveryState = async (
   pg: SupabaseDirectClient,
@@ -113,7 +116,7 @@ const makePlans = async (
     pg
   )
   const contractsById = keyBy(contracts, 'id')
-  const definitionsByFeedId = keyBy(PERP_LAUNCH_MARKETS, 'feedId')
+  const definitionsByFeedId = keyBy(ALL_PERP_LAUNCH_MARKETS, 'feedId')
 
   return await Promise.all(
     rows.map(async (row) => {
@@ -172,11 +175,12 @@ const makePlans = async (
 const printPlans = (
   plans: DiscoveryPlan[],
   missingMarketFeedIds: string[],
-  apply: boolean
+  apply: boolean,
+  definitions: readonly PerpLaunchMarketDefinition[]
 ) => {
   console.log(apply ? 'Mode: APPLY' : 'Mode: DRY RUN (no writes)')
 
-  for (const definition of PERP_LAUNCH_MARKETS) {
+  for (const definition of definitions) {
     const plan = plans.find(
       (candidate) => candidate.definition.feedId === definition.feedId
     )
@@ -230,7 +234,8 @@ const printPlans = (
   )
 }
 
-const run = async (apply: boolean) => {
+const run = async (apply: boolean, mnx: boolean) => {
+  const definitions = mnx ? MNX_LAUNCH_MARKETS : PERP_LAUNCH_MARKETS
   await runScript(async ({ pg }) => {
     const environment = getLocalEnv()
     console.log(`Target environment: ${environment}`)
@@ -241,7 +246,7 @@ const run = async (apply: boolean) => {
         `Launch manifest is invalid:\n- ${manifestErrors.join('\n- ')}`
       )
 
-    const launchFeedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+    const launchFeedIds = definitions.map((market) => market.feedId)
     const accidentallyIncludedFeedIds = PERP_LAUNCH_EXCLUDED_FEED_IDS.filter(
       (feedId) => launchFeedIds.includes(feedId)
     )
@@ -273,7 +278,7 @@ const run = async (apply: boolean) => {
       )
 
     const requiredTopicSlugs = uniq(
-      PERP_LAUNCH_MARKETS.flatMap((market) =>
+      definitions.flatMap((market) =>
         market.requiredTopics.map((topic) =>
           getPerpLaunchTopicSlug(topic, environment)
         )
@@ -303,7 +308,7 @@ const run = async (apply: boolean) => {
           .join(', ')}`
       )
 
-    for (const definition of PERP_LAUNCH_MARKETS) {
+    for (const definition of definitions) {
       for (const topic of definition.requiredTopics) {
         const requiredSlug = getPerpLaunchTopicSlug(topic, environment)
         const group = groupsBySlug[requiredSlug]
@@ -320,7 +325,7 @@ const run = async (apply: boolean) => {
     const missingMarketFeedIds = launchFeedIds.filter(
       (feedId) => !foundFeedIds.includes(feedId)
     )
-    printPlans(plans, missingMarketFeedIds, apply)
+    printPlans(plans, missingMarketFeedIds, apply, definitions)
 
     const changesNeeded =
       sumBy(plans, (plan) => plan.missingGroups.length) +
@@ -402,7 +407,7 @@ const run = async (apply: boolean) => {
 if (require.main === module) {
   const args = process.argv.slice(2)
   const unknownArgs = args.filter(
-    (arg) => arg !== '--apply' && arg !== '--help'
+    (arg) => arg !== '--apply' && arg !== '--help' && arg !== '--cohort=mnx'
   )
   const hasDuplicateApply = args.filter((arg) => arg === '--apply').length > 1
   if (unknownArgs.length > 0 || hasDuplicateApply) {
@@ -411,6 +416,6 @@ if (require.main === module) {
   } else if (args.includes('--help')) {
     console.log(usage)
   } else {
-    void run(args.includes('--apply'))
+    void run(args.includes('--apply'), args.includes('--cohort=mnx'))
   }
 }

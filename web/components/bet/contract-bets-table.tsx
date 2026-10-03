@@ -1,10 +1,10 @@
 import { Bet } from 'common/bet'
+import { Contract, CPMMNumericContract, isBinaryMulti } from 'common/contract'
 import {
-  Contract,
-  CPMMNumericContract,
-  getBinaryMCProb,
-  isBinaryMulti,
-} from 'common/contract'
+  getVersusBetProbs,
+  versusSideOutcome,
+  versusSideProb,
+} from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import {
   answerToRange,
@@ -192,6 +192,12 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isBinaryMC = isBinaryMulti(contract)
+  // On a versus market the bet may be stored on either answer: label it by
+  // the side it backs, and show that side's prices.
+  const displayOutcome = isBinaryMC
+    ? versusSideOutcome(contract, bet) ?? outcome
+    : outcome
+  const versusProbs = isBinaryMC ? getVersusBetProbs(bet) : undefined
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -221,7 +227,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td className="font-medium">
         <OutcomeLabel
           pseudonym={getPseudonym(contract)}
-          outcome={outcome}
+          outcome={displayOutcome}
           contract={contract}
           truncate="short"
         />
@@ -249,11 +255,11 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
               <span className="text-ink-400">→</span>
               <span>{getFormattedMappedValue(contract, probAfter)}</span>
             </span>
-          ) : isBinaryMC ? (
+          ) : versusProbs ? (
             <span className="inline-flex items-center gap-1">
-              <span>{formatPercent(getBinaryMCProb(probBefore, outcome))}</span>
+              <span>{formatPercent(versusProbs.probBefore)}</span>
               <span className="text-ink-400">→</span>
-              <span>{formatPercent(getBinaryMCProb(probAfter, outcome))}</span>
+              <span>{formatPercent(versusProbs.probAfter)}</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1">
@@ -263,7 +269,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
             </span>
           )
         ) : isBinaryMC ? (
-          formatPercent(getBinaryMCProb(bet.limitProb ?? 0, outcome))
+          formatPercent(versusSideProb(outcome, bet.limitProb ?? 0))
         ) : (
           formatPercent(bet.limitProb ?? 0)
         )}

@@ -10,9 +10,21 @@ export function SEO<
   url?: string
   ogProps?: { props: P; endpoint: string }
   image?: string
+  /** Lets crawlers (Facebook, LinkedIn) render the image on first share */
+  imageSize?: { width: number; height: number }
+  imageAlt?: string
   shouldIgnore?: boolean
 }) {
-  const { title, description, url, image, ogProps, shouldIgnore } = props
+  const {
+    title,
+    description,
+    url,
+    image,
+    imageSize,
+    imageAlt,
+    ogProps,
+    shouldIgnore,
+  } = props
 
   const imageUrl =
     image ??
@@ -54,6 +66,28 @@ export function SEO<
       {imageUrl && (
         <>
           <meta property="og:image" content={imageUrl} key="image1" />
+          {imageSize && (
+            <meta
+              property="og:image:width"
+              content={String(imageSize.width)}
+              key="image-width"
+            />
+          )}
+          {imageSize && (
+            <meta
+              property="og:image:height"
+              content={String(imageSize.height)}
+              key="image-height"
+            />
+          )}
+          {imageAlt && (
+            <meta
+              property="og:image:alt"
+              name="twitter:image:alt"
+              content={imageAlt}
+              key="image-alt"
+            />
+          )}
           <meta name="twitter:card" content="summary_large_image" key="card" />
           <meta name="twitter:image" content={imageUrl} key="image2" />
         </>

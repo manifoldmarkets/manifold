@@ -1,3 +1,19 @@
+import {
+  socialPostDraftSchema,
+  socialPostEditSchema,
+  hasSocialPostContent,
+  socialPostSourceSchema,
+  socialCursorSchema,
+  SocialPost,
+  SocialPostPage,
+  SocialPostDetail,
+  SocialLikerPage,
+} from '../social-post'
+import { PerpSuggestion } from '../perps/suggestion'
+import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
+import { MnxDashboard, perpConfigFields } from 'common/perps/management'
+import { randomStringRegex } from 'common/util/random'
+import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
@@ -10,7 +26,12 @@ import {
   PostComment,
   type ContractComment,
 } from 'common/comment'
-import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
+import {
+  AIGeneratedMarket,
+  Contract,
+  CREATEABLE_OUTCOME_TYPES,
+  MarketContract,
+} from 'common/contract'
 import { Dashboard } from 'common/dashboard'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -35,6 +56,8 @@ import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
 import type { PerpTradeActivity } from 'common/perps/activity'
+import { PerpCreatorAccount } from 'common/perps/creator-accounts'
+import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -47,7 +70,7 @@ import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
 import { PrivateUser, User, UserBan } from '../user'
-import { searchProps } from './market-search-types'
+import { type FullMarketSearchResult, searchProps } from './market-search-types'
 import {
   FullMarket,
   closePerpPositionSchema,
@@ -1062,6 +1085,12 @@ export const API = (_apiTypeCheck = {
       // Open-side taker fee charged on this call, in mana. Closing is free;
       // a flip pays the fee on its newly opened leg only.
       fee: number
+      // Effective rate actually charged (fee / added notional × 10_000) and
+      // the position's resulting share of the pool depth it was priced
+      // against — the authoritative numbers for bots and analytics. Absent
+      // only on idempotent replays of trades stored before these existed.
+      feeBps?: number
+      poolShareAfter?: number
     },
     props: placePerpTradeSchema,
   },
@@ -1069,7 +1098,15 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { payout: number; pnl: number },
+    returns: {} as {
+      payout: number
+      pnl: number
+      /** Fraction actually closed, which can exceed the requested one when
+       * the remainder would have been dust. */
+      fraction: number
+      /** Notional left open; 0 when the whole position was closed. */
+      remainingSize: number
+    },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1149,7 +1186,67 @@ export const API = (_apiTypeCheck = {
         message: 'An open classification must cite a public weights repo',
       }),
   },
-  // Admin-only live risk tuning; undocumented deliberately — internal
+  // Runtime maintenance for the Chinese-lab OpenRouter index. Ordinary
+  // publishers are classified once at author scope; anonymous/shared
+  // namespaces can instead receive an exact-model verdict.
+  'get-openrouter-lab-classifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      pending: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        discoveredVia: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        firstSeen: number
+        firstRankedAt: number | null
+      }[]
+      decided: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        isChinese: boolean
+        evidence: string
+        sourceUrl: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        source: 'auto' | 'admin'
+        classifiedAt: number
+        classifiedBy: string | null
+      }[]
+      seedVersion: string
+    },
+    props: z.object({}).strict(),
+  },
+  'set-openrouter-lab-classification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      success: true
+      subjectType: 'author' | 'model'
+      subjectSlug: string
+      isChinese: boolean
+    },
+    props: z
+      .object({
+        subjectType: z.enum(['author', 'model']),
+        subjectSlug: z.string().trim().min(1).max(300),
+        isChinese: z.boolean(),
+        evidence: z.string().trim().min(1).max(2_000),
+        sourceUrl: z
+          .string()
+          .trim()
+          .url()
+          .max(2_000)
+          .refine((url) => /^https?:\/\//i.test(url), {
+            message: 'Evidence URL must use http or https',
+          }),
+      })
+      .strict(),
+  },
+  // Admin / MNX-owner live risk tuning; undocumented deliberately — internal
   // operator tooling, not part of the public perp API surface.
   'update-perp-config': {
     method: 'POST',
@@ -1159,36 +1256,45 @@ export const API = (_apiTypeCheck = {
       success: true
       maxLeverage: number
       maxFundingRate: number
+      fundingSensitivity: number
       takerFeeBps: number
+      takerFeeImpact: number
+      // Configured API-channel base rate, or null when API trades pay the
+      // same base as the web. The engine applies max(takerFeeBps, this).
+      takerFeeApiBps: number | null
+      // What an API-key open is actually charged after that max() — equal to
+      // takerFeeBps whenever the configured API rate sits at or below the
+      // base, which makes such a rate a no-op rather than a reduction.
+      effectiveTakerFeeApiBps: number
+      maxOraclePriceAgeMs: number
     },
-    props: z
-      .object({
+    props: perpConfigFields
+      .extend({
         contractId: z.string().min(1),
-        // Same bounds as createPerpSchema. maxFundingRate must stay inside
-        // the engine's assertPerpFundingConfig domain (0, 1) — at >= 1 the
-        // funding tick fail-closes and the market stops funding entirely.
-        maxLeverage: z.number().gt(1).lte(100).optional(),
-        maxFundingRate: z.number().gt(0).lt(1).optional(),
-        // Open-side taker fee in bps of notional (closing is free, so this
-        // is the round-trip cost); 0 disables. Bounds match
-        // assertPerpTakerFeeConfig — outside them the engine fail-closes
-        // every trade.
-        takerFeeBps: z.number().min(0).max(100).optional(),
+        // Optimistic check of the values the operator reviewed. Trades do not
+        // change these, so normal activity does not invalidate the preview.
+        expectedConfig: perpConfigFields.optional(),
+        expectedManagerId: z.string().min(1).optional(),
       })
       .strict()
       .refine(
         (p) =>
-          p.maxLeverage !== undefined ||
-          p.maxFundingRate !== undefined ||
-          p.takerFeeBps !== undefined,
+          Object.keys(perpConfigFields.shape).some(
+            (key) => p[key as keyof typeof perpConfigFields.shape] !== undefined
+          ),
         { message: 'Provide at least one field to update' }
       ),
   },
-  // Admin-only escrow top-up of one side's backing pool on a live perp.
-  // Ops tool for restoring margin cover (a side's pool can fall below its
-  // side's aggregate cost basis when realized profits were paid against
-  // opposing unrealized losses that later recovered — see the UK carbon
-  // incident 2026-08-07). The funder pays from their own balance.
+  'get-mnx-dashboard': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as MnxDashboard,
+    props: z.object({}).strict(),
+  },
+  // Defaults to the signed-in manager; the MNX dashboard uses MNX funds.
+  // For 'both', amount is added to EACH side.
+  // A request key makes retrying a dashboard operation safe after a timeout.
   'add-perp-subsidy': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1197,8 +1303,15 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string().min(1),
-        side: z.enum(['long', 'short']),
-        amount: z.number().gt(0).lte(1_000_000),
+        side: z.enum(['long', 'short', 'both']),
+        fundingAccount: z.enum(['mnx']).optional(),
+        expectedManagerId: z.string().min(1).optional(),
+        amount: z.number().finite().gt(0).lte(1_000_000),
+        idempotencyKey: z
+          .string()
+          .regex(randomStringRegex)
+          .length(10)
+          .optional(),
       })
       .strict(),
   },
@@ -1255,9 +1368,14 @@ export const API = (_apiTypeCheck = {
     // daily feed would understate the cap 24x.
     returns: [] as {
       id: string
+      // Capability probe for scripts that explicitly set the API-channel fee.
+      supportsApiTakerFee: boolean
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
       description: string | null
+      // Canonical ticker (PERP_FEED_TICKERS); null for a feed nobody has
+      // named, where the form may choose one.
+      ticker: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
         question: string
@@ -1270,6 +1388,20 @@ export const API = (_apiTypeCheck = {
         requiredTopicNames: string[]
         creatorAuthorized: boolean
       } | null
+      // Whether the caller may create on this feed at all: only the official
+      // Manifold account can, because it either pays the backing itself or
+      // acts for a partner account (see createPerpSchema.creatorAccount).
+      callerAuthorized: boolean
+      // Every selectable owner, in display order. `allowed` is feed policy
+      // (a partner owns only its own feeds); `unavailableReason` is set when
+      // the account cannot be resolved in this environment.
+      creatorAccounts: {
+        account: PerpCreatorAccount
+        label: string
+        allowed: boolean
+        username: string | null
+        unavailableReason: string | null
+      }[]
     }[],
     props: z.object({}).strict(),
   },
@@ -1291,6 +1423,37 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-perp-quote': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // Never edge-cached. This is the price a trader sizes and closes against;
+    // DEFAULT_CACHE_STRATEGY's max-age=5 + stale-while-revalidate=10 can serve
+    // a body 15s old, which at 100x leverage is a materially different market.
+    // See get-perp-positions for the same reasoning applied to positions.
+    cache: 'no-cache',
+    returns: {} as PerpQuote,
+    props: z.object({ contractId: z.string().min(1) }).strict(),
+  },
+  // Scheduler -> API hop that turns an applied oracle tick into a websocket
+  // broadcast. Not called by clients. See perps/publish-perp-quote.ts for why
+  // the scheduler cannot broadcast directly.
+  //
+  // Must stay off the read-replica allowlist in url-map-config.yaml: only the
+  // writer process runs the websocket server, so routing this to a replica
+  // would drop every push without erroring.
+  'internal-perp-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        quote: perpQuoteSchema,
+      })
+      .strict(),
+  },
   'get-perp-positions': {
     method: 'GET',
     visibility: 'public',
@@ -1301,6 +1464,7 @@ export const API = (_apiTypeCheck = {
     // Positions are correctness-critical right after a trade.
     cache: 'no-cache',
     returns: [] as {
+      contractId: string
       userId: string
       direction: 'long' | 'short'
       size: number
@@ -1318,8 +1482,71 @@ export const API = (_apiTypeCheck = {
     }[],
     props: z
       .object({
-        contractId: z.string().min(1),
+        // One of contractId / userId is required: a market's book, a user's
+        // book across every perp (the /perps hub polls that in one call), or
+        // one user in one market.
+        contractId: z.string().min(1).optional(),
         userId: z.string().min(1).optional(),
+      })
+      .strict()
+      .refine((p) => p.contractId || p.userId, {
+        message: 'contractId or userId is required',
+      }),
+  },
+  'get-perp-suggestions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Signed-in viewers get their own hasVoted in the same response.
+    preferAuth: true,
+    cache: 'no-store',
+    returns: [] as PerpSuggestion[],
+    props: z
+      .object({
+        limit: z.coerce.number().int().positive().max(100).optional(),
+        // Mods and admins only — silently ignored for everyone else. Returns
+        // moderated rows alongside the live ones, each tagged with `hidden`.
+        includeHidden: coerceBoolean.optional(),
+      })
+      .strict(),
+  },
+  'create-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as PerpSuggestion,
+    props: z
+      .object({
+        name: z.string().min(1).max(200),
+        dataSource: z.string().max(1000).optional(),
+      })
+      .strict(),
+  },
+  'vote-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { votes: number },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        remove: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  // Moderation: mods and admins drop a suggestion out of the public list.
+  // Reversible — the row is flagged, never deleted, so the votes on it
+  // survive an unhide.
+  'hide-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { hidden: boolean },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        // Omitted means hide; pass false to restore.
+        hide: z.boolean().optional(),
       })
       .strict(),
   },
@@ -1333,6 +1560,7 @@ export const API = (_apiTypeCheck = {
     cache: 'no-cache',
     returns: [] as {
       id: number
+      contractId: string
       ts: number
       userId: string | null
       direction: 'long' | 'short' | null
@@ -1345,6 +1573,9 @@ export const API = (_apiTypeCheck = {
       payout: number | null
       pnl: number | null
       adlFactor: number | null
+      /** Closes only: the fraction of the position this event took. Null on
+       * closes written before partial closes existed, which were whole. */
+      fraction: number | null
       isApi: boolean
       userName: string | null
       username: string | null
@@ -1352,7 +1583,11 @@ export const API = (_apiTypeCheck = {
     }[],
     props: z
       .object({
-        contractId: z.string().min(1),
+        contractId: z.string().min(1).optional(),
+        // A merged, newest-first tape across several markets in ONE query —
+        // the /perps hub's activity feed. Exactly one of contractId /
+        // contractIds.
+        contractIds: z.array(z.string().min(1)).min(1).max(50).optional(),
         userId: z.string().min(1).optional(),
         beforeId: z.coerce.number().int().optional(),
         limit: z.coerce.number().int().positive().max(200).optional(),
@@ -1361,7 +1596,10 @@ export const API = (_apiTypeCheck = {
         // carry no marker and read as manual.
         excludeApi: coerceBoolean.optional(),
       })
-      .strict(),
+      .strict()
+      .refine((p) => !!p.contractId !== !!p.contractIds, {
+        message: 'Exactly one of contractId or contractIds is required',
+      }),
   },
   'get-perp-funding-events': {
     method: 'GET',
@@ -1426,7 +1664,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // Both search handlers accept optional auth and use it for visibility,
+    // blocks, and personalized ranking. The edge cache does not vary on the
+    // Authorization header, so public caching can serve one user's result to
+    // another user (or to an anonymous caller).
+    cache: 'private, no-store',
     returns: [] as LiteMarket[],
     props: searchProps,
   },
@@ -1435,8 +1677,8 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     preferAuth: true,
-    cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as Contract[],
+    cache: 'private, no-store',
+    returns: [] as FullMarketSearchResult[],
     props: searchProps,
   },
   'recent-markets': {
@@ -1645,6 +1887,7 @@ export const API = (_apiTypeCheck = {
       shouldShowWelcome: z.boolean().optional(),
       hasSeenContractFollowModal: z.boolean().optional(),
       hasSeenLoanModal: z.boolean().optional(),
+      hasSeenPerpsExplainer: z.boolean().optional(),
       lastShopVisitTime: z.number().optional(),
     }),
     returns: {} as FullUser,
@@ -1839,6 +2082,19 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-mnx-invite-link': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z
+      .object({
+        feedId: z.string(),
+        location: z.enum(MNX_LINK_LOCATIONS),
+      })
+      .strict(),
+    returns: {} as { url: string },
+  },
   'get-job-interest': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1883,7 +2139,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentId: z.string(),
-        contentType: z.enum(['comment', 'contract', 'post']),
+        contentType: z.enum(['comment', 'contract', 'post', 'social_post']),
         commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
@@ -2447,6 +2703,9 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(100).default(25),
         offset: z.coerce.number().gte(0).default(0),
         count: coerceBoolean.optional(),
+        order: z.enum(['asc', 'desc']).default('desc'),
+        cursorTime: z.string().datetime({ offset: true }).optional(),
+        cursorId: z.coerce.number().int().optional(),
       })
       .strict(),
     returns: {} as {
@@ -3020,6 +3279,14 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-browse-personalization': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z.object({}).strict(),
+    returns: {} as BrowsePersonalization,
+  },
   'get-unified-feed': {
     method: 'GET',
     visibility: 'undocumented',
@@ -3141,7 +3408,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentIds: z.array(z.string()),
-        contentType: z.enum(['comment', 'contract']),
+        contentType: z.enum(['comment', 'contract', 'social_post']),
       })
       .strict(),
   },
@@ -3352,7 +3619,11 @@ export const API = (_apiTypeCheck = {
         data: z.object({
           question: z.string(),
           description: z.any().optional(),
-          outcomeType: z.string(),
+          // The creatable types, not a free string. A draft is a market in
+          // progress, so a type create-market can never accept (PERP) has no
+          // business being saved as one — storing it produced a draft that
+          // looked creatable in the form and then failed at submit.
+          outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
           answers: z.array(z.string()).optional(),
           closeDate: z.string().optional(),
           closeHoursMinutes: z.string().optional(),
@@ -4756,6 +5027,92 @@ export const API = (_apiTypeCheck = {
     },
   },
 
+  'create-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        content: socialPostDraftSchema,
+        parentId: z.string().optional(),
+        source: socialPostSourceSchema.optional(),
+      })
+      .strict()
+      .refine(
+        ({ content, source }) =>
+          hasSocialPostContent(content) || !!(source && 'postId' in source),
+        'Add text, a market, an image, or a quoted post'
+      ),
+    returns: {} as SocialPost,
+  },
+  'edit-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string(), content: socialPostEditSchema }).strict(),
+    returns: {} as SocialPost,
+  },
+  'delete-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as { success: true },
+  },
+  'get-social-posts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        parentId: z.string().optional(),
+        ids: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+        forModeration: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        useCache: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(30).default(20),
+      })
+      .strict()
+      .refine(
+        ({ ids, parentId, cursor, useCache }) =>
+          !ids || (!parentId && !cursor && !useCache),
+        'ID lookups cannot be combined with timeline pagination or caching'
+      )
+      .refine(
+        ({ forModeration, ids }) => !forModeration || !!ids,
+        'Moderation lookups require post IDs'
+      ),
+    returns: {} as SocialPostPage,
+  },
+  'get-social-post': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as SocialPostDetail,
+  },
+  'get-social-likers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        id: z.string(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(50).default(30),
+      })
+      .strict(),
+    returns: {} as SocialLikerPage,
+  },
   'admin-sports-resolve': {
     method: 'POST',
     visibility: 'undocumented',

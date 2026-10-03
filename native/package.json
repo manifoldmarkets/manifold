@@ -2,6 +2,7 @@
   "name": "manifold",
   "version": "1.0.0",
   "scripts": {
+    "postinstall": "patch-package",
     "android:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV yarn android -d",
     "android:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD yarn android -d",
     "prebuild": "npx expo prebuild",
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.7",
+    "@bacons/apple-targets": "^4.0.7",
     "@expo-google-fonts/readex-pro": "^0.2.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-clipboard/clipboard": "1.16.3",
@@ -52,6 +54,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.4",
+    "react-native-android-widget": "0.20.3",
     "react-native-logs": "^5.1.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-web": "^0.21.0",
@@ -62,7 +65,9 @@
     "@babel/core": "^7.24.7",
     "@types/lodash": "^4.17.5",
     "babel-plugin-transform-inline-environment-variables": "^0.4.4",
-    "babel-preset-expo": "~54.0.0"
+    "babel-preset-expo": "~54.0.0",
+    "patch-package": "8.0.1",
+    "postinstall-postinstall": "2.1.0"
   },
   "private": true
 }

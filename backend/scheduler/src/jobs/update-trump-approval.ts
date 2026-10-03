@@ -1,62 +1,72 @@
-import * as dayjs from 'dayjs'
-import * as timezone from 'dayjs/plugin/timezone'
-import * as utc from 'dayjs/plugin/utc'
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
+import { TRUMP_APPROVAL_FEED_ID } from 'shared/oracle'
 import {
-  hasTrumpApprovalPointForDay,
   publishTrumpApprovalPoint,
   trumpApprovalDay,
-  TRUMP_APPROVAL_TZ,
 } from 'shared/perps/publish-trump-approval'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import {
+  DAILY_FEED_STALE_ERROR_MS,
+  reportDailyFeedFailure,
+} from './daily-feed-failure'
 
-// The last Pacific hour the job is scheduled to fire. MUST match the end of
-// the hour range in this job's cron expression in ./index.ts — it is how a
-// run knows whether another attempt is coming today, which decides whether a
-// failure is a blip to retry or a lost day worth paging on.
-export const TRUMP_APPROVAL_LAST_ATTEMPT_HOUR = 23
+/**
+ * How long the feed may go without a published point before a failed attempt
+ * is an ERROR rather than a retryable blip. The rationale and the number are
+ * DAILY_FEED_STALE_ERROR_MS; this name is kept for the feed's own docs.
+ */
+export const TRUMP_APPROVAL_STALE_ERROR_MS = DAILY_FEED_STALE_ERROR_MS
 
-// Publishes one point per Pacific day for the `trump-approval-rating` feed.
+// Publishes points for the `trump-approval-rating` feed from VoteHub's
+// published average.
 //
-// Scheduled hourly rather than once, because a single daily firing made the
-// feed only as reliable as VoteHub's worst minute of the day: on 2026-08-14
-// the 5:30am attempt got an HTTP 500, and with no retry the feed sat frozen
-// for over 26 hours, tripped its staleness alerts, and came within ~1.5h of
-// the market's maxOraclePriceAgeMs — which pauses the engine, and with it
-// liquidations and ADL, on a market carrying leveraged positions.
+// Runs EVERY 5 MINUTES and publishes whenever the source value moves — see
+// decideDailyFeedPublish. Publishing once a day, as this job did originally,
+// left every intraday move by the source sitting in public view as the exact
+// next morning's mark: the same timing edge the feed was rebuilt to remove,
+// relocated from the averaging window to the publication schedule. Hourly
+// shortened that window without closing it.
 //
-// The first attempt is still 5:30am Pacific, so the normal publication time
-// is unchanged; later firings only do work when the day has no point yet.
+// 5 minutes is VoteHub's own bound, not a guess: their averages endpoint
+// serves `Cache-Control: max-age=300`. Polling faster returns cached bytes
+// rather than a fresher number, and it is the same cache any other observer
+// reads through.
+//
+// The hourly cadence originally existed only as a retry: on 2026-08-14 a
+// single 5:30am HTTP 500 froze the feed for over 26 hours, tripped its
+// staleness alerts, and came within ~1.5h of the market's
+// maxOraclePriceAgeMs, which pauses the engine and with it liquidations and
+// ADL. That retry behaviour is preserved — a failed hour is simply followed
+// by another hour — it is just no longer the only reason to run.
+//
+// The other VoteHub averages (generic ballot, Vance favorability) run in
+// their own job, update-votehub-averages, offset by two minutes from this
+// one. This job keeps its name and its `[trump-approval]` prefix because the
+// GCP alert policies are keyed on both.
 export const updateTrumpApproval = async () => {
   const pg = createSupabaseDirectClient()
   const today = trumpApprovalDay()
 
-  if (await hasTrumpApprovalPointForDay(pg, today)) return
-
   try {
     const result = await publishTrumpApprovalPoint(pg)
-    // A returned failure and a thrown one are the same event to a retry
-    // loop: nothing was published, and the day is only lost if no attempt
-    // remains. Classifying only thrown errors would let `no-polls` and
-    // `rejected` page every hour and would leave the final attempt of the
-    // day without its "no attempts left" signal.
-    if (result.status !== 'published') reportFailure(today, result.reason)
+    // `unchanged` is the ordinary outcome most hours and is deliberately
+    // silent: the source moves roughly once every couple of days, so logging
+    // every no-op would bury the hours that matter.
+    if (result.status === 'published' || result.status === 'unchanged') return
+    await reportFailure(pg, today, result.reason)
   } catch (err) {
-    reportFailure(today, `${err}`)
+    await reportFailure(pg, today, `${err}`)
   }
 }
 
-// Feed staleness is already alerted on by update-perps and
-// update-oracle-feeds, so a retryable attempt logs at WARN to keep from
-// paging once an hour for the same outage. The final attempt of the day is
-// the one that means the day is lost, so that one is an ERROR.
-const reportFailure = (day: string, reason: string) => {
-  const hour = dayjs.tz(dayjs(), TRUMP_APPROVAL_TZ).hour()
-  const message = `[trump-approval] publish failed for ${day} — ${reason}`
-  if (hour >= TRUMP_APPROVAL_LAST_ATTEMPT_HOUR)
-    log.error(`${message}; no attempts left today, feed will go stale`)
-  else log.warn(`${message}; retrying next hour`)
-}
+const reportFailure = (
+  pg: ReturnType<typeof createSupabaseDirectClient>,
+  day: string,
+  reason: string
+) =>
+  reportDailyFeedFailure(pg, {
+    feedId: TRUMP_APPROVAL_FEED_ID,
+    label: '[trump-approval]',
+    day,
+    reason,
+    staleErrorMs: TRUMP_APPROVAL_STALE_ERROR_MS,
+  })

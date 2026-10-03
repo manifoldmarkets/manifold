@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
+  formatMoneyPrecise,
   formatMoneyUSD,
   formatSpice,
   formatSweepies,
@@ -793,6 +794,8 @@ const TxnBalanceChangeRow = (props: {
               ? formatSpice(amount).replace('-', '')
               : token === 'CASH'
               ? formatSweepies(amount).replace('-', '')
+              : type === 'PERP_TAKER_FEE'
+              ? formatMoneyPrecise(Math.abs(amount))
               : formatMoney(amount).replace('-', '')}
           </span>
         </Row>

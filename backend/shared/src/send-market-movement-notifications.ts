@@ -43,6 +43,7 @@ export async function sendMarketMovementNotifications(debug = false) {
   const where = `
   where c.last_bet_time > now() - interval '${nowPeriodHoursAgoStart} hours'
   and c.resolution_time is null
+  and c.deleted = false
   and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'
   and coalesce(c.data->>'mechanism', '') <> 'perp'`
   const results = await pg.multi(

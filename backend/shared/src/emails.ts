@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
@@ -15,7 +16,7 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
@@ -175,7 +176,11 @@ export const toDisplayResolution = (
       Number.isFinite(contract.resolvedOraclePrice)
         ? contract.resolvedOraclePrice
         : contract.oraclePrice
-    return formatPrice(finalPrice, inferPriceDecimals([finalPrice]))
+    return formatOraclePrice(
+      contract.oracleFeedId,
+      finalPrice,
+      inferPriceDecimals([finalPrice])
+    )
   }
 
   if (contract.outcomeType === 'NUMBER') {

@@ -1,10 +1,11 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { PerpContract } from 'common/contract'
 import { Notification } from 'common/notification'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { getPrivateUser } from 'shared/utils'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { MANIFOLD_AVATAR_URL } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyPrecise } from 'common/util/format'
 import { nanoid } from 'common/util/random'
 import type {
   AdlNotificationResult,
@@ -98,10 +99,12 @@ export const createPerpLiquidationNotification = async (
     contract.question
   } lost its ${formatMoney(
     data.originalCostBasis
-  )} margin. The price hit ${formatPrice(
+  )} margin. The price hit ${formatOraclePrice(
+    contract.oracleFeedId,
     data.oraclePrice,
     decimals
-  )}, past your liquidation price of ${formatPrice(
+  )}, past your liquidation price of ${formatOraclePrice(
+    contract.oracleFeedId,
     data.liquidationPrice,
     decimals
   )}.`
@@ -183,7 +186,7 @@ export const createPerpAdlNotification = async (
     data.settlementPayout != null
       ? `Your ${data.direction} on ${
           contract.question
-        } was fully auto-deleveraged${sizes} to stay payable. The position is closed and its ${formatMoney(
+        } was fully auto-deleveraged${sizes} to stay payable. The position is closed and its ${formatMoneyPrecise(
           data.settlementPayout
         )} remaining margin was returned to your balance.`
       : `Your ${data.direction} on ${contract.question} was reduced ${cutPct}%${sizes} to stay payable: your unrealized profit exceeded what the other side's pool can pay. Your cost basis is unchanged.`

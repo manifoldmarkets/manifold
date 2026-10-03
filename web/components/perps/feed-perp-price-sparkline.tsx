@@ -1,9 +1,10 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { line } from 'd3-shape'
 import { PerpContract } from 'common/contract'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { inferPriceDecimals } from 'common/perps/format'
 import { formatOraclePriceTick } from 'common/perps/oracle-display'
 import { DAY_MS } from 'common/util/time'
 import { api } from 'web/lib/api/api'
@@ -233,10 +234,18 @@ export const FeedPerpPriceSparkline = (props: {
         ) : (
           <>
             <span className="tabular-nums">
-              {formatPrice(chart.firstPrice, priceDecimals)}
+              {formatOraclePrice(
+                contract.oracleFeedId,
+                chart.firstPrice,
+                priceDecimals
+              )}
             </span>
             <span className="tabular-nums">
-              {formatPrice(chart.lastPrice, priceDecimals)}
+              {formatOraclePrice(
+                contract.oracleFeedId,
+                chart.lastPrice,
+                priceDecimals
+              )}
             </span>
           </>
         )}

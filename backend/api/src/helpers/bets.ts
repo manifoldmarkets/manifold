@@ -89,6 +89,24 @@ const getLimitOrderQueryFragments = (body: BetDataBody) => {
   return { answerIds, isSumsToOne, whereLimitOrderBets }
 }
 
+// Contract-state guards shared by the pre-transaction validation and the
+// in-transaction locked re-read. fetchContractBetDataAndValidate runs before
+// the transaction, so a market that resolves or closes between that read and
+// the FOR UPDATE re-read — for example a sell that retries after losing a
+// serialization race with the resolution — must be re-checked against the
+// fresh row, or it would trade against an already-resolved market and pay out
+// on top of the resolution payout.
+export const assertContractTradeable = (contract: {
+  deleted?: boolean
+  closeTime?: number
+  isResolved: boolean
+}) => {
+  if (contract.deleted) throw new APIError(403, 'Market is deleted.')
+  if (contract.closeTime && Date.now() > contract.closeTime)
+    throw new APIError(403, 'Trading is closed.')
+  if (contract.isResolved) throw new APIError(403, 'Market is resolved.')
+}
+
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
   body: {
@@ -230,10 +248,7 @@ export const fetchContractBetDataAndValidate = async (
       'index'
     )
 
-  const { closeTime, isResolved } = contract
-  if (closeTime && Date.now() > closeTime)
-    throw new APIError(403, 'Trading is closed.')
-  if (isResolved) throw new APIError(403, 'Market is resolved.')
+  assertContractTradeable(contract)
 
   const balanceByUserId = Object.fromEntries(
     uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
@@ -325,6 +340,11 @@ export const lockContractAndGetBetData = async (
   )
   const results = await pgTrans.multi(queries)
   const contract = convertContract(results[0][0]) as MarketContract
+  // Re-check on the freshly locked row: the pre-transaction validation may
+  // have seen the market open, and this read (and the enclosing transaction)
+  // reruns on every retry, so a resolution that committed in between is
+  // caught here instead of being traded against.
+  assertContractTradeable(contract)
   const answers = results[1].map(convertAnswer)
   if (contract.mechanism === 'cpmm-multi-1')
     contract.answers = sortBy(

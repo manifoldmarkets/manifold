@@ -48,6 +48,16 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     }
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
+    // Selling every answer at once redeems full sets at M$1 each, which is
+    // only sound when the answers are constrained to sum to one. On an
+    // independent market the answer probabilities can add up to less than 1,
+    // so this would pay out more than the shares are worth. Sell answers on
+    // independent markets one at a time via /market/:contractId/sell instead.
+    if (!contract.shouldAnswersSumToOne)
+      throw new APIError(
+        400,
+        'Multi-sell is only supported on markets whose answers sum to one. Sell each answer individually instead.'
+      )
 
     const answersToSell = contract.answers.filter((a) =>
       answerIds.includes(a.id)

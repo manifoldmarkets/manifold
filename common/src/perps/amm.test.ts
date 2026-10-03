@@ -3,12 +3,16 @@ import {
   applyFunding,
   applyFundingWithSolvency,
   assertPerpFundingConfig,
+  assertPerpPositionNumbers,
+  assertPerpStateNumbers,
   assertPerpStateSolvent,
   closePosition,
   computeFundingRate,
   getPerpBackingPool,
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
+  getPerpOpenInterestCapacityForOpen,
+  getPositionValue,
   getUnrealizedEquity,
   imbalance,
   isLiquidated,
@@ -16,9 +20,14 @@ import {
   mergedEntryPrice,
   MIN_PERP_LEVERAGE,
   openPosition,
+  PERP_EXPECTED_SIZE_TOLERANCE,
+  PERP_MIN_CLOSE_FRACTION,
+  PERP_MIN_REMAINDER_COST_BASIS,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
+  perpSizeMatchesExpectation,
   processLiquidations,
+  resolvePerpCloseFraction,
   solvencyFactor,
   unmergeEntryPrice,
 } from './amm'
@@ -974,6 +983,9 @@ describe('open interest capacity', () => {
     expect(capacity).toEqual({
       openInterest: 9999,
       availableCover: 1000,
+      // No short positions exist, so there is nothing to credit and the cap
+      // is exactly the pre-netting one.
+      matchedCredit: 0,
       limit: 10_000,
       headroom: 1,
       isWithinLimit: true,
@@ -1003,8 +1015,12 @@ describe('open interest capacity', () => {
     const capacity = getPerpOpenInterestCapacity('long', state, 100)
     expect(capacity.openInterest).toBe(0)
     expect(capacity.availableCover).toBe(1000)
-    expect(capacity.limit).toBe(10_000)
-    expect(capacity.headroom).toBe(10_000)
+    // The short's own M$1000 of notional is credited on top: over an adverse
+    // move it is the shorts who fund the longs, up to their M$500 of margin
+    // (10 x 500 = 5000 of notional headroom, so their own 1000 binds).
+    expect(capacity.matchedCredit).toBe(1000)
+    expect(capacity.limit).toBe(11_000)
+    expect(capacity.headroom).toBe(11_000)
   })
 
   it('releases an opposite-side unrealized loss into available cover', () => {
@@ -1022,7 +1038,178 @@ describe('open interest capacity', () => {
     // At 140 the short has lost M$400, so only M$100 remains refundable.
     const capacity = getPerpOpenInterestCapacity('long', state, 140)
     expect(capacity.availableCover).toBeCloseTo(1400, 10)
-    expect(capacity.limit).toBeCloseTo(14_000, 10)
+    expect(capacity.matchedCredit).toBe(1000)
+    expect(capacity.limit).toBeCloseTo(15_000, 10)
+  })
+
+  it('credits the opposing side notional it funds from its own losses', () => {
+    const base: PerpState = {
+      pool: { L: 1000, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 4000,
+          costBasis: 1000,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    // Opposing pool 1000, all of it reserved as the short's own refundable
+    // basis: zero unreserved cover, so the old rule granted zero long capacity
+    // despite 4000 of short notional standing in front of it.
+    const capacity = getPerpOpenInterestCapacity('long', base, 100)
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(4000)
+    expect(capacity.limit).toBe(4000)
+    expect(capacity.headroom).toBe(4000)
+  })
+
+  it('caps the credit by the opposing side margin, not its notional', () => {
+    // 100x shorts: 10_000 of notional standing on 100 of margin. They can fund
+    // only 100 of losses before liquidating, so credit 10 x 100, not 10_000.
+    const state: PerpState = {
+      pool: { L: 1000, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 10_000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const capacity = getPerpOpenInterestCapacity('long', state, 100)
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(1000)
+    expect(capacity.limit).toBe(1000)
+  })
+
+  it('lets a short-heavy book take the long trade that balances it', () => {
+    // Shape of the BTC market on 2026-08-31: more short notional than long,
+    // yet the long side was the one being refused.
+    const state: PerpState = {
+      pool: { L: 1000, S: 200 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 2000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 3000,
+          costBasis: 150,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const long = getPerpOpenInterestCapacity('long', state, 100)
+    expect(long.openInterest).toBe(2000)
+    // Old rule: 10 x (200 - 150) = 500, under the 2000 of long OI already
+    // open, so the book could not take another M$1 of long.
+    expect(long.availableCover).toBe(50)
+    expect(long.matchedCredit).toBe(1500)
+    expect(long.limit).toBe(2000)
+    expect(long.isWithinLimit).toBe(true)
+  })
+
+  it('previews a flip against the book after closing the opposite position', () => {
+    const shortToClose = makePosition({
+      userId: 'flipper',
+      direction: 'short',
+      size: 1000,
+      costBasis: 500,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 1500 },
+      positions: [
+        makePosition({
+          userId: 'other',
+          direction: 'long',
+          size: 8000,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+        shortToClose,
+      ],
+    }
+
+    // Against the current book the short supplies 1000 of matched credit,
+    // making 3000 appear available. A flat close pays its M$500 basis out of
+    // pool S and removes that credit, so the opening leg can use only 2000.
+    expect(getPerpOpenInterestCapacity('long', state, 100).headroom).toBe(3000)
+    expect(
+      getPerpOpenInterestCapacityForOpen('long', state, 100, shortToClose)
+        .headroom
+    ).toBe(2000)
+  })
+
+  it('credits nothing for an opposing side that is in profit', () => {
+    // Review counterexample. The short is 500 up at the mark, so its reserve is
+    // clamped at its 100 of cost basis and STAYS there across the whole move
+    // this cap is sized for — an adverse tick frees none of the pool. Crediting
+    // its reserve outright would admit 1000 of long notional whose cover is
+    // zero, and factor-zero ADL would take it out on its first profitable tick.
+    const profitableOpponent: PerpState = {
+      pool: { L: 500, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 1000,
+          costBasis: 100,
+          entryPrice: 200,
+        }),
+      ],
+    }
+
+    const capacity = getPerpOpenInterestCapacity(
+      'long',
+      profitableOpponent,
+      100
+    )
+    expect(capacity.availableCover).toBe(0)
+    expect(capacity.matchedCredit).toBe(0)
+    expect(capacity.limit).toBe(0)
+    expect(capacity.headroom).toBe(0)
+
+    // The same short, now at a mark where it is underwater, does release its
+    // margin over the move and is credited for it.
+    const underwater = getPerpOpenInterestCapacity(
+      'long',
+      profitableOpponent,
+      210
+    )
+    expect(underwater.matchedCredit).toBeGreaterThan(0)
+  })
+
+  it('never promises more than the whole opposing pool', () => {
+    // A book whose long side is already short of its own reserve: cover floors
+    // at 0 and the reserved value exceeds pool.L, so the raw credit would hand
+    // the shorts more notional than the long pool could ever fund.
+    const wedged: PerpState = {
+      pool: { L: 100, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const short = getPerpOpenInterestCapacity('short', wedged, 100)
+    expect(short.availableCover).toBe(-100)
+    expect(short.matchedCredit).toBe(1000)
+    expect(short.limit).toBe(1000)
+    expect(short.limit).toBeLessThanOrEqual(
+      wedged.pool.L * PERP_OPEN_INTEREST_COVER_MULTIPLE
+    )
   })
 
   it('fails closed on non-finite aggregate exposure', () => {
@@ -1041,5 +1228,685 @@ describe('open interest capacity', () => {
     expect(() => getPerpOpenInterestCapacity('long', state, 100)).toThrow(
       'position 0 size must be finite'
     )
+  })
+})
+
+describe('assertPerpPositionNumbers', () => {
+  const sound = (over: Partial<PerpPosition> = {}): PerpPosition => ({
+    userId: 'u',
+    contractId: 'c',
+    direction: 'long',
+    size: 200_000,
+    costBasis: 200_000,
+    originalCostBasis: 200_000,
+    takerFeeCostBasis: 200,
+    entryPrice: 100,
+    leverage: 1,
+    liquidationPrice: 0,
+    openedTime: 1,
+    updatedTime: 1,
+    ...over,
+  })
+
+  it('accepts a sound row', () => {
+    expect(() => assertPerpPositionNumbers(sound())).not.toThrow()
+  })
+
+  it.each([
+    ['entryPrice', { entryPrice: 0 }],
+    ['negative entryPrice', { entryPrice: -100 }],
+    ['non-finite entryPrice', { entryPrice: Number.NaN }],
+    ['non-finite size', { size: Number.POSITIVE_INFINITY }],
+    ['negative costBasis', { costBasis: -1 }],
+    ['zero costBasis with live exposure', { costBasis: 0 }],
+    // The mirror case, and the one a naive "size > 0" filter hides: a row
+    // carrying margin at size 0 is corrupt, not closed. The web hook's
+    // partition depends on this rejecting.
+    ['zero size still carrying margin', { size: 0 }],
+    ['negative originalCostBasis', { originalCostBasis: -1 }],
+    ['negative takerFeeCostBasis', { takerFeeCostBasis: -1 }],
+    ['non-finite takerFeeCostBasis', { takerFeeCostBasis: Number.NaN }],
+    ['non-positive leverage', { leverage: 0 }],
+    ['non-finite liquidationPrice', { liquidationPrice: Number.NaN }],
+  ])('rejects %s', (_label, over) => {
+    expect(() => assertPerpPositionNumbers(sound(over))).toThrow()
+  })
+
+  it('labels the row so a caller can say WHICH position is corrupt', () => {
+    expect(() =>
+      assertPerpPositionNumbers(sound({ entryPrice: 0 }), 'opposite leg')
+    ).toThrow(/opposite leg entry price must be positive/)
+  })
+
+  // Why the engine scans rows IRRESPECTIVE of size, not just the ones its
+  // `size > 0` selection returns.
+  it('replaces a same-direction row regardless of size, so malformed rows must be rejected first', () => {
+    for (const badSize of [Number.NaN, -5, 0]) {
+      const corrupt = sound({ size: badSize })
+      const state: PerpState = {
+        pool: { L: 250_000, S: 250_000 },
+        positions: [corrupt],
+      }
+
+      // The predicate both engine paths select with does NOT match it, so a
+      // guard applied only to the selected rows never sees this row.
+      expect(
+        state.positions.find(
+          (p) => p.userId === 'u' && p.direction === 'long' && p.size > 0
+        )
+      ).toBeUndefined()
+
+      // But openPosition's replacement filter keys on (userId, direction)
+      // ONLY — it never re-checks size — so the trade would overwrite the row
+      // and its 200,000 cost basis would vanish from the position table while
+      // the pool still held the margin.
+      const res = openPosition(
+        state,
+        'u',
+        'c',
+        'long',
+        100,
+        1,
+        100,
+        undefined,
+        1
+      )
+      expect(res.state.positions).toHaveLength(1)
+      expect(res.state.positions[0].costBasis).toBe(100)
+
+      // Hence the guard, which reads every row the user holds.
+      expect(() => assertPerpPositionNumbers(corrupt)).toThrow()
+    }
+  })
+
+  // Why the engine must run this BEFORE closing an opposite leg on a flip.
+  it('catches the corrupt row that would otherwise pay out its full margin', () => {
+    // getUnrealizedEquity short-circuits to 0 when entryPrice <= 0, so a
+    // corrupt row marks as FLAT: closePosition computes pi = 0 and pays
+    // costBasis in full, wherever the oracle actually is. Nothing downstream
+    // catches it either — the close REMOVES the row from state, so the
+    // post-close assertPerpStateSolvent has nothing left to inspect.
+    const corrupt = sound({ entryPrice: 0 })
+    const state: PerpState = {
+      pool: { L: 250_000, S: 250_000 },
+      positions: [corrupt],
+    }
+    const soundAtSameDrawdown = sound()
+    expect(getPositionValue(soundAtSameDrawdown, 20)).toBeCloseTo(40_000, 6)
+    // Same position, corrupt entry price: worth its full basis at any mark.
+    expect(getPositionValue(corrupt, 20)).toBe(200_000)
+
+    const closed = closePosition(state, corrupt, 20)
+    expect(closed.payout).toBe(200_000)
+    expect(closed.state.positions).toHaveLength(0)
+    // The post-close state is "solvent" precisely because the corrupt row is
+    // gone — which is why the guard has to run first.
+    expect(() => assertPerpStateSolvent(closed.state, 20)).not.toThrow()
+    expect(() => assertPerpPositionNumbers(corrupt)).toThrow()
+  })
+})
+
+describe('assertPerpStateNumbers ordering vs the risk transitions', () => {
+  const soundRow = (over: Partial<PerpPosition> = {}): PerpPosition => ({
+    userId: 'u',
+    contractId: 'c',
+    direction: 'long',
+    size: 100_000,
+    costBasis: 10_000,
+    originalCostBasis: 10_000,
+    takerFeeCostBasis: 10,
+    entryPrice: 100,
+    leverage: 10,
+    liquidationPrice: 90,
+    openedTime: 1,
+    updatedTime: 1,
+    ...over,
+  })
+
+  // processLiquidations OVERWRITES size / costBasis / leverage with 0, so a
+  // corruption in any of those three is laundered into a valid zero row.
+  it.each(['size', 'costBasis', 'leverage'] as const)(
+    'rejects a corrupt %s that liquidation would otherwise zero away',
+    (field) => {
+      // A 10x long at entry 100 liquidates at 90; mark 50 is well past it.
+      const corrupt = soundRow({ [field]: Number.NaN })
+      const state: PerpState = {
+        pool: { L: 50_000, S: 50_000 },
+        positions: [corrupt],
+      }
+
+      // Pre-transition: the corruption is visible.
+      expect(() => assertPerpStateNumbers(state, 50)).toThrow()
+
+      // Post-transition: it is not. The row survives but its corrupt field
+      // has been replaced with 0, leaving a structurally valid zero row.
+      const liquidated = processLiquidations(state, 50)
+      expect(liquidated.liquidated).toHaveLength(1)
+      expect(liquidated.state.positions[0]).toMatchObject({
+        size: 0,
+        costBasis: 0,
+        leverage: 0,
+      })
+      expect(() => assertPerpStateNumbers(liquidated.state, 50)).not.toThrow()
+      expect(() => assertPerpStateSolvent(liquidated.state, 50)).not.toThrow()
+    }
+  )
+
+  it('rejects a corrupt row that a factor-zero ADL would otherwise settle away', () => {
+    // ADL removes a profitable position outright when the factor hits 0, so
+    // the same blind spot exists on that transition.
+    const corrupt = soundRow({ originalCostBasis: Number.NaN })
+    const state: PerpState = {
+      pool: { L: 10_000, S: 0 },
+      positions: [corrupt],
+    }
+    expect(() => assertPerpStateNumbers(state, 150)).toThrow()
+
+    const adl = applyADL(state, 150)
+    expect(adl.adlFactorLong).toBe(0)
+    expect(adl.settled).toHaveLength(1)
+    expect(adl.state.positions).toHaveLength(0)
+    // Blind after the fact — the row it would have flagged no longer exists.
+    expect(() => assertPerpStateNumbers(adl.state, 150)).not.toThrow()
+    expect(() => assertPerpStateSolvent(adl.state, 150)).not.toThrow()
+  })
+
+  it('is the numbers check, NOT the solvency check — transitions must still repair insolvency', () => {
+    // The distinction that makes it safe to assert on the INPUT: a legitimately
+    // insolvent book is exactly what liquidation and ADL are for, so asserting
+    // solvency there would fail closed on the states they exist to fix.
+    const underwater = soundRow({
+      direction: 'long',
+      entryPrice: 100,
+      size: 100_000,
+      costBasis: 10_000,
+      leverage: 10,
+    })
+    const insolvent: PerpState = {
+      pool: { L: 10_000, S: 0 },
+      positions: [underwater],
+    }
+    // Structurally sound...
+    expect(() => assertPerpStateNumbers(insolvent, 150)).not.toThrow()
+    // ...but not solvent, and ADL is what repairs that.
+    expect(() => assertPerpStateSolvent(insolvent, 150)).toThrow()
+    const repaired = applyADL(insolvent, 150)
+    expect(() => assertPerpStateSolvent(repaired.state, 150)).not.toThrow()
+  })
+})
+
+describe('partial close', () => {
+  // A long in profit, funded by a short pool with room to pay it.
+  const profitableLong = () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+      takerFeeCostBasis: 4,
+    })
+    const state: PerpState = {
+      pool: { L: 100, S: 500 },
+      positions: [position],
+    }
+    return { position, state }
+  }
+
+  describe('perpSizeMatchesExpectation', () => {
+    it('forgives representation dust at any scale', () => {
+      expect(perpSizeMatchesExpectation(400, 400)).toBe(true)
+      expect(
+        perpSizeMatchesExpectation(
+          400,
+          400 * (1 + PERP_EXPECTED_SIZE_TOLERANCE / 2)
+        )
+      ).toBe(true)
+      expect(
+        perpSizeMatchesExpectation(
+          12_345_678,
+          12_345_678 * (1 + PERP_EXPECTED_SIZE_TOLERANCE / 2)
+        )
+      ).toBe(true)
+    })
+
+    it('refuses a row that actually moved', () => {
+      // The smallest close that can change a row is 1%, so anything an
+      // intervening close could have done is far outside the tolerance.
+      expect(perpSizeMatchesExpectation(400 * 0.99, 400)).toBe(false)
+      expect(perpSizeMatchesExpectation(100, 400)).toBe(false)
+      // Funding and ADL scale size too, and invalidate the preview the same way.
+      expect(perpSizeMatchesExpectation(400 * 0.999, 400)).toBe(false)
+    })
+
+    it('refuses values it cannot compare', () => {
+      expect(perpSizeMatchesExpectation(NaN, 400)).toBe(false)
+      expect(perpSizeMatchesExpectation(400, Infinity)).toBe(false)
+    })
+  })
+
+  describe('resolvePerpCloseFraction', () => {
+    const row = { size: 400, costBasis: 100 }
+
+    it('refuses a fraction outside (0, 1]', () => {
+      expect(() => resolvePerpCloseFraction(row, 0)).toThrow(/in \(0, 1\]/)
+      expect(() => resolvePerpCloseFraction(row, -0.5)).toThrow(/in \(0, 1\]/)
+      expect(() => resolvePerpCloseFraction(row, 1.5)).toThrow(/in \(0, 1\]/)
+      expect(() => resolvePerpCloseFraction(row, NaN)).toThrow(/in \(0, 1\]/)
+    })
+
+    it('refuses a close too small to be worth its own event', () => {
+      expect(() =>
+        resolvePerpCloseFraction(row, PERP_MIN_CLOSE_FRACTION / 2)
+      ).toThrow(/at least/)
+    })
+
+    it('passes a valid partial through and reads 1 as a full close', () => {
+      expect(resolvePerpCloseFraction(row, 0.25)).toBe(0.25)
+      expect(resolvePerpCloseFraction(row, 0.333)).toBe(0.333)
+      expect(resolvePerpCloseFraction(row, PERP_MIN_CLOSE_FRACTION)).toBe(
+        PERP_MIN_CLOSE_FRACTION
+      )
+      expect(resolvePerpCloseFraction(row, 1)).toBe(1)
+    })
+
+    it('promotes a close whose remainder would be dust', () => {
+      // Half a mana-cent of margin left open — a row that would still accrue
+      // funding every period and still need closing by hand.
+      expect(resolvePerpCloseFraction(row, 0.99995)).toBe(1)
+      // The bound is on the REMAINING margin, not on 1 - fraction, so the
+      // same fraction survives on a position large enough for the remainder
+      // to be real money.
+      expect(
+        resolvePerpCloseFraction({ size: 40_000, costBasis: 10_000 }, 0.99995)
+      ).toBe(0.99995)
+      // At the bound the remainder is kept: PERP_MIN_REMAINDER_COST_BASIS is
+      // the smallest margin still worth a row.
+      expect(
+        resolvePerpCloseFraction(
+          { size: 4, costBasis: 1 },
+          1 - PERP_MIN_REMAINDER_COST_BASIS
+        )
+      ).toBe(1 - PERP_MIN_REMAINDER_COST_BASIS)
+    })
+  })
+
+  it('leaves the full close bit-for-bit what it was', () => {
+    const { position, state } = profitableLong()
+    const full = closePosition(state, position, 150)
+
+    // π = (150-100)/100 · 400 = 200, paid out of the short pool; the M$100
+    // margin comes back out of the long pool.
+    expect(full.payout).toBe(300)
+    expect(full.pnl).toBe(200)
+    expect(full.state.pool).toEqual({ L: 0, S: 300 })
+    expect(full.state.positions).toEqual([])
+    expect(full.fraction).toBe(1)
+    expect(full.remainingPosition).toBeNull()
+    expect(full.closedSize).toBe(position.size)
+    expect(full.closedCostBasis).toBe(position.costBasis)
+    expect(full.closedOriginalCostBasis).toBe(position.originalCostBasis)
+    expect(full.closedTakerFeeCostBasis).toBe(4)
+  })
+
+  it('pays exactly its fraction of the full close, out of the same pools', () => {
+    const { position, state } = profitableLong()
+    const full = closePosition(state, position, 150)
+    const quarter = closePosition(state, position, 150, 0.25)
+
+    expect(quarter.payout).toBeCloseTo(0.25 * full.payout, 9)
+    expect(quarter.pnl).toBeCloseTo(0.25 * full.pnl, 9)
+    expect(quarter.poolLongDelta).toBeCloseTo(0.25 * full.poolLongDelta, 9)
+    expect(quarter.poolShortDelta).toBeCloseTo(0.25 * full.poolShortDelta, 9)
+    expect(quarter.fraction).toBe(0.25)
+  })
+
+  it('leaves a survivor at the same entry, leverage and liquidation price', () => {
+    const { position, state } = profitableLong()
+    const { remainingPosition } = closePosition(state, position, 150, 0.25)
+    if (!remainingPosition) throw new Error('expected a surviving position')
+
+    // The whole point: reducing exposure must not move the price at which
+    // what is left gets liquidated.
+    expect(remainingPosition.entryPrice).toBe(position.entryPrice)
+    expect(remainingPosition.leverage).toBeCloseTo(position.leverage, 12)
+    expect(remainingPosition.liquidationPrice).toBeCloseTo(
+      position.liquidationPrice,
+      12
+    )
+    expect(remainingPosition.size).toBeCloseTo(300, 9)
+    expect(remainingPosition.costBasis).toBeCloseTo(75, 9)
+    expect(remainingPosition.originalCostBasis).toBeCloseTo(75, 9)
+    expect(remainingPosition.takerFeeCostBasis).toBeCloseTo(3, 9)
+    // openedTime is what `expectedOpenedTime` matches on, so a partial close
+    // must not look like a new position to the next one.
+    expect(remainingPosition.openedTime).toBe(position.openedTime)
+  })
+
+  it('splits the row without losing or minting any of it', () => {
+    const { position, state } = profitableLong()
+    // Exact, not close-to: metric-periods rebuilds the pre-close row by
+    // adding this event's deltas back onto the survivor, and any drift here
+    // is drift in every historical P&L that replays through it.
+    for (const fraction of [0.01, 0.25, 1 / 3, 0.5, 0.9]) {
+      const res = closePosition(state, position, 150, fraction)
+      const survivor = res.remainingPosition
+      if (!survivor) throw new Error('expected a surviving position')
+      expect(res.closedSize + survivor.size).toBe(position.size)
+      expect(res.closedCostBasis + survivor.costBasis).toBe(position.costBasis)
+      expect(res.closedOriginalCostBasis + survivor.originalCostBasis).toBe(
+        position.originalCostBasis
+      )
+      expect(
+        res.closedTakerFeeCostBasis + (survivor.takerFeeCostBasis ?? 0)
+      ).toBe(position.takerFeeCostBasis)
+    }
+  })
+
+  it('pays the same in two steps as in one', () => {
+    const { position, state } = profitableLong()
+    const full = closePosition(state, position, 150)
+
+    const first = closePosition(state, position, 150, 0.4)
+    const survivor = first.remainingPosition
+    if (!survivor) throw new Error('expected a surviving position')
+    const second = closePosition(first.state, survivor, 150)
+
+    expect(first.payout + second.payout).toBeCloseTo(full.payout, 9)
+    expect(second.state.pool.L).toBeCloseTo(full.state.pool.L, 9)
+    expect(second.state.pool.S).toBeCloseTo(full.state.pool.S, 9)
+    expect(second.state.positions).toEqual([])
+  })
+
+  it('is the state a smaller position would have been in all along', () => {
+    const { position, state } = profitableLong()
+    const partial = closePosition(state, position, 150, 0.25)
+
+    // Same book, but the trader only ever opened 75% of the position.
+    const smaller = makePosition({
+      direction: 'long',
+      size: 300,
+      costBasis: 75,
+      entryPrice: 100,
+      originalCostBasis: 75,
+      takerFeeCostBasis: 3,
+    })
+    const reference = closePosition(
+      { pool: { L: 100, S: 500 }, positions: [smaller] },
+      smaller,
+      150
+    )
+    // Closing the survivor next must land exactly where closing the
+    // never-larger position would.
+    const survivor = partial.remainingPosition
+    if (!survivor) throw new Error('expected a surviving position')
+    const closeOut = closePosition(partial.state, survivor, 150)
+    expect(closeOut.payout).toBeCloseTo(reference.payout, 9)
+  })
+
+  it('draws a losing close from the closer own pool only', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    // π = (90-100)/100 · 100 = -10 on a quarter of the notional.
+    const res = closePosition(state, position, 90, 0.25)
+    expect(res.pnl).toBeCloseTo(-10, 9)
+    expect(res.payout).toBeCloseTo(15, 9)
+    expect(res.poolLongDelta).toBeCloseTo(-15, 9)
+    expect(res.poolShortDelta).toBe(0)
+    expect(res.state.pool.S).toBe(500)
+  })
+
+  it('pays nothing when the closed leg is past its own margin', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    // A 50% move against a 4x long wipes the margin out entirely.
+    const res = closePosition(state, position, 50, 0.5)
+    expect(res.payout).toBe(0)
+    // toBeCloseTo, not toBe: a zero payout debits the pool by -0, exactly as
+    // a full close of the same position always has. Both read as no debit.
+    expect(res.poolLongDelta).toBeCloseTo(0, 12)
+    expect(res.remainingPosition?.costBasis).toBeCloseTo(50, 9)
+  })
+
+  it('leaves a survivor the state validators accept, and a solvent book', () => {
+    const { position, state } = profitableLong()
+    const res = closePosition(state, position, 150, 0.25)
+    expect(() =>
+      assertPerpPositionNumbers(res.remainingPosition as PerpPosition)
+    ).not.toThrow()
+    expect(() => assertPerpStateSolvent(res.state, 150)).not.toThrow()
+  })
+
+  it('replaces the row in place rather than reordering the book', () => {
+    const other = makePosition({
+      userId: 'u2',
+      direction: 'short',
+      size: 100,
+      costBasis: 50,
+      entryPrice: 100,
+    })
+    const { position } = profitableLong()
+    const state: PerpState = {
+      pool: { L: 100, S: 500 },
+      positions: [position, other],
+    }
+    const res = closePosition(state, position, 150, 0.5)
+    expect(res.state.positions).toHaveLength(2)
+    expect(res.state.positions[0].userId).toBe('u1')
+    expect(res.state.positions[1]).toBe(other)
+  })
+
+  it('closes the whole position when the remainder would be dust', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    const res = closePosition(state, position, 150, 1 - 1e-5)
+    expect(res.fraction).toBe(1)
+    expect(res.remainingPosition).toBeNull()
+    expect(res.payout).toBe(300)
+    expect(res.state.positions).toEqual([])
+  })
+
+  it('keeps a remainder that is still real money', () => {
+    const position = makePosition({
+      direction: 'long',
+      size: 400,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 100, S: 500 }, positions: [position] }
+    // 1% of M$100 is M$1 left open — well above the dust bound.
+    const res = closePosition(state, position, 150, 0.99)
+    expect(res.fraction).toBe(0.99)
+    expect(res.remainingPosition?.costBasis).toBeGreaterThan(
+      PERP_MIN_REMAINDER_COST_BASIS
+    )
+  })
+
+  it('prices a short partial close off the long pool', () => {
+    const position = makePosition({
+      direction: 'short',
+      size: 200,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = { pool: { L: 500, S: 100 }, positions: [position] }
+    // π = (100-80)/100 · 200 = 40 in profit; half of that is 20.
+    const res = closePosition(state, position, 80, 0.5)
+    expect(res.pnl).toBeCloseTo(20, 9)
+    expect(res.payout).toBeCloseTo(70, 9)
+    expect(res.poolShortDelta).toBeCloseTo(-50, 9)
+    expect(res.poolLongDelta).toBeCloseTo(-20, 9)
+  })
+})
+
+describe('applyADL cross-side deficit transfer', () => {
+  // pool.L cannot cover the long book's own refundable margin, because short
+  // profits were paid out of L against long paper losses that then recovered.
+  // pool.S is fat. This is the shape of both production wedges.
+  const wedged = (): PerpState => ({
+    pool: { L: 100, S: 1000 },
+    positions: [
+      makePosition({
+        direction: 'long',
+        size: 1000,
+        costBasis: 200,
+        entryPrice: 100,
+      }),
+      makePosition({
+        direction: 'short',
+        size: 100,
+        costBasis: 10,
+        entryPrice: 100,
+      }),
+    ],
+  })
+
+  it('is load-bearing: the book is unrepresentable without it', () => {
+    // Guards the premise. If this stops throwing, the rest of the block is
+    // asserting nothing.
+    expect(() => assertPerpStateSolvent(wedged(), 110)).toThrow(
+      'short solvency factor must be finite or +Infinity'
+    )
+  })
+
+  it('moves exactly the deficit and leaves the state solvent', () => {
+    const result = applyADL(wedged(), 110)
+
+    expect(result.crossSideTransfer).toBeCloseTo(100, 10)
+    expect(result.state.pool.L).toBeCloseTo(200, 10)
+    expect(result.state.pool.S).toBeCloseTo(900, 10)
+    expect(() => assertPerpStateSolvent(result.state, 110)).not.toThrow()
+  })
+
+  it('conserves total escrow', () => {
+    const before = wedged()
+    const result = applyADL(before, 110)
+
+    expect(result.state.pool.L + result.state.pool.S).toBeCloseTo(
+      before.pool.L + before.pool.S,
+      10
+    )
+  })
+
+  it('does nothing at all to a book that is already covered', () => {
+    const healthy: PerpState = {
+      pool: { L: 1000, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 500,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const result = applyADL(healthy, 110)
+    expect(result.crossSideTransfer).toBe(0)
+    expect(result.state.pool).toEqual(healthy.pool)
+    expect(result.adlFactorLong).toBe(1)
+    expect(result.adlFactorShort).toBe(1)
+  })
+
+  it('transfers in the other direction too', () => {
+    const shortSideWedged: PerpState = {
+      pool: { L: 1000, S: 100 },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'long',
+          size: 100,
+          costBasis: 10,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const result = applyADL(shortSideWedged, 90)
+    expect(result.crossSideTransfer).toBeCloseTo(-100, 10)
+    expect(result.state.pool.S).toBeCloseTo(200, 10)
+    expect(result.state.pool.L).toBeCloseTo(900, 10)
+    expect(() => assertPerpStateSolvent(result.state, 90)).not.toThrow()
+  })
+
+  it('still fails closed when the whole pot cannot cover the book', () => {
+    // Nothing to donate: the deficit is real at the contract level, not an
+    // artifact of the partition. The engine's liveness path handles this one.
+    const globallyInsolvent: PerpState = {
+      pool: { L: 100, S: 0 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 100,
+          costBasis: 10,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const result = applyADL(globallyInsolvent, 110)
+    expect(result.crossSideTransfer).toBe(0)
+    expect(() => assertPerpStateSolvent(result.state, 110)).toThrow()
+  })
+
+  it('declines to donate at all when it cannot cover the whole deficit', () => {
+    const thinDonor: PerpState = {
+      pool: { L: 100, S: 40 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 1000,
+          costBasis: 200,
+          entryPrice: 100,
+        }),
+        makePosition({
+          direction: 'short',
+          size: 100,
+          costBasis: 10,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    // The deficit is 100 and S holds only 40 spare. Moving those 40 would
+    // leave the book just as unrepresentable while draining the donor to zero,
+    // which drives the opposing ADL factor to 0 and settles a position against
+    // a pool that cannot pay it. Leave the state exactly as it was and let the
+    // engine's liveness path deal with it.
+    const result = applyADL(thinDonor, 110)
+    expect(result.crossSideTransfer).toBe(0)
+    expect(result.state.pool).toEqual(thinDonor.pool)
+    expect(() => assertPerpStateSolvent(result.state, 110)).toThrow()
   })
 })

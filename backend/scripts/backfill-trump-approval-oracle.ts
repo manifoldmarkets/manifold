@@ -4,37 +4,41 @@ import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
+import { readPublishedApprovalSeries } from 'common/perps/trump-approval'
+
 import { log } from 'shared/utils'
 import { TRUMP_APPROVAL_FEED_ID, insertOraclePrices } from 'shared/oracle'
-import {
-  computeRollingAverages,
-  fetchTrumpApprovalPolls,
-  TRUMP_APPROVAL_WINDOW_DAYS,
-  TRUMP_INAUGURATION_DATE,
-} from 'shared/trump-approval'
+import { fetchTrumpApprovalAverage } from 'shared/trump-approval'
 import { runScript } from './run-script'
 
-// Backfill `trump-approval-rating` oracle feed from the VoteHub API.
-// Strategy:
-//   1. Fetch every poll since inauguration (Jan 21, 2025) — the first day
-//      Trump's approval as president is defined.
-//   2. For each day from (inauguration + windowDays - 1) through today,
-//      compute the unweighted 14-day trailing mean of Approve pct.
-//   3. Upsert as one oracle_prices row per day (idempotent on (feed_id, ts)).
+// Backfill `trump-approval-rating` from VoteHub's published, time-weighted
+// approval average — the same series the daily job publishes, so a backfill
+// and the live feed can never disagree about what the index means.
+//
+// ⚠️ NOT for a live feed. Points already published are immutable and may have
+// been consumed by funding and liquidations; this writes history under
+// whatever the methodology is TODAY, so running it against a feed with open
+// positions rewrites the basis those positions were priced against. It exists
+// for standing up a NEW feed, and `insertOraclePrices` is on-conflict-do-
+// nothing, so existing rows are left alone even if it is run by accident.
 if (require.main === module)
   runScript(async ({ pg }) => {
-    const polls = await fetchTrumpApprovalPolls(TRUMP_INAUGURATION_DATE)
-
-    // First day with a full trailing window available.
-    const fromDay = dayjs
-      .tz(TRUMP_INAUGURATION_DATE, 'America/Los_Angeles')
-      .add(TRUMP_APPROVAL_WINDOW_DAYS - 1, 'day')
-      .format('YYYY-MM-DD')
-    const toDay = dayjs.tz(dayjs(), 'America/Los_Angeles').format('YYYY-MM-DD')
-
-    const points = computeRollingAverages(polls, fromDay, toDay)
+    // Stamp each day's point from its own calendar date rather than adding a
+    // day to a running instant: dayjs.tz(...).add(1,'day') adds 24 UTC hours,
+    // so a loop started in PST drifts to 1 AM once PDT begins, and every
+    // summer stamp lands an hour off midnight — colliding with the correctly
+    // stamped rows the daily job writes.
+    const series = readPublishedApprovalSeries(
+      await fetchTrumpApprovalAverage()
+    )
+    const points = series.map((entry) => ({
+      ts: dayjs.tz(entry.day, 'America/Los_Angeles').valueOf(),
+      price: entry.price,
+    }))
+    const fromDay = series[0]?.day ?? 'n/a'
+    const toDay = series[series.length - 1]?.day ?? 'n/a'
     log(
-      `computed ${points.length} daily rolling averages from ${fromDay} to ${toDay}`
+      `read ${points.length} published daily averages from ${fromDay} to ${toDay}`
     )
     if (points.length > 0) {
       log(
