@@ -186,6 +186,7 @@ export type Database = {
           index: number | null
           is_other: boolean
           midpoint: number | null
+          p: number
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
@@ -213,6 +214,7 @@ export type Database = {
           index?: number | null
           is_other?: boolean
           midpoint?: number | null
+          p?: number
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
@@ -240,6 +242,7 @@ export type Database = {
           index?: number | null
           is_other?: boolean
           midpoint?: number | null
+          p?: number
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null

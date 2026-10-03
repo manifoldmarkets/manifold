@@ -25,6 +25,7 @@ import {
   PollVoterVisibility,
   add_answers_mode,
   contractUrl,
+  isMultiCpmm,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { FREE_MARKET_USER_ID, getAnte } from 'common/economy'
@@ -324,10 +325,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       const contractDataToInsert = Object.fromEntries(
         Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
       )
-      const insertAnswersQuery =
-        contract.mechanism === 'cpmm-multi-1'
-          ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
-          : 'select 1 where false'
+      const insertAnswersQuery = isMultiCpmm(contract)
+        ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
+        : 'select 1 where false'
       const contractQuery = pgp.as.format(
         `insert into contracts
         (id, data, ${nativeColumns.join(',')})
@@ -339,7 +339,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
        ${insertAnswersQuery};`
       )
 
-      if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+      if (result[1].length > 0 && isMultiCpmm(contract)) {
         contract.answers = result[1].map(convertAnswer)
       }
       const house = isProd()

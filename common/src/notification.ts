@@ -443,7 +443,7 @@ export type BetFillData = {
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
-  mechanism: 'cpmm-1' | 'cpmm-multi-1'
+  mechanism: 'cpmm-1' | 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: OutcomeType
   betAnswerId?: string
   expiresAt?: number

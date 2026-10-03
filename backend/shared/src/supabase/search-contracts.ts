@@ -1,4 +1,4 @@
-import { Contract, isSportsContract } from 'common/contract'
+import { Contract, isMultiCpmm, isSportsContract } from 'common/contract'
 import { DiscoveryExperimentVariant } from 'common/discovery-experiment'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
@@ -35,6 +35,7 @@ import {
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const DEFAULT_THRESHOLD = 1000
 const GROUP_SCORE_POWER = 4
@@ -121,7 +122,7 @@ export const staleSeenMarketsSql = (
         -- Only CPMM markets have a normalized daily probability-change
         -- metric. Perps, polls, and bounties can be active while probChanges
         -- is absent, so never classify them as quiet from missing data.
-        and contracts.mechanism in ('cpmm-1', 'cpmm-multi-1')
+        and contracts.mechanism in ('cpmm-1', 'cpmm-multi-1', 'cpmm-multi-2')
         and abs(coalesce((contracts.data->'probChanges'->>'day')::numeric, 0))
             <= ${SEEN_PROB_MOVE_THRESHOLD}
         -- Multi-answer markets store movement on answers, not contracts. A
@@ -658,13 +659,13 @@ function getSearchContractWhereSQL(args: {
   const liquidityFilter = liquidity
     ? `(
     CASE
-        WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
+        WHEN mechanism in ${MULTI_CPMM_MECHANISMS_SQL} AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
         THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
         WHEN mechanism = 'perp'
         THEN (coalesce((contracts.data->>'poolLong')::numeric, 0) + coalesce((contracts.data->>'poolShort')::numeric, 0))
         ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
     END
-  ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`
+  ) >= case when mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ${answerLiquidity} else ${liquidity} end`
     : ''
   const deletedFilter = `deleted = false`
 
@@ -765,7 +766,7 @@ export const sortFields: SortFields = {
     sortCallback: (c: Contract) =>
       c.mechanism === 'perp'
         ? getPerpBackingPool(c.poolLong, c.poolShort)
-        : c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
+        : c.mechanism === 'cpmm-1' || isMultiCpmm(c)
         ? c.totalLiquidity
         : 0,
     order: 'DESC',

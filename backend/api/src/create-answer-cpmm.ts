@@ -1,13 +1,19 @@
 import { followContractInternal } from 'api/follow-contract'
-import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
+import {
+  getUnfilledBets,
+  getUnfilledBetsAndUserBalances,
+  updateMakers,
+} from 'api/helpers/bets'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import {
+  addAnswerToCpmmMulti2Pools,
   addCpmmMultiLiquidityAnswersSumToOne,
+  getCpmmLiquidity,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { isAdminId } from 'common/envs/constants'
 import { noFees } from 'common/fees'
@@ -58,6 +64,8 @@ import { broadcastUpdatedMetrics } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { redeemShares } from './redeem-shares'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> =
   onlyUsersWhoCanPerformAction('createAnswer', async (props, auth) => {
     const { contractId, text } = props
@@ -82,7 +90,7 @@ const verifyContract = async (contractId: string, creatorId: string) => {
   if (contract.token !== 'MANA') {
     throw new APIError(403, 'Cannot add answers to sweepstakes question')
   }
-  if (contract.mechanism !== 'cpmm-multi-1')
+  if (!isMultiCpmm(contract))
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
   if (contract.outcomeType === 'NUMBER')
     throw new APIError(403, 'Cannot create new answers for numeric contracts')
@@ -122,6 +130,17 @@ const createAnswerCpmmMain = async (
 
   const { newAnswer, user } = await runTransactionWithRetries(
     async (pgTrans) => {
+      // The mechanism picks the split below. A liquidity add can convert a
+      // cpmm-multi-1 market to cpmm-multi-2 after `contract` was read, and the
+      // drizzle then floats its answers' p, so read the mechanism again in each
+      // attempt. A conversion committed after this read changes the contract
+      // row, which this transaction updates below, so the attempt fails to
+      // serialize and is retried.
+      const { mechanism } = await pgTrans.one<
+        Pick<CPMMMultiContract, 'mechanism'>
+      >(`select mechanism from contracts where id = $1`, [contract.id])
+      const currentContract = { ...contract, mechanism }
+
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -162,6 +181,7 @@ const createAnswerCpmmMain = async (
         isOther: false,
         poolYes,
         poolNo,
+        p: 0.5, // balanced pool at p=0.5; v2 lossless split sets per-answer p (PR2 late add-on)
         prob,
         totalLiquidity,
         subsidyPool: 0,
@@ -171,18 +191,28 @@ const createAnswerCpmmMain = async (
 
       const updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
-        await createAnswerAndSumAnswersToOne(
-          pgTrans,
-          user,
-          contract,
-          answers,
-          newAnswer,
-          answerCost
-        )
+        if (mechanism === 'cpmm-multi-2') {
+          await createAnswerAndSumAnswersToOneV2(
+            pgTrans,
+            currentContract,
+            answers,
+            newAnswer,
+            answerCost
+          )
+        } else {
+          await createAnswerAndSumAnswersToOne(
+            pgTrans,
+            user,
+            currentContract,
+            answers,
+            newAnswer,
+            answerCost
+          )
+        }
         const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
         await convertOtherAnswerShares(
           pgTrans,
-          contract,
+          currentContract,
           updatedAnswers,
           newAnswer.id
         )
@@ -196,7 +226,7 @@ const createAnswerCpmmMain = async (
 
       const lp = getCpmmInitialLiquidity(
         user.id,
-        contract,
+        currentContract,
         answerCost,
         createdTime,
         newAnswer.id
@@ -441,6 +471,101 @@ async function createAnswerAndSumAnswersToOne(
 
   allOrdersToCancel.push(...unfilledBetsOnOther)
   await cancelLimitOrders(pgTrans, allOrdersToCancel)
+}
+
+// cpmm-multi-2: split "Other" into the new answer and a new Other with
+// addAnswerToCpmmMulti2Pools, which keeps every share in the pools (so each
+// liquidity provider's share of them is unchanged) and puts the fee for the
+// answer into the new answer's pool. The new answer opens at 2%, out of Other
+// while Other can spare it, and otherwise partly out of the listed answers.
+// Users' own positions in Other are refined the same way by
+// convertOtherAnswerShares.
+async function createAnswerAndSumAnswersToOneV2(
+  pgTrans: SupabaseTransaction,
+  contract: CPMMMultiContract,
+  answers: Answer[],
+  newAnswer: Answer,
+  answerCost: number
+) {
+  const otherAnswer = answers.find((a) => a.isOther)
+  if (!otherAnswer) {
+    throw new APIError(
+      500,
+      '"Other" answer not found, and is required for adding new answers.'
+    )
+  }
+
+  const pools = addAnswerToCpmmMulti2Pools(
+    Object.fromEntries(
+      answers.map((a) => [
+        a.id,
+        { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
+      ])
+    ),
+    otherAnswer.id,
+    newAnswer.id,
+    answerCost
+  )
+  if (!pools)
+    throw new APIError(
+      403,
+      "This market's prices leave no room to add another answer."
+    )
+  const poolFields = (answerId: string) => {
+    const { pool, p } = pools[answerId]
+    return {
+      poolYes: pool.YES,
+      poolNo: pool.NO,
+      p,
+      prob: getCpmmProbability(pool, p),
+    }
+  }
+
+  const n = answers.length
+  const newAnswerFields = poolFields(newAnswer.id)
+  await insertAnswer(pgTrans, {
+    ...newAnswer,
+    ...newAnswerFields,
+    index: n - 1,
+    totalLiquidity: getCpmmLiquidity(
+      pools[newAnswer.id].pool,
+      pools[newAnswer.id].p
+    ),
+    subsidyPool: 0,
+  })
+  await updateAnswers(
+    pgTrans,
+    contract.id,
+    answers.map((a) => ({ id: a.id, ...poolFields(a.id) }))
+  )
+  await updateAnswer(pgTrans, otherAnswer.id, {
+    index: n,
+    totalLiquidity: getCpmmLiquidity(
+      pools[otherAnswer.id].pool,
+      pools[otherAnswer.id].p
+    ),
+  })
+
+  // Other's resting limit orders were priced against the old Other. Listed
+  // answers keep theirs while their prices hold. Where they give some of their
+  // price to the new answer (addAnswerToCpmmMulti2Pools), the YES orders their
+  // new prices have passed are cancelled rather than left crossed.
+  const ordersToCancel = await getUnfilledBets(
+    pgTrans,
+    contract.id,
+    otherAnswer.id
+  )
+  for (const a of answers) {
+    if (a.isOther) continue
+    const prob = poolFields(a.id).prob
+    const was = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+    if (floatingEqual(prob, was)) continue
+    const orders = await getUnfilledBets(pgTrans, contract.id, a.id)
+    ordersToCancel.push(
+      ...orders.filter((bet) => bet.outcome === 'YES' && bet.limitProb > prob)
+    )
+  }
+  await cancelLimitOrders(pgTrans, ordersToCancel)
 }
 
 async function convertOtherAnswerShares(

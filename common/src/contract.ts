@@ -10,7 +10,7 @@ import { getLiquidity } from './calculate-cpmm'
 import { MultiBase64Points } from './chart'
 import { ContractComment } from './comment'
 import { ContractMetric } from './contract-metric'
-import { ENV_CONFIG } from './envs/constants'
+import { ENV, ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
@@ -189,9 +189,21 @@ export const NO_CLOSE_TIME_TYPES: OutcomeType[] = NON_BETTING_OUTCOMES.concat([
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
  * The mechanism is stored among the contract's answers, which each
  * reference this contract id.
+ *
+ * Reserved cpmm-multi-2 semantics (declared now, not yet reachable): a
+ * shouldAnswersSumToOne=true answer MAY in the future be individually
+ * resolved NO while the market stays open (that answer's
+ * `Answer.resolution` set, siblings still unresolved), with probabilities
+ * summing to 1 over the *unresolved* answers. No code path creates this
+ * state today — resolution of linked markets remains whole-market-only —
+ * but integrators adding cpmm-multi-2 support should not assume
+ * "shouldAnswersSumToOne ⇒ answers are never individually resolved".
+ * (`Answer.resolution` already exists and is populated today for
+ * independent markets.) cpmm-multi-1 keeps the whole-market-only
+ * guarantee unchanged.
  */
 export type CPMMMulti = {
-  mechanism: 'cpmm-multi-1'
+  mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
   addAnswersMode?: add_answers_mode
@@ -214,7 +226,7 @@ export type CPMMMulti = {
 }
 
 export type CPMMNumber = {
-  mechanism: 'cpmm-multi-1'
+  mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: 'NUMBER'
   shouldAnswersSumToOne: true
   addAnswersMode: 'DISABLED'
@@ -277,7 +289,7 @@ export type Number = {
 }
 
 export type MultiNumeric = {
-  mechanism: 'cpmm-multi-1'
+  mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: 'MULTI_NUMERIC'
   unit: string
   answers: Answer[]
@@ -479,7 +491,7 @@ export function contractUrl(contract: Contract) {
 export function contractPool(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
-    : contract.mechanism === 'cpmm-multi-1'
+    : isMultiCpmm(contract)
     ? formatMoney(
         sum(
           contract.answers.map((a) =>
@@ -490,8 +502,21 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+// True for any multi-answer CPMM market, v1 or v2. The mechanism is the AMM engine and is
+// orthogonal to outcomeType, so this covers MULTIPLE_CHOICE / NUMBER / MULTI_NUMERIC / DATE
+// alike (they are all cpmm-multi markets). Type guard → MultiContract.
+export const isMultiCpmm = (contract: Contract): contract is MultiContract =>
+  contract.mechanism === 'cpmm-multi-1' || contract.mechanism === 'cpmm-multi-2'
+
+// For sites that only have the mechanism string (destructured, raw, or compound `|| 'cpmm-1'`).
+export const isMultiCpmmMechanism = (mechanism: string): boolean =>
+  mechanism === 'cpmm-multi-1' || mechanism === 'cpmm-multi-2'
+
+// Raw-SQL fragment for the same predicate (the TS helpers can't reach SQL string literals).
+export const MULTI_CPMM_MECHANISMS_SQL = `('cpmm-multi-1', 'cpmm-multi-2')`
+
 export const isBinaryMulti = (contract: Contract) =>
-  contract.mechanism === 'cpmm-multi-1' &&
+  isMultiCpmm(contract) &&
   contract.outcomeType !== 'NUMBER' &&
   contract.outcomeType !== 'MULTI_NUMERIC' &&
   contract.outcomeType !== 'DATE' &&
@@ -510,7 +535,7 @@ export const isSportsContract = (
  * common/versus to work out which side a bet, order or position backs.
  */
 export const getMainBinaryMCAnswer = (contract: Contract) =>
-  isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+  isBinaryMulti(contract) && isMultiCpmm(contract)
     ? contract.answers[0]
     : undefined
 
@@ -540,6 +565,22 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 export const CPMM_MIN_POOL_QTY = 0.01
 export const NUMBER_BUCKETS_MAX = 50
 export const NUMBER_CREATION_ENABLED = false
+// cpmm-multi-2 (PR2c) kill-switch: gates creating multiple-choice markets with
+// per-answer initial probabilities. Reads are always safe (p ?? 0.5), so only
+// the creation path is flagged. Flip last, for staged rollout.
+export const CPMM_MULTI_2_CREATION_ENABLED = ENV === 'DEV'
+// Separately gates converting an existing cpmm-multi-1 market to cpmm-multi-2
+// the first time a user adds liquidity to it. Unlike creation, that changes how
+// a live market trades (limit-order fills, liquidity adds) under positions and
+// orders placed against v1, so it stays off until v2 has run on new markets.
+export const CPMM_MULTI_2_CONVERSION_ENABLED = false
+// Whether adding liquidity converts this market to cpmm-multi-2. Only multiple
+// choice markets: numeric and date markets take bets across several answers at
+// once (multi-bet), which cpmm-multi-2 refuses for now.
+export const convertsToCpmmMulti2 = (contract: Contract) =>
+  CPMM_MULTI_2_CONVERSION_ENABLED &&
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.outcomeType === 'MULTIPLE_CHOICE'
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
@@ -620,7 +661,7 @@ export const getAdjustedProfit = (
   answers: Answer[] | undefined,
   answerId: string | null
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     // Null answerId stands for the summary of all answer metrics
     if (!answerId) {
       return isMarketRanked(contract) &&

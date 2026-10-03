@@ -7,7 +7,7 @@ import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
 import { APIError } from 'common/api/utils'
 import { getForcedABTestVariant } from 'common/ab-test'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import {
   BrowseMode,
   normalizeBrowseChange,
@@ -484,7 +484,7 @@ export function Search(props: SearchProps) {
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
   const answersWithChanges = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(c)
       ? orderBy(
           c.answers.filter((a) => Math.abs(a.probChanges.day) > 0.02),
           (a) => Math.abs(a.probChanges.day),
@@ -494,7 +494,7 @@ export function Search(props: SearchProps) {
   )
 
   const answersMatchingQuery = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(c)
       ? c.answers
           .filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
           .slice(0, 2)
