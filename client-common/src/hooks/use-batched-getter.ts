@@ -4,6 +4,8 @@ import { useEvent } from './use-event'
 import { Contract } from 'common/contract'
 import { Reaction } from 'common/reaction'
 import { DisplayUser } from 'common/api/user-types'
+import { maxCachedAgeMs } from 'common/api/cache'
+import { API } from 'common/api/schema'
 import { debounce } from 'lodash'
 
 export const pendingRequests: {
@@ -12,11 +14,14 @@ export const pendingRequests: {
   userId?: string
 }[] = []
 
-// Callbacks get the generation of the read that produced the value, which may
-// be a newer read than the one they were waiting on.
+// A read's position in dispatch order, and when it was sent.
+type Read = { generation: number; dispatchedAt: number }
+
+// Callbacks get the read that produced the value, which may be a newer read
+// than the one they were waiting on.
 export const pendingCallbacks: Map<
   string,
-  ((value: any, generation: number, error?: unknown) => void)[]
+  ((value: any, read: Read, error?: unknown) => void)[]
 > = new Map()
 
 type FilterCallback<T> = (data: T[], id: string) => T | undefined
@@ -24,8 +29,14 @@ type FilterCallback<T> = (data: T[], id: string) => T | undefined
 // Per key: requests in flight, and the newest response delivered while any
 // are. Dispatch order stands in for snapshot order.
 const inFlight = new Map<string, number>()
-const newest = new Map<string, { generation: number; value: unknown }>()
+const newest = new Map<string, Read & { value: unknown }>()
 let dispatches = 0
+
+// How much older than its request a response can be. Other query types read
+// from the origin, or have no consumers that apply live updates.
+const maxAgeByQueryType: Record<string, number> = {
+  markets: maxCachedAgeMs(API['markets-by-ids'].cache),
+}
 
 export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
   const requestsToProcess = pendingRequests.splice(0, pendingRequests.length)
@@ -34,7 +45,7 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
   const batchPromises = requestsToProcess.map(
     async ({ queryType, ids, userId }) => {
       if (!ids.size) return
-      const generation = ++dispatches
+      const read: Read = { generation: ++dispatches, dispatchedAt: Date.now() }
       const callbacksById = new Map(
         Array.from(ids, (id) => {
           const k = key(queryType, id)
@@ -48,7 +59,9 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
       // consumers get that value instead of an older one.
       const newer = (id: string) => {
         const latest = newest.get(key(queryType, id))
-        return latest && latest.generation > generation ? latest : undefined
+        return latest && latest.generation > read.generation
+          ? latest
+          : undefined
       }
 
       try {
@@ -62,22 +75,22 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
 
         ids.forEach((id) => {
           const result = newer(id) ?? {
-            generation,
+            ...read,
             value: filtersByQueryType[queryType](data, id),
           }
-          if (result.generation === generation)
+          if (result.generation === read.generation)
             newest.set(key(queryType, id), result)
           callbacksById
             .get(id)
-            ?.forEach((callback) => callback(result.value, result.generation))
+            ?.forEach((callback) => callback(result.value, result))
         })
       } catch (error) {
         for (const [id, callbacks] of callbacksById) {
           const latest = newer(id)
           callbacks.forEach((callback) =>
             latest
-              ? callback(latest.value, latest.generation)
-              : callback(undefined, generation, error)
+              ? callback(latest.value, latest)
+              : callback(undefined, read, error)
           )
         }
         console.error(`Error fetching batch data for ${queryType}:`, error)
@@ -123,7 +136,12 @@ export const filtersByQueryType: Record<string, FilterCallback<any>> = {
     id.split(',').map((userId) => data.find((u) => u.id === userId) ?? null),
 }
 
-type LiveUpdate<T> = { update: SetStateAction<T>; dispatched: number }
+type LiveUpdate<T> = {
+  update: SetStateAction<T>
+  // How many reads had been dispatched, and the time, when it arrived.
+  dispatched: number
+  at: number
+}
 
 export type BatchQueryParams = { ids: Set<string>; userId?: string }
 export type QueryHandler<T> = (params: BatchQueryParams) => Promise<T>
@@ -153,11 +171,17 @@ export const useBatchedGetter = <T>(
 ) => {
   const key = `${queryType}-${id}`
   const [state, saveState] = usePersistentInMemoryState<T>(initialValue, key)
-  // Live updates received while a read is in flight, with how many reads had
-  // been dispatched when each arrived.
-  const liveUpdates = useRef<LiveUpdate<T>[] | undefined>(undefined)
+  const maxAge = maxAgeByQueryType[queryType] ?? 0
+  // Live updates, oldest first, that a response might not include: those
+  // received since the pending read was requested, and up to the max age of
+  // a cached response before it.
+  const liveUpdates = useRef<LiveUpdate<T>[]>([])
+  const requestedAt = useRef<number | undefined>(undefined)
   const setState = useEvent((update: SetStateAction<T>) => {
-    liveUpdates.current?.push({ update, dispatched: dispatches })
+    const at = Date.now()
+    const since = Math.min(at, requestedAt.current ?? at) - maxAge
+    liveUpdates.current = liveUpdates.current.filter((u) => u.at >= since)
+    liveUpdates.current.push({ update, dispatched: dispatches, at })
     saveState(update)
   })
 
@@ -166,18 +190,21 @@ export const useBatchedGetter = <T>(
   useEffect(() => {
     if (!enabled) return
     let active = true
-    const updates: LiveUpdate<T>[] = []
-    liveUpdates.current = updates
-    const receive = (value: T, generation: number, error?: unknown) => {
+    requestedAt.current = Date.now()
+    const receive = (value: T, read: Read, error?: unknown) => {
       if (!active) return
-      liveUpdates.current = undefined
+      requestedAt.current = undefined
       if (error) return
-      // Replay only updates that arrived after the read producing this value
-      // was dispatched. Earlier ones are already in its response, and
-      // replaying them would revert anything newer it contains.
+      // Replay the updates this value may not include: those that arrived
+      // after its read was dispatched, and for a cached response, those that
+      // arrived within its max age before. An origin read already includes
+      // earlier ones, and replaying them would revert anything newer.
       saveState(
-        updates
-          .filter(({ dispatched }) => dispatched >= generation)
+        liveUpdates.current
+          .filter(
+            ({ dispatched, at }) =>
+              dispatched >= read.generation || at > read.dispatchedAt - maxAge
+          )
           .reduce<T>(
             (current, { update }) =>
               typeof update === 'function'
@@ -214,7 +241,7 @@ export const useBatchedGetter = <T>(
 
     return () => {
       active = false
-      if (liveUpdates.current === updates) liveUpdates.current = undefined
+      requestedAt.current = undefined
       const callbacks = pendingCallbacks.get(key)
       if (callbacks) {
         const index = callbacks.indexOf(receive)

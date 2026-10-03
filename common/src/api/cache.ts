@@ -11,3 +11,13 @@ export const isUncachedQuoteRead = (
   ((path === 'bets' && params.kinds === 'open-limit') ||
     path === 'markets-by-ids' ||
     path === 'users/by-id/balance')
+
+/** How far a response cached under `strategy` can lag the origin: max-age plus
+ * stale-while-revalidate, which the CDN and browsers honor even for requests
+ * that send no-cache. Ages are counted in whole seconds, so add one more. */
+export const maxCachedAgeMs = (strategy: string | undefined) => {
+  const seconds = (directive: string) =>
+    Number(strategy?.match(new RegExp(`\\b${directive}=(\\d+)`))?.[1] ?? 0)
+  const lag = seconds('max-age') + seconds('stale-while-revalidate')
+  return lag && (lag + 1) * 1000
+}

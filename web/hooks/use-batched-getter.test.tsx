@@ -23,15 +23,19 @@ afterEach(async () => {
   executeBatchQuery.cancel()
 })
 
-async function mount(read: () => Promise<any[]>, market = `batch-${id++}`) {
+async function mount(
+  read: () => Promise<any[]>,
+  market = `batch-${id++}`,
+  queryType: 'markets' | 'markets-fresh' = 'markets'
+) {
   let root!: ReactTestRenderer
   let latest: any,
     setValue: any,
     refreshKey = 0
   function Consumer() {
     ;[latest, setValue] = useBatchedGetter(
-      { markets: read },
-      'markets',
+      { [queryType]: read },
+      queryType,
       market,
       { id: market, pool: 0 },
       true,
@@ -107,7 +111,7 @@ it('gives a failed older request the newer value', async () => {
 })
 
 it.each(['succeeds', 'fails'])(
-  'does not replay an update the newer value already includes when the older request %s',
+  'does not replay an update a newer origin read already includes when the older request %s',
   async (outcome) => {
     const log = jest.spyOn(console, 'error').mockImplementation(() => {})
     let settle!: () => void
@@ -120,38 +124,88 @@ it.each(['succeeds', 'fails'])(
     const fresh = deferred()
     let calls = 0
     const read = () => (++calls === 1 ? old : fresh.promise)
-    const first = await mount(read)
+    const first = await mount(read, undefined, 'markets-fresh')
     const market = first.market
     first.dispatch()
     // Live update received while the first read is in flight.
     await first.setValue((prev: any) => ({ ...prev, pool: 2 }))
     // A later read sees a newer change whose broadcast hasn't arrived.
-    const second = await mount(read, market)
+    const second = await mount(read, market, 'markets-fresh')
     second.dispatch()
     await act(async () => fresh.resolve([{ id: market, pool: 3 }]))
     await act(async () => settle())
     expect(first.latest().pool).toBe(3)
     expect(second.latest().pool).toBe(3)
-    const later = await mount(() => new Promise(() => {}), market)
+    const later = await mount(
+      () => new Promise(() => {}),
+      market,
+      'markets-fresh'
+    )
     expect(later.latest().pool).toBe(3)
     log.mockRestore()
   }
 )
 
-it('replays updates that arrive after the newer request started', async () => {
+it('replays updates that arrive after the newer origin read started', async () => {
   const old = deferred(),
     fresh = deferred()
   let calls = 0
   const read = () => (++calls === 1 ? old.promise : fresh.promise)
-  const first = await mount(read)
+  const first = await mount(read, undefined, 'markets-fresh')
   first.dispatch()
   await first.setValue((prev: any) => ({ ...prev, pool: 2 }))
-  const second = await mount(read, first.market)
+  const second = await mount(read, first.market, 'markets-fresh')
   second.dispatch()
   await first.setValue((prev: any) => ({ ...prev, pool: 4 }))
   await act(async () => fresh.resolve([{ id: first.market, pool: 3 }]))
   await act(async () => old.resolve([{ id: first.market, pool: 1 }]))
   expect(first.latest().pool).toBe(4)
+})
+
+it('replays updates from before dispatch over a cached response', async () => {
+  const read = deferred()
+  const m = await mount(() => read.promise)
+  // A broadcast during the batching delay, missing from the CDN's copy.
+  await m.setValue((prev: any) => ({ ...prev, pool: 2 }))
+  m.dispatch()
+  await act(async () => read.resolve([{ id: m.market, pool: 1 }]))
+  expect(m.latest().pool).toBe(2)
+})
+
+it('lets an origin read replace updates from before dispatch', async () => {
+  const read = deferred()
+  const m = await mount(() => read.promise, undefined, 'markets-fresh')
+  await m.setValue((prev: any) => ({ ...prev, pool: 2 }))
+  m.dispatch()
+  await act(async () => read.resolve([{ id: m.market, pool: 3 }]))
+  expect(m.latest().pool).toBe(3)
+})
+
+it('replays recent updates over a cached refresh until it must include them', async () => {
+  let now = 1_000_000
+  const clock = jest.spyOn(Date, 'now').mockImplementation(() => now)
+  try {
+    let pool = 1
+    const m = await mount(async () => [{ id: m.market, pool }])
+    m.dispatch()
+    await act(async () => {})
+    await m.setValue((prev: any) => ({ ...prev, pool: 2 }))
+    // A refresh soon after can get a cached copy from before that update.
+    now += 1_000
+    await m.refresh()
+    m.dispatch()
+    await act(async () => {})
+    expect(m.latest().pool).toBe(2)
+    // Once any cached copy postdates it, the response wins.
+    pool = 3
+    now += 60_000
+    await m.refresh()
+    m.dispatch()
+    await act(async () => {})
+    expect(m.latest().pool).toBe(3)
+  } finally {
+    clock.mockRestore()
+  }
 })
 
 it('replays live pool changes over the fetched market snapshot', async () => {

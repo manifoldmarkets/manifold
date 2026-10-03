@@ -1,4 +1,5 @@
-import { APIParams, APIResponse } from 'common/api/schema'
+import { maxCachedAgeMs } from 'common/api/cache'
+import { API, APIParams, APIResponse } from 'common/api/schema'
 import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
 import { createLiveSnapshot } from 'common/util/live-snapshot'
 import { createRequestDeduper } from 'common/util/promise'
@@ -182,29 +183,31 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
 
 // Each contract has one observable snapshot for quote panels and one for
 // display-only consumers. Quote reads come from the origin. Display reads go
-// through the CDN, so they can lag a confirmed change by up to its max-age;
+// through the CDN, so they can lag a confirmed change by up to its max age;
 // keeping the snapshots apart stops one from replacing a quote panel's. A
 // confirmed cancel changes both, including when no consumer is mounted. Live
-// updates are retained only while a snapshot request is in flight; no
+// updates are kept only while a response might not include them, so no
 // tombstone TTL is needed.
 const dedupeRefresh = createRequestDeduper<void>('burst')
-const createOrderBook = () =>
-  createLiveSnapshot<LimitBet>((bets) =>
-    sortBy(
-      bets.filter((bet) => isOpenLimitOrder(bet)),
-      'createdTime'
-    )
+const createOrderBook = (fresh: boolean) =>
+  createLiveSnapshot<LimitBet>(
+    (bets) =>
+      sortBy(
+        bets.filter((bet) => isOpenLimitOrder(bet)),
+        'createdTime'
+      ),
+    fresh ? 0 : maxCachedAgeMs(API.bets.cache)
   )
 const orderBooks = new Map<string, ReturnType<typeof createOrderBook>>()
 const bookKey = (contractId: string, fresh: boolean) =>
   `${fresh ? 'quote' : 'display'}:${contractId}`
 const getOrderBook = (contractId: string, fresh: boolean) => {
   // Never share mutable market state between SSR requests.
-  if (typeof window === 'undefined') return createOrderBook()
+  if (typeof window === 'undefined') return createOrderBook(fresh)
   const key = bookKey(contractId, fresh)
   let book = orderBooks.get(key)
   if (!book) {
-    book = createOrderBook()
+    book = createOrderBook(fresh)
     orderBooks.set(key, book)
   }
   return book

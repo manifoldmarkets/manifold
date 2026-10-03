@@ -246,6 +246,19 @@ it('reads display books through the CDN and reconciles reconnects after a delay'
   }
 })
 
+it('keeps a live cancel when a cached display refresh predates it', async () => {
+  const id = `market-${nextId++}`
+  // The CDN keeps serving its copy from before the cancel.
+  const m = await mount(async () => [order(id)], id)
+  await m.broadcast([order(id, 'a', { isCancelled: true })])
+  expect(m.latest[0]).toEqual([])
+  mockVisible = false
+  await m.update()
+  mockVisible = true
+  await m.update()
+  expect(m.latest[0]).toEqual([])
+})
+
 it('keeps a cached display read out of the quote book', async () => {
   const id = `market-${nextId++}`
   const latest: { quote?: LimitBet[]; display?: LimitBet[] } = {}

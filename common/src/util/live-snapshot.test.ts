@@ -106,3 +106,33 @@ it('notifies all subscribers and stops after unsubscribe', () => {
   expect(first).toHaveBeenCalledTimes(1)
   expect(second).toHaveBeenCalledTimes(2)
 })
+
+it('lets a response replace updates received before its read started', async () => {
+  const store = book()
+  store.update([{ id: 'a', amount: 1 }])
+  await store.refresh(async () => [{ id: 'a', amount: 2 }])
+  expect(store.getSnapshot()).toEqual([{ id: 'a', amount: 2 }])
+})
+
+it('replays recent updates over a cached response that can predate them', async () => {
+  let now = 1_000_000
+  const clock = jest.spyOn(Date, 'now').mockImplementation(() => now)
+  try {
+    const store = createLiveSnapshot<Order>(
+      (orders) => orders.filter((o) => !o.closed),
+      10_000
+    )
+    store.update([{ id: 'a', closed: true }])
+    now += 9_000
+    // A cached copy from before the cancel.
+    await store.refresh(async () => [{ id: 'a' }, { id: 'b', amount: 1 }])
+    expect(store.getSnapshot()).toEqual([{ id: 'b', amount: 1 }])
+    store.update([{ id: 'b', amount: 2 }])
+    now += 10_001
+    // Any cached copy now postdates that update, so the response wins.
+    await store.refresh(async () => [{ id: 'b', amount: 3 }])
+    expect(store.getSnapshot()).toEqual([{ id: 'b', amount: 3 }])
+  } finally {
+    clock.mockRestore()
+  }
+})
