@@ -106,6 +106,54 @@ it('gives a failed older request the newer value', async () => {
   log.mockRestore()
 })
 
+it.each(['succeeds', 'fails'])(
+  'does not replay an update the newer value already includes when the older request %s',
+  async (outcome) => {
+    const log = jest.spyOn(console, 'error').mockImplementation(() => {})
+    let settle!: () => void
+    const old = new Promise<any[]>((yes, no) => {
+      settle = () =>
+        outcome === 'fails'
+          ? no(new Error('offline'))
+          : yes([{ id: market, pool: 1 }])
+    })
+    const fresh = deferred()
+    let calls = 0
+    const read = () => (++calls === 1 ? old : fresh.promise)
+    const first = await mount(read)
+    const market = first.market
+    first.dispatch()
+    // Live update received while the first read is in flight.
+    await first.setValue((prev: any) => ({ ...prev, pool: 2 }))
+    // A later read sees a newer change whose broadcast hasn't arrived.
+    const second = await mount(read, market)
+    second.dispatch()
+    await act(async () => fresh.resolve([{ id: market, pool: 3 }]))
+    await act(async () => settle())
+    expect(first.latest().pool).toBe(3)
+    expect(second.latest().pool).toBe(3)
+    const later = await mount(() => new Promise(() => {}), market)
+    expect(later.latest().pool).toBe(3)
+    log.mockRestore()
+  }
+)
+
+it('replays updates that arrive after the newer request started', async () => {
+  const old = deferred(),
+    fresh = deferred()
+  let calls = 0
+  const read = () => (++calls === 1 ? old.promise : fresh.promise)
+  const first = await mount(read)
+  first.dispatch()
+  await first.setValue((prev: any) => ({ ...prev, pool: 2 }))
+  const second = await mount(read, first.market)
+  second.dispatch()
+  await first.setValue((prev: any) => ({ ...prev, pool: 4 }))
+  await act(async () => fresh.resolve([{ id: first.market, pool: 3 }]))
+  await act(async () => old.resolve([{ id: first.market, pool: 1 }]))
+  expect(first.latest().pool).toBe(4)
+})
+
 it('replays live pool changes over the fetched market snapshot', async () => {
   const read = deferred()
   const m = await mount(() => read.promise)

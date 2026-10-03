@@ -12,9 +12,11 @@ export const pendingRequests: {
   userId?: string
 }[] = []
 
+// Callbacks get the generation of the read that produced the value, which may
+// be a newer read than the one they were waiting on.
 export const pendingCallbacks: Map<
   string,
-  ((data: any, error?: unknown) => void)[]
+  ((value: any, generation: number, error?: unknown) => void)[]
 > = new Map()
 
 type FilterCallback<T> = (data: T[], id: string) => T | undefined
@@ -59,18 +61,23 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
         const data = await handler({ ids, userId })
 
         ids.forEach((id) => {
-          const latest = newer(id)
-          const value = latest
-            ? latest.value
-            : filtersByQueryType[queryType](data, id)
-          if (!latest) newest.set(key(queryType, id), { generation, value })
-          callbacksById.get(id)?.forEach((callback) => callback(value))
+          const result = newer(id) ?? {
+            generation,
+            value: filtersByQueryType[queryType](data, id),
+          }
+          if (result.generation === generation)
+            newest.set(key(queryType, id), result)
+          callbacksById
+            .get(id)
+            ?.forEach((callback) => callback(result.value, result.generation))
         })
       } catch (error) {
         for (const [id, callbacks] of callbacksById) {
           const latest = newer(id)
           callbacks.forEach((callback) =>
-            latest ? callback(latest.value) : callback(undefined, error)
+            latest
+              ? callback(latest.value, latest.generation)
+              : callback(undefined, generation, error)
           )
         }
         console.error(`Error fetching batch data for ${queryType}:`, error)
@@ -99,9 +106,12 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
 const reactionsFilter = (data: Reaction[], id: string) =>
   data.filter((item) => item.content_id === id)
 
+const marketFilter = (data: Contract[], id: string) =>
+  data.find((item) => item.id === id)
+
 export const filtersByQueryType: Record<string, FilterCallback<any>> = {
-  markets: (data: Contract[], id: string) =>
-    data.find((item) => item.id === id),
+  markets: marketFilter,
+  'markets-fresh': marketFilter,
   'comment-reactions': reactionsFilter,
   'post-reactions': reactionsFilter,
   'contract-reactions': reactionsFilter,
@@ -112,6 +122,8 @@ export const filtersByQueryType: Record<string, FilterCallback<any>> = {
   users: (data: DisplayUser[], id: string) =>
     id.split(',').map((userId) => data.find((u) => u.id === userId) ?? null),
 }
+
+type LiveUpdate<T> = { update: SetStateAction<T>; dispatched: number }
 
 export type BatchQueryParams = { ids: Set<string>; userId?: string }
 export type QueryHandler<T> = (params: BatchQueryParams) => Promise<T>
@@ -125,6 +137,7 @@ export const useBatchedGetter = <T>(
   handlers: QueryHandlers,
   queryType:
     | 'markets'
+    | 'markets-fresh'
     | 'comment-reactions'
     | 'contract-reactions'
     | 'post-reactions'
@@ -140,9 +153,11 @@ export const useBatchedGetter = <T>(
 ) => {
   const key = `${queryType}-${id}`
   const [state, saveState] = usePersistentInMemoryState<T>(initialValue, key)
-  const liveUpdates = useRef<SetStateAction<T>[] | undefined>(undefined)
+  // Live updates received while a read is in flight, with how many reads had
+  // been dispatched when each arrived.
+  const liveUpdates = useRef<LiveUpdate<T>[] | undefined>(undefined)
   const setState = useEvent((update: SetStateAction<T>) => {
-    liveUpdates.current?.push(update)
+    liveUpdates.current?.push({ update, dispatched: dispatches })
     saveState(update)
   })
 
@@ -151,20 +166,25 @@ export const useBatchedGetter = <T>(
   useEffect(() => {
     if (!enabled) return
     let active = true
-    const updates: SetStateAction<T>[] = []
+    const updates: LiveUpdate<T>[] = []
     liveUpdates.current = updates
-    const receive = (value: T, error?: unknown) => {
+    const receive = (value: T, generation: number, error?: unknown) => {
       if (!active) return
       liveUpdates.current = undefined
       if (error) return
+      // Replay only updates that arrived after the read producing this value
+      // was dispatched. Earlier ones are already in its response, and
+      // replaying them would revert anything newer it contains.
       saveState(
-        updates.reduce<T>(
-          (current, update) =>
-            typeof update === 'function'
-              ? (update as (prev: T) => T)(current)
-              : update,
-          value
-        )
+        updates
+          .filter(({ dispatched }) => dispatched >= generation)
+          .reduce<T>(
+            (current, { update }) =>
+              typeof update === 'function'
+                ? (update as (prev: T) => T)(current)
+                : update,
+            value
+          )
       )
     }
 
