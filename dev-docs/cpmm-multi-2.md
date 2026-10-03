@@ -47,8 +47,8 @@ So the new answer gets a pool of its own, paid for by the fee. The fee is
 tiered by the market's liquidity per answer (Ṁ25, Ṁ100, Ṁ1,000 or Ṁ10,000),
 so the new answer trades about as deeply as the others. In a Ṁ1,000 market at
 30/20/10/5 with Other at 35%, buying the new answer from 2% to 20% costs Ṁ33
-and to 50% Ṁ131, against Ṁ26 and Ṁ145 for an answer listed at 2% in the same
-market from the start.
+and to 50% Ṁ131, against Ṁ26 and Ṁ145 for an answer listed at 2% from the
+start in a market opened with the same liquidity.
 
 Every outcome then pays the fee more than it did, and nothing else changes. A
 pool's p sets its prices without moving any value, so the prices come last:
