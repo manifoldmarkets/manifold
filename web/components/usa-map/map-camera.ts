@@ -21,16 +21,21 @@ export function clampCamera(
     position: number,
     size: number,
     start: number,
-    visible: number,
-    alignStart = false
-  ) =>
-    size * k <= visible
-      ? start + (alignStart ? 0 : (visible - size * k) / 2)
-      : Math.max(start + visible - size * k, Math.min(start, position))
+    visible: number
+  ) => {
+    // Leave room to move the map beside a popup, even at the overview.
+    // Keep half of the smaller map/viewport dimension visible on each axis
+    // so the map cannot be dragged completely out of reach.
+    const overlap = Math.min(size * k, visible) / 2
+    return Math.max(
+      start + overlap - size * k,
+      Math.min(start + visible - overlap, position)
+    )
+  }
   return {
     k,
     x: axis(camera.x, 960, viewport.x, viewport.width),
-    y: axis(camera.y, 600, viewport.y, viewport.height, true),
+    y: axis(camera.y, 600, viewport.y, viewport.height),
   }
 }
 

@@ -51,7 +51,7 @@ test('pinching keeps the touched map location under the moving midpoint', () => 
   assert.equal(250 * result.k + result.y, 280)
 })
 
-test('pinching back to the overview recenters the map', () => {
+test('pinching back to the overview retains the pinch position', () => {
   const result = gestureCamera(
     { k: 2, x: -400, y: -200 },
     [
@@ -64,7 +64,7 @@ test('pinching back to the overview recenters the map', () => {
     ],
     desktop
   )
-  assert.deepEqual(result, INITIAL_CAMERA)
+  assert.deepEqual(result, { k: 1, x: 0, y: 50 })
 })
 
 test('zoom limits do not move the pinch anchor beyond the requested scale', () => {
@@ -93,8 +93,8 @@ test('one-finger pan after a pinch retains its zoom and respects map bounds', ()
   assert.deepEqual(result, { k: 3, x: -550, y: -450 })
   assert.deepEqual(clampCamera({ k: 3, x: 900, y: -9999 }, desktop), {
     k: 3,
-    x: 0,
-    y: -1200,
+    x: 480,
+    y: -1500,
   })
 })
 
@@ -102,26 +102,63 @@ test('portrait maps use the full viewport rather than clipping to a short strip'
   const portrait = mapViewport(360, 600)
   assert.deepEqual(portrait, { x: 0, y: 0, width: 960, height: 1600 })
   assert.deepEqual(clampCamera(INITIAL_CAMERA, portrait), INITIAL_CAMERA)
-  // At 2x the map is taller than the old 600-unit viewBox, but still fits
-  // vertically in this screen. Keep it below the toolbar without clipping it.
+  // Even when the content fits, it can move aside while retaining half of
+  // the map in the viewport.
   assert.deepEqual(clampCamera({ k: 2, x: -480, y: -900 }, portrait), {
     k: 2,
     x: -480,
-    y: 0,
+    y: -600,
   })
   // At 3x the content exceeds the screen and can pan through its full height.
   assert.deepEqual(clampCamera({ k: 3, x: -960, y: -9999 }, portrait), {
     k: 3,
     x: -960,
-    y: -200,
+    y: -1000,
   })
 })
 
-test('resizing back to desktop brings a panned map back into bounds', () => {
-  assert.deepEqual(
-    clampCamera({ k: 1, x: -700, y: -800 }, desktop),
-    INITIAL_CAMERA
-  )
+test('resizing keeps a panned map reachable without forcing it to recenter', () => {
+  assert.deepEqual(clampCamera({ k: 1, x: -700, y: -800 }, desktop), {
+    k: 1,
+    x: -480,
+    y: -300,
+  })
   const wide = mapViewport(1200, 400)
   assert.deepEqual(clampCamera(INITIAL_CAMERA, wide), INITIAL_CAMERA)
+})
+
+test('the overview can pan until half the map is outside any edge', () => {
+  assert.deepEqual(
+    gestureCamera(
+      INITIAL_CAMERA,
+      [{ x: 480, y: 300 }],
+      [{ x: 0, y: 0 }],
+      desktop
+    ),
+    { k: 1, x: -480, y: -300 }
+  )
+  assert.deepEqual(clampCamera({ k: 1, x: 9999, y: 9999 }, desktop), {
+    k: 1,
+    x: 480,
+    y: 300,
+  })
+})
+
+test('wide layouts allow moving the map past the viewport edge for a popup', () => {
+  const wide = mapViewport(1200, 400)
+  assert.deepEqual(clampCamera({ k: 1, x: -900, y: 0 }, wide), {
+    k: 1,
+    x: -900,
+    y: 0,
+  })
+  assert.deepEqual(clampCamera({ k: 1, x: 900, y: 0 }, wide), {
+    k: 1,
+    x: 900,
+    y: 0,
+  })
+})
+
+test('zooming out at the minimum preserves a deliberately offset map', () => {
+  const camera = { k: 1, x: -400, y: 100 }
+  assert.deepEqual(zoomCamera(camera, 0.7, { x: 700, y: 450 }, desktop), camera)
 })

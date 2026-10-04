@@ -382,12 +382,13 @@
   transition: fill 180ms, opacity 150ms;
   stroke: var(--map-border);
 }
-.map[data-zoomed='true'],
-.map[data-zoomed='true'] .shape {
+.map,
+.map .shape {
   cursor: grab;
+  user-select: none;
 }
-.map[data-zoomed='true']:active,
-.map[data-zoomed='true']:active .shape {
+.map:active,
+.map:active .shape {
   cursor: grabbing;
 }
 .shape:hover,

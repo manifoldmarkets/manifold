@@ -93,13 +93,7 @@ export function useMapCamera(ready: boolean) {
       start = { points: [point(e)], camera: cameraRef.current }
     }
     const pointerMove = (e: PointerEvent) => {
-      if (
-        e.pointerType === 'touch' ||
-        !start ||
-        !mouseOrigin ||
-        !e.buttons ||
-        cameraRef.current.k === 1
-      )
+      if (e.pointerType === 'touch' || !start || !mouseOrigin || !e.buttons)
         return
       if (
         Math.hypot(e.clientX - mouseOrigin.x, e.clientY - mouseOrigin.y) > 4
@@ -125,11 +119,16 @@ export function useMapCamera(ready: boolean) {
       mouseOrigin = undefined
     }
     const wheel = (e: WheelEvent) => {
+      // The map owns the wheel even at its zoom limits, avoiding a sudden
+      // jump to page scrolling when zooming out reaches the overview.
+      e.preventDefault()
       if (!e.deltaY) return
       const current = cameraRef.current
-      // Scrolling down at the overview continues down the page.
-      if (current.k === 1 && e.deltaY > 0 && !e.ctrlKey) return
-      e.preventDefault()
+      if (
+        (current.k === 1 && e.deltaY > 0) ||
+        (current.k === 6 && e.deltaY < 0)
+      )
+        return
       const unit =
         e.deltaMode === 1
           ? 16
