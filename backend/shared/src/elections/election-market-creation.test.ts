@@ -14,6 +14,7 @@ import {
   ManifestEntry,
   MarketLike,
   planOffline,
+  plannedAnswerColors,
   SEARCH_PAGE_SIZE,
   seedMismatch,
   validateManifest,
@@ -118,6 +119,7 @@ function mockApi(o: MockOpts = {}) {
       balance: 1_000_000,
     })),
     publishMarket: jest.fn(async () => undefined),
+    setAnswerColor: jest.fn(async () => undefined),
     createMarket: jest.fn(async (body) => {
       const i = createCalls++
       api.creates.push(body)
@@ -277,6 +279,47 @@ describe('http client', () => {
     headers: { get: () => null },
     json: async () => body,
     text: async () => JSON.stringify(body),
+  })
+
+  test('answer colors use the authenticated edit endpoint and are blocked in dry runs', async () => {
+    const fetch = jest
+      .fn()
+      .mockResolvedValueOnce(okJson({ status: 'success' }))
+      .mockResolvedValueOnce(okJson({}))
+    const api = makeHttpApi({
+      apiBase: 'https://example.com',
+      apiKey: 'mock',
+      allowWrites: true,
+      fetch,
+    })
+    await api.setAnswerColor!('market', 'answer', '#adc4e3')
+    expect(fetch).toHaveBeenCalledWith(
+      'https://example.com/edit-answer-cpmm',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Key mock',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractId: 'market',
+          answerId: 'answer',
+          color: '#adc4e3',
+        }),
+      })
+    )
+    await expect(
+      api.setAnswerColor!('market', 'answer', '#adc4e3')
+    ).rejects.toThrow(/did not confirm success/)
+    const dryRun = makeHttpApi({
+      apiBase: 'https://example.com',
+      allowWrites: false,
+      fetch,
+    })
+    await expect(
+      dryRun.setAnswerColor!('market', 'answer', '#adc4e3')
+    ).rejects.toThrow(/dry run/)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   test('quiet publication uses the visibility update endpoint and requires success', async () => {
@@ -1027,6 +1070,83 @@ describe('ambiguous timeouts', () => {
 })
 
 describe('quiet creation', () => {
+  test('sets audited party colors before publication, including named and DFL answers', async () => {
+    const { api } = mockApi()
+    const first = partyEntry('MN', 'Minnesota')
+    first.answerMeta![0].label = first.payload!.answers![0] =
+      'Democratic Party (DFL) — Jane Doe'
+    const m = manifest([first])
+    const state = emptyState(m)
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toBeUndefined()
+    const record = state.entries[first.raceKey]
+    expect((api.setAnswerColor as jest.Mock).mock.calls).toEqual([
+      [record.contractId, record.answers![0].id, '#adc4e3'],
+      [record.contractId, record.answers![1].id, '#ecbab5'],
+      [record.contractId, record.answers![2].id, '#9e9fbd'],
+    ])
+    expect(
+      (api.setAnswerColor as jest.Mock).mock.invocationCallOrder[2]
+    ).toBeLessThan((api.publishMarket as jest.Mock).mock.invocationCallOrder[0])
+    expect(Object.keys(record.answerColorsApplied!)).toHaveLength(3)
+    await applyManifest(m, state, api, opts({ quiet: true }), () => undefined)
+    expect(api.setAnswerColor).toHaveBeenCalledTimes(3)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('a failed color edit preserves spend and resumes the remaining edits without recreating', async () => {
+    const { api } = mockApi()
+    const first = partyEntry('AL', 'Alabama')
+    const m = manifest([first])
+    const state = emptyState(m)
+    ;(api.setAnswerColor as jest.Mock)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('timeout'))
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toMatch(/answer colors are pending/)
+    expect(result.spentThisRun).toBe(1000)
+    expect(state.entries[first.raceKey].costMana).toBe(1000)
+    expect(api.publishMarket).not.toHaveBeenCalled()
+    const resumed = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(resumed.stoppedReason).toBeUndefined()
+    expect(resumed.spentThisRun).toBe(0)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    expect(api.setAnswerColor).toHaveBeenCalledTimes(4)
+    expect(api.publishMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('candidate colors come from audited affiliation, not their names or answer order', () => {
+    const first = partyEntry('RI', 'Rhode Island')
+    first.answerMeta = [
+      { label: 'Candidate A', kind: 'candidate', party: 'I' },
+      { label: 'Candidate B', kind: 'candidate', party: 'R' },
+      { label: 'Candidate C', kind: 'candidate', party: 'D' },
+    ]
+    expect(plannedAnswerColors(first).map((a) => a.color)).toEqual([
+      '#80cbc4',
+      '#ecbab5',
+      '#adc4e3',
+    ])
+  })
+
   test('creates unlisted, verifies seeds, then publishes while keeping the manifest public', async () => {
     const { api } = mockApi()
     const first = partyEntry('AL', 'Alabama')

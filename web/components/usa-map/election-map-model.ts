@@ -7,6 +7,7 @@ import {
   HOUSE_RACE_MARKETS,
 } from 'web/public/data/house-market-data'
 import { DATA } from './usa-map-data'
+import { BallotCandidate, raceCandidates } from './election-candidates'
 import {
   basisOdds,
   fixedBasisIds,
@@ -39,6 +40,7 @@ export type Race = {
   contract?: Contract
   answerId?: string
   matchup?: string
+  candidates?: BallotCandidate[]
   odds?: Odds
   // Why the race counts the way it does: a market, a same-party ballot, a
   // seat decided before Election Day, or a candidate-only source.
@@ -180,7 +182,9 @@ export function matchesRaceQuery(race: Race, query: string) {
   }
   const exactState = exactStateQuery(value)
   if (exactState) return race.state === exactState
-  return `${race.label} ${race.shortLabel} ${race.matchup ?? ''}`
+  return `${race.label} ${race.shortLabel} ${race.matchup ?? ''} ${
+    race.candidates?.map((c) => c.name).join(' ') ?? ''
+  }`
     .toLowerCase()
     .includes(value)
 }
@@ -234,6 +238,7 @@ export function buildRaces(
           mode === 'senate' ? 'Senate' : 'Governor'
         }`,
         shortLabel: state,
+        candidates: raceCandidates(mode, state),
         contract: contracts[state] ?? undefined,
         ...(({ odds, basis }) => ({ odds, basis }))(
           raceOdds(state, contracts[state], contracts[state]?.slug, (c) =>
@@ -327,6 +332,7 @@ export function buildRaces(
           id,
           state,
           district,
+          candidates: raceCandidates(mode, id),
           shortLabel: `${state}-${district || 'AL'}`,
           label: `${data.name} ${
             district ? `District ${district}` : 'at-large'

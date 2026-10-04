@@ -471,9 +471,11 @@
   background: var(--soft);
 }
 .quote {
-  white-space: nowrap;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+.quoteName {
+  font-weight: 500;
 }
 .legend {
   display: flex;
@@ -660,6 +662,8 @@
 }
 .detailSummary {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   justify-content: space-between;
   font-size: 13px;
   font-weight: 600;

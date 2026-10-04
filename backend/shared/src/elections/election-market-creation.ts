@@ -221,6 +221,8 @@ export type EntryState = {
   seedReviewRequired?: string
   // Quiet creation stages the market unlisted, then publishes after read-back.
   pendingPublication?: boolean
+  // Save each successful edit so a resume finishes styling before publication.
+  answerColorsApplied?: Record<string, string>
   existing?: {
     id: string
     slug?: string
@@ -282,6 +284,26 @@ export type ElectionApi = {
     body: CreatePayload & { idempotencyKey: string }
   ): Promise<{ id: string; slug?: string; url?: string }>
   publishMarket?(id: string): Promise<void>
+  setAnswerColor?(
+    contractId: string,
+    answerId: string,
+    color: string
+  ): Promise<void>
+}
+
+export function plannedAnswerColors(entry: AnyManifestEntry) {
+  if (isMeasureEntry(entry)) return []
+  return (entry.answerMeta ?? []).map((answer) => ({
+    label: answer.label,
+    color:
+      answer.party === 'D'
+        ? '#adc4e3'
+        : answer.party === 'R'
+        ? '#ecbab5'
+        : answer.party === 'I'
+        ? '#80cbc4'
+        : '#9e9fbd',
+  }))
 }
 
 // ---------------------------------------------------------------------------
@@ -1184,6 +1206,15 @@ export async function applyManifest(
     throw new Error(`Refusing to apply:\n- ${problems.join('\n- ')}`)
   if (opts.quiet && !api.publishMarket)
     throw new Error('Quiet creation requires a client that can publish markets')
+  if (
+    !api.setAnswerColor &&
+    manifest.entries.some(
+      (e) => e.status === 'ready' && plannedAnswerColors(e).length
+    )
+  )
+    throw new Error(
+      'Race creation requires a client that can set answer colors'
+    )
   if (state.series !== manifest.series)
     throw new Error(
       `State file belongs to series ${state.series}, not ${manifest.series}`
@@ -1273,6 +1304,42 @@ export async function applyManifest(
     }
   }
 
+  const finishCreation = async (entry: AnyManifestEntry) => {
+    const record = state.entries[entry.raceKey]
+    const colors = plannedAnswerColors(entry)
+    try {
+      if (colors.length) {
+        if (!record.contractId || !api.setAnswerColor)
+          throw new Error('missing contract ID or answer-color client')
+        const edits = colors.map(({ label, color }) => {
+          const answer = record.answers?.find((a) => a.text === label)
+          if (!answer) throw new Error(`cannot find answer: ${label}`)
+          return { answerId: answer.id, color }
+        })
+        for (const { answerId, color } of edits) {
+          if (record.answerColorsApplied?.[answerId] === color) continue
+          await api.setAnswerColor(record.contractId, answerId, color)
+          record.answerColorsApplied = {
+            ...record.answerColorsApplied,
+            [answerId]: color,
+          }
+          await save(entry.raceKey, {
+            status: 'created',
+            answerColorsApplied: record.answerColorsApplied,
+          })
+        }
+      }
+    } catch (err) {
+      result.stoppedReason = `${
+        entry.raceKey
+      } was created and its cost recorded, but answer colors are pending: ${
+        (err as Error).message
+      }; resume with the same state file`
+      return false
+    }
+    return publishPending(entry.raceKey)
+  }
+
   for (const entry of manifest.entries) {
     if (entry.status !== 'ready') continue
     const key = idempotencyKeyFor(manifest.series, entry.raceKey)
@@ -1283,8 +1350,15 @@ export async function applyManifest(
         log(
           `${entry.raceKey}: already created as ${prior.contractId}; manifest payload changed since — NOT recreating`
         )
-      if (prior.status === 'created' && !(await publishPending(entry.raceKey)))
-        break
+      if (prior.status === 'created') {
+        // An older created payload may use different answer labels. Do not
+        // rename it or infer which answer to edit from the new manifest.
+        const finished =
+          prior.payloadHash === hash
+            ? await finishCreation(entry)
+            : await publishPending(entry.raceKey)
+        if (!finished) break
+      }
       continue
     }
     // 1) Read-only reconciliation of our reserved id, always first — also for
@@ -1320,7 +1394,7 @@ export async function applyManifest(
         result.stoppedReason = `${entry.raceKey} exists, but ${seedProblem}; review its opening prices before creating more (current prices may have moved)`
         break
       }
-      if (!(await publishPending(entry.raceKey))) break
+      if (!(await finishCreation(entry))) break
       continue
     }
     if (prior?.status === 'needs-review' || prior?.status === 'failed') {
@@ -1493,7 +1567,7 @@ export async function applyManifest(
         result.stoppedReason = `${entry.raceKey} was created, but ${seedProblem}; stopped before creating more`
         break
       }
-      if (!(await publishPending(entry.raceKey))) break
+      if (!(await finishCreation(entry))) break
       continue
     }
     if (createdId) {
@@ -1516,7 +1590,7 @@ export async function applyManifest(
         result.stoppedReason = `${entry.raceKey}: ${seedProblem}; stopped before creating more`
         break
       }
-      if (!(await publishPending(entry.raceKey))) break
+      if (!(await finishCreation(entry))) break
       continue
     }
     await save(entry.raceKey, {
@@ -1720,6 +1794,24 @@ export function makeHttpApi(opts: {
       const body = await res.json().catch(() => undefined)
       if (body?.success !== true)
         throw new Error('publication response did not confirm success')
+    },
+    setAnswerColor: async (contractId, answerId, color) => {
+      if (!opts.allowWrites) throw new Error('Refusing to write: dry run')
+      if (!opts.apiKey)
+        throw new Error('MANIFOLD_API_KEY is required to set answer colors')
+      const res = await f(url('edit-answer-cpmm'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Key ${opts.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contractId, answerId, color }),
+        signal: timeout(opts.createTimeoutMs ?? 60_000),
+      })
+      if (!res.ok) throw await classify(res, 'set answer color')
+      const body = await res.json().catch(() => undefined)
+      if (body?.status !== 'success')
+        throw new Error('answer color response did not confirm success')
     },
     createMarket: async (body) => {
       if (!opts.allowWrites)

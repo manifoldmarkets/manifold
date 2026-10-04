@@ -15,6 +15,7 @@ import { Congress } from 'web/public/custom-components/congress'
 import { Governor } from 'web/public/custom-components/governor'
 import { ElectionBalance } from './election-balance'
 import { sourceAudit } from './audited-sources'
+import { candidateForParty } from './election-candidates'
 import { Contract, contractPath } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
@@ -974,6 +975,7 @@ export function ElectionExplorer(props: Props) {
               ) : hoverRace ? (
                 <>
                   <RaceQuote race={hoverRace} />
+                  <BallotCandidates race={hoverRace} />
                   <IncumbentDetails
                     mode={raceMode}
                     state={hoverRace.state}
@@ -1114,6 +1116,7 @@ export function ElectionExplorer(props: Props) {
                         elected. This seat is not on the November ballot.
                       </p>
                     )}
+                    <BallotCandidates race={selectedRace} />
                     {!selectedRace.contract ? (
                       <p className={styles.empty}>
                         {selectedRace.basis?.kind === 'decided'
@@ -1422,6 +1425,7 @@ function IncumbentDetails({
 
 function RaceQuote({ race }: { race: Race }) {
   const party = leadingParty(race.odds)
+  const candidate = candidateForParty(race, party)
   return (
     <span
       className={styles.quote}
@@ -1447,7 +1451,29 @@ function RaceQuote({ race }: { race: Race }) {
         : !party
         ? 'Tied'
         : `${outcomeLabel(party)} ${pct(race.odds[party] ?? 0)}`}
+      {candidate && <span className={styles.quoteName}> · {candidate}</span>}
     </span>
+  )
+}
+
+function BallotCandidates({ race }: { race: Race }) {
+  if (
+    !race.candidates?.length ||
+    race.basis?.kind === 'ballot' ||
+    race.basis?.kind === 'decided'
+  )
+    return null
+  return (
+    <p className={styles.note}>
+      On ballot:{' '}
+      {race.candidates
+        .map((c) =>
+          c.party === 'unknown' || c.party === 'other'
+            ? c.name
+            : `${c.name} (${c.party})`
+        )
+        .join(' · ')}
+    </p>
   )
 }
 

@@ -38,6 +38,7 @@ import {
   Manifest,
   MeasureManifestEntry,
   planOffline,
+  plannedAnswerColors,
   validateManifest,
 } from 'shared/elections/election-market-creation'
 
@@ -297,7 +298,10 @@ async function main() {
           payload: args.quiet
             ? { ...e.payload!, visibility: 'unlisted' }
             : e.payload,
-          ...(args.quiet ? { afterCreation: { visibility: 'public' } } : {}),
+          afterCreation: {
+            answerColors: plannedAnswerColors(e),
+            ...(args.quiet ? { visibility: 'public' } : {}),
+          },
         }))
     )
     writeAtomic(path.join(outDir, 'dry-run-plan.json'), {
