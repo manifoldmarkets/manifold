@@ -22,6 +22,7 @@ export function CommentOnAnswer(props: { answer: Answer; clear?: () => void }) {
         <AnswerSectionForCommentOnAnswer answer={answer} color={color} />
         {clear && (
           <button
+            aria-label="Clear selected answer"
             onClick={clear}
             className="text-ink-500 hover:text-ink-600 bg-canvas-0 absolute -right-1.5 -top-1.5 rounded-full"
           >

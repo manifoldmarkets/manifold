@@ -155,6 +155,7 @@ export function SearchCreateAnswerPanel(props: {
             >
               {text && (
                 <button
+                  aria-label="Clear answer"
                   className={clsx('group h-full')}
                   onMouseDown={(e) => e.preventDefault()}
                   onTouchStart={(e) => e.preventDefault()}

@@ -585,6 +585,7 @@ const LiveTradeFilters = (props: {
               {selectedUser.name}
             </span>
             <button
+              aria-label="Clear user filter"
               onClick={() => {
                 setSelectedUser(undefined)
                 track('clear-live-bet-user-filter')
@@ -641,6 +642,7 @@ const LiveTradeFilters = (props: {
                 }}
               />
               <button
+                aria-label="Close user search"
                 onClick={() => {
                   setUserSearchTerm('')
                   setIsEditingUserFilter(false)

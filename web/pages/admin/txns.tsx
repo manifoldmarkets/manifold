@@ -124,7 +124,11 @@ const TxnRow = ({
       <td>
         <Row className="items-center gap-2">
           {txn.category}
-          <IconButton size="xs" onClick={() => onHideCategory(txn.category)}>
+          <IconButton
+            aria-label={`Hide ${txn.category}`}
+            size="xs"
+            onClick={() => onHideCategory(txn.category)}
+          >
             <EyeOffIcon className="h-4 w-4" />
           </IconButton>
         </Row>

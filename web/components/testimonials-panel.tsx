@@ -162,13 +162,19 @@ function PaginationCircle(props: {
 }) {
   const { currentPageNumber, pageNumber, onClick } = props
   return (
-    <div onClick={() => onClick()} className="cursor-pointer p-1.5">
+    <button
+      type="button"
+      onClick={() => onClick()}
+      className="cursor-pointer p-1.5"
+      aria-label={`Go to testimonial ${pageNumber + 1}`}
+      aria-current={currentPageNumber === pageNumber ? 'true' : undefined}
+    >
       <div
         className={clsx(
           'h-2 w-2 rounded-full transition-colors',
           currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
         )}
       />
-    </div>
+    </button>
   )
 }

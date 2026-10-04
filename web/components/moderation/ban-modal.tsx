@@ -451,6 +451,7 @@ export function BanModal({
         {/* Mod Alert Only Toggle */}
         <Row className="items-center gap-2">
           <input
+            aria-label="Send mod alert without banning"
             type="checkbox"
             checked={modAlertOnly}
             onChange={(e) => setModAlertOnly(e.target.checked)}
@@ -533,6 +534,7 @@ export function BanModal({
               <div className="border-ink-200 rounded border bg-orange-50 p-3">
                 <Row className="items-center gap-2">
                   <input
+                    aria-label="Restrict @username changes"
                     type="checkbox"
                     checked={allowUsernameChange !== true}
                     onChange={(e) =>
@@ -725,6 +727,7 @@ function BanTypeToggle({
     <div className="border-ink-300 border-l-4 pl-3">
       <Row className="mb-1 items-center gap-2">
         <input
+          aria-label={label}
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}

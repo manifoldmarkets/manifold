@@ -183,6 +183,7 @@ export const AddItemFloatyButton = (props: {
   return (
     <>
       <button
+        aria-label="Add dashboard item"
         className={clsx(
           'bg-primary-600 hover:bg-primary-500 rounded-full p-3',
           className

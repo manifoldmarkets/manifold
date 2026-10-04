@@ -197,6 +197,7 @@ export const StarRating = (props: {
       {range(0, 5).map((i) => {
         return (
           <button
+            aria-label={`${i + 1} star${i === 0 ? '' : 's'}`}
             className="relative"
             key={i}
             onClick={(e) => {

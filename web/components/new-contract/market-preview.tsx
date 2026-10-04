@@ -565,6 +565,11 @@ export function MarketPreview(props: {
                 noTap
               >
                 <button
+                  aria-label={
+                    visibility === 'unlisted'
+                      ? 'Make market public'
+                      : 'Make market unlisted'
+                  }
                   onClick={() => onToggleVisibility()}
                   className="transition-opacity hover:opacity-70"
                 >
@@ -1066,6 +1071,7 @@ export function MarketPreview(props: {
                       {/* X button to remove - far right */}
                       {isEditable && onEditAnswers && canRemoveMCAnswer && (
                         <button
+                          aria-label="Remove answer"
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -1158,6 +1164,7 @@ export function MarketPreview(props: {
                         {/* X button - positioned in top-right corner */}
                         {isEditable && onEditAnswers && canRemoveMCAnswer && (
                           <button
+                            aria-label="Remove answer"
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
@@ -1444,6 +1451,7 @@ export function MarketPreview(props: {
                       {/* X button to remove - far right */}
                       {isEditable && onEditAnswers && answers.length > 2 && (
                         <button
+                          aria-label="Remove answer"
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -1744,6 +1752,7 @@ export function MarketPreview(props: {
                           {/* X button to remove - far right */}
                           {isEditable && answers.length > 2 && (
                             <button
+                              aria-label="Remove answer"
                               onClick={() => {
                                 if (onEditAnswers) {
                                   const newAnswers = answers.filter(
@@ -1794,6 +1803,7 @@ export function MarketPreview(props: {
                             {/* X button - positioned in top-right corner */}
                             {isEditable && answers.length > 2 && (
                               <button
+                                aria-label="Remove answer"
                                 onClick={() => {
                                   if (onEditAnswers) {
                                     const newAnswers = answers.filter(
@@ -2123,6 +2133,7 @@ export function MarketPreview(props: {
                           {/* X button to remove - far right */}
                           {isEditable && answers.length > 2 && (
                             <button
+                              aria-label="Remove answer"
                               onClick={() => {
                                 if (onEditAnswers) {
                                   const newAnswers = answers.filter(
@@ -2173,6 +2184,7 @@ export function MarketPreview(props: {
                             {/* X button - positioned in top-right corner */}
                             {isEditable && answers.length > 2 && (
                               <button
+                                aria-label="Remove answer"
                                 onClick={() => {
                                   if (onEditAnswers) {
                                     const newAnswers = answers.filter(
@@ -2381,6 +2393,7 @@ function BinaryProbabilitySection(props: {
         </span>
         {isEditable && onProbabilityChange && (
           <button
+            aria-label="Edit probability"
             onClick={() => setIsModalOpen(true)}
             className="text-ink-500 hover:text-ink-700"
           >

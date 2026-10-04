@@ -364,12 +364,13 @@ const TopicRow = (props: {
       </Row>
       {onRemove && (
         <IconButton
+          aria-label={`Remove ${topic.name}`}
           onClick={(e) => {
             e.stopPropagation()
             e.preventDefault()
             onRemove(topic)
           }}
-          className="text-ink-400 hover:text-ink-600 -mr-1 opacity-0 transition-opacity group-hover:opacity-100"
+          className="text-ink-400 hover:text-ink-600 -mr-1 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
           size="xs"
         >
           <XIcon className="h-4 w-4" />

@@ -397,6 +397,7 @@ export function ReplyToBetRow(props: {
         )}
         {clearReply && (
           <button
+            aria-label="Cancel reply"
             onClick={clearReply}
             className={
               'bg-canvas-0 text-ink-500 hover:text-ink-600 absolute -right-2 -top-1.5 rounded-full'

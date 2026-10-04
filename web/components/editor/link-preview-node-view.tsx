@@ -47,6 +47,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
     >
       {!hideCloseButton && (
         <button
+          aria-label="Remove link preview"
           className={
             'bg-canvas-50 absolute right-2 top-2 z-20 rounded-full p-0.5 hover:invert'
           }

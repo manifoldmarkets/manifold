@@ -33,6 +33,18 @@ export const EditInPlaceInput = (props: {
       }}
     />
   ) : (
-    <div onClick={() => !disabled && setEditing(true)}>{children(value)}</div>
+    <div
+      role={disabled ? undefined : 'button'}
+      tabIndex={disabled ? undefined : 0}
+      onClick={() => !disabled && setEditing(true)}
+      onKeyDown={(e) => {
+        if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          setEditing(true)
+        }
+      }}
+    >
+      {children(value)}
+    </div>
   )
 }

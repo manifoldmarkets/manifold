@@ -109,6 +109,7 @@ export function MarketTopics(props: TopicRowProps) {
         ))}
         {user && canEdit && (
           <button
+            aria-label={topics.length ? 'Edit topics' : 'Add topics'}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()

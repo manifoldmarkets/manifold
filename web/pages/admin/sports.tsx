@@ -764,6 +764,7 @@ export default function SportsAdminPage() {
                   <Col key={code} className="gap-1">
                     <label className="text-ink-500 text-xs">{label}</label>
                     <input
+                      aria-label={label}
                       type="number"
                       value={stageTiers[code] ?? 1000}
                       onChange={(e) =>
@@ -795,6 +796,7 @@ export default function SportsAdminPage() {
               <Col className="gap-1">
                 <label className="text-ink-600 text-xs">Date from</label>
                 <input
+                  aria-label="Date from"
                   type="date"
                   value={dateFrom}
                   onChange={(e) => {
@@ -808,6 +810,7 @@ export default function SportsAdminPage() {
               <Col className="gap-1">
                 <label className="text-ink-600 text-xs">Date to</label>
                 <input
+                  aria-label="Date to"
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
@@ -860,6 +863,7 @@ export default function SportsAdminPage() {
                 {/* Select all */}
                 <Row className="items-center gap-2 text-sm">
                   <input
+                    aria-label="Select all fixtures"
                     type="checkbox"
                     checked={
                       selectableFixtures.length > 0 &&
@@ -904,6 +908,7 @@ export default function SportsAdminPage() {
                         >
                           <td>
                             <input
+                              aria-label={`Select ${f.homeTeam.name} vs ${f.awayTeam.name}`}
                               type="checkbox"
                               disabled={!!f.existingMarketId}
                               checked={selectedIds.has(f.id)}

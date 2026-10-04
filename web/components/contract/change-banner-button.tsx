@@ -44,6 +44,7 @@ export function ChangeBannerButton(props: {
         className={className}
       >
         <button
+          aria-label={canEdit ? 'Change banner image' : 'View banner image'}
           className={clsx(
             hasCoverImage
               ? 'flex rounded-full bg-black/60 p-2 text-white transition-colors hover:bg-black/80'

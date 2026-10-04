@@ -154,6 +154,7 @@ function NewMessageModal(props: {
                 />
                 <span className="max-w-[120px] truncate">{user.name}</span>
                 <button
+                  aria-label={`Remove ${user.name}`}
                   onClick={() => removeUser(user.id)}
                   className="hover:bg-primary-200 dark:hover:bg-primary-800 -mr-0.5 rounded-full p-0.5 transition-colors"
                 >

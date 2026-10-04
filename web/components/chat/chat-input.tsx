@@ -75,6 +75,7 @@ export const ChatInput = (props: {
       >
         {user && (
           <button
+            aria-label="Send message"
             className=" text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 absolute bottom-2 px-4 transition-colors sm:hidden"
             disabled={!editor || editor.isEmpty}
             onClick={submitComment}
@@ -88,6 +89,7 @@ export const ChatInput = (props: {
         )}
       </TextEditor>
       <button
+        aria-label="Open chat"
         type="button"
         className={clsx(
           'focus:ring-primary-500 fixed  left-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
@@ -101,6 +103,7 @@ export const ChatInput = (props: {
       </button>
       {showChat && (
         <button
+          aria-label="Close chat"
           className={clsx('absolute -top-1 right-1 lg:hidden')}
           onClick={() => setShowChat(!showChat)}
         >

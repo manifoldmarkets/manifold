@@ -1505,22 +1505,24 @@ function MerchItemCard(props: {
             {images.length > 1 && (
               <>
                 <button
+                  aria-label="Previous image"
                   onClick={() =>
                     setCurrentImageIndex((i) =>
                       i === 0 ? images.length - 1 : i - 1
                     )
                   }
-                  className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white focus-visible:opacity-100 group-hover:opacity-100"
                 >
                   <ChevronLeftIcon className="h-4 w-4" />
                 </button>
                 <button
+                  aria-label="Next image"
                   onClick={() =>
                     setCurrentImageIndex((i) =>
                       i === images.length - 1 ? 0 : i + 1
                     )
                   }
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white focus-visible:opacity-100 group-hover:opacity-100"
                 >
                   <ChevronRightIcon className="h-4 w-4" />
                 </button>
@@ -3592,6 +3594,7 @@ function RedCapStylePreview(props: {
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -3621,6 +3624,7 @@ function RedCapStylePreview(props: {
           </div>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -3685,6 +3689,7 @@ function BlueCapStylePreview(props: {
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -3714,6 +3719,7 @@ function BlueCapStylePreview(props: {
           </div>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -3778,6 +3784,7 @@ function GreenCapStylePreview(props: {
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -3807,6 +3814,7 @@ function GreenCapStylePreview(props: {
           </div>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -3871,6 +3879,7 @@ function BlackCapStylePreview(props: {
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -3900,6 +3909,7 @@ function BlackCapStylePreview(props: {
           </div>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -4097,6 +4107,7 @@ function CatEarsStylePreview(props: {
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -4177,6 +4188,7 @@ function CatEarsStylePreview(props: {
           />
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -4237,6 +4249,7 @@ function CrownPreview(props: {
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -4259,6 +4272,7 @@ function CrownPreview(props: {
           </div>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -5187,6 +5201,7 @@ function CustomYesButtonPreview(props: {
       <span className="text-ink-500 text-xs">Your YES button becomes:</span>
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -5202,6 +5217,7 @@ function CustomYesButtonPreview(props: {
           </Button>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
@@ -5253,6 +5269,7 @@ function CustomNoButtonPreview(props: {
       <span className="text-ink-500 text-xs">Your NO button becomes:</span>
       <Row className="w-full items-center">
         <button
+          aria-label="Previous style"
           onClick={cyclePrev}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
@@ -5268,6 +5285,7 @@ function CustomNoButtonPreview(props: {
           </Button>
         </div>
         <button
+          aria-label="Next style"
           onClick={cycleNext}
           className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >

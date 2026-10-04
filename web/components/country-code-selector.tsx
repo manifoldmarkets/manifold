@@ -35,7 +35,10 @@ export const CountryCodeSelector = (props: {
           placeholder="The country of which you are a citizen"
         />
         {selectedCountry !== '' && (
-          <button onClick={() => setSelectedCountry('')}>
+          <button
+            aria-label="Clear country"
+            onClick={() => setSelectedCountry('')}
+          >
             <XIcon className="absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-300" />
           </button>
         )}

@@ -122,6 +122,7 @@ const EditNewsModal = (props: {
                           {d.title}
                         </div>
                         <button
+                          aria-label={`Remove ${d.title}`}
                           className="text-ink-500 hover:text-ink-700 px-1 transition-colors"
                           onClick={() =>
                             setDashboards(

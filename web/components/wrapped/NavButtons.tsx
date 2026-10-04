@@ -13,6 +13,7 @@ export function NavButtons(props: {
   return (
     <Row className="absolute bottom-8 left-0 right-0 justify-center gap-6">
       <button
+        aria-label="Previous page"
         onClick={goToPrevPage}
         className={clsx(
           'rounded-full p-4 text-white transition-all duration-300',
@@ -26,6 +27,7 @@ export function NavButtons(props: {
         <ChevronLeftIcon className="h-6 w-6" />
       </button>
       <button
+        aria-label="Next page"
         onClick={goToNextPage}
         className={clsx(
           'rounded-full p-4 text-white transition-all duration-300',

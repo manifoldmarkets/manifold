@@ -273,6 +273,7 @@ export default function TodoPage() {
                 className="flex-1"
               />
               <button
+                aria-label="Add task"
                 onClick={addTodo}
                 className="bg-primary-500 hover:bg-primary-600 rounded-full p-2 text-white"
               >
@@ -543,6 +544,7 @@ export default function TodoPage() {
             <Row className="mb-4 items-center gap-6 sm:justify-between ">
               <h2 className="text-lg font-semibold">Categories</h2>
               <button
+                aria-label="Add category"
                 onClick={() => setIsModalOpen(true)}
                 className="text-primary-500 hover:text-primary-600"
               >
@@ -644,6 +646,7 @@ export default function TodoPage() {
 
           {/* Mobile sidebar toggle */}
           <button
+            aria-label={isSidebarOpen ? 'Close categories' : 'Open categories'}
             className="bg-canvas-500 hover:bg-canvas-600 fixed right-2 top-1.5 rounded-full p-3 text-white md:hidden"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >

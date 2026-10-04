@@ -276,6 +276,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                 {selectedUser.name}
               </span>
               <button
+                aria-label="Clear user filter"
                 onClick={() => {
                   setSelectedUser(undefined)
                   setOlderBets([])
@@ -337,6 +338,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                   }}
                 />
                 <button
+                  aria-label="Close user search"
                   onClick={() => {
                     setUserSearchTerm('')
                     setIsEditingUserFilter(false)

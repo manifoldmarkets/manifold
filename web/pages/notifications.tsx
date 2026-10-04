@@ -91,6 +91,7 @@ function NotificationsAppBanner() {
         <AppBadgesOrGetAppButton />
       </Row>
       <button
+        aria-label="Dismiss app banner"
         onClick={() => {
           track('close app banner')
           api('me/private/update', {

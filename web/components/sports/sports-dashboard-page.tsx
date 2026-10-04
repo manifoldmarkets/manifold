@@ -507,6 +507,7 @@ function CommunityTab({
               )}
             </Row>
             <button
+              aria-label={pollsExpanded ? 'Collapse polls' : 'Expand polls'}
               onClick={() => setPollsExpanded((e) => !e)}
               className="text-ink-400 hover:text-ink-600 transition-colors"
             >

@@ -281,6 +281,9 @@ export function CommentInputTextArea(props: {
           (commentTypes[0] === 'comment' ||
             commentTypes[0] === 'top-level-post') && (
             <button
+              aria-label={
+                commentTypes[0] === 'comment' ? 'Submit comment' : 'Submit post'
+              }
               className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
               disabled={!editor || editor.isEmpty}
               onClick={() => submit(commentTypes[0])}

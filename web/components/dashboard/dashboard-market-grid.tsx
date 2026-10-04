@@ -280,6 +280,7 @@ export function DashboardMarketGrid({
                   </button>
                 )}
                 <button
+                  aria-label={pollsExpanded ? 'Collapse polls' : 'Expand polls'}
                   onClick={() => setPollsExpanded((e) => !e)}
                   className="text-ink-400 hover:text-ink-600 transition-colors"
                 >
@@ -358,6 +359,7 @@ export function DashboardMarketGrid({
                             <span className="text-[15px] leading-none">⠿</span>
                           </div>
                           <button
+                            aria-label={`Remove ${contract.question}`}
                             onClick={() => handleRemove(contract)}
                             className="text-ink-400 hover:text-ink-600 absolute -right-2 -top-2 z-10 transition-colors"
                           >
@@ -382,6 +384,7 @@ export function DashboardMarketGrid({
               <div key={contract.id} className="relative flex flex-col">
                 {editMode && (
                   <button
+                    aria-label={`Remove ${contract.question}`}
                     onClick={() => handleRemove(contract)}
                     className="text-ink-400 hover:text-ink-600 absolute -right-2 -top-2 z-10 transition-colors"
                   >

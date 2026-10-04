@@ -225,6 +225,7 @@ const Card = (props: {
 function RemoveButton(props: { onClick: () => void }) {
   return (
     <button
+      aria-label="Remove item"
       className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0  transition-colors"
       onClick={props.onClick}
     >

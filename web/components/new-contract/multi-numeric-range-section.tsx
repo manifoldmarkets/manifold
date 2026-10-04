@@ -263,6 +263,7 @@ export const MultiNumericRangeSection = (props: {
                 />
                 {bucketAnswers.length > 2 && (
                   <button
+                    aria-label="Remove bucket"
                     onClick={() => removeAnswer(i, 'buckets')}
                     type="button"
                     className="hover:bg-canvas-50 border-ink-300 text-ink-700 focus:ring-primary-500 absolute -right-1 -top-1 inline-flex items-center rounded-full border p-0.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:static sm:p-1"
@@ -311,6 +312,7 @@ export const MultiNumericRangeSection = (props: {
                 />
                 {thresholdAnswers.length > 2 && (
                   <button
+                    aria-label="Remove threshold"
                     onClick={() => removeAnswer(i, 'thresholds')}
                     type="button"
                     className="hover:bg-canvas-50 border-ink-300 text-ink-700 focus:ring-primary-500 absolute -right-1 -top-1 inline-flex items-center rounded-full border p-0.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:static sm:p-1"

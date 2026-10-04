@@ -180,6 +180,7 @@ export function SelectUsers(props: {
                 />
                 <UserLink user={user} className="!text-current" />
                 <button
+                  aria-label={`Remove ${user.name}`}
                   onClick={() => removeUser(user.id)}
                   className="hover:bg-primary-200 -mr-0.5 rounded-full p-0.5 transition-colors"
                 >

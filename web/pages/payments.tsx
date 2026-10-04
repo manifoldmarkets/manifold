@@ -411,6 +411,7 @@ export const PaymentsModal = (props: {
                   </Col>
                 </Row>
                 <button
+                  aria-label="Clear recipients"
                   onClick={() => {
                     setToUsers([])
                     setRemovedToUser(true)
