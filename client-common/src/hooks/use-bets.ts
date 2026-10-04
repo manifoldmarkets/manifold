@@ -187,7 +187,9 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
 // keeping the snapshots apart stops one from replacing a quote panel's. A
 // confirmed cancel changes both, including when no consumer is mounted. Live
 // updates are kept only while a response might not include them, so no
-// tombstone TTL is needed.
+// tombstone TTL is needed. Updates from before a time with no consumers are
+// replayed only if they closed an order: anything else may have changed
+// unseen.
 const dedupeRefresh = createRequestDeduper<void>('burst')
 const createOrderBook = (fresh: boolean) =>
   createLiveSnapshot<LimitBet>(
@@ -196,7 +198,9 @@ const createOrderBook = (fresh: boolean) =>
         bets.filter((bet) => isOpenLimitOrder(bet)),
         'createdTime'
       ),
-    fresh ? 0 : maxCachedAgeMs(API.bets.cache)
+    fresh ? 0 : maxCachedAgeMs(API.bets.cache),
+    // Filled, cancelled and expired orders can't reopen.
+    (bet) => !isOpenLimitOrder(bet)
   )
 const orderBooks = new Map<string, ReturnType<typeof createOrderBook>>()
 const bookKey = (contractId: string, fresh: boolean) =>
@@ -265,6 +269,8 @@ export const useUnfilledBets = (
       )
     ).catch((e) => console.error('Failed to load limit orders', e))
   })
+  // Held while subscribed to the book's updates, below.
+  useEffect(() => (enabled ? book.hold() : undefined), [book, enabled])
   useEffect(refresh, [enabled, book, contractId, isPageVisible, connection])
 
   useApiSubscription({

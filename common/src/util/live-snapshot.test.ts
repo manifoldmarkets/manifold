@@ -136,3 +136,44 @@ it('replays recent updates over a cached response that can predate them', async 
     clock.mockRestore()
   }
 })
+
+it('stops replaying updates from before a gap in them, unless final', async () => {
+  const store = createLiveSnapshot<Order>(
+    (orders) => orders.filter((o) => !o.closed),
+    10_000,
+    (o) => !!o.closed
+  )
+  const release = store.hold()
+  store.update([{ id: 'a' }, { id: 'b', closed: true }])
+  release()
+  // Updates are missed until a consumer holds again, so 'a' may have closed.
+  store.hold()
+  store.update([{ id: 'c' }])
+  // Up to date, apart from a cached copy of 'b' from before it closed.
+  await store.refresh(async () => [{ id: 'b' }])
+  expect(store.getSnapshot()).toEqual([{ id: 'c' }])
+})
+
+it('has no gap while any consumer holds', async () => {
+  const store = createLiveSnapshot<Order>(undefined, 10_000)
+  const first = store.hold()
+  const second = store.hold()
+  store.update([{ id: 'a', amount: 1 }])
+  first()
+  first()
+  store.hold()
+  second()
+  await store.refresh(async () => [])
+  expect(store.getSnapshot()).toEqual([{ id: 'a', amount: 1 }])
+})
+
+it('keeps one live update per id while a read stalls', () => {
+  const isFinal = jest.fn(() => false)
+  const store = createLiveSnapshot<Order>(undefined, 0, isFinal)
+  store.refresh(() => new Promise(() => {}))
+  for (let amount = 1; amount <= 10_000; amount++)
+    store.update([{ id: 'a', amount }])
+  // Starting to hold checks each update kept, once.
+  store.hold()
+  expect(isFinal).toHaveBeenCalledTimes(1)
+})

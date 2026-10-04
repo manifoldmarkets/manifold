@@ -1,21 +1,25 @@
-/** A shared snapshot with ordered refreshes and a log of live updates. Each
- * response is overlaid with the live updates it may not include: those
- * received since its read started, and, when responses can come from a cache,
- * those received up to `maxAge` ms before. A response is dropped once a newer
- * read's response has been published; until then it replaces the older
+/** A shared snapshot with ordered refreshes and the latest live update of each
+ * id. Each response is overlaid with the live updates it may not include:
+ * those received since its read started, and, when responses can come from a
+ * cache, those received up to `maxAge` ms before. A response is dropped once a
+ * newer read's response has been published; until then it replaces the older
  * snapshot, so a slow or failed newer read can't discard it. */
 export function createLiveSnapshot<T extends { id: string }>(
   normalize: (values: T[]) => T[] = (values) => values,
-  maxAge = 0
+  maxAge = 0,
+  // Whether no later update can change a value, like a cancelled order's.
+  isFinal: (value: T) => boolean = () => false
 ) {
   let snapshot: T[] | undefined
   let started = 0
   let published = 0
   let received = 0
-  // Live updates, oldest first, kept while a read could still need them.
-  let log: { seq: number; at: number; value: T }[] = []
+  // The latest live update of each id, oldest first, kept while a read could
+  // still need it.
+  const log = new Map<string, { seq: number; at: number; value: T }>()
   // Where each read in flight started.
   const reads = new Map<number, { seq: number; at: number }>()
+  let holders = 0
   const listeners = new Set<() => void>()
 
   const publish = (values: T[]) => {
@@ -26,7 +30,7 @@ export function createLiveSnapshot<T extends { id: string }>(
   const merge = (values: T[], changes: T[]) =>
     Array.from(new Map([...values, ...changes].map((v) => [v.id, v])).values())
   const missedBy =
-    (read: { seq: number; at: number }) => (u: (typeof log)[0]) =>
+    (read: { seq: number; at: number }) => (u: { seq: number; at: number }) =>
       u.seq >= read.seq || u.at > read.at - maxAge
   const prune = () => {
     // Also covers a read that starts now.
@@ -35,7 +39,12 @@ export function createLiveSnapshot<T extends { id: string }>(
       oldest.seq = Math.min(oldest.seq, read.seq)
       oldest.at = Math.min(oldest.at, read.at)
     }
-    log = log.filter(missedBy(oldest))
+    const needed = missedBy(oldest)
+    // Any update after the first one still needed is needed too.
+    for (const [id, u] of log) {
+      if (needed(u)) break
+      log.delete(id)
+    }
   }
 
   return {
@@ -48,9 +57,26 @@ export function createLiveSnapshot<T extends { id: string }>(
     },
     update: (changes: T[]) => {
       const at = Date.now()
-      for (const value of changes) log.push({ seq: ++received, at, value })
+      for (const value of changes) {
+        // Moved to the end, so the log stays in arrival order.
+        log.delete(value.id)
+        log.set(value.id, { seq: ++received, at, value })
+      }
       prune()
       publish(merge(snapshot ?? [], changes))
+    },
+    /** Each consumer holds the snapshot while it applies live updates, and
+     * calls the returned function when it stops. While none hold it, updates
+     * can be missed, so when one starts again, earlier updates that aren't
+     * final stop being replayed: a missed update may have superseded them. */
+    hold: () => {
+      if (holders++ === 0)
+        for (const [id, u] of log) if (!isFinal(u.value)) log.delete(id)
+      let held = true
+      return () => {
+        if (held) holders--
+        held = false
+      }
     },
     // Used to remove orders when their expiry time is reached.
     normalize: () => {
@@ -67,7 +93,9 @@ export function createLiveSnapshot<T extends { id: string }>(
           // Older reads still in flight can no longer be published.
           for (const older of reads.keys())
             if (older < generation) reads.delete(older)
-          const missed = log.filter(missedBy(start)).map((u) => u.value)
+          const missed = Array.from(log.values())
+            .filter(missedBy(start))
+            .map((u) => u.value)
           publish(merge(values, missed))
         }
       } finally {

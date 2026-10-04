@@ -295,6 +295,31 @@ it('keeps a live cancel when a cached display refresh predates it', async () => 
   expect(m.latest[0]).toEqual([])
 })
 
+it('does not replay an order from before every consumer unmounted', async () => {
+  const id = `market-${nextId++}`
+  const m = await mount(async () => [], id)
+  await m.broadcast([order(id)])
+  expect(m.latest[0]?.map((b) => b.id)).toEqual(['a'])
+  await act(async () => root!.unmount())
+  root = undefined
+  // Its cancellation goes unseen, and the remount's read is up to date.
+  const later = await mount(async () => [], id)
+  expect(later.latest[0]).toEqual([])
+})
+
+it('still replays a confirmed cancel over a stale read after remount', async () => {
+  const id = `market-${nextId++}`
+  await mount(async () => [order(id)], id)
+  await act(async () => root!.unmount())
+  root = undefined
+  await act(async () =>
+    applyLimitOrderUpdates([order(id, 'a', { isCancelled: true })])
+  )
+  // The CDN keeps serving its copy from before the cancel.
+  const later = await mount(async () => [order(id)], id)
+  expect(later.latest[0]).toEqual([])
+})
+
 it('keeps a cached display read out of the quote book', async () => {
   const id = `market-${nextId++}`
   const latest: { quote?: LimitBet[]; display?: LimitBet[] } = {}
