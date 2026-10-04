@@ -359,9 +359,7 @@ const totalTakerAmount = (r: PublicResult) =>
 const sumProbAfter = (r: PublicResult) => sumBy(r.updatedAnswers, 'prob')
 
 const minPoolAfter = (r: PublicResult) =>
-  Math.min(
-    ...r.updatedAnswers.flatMap((a) => [a.poolYes, a.poolNo])
-  )
+  Math.min(...r.updatedAnswers.flatMap((a) => [a.poolYes, a.poolNo]))
 
 const fmt = (x: number, d = 12) => x.toExponential(3).padStart(d)
 
@@ -494,9 +492,9 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
         maxProbDiff = Math.max(maxProbDiff, Math.abs(myProb - ua.prob))
       }
       console.log(
-        `${c.label.padEnd(52)} |net-pubTotal|=${fmt(netDiff)}  maxProbDiff=${fmt(
-          maxProbDiff
-        )}`
+        `${c.label.padEnd(52)} |net-pubTotal|=${fmt(
+          netDiff
+        )}  maxProbDiff=${fmt(maxProbDiff)}`
       )
       expect(netDiff).toBeLessThan(1e-9)
       expect(maxProbDiff).toBeLessThan(1e-12)
@@ -610,20 +608,27 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
                   net0: prevNet,
                   net1: r.net,
                 }
-                if (!localWorst || v.relDrop > localWorst.relDrop) localWorst = v
+                if (!localWorst || v.relDrop > localWorst.relDrop)
+                  localWorst = v
                 if (!worst || v.relDrop > worst.relDrop) worst = v
               } else if (dnet === 0) {
                 localPlateaus++
                 plateauCount++
                 if (!worstPlateau)
-                  worstPlateau = { config: `${label}[${name}]`, g0: prevG, g1: g }
+                  worstPlateau = {
+                    config: `${label}[${name}]`,
+                    g0: prevG,
+                    g1: g,
+                  }
               }
               prevG = g
               prevNet = r.net
             }
             console.log(
               `${label.padEnd(30)} [${name}] gTop=${gTop.toExponential(3)} ` +
-                `worstDrop=${localWorst ? fmt(localWorst.drop) : '        none'} ` +
+                `worstDrop=${
+                  localWorst ? fmt(localWorst.drop) : '        none'
+                } ` +
                 `plateaus=${localPlateaus} undefHoles=${undefinedHoles}`
             )
             expect(undefinedHoles).toBe(0)
@@ -636,7 +641,9 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
       console.log(
         `\nWORST MONOTONICITY VIOLATION: ${worst.config} ` +
           `net(${worst.g0}) = ${worst.net0} -> net(${worst.g1}) = ${worst.net1} ` +
-          `(drop ${worst.drop.toExponential(6)}, rel ${worst.relDrop.toExponential(6)})`
+          `(drop ${worst.drop.toExponential(
+            6
+          )}, rel ${worst.relDrop.toExponential(6)})`
       )
     } else {
       console.log(
@@ -716,7 +723,9 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
     }
 
     rows.sort((a, b) => Math.abs(b.residual) - Math.abs(a.residual))
-    console.log('\n--- 2. cost==betAmount invariant (worst 15 by |residual|) ---')
+    console.log(
+      '\n--- 2. cost==betAmount invariant (worst 15 by |residual|) ---'
+    )
     console.log(
       'config'.padEnd(36) +
         'bet'.padStart(9) +
@@ -748,7 +757,9 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
 
   // ------------------------------------------------------------ probe 3
   it('3. whale / feasibility-boundary behavior, n=3, basket={0}', () => {
-    console.log('\n--- 3. whale/boundary: n=3, ps=[0.5,0.3,0.2], basket={0} ---')
+    console.log(
+      '\n--- 3. whale/boundary: n=3, ps=[0.5,0.3,0.2], basket={0} ---'
+    )
     console.log(
       'L'.padStart(6) +
         'bet'.padStart(10) +
@@ -794,11 +805,11 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
         } catch (e) {
           guard = ` THREW: ${(e as Error).message}`
           out =
-            String(L).padStart(6) +
-            bet.toExponential(0).padStart(10) +
-            guard
+            String(L).padStart(6) + bet.toExponential(0).padStart(10) + guard
         }
         console.log(out + guard)
+        // A solve that throws is a failure, not a line in the table.
+        expect(guard).toBe('')
       }
     }
   })
@@ -820,9 +831,15 @@ d('cpmm-multi-2 net(g) monotonicity probe', () => {
 
     console.log('\n--- x. cross-answer maker balance binding ---')
     for (const bet of [60, 500]) {
-      const solver = makeSolver(answers, basket, undefined, cloneBets(unfilled), {
-        ...balances,
-      })
+      const solver = makeSolver(
+        answers,
+        basket,
+        undefined,
+        cloneBets(unfilled),
+        {
+          ...balances,
+        }
+      )
       const { solved } = solver.solve(bet)
       const pub = publicV2(answers, basket, bet, unfilled, balances)
       // v1 comparison on the identical config (same taker-charge/sum-prob checks)

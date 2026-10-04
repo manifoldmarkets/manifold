@@ -633,10 +633,9 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       } catch (e) {
         threw = (e as Error).message
       }
-      if (threw) {
-        record(`P3 ${label}`, 'THROWS', `throws: ${threw}`)
-        return
-      }
+      if (threw) record(`P3 ${label}`, 'THROWS', `throws: ${threw}`)
+      // A sale that throws is a failure, not a verdict.
+      expect(threw).toBeUndefined()
       const after = applySale(answers, toSell.id, res!)
       const stats = domainStats(answers, after)
       const probsAfter = after.map((a) => probOf(a).toFixed(6)).join(',')
