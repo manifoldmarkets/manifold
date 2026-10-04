@@ -172,24 +172,30 @@ export const useBatchedGetter = <T>(
   const key = `${queryType}-${id}`
   const [state, saveState] = usePersistentInMemoryState<T>(initialValue, key)
   const maxAge = maxAgeByQueryType[queryType] ?? 0
-  // Live updates, oldest first, that a response might not include: those
-  // received since the pending read was requested, and up to the max age of
-  // a cached response before it.
-  const liveUpdates = useRef<LiveUpdate<T>[]>([])
+  // Live updates to the key's value, oldest first, that a response might not
+  // include: those received since the pending read was requested, and up to
+  // the max age of a cached response before it. The effect starts a new log
+  // for a new key, when the consumer's subscriptions move to it.
+  const liveUpdates = useRef({ key, log: [] as LiveUpdate<T>[] })
   const requestedAt = useRef<number | undefined>(undefined)
   const setState = useEvent((update: SetStateAction<T>) => {
+    const { log } = liveUpdates.current
     const at = Date.now()
     const since = Math.min(at, requestedAt.current ?? at) - maxAge
-    liveUpdates.current = liveUpdates.current.filter((u) => u.at >= since)
-    liveUpdates.current.push({ update, dispatched: dispatches, at })
+    let stale = 0
+    while (stale < log.length && log[stale].at < since) stale++
+    if (stale) log.splice(0, stale)
+    log.push({ update, dispatched: dispatches, at })
     saveState(update)
   })
 
   const MAX_BATCH_SIZE = 38
 
   useEffect(() => {
+    if (liveUpdates.current.key !== key) liveUpdates.current = { key, log: [] }
     if (!enabled) return
     let active = true
+    const { log } = liveUpdates.current
     requestedAt.current = Date.now()
     const receive = (value: T, read: Read, error?: unknown) => {
       if (!active) return
@@ -200,7 +206,7 @@ export const useBatchedGetter = <T>(
       // arrived within its max age before. An origin read already includes
       // earlier ones, and replaying them would revert anything newer.
       saveState(
-        liveUpdates.current
+        log
           .filter(
             ({ dispatched, at }) =>
               dispatched >= read.generation || at > read.dispatchedAt - maxAge

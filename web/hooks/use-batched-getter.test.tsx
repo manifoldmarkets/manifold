@@ -31,13 +31,14 @@ async function mount(
   let root!: ReactTestRenderer
   let latest: any,
     setValue: any,
-    refreshKey = 0
+    refreshKey = 0,
+    shown = market
   function Consumer() {
     ;[latest, setValue] = useBatchedGetter(
       { [queryType]: read },
       queryType,
-      market,
-      { id: market, pool: 0 },
+      shown,
+      { id: shown, pool: 0 },
       true,
       undefined,
       refreshKey
@@ -54,6 +55,10 @@ async function mount(
     setValue: async (value: any) => act(async () => setValue(value)),
     refresh: async () => {
       refreshKey++
+      await act(async () => root.update(<Consumer />))
+    },
+    show: async (market: string) => {
+      shown = market
       await act(async () => root.update(<Consumer />))
     },
     dispatch: () => {
@@ -206,6 +211,23 @@ it('replays recent updates over a cached refresh until it must include them', as
   } finally {
     clock.mockRestore()
   }
+})
+
+it("does not replay one market's updates over another's", async () => {
+  const other = `batch-${id++}`
+  const m = await mount(async () => [
+    { id: m.market, pool: 1 },
+    { id: other, pool: 1 },
+  ])
+  m.dispatch()
+  await act(async () => {})
+  // Merged like a contract broadcast, which carries the market's id.
+  await m.setValue((prev: any) => ({ ...prev, id: m.market, pool: 2 }))
+  // The same consumer switches markets soon after.
+  await m.show(other)
+  m.dispatch()
+  await act(async () => {})
+  expect(m.latest()).toEqual({ id: other, pool: 1 })
 })
 
 it('replays live pool changes over the fetched market snapshot', async () => {
