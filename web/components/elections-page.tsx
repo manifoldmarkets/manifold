@@ -19,6 +19,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { referralQuery } from 'common/util/share'
 import { ENV_CONFIG } from 'common/envs/constants'
+import interactions from './us-elections/election-interactions.module.css'
 
 // Kept for legacy political market panels that still reference it.
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
@@ -90,7 +91,9 @@ export function USElectionsPage(
   }`
 
   return (
-    <Col className="isolate mb-8 gap-6 px-1 sm:px-2">
+    <Col
+      className={clsx(interactions.scope, 'isolate mb-8 gap-6 px-1 sm:px-2')}
+    >
       {/* Hero with back navigation, left-aligned (back sits left of the title). */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
         <BackButton />

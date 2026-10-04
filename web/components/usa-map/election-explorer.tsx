@@ -59,6 +59,7 @@ import {
   TIERS,
 } from './election-map-model'
 import styles from './election-explorer.module.css'
+import interactions from '../us-elections/election-interactions.module.css'
 
 type Props = {
   senate: MapContractsDictionary
@@ -349,7 +350,7 @@ export function ElectionExplorer(props: Props) {
       : null
 
   return (
-    <div className={styles.layout}>
+    <div className={clsx(styles.layout, interactions.scope)}>
       <div className={styles.controls} aria-label="Chamber control">
         <ControlCard label="Senate" contract={props.senateControl} />
         <ControlCard label="House" contract={props.houseControl} />
@@ -1147,7 +1148,7 @@ export function ElectionExplorer(props: Props) {
           setOpen={setSources}
           ariaLabel="How to read the election map"
         >
-          <div className={styles.sources}>
+          <div className={clsx(styles.sources, interactions.scope)}>
             <h2>How to read the map</h2>
             {isMeasures ? (
               <>

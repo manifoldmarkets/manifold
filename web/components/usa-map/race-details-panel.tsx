@@ -10,8 +10,10 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
+import clsx from 'clsx'
 import { RefreshIcon, XIcon } from '@heroicons/react/outline'
 import styles from './election-explorer.module.css'
+import interactions from '../us-elections/election-interactions.module.css'
 
 export function RaceDetailsPanel(props: {
   title: string
@@ -136,7 +138,7 @@ export function RaceDetailsPanel(props: {
   const panel = (
     <section
       ref={panelRef}
-      className={styles.details}
+      className={clsx(styles.details, interactions.scope)}
       aria-label={label}
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
     >

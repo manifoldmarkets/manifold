@@ -276,9 +276,10 @@
 .balanceTrack button:hover {
   opacity: 0.8;
 }
-.balanceTrack button[aria-pressed='true'] {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.balanceTrack button[aria-pressed='true'],
+.balanceTrack button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 .majorityLine {
   position: absolute;
@@ -1131,9 +1132,17 @@
     background-position: right 0 center;
     background-size: 12px;
     border: 0;
+    border-radius: inherit;
     font-size: 11px;
     color: inherit;
     cursor: pointer;
+  }
+  .mobileMode select:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  .mobileMode:has(select:focus-visible) {
+    box-shadow: inset 0 0 0 2px var(--accent);
   }
   .tabIcon,
   .tabIcon svg {
