@@ -3,7 +3,8 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { SUBSIDY_FEE } from 'common/economy'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { SupabaseTransaction } from 'shared/supabase/init'
 import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
@@ -32,8 +33,15 @@ export const addContractLiquidity = async (
   // When set, subsidize a single answer (its own binary CPMM) rather than the whole market.
   answerId?: string
 ) => {
-  // Run as transaction to prevent race conditions
-  return await createSupabaseDirectClient().tx(async (tx) => {
+  // One transaction, so nothing can interleave with the balance check and the
+  // writes. Retried on a deadlock: the drizzle, resolution and answer creation
+  // lock answer rows before the contract row, the reverse of bets and of the
+  // per-answer branch below, and all of them retry the same way. At Postgres's
+  // default READ COMMITTED level, as before, not the helper's SERIALIZABLE:
+  // this transaction's snapshot starts before it waits in the bets queue, so
+  // under SERIALIZABLE every bet committing meanwhile would abort it, where
+  // READ COMMITTED applies its increments to the bet's row version.
+  const run = async (tx: SupabaseTransaction) => {
     const contract = await getContract(tx, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
 
@@ -151,7 +159,9 @@ export const addContractLiquidity = async (
     if (answerId !== undefined) {
       // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion
       // trigger applies just as for a whole-market add. Update the contract row before the
-      // answer row, the order bets lock them in, so the two can't deadlock.
+      // answer row, the order bets lock them in. The drizzle (drizzleMarket), resolution and
+      // answer creation lock in the other order, so this can deadlock with one of them, as a
+      // bet can; the loser's transaction is rolled back and retried (runTransactionWithRetries).
       await updateContract(tx, contractId, {
         totalLiquidity: FieldVal.increment(subsidyAmount),
         ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
@@ -192,5 +202,6 @@ export const addContractLiquidity = async (
         await onCreateLiquidityProvision(liquidity)
       },
     }
-  })
+  }
+  return await runTransactionWithRetries(run, 3, { mode: 'default' })
 }
