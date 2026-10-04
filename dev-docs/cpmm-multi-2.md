@@ -12,7 +12,8 @@ as `cpmm-multi-2`, whether or not answers can be added later. One created with
 starting probabilities (`answerProbs`) opens at them. One created without
 opens at the even split `cpmm-multi-1` opens at, on the same pools with every
 `p` at 0.5, and differs only in what comes after: liquidity added later keeps
-its value, answers added open at 2%, and liquidity can go to a single answer.
+its value, answers added open at half of what Other has, and liquidity can go
+to a single answer.
 Numeric and date markets, and every market created before the switch, stay
 `cpmm-multi-1` and trade exactly as before. The mechanism, pool math, proofs
 and benchmarks come from Evan's PR, #3934, and
@@ -51,18 +52,26 @@ wins, plus the fee for adding the answer. It splits the shares as
 So the new answer gets a pool of its own, paid for by the fee. The fee is
 tiered by the market's liquidity per answer (Ṁ25, Ṁ100, Ṁ1,000 or Ṁ10,000),
 so the new answer trades about as deeply as the others. In a Ṁ1,000 market at
-30/20/10/5 with Other at 35%, buying the new answer from 2% to 20% costs Ṁ33
-and to 50% Ṁ131, against Ṁ26 and Ṁ145 for an answer listed at 2% from the
-start in a market opened with the same liquidity.
+30/20/10/5 with Other at 35%, the new answer opens at 17.5%, and buying it to
+30% costs Ṁ57 and to 50% Ṁ190, against Ṁ66 and Ṁ215 for an answer listed at
+17.5% from the start in a market opened with the same liquidity.
 
 Every outcome then pays the fee more than it did, and nothing else changes. A
 pool's p sets its prices without moving any value, so the prices come last:
 
-- The new answer opens at 2% (`NEW_ANSWER_PROB`). Nobody picks its price. A
-  contender worth more gets bought up from there, and a long shot barely moves
-  anything.
-- The new Other gives what it can toward that, down to 1%. While Other is at
-  3% or more, the listed answers keep their prices.
+- The new answer opens at half of what Other has (`newAnswerOpeningProb`), as
+  `cpmm-multi-1`'s split gives it, and never below 2% (`NEW_ANSWER_PROB`).
+  Nobody picks its price. Other priced every unlisted answer together, and
+  halving it claims nothing about which of them the new answer is. It also
+  bounds what the first buyer can take from the pools by Other's own price. A
+  fixed 2% opening didn't: it priced an Other at 99% as a near-certain NO, so
+  on a market opened with Other alone a Ṁ100 buy of the first answer added
+  took 1,184 shares and left the pools paying Ṁ15 if it won, where opening at
+  half takes 192, as on `cpmm-multi-1`. A contender worth more gets bought up
+  from its opening price, and a long shot barely moves anything.
+- The new Other keeps the other half, or gives what it can toward the 2%
+  floor, down to 1%. While Other has 3% or more, the listed answers keep their
+  prices.
 - Below that, the listed answers give the rest, each the same share of its
   price. With Other at 2%, Other goes to 1% and the listed answers give up 1
   point between them. An Other already below 1% stays where it is.
@@ -75,8 +84,8 @@ pool's p sets its prices without moving any value, so the prices come last:
   an answer above 99%, which no trade can reach.
 - A market opened with no listed answers holds Other alone at 99%, the top of
   the band, on the pool `cpmm-multi-1` builds, which prices it at 50%. Its
-  answers sum to one from the first answer added, which opens at 2% and puts
-  Other at 98%. Until then nothing can be bet: place-bet refuses bets on a
+  answers sum to one from the first answer added, which opens at 50% beside
+  a new Other at 50%. Until then nothing can be bet: place-bet refuses bets on a
   sum-to-one market with fewer than two answers, as on `main`.
 
 Where a listed price gives, the backend cancels the YES orders the new price
@@ -129,8 +138,8 @@ can fall to 1e-20 or below. What keeps that priceable:
   re-derives every `p`, only when every answer is inside the band, and
   otherwise goes to the answers inside it, weighted by the depth creation would
   give them. Adding an answer moves a listed answer's `p` only with its price,
-  when it gives its share of the new answer's 2% (a long shot's by about 2%),
-  and raises it as YES goes into its pool. Trades can't get an answer there
+  when it gives its share of the new answer's opening price (a long shot's by
+  about that much), and raises it as YES goes into its pool. Trades can't get an answer there
   either: pushing a low-`p` answer toward 0%, or a high-`p` one toward 100%,
   moves its price only in proportion to the mana spent.
 - Until new answers opened at 2%, splitting a tiny Other was the one way an
@@ -246,15 +255,18 @@ varies; note that in `docs/docs/api.md` in the same deploy.
   shots, Ṁ30 against the favourite moves it to 90.9% (87.8% on `cpmm-multi-1`),
   but Ṁ300 moves it to 3.2% (17%). An answer that rallies from near 0% after
   liquidity went in near 0% can be moved a long way by a small bet.
-- A new answer opens at 2% whatever its chances, so the first trader after the
-  add can buy a strong contender cheaply, out of the pools. Whenever a bot is
-  watching, that isn't the adder: the new answer is broadcast before the add
-  returns, and in the fifth live test a bot listening on the websocket bought
-  first in all 10 races, as it does on `cpmm-multi-1`. At 2% the first buyer
-  gains more than at `cpmm-multi-1`'s opening price: Ṁ50 of an answer worth 20%
-  gained Ṁ55 on the first of ten adds and Ṁ175 by the tenth, against −Ṁ3 to
-  Ṁ85. An adder who wants the new answer can buy Other first: YES in Other
-  becomes YES in the new answer too.
+- A new answer opens at half of what Other has whatever its chances, so the
+  first trader after the add can buy a strong contender below its worth, out
+  of the pools, as on `cpmm-multi-1`. Whenever a bot is watching, that isn't
+  the adder: the new answer is broadcast before the add returns, and in the
+  fifth live test a bot listening on the websocket bought first in all 10
+  races, as it does on `cpmm-multi-1`. Opening at half gives the first buyer
+  the same edge `cpmm-multi-1`'s split does. The fixed 2% opening this
+  replaced gave far more: Ṁ50 of an answer worth 20% gained Ṁ55 on the first
+  of ten adds and Ṁ175 by the tenth, against −Ṁ3 to Ṁ85 on `cpmm-multi-1`, and
+  on a market opened with Other alone a Ṁ100 buy of the first answer added
+  took 1,184 shares against 192. An adder who wants the new answer can buy
+  Other first: YES in Other becomes YES in the new answer too.
 - Once Other is below 3%, each answer added takes up to 2 points from the
   listed answers without a trade, and the first trader to buy them back gains
   what the pools lose. On a Ṁ1,000 market with a 97% favourite that's about

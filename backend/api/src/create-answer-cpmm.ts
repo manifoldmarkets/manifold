@@ -476,8 +476,9 @@ async function createAnswerAndSumAnswersToOne(
 // cpmm-multi-2: split "Other" into the new answer and a new Other with
 // addAnswerToCpmmMulti2Pools, which keeps every share in the pools (so each
 // liquidity provider's share of them is unchanged) and puts the fee for the
-// answer into the new answer's pool. The new answer opens at 2%, out of Other
-// while Other can spare it, and otherwise partly out of the listed answers.
+// answer into the new answer's pool. The new answer opens at half of what
+// Other has, or 2% if that's more (newAnswerOpeningProb), out of Other while
+// Other can spare it, and otherwise partly out of the listed answers.
 // Users' own positions in Other are refined the same way by
 // convertOtherAnswerShares.
 async function createAnswerAndSumAnswersToOneV2(

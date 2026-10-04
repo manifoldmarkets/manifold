@@ -221,7 +221,7 @@ describe('cpmm-multi-2 creation — per-answer answerProbs', () => {
   it('opens Other alone at the top of the band, where cpmm-multi-1 has 50%', () => {
     // Other alone is sure to win until an answer is added. Both open it on
     // cpmm-multi-1's balanced pool; cpmm-multi-2 prices it at 99% rather than
-    // 50%. Its first answer added opens at 2% and puts Other at 98%
+    // 50%. Its first answer added opens at 50% beside a new Other at 50%
     // (add-answer tests).
     for (const enabled of [true, false]) {
       const contract = makeMC([], undefined, 1000, true, 'ANYONE', enabled)

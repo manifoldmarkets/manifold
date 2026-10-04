@@ -1337,10 +1337,23 @@ const foldIntoListedAnswer = (
   }
 }
 
-// cpmm-multi-2: the chance an answer opens at when it's added to a sum-to-one
-// market. Nobody picks it. A contender worth more gets bought up from here,
+// cpmm-multi-2: the least an answer opens at when it's added to a sum-to-one
+// market. Nobody picks it. A contender worth more gets bought up from there,
 // and a long shot barely moves anything.
 export const NEW_ANSWER_PROB = 0.02
+
+// What an added answer opens at: half of what Other has, as cpmm-multi-1's
+// split gives it (createAnswerAndSumAnswersToOne), and never less than
+// NEW_ANSWER_PROB. Other priced every unlisted answer together, and halving it
+// claims nothing about which of them the new answer is. It also bounds what
+// the first buyer can take from the pools by Other's own price. A fixed 2%
+// opening didn't: an Other at 99% is a near-certain NO at 1%, so on a market
+// opened with Other alone, a Ṁ100 buy of the first answer added took 1,184
+// shares and left the pools paying Ṁ15 if it won. Opening at half, the same
+// buy takes 192, as it does on cpmm-multi-1. Below 4% Other the floor applies,
+// and Other gives what it can toward it, down to 1%.
+export const newAnswerOpeningProb = (otherProb: number) =>
+  Math.max(NEW_ANSWER_PROB, otherProb / 2)
 
 const clampP = (p: number, [lo, hi] = [MIN_CPMM_PROB, MAX_CPMM_PROB]) =>
   Math.min(hi, Math.max(lo, p))
@@ -1363,8 +1376,8 @@ const clampP = (p: number, [lo, hi] = [MIN_CPMM_PROB, MAX_CPMM_PROB]) =>
 //   others', not a sliver of Other's.
 // Every outcome then pays the fee more than it did, and nothing else changes.
 // A pool's p sets its prices without moving any value, so the prices come
-// last. The new answer opens at NEW_ANSWER_PROB, which comes out of the new
-// Other down to 1%. The listed answers keep their prices unless that leaves
+// last. The new answer opens at newAnswerOpeningProb(what Other has), which
+// comes out of the new Other down to 1%. The listed answers keep their prices unless that leaves
 // some still to find, which they give up in proportion to their prices. An
 // answer's p falls with its price and stays in [0.01, 0.99]. Where one
 // couldn't give its share, every pool first takes the same YES out of the new
@@ -1430,6 +1443,11 @@ export function addAnswerToCpmmMulti2Pools(
     return [Math.min(MIN_CPMM_PROB, p), Math.max(MAX_CPMM_PROB, p)]
   }
 
+  // What Other has sets what the new answer opens at. A market opened with
+  // Other alone sums to one only from this split, so its first answer and its
+  // new Other open at 50% each.
+  const openAt = newAnswerOpeningProb(room)
+
   // The new answer's and the new Other's pools and prices with `sets` YES
   // added to every pool, out of the new Other's NO, and what that leaves the
   // listed answers to keep between them.
@@ -1438,7 +1456,7 @@ export function addAnswerToCpmmMulti2Pools(
     const otherPool = { YES: yesOver + otherNo, NO: otherNo - sets }
     const newProb = getCpmmProbability(
       newPool,
-      clampP(pForProbability(newPool, NEW_ANSWER_PROB))
+      clampP(pForProbability(newPool, openAt))
     )
     // The new Other gives what it can toward the new answer, down to 1%.
     const otherTarget =
