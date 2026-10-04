@@ -135,7 +135,7 @@ export const getCopiedAnswerProbs = (
     MultiContract,
     'mechanism' | 'outcomeType' | 'isResolved' | 'shouldAnswersSumToOne'
   > & {
-    addAnswersMode: MultiContract['addAnswersMode']
+    addAnswersMode?: MultiContract['addAnswersMode']
     answers: Pick<Answer, 'prob' | 'isOther' | 'resolution'>[]
   },
   hasAllAnswers: boolean

@@ -100,7 +100,8 @@ export function duplicateContractHref(
   }
   if (
     hasAllAnswers &&
-    (contract.outcomeType === 'MULTI_NUMERIC' || contract.outcomeType === 'DATE')
+    (contract.outcomeType === 'MULTI_NUMERIC' ||
+      contract.outcomeType === 'DATE')
   ) {
     params.midpoints = contract.answers.map((a) => a.midpoint!)
   }

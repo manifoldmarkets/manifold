@@ -593,7 +593,10 @@ describe('getCopiedAnswerProbs', () => {
 
   it('carries the odds of a market the page holds every answer of', () => {
     expect(
-      getCopiedAnswerProbs(market([answer(0.5), answer(0.3), answer(0.2)]), true)
+      getCopiedAnswerProbs(
+        market([answer(0.5), answer(0.3), answer(0.2)]),
+        true
+      )
     ).toEqual([50, 30, 20])
     // Fitted along with Other, then Other is dropped to be recreated.
     expect(
