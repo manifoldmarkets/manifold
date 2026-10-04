@@ -12,6 +12,10 @@ import { convertsToCpmmMulti2, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { getAnswer } from 'shared/supabase/answers'
+import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
+import { convertAnswer } from 'common/supabase/contracts'
+import { Row } from 'common/supabase/utils'
+import { Answer } from 'common/answer'
 
 export const addLiquidity: APIHandler<'market/:contractId/add-liquidity'> =
   onlyUsersWhoCanPerformAction(
@@ -127,6 +131,7 @@ export const addContractLiquidity = async (
     // own kill switch, separate from v2 creation, so it stays inert until deliberately enabled.
     const shouldConvertToV2 = convertsToCpmmMulti2(contract)
 
+    let updatedAnswer: Answer | undefined
     if (answerId !== undefined) {
       // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion
       // trigger applies just as for a whole-market add. Update the contract row before the
@@ -140,16 +145,17 @@ export const addContractLiquidity = async (
       // increment, so it can't interleave with the scheduler's drizzleAnswer, which
       // read-modify-writes subsidyPool under a row lock in another process. The resolution
       // check here also covers an answer that resolved since the check above.
-      const updated = await tx.oneOrNone(
+      const updated = await tx.oneOrNone<Row<'answers'>>(
         `update answers
         set
           total_liquidity = total_liquidity + $1,
           subsidy_pool = subsidy_pool + $1
         where id = $2 and resolution is null
-        returning id`,
+        returning *`,
         [subsidyAmount, answerId]
       )
       if (!updated) throw new APIError(403, 'This answer is already resolved')
+      updatedAnswer = convertAnswer(updated)
     } else {
       await updateContract(tx, contractId, {
         subsidyPool: FieldVal.increment(subsidyAmount),
@@ -160,7 +166,13 @@ export const addContractLiquidity = async (
 
     return {
       result: liquidity,
-      continue: () => onCreateLiquidityProvision(liquidity),
+      continue: async () => {
+        // The increment above skips updateAnswer, and with it the broadcast,
+        // so send the answer's new pending subsidy here, once it's committed.
+        // Without it, open pages count the subsidy as active until a reload.
+        if (updatedAnswer) broadcastUpdatedAnswers(contractId, [updatedAnswer])
+        await onCreateLiquidityProvision(liquidity)
+      },
     }
   })
 }
