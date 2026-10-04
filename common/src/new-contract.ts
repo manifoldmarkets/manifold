@@ -678,8 +678,8 @@ function createAnswers(
   // cpmm-multi-2: Other alone, in a market opened with no listed answers, is
   // sure to win until an answer is added, so it opens at the top of the band on
   // the same pool rather than at cpmm-multi-1's 50%. Nothing can be bet until a
-  // second answer exists (place-bet), and the first one added opens at 2% and
-  // puts Other at 98%.
+  // second answer exists (place-bet), and the first one added opens at 50%
+  // beside a new Other at 50% (newAnswerOpeningProb of the whole market).
   let p = 0.5
   if (cpmmMulti2 && shouldAnswersSumToOne && answers.length === 1) {
     p = MAX_CPMM_PROB

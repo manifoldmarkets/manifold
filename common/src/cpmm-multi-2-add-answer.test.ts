@@ -6,7 +6,7 @@ import {
   getCpmmLiquidity,
   getCpmmProbability,
   isDrainedPool,
-  NEW_ANSWER_PROB,
+  newAnswerOpeningProb,
   pForProbability,
 } from './calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from './calculate-cpmm-arbitrage'
@@ -187,29 +187,28 @@ const withSplit = (answers: Answer[], pools: Pools, newId = 'new') => {
   ]
 }
 
-// The new answer opens at 2% out of Other, and the listed answers keep their
-// prices.
+// The new answer opens at half of Other's price, or 2% if that's more, out of
+// Other, and the listed answers keep their prices.
 const expectOpensFromOther = (before: Pools, after: Pools) => {
   for (const id of Object.keys(before)) {
     if (id === 'other') continue
     expect(prob(after[id]) / prob(before[id])).toBeCloseTo(1, 10)
   }
-  expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
-  expect(prob(after.other)).toBeCloseTo(
-    prob(before.other) - NEW_ANSWER_PROB,
-    12
-  )
+  const openAt = newAnswerOpeningProb(prob(before.other))
+  expect(prob(after.new)).toBeCloseTo(openAt, 12)
+  expect(prob(after.other)).toBeCloseTo(prob(before.other) - openAt, 12)
   expect(sumBy(Object.values(after), prob)).toBeCloseTo(1, 12)
 }
 
-// The new answer opens at 2%, Other gives what it can down to 1%, and the
-// listed answers give the rest, each the same share of its price.
+// The new answer opens at its opening price, Other gives what it can down to
+// 1%, and the listed answers give the rest, each the same share of its price.
 const expectListedGiveTheRest = (before: Pools, after: Pools) => {
   const was = prob(before.other)
-  const other = was < 0.01 ? was : Math.max(0.01, was - NEW_ANSWER_PROB)
-  expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
+  const openAt = newAnswerOpeningProb(was)
+  const other = was < 0.01 ? was : Math.max(0.01, was - openAt)
+  expect(prob(after.new)).toBeCloseTo(openAt, 12)
   expect(prob(after.other)).toBeCloseTo(other, 12)
-  const share = (1 - NEW_ANSWER_PROB - other) / (1 - was)
+  const share = (1 - openAt - other) / (1 - was)
   for (const id of Object.keys(before)) {
     if (id === 'other') continue
     expect(prob(after[id]) / prob(before[id])).toBeCloseTo(share, 9)
@@ -244,7 +243,7 @@ const costTo = (answers: Answer[], id: string, target: number) => {
 }
 
 describe('addAnswerToCpmmMulti2Pools', () => {
-  it('opens the new answer at 2% out of Other, keeping the listed prices', () => {
+  it('opens the new answer at half of Other, keeping the listed prices', () => {
     let answers = openAddable([50, 30])
     answers = trade(answers, 0, 'YES', 200)
     answers = trade(answers, 2, 'YES', 40)
@@ -268,14 +267,17 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     expect(after.new.pool.NO).toBe(75)
   })
 
-  it('gives the new answer about the depth of one listed at 2% from the start', () => {
+  it('gives the new answer about the depth of one listed at its price from the start', () => {
     const listed = [30, 20, 10, 5]
     const answers = openAddable(listed)
     const fee = getAnswerCostFromLiquidity(1000, answers.length)
     const added = withSplit(answers, split(toPools(answers), fee))
-    const opened = openAddable([...listed, 2], 1000 + fee)
-    expect(prob(toPools(opened).a4)).toBeCloseTo(NEW_ANSWER_PROB, 9)
-    for (const target of [0.2, 0.5]) {
+    // Other at 35%, so the new answer opens at 17.5%.
+    const openAt = newAnswerOpeningProb(prob(toPools(answers).other))
+    expect(openAt).toBeCloseTo(0.175, 12)
+    const opened = openAddable([...listed, openAt * 100], 1000 + fee)
+    expect(prob(toPools(opened).a4)).toBeCloseTo(openAt, 9)
+    for (const target of [0.3, 0.5]) {
       const ratio = costTo(added, 'new', target) / costTo(opened, 'a4', target)
       expect(ratio).toBeGreaterThan(0.5)
       expect(ratio).toBeLessThan(2)
@@ -296,7 +298,7 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     expectSane(after)
   })
 
-  it('opens answers added to a market opened at an even split at 2%', () => {
+  it('opens answers added to a market opened at an even split at half of Other', () => {
     const before = toPools(openAddable(undefined, 1000, 3))
     for (const { p } of Object.values(before)) expect(p).toBe(0.5)
     const after = split(before, 100)
@@ -305,10 +307,11 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     expectSane(after)
   })
 
-  it('opens the first answer of a market that listed none at 2%, and Other at 98%', () => {
+  it('opens the first answer of a market that listed none at half of Other', () => {
     // Other opens alone at 99%, and the answers sum to one from the first one
-    // added. Markets opened before that held Other alone at 50%, as
-    // cpmm-multi-1 does, and split the same way.
+    // added: the whole market is Other's, so they open at 50% each. Markets
+    // opened before that held Other alone at 50%, as cpmm-multi-1 does, and
+    // split the same way.
     const opened = toPools(openAddable(undefined))
     expect(Object.keys(opened)).toEqual(['other'])
     expect(prob(opened.other)).toBeCloseTo(MAX_CPMM_PROB, 12)
@@ -317,9 +320,40 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     for (const before of [opened, atHalf]) {
       const after = split(before, 100)
       expectSplitKeepsPayouts(before, after, 100)
-      expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
-      expect(prob(after.other)).toBeCloseTo(1 - NEW_ANSWER_PROB, 12)
+      expect(prob(after.new)).toBeCloseTo(0.5, 12)
+      expect(prob(after.other)).toBeCloseTo(0.5, 12)
       expectSane(after)
+    }
+  })
+
+  it('bounds what the first buyer of an added answer can take from the pools', () => {
+    // A fixed 2% opening priced Other as a near-certain NO: on a market opened
+    // with Other alone, a Ṁ100 YES buy of the first answer added took 1,184
+    // shares and left the pools paying Ṁ15 if it won, against Ṁ1,100 before
+    // the buy. Opening at half of Other, as cpmm-multi-1's split does, the
+    // same buy takes about 192 shares, and the pools keep over 90% of what
+    // they paid. The second case is the design doc's 30/20/10/5 market with
+    // Other at 35%, where a Ṁ50 buy took 572 shares at 2%, against 219 at
+    // half and 205 on cpmm-multi-1's split.
+    const cases: [number[] | undefined, number, number, number][] = [
+      [undefined, 100, 100, 0.5],
+      [[30, 20, 10, 5], 100, 50, 0.175],
+    ]
+    for (const [odds, fee, amount, openAt] of cases) {
+      const opened = openAddable(odds)
+      const before = toPools(opened)
+      const after = split(before, fee)
+      expect(prob(after.new)).toBeCloseTo(openAt, 9)
+      const answers = withSplit(opened, after)
+      const i = answers.findIndex((a) => a.id === 'new')
+      const traded = toPools(trade(answers, i, 'YES', amount))
+      const bought =
+        poolPayout(after, 'new') + amount - poolPayout(traded, 'new')
+      // About what cpmm-multi-1's split gives the same buy: 192 and 205 shares.
+      expect(bought).toBeLessThan(odds ? 230 : 200)
+      expect(poolPayout(traded, 'new')).toBeGreaterThan(
+        0.8 * poolPayout(after, 'new')
+      )
     }
   })
 
@@ -379,7 +413,10 @@ describe('addAnswerToCpmmMulti2Pools', () => {
       const after = split(before, 100, `n${k}`)
       expectSplitKeepsPayouts(before, after, 100, `n${k}`)
       expectSane(after)
-      expect(prob(after[`n${k}`])).toBeCloseTo(NEW_ANSWER_PROB, 12)
+      expect(prob(after[`n${k}`])).toBeCloseTo(
+        newAnswerOpeningProb(prob(before.other)),
+        12
+      )
       for (const id of Object.keys(before))
         if (id !== 'other')
           expect(prob(after[id])).toBeLessThanOrEqual(prob(before[id]))
@@ -415,18 +452,27 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     }
   })
 
-  it('opens every answer at 2% with a pool of its own, 60 adds from a 60% Other', () => {
+  it('opens every answer at half of Other, or 2%, with a pool of its own, 60 adds from a 60% Other', () => {
     let answers = openAddable([25, 15])
     for (let k = 0; k < 60; k++) {
       const fee = getAnswerCostFromLiquidity(1000 + 25 * k, answers.length)
       const before = toPools(answers)
       const after = addAnswerToCpmmMulti2Pools(before, 'other', `n${k}`, fee)!
       expectSane(after)
-      expect(prob(after[`n${k}`])).toBeCloseTo(NEW_ANSWER_PROB, 12)
+      expect(prob(after[`n${k}`])).toBeCloseTo(
+        newAnswerOpeningProb(prob(before.other)),
+        12
+      )
       expect(after[`n${k}`].pool.NO).toBeGreaterThan(fee / 4)
       answers = withSplit(answers, after, `n${k}`)
+      // The first four adds halve Other, from 60% to 3.75%; the fifth opens at
+      // 2% and takes Other to 1.75%; the sixth takes it to 1%, where it stays.
+      if (k < 4)
+        expect(answers[answers.length - 1].prob).toBeCloseTo(
+          0.6 / 2 ** (k + 1),
+          9
+        )
     }
-    // 29 adds take Other from 60% to 2%, and it stays at 1% after.
     expect(answers[answers.length - 1].prob).toBeCloseTo(0.01, 12)
   })
 
@@ -464,7 +510,10 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     expectSane(after)
     expect(prob(after.a0)).toBeLessThan(prob(before.a0))
     expect(prob(after.a0)).toBeGreaterThan(prob(before.a0) * 0.99)
-    expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
+    expect(prob(after.new)).toBeCloseTo(
+      newAnswerOpeningProb(prob(before.other)),
+      12
+    )
   })
 
   it('keeps a listed answer above 99% in band, giving its share', () => {
@@ -529,8 +578,8 @@ describe('addAnswerToCpmmMulti2Pools', () => {
       const after = split(before, fee)
       expectSplitKeepsPayouts(before, after, fee)
       expectSane(after)
-      // No listed price rises, and the new answer opens at 2% unless its p or
-      // the new Other's is held at the edge of [0.01, 0.99].
+      // No listed price rises, and the new answer opens at half of Other, or
+      // 2%, unless its p or the new Other's is held at the edge of [0.01, 0.99].
       for (const id of Object.keys(before))
         if (id !== 'other')
           expect(prob(after[id])).toBeLessThanOrEqual(
@@ -538,8 +587,17 @@ describe('addAnswerToCpmmMulti2Pools', () => {
           )
       const inBand = (p: number) =>
         p > MIN_CPMM_PROB * (1 + 1e-9) && p < MAX_CPMM_PROB * (1 - 1e-9)
+      // What Other has is what the listed prices leave, which is Other's own
+      // price unless a listed answer at its p bound gave some of its.
+      const listedAfter = sumBy(
+        Object.keys(before).filter((id) => id !== 'other'),
+        (id) => prob(after[id])
+      )
       if (inBand(after.new.p) && inBand(after.other.p))
-        expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
+        expect(prob(after.new)).toBeCloseTo(
+          newAnswerOpeningProb(1 - listedAfter),
+          9
+        )
       // With room in Other and nothing to fold into the listed answers, only
       // Other's pool is split.
       if (
