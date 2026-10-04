@@ -668,7 +668,9 @@ export function ElectionExplorer(props: Props) {
               }`}
               className={styles.map}
               data-mode={mode}
+              data-zoomed={camera.k > 1}
               style={{ touchAction: camera.k > 1 ? 'none' : 'pan-y' }}
+              onWheel={() => setHovered(undefined)}
               onPointerMove={() => {
                 if (dragged.current) setHovered(undefined)
               }}
@@ -753,10 +755,19 @@ export function ElectionExplorer(props: Props) {
                         .map((s) => (
                           <text
                             key={s.state}
-                            x={s.center[0]}
-                            y={s.center[1]}
+                            x={s.state === 'FL' ? 785 : s.center[0]}
+                            y={s.state === 'FL' ? 496 : s.center[1]}
                             className={styles.stateLabel}
-                            style={{ fill: labelColor(s.state) }}
+                            style={{
+                              fill: labelColor(s.state),
+                              ...(s.state === 'FL' && {
+                                stroke:
+                                  labelColor(s.state) === '#fff'
+                                    ? '#1e293bcc'
+                                    : '#ffffffcc',
+                                strokeWidth: 2,
+                              }),
+                            }}
                           >
                             {s.state}
                           </text>
@@ -940,7 +951,7 @@ export function ElectionExplorer(props: Props) {
           {isMeasures
             ? 'Select a state to explore its ballot measures.'
             : 'Select a race to explore the odds.'}{' '}
-          Zoom in to drag the map.{' '}
+          Scroll or pinch to zoom; drag to move the map.{' '}
           <button onClick={() => setSources(true)}>More info</button>
         </p>
 

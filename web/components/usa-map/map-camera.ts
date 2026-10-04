@@ -62,3 +62,20 @@ export function gestureCamera(
     viewport
   )
 }
+
+export function zoomCamera(
+  camera: MapCamera,
+  factor: number,
+  origin: Point,
+  viewport: MapViewport
+): MapCamera {
+  const k = Math.max(1, Math.min(6, camera.k * factor))
+  return clampCamera(
+    {
+      k,
+      x: origin.x - ((origin.x - camera.x) * k) / camera.k,
+      y: origin.y - ((origin.y - camera.y) * k) / camera.k,
+    },
+    viewport
+  )
+}

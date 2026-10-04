@@ -6,6 +6,7 @@ import {
   MapCamera,
   mapViewport,
   Point,
+  zoomCamera,
 } from './map-camera'
 
 export function useMapCamera(ready: boolean) {
@@ -123,6 +124,32 @@ export function useMapCamera(ready: boolean) {
       start = undefined
       mouseOrigin = undefined
     }
+    const wheel = (e: WheelEvent) => {
+      if (!e.deltaY) return
+      const current = cameraRef.current
+      // Scrolling down at the overview continues down the page.
+      if (current.k === 1 && e.deltaY > 0 && !e.ctrlKey) return
+      e.preventDefault()
+      const unit =
+        e.deltaMode === 1
+          ? 16
+          : e.deltaMode === 2
+          ? svg.getBoundingClientRect().height
+          : 1
+      // Trackpad pinches arrive as small ctrl-wheel deltas.
+      const delta = Math.max(
+        -200,
+        Math.min(200, e.deltaY * unit * (e.ctrlKey ? 5 : 1))
+      )
+      update(
+        zoomCamera(
+          current,
+          Math.exp(-delta * 0.002),
+          point(e),
+          viewportRef.current
+        )
+      )
+    }
     // Native, non-passive listeners let a two-finger gesture zoom the map
     // without zooming the page; React's delegated touch listeners are passive.
     svg.addEventListener('touchstart', touchStart, { passive: false })
@@ -133,6 +160,7 @@ export function useMapCamera(ready: boolean) {
     svg.addEventListener('pointermove', pointerMove)
     svg.addEventListener('pointerup', pointerEnd)
     svg.addEventListener('pointercancel', pointerEnd)
+    svg.addEventListener('wheel', wheel, { passive: false })
     return () => {
       observer.disconnect()
       svg.removeEventListener('touchstart', touchStart)
@@ -143,6 +171,7 @@ export function useMapCamera(ready: boolean) {
       svg.removeEventListener('pointermove', pointerMove)
       svg.removeEventListener('pointerup', pointerEnd)
       svg.removeEventListener('pointercancel', pointerEnd)
+      svg.removeEventListener('wheel', wheel)
     }
   }, [ready])
 
@@ -153,15 +182,11 @@ export function useMapCamera(ready: boolean) {
     viewBox: `${viewport.x} ${viewport.y} ${viewport.width} ${viewport.height}`,
     resetView: () => update(INITIAL_CAMERA),
     zoom: (factor: number) => {
-      const current = cameraRef.current
-      const k = Math.max(1, Math.min(6, current.k * factor))
       update(
-        clampCamera(
-          {
-            k,
-            x: 480 - ((480 - current.x) * k) / current.k,
-            y: 300 - ((300 - current.y) * k) / current.k,
-          },
+        zoomCamera(
+          cameraRef.current,
+          factor,
+          { x: 480, y: 300 },
           viewportRef.current
         )
       )

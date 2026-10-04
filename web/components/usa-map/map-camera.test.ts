@@ -5,9 +5,33 @@ import {
   gestureCamera,
   INITIAL_CAMERA,
   mapViewport,
+  zoomCamera,
 } from './map-camera'
 
 const desktop = mapViewport(960, 600)
+
+test('wheel zoom keeps the map location under the cursor', () => {
+  const camera = { k: 2, x: -400, y: -200 }
+  const cursor = { x: 700, y: 450 }
+  const result = zoomCamera(camera, 1.5, cursor, desktop)
+  assert.equal(
+    ((cursor.x - camera.x) / camera.k) * result.k + result.x,
+    cursor.x
+  )
+  assert.equal(
+    ((cursor.y - camera.y) / camera.k) * result.k + result.y,
+    cursor.y
+  )
+  assert.deepEqual(zoomCamera(result, 1 / 1.5, cursor, desktop), camera)
+})
+
+test('wheel zoom stops at its limits and returns to the overview', () => {
+  const cursor = { x: 785, y: 496 }
+  const zoomed = zoomCamera(INITIAL_CAMERA, 20, cursor, desktop)
+  assert.equal(zoomed.k, 6)
+  assert.deepEqual(zoomCamera(zoomed, 2, cursor, desktop), zoomed)
+  assert.deepEqual(zoomCamera(zoomed, 0.01, cursor, desktop), INITIAL_CAMERA)
+})
 
 test('pinching keeps the touched map location under the moving midpoint', () => {
   const result = gestureCamera(

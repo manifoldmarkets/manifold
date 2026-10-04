@@ -381,6 +381,14 @@
   transition: fill 180ms, opacity 150ms;
   stroke: var(--map-border);
 }
+.map[data-zoomed='true'],
+.map[data-zoomed='true'] .shape {
+  cursor: grab;
+}
+.map[data-zoomed='true']:active,
+.map[data-zoomed='true']:active .shape {
+  cursor: grabbing;
+}
 .shape:hover,
 .shape:focus-visible,
 .selected {
@@ -759,7 +767,7 @@
 }
 @media (max-width: 850px) {
   .map {
-    height: max(360px, calc(100svh - 180px));
+    height: clamp(220px, 60vw, 360px);
   }
   .stage {
     margin-top: 8px;
