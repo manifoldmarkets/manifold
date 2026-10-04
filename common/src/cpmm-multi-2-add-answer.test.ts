@@ -19,7 +19,13 @@ type Pools = {
   [answerId: string]: { pool: { YES: number; NO: number }; p: number }
 }
 
-const openAddable = (answerProbs: number[], ante = 1000) => {
+// An addable market opened at `answerProbs`, or with `listed` answers at an
+// even split when they're left out.
+const openAddable = (
+  answerProbs: number[] | undefined,
+  ante = 1000,
+  listed = 0
+) => {
   const contract = getNewContract({
     id: 'c',
     slug: 'c',
@@ -34,7 +40,7 @@ const openAddable = (answerProbs: number[], ante = 1000) => {
     min: 0,
     max: 0,
     isLogScale: false,
-    answers: answerProbs.map((_, i) => `A${i}`),
+    answers: (answerProbs ?? Array(listed).fill(0)).map((_, i) => `A${i}`),
     addAnswersMode: 'ANYONE',
     shouldAnswersSumToOne: true,
     answerProbs,
@@ -287,6 +293,28 @@ describe('addAnswerToCpmmMulti2Pools', () => {
       expect(after[id].pool.YES).toBeGreaterThan(before[id].pool.YES)
     expectSplitKeepsPayouts(before, after, 20)
     expectOpensFromOther(before, after)
+    expectSane(after)
+  })
+
+  it('opens answers added to a market opened at an even split at 2%', () => {
+    const before = toPools(openAddable(undefined, 1000, 3))
+    for (const { p } of Object.values(before)) expect(p).toBe(0.5)
+    const after = split(before, 100)
+    expectSplitKeepsPayouts(before, after, 100)
+    expectOpensFromOther(before, after)
+    expectSane(after)
+  })
+
+  it('opens the first answer of a market that listed none at 2%, and Other at 98%', () => {
+    // Other opens alone at 50%, as cpmm-multi-1 builds it, so the answers
+    // don't sum to one until the first one is added.
+    const before = toPools(openAddable(undefined))
+    expect(Object.keys(before)).toEqual(['other'])
+    expect(prob(before.other)).toBe(0.5)
+    const after = split(before, 100)
+    expectSplitKeepsPayouts(before, after, 100)
+    expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
+    expect(prob(after.other)).toBeCloseTo(1 - NEW_ANSWER_PROB, 12)
     expectSane(after)
   })
 

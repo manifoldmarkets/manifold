@@ -72,7 +72,7 @@ export function getNewContract(
     answerImageUrls?: string[]
     // Starting probability of each answer, as a percent. Defaults to an even split.
     answerProbs?: number[]
-    // Whether starting probabilities open a cpmm-multi-2 market. Defaults to
+    // Whether a multiple choice market opens as cpmm-multi-2. Defaults to
     // CPMM_MULTI_2_CREATION_ENABLED; tests set it to cover both mechanisms.
     cpmmMulti2Enabled?: boolean
 
@@ -322,18 +322,13 @@ export const MAX_ANSWER_PROB = MAX_CPMM_PROB * 100
 // them rather than scaling them to fit. Lets creators type 33/33/33.
 export const ANSWER_PROB_SUM_TOLERANCE = 1
 
-// Whether a market with manually set starting probabilities opens as
-// cpmm-multi-2. A cpmm-multi-1 pool has p fixed at 0.5, so it can only hold an
-// answer away from an even split by throwing away shares the ante bought;
-// giving each answer its own p lets it open anywhere without losing any.
-export const opensAsCpmmMulti2 = (props: {
-  answerProbs: number[] | undefined
-  cpmmMulti2Enabled?: boolean
-}) => {
-  const { answerProbs, cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED } =
-    props
-  return !!answerProbs && cpmmMulti2Enabled
-}
+// Whether a new multiple choice market opens as cpmm-multi-2. A cpmm-multi-1
+// pool has p fixed at 0.5, so it can only hold an answer away from an even
+// split by throwing away shares, whether the ante bought them or liquidity
+// added later did; giving each answer its own p loses none. Without starting
+// probabilities the pools are cpmm-multi-1's even split, every p at 0.5.
+export const opensAsCpmmMulti2 = (props: { cpmmMulti2Enabled?: boolean }) =>
+  props.cpmmMulti2Enabled ?? CPMM_MULTI_2_CREATION_ENABLED
 
 // Checks manually set starting probabilities (percent, one per listed answer)
 // against the answers they'll be applied to. Returns a message explaining the
@@ -426,7 +421,7 @@ const getMultipleChoiceProps = (
     answers.length === 2 &&
     shouldAnswersSumToOne
 
-  const isV2 = opensAsCpmmMulti2({ answerProbs, cpmmMulti2Enabled })
+  const isV2 = opensAsCpmmMulti2({ cpmmMulti2Enabled })
 
   const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
   const answersWithOther = answers.concat(hasOther ? ['Other'] : [])

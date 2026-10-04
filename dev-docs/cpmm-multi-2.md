@@ -7,11 +7,16 @@ split by throwing away shares its liquidity bought, so a market opened at
 uneven odds loses part of the creator's liquidity. A per-answer `p` lets every
 answer open at its own odds with none of it lost.
 
-Once the creation switch below is on, markets created with starting
-probabilities (`answerProbs`) open as `cpmm-multi-2`, whether or not answers
-can be added later. Every other market is still created as `cpmm-multi-1` and
-trades exactly as before. The mechanism, pool math, proofs and benchmarks come
-from Evan's PR, #3934, and https://github.com/evand/manifold-math.
+Once the creation switch below is on, every new multiple choice market opens
+as `cpmm-multi-2`, whether or not answers can be added later. One created with
+starting probabilities (`answerProbs`) opens at them. One created without
+opens at the even split `cpmm-multi-1` opens at, on the same pools with every
+`p` at 0.5, and differs only in what comes after: liquidity added later keeps
+its value, answers added open at 2%, and liquidity can go to a single answer.
+Numeric and date markets, and every market created before the switch, stay
+`cpmm-multi-1` and trade exactly as before. The mechanism, pool math, proofs
+and benchmarks come from Evan's PR, #3934, and
+https://github.com/evand/manifold-math.
 
 Answers that sum to one open with depth in proportion to √(q(1 − q)), and
 every outcome pays the creator back exactly the ante. Evan's closed form
@@ -68,6 +73,10 @@ pool's p sets its prices without moving any value, so the prices come last:
   98% keeps giving its share, add after add.
 - Where even that can't make room, the add is refused with a 403. That takes
   an answer above 99%, which no trade can reach.
+- A market opened with no listed answers holds Other alone at 50%, as
+  `cpmm-multi-1` does, so its answers sum to one only from the first answer
+  added, which opens at 2% and puts Other at 98%. Until then a NO bet on Other
+  can't be priced and is refused with a 403; `cpmm-multi-1` fails it with a 500.
 
 Where a listed price gives, the backend cancels the YES orders the new price
 has passed. Other's resting orders are always cancelled.
@@ -228,7 +237,8 @@ varies; note that in `docs/docs/api.md` in the same deploy.
   would spend exactly the bet by construction. The solve takes about 70ms at
   10 answers and 0.7s at 50, against 35ms and 170ms on `cpmm-multi-1`. The
   site only sends multi-answer bets on numeric markets, which are never
-  `cpmm-multi-2`, so this only affects API callers.
+  `cpmm-multi-2`, so this only affects API callers, on every new multiple
+  choice market.
 - Depth is concentrated where an answer's liquidity went in, as on a binary
   market: an answer is deeper than on `cpmm-multi-1` near its starting odds and
   thinner far from them. In a Ṁ1,000 market with a 95% favourite and 15 long

@@ -826,7 +826,10 @@ class Sim {
       expect(probAt(afterYes) - probAt(lnOdds)).toBeLessThan(1e-3)
       expect(probAt(lnOdds) - probAt(afterNo)).toBeLessThan(1e-3)
     }
-    if (this.type === 'mc_sumone') {
+    // A market opened with Other alone prices it at 50%, as cpmm-multi-1 does,
+    // so it sums to one only from its first answer added.
+    const loneOther = this.answers.length === 1 && !!this.answers[0].isOther
+    if (this.type === 'mc_sumone' && !loneOther) {
       const s = sumBy(this.answers, (a) =>
         getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
       )
@@ -1362,6 +1365,8 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
   let dust = 0
   let edgeOrders = 0
   let opsPerMarket = [6, 15]
+  // How many markets open without starting probabilities, at an even split.
+  let evenSplit = 0
   const pick = <T>(xs: T[]) => xs[Math.floor(rng() * xs.length)]
   const logUniform = (lo: number, hi: number) =>
     Math.exp(Math.log(lo) + rng() * (Math.log(hi) - Math.log(lo)))
@@ -1396,12 +1401,14 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
   }
 
   // `addable` markets open with an Other answer (Other takes the remainder of
-  // answerProbs) and can gain answers.
+  // answerProbs) and can gain answers. With `even`, the market opens without
+  // starting probabilities, with one answer for each of answerProbs.
   const open = (
     answerProbs: number[],
     sumsToOne: boolean,
     ante: number,
-    addable = false
+    addable = false,
+    even = false
   ) => {
     const contract = getNewContract({
       id: 'c',
@@ -1420,17 +1427,20 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
       answers: answerProbs.map((_, i) => `A${i}`),
       addAnswersMode: addable ? 'ANYONE' : 'DISABLED',
       shouldAnswersSumToOne: sumsToOne,
-      answerProbs,
+      answerProbs: even ? undefined : answerProbs,
       cpmmMulti2Enabled: true,
       token: 'MANA',
       unit: '',
     } as any) as CPMMMulti
     expect(contract.mechanism).toBe('cpmm-multi-2')
     const answers = contract.answers.map((a, i) => ({ ...a, id: `a${i}` }))
-    const expected =
-      addable && sumsToOne
-        ? [...answerProbs, 100 - sumBy(answerProbs)]
-        : answerProbs
+    const count = answerProbs.length + (addable && sumsToOne ? 1 : 0)
+    // An even split; Other alone opens at 50%, as on cpmm-multi-1.
+    const expected = even
+      ? Array(count).fill(sumsToOne && count > 1 ? 100 / count : 50)
+      : addable && sumsToOne
+      ? [...answerProbs, 100 - sumBy(answerProbs)]
+      : answerProbs
     expect(answers.map((a) => !!a.isOther)).toEqual(
       expected.map((_, i) => addable && sumsToOne && i === answerProbs.length)
     )
@@ -1477,15 +1487,18 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
       const ante = pick([100, 1000, 10_000])
       // An addable market's Other takes the last of n starting probabilities.
       const probs = startingProbs(n, sumsToOne)
+      const even = evenSplit > 0 && rng() < evenSplit
+      const loneOther = even && addable && rng() < 0.25
       const answers = open(
-        addable ? probs.slice(0, -1) : probs,
+        loneOther ? [] : addable ? probs.slice(0, -1) : probs,
         sumsToOne,
         ante,
-        addable
+        addable,
+        even
       )
       const type = sumsToOne ? 'mc_sumone' : 'set_indep'
       const s = new Sim(
-        { n, probs: 'balanced', type },
+        { n: answers.length, probs: 'balanced', type },
         'creator',
         ante,
         answers
@@ -1497,7 +1510,10 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
         Math.floor(rng() * (opsPerMarket[1] - opsPerMarket[0]))
       const target = Math.floor(rng() * n)
       for (let op = 0; op < ops; op++) {
-        const roll = rng()
+        let roll = rng()
+        // Other alone waits for its first answer, which the add branch gives
+        // it. Trading it alone is covered in cpmm-multi-2-add-answer.test.ts.
+        if (s.answers.length === 1 && s.answers[0].isOther) roll = 0.9
         let i = Math.floor(rng() * s.answers.length)
         if (roll < 0.4) {
           trades++
@@ -1509,7 +1525,7 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
           if (rng() < grind) {
             const probs = s.answers.map((a) => a.prob)
             if (op < ops / 2) {
-              i = target
+              i = Math.min(target, s.answers.length - 1)
               outcome = 'YES'
             } else if (rng() < 0.5) {
               i = probs.indexOf(Math.min(...probs))
@@ -1615,6 +1631,22 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     const { trades, refused, answersAdded } = lifecycles()
     expect(trades).toBeGreaterThan(300)
     expect(answersAdded).toBeGreaterThan(5)
+    expect(refused).toBe(0)
+  })
+
+  it('and markets opened without starting probabilities, Other alone included', () => {
+    rng = seeded(31337)
+    favourite = { from: 60, spread: 35 }
+    maxTradeOfAnte = 3
+    grind = 0.2
+    dust = 0.1
+    edgeOrders = 0.2
+    opsPerMarket = [10, 30]
+    evenSplit = 1
+    const { trades, refused, answersAdded } = lifecycles()
+    evenSplit = 0
+    expect(trades).toBeGreaterThan(200)
+    expect(answersAdded).toBeGreaterThan(10)
     expect(refused).toBe(0)
   })
 

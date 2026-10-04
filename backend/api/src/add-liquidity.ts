@@ -71,7 +71,7 @@ export const addContractLiquidity = async (
       )
         throw new APIError(
           403,
-          'Liquidity can only be added to a single answer on markets created with starting probabilities.'
+          "Liquidity can't be added to a single answer on this market: it was created before multiple choice markets supported it."
         )
       const answer = await getAnswer(tx, answerId)
       if (!answer || answer.contractId !== contractId)

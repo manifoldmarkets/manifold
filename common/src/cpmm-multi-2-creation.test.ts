@@ -186,10 +186,10 @@ describe('cpmm-multi-2 creation — per-answer answerProbs', () => {
     expect(sumProbs(contract.answers)).toBeCloseTo(1, 10)
   })
 
-  it('regression: no answerProbs ⇒ frozen v1 cpmm-multi-1, uniform 1/n', () => {
+  it("opens without starting probabilities on cpmm-multi-1's even split", () => {
     const ante = 1000
     const contract = makeMC(['A', 'B', 'C', 'D'], undefined, ante)
-    expect(contract.mechanism).toBe('cpmm-multi-1')
+    expect(contract.mechanism).toBe('cpmm-multi-2')
     const n = contract.answers.length
     contract.answers.forEach((a) => {
       expect(a.prob).toBeCloseTo(1 / n, 10)
@@ -198,6 +198,39 @@ describe('cpmm-multi-2 creation — per-answer answerProbs', () => {
       expect(a.poolYes).toBeCloseTo(ante / 2, 8)
       expect(a.poolNo).toBeCloseTo(ante / (2 * n - 2), 8)
     })
+    // The same pools as with cpmm-multi-2 off, which opens cpmm-multi-1.
+    const v1 = makeMC(
+      ['A', 'B', 'C', 'D'],
+      undefined,
+      ante,
+      true,
+      'DISABLED',
+      false
+    )
+    expect(v1.mechanism).toBe('cpmm-multi-1')
+    const pools = (c: CPMMMulti) =>
+      c.answers.map(({ poolYes, poolNo, p, prob }) => ({
+        poolYes,
+        poolNo,
+        p,
+        prob,
+      }))
+    expect(pools(contract)).toEqual(pools(v1))
+  })
+
+  it('opens an addable market with no listed answers as cpmm-multi-1 builds it', () => {
+    // Other alone, as cpmm-multi-1 opens it: a balanced pool at 50%. Its first
+    // answer added opens at 2% and puts Other at 98% (add-answer tests).
+    for (const enabled of [true, false]) {
+      const contract = makeMC([], undefined, 1000, true, 'ANYONE', enabled)
+      expect(contract.mechanism).toBe(enabled ? 'cpmm-multi-2' : 'cpmm-multi-1')
+      expect(contract.answers).toHaveLength(1)
+      const [other] = contract.answers
+      expect(other.isOther).toBe(true)
+      expect(other.poolYes).toBe(1000)
+      expect(other.poolNo).toBe(1000)
+      expect(other.p).toBe(0.5)
+    }
   })
 })
 
@@ -266,10 +299,10 @@ describe('cpmm-multi-2 creation — independent ("Set") absolute probs', () => {
     })
   })
 
-  it('regression: Set with no answerProbs ⇒ v1 cpmm-multi-1, each answer 50%', () => {
+  it('opens a Set without starting probabilities at 50% each, as cpmm-multi-1 does', () => {
     const ante = 1000
     const contract = makeMC(['A', 'B', 'C'], undefined, ante, false)
-    expect(contract.mechanism).toBe('cpmm-multi-1')
+    expect(contract.mechanism).toBe('cpmm-multi-2')
     const n = contract.answers.length
     contract.answers.forEach((a) => {
       expect(a.prob).toBeCloseTo(0.5, 10)
