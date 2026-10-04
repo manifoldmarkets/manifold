@@ -502,6 +502,12 @@ describe('fitting the odds of a market with an Other answer to seed a copy', () 
     expect(passes(high)).toBe(true)
   })
 
+  it('carries nothing from Other alone, so the copy opens it as the original did', () => {
+    // Creation refuses starting probabilities that list no answer.
+    expect(fit([99])).toBeUndefined()
+    expect(fit([50])).toBeUndefined()
+  })
+
   it('carries independent answers, which have no Other, one by one', () => {
     expect(fitCopiedAnswerProbs([80, 20, 50], false, false, 1, 99)).toEqual([
       80, 20, 50,

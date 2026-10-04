@@ -73,10 +73,11 @@ pool's p sets its prices without moving any value, so the prices come last:
   98% keeps giving its share, add after add.
 - Where even that can't make room, the add is refused with a 403. That takes
   an answer above 99%, which no trade can reach.
-- A market opened with no listed answers holds Other alone at 50%, as
-  `cpmm-multi-1` does, so its answers sum to one only from the first answer
-  added, which opens at 2% and puts Other at 98%. Until then a NO bet on Other
-  can't be priced and is refused with a 403; `cpmm-multi-1` fails it with a 500.
+- A market opened with no listed answers holds Other alone at 99%, the top of
+  the band, on the pool `cpmm-multi-1` builds, which prices it at 50%. Its
+  answers sum to one from the first answer added, which opens at 2% and puts
+  Other at 98%. Until then nothing can be bet: place-bet refuses bets on a
+  sum-to-one market with fewer than two answers, as on `main`.
 
 Where a listed price gives, the backend cancels the YES orders the new price
 has passed. Other's resting orders are always cancelled.
@@ -252,8 +253,8 @@ varies; note that in `docs/docs/api.md` in the same deploy.
   first in all 10 races, as it does on `cpmm-multi-1`. At 2% the first buyer
   gains more than at `cpmm-multi-1`'s opening price: Ṁ50 of an answer worth 20%
   gained Ṁ55 on the first of ten adds and Ṁ175 by the tenth, against −Ṁ3 to
-  Ṁ85. An add that took the adder's own buy, in the same transaction, would
-  give the adder that price instead.
+  Ṁ85. An adder who wants the new answer can buy Other first: YES in Other
+  becomes YES in the new answer too.
 - Once Other is below 3%, each answer added takes up to 2 points from the
   listed answers without a trade, and the first trader to buy them back gains
   what the pools lose. On a Ṁ1,000 market with a 97% favourite that's about

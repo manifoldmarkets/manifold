@@ -11,7 +11,7 @@ import {
   calculateCpmmMultiArbitrageBet,
   calculateCpmmMultiArbitrageYesBets,
 } from './calculate-cpmm-arbitrage'
-import { CPMMMulti } from './contract'
+import { CPMMMulti, MAX_CPMM_PROB } from './contract'
 import { noFees } from './fees'
 import { getAnswerProbsError, getNewContract } from './new-contract'
 import { User } from './user'
@@ -218,9 +218,11 @@ describe('cpmm-multi-2 creation — per-answer answerProbs', () => {
     expect(pools(contract)).toEqual(pools(v1))
   })
 
-  it('opens an addable market with no listed answers as cpmm-multi-1 builds it', () => {
-    // Other alone, as cpmm-multi-1 opens it: a balanced pool at 50%. Its first
-    // answer added opens at 2% and puts Other at 98% (add-answer tests).
+  it('opens Other alone at the top of the band, where cpmm-multi-1 has 50%', () => {
+    // Other alone is sure to win until an answer is added. Both open it on
+    // cpmm-multi-1's balanced pool; cpmm-multi-2 prices it at 99% rather than
+    // 50%. Its first answer added opens at 2% and puts Other at 98%
+    // (add-answer tests).
     for (const enabled of [true, false]) {
       const contract = makeMC([], undefined, 1000, true, 'ANYONE', enabled)
       expect(contract.mechanism).toBe(enabled ? 'cpmm-multi-2' : 'cpmm-multi-1')
@@ -229,7 +231,13 @@ describe('cpmm-multi-2 creation — per-answer answerProbs', () => {
       expect(other.isOther).toBe(true)
       expect(other.poolYes).toBe(1000)
       expect(other.poolNo).toBe(1000)
-      expect(other.p).toBe(0.5)
+      expect(other.totalLiquidity).toBe(1000)
+      const p = enabled ? MAX_CPMM_PROB : 0.5
+      expect(other.p).toBe(p)
+      expect(other.prob).toBe(
+        getCpmmProbability({ YES: other.poolYes, NO: other.poolNo }, other.p)
+      )
+      expect(other.prob).toBeCloseTo(p, 12)
     }
   })
 })

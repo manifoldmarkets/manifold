@@ -95,7 +95,8 @@ export const fitAnswerProbs = (
 // recreated with whatever the other answers leave. So it's fitted along with
 // them, then dropped, and kept a tenth clear of min and max, where adding up
 // the rest in floating point could leave it a hair outside. Undefined if they
-// can't all fit.
+// can't all fit, or if Other is alone: then there's nothing to carry, and the
+// copy opens Other alone as the original did.
 export const fitCopiedAnswerProbs = (
   probs: number[],
   shouldAnswersSumToOne: boolean,
@@ -103,6 +104,7 @@ export const fitCopiedAnswerProbs = (
   min: number,
   max: number
 ) => {
+  if (hasOther && probs.length < 2) return undefined
   const fitted = fitAnswerProbs(probs, shouldAnswersSumToOne, min, max)
   if (!fitted || !hasOther) return fitted
   const listed = fitted.slice(0, -1)

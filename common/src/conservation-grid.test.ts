@@ -826,8 +826,8 @@ class Sim {
       expect(probAt(afterYes) - probAt(lnOdds)).toBeLessThan(1e-3)
       expect(probAt(lnOdds) - probAt(afterNo)).toBeLessThan(1e-3)
     }
-    // A market opened with Other alone prices it at 50%, as cpmm-multi-1 does,
-    // so it sums to one only from its first answer added.
+    // A market opened with Other alone prices it at 99%, so it sums to one
+    // only from its first answer added.
     const loneOther = this.answers.length === 1 && !!this.answers[0].isOther
     if (this.type === 'mc_sumone' && !loneOther) {
       const s = sumBy(this.answers, (a) =>
@@ -1435,9 +1435,11 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
     expect(contract.mechanism).toBe('cpmm-multi-2')
     const answers = contract.answers.map((a, i) => ({ ...a, id: `a${i}` }))
     const count = answerProbs.length + (addable && sumsToOne ? 1 : 0)
-    // An even split; Other alone opens at 50%, as on cpmm-multi-1.
+    // An even split; Other alone opens at 99%.
     const expected = even
-      ? Array(count).fill(sumsToOne && count > 1 ? 100 / count : 50)
+      ? Array(count).fill(
+          !sumsToOne ? 50 : count > 1 ? 100 / count : MAX_CPMM_PROB * 100
+        )
       : addable && sumsToOne
       ? [...answerProbs, 100 - sumBy(answerProbs)]
       : answerProbs
@@ -1511,8 +1513,8 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
       const target = Math.floor(rng() * n)
       for (let op = 0; op < ops; op++) {
         let roll = rng()
-        // Other alone waits for its first answer, which the add branch gives
-        // it. Trading it alone is covered in cpmm-multi-2-add-answer.test.ts.
+        // Other alone takes no trades until a second answer exists (place-bet
+        // refuses them), so its first operation is the add.
         if (s.answers.length === 1 && s.answers[0].isOther) roll = 0.9
         let i = Math.floor(rng() * s.answers.length)
         if (roll < 0.4) {

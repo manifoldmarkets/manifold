@@ -4,6 +4,7 @@ import {
   cpmmMulti2BalancedPools,
   cpmmMulti2SumToOneCreationPools,
   getCpmmLiquidity,
+  getCpmmProbability,
   getInitialAnswerPools,
   getMultiCpmmLiquidity,
 } from './calculate-cpmm'
@@ -674,6 +675,17 @@ function createAnswers(
     // poolNo = ante * (prob ** 2 / (1 - prob))
   }
 
+  // cpmm-multi-2: Other alone, in a market opened with no listed answers, is
+  // sure to win until an answer is added, so it opens at the top of the band on
+  // the same pool rather than at cpmm-multi-1's 50%. Nothing can be bet until a
+  // second answer exists (place-bet), and the first one added opens at 2% and
+  // puts Other at 98%.
+  let p = 0.5
+  if (cpmmMulti2 && shouldAnswersSumToOne && answers.length === 1) {
+    p = MAX_CPMM_PROB
+    prob = getCpmmProbability({ YES: poolYes, NO: poolNo }, p)
+  }
+
   return answers.map((text, i) => {
     const { YES: answerPoolYes, NO: answerPoolNo } = customPools?.[i] ?? {
       YES: poolYes,
@@ -683,7 +695,7 @@ function createAnswers(
       ...baseAnswer(i, text),
       poolYes: answerPoolYes,
       poolNo: answerPoolNo,
-      p: 0.5, // cpmm-multi-1 / cpmm-multi-2-at-uniform-init; per-answer p set on v2 creation (PR2c)
+      p, // 0.5, as on cpmm-multi-1, except a cpmm-multi-2 Other alone (above)
       prob: probs?.[i] ?? prob,
       totalLiquidity: getMultiCpmmLiquidity({
         YES: answerPoolYes,

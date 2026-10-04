@@ -306,16 +306,21 @@ describe('addAnswerToCpmmMulti2Pools', () => {
   })
 
   it('opens the first answer of a market that listed none at 2%, and Other at 98%', () => {
-    // Other opens alone at 50%, as cpmm-multi-1 builds it, so the answers
-    // don't sum to one until the first one is added.
-    const before = toPools(openAddable(undefined))
-    expect(Object.keys(before)).toEqual(['other'])
-    expect(prob(before.other)).toBe(0.5)
-    const after = split(before, 100)
-    expectSplitKeepsPayouts(before, after, 100)
-    expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
-    expect(prob(after.other)).toBeCloseTo(1 - NEW_ANSWER_PROB, 12)
-    expectSane(after)
+    // Other opens alone at 99%, and the answers sum to one from the first one
+    // added. Markets opened before that held Other alone at 50%, as
+    // cpmm-multi-1 does, and split the same way.
+    const opened = toPools(openAddable(undefined))
+    expect(Object.keys(opened)).toEqual(['other'])
+    expect(prob(opened.other)).toBeCloseTo(MAX_CPMM_PROB, 12)
+    const atHalf = { other: { ...opened.other, p: 0.5 } }
+    expect(prob(atHalf.other)).toBe(0.5)
+    for (const before of [opened, atHalf]) {
+      const after = split(before, 100)
+      expectSplitKeepsPayouts(before, after, 100)
+      expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
+      expect(prob(after.other)).toBeCloseTo(1 - NEW_ANSWER_PROB, 12)
+      expectSane(after)
+    }
   })
 
   it('takes Other down to 1%, and the rest from the listed answers in proportion', () => {
