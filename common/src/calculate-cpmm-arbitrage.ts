@@ -2276,7 +2276,11 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) => {
-  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  // Working snapshots of the order book and maker balances, carried across
+  // rounds so an order a round's legs fill is not seen as unfilled again by
+  // the next round and filled a second time (cf. calculateCpmmMultiArbitrageBetsYes).
+  let workingUnfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  let workingBalanceByUserId = { ...balanceByUserId }
   const allAnswersToSell = initialAnswers.filter(
     (a) => userBetsByAnswerIdToSell[a.id]?.length
   )
@@ -2307,26 +2311,34 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
             { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
             sharesToSell,
             'YES',
-            unfilledBetsByAnswer[id] ?? [],
-            balanceByUserId,
+            workingUnfilledBetsByAnswer[id] ?? [],
+            workingBalanceByUserId,
             // Zero fees on arbitrage bets
             true
           )
         }
       )
-      const { newUpdatedAnswers, yesBets, noBuyResults } =
-        getBetResultsAndUpdatedAnswers(
-          oppositeAnswersFromSaleToBuyYesShares,
-          yesAmounts,
-          updatedAnswers,
-          undefined,
-          unfilledBets,
-          balanceByUserId,
-          collectedFees,
-          // Charge fees on sale bets
-          answerIdsToSellNow
-        )
+      const {
+        newUpdatedAnswers,
+        yesBets,
+        noBuyResults,
+        updatedUnfilledBetsByAnswer,
+        updatedBalanceByUserId,
+      } = getBetResultsAndUpdatedAnswers(
+        oppositeAnswersFromSaleToBuyYesShares,
+        yesAmounts,
+        updatedAnswers,
+        undefined,
+        // Flatten the working book; it rebuilds its own map from this
+        Object.values(workingUnfilledBetsByAnswer).flat(),
+        workingBalanceByUserId,
+        collectedFees,
+        // Charge fees on sale bets
+        answerIdsToSellNow
+      )
       updatedAnswers = newUpdatedAnswers
+      workingUnfilledBetsByAnswer = updatedUnfilledBetsByAnswer
+      workingBalanceByUserId = updatedBalanceByUserId
       for (const yesBet of yesBets) {
         const redemptionFill = {
           matchedBetId: null,

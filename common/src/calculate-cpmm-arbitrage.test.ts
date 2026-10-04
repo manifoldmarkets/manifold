@@ -1153,6 +1153,106 @@ describe('calculateCpmmMultiArbitrageBet — degenerate cpmm-multi-1 pools', () 
   })
 })
 
+describe('calculateCpmmMultiArbitrageSellYesEqually — resting orders across rounds', () => {
+  // Pools after a buy, matched to each answer by id.
+  const applyResult = (
+    answers: Answer[],
+    result: ReturnType<typeof calculateCpmmMultiArbitrageBet>
+  ) => {
+    const stateById = new Map(
+      [result.newBetResult, ...result.otherBetResults].map((r) => [
+        r.answer.id,
+        r.cpmmState,
+      ])
+    )
+    return answers.map((a) => {
+      const state = stateById.get(a.id)
+      if (!state) return a
+      const { YES: poolYes, NO: poolNo } = state.pool
+      return {
+        ...a,
+        poolYes,
+        poolNo,
+        prob: getCpmmProbability(state.pool, state.p),
+      }
+    })
+  }
+  const buyYes = (answers: Answer[], answerId: string, amount: number) => {
+    const result = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers.find((a) => a.id === answerId)!,
+      'YES',
+      amount,
+      undefined,
+      [],
+      {},
+      noFees
+    )
+    return {
+      answers: applyResult(answers, result),
+      shares: sumBy(result.newBetResult.takers, 'shares'),
+    }
+  }
+
+  // Enough liquidity that the larger position stays on answer0 and its
+  // price falls through the order in both rounds.
+  const scalePools = (a: Answer, s: number) =>
+    ({ ...a, poolYes: a.poolYes * s, poolNo: a.poolNo * s } as Answer)
+  const markets: Record<string, Answer[]> = {
+    'p = 0.5 (cpmm-multi-1)': [
+      getAnswer(0, 0.5),
+      getAnswer(1, 0.3),
+      getAnswer(2, 0.2),
+    ].map((a) => scalePools(a, 20)),
+    'general p (cpmm-multi-2)': [
+      getAnswerWithP(0, 0.5, 500),
+      getAnswerWithP(1, 0.3, 500),
+      getAnswerWithP(2, 0.2, 500),
+    ],
+  }
+  for (const [name, initialAnswers] of Object.entries(markets)) {
+    it(`fills a resting order at most once across sale rounds, ${name}`, () => {
+      // Hold more YES on answer0 than on answer1, so the sale runs two rounds:
+      // round 1 sells both answers (its NO legs on every answer fill the YES
+      // order resting on answer0), round 2 sells answer0's remainder. Each
+      // round used to rebuild the order book from the original unfilled
+      // orders, so round 2 filled the same order again, past its size.
+      const first = buyYes(initialAnswers, 'answer0', 300)
+      const second = buyYes(first.answers, 'answer1', 100)
+      const answers = second.answers
+      const answer0 = answers.find((a) => a.id === 'answer0')!
+      const resting = getLimitBet(
+        'resting',
+        answer0,
+        'YES',
+        'maker',
+        40,
+        Math.round((answer0.prob - 0.02) * 100) / 100
+      )
+
+      const { newBetResults, otherBetResults } =
+        calculateCpmmMultiArbitrageSellYesEqually(
+          answers,
+          {
+            answer0: [{ shares: first.shares } as Bet],
+            answer1: [{ shares: second.shares } as Bet],
+          },
+          [resting],
+          { maker: 1000 },
+          noFees
+        )
+
+      // Every fill of the resting order, across all the sale's bets.
+      const filled = sumBy(
+        [...newBetResults, ...otherBetResults].flatMap((r) => r.makers),
+        (m) => (m.bet.id === resting.id ? m.amount : 0)
+      )
+      expect(filled).toBeGreaterThan(0)
+      expect(filled).toBeLessThanOrEqual(resting.orderAmount + 1e-9)
+    })
+  }
+})
+
 describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting limit order', () => {
   it("sells through a NO order resting at the other answer's price", () => {
     // A two-answer market at 60/40 with a NO limit order resting on the 40%
