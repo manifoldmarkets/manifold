@@ -2,10 +2,14 @@ import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
   addAnswerToCpmmMulti2Pools,
+  addCpmmLiquidity,
   addCpmmMultiLiquidityAnswersSumToOneV2,
+  cpmmMulti2SumToOneCreationPools,
+  cpmmMulti2SumToOnePools,
   getCpmmLiquidity,
   getCpmmProbability,
   isDrainedPool,
+  NEW_ANSWER_PROB,
   newAnswerOpeningProb,
   pForProbability,
 } from './calculate-cpmm'
@@ -550,6 +554,8 @@ describe('addAnswerToCpmmMulti2Pools', () => {
     const logUniform = (lo: number, hi: number) =>
       Math.exp(Math.log(lo) + rand() * (Math.log(hi) - Math.log(lo)))
     let checked = 0
+    let openedOnExtraNo = 0
+    let openedShort = 0
     for (let trial = 0; trial < 3000; trial++) {
       const n = 1 + Math.floor(rand() * 6)
       // Probabilities from a spread of shapes, down to 1e-9.
@@ -579,25 +585,34 @@ describe('addAnswerToCpmmMulti2Pools', () => {
       expectSplitKeepsPayouts(before, after, fee)
       expectSane(after)
       // No listed price rises, and the new answer opens at half of Other, or
-      // 2%, unless its p or the new Other's is held at the edge of [0.01, 0.99].
+      // 2%, unless the new Other's p is held at 0.99. There the new Other
+      // couldn't hold its price and the new answer took what it left, above
+      // that, or Other's pool held too little mana beside its YES to price
+      // both parts at a p in band, which leaves the new answer short, even of
+      // 1%. Where only the new answer's p is at 0.99, its NO side took what its
+      // opening price needs out of the new Other's share.
       for (const id of Object.keys(before))
         if (id !== 'other')
           expect(prob(after[id])).toBeLessThanOrEqual(
             prob(before[id]) * (1 + 1e-12)
           )
-      const inBand = (p: number) =>
-        p > MIN_CPMM_PROB * (1 + 1e-9) && p < MAX_CPMM_PROB * (1 - 1e-9)
+      const atTop = (p: number) => p >= MAX_CPMM_PROB * (1 - 1e-9)
       // What Other has is what the listed prices leave, which is Other's own
       // price unless a listed answer at its p bound gave some of its.
       const listedAfter = sumBy(
         Object.keys(before).filter((id) => id !== 'other'),
         (id) => prob(after[id])
       )
-      if (inBand(after.new.p) && inBand(after.other.p))
+      if (!atTop(after.other.p)) {
         expect(prob(after.new)).toBeCloseTo(
           newAnswerOpeningProb(1 - listedAfter),
           9
         )
+        if (atTop(after.new.p)) openedOnExtraNo++
+      }
+      if (!(atTop(after.new.p) && atTop(after.other.p)))
+        expect(prob(after.new)).toBeGreaterThanOrEqual(MIN_CPMM_PROB - 1e-12)
+      else if (prob(after.new) < MIN_CPMM_PROB) openedShort++
       // With room in Other and nothing to fold into the listed answers, only
       // Other's pool is split.
       if (
@@ -611,10 +626,155 @@ describe('addAnswerToCpmmMulti2Pools', () => {
       checked++
     }
     expect(checked).toBeGreaterThan(1500)
+    expect(openedOnExtraNo).toBeGreaterThan(0)
+    // Only an Other near 0% split for no fee comes up short.
+    expect(openedShort).toBeLessThan(checked / 20)
+  })
+
+  it('opens at 2% on NO from the new Other where the fee alone would not price it', () => {
+    // Other at 0.02% holds 5,000 times the YES of its NO. A p of 0.99 prices
+    // the new answer at 2% on about Ṁ103 of NO, four times the Ṁ25 fee, which
+    // the new Other spares: holding 0.02% at p 0.99 takes it about Ṁ1.
+    const before: Pools = {
+      a0: poolAt(0.6, 0.5, 3000),
+      a1: poolAt(0.3998, 0.5, 2000),
+      other: { pool: { YES: 500_000, NO: 100 }, p: 0.5 },
+    }
+    const after = split(before, 25)
+    expectSplitKeepsPayouts(before, after, 25)
+    expectSane(after)
+    expect(prob(after.new)).toBeCloseTo(NEW_ANSWER_PROB, 12)
+    expect(after.new.p).toBeLessThanOrEqual(MAX_CPMM_PROB)
+    expect(after.new.pool.NO).toBeGreaterThan(100)
+    expect(after.other.pool.NO).toBeGreaterThan(1)
+    // The new Other keeps what the listed answers left it, and they give the 2%.
+    const room = 1 - prob(before.a0) - prob(before.a1)
+    expect(prob(after.other)).toBeCloseTo(room, 12)
+    for (const id of ['a0', 'a1'])
+      expect(prob(after[id]) / prob(before[id])).toBeCloseTo(
+        (1 - NEW_ANSWER_PROB - room) / (1 - room),
+        9
+      )
+  })
+
+  it('opens as near 2% as the mana allows where the fee and Other cannot price it', () => {
+    // Other at 0.01% holds 10,000 times the YES of its NO: 2% takes about
+    // Ṁ206 of NO at p 0.99, and the fee and Other's NO are Ṁ200 together.
+    // The new Other keeps the Ṁ1 that holds its price and the new answer
+    // opens on the rest, just under 2%. For no fee it has Ṁ100, and opens
+    // below 1%: the exception the design notes.
+    const listed: Pools = {
+      a0: poolAt(0.6, 0.5, 3000),
+      a1: poolAt(0.3999, 0.5, 2000),
+    }
+    const other = { pool: { YES: 1_000_000, NO: 100 }, p: 0.5 }
+    for (const [fee, atLeast] of [
+      [100, 0.019],
+      [0, 0.0095],
+    ]) {
+      const before: Pools = { ...listed, other }
+      const after = split(before, fee)
+      expectSplitKeepsPayouts(before, after, fee)
+      expectSane(after)
+      expect(prob(after.new)).toBeGreaterThan(atLeast)
+      expect(prob(after.new)).toBeLessThan(NEW_ANSWER_PROB)
+      expect(after.new.p).toBe(MAX_CPMM_PROB)
+      expect(after.other.p).toBeCloseTo(MAX_CPMM_PROB, 9)
+      expect(prob(after.other)).toBeCloseTo(
+        1 - prob(before.a0) - prob(before.a1),
+        12
+      )
+    }
   })
 })
 
 describe('addCpmmMultiLiquidityAnswersSumToOneV2', () => {
+  // What the add did before it checked the band ahead of creation's solve:
+  // the merge of creation's shape where every answer is in band and the merge
+  // leaves each sane with its p in band, else the per-answer adds, in the
+  // same operations in the same order, so the results are the same floats.
+  const reference = (before: Pools, amount: number) => {
+    const ids = Object.keys(before)
+    const probs = ids.map((id) => prob(before[id]))
+    const delta = cpmmMulti2SumToOneCreationPools(probs, amount)
+    const merged = Object.fromEntries(
+      ids.map((id, i) => {
+        const { pool } = before[id]
+        const newPool = {
+          YES: pool.YES + delta[i].poolYes,
+          NO: pool.NO + delta[i].poolNo,
+        }
+        const newP = pForProbability(newPool, probs[i])
+        const liquidity =
+          getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
+        return [id, { pool: newPool, p: newP, liquidity }]
+      })
+    )
+    const inBand = (id: string) =>
+      isDeepenable(probs[ids.indexOf(id)]) &&
+      ((merged[id].p >= MIN_CPMM_PROB && merged[id].p <= MAX_CPMM_PROB) ||
+        Math.abs(merged[id].p - 0.5) <= Math.abs(before[id].p - 0.5))
+    const sane = (id: string) =>
+      merged[id].pool.YES > 0 &&
+      merged[id].pool.NO > 0 &&
+      merged[id].p > 1e-9 &&
+      merged[id].p < 1 - 1e-9
+    if (ids.every((id) => sane(id) && inBand(id))) return merged
+    const deepenable = ids.filter((id) => isDeepenable(prob(before[id])))
+    const depth = (id: string) => {
+      const q = probs[ids.indexOf(id)]
+      return Math.sqrt(q * (1 - q))
+    }
+    const totalDepth = sumBy(deepenable, depth)
+    return Object.fromEntries(
+      ids.map((id) => {
+        const { pool, p } = before[id]
+        if (!deepenable.includes(id)) return [id, { pool, p, liquidity: 0 }]
+        const share = (amount * depth(id)) / totalDepth
+        const { newPool, newP } = addCpmmLiquidity(pool, p, share)
+        const liquidity =
+          getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
+        return [id, { pool: newPool, p: newP, liquidity }]
+      })
+    )
+  }
+  const isDeepenable = (q: number) => q >= MIN_CPMM_PROB && q <= MAX_CPMM_PROB
+  const fromCreation = (q: number[], ante: number): Pools =>
+    Object.fromEntries(
+      cpmmMulti2SumToOnePools(q, ante).map((x, i) => [
+        `a${i}`,
+        { pool: { YES: x.poolYes, NO: x.poolNo }, p: x.p },
+      ])
+    )
+
+  it('gives the same floats as before it checked the band ahead of the solve', () => {
+    const states: Pools[] = [
+      // An answer ground down to 1e-7, and one bought past 99%.
+      {
+        a0: poolAt(0.6, 0.6, 500),
+        a1: poolAt(0.4 - 1e-7, 0.4, 500),
+        a2: poolAt(1e-7, 0.98, 800),
+      },
+      {
+        a0: poolAt(0.995, 0.9, 1200),
+        a1: poolAt(0.003, 0.2, 300),
+        a2: poolAt(0.002, 0.3, 250),
+      },
+      // Every answer in band: the grid's skewed and extreme sets, as opened
+      // and after a trade, and a market whose Other was split.
+      fromCreation([0.55, 0.3, 0.15], 500),
+      fromCreation([0.4, 0.25, 0.18, 0.1, 0.07], 1000),
+      fromCreation([0.8, 0.1, 0.05, 0.03, 0.02], 1000),
+      toPools(trade(openAddable([30, 20, 10, 5]), 0, 'YES', 200)),
+      split(toPools(openAddable([30, 20, 10, 5])), 100),
+    ]
+    for (const before of states)
+      for (const amount of [10, 100, 2500])
+        expect(addCpmmMultiLiquidityAnswersSumToOneV2(before, amount)).toEqual(
+          reference(before, amount)
+        )
+  })
+
   it('leaves an answer outside 1%-99% as it is', () => {
     const before: Pools = {
       a0: poolAt(0.6, 0.6, 500),
