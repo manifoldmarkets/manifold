@@ -41,10 +41,25 @@ export const drizzleLiquidity = async () => {
   const contractIds = shuffle(data.map((doc) => doc.id))
   log('found', contractIds.length, 'markets to drizzle')
 
-  await mapAsync(contractIds, (cid) => drizzleMarket(cid), 10)
+  // One market that can't be drizzled (a pool the add rejects, a deleted
+  // contract) is logged and skipped, so it stops neither the rest nor the
+  // per-answer phase below.
+  await mapAsync(
+    contractIds,
+    async (cid) => {
+      try {
+        await drizzleMarket(cid)
+      } catch (e) {
+        log.error(`drizzleMarket failed for ${cid}`, { e })
+      }
+    },
+    10
+  )
 
+  // A resolved answer has paid out its pool and its subsidy and never pays out
+  // again, so nothing goes into it (see drizzleMarket).
   const answers = await pg.map(
-    `select * from answers where subsidy_pool > 1e-7`,
+    `select * from answers where subsidy_pool > 1e-7 and resolution is null`,
     [],
     convertAnswer
   )
@@ -54,8 +69,7 @@ export const drizzleLiquidity = async () => {
   // Per-answer subsidies (from a per-answer addLiquidity, or an independent answer's share of a
   // whole-market add while it's outside 1%-99%) drizzle here, once every drizzleMarket above has
   // finished, so the two phases never contend. drizzleAnswer's row lock orders it with the API's
-  // writes to the same answer (bets, per-answer adds, resolution). If a drizzleMarket call above
-  // throws, mapAsync rejects and this phase waits for the next run. An answer's undrizzled
+  // writes to the same answer (bets, per-answer adds, resolution). An answer's undrizzled
   // subsidy is paid out when it resolves.
   await mapAsync(answers, (answer) => drizzleAnswer(pg, answer.id), 10)
 }
@@ -74,7 +88,13 @@ const drizzleMarket = async (contractId: string) => {
     const amount = subsidyPool <= 1 ? subsidyPool : r * v * subsidyPool
 
     if (isMultiCpmm(contract)) {
-      const answers = contract.answers
+      // On an independent market, answers resolve one at a time, and a resolved
+      // one has paid out its pool and its subsidy and never pays out again, so
+      // any share of the subsidy sent there is lost to the providers. The whole
+      // amount goes to the unresolved answers, as resolution splits the
+      // contract's subsidy among them (resolveMarketHelper), and as the
+      // per-answer add refuses a resolved answer.
+      const answers = contract.answers.filter((a) => !a.resolution)
       if (!answers.length) {
         return
       }
@@ -196,6 +216,9 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
     // values, racing the per-answer addLiquidity API path in another process.
     const answer = await getAnswerForUpdate(tx, answerId)
     if (!answer) return
+    // Resolved since it was listed: its subsidy was paid out at resolution
+    // (resolveMarketHelper), and a pool it can't pay out again shouldn't take any.
+    if (answer.resolution) return
 
     const { subsidyPool, poolYes, poolNo } = answer
     if ((subsidyPool ?? 0) < 1e-7) return
