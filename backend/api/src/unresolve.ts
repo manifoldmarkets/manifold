@@ -107,8 +107,7 @@ const verifyUserCanUnresolve = async (
 
   const user = await getUser(userId, pg)
   if (!user) throw new APIError(404, 'User not found')
-  if (user.userDeleted)
-    throw new APIError(403, 'Your account has been deleted')
+  if (user.userDeleted) throw new APIError(403, 'Your account has been deleted')
 
   const { creatorId, mechanism, isSpicePayout, token } = contract
 
@@ -287,12 +286,17 @@ const undoResolution = async (
   let answerUpdates: (Partial<Answer> & { id: string })[] = []
 
   if (contract.isResolved || contract.resolutionTime) {
-    // Restore subsidyPool from the contract state before resolution
+    // Restore subsidyPool from the contract state before resolution: the
+    // latest edit recorded while the market was unresolved. An unresolve
+    // attempt that failed after recording its own edit (recordContractEdit
+    // writes outside this transaction) has left a later one holding the
+    // resolved market, with subsidyPool 0, which this must skip.
     const preResolutionSubsidyPool = await pg.oneOrNone(
       `select (data->>'subsidyPool')::numeric as subsidy_pool
        from contract_edits
        where contract_id = $1
          and 'subsidyPool' = any(updated_keys)
+         and coalesce((data->>'isResolved')::boolean, false) = false
        order by created_time desc
        limit 1`,
       [contractId],
@@ -344,7 +348,10 @@ const undoResolution = async (
   }
   // A cpmm-multi-2 answer's probability can move without a bet (adding an
   // answer splits Other's), so its last bet can be stale, or missing. Resolution
-  // leaves the pools as they were, so restore its probability from them.
+  // leaves the pools as they were, so restore its probability from them. A
+  // cpmm-multi-1 answer is restored from its last bet, as before, and from its
+  // pool where it has none (listed at creation and never traded): resolution
+  // marked it resolved too, and it must be cleared with the rest.
   const isV2 = contract.mechanism === 'cpmm-multi-2'
   const poolProb = `(answers.p * answers.pool_no) / ((1 - answers.p) * answers.pool_yes + answers.p * answers.pool_no)`
   if (isMultiCpmm(contract) && !answerId) {
@@ -374,18 +381,21 @@ const undoResolution = async (
       set
         resolution_time = null,
         resolver_id = null,
-        prob = ${isV2 ? poolProb : 'coalesce(last_bet.prob_after, 0.5)'},
+        prob = ${
+          isV2
+            ? poolProb
+            : `coalesce(
+          (select prob_after from last_bet where last_bet.answer_id = answers.id),
+          ${poolProb}
+        )`
+        },
         subsidy_pool = coalesce(
           (select (answer_data->>'subsidyPool')::numeric
            from pre_resolution_answers
            where answer_data->>'id' = answers.id),
           0
         )
-      ${
-        isV2
-          ? 'where answers.contract_id = $1'
-          : 'from last_bet where answers.id = last_bet.answer_id'
-      }
+      where answers.contract_id = $1
       returning *`,
       [contractId],
       convertAnswer
