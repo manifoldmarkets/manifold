@@ -183,6 +183,23 @@ can fall to 1e-20 or below. What keeps that priceable:
 The general-p cost of a number of shares is solved by Newton's method on the
 invariant, in log1p form.
 
+## Parity with main
+
+With both switches off, every `cpmm-1` and `cpmm-multi-1` entry point should
+behave exactly as on `main`, apart from the two sale fixes described under
+[Deployment](#deployment). `common/src/cpmm-multi-1-parity-probe.test.ts`
+checks that: it runs each entry point on seeded random markets through this
+branch and through `main`'s code, vendored at the merge base under
+`common/src/parity-baseline/` (its README says how to regenerate it), and
+fails on any difference other than those two, which it recognises from
+`main`'s own behaviour (the dust-fill NaN fee error, or a sale that missed
+the shares asked by more than a millionth). It is gated behind `PROBE`, so
+normal test runs skip it. To run it:
+
+```sh
+cd common && PROBE=1 npx jest cpmm-multi-1-parity-probe
+```
+
 ## Switches
 
 Both live in `common/src/contract.ts`.
