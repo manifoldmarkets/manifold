@@ -17,6 +17,7 @@
 }
 .detailsLayer {
   position: fixed;
+  inset: 0;
   z-index: 40;
   pointer-events: none;
 }
@@ -469,24 +470,6 @@
 .zoomControls button:hover:not(:disabled) {
   background: var(--soft);
 }
-.hoverCard {
-  position: absolute;
-  left: 24px;
-  bottom: 12px;
-  display: grid;
-  gap: 5px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  box-shadow: 0 4px 18px #0000000c;
-  border-radius: 9px;
-  padding: 12px 16px;
-  font-size: 13px;
-  pointer-events: none;
-}
-.hoverCard > span:last-child {
-  color: var(--muted);
-  font-size: 10px;
-}
 .quote {
   white-space: nowrap;
   font-weight: 650;
@@ -583,10 +566,8 @@
   color: var(--muted);
 }
 .details {
-  position: absolute;
+  position: fixed;
   z-index: 12;
-  right: 30px;
-  top: 320px;
   width: min(345px, calc(100% - 40px));
   max-height: 470px;
   overflow: hidden;
@@ -596,6 +577,10 @@
   box-shadow: 0 12px 48px #00000026;
   display: flex;
   flex-direction: column;
+}
+.details[data-pinned='false'] {
+  pointer-events: none;
+  font-size: 13px;
 }
 .detailHeading {
   display: flex;
@@ -762,12 +747,16 @@
     height: var(--map-height);
   }
   .details {
-    top: auto;
-    bottom: 84px;
-    max-height: calc(var(--map-height) - 16px);
+    max-height: min(
+      calc(var(--map-height) - 16px),
+      calc(100dvh - var(--popup-top, 8px) - 8px)
+    );
   }
 }
 @media (max-width: 850px) {
+  .details[data-pinned='false'] {
+    display: none;
+  }
   .map {
     height: clamp(220px, 60vw, 360px);
   }
@@ -912,9 +901,6 @@
   }
   .hint {
     font-size: 9px;
-  }
-  .hoverCard {
-    display: none;
   }
   .results {
     grid-template-columns: 1fr;

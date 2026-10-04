@@ -25,6 +25,7 @@ import { BetDialog } from 'web/components/bet/bet-dialog'
 import { DistrictBetButtons } from './district-bet-buttons'
 import { RaceDetailsPanel } from './race-details-panel'
 import { useMapCamera } from './use-map-camera'
+import { Point } from './map-camera'
 import { BallotMeasureCard } from './ballot-measure-card'
 import {
   BALLOT_MEASURES,
@@ -90,6 +91,7 @@ export function ElectionExplorer(props: Props) {
   const [filter, setFilter] = useState<Tier>()
   const [selected, setSelected] = useState<string>()
   const [hovered, setHovered] = useState<string>()
+  const mapPointer = useRef<Point>()
   const [sources, setSources] = useState(false)
   const [atlas, setAtlas] = useState<Atlas>()
   const [mapError, setMapError] = useState(false)
@@ -167,6 +169,10 @@ export function ElectionExplorer(props: Props) {
     !isMeasures && mode !== 'house' && hovered && !hoverRace
       ? DATA[hovered]
       : undefined
+  const detailId = selected ?? hovered
+  const detailRace = detailId ? raceById.get(detailId) : undefined
+  const detailTitle =
+    detailRace?.label ?? (detailId ? DATA[detailId]?.name : undefined)
   const matches = (race: Race) =>
     (!filter || raceTier(race) === filter) && matchesRaceQuery(race, query)
   const filtered = races.filter(matches)
@@ -199,7 +205,10 @@ export function ElectionExplorer(props: Props) {
     return () => abort.abort()
   }, [attempt])
   useEffect(() => {
-    if (selected) closeRef.current?.focus({ preventScroll: true })
+    if (selected) return
+    const clear = () => setHovered(undefined)
+    window.addEventListener('scroll', clear, true)
+    return () => window.removeEventListener('scroll', clear, true)
   }, [selected])
   useEffect(() => {
     if (!selected) return
@@ -238,7 +247,6 @@ export function ElectionExplorer(props: Props) {
     selectionOrigin.current = element
     setSelected(id)
     setSearchOpen(false)
-    setHovered(undefined)
     focusMap()
   }
   const changeMode = (next: ExplorerMode) => {
@@ -308,10 +316,7 @@ export function ElectionExplorer(props: Props) {
               : ''
           }`,
       'aria-pressed': selectable ? selected === id : undefined,
-      onPointerEnter: (e: React.PointerEvent<SVGElement>) => {
-        if (e.pointerType === 'mouse' && selectable) setHovered(id)
-      },
-      onPointerLeave: () => setHovered(undefined),
+      'data-race-id': selectable ? id : undefined,
       onClick: (e: React.MouseEvent<SVGElement>) => {
         if (selectable && !dragged.current) choose(id, e.currentTarget)
       },
@@ -322,6 +327,19 @@ export function ElectionExplorer(props: Props) {
         }
       },
     }
+  }
+  const trackHover = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.pointerType !== 'mouse' || window.innerWidth <= 850) return
+    mapPointer.current = { x: e.clientX, y: e.clientY }
+    if (e.buttons) {
+      if (dragged.current) setHovered(undefined)
+      return
+    }
+    const id =
+      (e.target as Element)
+        .closest('[data-race-id]')
+        ?.getAttribute('data-race-id') ?? undefined
+    if (id !== hovered) setHovered(id)
   }
   const labelColor = (state: string) => {
     if (isMeasures) {
@@ -672,8 +690,11 @@ export function ElectionExplorer(props: Props) {
               data-zoomed={camera.k > 1}
               style={{ touchAction: camera.k > 1 ? 'none' : 'pan-y' }}
               onWheel={() => setHovered(undefined)}
-              onPointerMove={() => {
-                if (dragged.current) setHovered(undefined)
+              onPointerEnter={trackHover}
+              onPointerMove={trackHover}
+              onPointerLeave={() => {
+                mapPointer.current = undefined
+                setHovered(undefined)
               }}
             >
               <defs>
@@ -859,36 +880,6 @@ export function ElectionExplorer(props: Props) {
               </g>
             </svg>
           )}
-          {isMeasures && hovered && DATA[hovered] && !selected && (
-            <div className={styles.hoverCard}>
-              <strong>{DATA[hovered].name}</strong>
-              <span>{measureStateLabel(hovered)} on November 3</span>
-              {measureCount(hovered) > 0 && (
-                <span>Click to explore measures and odds</span>
-              )}
-            </div>
-          )}
-          {!isMeasures && (hoverRace || hoveredNoRace) && !selected && (
-            <div className={styles.hoverCard}>
-              <strong>{hoverRace?.label ?? hoveredNoRace?.name}</strong>
-              {hoverRace ? (
-                <>
-                  <RaceQuote race={hoverRace} />
-                  <IncumbentDetails
-                    mode={raceMode}
-                    state={hoverRace.state}
-                    district={hoverRace.district}
-                  />
-                  <span>Click to explore this race</span>
-                </>
-              ) : (
-                <>
-                  <span>No {modeName(mode)} election in 2026</span>
-                  <IncumbentDetails mode={raceMode} state={hovered!} />
-                </>
-              )}
-            </div>
-          )}
         </div>
         {isMeasures ? (
           <div className={styles.legend}>
@@ -956,190 +947,223 @@ export function ElectionExplorer(props: Props) {
           <button onClick={() => setSources(true)}>More info</button>
         </p>
 
-        {isMeasures && selected && DATA[selected] && (
+        {detailTitle && (
           <RaceDetailsPanel
-            title={DATA[selected].name}
-            eyebrow="2026 · Ballot measures"
-            label={`${DATA[selected].name} ballot measures`}
-            closeRef={closeRef}
-            onClose={closeDetails}
-          >
-            {measureCount(selected) === 0 ? (
-              <p className={styles.note}>
-                No statewide measures on the November 3, 2026 ballot.
-              </p>
-            ) : (
-              <>
-                <p className={styles.note}>
-                  {measureStateLabel(selected)}. Pass means approval of the
-                  ballot question, including a question proposing repeal.
-                </p>
-                {(query
-                  ? measureMatches.filter((m) => m.state === selected)
-                  : measuresByState[selected]
-                ).map((m) => (
-                  <BallotMeasureCard
-                    key={m.key}
-                    measure={m}
-                    contract={
-                      m.source
-                        ? props.measures?.[m.source.contractId]
-                        : undefined
-                    }
-                  />
-                ))}
-                {query && (
-                  <button
-                    className={styles.chartLink}
-                    onClick={() => setQuery('')}
-                  >
-                    Show all {measureCount(selected)} measures →
-                  </button>
-                )}
-              </>
-            )}
-          </RaceDetailsPanel>
-        )}
-        {selectedNoRace && (
-          <RaceDetailsPanel
-            title={selectedNoRace.name}
-            eyebrow={`2026 · ${modeName(mode)}`}
-            label={`${selectedNoRace.name} election details`}
-            closeRef={closeRef}
-            onClose={closeDetails}
-          >
-            <p className={styles.empty}>
-              No {mode === 'governor' ? 'gubernatorial' : 'Senate'} election in
-              2026.
-            </p>
-            <IncumbentDetails mode={raceMode} state={selected!} />
-            <button
-              className={styles.exploreState}
-              onClick={() => {
-                const name = selectedNoRace.name
-                changeMode('house')
-                setQuery(name)
-              }}
-            >
-              Explore House districts →
-            </button>
-          </RaceDetailsPanel>
-        )}
-
-        {selectedRace && (
-          <RaceDetailsPanel
-            title={selectedRace.label}
+            title={detailTitle}
+            eyebrow={
+              detailRace
+                ? `${modeName(mode)} · ${detailRace.shortLabel}`
+                : `2026 · ${modeName(mode)}`
+            }
+            label={`${detailTitle} ${
+              isMeasures ? 'ballot measures' : 'details'
+            }`}
             chartLink={
-              selectedRace.contract && (
+              selectedRace?.contract && (
                 <MarketDetailsLink contract={selectedRace.contract} />
               )
             }
-            eyebrow={`${modeName(mode)} · ${selectedRace.shortLabel}`}
-            label={`${selectedRace.label} details`}
             closeRef={closeRef}
+            pinned={!!selected}
+            pointer={mapPointer}
             onClose={closeDetails}
           >
-            <div className={styles.detailSummary}>
-              <span
-                style={{
-                  color: TIERS.find((t) => t.id === raceTier(selectedRace))
-                    ?.color,
-                }}
-              >
-                {selectedRace.basis?.kind === 'candidate-only'
-                  ? 'Candidate market'
-                  : TIERS.find((t) => t.id === raceTier(selectedRace))?.label}
-              </span>
-              {selectedRace.odds && <RaceQuote race={selectedRace} />}
-            </div>
-            {selectedRace.odds &&
-              selectedRace.basis?.kind !== 'ballot' &&
-              selectedRace.basis?.kind !== 'decided' && (
-                <div className={styles.raceBar}>
-                  {(
-                    [
-                      'dem',
-                      'rep',
-                      'other',
-                      'notDem',
-                      'notRep',
-                      'unknown',
-                    ] as const
-                  ).map((p, i) => (
-                    <span
-                      key={p}
-                      style={{
-                        width: `${(selectedRace.odds![p] ?? 0) * 100}%`,
-                        background: [
-                          DEM_COLOR,
-                          REP_COLOR,
-                          OTHER_COLOR,
-                          COMPLEMENT_COLOR,
-                          COMPLEMENT_COLOR,
-                          COMPLEMENT_COLOR,
-                        ][i],
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            {selectedRace.basis?.kind === 'ballot' && (
-              <p className={styles.note}>
-                Both November finalists are{' '}
-                {selectedRace.basis.party === 'D' ? 'Democrats' : 'Republicans'}
-                : {selectedRace.basis.finalists.join(' and ')}. This seat counts
-                by the certified ballot. Candidate odds are separate.
-              </p>
-            )}
-            {selectedRace.basis?.kind === 'decided' && (
-              <p className={styles.note}>
-                {selectedRace.basis.candidate} is unopposed and deemed elected.
-                This seat is not on the November ballot.
-              </p>
-            )}
-            {!selectedRace.contract ? (
-              <p className={styles.empty}>
-                {selectedRace.basis?.kind === 'decided'
-                  ? 'No election market is needed for this decided seat.'
-                  : selectedRace.basis?.kind === 'ballot'
-                  ? 'No candidate market is linked yet; the ballot party still counts in the balance.'
-                  : 'No Manifold market is linked yet. This race is excluded from priced seat estimates.'}
-              </p>
-            ) : selectedRace.answerId &&
-              selectedRace.contract.mechanism === 'cpmm-multi-1' &&
-              selectedRace.contract.outcomeType === 'MULTIPLE_CHOICE' ? (
-              <>
-                <DistrictBetButtons
-                  contract={selectedRace.contract}
-                  answer={
-                    selectedRace.contract.answers.find(
-                      (a) => a.id === selectedRace.answerId
-                    )!
-                  }
-                  label={selectedRace.label}
-                  matchup={selectedRace.matchup}
-                />
-              </>
+            {!selected ? (
+              isMeasures ? (
+                <span>{measureStateLabel(detailId!)} on November 3</span>
+              ) : hoverRace ? (
+                <>
+                  <RaceQuote race={hoverRace} />
+                  <IncumbentDetails
+                    mode={raceMode}
+                    state={hoverRace.state}
+                    district={hoverRace.district}
+                  />
+                </>
+              ) : hoveredNoRace ? (
+                <>
+                  <span className={styles.note}>
+                    No {modeName(mode)} election in 2026
+                  </span>
+                  <IncumbentDetails mode={raceMode} state={hovered!} />
+                </>
+              ) : null
             ) : (
-              <RaceMarket contract={selectedRace.contract} />
+              <>
+                {isMeasures && DATA[selected] && (
+                  <>
+                    {measureCount(selected) === 0 ? (
+                      <p className={styles.note}>
+                        No statewide measures on the November 3, 2026 ballot.
+                      </p>
+                    ) : (
+                      <>
+                        <p className={styles.note}>
+                          {measureStateLabel(selected)}. Pass means approval of
+                          the ballot question, including a question proposing
+                          repeal.
+                        </p>
+                        {(query
+                          ? measureMatches.filter((m) => m.state === selected)
+                          : measuresByState[selected]
+                        ).map((m) => (
+                          <BallotMeasureCard
+                            key={m.key}
+                            measure={m}
+                            contract={
+                              m.source
+                                ? props.measures?.[m.source.contractId]
+                                : undefined
+                            }
+                          />
+                        ))}
+                        {query && (
+                          <button
+                            className={styles.chartLink}
+                            onClick={() => setQuery('')}
+                          >
+                            Show all {measureCount(selected)} measures →
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+                {selectedNoRace && (
+                  <>
+                    <p className={styles.empty}>
+                      No {mode === 'governor' ? 'gubernatorial' : 'Senate'}{' '}
+                      election in 2026.
+                    </p>
+                    <IncumbentDetails mode={raceMode} state={selected!} />
+                    <button
+                      className={styles.exploreState}
+                      onClick={() => {
+                        const name = selectedNoRace.name
+                        changeMode('house')
+                        setQuery(name)
+                      }}
+                    >
+                      Explore House districts →
+                    </button>
+                  </>
+                )}
+
+                {selectedRace && (
+                  <>
+                    <div className={styles.detailSummary}>
+                      <span
+                        style={{
+                          color: TIERS.find(
+                            (t) => t.id === raceTier(selectedRace)
+                          )?.color,
+                        }}
+                      >
+                        {selectedRace.basis?.kind === 'candidate-only'
+                          ? 'Candidate market'
+                          : TIERS.find((t) => t.id === raceTier(selectedRace))
+                              ?.label}
+                      </span>
+                      {selectedRace.odds && <RaceQuote race={selectedRace} />}
+                    </div>
+                    {selectedRace.odds &&
+                      selectedRace.basis?.kind !== 'ballot' &&
+                      selectedRace.basis?.kind !== 'decided' && (
+                        <div className={styles.raceBar}>
+                          {(
+                            [
+                              'dem',
+                              'rep',
+                              'other',
+                              'notDem',
+                              'notRep',
+                              'unknown',
+                            ] as const
+                          ).map((p, i) => (
+                            <span
+                              key={p}
+                              style={{
+                                width: `${(selectedRace.odds![p] ?? 0) * 100}%`,
+                                background: [
+                                  DEM_COLOR,
+                                  REP_COLOR,
+                                  OTHER_COLOR,
+                                  COMPLEMENT_COLOR,
+                                  COMPLEMENT_COLOR,
+                                  COMPLEMENT_COLOR,
+                                ][i],
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    {selectedRace.basis?.kind === 'ballot' && (
+                      <p className={styles.note}>
+                        Both November finalists are{' '}
+                        {selectedRace.basis.party === 'D'
+                          ? 'Democrats'
+                          : 'Republicans'}
+                        : {selectedRace.basis.finalists.join(' and ')}. This
+                        seat counts by the certified ballot. Candidate odds are
+                        separate.
+                      </p>
+                    )}
+                    {selectedRace.basis?.kind === 'decided' && (
+                      <p className={styles.note}>
+                        {selectedRace.basis.candidate} is unopposed and deemed
+                        elected. This seat is not on the November ballot.
+                      </p>
+                    )}
+                    {!selectedRace.contract ? (
+                      <p className={styles.empty}>
+                        {selectedRace.basis?.kind === 'decided'
+                          ? 'No election market is needed for this decided seat.'
+                          : selectedRace.basis?.kind === 'ballot'
+                          ? 'No candidate market is linked yet; the ballot party still counts in the balance.'
+                          : 'No Manifold market is linked yet. This race is excluded from priced seat estimates.'}
+                      </p>
+                    ) : selectedRace.answerId &&
+                      selectedRace.contract.mechanism === 'cpmm-multi-1' &&
+                      selectedRace.contract.outcomeType ===
+                        'MULTIPLE_CHOICE' ? (
+                      <>
+                        <DistrictBetButtons
+                          contract={selectedRace.contract}
+                          answer={
+                            selectedRace.contract.answers.find(
+                              (a) => a.id === selectedRace.answerId
+                            )!
+                          }
+                          label={selectedRace.label}
+                          matchup={selectedRace.matchup}
+                        />
+                      </>
+                    ) : (
+                      <RaceMarket contract={selectedRace.contract} />
+                    )}
+                    <IncumbentDetails
+                      mode={raceMode}
+                      state={selectedRace.state}
+                      district={selectedRace.district}
+                    />
+                    {candidate &&
+                      candidate.id !== selectedRace.contract?.id &&
+                      sourceAudit(selectedRace.contract?.slug)?.kind !==
+                        'candidate' && (
+                        <div className={styles.candidates}>
+                          <div className={styles.candidateHeading}>
+                            <span className={styles.eyebrow}>
+                              Candidate market
+                            </span>
+                            <MarketDetailsLink contract={candidate} />
+                          </div>
+                          <RaceMarket contract={candidate} />
+                        </div>
+                      )}
+                  </>
+                )}
+              </>
             )}
-            <IncumbentDetails
-              mode={raceMode}
-              state={selectedRace.state}
-              district={selectedRace.district}
-            />
-            {candidate &&
-              candidate.id !== selectedRace.contract?.id &&
-              sourceAudit(selectedRace.contract?.slug)?.kind !==
-                'candidate' && (
-                <div className={styles.candidates}>
-                  <div className={styles.candidateHeading}>
-                    <span className={styles.eyebrow}>Candidate market</span>
-                    <MarketDetailsLink contract={candidate} />
-                  </div>
-                  <RaceMarket contract={candidate} />
-                </div>
-              )}
           </RaceDetailsPanel>
         )}
 
