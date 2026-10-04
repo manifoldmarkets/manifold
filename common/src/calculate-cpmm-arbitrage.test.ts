@@ -1180,7 +1180,7 @@ describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting lim
       amount: 21.427,
       shares: 21.427 / 0.4,
     }
-    const { saleValue, newBetResult } = calculateCpmmMultiSumsToOneSale(
+    const { saleValue, otherBetResults } = calculateCpmmMultiSumsToOneSale(
       answers,
       answers[0],
       6.522611723549393,
@@ -1192,7 +1192,11 @@ describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting lim
     )
     expect(saleValue).toBeGreaterThan(0)
     expect(saleValue).toBeLessThan(6.522611723549393 * 0.61)
-    expect(newBetResult.makers.length + saleValue).toBeGreaterThan(0)
+    // The sale goes through the order resting on the other answer, which
+    // takes the whole of it.
+    const makers = otherBetResults.flatMap((r) => r.makers)
+    expect(makers.length).toBeGreaterThan(0)
+    expect(sumBy(makers, 'amount')).toBeCloseTo(saleValue, 6)
   })
 
   it("sells a cpmm-multi-1 answer next to a NO order resting at the other answer's price", () => {

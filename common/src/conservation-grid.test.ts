@@ -833,7 +833,10 @@ class Sim {
       const s = sumBy(this.answers, (a) =>
         getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
       )
-      expect(s).toBeCloseTo(1, 4)
+      // Within placeBet's refusal at 1e-6 (SUM_TO_ONE_REFUSAL). The random
+      // regimes stay within about 1e-12; markets split by the old halving,
+      // where trades are solved again, within 1e-9.
+      expect(s).toBeCloseTo(1, 6)
     }
   }
 }
@@ -1506,6 +1509,9 @@ describe('cpmm-multi-2 conservation fuzz (markets from getNewContract)', () => {
         answers
       )
       s.refuseDrainedPools = true
+      // Refuse what placeBet refuses, so a trade that would 403 in production
+      // fails the fuzz rather than passing its looser check.
+      s.refuseUnpricedTrades = true
 
       const ops =
         opsPerMarket[0] +
