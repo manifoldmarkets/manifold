@@ -131,6 +131,22 @@ export const addContractLiquidity = async (
     // own kill switch, separate from v2 creation, so it stays inert until deliberately enabled.
     const shouldConvertToV2 = convertsToCpmmMulti2(contract)
 
+    // A resolution that committed after this transaction read the market has
+    // already paid out its pools and pending subsidy, and would strand this
+    // subsidy. Each branch below updates the market's row first, so this read
+    // is current: a resolution that has committed shows here, and one still
+    // to come has to wait for this transaction, then fails to serialize
+    // rather than pay out without it. Resolving the whole market leaves each
+    // answer's resolution unset, so the answer's own guard below can't see it.
+    const refuseIfResolved = async () => {
+      const { resolved } = await tx.one<{ resolved: boolean }>(
+        `select (resolution is not null or resolution_time is not null) as resolved
+        from contracts where id = $1`,
+        [contractId]
+      )
+      if (resolved) throw new APIError(403, 'This market has already resolved')
+    }
+
     let updatedAnswer: Answer | undefined
     if (answerId !== undefined) {
       // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion
@@ -140,11 +156,12 @@ export const addContractLiquidity = async (
         totalLiquidity: FieldVal.increment(subsidyAmount),
         ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
       })
+      await refuseIfResolved()
       // Per-answer: the subsidy lands in THAT answer's subsidyPool (drizzleAnswer deepens it
       // losslessly), and in its totalLiquidity, as addHouseSubsidyToAnswer does. An atomic
       // increment, so it can't interleave with the scheduler's drizzleAnswer, which
       // read-modify-writes subsidyPool under a row lock in another process. The resolution
-      // check here also covers an answer that resolved since the check above.
+      // check here also covers an answer resolved on its own since the check above.
       const updated = await tx.oneOrNone<Row<'answers'>>(
         `update answers
         set
@@ -162,6 +179,7 @@ export const addContractLiquidity = async (
         totalLiquidity: FieldVal.increment(subsidyAmount),
         ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
       })
+      await refuseIfResolved()
     }
 
     return {

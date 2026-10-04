@@ -28,6 +28,7 @@ import {
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
+import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 
 // (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 
@@ -143,11 +144,19 @@ const drizzleMarket = async (contractId: string) => {
 
       await updateAnswers(pgTrans, contractId, answerUpdates)
       // Atomic, as drizzleAnswer read-modify-writes subsidy_pool in its own tx.
-      for (const [answerId, pending] of pendingByAnswer)
-        await pgTrans.none(
-          `update answers set subsidy_pool = subsidy_pool + $1 where id = $2`,
+      // The broadcast above doesn't carry subsidyPool, so send each new pending
+      // balance too, or open pages count it as active liquidity.
+      const pendingUpdates: { id: string; subsidyPool: number }[] = []
+      for (const [answerId, pending] of pendingByAnswer) {
+        const row = await pgTrans.oneOrNone<{ subsidy_pool: number }>(
+          `update answers set subsidy_pool = subsidy_pool + $1 where id = $2
+          returning subsidy_pool`,
           [pending, answerId]
         )
+        if (row)
+          pendingUpdates.push({ id: answerId, subsidyPool: row.subsidy_pool })
+      }
+      broadcastUpdatedAnswers(contractId, pendingUpdates)
 
       await updateContract(pgTrans, contract.id, {
         subsidyPool: subsidyPool - amount,
