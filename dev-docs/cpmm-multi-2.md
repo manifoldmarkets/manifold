@@ -245,14 +245,26 @@ varies; note that in `docs/docs/api.md` in the same deploy.
   shots, Ṁ30 against the favourite moves it to 90.9% (87.8% on `cpmm-multi-1`),
   but Ṁ300 moves it to 3.2% (17%). An answer that rallies from near 0% after
   liquidity went in near 0% can be moved a long way by a small bet.
-- A new answer opens at 2% whatever its chances, so whoever adds a strong
-  contender that wasn't listed can buy it up first. That's deliberate: it
-  rewards adding the right answers.
+- A new answer opens at 2% whatever its chances, so the first trader after the
+  add can buy a strong contender cheaply, out of the pools. Whenever a bot is
+  watching, that isn't the adder: the new answer is broadcast before the add
+  returns, and in the fifth live test a bot listening on the websocket bought
+  first in all 10 races, as it does on `cpmm-multi-1`. At 2% the first buyer
+  gains more than at `cpmm-multi-1`'s opening price: Ṁ50 of an answer worth 20%
+  gained Ṁ55 on the first of ten adds and Ṁ175 by the tenth, against −Ṁ3 to
+  Ṁ85. An add that took the adder's own buy, in the same transaction, would
+  give the adder that price instead.
 - Once Other is below 3%, each answer added takes up to 2 points from the
   listed answers without a trade, and the first trader to buy them back gains
   what the pools lose. On a Ṁ1,000 market with a 97% favourite that's about
   Ṁ6.5 an add; `cpmm-multi-1`'s add leaves Ṁ18 there, and Ṁ10 to Ṁ12 even with
-  Other at 5% or more, where this leaves nothing.
+  Other at 5% or more, where this leaves nothing. Where the favourite was
+  bought up instead, it can be more than `cpmm-multi-1`'s: in the fifth live
+  test, buying back a favourite bought up to 98% gained Ṁ7.22 an add over 20
+  adds, against Ṁ4.23.
+- An add moves prices without recording a bet, so charts and `probChanges`,
+  which are built from bets, show the move at the next trade.
+  `cpmm-multi-1`'s add records its bet-downs as the adder's bets.
 - Markets split by the old halving (see Pricing at extreme odds) keep their
   slivers. Trades the arithmetic can't resolve there are solved again, which
   takes about 0.2s at 50 answers and 0.5s at 100 under jest, and a few very
