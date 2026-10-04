@@ -100,10 +100,17 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     totalComments,
+    totalAnswers,
   } = props
 
   // Just use the contract that was navigated to directly
   const liveContract = useLiveContract(props.contract)
+  // The server renders a big market with only its top answers; the rest arrive
+  // with the live contract. Until then a duplicate would copy only those
+  const hasAllAnswers =
+    !('answers' in liveContract) ||
+    totalAnswers === undefined ||
+    liveContract.answers.length >= totalAnswers
 
   const user = useUser()
 
@@ -331,6 +338,7 @@ export function ContractPageContent(props: ContractParams) {
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
                   contract={liveContract}
+                  hasAllAnswers={hasAllAnswers}
                   initialHideGraph={initialHideGraph}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
@@ -352,6 +360,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <HeaderActions
                 contract={liveContract}
+                hasAllAnswers={hasAllAnswers}
                 initialHideGraph={initialHideGraph}
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}

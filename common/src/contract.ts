@@ -628,6 +628,8 @@ export type ContractParams = {
   totalComments: number
   totalPositions: number
   totalBets: number
+  /** How many answers the market has. A big market's contract holds only its top answers until the live contract loads */
+  totalAnswers?: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]

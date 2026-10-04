@@ -1,4 +1,7 @@
 import { orderBy, range, sum } from 'lodash'
+import { Answer } from './answer'
+import { MultiContract } from './contract'
+import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 
 // The create form keeps one starting percentage per answer slot, blank slots
 // included, so they line up with the answers by index. A blank slot isn't an
@@ -113,4 +116,50 @@ export const fitCopiedAnswerProbs = (
   const step = other < min + 0.05 ? -0.1 : other > max - 0.05 ? 0.1 : 0
   listed[biggest] = Math.round((listed[biggest] + step) * 10) / 10
   return listed.every((prob) => prob >= min && prob <= max) ? listed : undefined
+}
+
+// The starting probabilities a copy of a multi-cpmm market opens at, in percent
+// and in the order of its listed answers (see fitCopiedAnswerProbs), or
+// undefined to open at an even split. Only a cpmm-multi-2 multiple choice
+// market opens at given odds, and a duplicate of one should start where the
+// original stands. Not once the market or any answer is resolved, when prob
+// holds the resolution instead. Fitted into the range bets trade in, since a
+// long shot can sit under it. The copy recreates Other with what the listed
+// answers leave, so Other's odds are carried that way, and only when the copy
+// will have an Other exactly where this market does. And only once the page
+// holds every answer: the server renders a big market with just its top
+// answers until the live contract arrives, and odds fitted over a subset would
+// be inflated to fill the 100% the missing answers share.
+export const getCopiedAnswerProbs = (
+  contract: Pick<
+    MultiContract,
+    'mechanism' | 'outcomeType' | 'isResolved' | 'shouldAnswersSumToOne'
+  > & {
+    addAnswersMode: MultiContract['addAnswersMode']
+    answers: Pick<Answer, 'prob' | 'isOther' | 'resolution'>[]
+  },
+  hasAllAnswers: boolean
+) => {
+  const other = contract.answers.find((a) => a.isOther)
+  const copyHasOther =
+    contract.shouldAnswersSumToOne && contract.addAnswersMode !== 'DISABLED'
+  if (
+    !hasAllAnswers ||
+    contract.mechanism !== 'cpmm-multi-2' ||
+    contract.outcomeType !== 'MULTIPLE_CHOICE' ||
+    contract.isResolved ||
+    contract.answers.some((a) => a.resolution) ||
+    copyHasOther !== !!other
+  )
+    return undefined
+  return fitCopiedAnswerProbs(
+    [
+      ...contract.answers.filter((a) => !a.isOther),
+      ...(other ? [other] : []),
+    ].map((a) => a.prob * 100),
+    contract.shouldAnswersSumToOne,
+    !!other,
+    MIN_ANSWER_PROB,
+    MAX_ANSWER_PROB
+  )
 }

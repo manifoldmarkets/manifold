@@ -167,6 +167,9 @@ export async function getContractParams(
     points: ogPointsString,
   })
 
+  // Counted before the truncation below. The page loads the rest with the live
+  // contract, and until then knows from the count that it doesn't hold them all
+  const totalAnswers = 'answers' in contract ? contract.answers.length : undefined
   if (contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)) {
     contract.answers = sortAnswers(contract, contract.answers)
       .slice(0, 20)
@@ -186,6 +189,7 @@ export async function getContractParams(
     totalComments,
     totalPositions,
     totalBets,
+    totalAnswers,
     topContractMetrics,
     relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
     chartAnnotations,
