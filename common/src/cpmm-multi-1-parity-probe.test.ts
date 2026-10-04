@@ -18,13 +18,19 @@
 //      head must then sell the shares asked.
 // Any other difference fails the test.
 //
+// cpmm-1 inputs stay within what placeBet accepts: a bet or sale that would
+// leave a pool side under CPMM_MIN_POOL_QTY is shrunk until it doesn't. Past
+// that floor the branch previews the pool from the invariant where main's
+// subtraction cancels (documented in the PR), and no such trade can be
+// committed, so it is outside the claim under test.
+//
 // Run with:  cd common && PROBE=1 npx jest cpmm-multi-1-parity-probe
 // Skipped (describe.skip) in normal test runs.
 
 import { sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { Bet, LimitBet } from './bet'
-import { CPMMContract, CPMMMultiContract } from './contract'
+import { CPMM_MIN_POOL_QTY, CPMMContract, CPMMMultiContract } from './contract'
 import { noFees } from './fees'
 
 import * as headCpmm from './calculate-cpmm'
@@ -202,7 +208,10 @@ const mkAnswer = (index: number, prob: number, k: number): Answer => {
   }
 }
 
-const withPool = (answer: Answer, pool: { YES: number; NO: number }): Answer => ({
+const withPool = (
+  answer: Answer,
+  pool: { [outcome: string]: number }
+): Answer => ({
   ...answer,
   poolYes: pool.YES,
   poolNo: pool.NO,
@@ -301,6 +310,9 @@ const mkRestingOrders = (
   for (let i = 0; i < count; i++) {
     const answerId = answers ? pick(rng, answers).id : undefined
     const orderAmount = logUniform(rng, 1, 300)
+    // Some orders rest at exactly the current price, where a fill is dust:
+    // that is what gave main the NaN fee.
+    const limitProb = chance(rng, 0.3) ? probOf(answerId) : limitProbOf(rng)
     // Most orders are untouched; some are partly filled already.
     const filledAmount = chance(rng, 0.25)
       ? orderAmount * uniform(rng, 0.05, 0.95)
@@ -312,7 +324,7 @@ const mkRestingOrders = (
         answerId,
         outcomeOf(rng),
         orderAmount,
-        limitProbOf(rng),
+        limitProb,
         filledAmount,
         probOf(answerId)
       )
@@ -334,7 +346,9 @@ const mkSumToOneMarket = (rng: Rng): MultiMarket => {
   const n = int(rng, 2, 12)
   const weights = Array.from({ length: n }, () => logUniform(rng, 1, 60))
   const total = sum(weights)
-  let answers = weights.map((w, i) => mkAnswer(i, w / total, logUniform(rng, 10, 1e4)))
+  let answers = weights.map((w, i) =>
+    mkAnswer(i, w / total, logUniform(rng, 10, 1e4))
+  )
 
   const trades = int(rng, 0, 3)
   for (let t = 0; t < trades; t++) {
@@ -342,29 +356,42 @@ const mkSumToOneMarket = (rng: Rng): MultiMarket => {
     const outcome = outcomeOf(rng)
     const amount = logUniform(rng, 1, 500)
     try {
-      const { newBetResult, otherBetResults } = baseArb.calculateCpmmMultiArbitrageBet(
-        answers,
-        answer,
-        outcome,
-        amount,
-        undefined,
-        [],
-        {},
-        noFees
-      )
-      const poolById = new Map<string, { YES: number; NO: number }>()
+      const { newBetResult, otherBetResults } =
+        baseArb.calculateCpmmMultiArbitrageBet(
+          answers,
+          answer,
+          outcome,
+          amount,
+          undefined,
+          [],
+          {},
+          noFees
+        )
+      const poolById = new Map<string, { [outcome: string]: number }>()
       for (const r of [newBetResult, ...otherBetResults])
         poolById.set(r.answer.id, r.cpmmState.pool)
-      answers = answers.map((a) => withPool(a, poolById.get(a.id) ?? { YES: a.poolYes, NO: a.poolNo }))
+      answers = answers.map((a) =>
+        withPool(a, poolById.get(a.id) ?? { YES: a.poolYes, NO: a.poolNo })
+      )
     } catch (_e) {
       // A trade main refuses leaves the pools as they were.
     }
   }
 
   if (chance(rng, 0.5)) answers = answers.map(withoutP)
-  const probOf = (id: string | undefined) => answers.find((a) => a.id === id)!.prob
-  const { unfilledBets, balanceByUserId } = mkRestingOrders(rng, answers, probOf)
-  return { contract: mkMultiContract(answers, true), answers, unfilledBets, balanceByUserId }
+  const probOf = (id: string | undefined) =>
+    answers.find((a) => a.id === id)!.prob
+  const { unfilledBets, balanceByUserId } = mkRestingOrders(
+    rng,
+    answers,
+    probOf
+  )
+  return {
+    contract: mkMultiContract(answers, true),
+    answers,
+    unfilledBets,
+    balanceByUserId,
+  }
 }
 
 const mkIndependentMarket = (rng: Rng): MultiMarket => {
@@ -381,23 +408,39 @@ const mkIndependentMarket = (rng: Rng): MultiMarket => {
     const amount = logUniform(rng, 1, 500)
     try {
       const { cpmmState } = baseCpmm.computeFills(
-        { pool: { YES: a.poolYes, NO: a.poolNo }, p: 0.5, collectedFees: noFees },
+        {
+          pool: { YES: a.poolYes, NO: a.poolNo },
+          p: 0.5,
+          collectedFees: noFees,
+        },
         outcome,
         amount,
         undefined,
         [],
         {}
       )
-      answers = answers.map((x, j) => (j === i ? withPool(x, cpmmState.pool) : x))
+      answers = answers.map((x, j) =>
+        j === i ? withPool(x, cpmmState.pool) : x
+      )
     } catch (_e) {
       // A trade main refuses leaves the pool as it was.
     }
   }
 
   if (chance(rng, 0.5)) answers = answers.map(withoutP)
-  const probOf = (id: string | undefined) => answers.find((a) => a.id === id)!.prob
-  const { unfilledBets, balanceByUserId } = mkRestingOrders(rng, answers, probOf)
-  return { contract: mkMultiContract(answers, false), answers, unfilledBets, balanceByUserId }
+  const probOf = (id: string | undefined) =>
+    answers.find((a) => a.id === id)!.prob
+  const { unfilledBets, balanceByUserId } = mkRestingOrders(
+    rng,
+    answers,
+    probOf
+  )
+  return {
+    contract: mkMultiContract(answers, false),
+    answers,
+    unfilledBets,
+    balanceByUserId,
+  }
 }
 
 type BinaryMarket = {
@@ -405,6 +448,17 @@ type BinaryMarket = {
   state: headCpmm.CpmmState
   unfilledBets: LimitBet[]
   balanceByUserId: Balances
+}
+
+// placeBet refuses a cpmm-1 trade that leaves a pool side under the floor.
+const keepsFloor = (pool: { [outcome: string]: number }) =>
+  pool.YES >= CPMM_MIN_POOL_QTY && pool.NO >= CPMM_MIN_POOL_QTY
+
+// Halve x until check(x) holds: the largest trade of the size drawn that
+// placeBet would accept.
+const shrinkUntil = (x: number, check: (x: number) => boolean) => {
+  for (let i = 0; i < 100 && !check(x); i++) x /= 2
+  return x
 }
 
 // A cpmm-1 market: liquidity L = Y^p * N^(1-p) at (prob, p), partly traded.
@@ -429,14 +483,19 @@ const mkBinaryMarket = (rng: Rng): BinaryMarket => {
         [],
         {}
       )
-      pool = { YES: cpmmState.pool.YES, NO: cpmmState.pool.NO }
+      if (keepsFloor(cpmmState.pool))
+        pool = { YES: cpmmState.pool.YES, NO: cpmmState.pool.NO }
     } catch (_e) {
       // A trade main refuses leaves the pool as it was.
     }
   }
 
   const contract = mkBinaryContract(pool, p)
-  const { unfilledBets, balanceByUserId } = mkRestingOrders(rng, undefined, () => contract.prob)
+  const { unfilledBets, balanceByUserId } = mkRestingOrders(
+    rng,
+    undefined,
+    () => contract.prob
+  )
   return {
     contract,
     state: { pool: contract.pool, p: contract.p, collectedFees: noFees },
@@ -445,11 +504,48 @@ const mkBinaryMarket = (rng: Rng): BinaryMarket => {
   }
 }
 
-// Shares a trader could plausibly hold or want in an answer: up to twice its pool.
+// Whether main accepts a cpmm-1 bet of this amount, by the pool it leaves.
+const binaryBuyKeepsFloor =
+  (b: BinaryMarket, outcome: 'YES' | 'NO', limitProb: number | undefined) =>
+  (amount: number) => {
+    try {
+      const { cpmmState } = baseCpmm.computeFills(
+        b.state,
+        outcome,
+        amount,
+        limitProb,
+        b.unfilledBets,
+        b.balanceByUserId
+      )
+      return keepsFloor(cpmmState.pool)
+    } catch (_e) {
+      return false
+    }
+  }
+
+// Whether main accepts a cpmm-1 sale of these shares, by the pool it leaves.
+const binarySellKeepsFloor =
+  (b: BinaryMarket, outcome: 'YES' | 'NO') => (shares: number) => {
+    try {
+      const { cpmmState } = baseCpmm.calculateCpmmSale(
+        b.state,
+        shares,
+        outcome,
+        b.unfilledBets,
+        b.balanceByUserId
+      )
+      return keepsFloor(cpmmState.pool)
+    } catch (_e) {
+      return false
+    }
+  }
+
+// Shares a trader could plausibly hold or want in an answer: up to twice its
+// pool.
 const sharesIn = (rng: Rng, pool: { YES: number; NO: number }) =>
   logUniform(rng, 0.01, 2 * Math.max(pool.YES, pool.NO))
 
-// ------------------------------------------------------------------ canonical form
+// ------------------------------------------------------------------ canonical
 
 const TIMESTAMP_KEYS = new Set(['createdTime', 'timestamp', 'expiresAt'])
 
@@ -500,10 +596,12 @@ type Case = {
 
 type CaseBuilder = (seed: number, caseIndex: number) => Case
 
-const sumToOne = (seed: number, i: number) => mkSumToOneMarket(rngFor(seed, i, 'sum-to-one'))
+const sumToOne = (seed: number, i: number) =>
+  mkSumToOneMarket(rngFor(seed, i, 'sum-to-one'))
 const independent = (seed: number, i: number) =>
   mkIndependentMarket(rngFor(seed, i, 'independent'))
-const binary = (seed: number, i: number) => mkBinaryMarket(rngFor(seed, i, 'binary'))
+const binary = (seed: number, i: number) =>
+  mkBinaryMarket(rngFor(seed, i, 'binary'))
 
 // The shares a sale result sold, from the bet it wrote: a sale's bet carries
 // the (negative) shares sold.
@@ -558,10 +656,20 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const outcome = outcomeOf(rng)
     if (chance(rng, 1 / 3)) {
       const b = binary(seed, i)
-      const shares = sharesIn(rng, b.contract.pool as { YES: number; NO: number })
+      // Buying shares of outcome is a sale of the other side.
+      const shares = shrinkUntil(
+        sharesIn(rng, b.contract.pool as { YES: number; NO: number }),
+        binarySellKeepsFloor(b, outcome === 'YES' ? 'NO' : 'YES')
+      )
       return {
         run: (side) =>
-          side.cpmmAmountToBuyShares(b.contract, shares, outcome, b.unfilledBets, b.balanceByUserId),
+          side.cpmmAmountToBuyShares(
+            b.contract,
+            shares,
+            outcome,
+            b.unfilledBets,
+            b.balanceByUserId
+          ),
       }
     }
     const m = chance(rng, 0.5) ? sumToOne(seed, i) : independent(seed, i)
@@ -614,20 +722,23 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const loanPaidByAnswerId: { [answerId: string]: number } = {}
     for (const answer of shuffled.slice(0, count)) {
       const bets = int(rng, 1, 2)
-      userBetsByAnswerIdToSell[answer.id] = Array.from({ length: bets }, (_, j) => ({
-        id: `bet-${answer.id}-${j}`,
-        userId: 'seller',
-        contractId: CONTRACT_ID,
-        answerId: answer.id,
-        createdTime: 0,
-        amount: 0,
-        outcome: 'YES',
-        shares: sharesIn(rng, { YES: answer.poolYes, NO: answer.poolNo }),
-        probBefore: answer.prob,
-        probAfter: answer.prob,
-        fees: noFees,
-        isRedemption: false,
-      }))
+      userBetsByAnswerIdToSell[answer.id] = Array.from(
+        { length: bets },
+        (_, j) => ({
+          id: `bet-${answer.id}-${j}`,
+          userId: 'seller',
+          contractId: CONTRACT_ID,
+          answerId: answer.id,
+          createdTime: 0,
+          amount: 0,
+          outcome: 'YES',
+          shares: sharesIn(rng, { YES: answer.poolYes, NO: answer.poolNo }),
+          probBefore: answer.prob,
+          probAfter: answer.prob,
+          fees: noFees,
+          isRedemption: false,
+        })
+      )
       if (chance(rng, 0.3)) loanPaidByAnswerId[answer.id] = uniform(rng, 0, 20)
     }
     return {
@@ -674,7 +785,10 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const loanPaid = chance(rng, 0.3) ? uniform(rng, 0, 20) : 0
     if (chance(rng, 0.5)) {
       const b = binary(seed, i)
-      const shares = sharesIn(rng, b.contract.pool as { YES: number; NO: number })
+      const shares = shrinkUntil(
+        sharesIn(rng, b.contract.pool as { YES: number; NO: number }),
+        binarySellKeepsFloor(b, outcome)
+      )
       return {
         run: (side) =>
           side.cpmmSellBetInfo(
@@ -711,16 +825,31 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const outcome = outcomeOf(rng)
     if (chance(rng, 1 / 3)) {
       const b = binary(seed, i)
-      const shares = sharesIn(rng, b.contract.pool as { YES: number; NO: number })
+      const shares = shrinkUntil(
+        sharesIn(rng, b.contract.pool as { YES: number; NO: number }),
+        binarySellKeepsFloor(b, outcome)
+      )
       return {
         run: (side) =>
-          side.saleResult(b.contract, shares, outcome, b.unfilledBets, b.balanceByUserId),
+          side.saleResult(
+            b.contract,
+            shares,
+            outcome,
+            b.unfilledBets,
+            b.balanceByUserId
+          ),
         sale: {
           asked: shares,
           // getSaleResult doesn't return its fills; re-run the sale it wraps.
           sold: (side) =>
             -sumBy(
-              side.cpmmSale(b.state, shares, outcome, b.unfilledBets, b.balanceByUserId).takers,
+              side.cpmmSale(
+                b.state,
+                shares,
+                outcome,
+                b.unfilledBets,
+                b.balanceByUserId
+              ).takers,
               'shares'
             ),
         },
@@ -736,12 +865,25 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     }
     return {
       run: (side) =>
-        side.saleResult(m.contract, shares, outcome, m.unfilledBets, m.balanceByUserId, answer),
+        side.saleResult(
+          m.contract,
+          shares,
+          outcome,
+          m.unfilledBets,
+          m.balanceByUserId,
+          answer
+        ),
       sale: {
         asked: shares,
         sold: (side) =>
           -sumBy(
-            side.cpmmSale(state, shares, outcome, m.unfilledBets, m.balanceByUserId).takers,
+            side.cpmmSale(
+              state,
+              shares,
+              outcome,
+              m.unfilledBets,
+              m.balanceByUserId
+            ).takers,
             'shares'
           ),
       },
@@ -752,8 +894,11 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const b = binary(seed, i)
     const rng = rngFor(seed, i, 'computeCpmmBet')
     const outcome = outcomeOf(rng)
-    const amount = logUniform(rng, 0.5, 1000)
     const limitProb = takerLimitProb(rng)
+    const amount = shrinkUntil(
+      logUniform(rng, 0.5, 1000),
+      binaryBuyKeepsFloor(b, outcome, limitProb)
+    )
     const limitProbs = chance(rng, 0.2) ? { max: 0.99, min: 0.01 } : undefined
     return {
       run: (side) =>
@@ -773,10 +918,20 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const b = binary(seed, i)
     const rng = rngFor(seed, i, 'calculateAmountToBuyShares')
     const outcome = outcomeOf(rng)
-    const shares = sharesIn(rng, b.contract.pool as { YES: number; NO: number })
+    // Buying shares of outcome is a sale of the other side.
+    const shares = shrinkUntil(
+      sharesIn(rng, b.contract.pool as { YES: number; NO: number }),
+      binarySellKeepsFloor(b, outcome === 'YES' ? 'NO' : 'YES')
+    )
     return {
       run: (side) =>
-        side.amountToBuyShares(b.state, shares, outcome, b.unfilledBets, b.balanceByUserId),
+        side.amountToBuyShares(
+          b.state,
+          shares,
+          outcome,
+          b.unfilledBets,
+          b.balanceByUserId
+        ),
     }
   },
 
@@ -794,11 +949,19 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
     const m = sumToOne(seed, i)
     const rng = rngFor(seed, i, 'getBetDownToOneMultiBetInfo')
     // An answer just added at its own odds, so the probabilities sum past one.
-    const added = mkAnswer(m.answers.length, uniform(rng, 0.01, 0.6), logUniform(rng, 10, 1e4))
-    const answers = [...m.answers, 'p' in m.answers[0] ? added : withoutP(added)]
+    const added = mkAnswer(
+      m.answers.length,
+      uniform(rng, 0.01, 0.6),
+      logUniform(rng, 10, 1e4)
+    )
+    const answers = [
+      ...m.answers,
+      'p' in m.answers[0] ? added : withoutP(added),
+    ]
     const contract = mkMultiContract(answers, true)
     return {
-      run: (side) => side.betDownToOne(contract, answers, m.unfilledBets, m.balanceByUserId),
+      run: (side) =>
+        side.betDownToOne(contract, answers, m.unfilledBets, m.balanceByUserId),
     }
   },
 }
@@ -810,7 +973,8 @@ type Verdict = 'match' | 'nan-fee' | 'coarse-sale' | 'unexpected'
 const classify = (c: Case, base: Outcome, hd: Outcome): Verdict => {
   if (base.canon === hd.canon) return 'match'
 
-  // 1. The baseline failed the sale with the dust-fill NaN fee; the head goes through.
+  // 1. The baseline failed the sale with the dust-fill NaN fee; the head goes
+  //    through.
   if (!base.ok && base.error.includes(NAN_FEE_ERROR) && hd.ok) return 'nan-fee'
 
   // 2. The baseline's sale missed the shares asked by more than a millionth;
@@ -819,7 +983,10 @@ const classify = (c: Case, base: Outcome, hd: Outcome): Verdict => {
     const { asked } = c.sale
     const baseMiss = Math.abs(c.sale.sold(baseline, base.value) - asked)
     const headMiss = Math.abs(c.sale.sold(head, hd.value) - asked)
-    if (baseMiss > COARSE_SALE_TOLERANCE * asked && headMiss <= COARSE_SALE_TOLERANCE * asked)
+    if (
+      baseMiss > COARSE_SALE_TOLERANCE * asked &&
+      headMiss <= COARSE_SALE_TOLERANCE * asked
+    )
       return 'coarse-sale'
   }
 
