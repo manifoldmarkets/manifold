@@ -79,10 +79,9 @@ payout txns but not the contract's `subsidyPool` share resolution deducted,
 `resolve-market-helpers.ts` ~168-181, so the share sits in the contract by
 txn accounting without being drizzled or paid out); unresolving an untraded
 answer resets it to 0.5; undoing N/A doesn't restore the creator's
-unique-bettor bonuses. Also: the whole-market unresolve clears
-`resolution_probability` only in the websocket payload, not in the `answers`
-row (`backend/api/src/unresolve.ts`). Not reproduced by this review beyond
-the first.
+unique-bettor bonuses. Not reproduced by this review beyond the first. (The
+whole-market unresolve also left `resolution_probability` in the `answers`
+row; the seventh live test confirmed it, and #4102 now clears it.)
 
 ### 6a. Retried transactions log ordinary refusals as errors
 

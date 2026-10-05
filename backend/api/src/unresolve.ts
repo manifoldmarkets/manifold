@@ -355,7 +355,9 @@ const undoResolution = async (
   const isV2 = contract.mechanism === 'cpmm-multi-2'
   const poolProb = `(answers.p * answers.pool_no) / ((1 - answers.p) * answers.pool_yes + answers.p * answers.pool_no)`
   if (isMultiCpmm(contract) && !answerId) {
-    // remove resolutionTime and resolverId from all answers in the contract, restore subsidyPool
+    // Remove resolutionTime, resolverId and resolutionProbability from all
+    // answers in the contract, and restore subsidyPool. The broadcast below
+    // clears them on open pages too.
     const newAnswers = await pg.map(
       `
       with last_bet as (
@@ -381,6 +383,7 @@ const undoResolution = async (
       set
         resolution_time = null,
         resolver_id = null,
+        resolution_probability = null,
         prob = ${
           isV2
             ? poolProb
