@@ -3280,7 +3280,15 @@
       "yesMeans": "Constitution would require approved government-issued photo ID to vote (unexpired Ohio license/state ID, US passport/card, military/National Guard/VA ID), with a law-defined alternative for sincere religious objectors.",
       "noMeans": "No constitutional change; Ohio's existing statutory photo-ID requirement (since 2023) remains in law.",
       "verification": "secondary",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "EguC5EqzpA",
+        "slug": "will-ohio-issue-3-voter-photo-id-am",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "OK-sq-845",
@@ -3304,7 +3312,15 @@
       "yesMeans": "Amends art. 7-B §3 to restructure JNC appointments, terms and party/attorney rules.",
       "noMeans": "JNC keeps its current structure based on 1967 congressional districts.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "Id2NupPdzp",
+        "slug": "will-oklahoma-state-question-845-ju",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "OK-sq-847",
@@ -3329,7 +3345,15 @@
       "yesMeans": "Amends art. 10 §§8B-8C: 4%/1.75% caps; seniors at or below area median income get no increase; tiered caps above.",
       "noMeans": "Keeps 5%/3% caps and the current income-capped senior valuation freeze.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "nuPUA962S0",
+        "slug": "will-oklahoma-state-question-847-pr",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "RI-econ-development-bond",
@@ -3800,7 +3824,15 @@
       "yesMeans": "Repeals the 2025 amendments and restores RCW 28A.605.005 (parent/guardian rights list) as enacted by Initiative 2081 in 2024.",
       "noMeans": "The parents' rights statute stays as amended by the 2025 Legislature.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "NhsNAzU0Pg",
+        "slug": "will-washington-initiative-il26001",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "WA-il26-638",
@@ -3824,7 +3856,15 @@
       "yesMeans": "Prohibits 'biologically male' students from female-only school athletics and requires provider-signed sex verification for female teams.",
       "noMeans": "Current sex/gender-identity non-discrimination rules for school sports stay.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "zq2UpLUNlO",
+        "slug": "will-washington-initiative-il26638",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "WA-il26-645",
