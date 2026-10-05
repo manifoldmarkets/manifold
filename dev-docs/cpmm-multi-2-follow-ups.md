@@ -127,3 +127,32 @@ description cites aren't in the repo, so CI checks `cpmm-multi-1` parity with
 `new-bet.ts`, `calculate.ts` and `util/algos.ts` at the merge base and found
 zero numeric differences over ~34,000 cases. A PROBE-gated suite built the
 same way would catch regressions on the shared paths.
+
+## Design
+
+### 11. Where Other holds most of the market, every answer added puts the ante at risk
+
+An added answer's opening price is a guess: Other priced every unlisted answer
+together, and nothing says which of them the new one is. Where Other holds
+most of the market, its pool holds most of the ante, so a wrong guess costs
+the providers most of it, in whichever direction the guess is wrong. On a
+Ṁ1,000 market opened with Other alone, with each answer traded to its true
+chance as it's added (measured against the shipped functions):
+
+| Answers added, in order (true chance) | Half of Other (now) | Fixed 2% (before) |
+| ------------------------------------- | ------------------- | ----------------- |
+| 40%, 30%, 20%, 10%                    | Ṁ24                 | Ṁ822              |
+| 60%, then 25% and 10%                 | Ṁ25                 | Ṁ853              |
+| long shots: 5%, 3%, 2%, 1%            | Ṁ921                | Ṁ17               |
+| three junk answers                    | Ṁ1,245              | Ṁ24               |
+
+With Other at 35% or less, either rule costs about an add's fee or less. On
+the Other-alone market, a single add's worst case is Ṁ870–1,020 for every
+fixed opening from 2% to half of Other, and `cpmm-multi-1` has the same
+exposure: its split opens an answer at 50% beside Other alone. A fix has to
+keep most of the ante out of the pools until there's a price to put it at:
+open such a market with a small pool and the rest of its ante as pending
+subsidy, and drizzle that in only after answers have been added and traded
+(`cpmm-multi-2` deepens at the current prices without loss). That bounds what
+an add can cost to the fee and the small pool, at the cost of a thinner
+market for its first trades.

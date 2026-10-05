@@ -148,12 +148,13 @@ can fall to 1e-20 or below. What keeps that priceable:
   about that much), and raises it as YES goes into its pool. Trades can't get an answer there
   either: pushing a low-`p` answer toward 0%, or a high-`p` one toward 100%,
   moves its price only in proportion to the mana spent.
-- Until new answers opened at 2%, splitting a tiny Other was the one way an
-  answer came to be priced by a sliver of its pool. Each answer added halved
-  Other, so a market that gained answers while nobody bought Other ended up
-  with answers far below 1% (from 30%, the 50th opened near 3e-16), with NO
-  sides to match; once one is bought up, its pool is all but empty. Dev still
-  has such markets. Trades through those can miss summing to one by more than
+- Until each new answer got a pool of its own and an opening price of at
+  least 2%, splitting a tiny Other was the one way an answer came to be priced
+  by a sliver of its pool. Each answer added halved Other with no floor and no
+  pool of its own, so a market that gained answers while nobody bought Other
+  ended up with answers far below 1% (from 30%, the 50th opened near 3e-16),
+  with NO sides to match; once one is bought up, its pool is all but empty.
+  Dev still has such markets. Trades through those can miss summing to one by more than
   the arithmetic resolves: a buy on dev left a market summing to 164%. So a `cpmm-multi-2` single-answer buy or sale that misses summing to
   one by more than 1e-9 is solved again. A buy is priced from the other
   answers: with s shares in each of them, the answer must end at one minus
@@ -267,18 +268,26 @@ it refuses basket bets (`multi-bet`); `docs/docs/api.md` says so.
   shots, Ṁ30 against the favourite moves it to 90.9% (87.8% on `cpmm-multi-1`),
   but Ṁ300 moves it to 3.2% (17%). An answer that rallies from near 0% after
   liquidity went in near 0% can be moved a long way by a small bet.
-- A new answer opens at half of what Other has whatever its chances, so the
-  first trader after the add can buy a strong contender below its worth, out
-  of the pools, as on `cpmm-multi-1`. Whenever a bot is watching, that isn't
-  the adder: the new answer is broadcast before the add returns, and in the
-  fifth live test a bot listening on the websocket bought first in all 10
-  races, as it does on `cpmm-multi-1`. Opening at half gives the first buyer
-  the same edge `cpmm-multi-1`'s split does. The fixed 2% opening this
-  replaced gave far more: Ṁ50 of an answer worth 20% gained Ṁ55 on the first
-  of ten adds and Ṁ175 by the tenth, against −Ṁ3 to Ṁ85 on `cpmm-multi-1`, and
-  on a market opened with Other alone a Ṁ100 buy of the first answer added
-  took 1,184 shares against 192. An adder who wants the new answer can buy
-  Other first: YES in Other becomes YES in the new answer too.
+- A new answer opens at half of what Other has whatever its chances, as on
+  `cpmm-multi-1`, whose split opens it at about half of a large Other or
+  more. The first trader after the add can buy a strong contender below its
+  worth, or sell a long shot down from above it, out of the pools. With Other
+  at 35% or less, that costs the pools about the add's fee or less. Where
+  Other holds most of the market it can cost most of the ante, and no fixed
+  opening price avoids that: on a Ṁ1,000 market opened with Other alone, a
+  long shot added first opens at 50%, and selling it to 1% takes about Ṁ990
+  from the pools for about Ṁ9,800 spent, so a junk answer pays whoever adds
+  it and sells it down, as on `cpmm-multi-1`. The fixed 2% opening this
+  replaced lost as much the other way: Ṁ822 when answers worth 40%, 30%, 20%
+  and 10% were added in turn and bought to their worth, against Ṁ24 at half,
+  and Ṁ17 against Ṁ921 for long shots worth 5%, 3%, 2% and 1%. Holding most of
+  such a market's ante back until answers have been added would cover both
+  (`cpmm-multi-2-follow-ups.md`, 11).
+- Whenever a bot is watching, the first trader after an add isn't the adder:
+  the new answer is broadcast before the add returns, and in the fifth live
+  test a bot listening on the websocket bought first in all 10 races, as it
+  does on `cpmm-multi-1`. An adder who wants the new answer can buy Other
+  first: YES in Other becomes YES in the new answer too.
 - Once Other is below 3%, each answer added takes up to 2 points from the
   listed answers without a trade, and the first trader to buy them back gains
   what the pools lose. On a Ṁ1,000 market with a 97% favourite that's about
