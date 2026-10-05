@@ -190,7 +190,15 @@
       "yesMeans": "FOR: adds 'only a citizen of the United States' language to the Constitution's voter-qualification section; existing four qualifications unchanged.",
       "noMeans": "AGAINST: Article 3 voter-qualification wording stays as is.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "h2yzQ6AAyU",
+        "slug": "will-arkansas-issue-1-citizenship-r",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "AR-issue-2",
@@ -215,7 +223,15 @@
       "yesMeans": "FOR: rewrites the arms section to add hunting/recreation/any lawful purpose, ammunition, accessories, components, and 'shall not be infringed' language.",
       "noMeans": "AGAINST: existing art. 2 §5 language (common defense) remains.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "U509gZUqEN",
+        "slug": "will-arkansas-issue-2-right-to-keep",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "AR-issue-3",
@@ -240,7 +256,15 @@
       "yesMeans": "FOR: authorizes economic development programs/loans/grants and districts with bonding and taxing powers; supersedes conflicting provisions.",
       "noMeans": "AGAINST: no change to constitutional economic development provisions.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "EPZRIOqcEg",
+        "slug": "will-arkansas-issue-3-economic-deve",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "AR-water-bond",
@@ -486,7 +510,15 @@
       "yesMeans": "The state could borrow $11.25 billion to support veterans and affordable housing.",
       "noMeans": "The state could not borrow $11.25 billion to support veterans and affordable housing.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "dE989yuCtO",
+        "slug": "will-california-proposition-1-1125b",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-2",
@@ -511,7 +543,15 @@
       "yesMeans": "Rules for building state budget reserves and paying down extra state debts would change; reserves would be higher and extra debt payments required for longer.",
       "noMeans": "Rules for building state budget reserves and paying down extra state debts would not change.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "cA0OZzC88C",
+        "slug": "will-california-proposition-2-large",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-3",
@@ -538,7 +578,15 @@
       "yesMeans": "An income tax increase on high-income earners in place since 2012 would become permanent instead of expiring in 2031.",
       "noMeans": "An income tax increase on high-income earners in place since 2012 would expire in 2031.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "s8UCzu29Ih",
+        "slug": "will-california-proposition-3-exten",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-37",
@@ -599,7 +647,15 @@
       "yesMeans": "The state could borrow $8.4 billion to support immunology and immunotherapy research by California institutes and universities.",
       "noMeans": "The state could not borrow $8.4 billion for immunology and immunotherapy research.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "dRcZIO5PS0",
+        "slug": "will-california-proposition-38-84b",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-39",
@@ -735,7 +791,15 @@
       "yesMeans": "State Auditor would review programs funded by proposed and enacted special taxes; the state might not be able to exclude new special-tax spending from its spending limit.",
       "noMeans": "The State Auditor's review duties and the state spending limit requirements would not change.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "R8Oz2hgPyU",
+        "slug": "will-california-proposition-41-tax",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-42",
@@ -762,7 +826,15 @@
       "yesMeans": "The state could not establish new taxes on the ownership of financial assets or other personal property.",
       "noMeans": "The state would continue to have the option to establish new taxes on the ownership of financial assets or other personal property.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "6O2g5QNRch",
+        "slug": "will-california-proposition-42-ban",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-43",
@@ -814,7 +886,15 @@
       "yesMeans": "Certain private nonprofit health care clinics would have to spend at least 90 percent of their revenue each year on providing health care services.",
       "noMeans": "The new requirement on health care clinic spending would not go into effect.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "S2pzstPLgy",
+        "slug": "will-california-proposition-44-90-s",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-45",
@@ -840,7 +920,15 @@
       "yesMeans": "Certain projects would get new review and court-challenge procedures, with tighter time limits and narrower court review.",
       "noMeans": "Projects would continue to use existing review and court-challenge procedures.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "6dIlzZuQNS",
+        "slug": "will-california-proposition-45-fast",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CA-prop-5",
@@ -1087,7 +1175,15 @@
       "yesMeans": "Life without parole for child sex trafficking; crime expanded to buying sex with a minor (Blue Book).",
       "noMeans": "Keeps current felony penalties (8-48 years plus mandatory parole) (Blue Book).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "ElpzU8EIZg",
+        "slug": "will-colorado-proposition-133-penal",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CO-prop-134",
@@ -1111,7 +1207,15 @@
       "yesMeans": "School teams designated by biological sex or as mixed; schools must adopt sex-eligibility policies (Blue Book).",
       "noMeans": "Schools and athletic associations keep setting their own eligibility policies under current law (Blue Book).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "RIt2NLyLSZ",
+        "slug": "will-colorado-proposition-134-male",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CO-prop-135",
@@ -1134,7 +1238,15 @@
       "yesMeans": "Bans these surgeries on minors and bars government funds or insurance from paying (Blue Book).",
       "noMeans": "Keeps current law protecting access and allowing insurance coverage (Blue Book).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "9z9ASRc9Qg",
+        "slug": "will-colorado-proposition-135-prohi",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CO-prop-136",
@@ -1158,7 +1270,15 @@
       "yesMeans": "Sets the current 4.4% rate as the statutory maximum (Blue Book).",
       "noMeans": "Keeps the 4.4% rate without a new statutory limit (Blue Book).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "dghE2StCNC",
+        "slug": "will-colorado-proposition-136-44-in",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CO-prop-137",
@@ -1182,7 +1302,15 @@
       "yesMeans": "Sporting-goods sales tax revenue funds conservation/wildfire/recreation programs, exempt from revenue limits (Blue Book).",
       "noMeans": "Revenue stays in the general budget subject to the revenue limit (Blue Book).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "yO9IEEN5qu",
+        "slug": "will-colorado-proposition-137-sport",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "CO-prop-nn",
@@ -1207,7 +1335,15 @@
       "yesMeans": "State may keep revenue above the TABOR limit to increase K-12 spending 2%/yr for 10 years (per ballot question).",
       "noMeans": "No change to the spending limit for this purpose; above-cap revenue continues to be refunded.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "dRPshhPN8U",
+        "slug": "will-colorado-proposition-nn-keepin",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "FL-ag-property-exemption",
@@ -1459,7 +1595,15 @@
       "yesMeans": "Legislature gets exclusive authority to legalize marijuana, narcotics or psychoactive substances (pamphlet).",
       "noMeans": "No change; controlled-substance laws can still be changed by initiative (pamphlet).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "NO0sQC0nu8",
+        "slug": "will-idaho-hjr-4-legislative-author",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "ID-hjr-6",
@@ -1479,7 +1623,15 @@
       "yesMeans": "Designates English the official state language in the constitution (pamphlet).",
       "noMeans": "No constitutional change; English remains official language in statute only (pamphlet).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "PNOlPLOclR",
+        "slug": "will-idaho-hjr-6-english-as-officia",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "ID-prop-1",
@@ -1502,7 +1654,15 @@
       "yesMeans": "Creates a right to abortion before viability and post-viability in medical emergencies; provider protections; statutory reproductive privacy right (pamphlet).",
       "noMeans": "Keeps current law banning abortion except to prevent death and early-pregnancy reported rape/incest (pamphlet).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "0S5QPtNucq",
+        "slug": "will-idaho-proposition-1-reproducti",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "ID-state-gun",
@@ -2548,7 +2708,15 @@
       "yesMeans": "Judicial elections must stay nonpartisan under the constitution.",
       "noMeans": "Nonpartisan judicial elections remain a matter of statute that the Legislature could change.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "ZgpnROpQdh",
+        "slug": "will-montana-ci132-nonpartisan-judi",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "MT-ci-133",
@@ -2570,7 +2738,15 @@
       "yesMeans": "Initiative/referendum becomes a fundamental right (Art. II §37) subject to strict scrutiny, with process guarantees.",
       "noMeans": "Initiative and referendum process continues under current constitution and statutes.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "OtNScA0N69",
+        "slug": "will-montana-ci133-right-of-initiat",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "MT-i-194",
@@ -2596,7 +2772,15 @@
       "yesMeans": "Artificial persons lose the legal power to spend on candidates, parties or ballot issues in Montana.",
       "noMeans": "Current law on entity political spending stays in place.",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "IRugUQspcZ",
+        "slug": "will-montana-i194-montana-plan-ban",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "NC-income-tax-cap",
@@ -2694,7 +2878,15 @@
       "yesMeans": "Future constitutional amendments would need at least 60% approval (SOS guide).",
       "noMeans": "Constitutional amendments continue to need more than 50% (SOS guide).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "phnS8hnQ2d",
+        "slug": "will-north-dakota-measure-1-60-vote",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "ND-measure-2",
@@ -2717,7 +2909,15 @@
       "yesMeans": "State funds one free breakfast and lunch daily for students at participating schools (SOS guide).",
       "noMeans": "No state funding beyond current free and reduced-price meal eligibility (SOS guide).",
       "verification": "official",
-      "marketNote": "No linked market yet."
+      "marketNote": "No linked market yet.",
+      "source": {
+        "kind": "binary",
+        "contractId": "n8P5PQgNEL",
+        "slug": "will-north-dakota-measure-2-free-sc",
+        "yesOrientation": "approve",
+        "confidence": "confirmed",
+        "offBallot": "unspecified"
+      }
     },
     {
       "key": "NE-sports-sex",

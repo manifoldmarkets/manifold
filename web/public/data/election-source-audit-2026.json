@@ -4072,6 +4072,3723 @@
       "caveats": [
         "Dev rehearsal market created by create-election-markets.ts on dev."
       ]
+    },
+    "which-party-will-win-the-2026-us-ho-09pz2NughU": {
+      "contractId": "P0OnSEgALQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-14-regular-general",
+          "office": "house",
+          "key": "GA-14"
+        }
+      ],
+      "answerParties": {
+        "h5CL6t6SlC": "D",
+        "Q8NLyZplEu": "R",
+        "hOl5dIpz5S": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2lzt8tznhc": {
+      "contractId": "gd2d2tQuP2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-HI-01-regular-general",
+          "office": "house",
+          "key": "HI-1"
+        }
+      ],
+      "answerParties": {
+        "C5A0U9P8EP": "D",
+        "25cluqqq6u": "R",
+        "QdI6IZ5qU0": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2lSC2QuL20": {
+      "contractId": "ClCOn0sUnO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-HI-02-regular-general",
+          "office": "house",
+          "key": "HI-2"
+        }
+      ],
+      "answerParties": {
+        "pnNp0uO02d": "D",
+        "EdR8n0S8pP": "R",
+        "yUn6t8Ldgn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-9zCCRqc6gZ": {
+      "contractId": "cPQSlP0q0h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ID-01-regular-general",
+          "office": "house",
+          "key": "ID-1"
+        }
+      ],
+      "answerParties": {
+        "856tyg9ZsZ": "D",
+        "dEpCP82L86": "R",
+        "C2Ry8NLuu2": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-nh890AqPS6": {
+      "contractId": "OpEQAINLU6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ID-02-regular-general",
+          "office": "house",
+          "key": "ID-2"
+        }
+      ],
+      "answerParties": {
+        "uyt62l9nI9": "D",
+        "IR5Ag0Rs69": "R",
+        "hz652506U8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LdPqSlgsUP": {
+      "contractId": "lp25AngIng",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-01-regular-general",
+          "office": "house",
+          "key": "IL-1"
+        }
+      ],
+      "answerParties": {
+        "lOAzEzdu86": "D",
+        "l9hRSh2QzR": "R",
+        "S9NS9yNuLA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-qZONnACEgn": {
+      "contractId": "hhlL2p0NQz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-02-regular-general",
+          "office": "house",
+          "key": "IL-2"
+        }
+      ],
+      "answerParties": {
+        "tznzdPRggR": "D",
+        "5pPlO9QARZ": "R",
+        "0cz6OqpghE": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LcyUAZ58pc": {
+      "contractId": "gZsEIlAsu2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-03-regular-general",
+          "office": "house",
+          "key": "IL-3"
+        }
+      ],
+      "answerParties": {
+        "dPNCQpAu0u": "D",
+        "tOyqE80hlR": "R",
+        "A56d2R0sId": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-SEZtys6LhO": {
+      "contractId": "6EEZ8E8usd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-04-regular-general",
+          "office": "house",
+          "key": "IL-4"
+        }
+      ],
+      "answerParties": {
+        "Qlq25NcOld": "D",
+        "9NC6ShARgO": "R",
+        "n2LZIzQS0t": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-R8nzZqpOgz": {
+      "contractId": "96IzOltlEp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-05-regular-general",
+          "office": "house",
+          "key": "IL-5"
+        }
+      ],
+      "answerParties": {
+        "55ZzlS9yAU": "D",
+        "UtlCQNuzRQ": "R",
+        "glgEZNCIyl": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-nlAPAN0I8C": {
+      "contractId": "NAO2yZh59A",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-06-regular-general",
+          "office": "house",
+          "key": "IL-6"
+        }
+      ],
+      "answerParties": {
+        "OQ92Q08EEt": "D",
+        "Q9uC6C5OQz": "R",
+        "EP2c55zZEA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5nqI5nUsCd": {
+      "contractId": "nZstIA50z9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-07-regular-general",
+          "office": "house",
+          "key": "IL-7"
+        }
+      ],
+      "answerParties": {
+        "EyhNnE8dQt": "D",
+        "6R8tRCQglR": "R",
+        "6ONgZdPCd2": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ASphLQCERL": {
+      "contractId": "5A8nh2CNdz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-08-regular-general",
+          "office": "house",
+          "key": "IL-8"
+        }
+      ],
+      "answerParties": {
+        "ZcgUnqnusl": "D",
+        "UAhNPAn2hP": "R",
+        "qhtLuu8QpC": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-dRg8s2O6cq": {
+      "contractId": "NU6OqOEZ2c",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-09-regular-general",
+          "office": "house",
+          "key": "IL-9"
+        }
+      ],
+      "answerParties": {
+        "A58hCQzIyd": "D",
+        "QtqlItZndU": "R",
+        "qtgzuRIZPZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5Qtc6R9QS8": {
+      "contractId": "6qyClAsqZP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-10-regular-general",
+          "office": "house",
+          "key": "IL-10"
+        }
+      ],
+      "answerParties": {
+        "ypc0yPcszZ": "D",
+        "nIEsAzNIRd": "R",
+        "szsOnZLNUZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5SsCyRsgdl": {
+      "contractId": "ZZR9tnzpZZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-11-regular-general",
+          "office": "house",
+          "key": "IL-11"
+        }
+      ],
+      "answerParties": {
+        "lQqsN2ZchL": "D",
+        "5AzngQPP8t": "R",
+        "Q0n5pZCOO5": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2LnyZ56ygq": {
+      "contractId": "yqUIp9yAUQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-12-regular-general",
+          "office": "house",
+          "key": "IL-12"
+        }
+      ],
+      "answerParties": {
+        "6IPQRINgRU": "D",
+        "5ULC9EuRdd": "R",
+        "hS2Z6tQLln": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-I5nPI0Ry5N": {
+      "contractId": "ysQ9LnCh0p",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-13-regular-general",
+          "office": "house",
+          "key": "IL-13"
+        }
+      ],
+      "answerParties": {
+        "QzINnROlAh": "D",
+        "ydhcuQulpZ": "R",
+        "OsypO2Aqu2": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-uu0AdcgOAu": {
+      "contractId": "8UR22hhAEA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-14-regular-general",
+          "office": "house",
+          "key": "IL-14"
+        }
+      ],
+      "answerParties": {
+        "60hqs05Rsc": "D",
+        "8h9E0U2lR5": "R",
+        "nNAZ26quzR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-yNCu00Qdqq": {
+      "contractId": "C9sNdtyCAd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-15-regular-general",
+          "office": "house",
+          "key": "IL-15"
+        }
+      ],
+      "answerParties": {
+        "zAUhcnLpAE": "D",
+        "UIZShhq8RZ": "R",
+        "ZLsp5A2sN0": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-lhduuQt55A": {
+      "contractId": "sPQ9glscQ8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-16-regular-general",
+          "office": "house",
+          "key": "IL-16"
+        }
+      ],
+      "answerParties": {
+        "UnUg6QZO8C": "D",
+        "IL0sNc2Epz": "R",
+        "25nn5AlgQg": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-htClLNp9zg": {
+      "contractId": "5ppg2RNL98",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-02-regular-general",
+          "office": "house",
+          "key": "IN-2"
+        }
+      ],
+      "answerParties": {
+        "2RL65sgSSy": "D",
+        "0ZC2ISLIp5": "R",
+        "25tQphNUQQ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ztPnzAtpRO": {
+      "contractId": "8lI0OSlhdS",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-03-regular-general",
+          "office": "house",
+          "key": "IN-3"
+        }
+      ],
+      "answerParties": {
+        "dnSLpcC69C": "D",
+        "EdIhZttcyQ": "R",
+        "L0yU9Q90qt": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-OtN8CLElul": {
+      "contractId": "u5SqRuUyCs",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-04-regular-general",
+          "office": "house",
+          "key": "IN-4"
+        }
+      ],
+      "answerParties": {
+        "QZygQPSQgd": "D",
+        "nIQNIh8yty": "R",
+        "SyAEs9Eg9z": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2EZcIcAOZU": {
+      "contractId": "yPIyRptlQt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-05-regular-general",
+          "office": "house",
+          "key": "IN-5"
+        }
+      ],
+      "answerParties": {
+        "p5zydS9N0A": "D",
+        "Shu0Qsh0Zc": "R",
+        "uU2ZAhuhNq": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-dQ62RgpqAU": {
+      "contractId": "0NUQINhphU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-06-regular-general",
+          "office": "house",
+          "key": "IN-6"
+        }
+      ],
+      "answerParties": {
+        "yNzNhUSdz0": "D",
+        "Ndp86I2phl": "R",
+        "Opn95z6pQ2": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ycO25QAu5t": {
+      "contractId": "8q6h0qcP0l",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-07-regular-general",
+          "office": "house",
+          "key": "IN-7"
+        }
+      ],
+      "answerParties": {
+        "UZz5zsnlPR": "D",
+        "Rd5N8S0Ec2": "R",
+        "6d2UQOlzpd": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-hs52OgNAIA": {
+      "contractId": "q6Ssyy0qph",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-08-regular-general",
+          "office": "house",
+          "key": "IN-8"
+        }
+      ],
+      "answerParties": {
+        "6595N2hqOU": "D",
+        "IlPn6dNROQ": "R",
+        "L8yl0CcdUP": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-Zt9PQtRQZI": {
+      "contractId": "9EUpgt62Qs",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-09-regular-general",
+          "office": "house",
+          "key": "IN-9"
+        }
+      ],
+      "answerParties": {
+        "hQh88LNzlN": "D",
+        "hczOuEdNPq": "R",
+        "6UqI6yLNZP": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2SU6ys8pp5": {
+      "contractId": "hA2IdSCnQE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-01-regular-general",
+          "office": "house",
+          "key": "KS-1"
+        }
+      ],
+      "answerParties": {
+        "ZAz6EssORS": "D",
+        "UqdEluPq2y": "R",
+        "pSNtEO9SPA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-yqcRts52zg": {
+      "contractId": "nqhdgyz6OU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-02-regular-general",
+          "office": "house",
+          "key": "KS-2"
+        }
+      ],
+      "answerParties": {
+        "Z0Spu0hRS9": "D",
+        "RcllOl9SN9": "R",
+        "CAPp96tpqn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LldyLNE6LE": {
+      "contractId": "U2h9ALqR9Z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-03-regular-general",
+          "office": "house",
+          "key": "KS-3"
+        }
+      ],
+      "answerParties": {
+        "l2dlZPq2Q9": "D",
+        "ygZ8gA82Au": "R",
+        "Ry5hdnOAn8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-8NhSypgQCI": {
+      "contractId": "C2chRU2N9L",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-04-regular-general",
+          "office": "house",
+          "key": "KS-4"
+        }
+      ],
+      "answerParties": {
+        "LZgq0lN98g": "D",
+        "ZSnOR6QQQp": "R",
+        "zIqClq2tpO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-IQIstC2EZS": {
+      "contractId": "IytLR8t2UN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-01-regular-general",
+          "office": "house",
+          "key": "KY-1"
+        }
+      ],
+      "answerParties": {
+        "puNnp0qANd": "D",
+        "dNqnzZZChh": "R",
+        "Rq65AdAPnn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-EEtPyICqOR": {
+      "contractId": "yApuQ6cQ9q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-02-regular-general",
+          "office": "house",
+          "key": "KY-2"
+        }
+      ],
+      "answerParties": {
+        "Iun2LQhNRu": "D",
+        "AAqLPn6P2O": "R",
+        "tyRUL2Qsny": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-CSqlzdcQ8l": {
+      "contractId": "U9lEqhgdLI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-03-regular-general",
+          "office": "house",
+          "key": "KY-3"
+        }
+      ],
+      "answerParties": {
+        "QnLgLqI9RZ": "D",
+        "t9phuE0QlA": "R",
+        "Z6PtydC9lz": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-L8OPdhzR8d": {
+      "contractId": "8pScpgsc9O",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-04-regular-general",
+          "office": "house",
+          "key": "KY-4"
+        }
+      ],
+      "answerParties": {
+        "9cgtIn8qLC": "D",
+        "qqygsns8E8": "R",
+        "uAUgE2pNds": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-us5AtPlI2q": {
+      "contractId": "2guUzgU26z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-05-regular-general",
+          "office": "house",
+          "key": "KY-5"
+        }
+      ],
+      "answerParties": {
+        "8nhUuESnlA": "D",
+        "6q0lEQhtd2": "R",
+        "gntgOQyp29": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-Ay8ApzOQc9": {
+      "contractId": "lzql5qqCPL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-01-regular-general",
+          "office": "house",
+          "key": "LA-1"
+        }
+      ],
+      "answerParties": {
+        "yE22zR00np": "D",
+        "2c0uunRUI2": "R",
+        "AOuE0N5sRE": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-RLONEpPySl": {
+      "contractId": "0N6SPOy6yQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-02-regular-general",
+          "office": "house",
+          "key": "LA-2"
+        }
+      ],
+      "answerParties": {
+        "9Aqh0PUn6n": "D",
+        "E6ESOu2AgP": "R",
+        "lpzE5N2s98": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QEdAtsp0UU": {
+      "contractId": "nutlNucQh5",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-03-regular-general",
+          "office": "house",
+          "key": "LA-3"
+        }
+      ],
+      "answerParties": {
+        "CL0ZP0qIZI": "D",
+        "glPLAn00p2": "R",
+        "RLINUdcAPy": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QpIylNAynS": {
+      "contractId": "CndzIdpS6R",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-04-regular-general",
+          "office": "house",
+          "key": "LA-4"
+        }
+      ],
+      "answerParties": {
+        "CzS2Uly8hg": "D",
+        "AtNUnn60Un": "R",
+        "RCCQ6gpnqZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-qCcssllLyc": {
+      "contractId": "n0hOh0snQ2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-05-regular-general",
+          "office": "house",
+          "key": "LA-5"
+        }
+      ],
+      "answerParties": {
+        "9gyPP6nuEl": "D",
+        "2hES2sddU2": "R",
+        "UygtZy2Eyh": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-56n9c5dycE": {
+      "contractId": "tQSnz2Epnq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-06-regular-general",
+          "office": "house",
+          "key": "LA-6"
+        }
+      ],
+      "answerParties": {
+        "yZ06SIPOzZ": "D",
+        "z5u0hnEPQn": "R",
+        "NlyL8EqIEc": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LULghcptnp": {
+      "contractId": "2dL9EdguUd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ME-01-regular-general",
+          "office": "house",
+          "key": "ME-1"
+        }
+      ],
+      "answerParties": {
+        "tpP8AsAs58": "D",
+        "8Ad5lRSZOS": "R",
+        "8tnZu5Qy9L": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ElhOEytpS6": {
+      "contractId": "ROASQpAyg2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-01-regular-general",
+          "office": "house",
+          "key": "MD-1"
+        }
+      ],
+      "answerParties": {
+        "9AlAC9lgN6": "D",
+        "OcpEnlQlNu": "R",
+        "y0QgZlLOsO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-qq65ZP5pQz": {
+      "contractId": "LLcz0OIAIQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-02-regular-general",
+          "office": "house",
+          "key": "MD-2"
+        }
+      ],
+      "answerParties": {
+        "RlULpsZsQE": "D",
+        "zI2ZLdtZSQ": "R",
+        "OhL6O50Cpq": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cyAO59CN6u": {
+      "contractId": "25p0U0Pg2z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-03-regular-general",
+          "office": "house",
+          "key": "MD-3"
+        }
+      ],
+      "answerParties": {
+        "LdzpSACSnz": "D",
+        "u09tdSQhUg": "R",
+        "QOtLl2QnAO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-RNOPR5g62g": {
+      "contractId": "C5Esl98PS9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-04-regular-general",
+          "office": "house",
+          "key": "MD-4"
+        }
+      ],
+      "answerParties": {
+        "yAlQtQquSN": "D",
+        "utCRq2nQCU": "R",
+        "0S8O9l6SyQ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-AhRLL00ll5": {
+      "contractId": "Nplpy5qOtL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-05-regular-general",
+          "office": "house",
+          "key": "MD-5"
+        }
+      ],
+      "answerParties": {
+        "g6g6AZSRZ8": "D",
+        "s9PEzl2IA5": "R",
+        "Uduh0yIzp0": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5td8upLZ6E": {
+      "contractId": "0t8Cz2n6AA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-06-regular-general",
+          "office": "house",
+          "key": "MD-6"
+        }
+      ],
+      "answerParties": {
+        "zgRU00S8AU": "D",
+        "Z5Q5dARpQg": "R",
+        "qAShsLzRn9": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-899ycUPUgE": {
+      "contractId": "5AQs0Q0qhA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-07-regular-general",
+          "office": "house",
+          "key": "MD-7"
+        }
+      ],
+      "answerParties": {
+        "zNAzUZCUzO": "D",
+        "UQAdnERnZ5": "R",
+        "yOqZAzc8uU": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ncqPqZZP6N": {
+      "contractId": "nRscqc6ntE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-08-regular-general",
+          "office": "house",
+          "key": "MD-8"
+        }
+      ],
+      "answerParties": {
+        "OgI9AQspdA": "D",
+        "PcURNLRdEO": "R",
+        "PnPt6L9chN": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-szzd5qs9qq": {
+      "contractId": "zcgsQ5cNyN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-01-regular-general",
+          "office": "house",
+          "key": "MA-1"
+        }
+      ],
+      "answerParties": {
+        "02AZz9ggtc": "D",
+        "cC2lUI9c6U": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-hN98Pc2OEE": {
+      "contractId": "ul0UlstnU2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-03-regular-general",
+          "office": "house",
+          "key": "MA-3"
+        }
+      ],
+      "answerParties": {
+        "0qZRIPll9c": "D",
+        "s92ULlnp8U": "R",
+        "RE6utddqhp": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5y0gA95q6E": {
+      "contractId": "z0c9Us0UR5",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-04-regular-general",
+          "office": "house",
+          "key": "MA-4"
+        }
+      ],
+      "answerParties": {
+        "ySzu0uhgsN": "D",
+        "pdOh069qU9": "R",
+        "SdnOlR2EpZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2RztANZzqE": {
+      "contractId": "qOLAzuzA2u",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-06-regular-general",
+          "office": "house",
+          "key": "MA-6"
+        }
+      ],
+      "answerParties": {
+        "u0h9ZnI0Ec": "D",
+        "CEnRPtqAsh": "R",
+        "IQnlh8gpgO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-lShOzQSPnS": {
+      "contractId": "ZgQ26U99PZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-08-regular-general",
+          "office": "house",
+          "key": "MA-8"
+        }
+      ],
+      "answerParties": {
+        "PdEtOLnZtd": "D",
+        "IdtSNLS892": "R",
+        "PIc2RsQOON": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-gZR5EZcRSI": {
+      "contractId": "sISEZdzSdu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-09-regular-general",
+          "office": "house",
+          "key": "MA-9"
+        }
+      ],
+      "answerParties": {
+        "gSh8SgcQuL": "D",
+        "q9pcyRQspZ": "R",
+        "EypQg9EcO6": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-P50uAZIup0": {
+      "contractId": "RSc8OEqNLu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-01-regular-general",
+          "office": "house",
+          "key": "MI-1"
+        }
+      ],
+      "answerParties": {
+        "qgNRssn2yA": "D",
+        "PURAZ9d5Iz": "R",
+        "Zd902NQyP0": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-hNyPCS9Syp": {
+      "contractId": "2u88Rp9y5S",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-02-regular-general",
+          "office": "house",
+          "key": "MI-2"
+        }
+      ],
+      "answerParties": {
+        "sCnEOpCycU": "D",
+        "cgIqSyhtEs": "R",
+        "22lNsRqOZ5": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5y5s9OIup2": {
+      "contractId": "yl6PZ8OlSE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-05-regular-general",
+          "office": "house",
+          "key": "MI-5"
+        }
+      ],
+      "answerParties": {
+        "LZPZqtZ8CZ": "D",
+        "ZLhdyyNIIU": "R",
+        "phE0dILuIR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-I62ApCN6NU": {
+      "contractId": "yU8EZhO9cZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-06-regular-general",
+          "office": "house",
+          "key": "MI-6"
+        }
+      ],
+      "answerParties": {
+        "5qOAIAuUqy": "D",
+        "zCz8qL6ECE": "R",
+        "tc0yuRcnnA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-c299gICPUZ": {
+      "contractId": "sPP8QgcqN8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-09-regular-general",
+          "office": "house",
+          "key": "MI-9"
+        }
+      ],
+      "answerParties": {
+        "S6pssnc2t5": "D",
+        "N5pldslqZy": "R",
+        "NOu00cEIdN": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-E6uIAc008E": {
+      "contractId": "h2gR9cCuAh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-11-regular-general",
+          "office": "house",
+          "key": "MI-11"
+        }
+      ],
+      "answerParties": {
+        "Nnltn82Ecy": "D",
+        "hN2NLE2s8y": "R",
+        "IPcIhELqR5": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-nznZOAQglP": {
+      "contractId": "Cz9ZlzIIdh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-12-regular-general",
+          "office": "house",
+          "key": "MI-12"
+        }
+      ],
+      "answerParties": {
+        "UNlUqlhLns": "D",
+        "qcq2EUsgSg": "R",
+        "Ugd6dQlISO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LsAU9RAEEh": {
+      "contractId": "9qRpNNAPNq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-13-regular-general",
+          "office": "house",
+          "key": "MI-13"
+        }
+      ],
+      "answerParties": {
+        "6d8OISLgnl": "D",
+        "8gIncRqRL9": "R",
+        "CsuyLZU9n6": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-h8dssCnzyh": {
+      "contractId": "gsu5A9qP2L",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-03-regular-general",
+          "office": "house",
+          "key": "MN-3"
+        }
+      ],
+      "answerParties": {
+        "hsl26PuEEZ": "D",
+        "ypgONR6tEQ": "R",
+        "sqUuSSlPtZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-lLlO2hRRSc": {
+      "contractId": "AqtUy25u95",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-04-regular-general",
+          "office": "house",
+          "key": "MN-4"
+        }
+      ],
+      "answerParties": {
+        "zpnpzR80qO": "D",
+        "gtdQzAyR2t": "R",
+        "PntEzU9qz9": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-p626ZOcIRh": {
+      "contractId": "CPU6QOplsN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-05-regular-general",
+          "office": "house",
+          "key": "MN-5"
+        }
+      ],
+      "answerParties": {
+        "zLZnsRnqy6": "D",
+        "9LRqypqpLh": "R",
+        "n96Pl0uL5O": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cl2O2tuUdu": {
+      "contractId": "zEzIUsQ6pZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-06-regular-general",
+          "office": "house",
+          "key": "MN-6"
+        }
+      ],
+      "answerParties": {
+        "8g6hhp98py": "D",
+        "R9AUPzRdRp": "R",
+        "ZcONy6lhQd": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-tl0tPll6th": {
+      "contractId": "ggPg5zR8Zl",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-07-regular-general",
+          "office": "house",
+          "key": "MN-7"
+        }
+      ],
+      "answerParties": {
+        "yupI5yPndd": "D",
+        "62OELtUESS": "R",
+        "Znsd60OAE8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QhIUOnSpOs": {
+      "contractId": "PCZ0QtcNLQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-08-regular-general",
+          "office": "house",
+          "key": "MN-8"
+        }
+      ],
+      "answerParties": {
+        "llhqZShENq": "D",
+        "sEN90dRIps": "R",
+        "NEcCCpgupZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-U8uu0EuUdZ": {
+      "contractId": "ppl6Qsguls",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-01-regular-general",
+          "office": "house",
+          "key": "MS-1"
+        }
+      ],
+      "answerParties": {
+        "n9RtlSPPUc": "D",
+        "tq58uLh9OC": "R",
+        "zSQRQO2uzR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-z28SSzg2zA": {
+      "contractId": "OC2st8950h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-02-regular-general",
+          "office": "house",
+          "key": "MS-2"
+        }
+      ],
+      "answerParties": {
+        "l6RLzuIc0U": "D",
+        "0RzPREnlQd": "R",
+        "6S8Ls8UqzI": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-552u2RN2SP": {
+      "contractId": "nNUnIANsCt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-03-regular-general",
+          "office": "house",
+          "key": "MS-3"
+        }
+      ],
+      "answerParties": {
+        "dgRNcs5ZA9": "D",
+        "PZ8cuUlc96": "R",
+        "8n0Cn90yRp": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cpsUs2hQq0": {
+      "contractId": "g9uIdELQ0P",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-04-regular-general",
+          "office": "house",
+          "key": "MS-4"
+        }
+      ],
+      "answerParties": {
+        "PpAPPyLhhO": "D",
+        "0RN6NN8Py8": "R",
+        "20sScqSIZE": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-55OZClyOtn": {
+      "contractId": "P6CP0RAEU2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-01-regular-general",
+          "office": "house",
+          "key": "MO-1"
+        }
+      ],
+      "answerParties": {
+        "nQCzNtOldq": "D",
+        "UZcdyA0RyP": "R",
+        "y5LpQlqyUn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QQAznO2lZ0": {
+      "contractId": "sQQgCq6Eu6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-02-regular-general",
+          "office": "house",
+          "key": "MO-2"
+        }
+      ],
+      "answerParties": {
+        "N2g2lOpz22": "D",
+        "ycnAsNCznS": "R",
+        "huO0gUhL95": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2ngUOCOqZ0": {
+      "contractId": "8h0SLdLC9C",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-03-regular-general",
+          "office": "house",
+          "key": "MO-3"
+        }
+      ],
+      "answerParties": {
+        "U00Nz6UPsZ": "D",
+        "ChCdy2hUuZ": "R",
+        "p5syLuRunl": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-lAuLNyUlIh": {
+      "contractId": "CggpL8yZ9N",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-04-regular-general",
+          "office": "house",
+          "key": "MO-4"
+        }
+      ],
+      "answerParties": {
+        "2cLNQNPsCU": "D",
+        "Sz5lhAlC22": "R",
+        "qnUhyERctn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-zyOAtn0RRC": {
+      "contractId": "uZZyLC0ASP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-05-regular-general",
+          "office": "house",
+          "key": "MO-5"
+        }
+      ],
+      "answerParties": {
+        "EnsZSgQS2R": "D",
+        "RudC0NsnI2": "R",
+        "qhdpzntuIN": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-pNtO0upOzZ": {
+      "contractId": "pQE8PqQQdn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-06-regular-general",
+          "office": "house",
+          "key": "MO-6"
+        }
+      ],
+      "answerParties": {
+        "UEuIdgLg00": "D",
+        "9t0syQRtz9": "R",
+        "dR6lIdAQyI": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cNzzy2uN9h": {
+      "contractId": "OdhQ6gZpCc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-07-regular-general",
+          "office": "house",
+          "key": "MO-7"
+        }
+      ],
+      "answerParties": {
+        "RqZ99Lsl6t": "D",
+        "LLzNpN68t2": "R",
+        "2lEnI9dOUI": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-unPsRSCE6L": {
+      "contractId": "IZAyQO6zAP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-08-regular-general",
+          "office": "house",
+          "key": "MO-8"
+        }
+      ],
+      "answerParties": {
+        "t9UqOdpqSs": "D",
+        "6n5CzIq290": "R",
+        "cdSO5Zd66I": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QqQlZgIP88": {
+      "contractId": "ynA8tEZ8O2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MT-02-regular-general",
+          "office": "house",
+          "key": "MT-2"
+        }
+      ],
+      "answerParties": {
+        "L0sqQSlEQq": "D",
+        "q8LLqINA9I": "R",
+        "pCStyLPQyp": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5qUNQQP6nQ": {
+      "contractId": "An5nNqZzZN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NE-01-regular-general",
+          "office": "house",
+          "key": "NE-1"
+        }
+      ],
+      "answerParties": {
+        "ZsAhhzuZO6": "D",
+        "EUd5lQLRRL": "R",
+        "U5nc8PpSC6": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-9tsERdgOdd": {
+      "contractId": "RId8nyt5zy",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NE-03-regular-general",
+          "office": "house",
+          "key": "NE-3"
+        }
+      ],
+      "answerParties": {
+        "OSuyzQICP9": "D",
+        "CCItCsQCtS": "R",
+        "QCPQCcOLQ6": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-tzUPht6pOh": {
+      "contractId": "pgh2sLlSIt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-01-regular-general",
+          "office": "house",
+          "key": "NJ-1"
+        }
+      ],
+      "answerParties": {
+        "lSZRq80ZLS": "D",
+        "ZQ5LSIdZuq": "R",
+        "L6qZUZI96t": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cnUSqUuyU9": {
+      "contractId": "AUOhtq2N89",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-02-regular-general",
+          "office": "house",
+          "key": "NJ-2"
+        }
+      ],
+      "answerParties": {
+        "IPOg95czLC": "D",
+        "gy66zl2guc": "R",
+        "8h5ZuhzO2q": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-NOZ05A26nS": {
+      "contractId": "cNOPnPUptd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-03-regular-general",
+          "office": "house",
+          "key": "NJ-3"
+        }
+      ],
+      "answerParties": {
+        "APlQSplIpC": "D",
+        "nuEAttqnIz": "R",
+        "EhNNQPPdOA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-IUdNL0PCRC": {
+      "contractId": "g8EOOqINSP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-04-regular-general",
+          "office": "house",
+          "key": "NJ-4"
+        }
+      ],
+      "answerParties": {
+        "zU0E0Z9NSd": "D",
+        "68RA8LA9Sh": "R",
+        "g96lOZzRZR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-nqIAULA80U": {
+      "contractId": "hlScUZSups",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-06-regular-general",
+          "office": "house",
+          "key": "NJ-6"
+        }
+      ],
+      "answerParties": {
+        "5nPRpglEqU": "D",
+        "OS85SZQnhp": "R",
+        "Zqzz8qQN09": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-809pQCcyOc": {
+      "contractId": "sCudzENQC0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-08-regular-general",
+          "office": "house",
+          "key": "NJ-8"
+        }
+      ],
+      "answerParties": {
+        "UZ8q9s5CO6": "D",
+        "L0Eh0syIqs": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-AUAUlpUZ22": {
+      "contractId": "I8p6Cz8c0P",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-10-regular-general",
+          "office": "house",
+          "key": "NJ-10"
+        }
+      ],
+      "answerParties": {
+        "0guZ9qShqS": "D",
+        "nCZdstcOh0": "R",
+        "cQENLNlQ5g": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-p2csIIdSCP": {
+      "contractId": "gCsluhOEgI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-11-regular-general",
+          "office": "house",
+          "key": "NJ-11"
+        }
+      ],
+      "answerParties": {
+        "I8qpgS09In": "D",
+        "5C0ANPdcg5": "R",
+        "SUzSEgZy9s": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-Q256qUhgEd": {
+      "contractId": "EZsdE8n096",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-12-regular-general",
+          "office": "house",
+          "key": "NJ-12"
+        }
+      ],
+      "answerParties": {
+        "cuzA5AACAp": "D",
+        "zg0t59AquL": "R",
+        "t5UUcynsSl": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-tnp9OcQ0IR": {
+      "contractId": "5sQ2ZIS8Lt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NM-01-regular-general",
+          "office": "house",
+          "key": "NM-1"
+        }
+      ],
+      "answerParties": {
+        "9ZPz6npOl5": "D",
+        "p02splgOyU": "R",
+        "uUc8Qp2dSl": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-t2tN2lttcZ": {
+      "contractId": "yOyt8OChIu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NM-03-regular-general",
+          "office": "house",
+          "key": "NM-3"
+        }
+      ],
+      "answerParties": {
+        "tS6pcgP0sp": "D",
+        "6EtPNQ9EdI": "R",
+        "OI9OchtCnN": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-UzpREtunch": {
+      "contractId": "At6UL96nuh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-02-regular-general",
+          "office": "house",
+          "key": "NC-2"
+        }
+      ],
+      "answerParties": {
+        "EI0ItPdSnE": "D",
+        "QdgNUUc2I8": "R",
+        "RRSLsuqcCL": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-UyQ9cL8l9p": {
+      "contractId": "2IzCEuclAd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-03-regular-general",
+          "office": "house",
+          "key": "NC-3"
+        }
+      ],
+      "answerParties": {
+        "z2q6dlQCON": "D",
+        "IEzZyOhzPU": "R",
+        "c60q2RSN06": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-lIEOlIR8C8": {
+      "contractId": "t8zqll0QIC",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-04-regular-general",
+          "office": "house",
+          "key": "NC-4"
+        }
+      ],
+      "answerParties": {
+        "SzpzZZtP0h": "D",
+        "slu5t5g5NQ": "R",
+        "nhyPylIZqN": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-sUNtcndqUL": {
+      "contractId": "C8SN5zQScp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-05-regular-general",
+          "office": "house",
+          "key": "NC-5"
+        }
+      ],
+      "answerParties": {
+        "tPlsE5lLc5": "D",
+        "zzPR622d0L": "R",
+        "LE2uR9LcNA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-0LzI0L8Q9q": {
+      "contractId": "dS8pZsO9N2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-06-regular-general",
+          "office": "house",
+          "key": "NC-6"
+        }
+      ],
+      "answerParties": {
+        "6lqCP0C6yN": "D",
+        "Rl2Opyp2UZ": "R",
+        "Pt8ql2EI8I": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-0U5QPuA6dc": {
+      "contractId": "CSuyzpgOIc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-07-regular-general",
+          "office": "house",
+          "key": "NC-7"
+        }
+      ],
+      "answerParties": {
+        "U2zQuzN8u9": "D",
+        "gUIgSh0s0U": "R",
+        "686CgEnOAE": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-0ccsy9nQCs": {
+      "contractId": "uq8ppQcLN8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-08-regular-general",
+          "office": "house",
+          "key": "NC-8"
+        }
+      ],
+      "answerParties": {
+        "NQCuEd0qEQ": "D",
+        "q6CC9qd9UC": "R",
+        "gSC96PqsNO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-pstEEIE5CC": {
+      "contractId": "pc5ERZzgtd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-10-regular-general",
+          "office": "house",
+          "key": "NC-10"
+        }
+      ],
+      "answerParties": {
+        "nl6N6PQQ8h": "D",
+        "2zCSCl0A86": "R",
+        "yUNP0cnySc": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-628Iggn60y": {
+      "contractId": "sPCQsphEpO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-12-regular-general",
+          "office": "house",
+          "key": "NC-12"
+        }
+      ],
+      "answerParties": {
+        "htq6IRlZpZ": "D",
+        "R8p6E6OlQC": "R",
+        "IUEPSpUqcc": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-IR9dggcE06": {
+      "contractId": "EO2EPndZ9t",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-13-regular-general",
+          "office": "house",
+          "key": "NC-13"
+        }
+      ],
+      "answerParties": {
+        "snz82OPIcZ": "D",
+        "NLgz2I9nUP": "R",
+        "sscAQ6zgQc": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-USqZ2unS0q": {
+      "contractId": "NAnshulz20",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-14-regular-general",
+          "office": "house",
+          "key": "NC-14"
+        }
+      ],
+      "answerParties": {
+        "RNn8CnRAyO": "D",
+        "yZLP9QyhlE": "R",
+        "AnOPQS9yyu": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-u250hQdOst": {
+      "contractId": "E8ulEgcIRz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ND-00-regular-general",
+          "office": "house",
+          "key": "ND-0"
+        }
+      ],
+      "answerParties": {
+        "5cE5OA0L99": "D",
+        "U8CqQOtq5g": "R",
+        "LOpIAyQzE5": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-zp5UUUpOh6": {
+      "contractId": "LE6SO0gs9y",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-02-regular-general",
+          "office": "house",
+          "key": "OH-2"
+        }
+      ],
+      "answerParties": {
+        "9NUcSPNtuQ": "D",
+        "tntNy8lScp": "R",
+        "cLhdIQO56A": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-OttZI9tzPC": {
+      "contractId": "RnNSEU02qz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-03-regular-general",
+          "office": "house",
+          "key": "OH-3"
+        }
+      ],
+      "answerParties": {
+        "SpgUyQt0N6": "D",
+        "5OPnPSUIAd": "R",
+        "dQqPSl20Us": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QghucQzcpp": {
+      "contractId": "hAInCR9l60",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-04-regular-general",
+          "office": "house",
+          "key": "OH-4"
+        }
+      ],
+      "answerParties": {
+        "EZIutCUpgQ": "D",
+        "ccOCyspRhg": "R",
+        "dIpLLzRNhn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-c6AIuRLpNR": {
+      "contractId": "8cuESdLZqZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-05-regular-general",
+          "office": "house",
+          "key": "OH-5"
+        }
+      ],
+      "answerParties": {
+        "0Pu5ApuUN9": "D",
+        "tERcUNuAtd": "R",
+        "qnRtutlSOS": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-50qPOdR8l9": {
+      "contractId": "6LdLqEtQ6I",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-06-regular-general",
+          "office": "house",
+          "key": "OH-6"
+        }
+      ],
+      "answerParties": {
+        "quLphLpIsO": "D",
+        "CCESq2dsus": "R",
+        "0nsphZUQpp": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-I26R8sZzct": {
+      "contractId": "CZug5PpNO0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-08-regular-general",
+          "office": "house",
+          "key": "OH-8"
+        }
+      ],
+      "answerParties": {
+        "u9tUSgcdNZ": "D",
+        "9RdA65pdQO": "R",
+        "nP8zycdpEu": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-0C5LPgEcO9": {
+      "contractId": "6cyERp9l0Q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-11-regular-general",
+          "office": "house",
+          "key": "OH-11"
+        }
+      ],
+      "answerParties": {
+        "qhgOuzAnnq": "D",
+        "gQNUZynpzn": "R",
+        "9582OLUQqU": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-nuygSp2EL9": {
+      "contractId": "Euu5IC6pg0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-12-regular-general",
+          "office": "house",
+          "key": "OH-12"
+        }
+      ],
+      "answerParties": {
+        "N82ICnOLc0": "D",
+        "pNChuUOcz5": "R",
+        "RL6ShthRSS": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-d8E6lCs9RL": {
+      "contractId": "sC0LchuuSp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-14-regular-general",
+          "office": "house",
+          "key": "OH-14"
+        }
+      ],
+      "answerParties": {
+        "cAzusg5gNZ": "D",
+        "uuyLplOgdy": "R",
+        "tzPhttCpc8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-8nyLpCpsEl": {
+      "contractId": "5n85Qu8qys",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-01-regular-general",
+          "office": "house",
+          "key": "OK-1"
+        }
+      ],
+      "answerParties": {
+        "0cNnQpzNP2": "D",
+        "cPNydddPP5": "R",
+        "Edq6zRyIAp": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cOEsu68cu0": {
+      "contractId": "p0dlzSOI8A",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-02-regular-general",
+          "office": "house",
+          "key": "OK-2"
+        }
+      ],
+      "answerParties": {
+        "yACSSzshUs": "D",
+        "Z9ZlyphnAA": "R",
+        "pQszEg9cO6": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-tEsPcdAUh2": {
+      "contractId": "2P8qQOyZl9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-03-regular-general",
+          "office": "house",
+          "key": "OK-3"
+        }
+      ],
+      "answerParties": {
+        "6ny0909uuh": "D",
+        "U8dQZA8gQt": "R",
+        "LscI6LNCpn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-NLLOuAQpLP": {
+      "contractId": "Z2IQPUq5cs",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-04-regular-general",
+          "office": "house",
+          "key": "OK-4"
+        }
+      ],
+      "answerParties": {
+        "0tlECzuPLl": "D",
+        "9SLOuAcNyn": "R",
+        "Qzs6RsPzQy": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-0Oz0LpsL89": {
+      "contractId": "9NCtcSRpNh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-05-regular-general",
+          "office": "house",
+          "key": "OK-5"
+        }
+      ],
+      "answerParties": {
+        "L0QU5SuI20": "D",
+        "tyQAEIt95Q": "R",
+        "CcUqLpdO6d": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-RIN28OAUL8": {
+      "contractId": "0nqh2nIIn8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-01-regular-general",
+          "office": "house",
+          "key": "OR-1"
+        }
+      ],
+      "answerParties": {
+        "CqqOgclnsu": "D",
+        "dul8QtgPdO": "R",
+        "SdlCy56yc8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-9O8UILPslh": {
+      "contractId": "8Uh5AP0IUA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-02-regular-general",
+          "office": "house",
+          "key": "OR-2"
+        }
+      ],
+      "answerParties": {
+        "hPlLZlnpLR": "D",
+        "cdIu02zPcQ": "R",
+        "0225lZS06c": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-QhLguq5REl": {
+      "contractId": "Slly2LINhh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-03-regular-general",
+          "office": "house",
+          "key": "OR-3"
+        }
+      ],
+      "answerParties": {
+        "NRtQtlEhsZ": "D",
+        "CgR85C5png": "R",
+        "sgdt5Qccny": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-UqgdA0QRgA": {
+      "contractId": "zASRyZ2dnd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-04-regular-general",
+          "office": "house",
+          "key": "OR-4"
+        }
+      ],
+      "answerParties": {
+        "2QO5ZsL6d9": "D",
+        "spuQAOEZn0": "R",
+        "p2yn6QLqSn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-h29U5glU8I": {
+      "contractId": "qzlg6nCuLL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-06-regular-general",
+          "office": "house",
+          "key": "OR-6"
+        }
+      ],
+      "answerParties": {
+        "qcENZ6Znqu": "D",
+        "cc0RScLuZg": "R",
+        "ll8dC0l6OL": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LPugy9luPn": {
+      "contractId": "tl9sRIRddE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-02-regular-general",
+          "office": "house",
+          "key": "PA-2"
+        }
+      ],
+      "answerParties": {
+        "qduqszNAtn": "D",
+        "ONgqLOy0zh": "R",
+        "Cg5ZptqhzA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ZNRA20qdLO": {
+      "contractId": "6qcqOI6nlI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-03-regular-general",
+          "office": "house",
+          "key": "PA-3"
+        }
+      ],
+      "answerParties": {
+        "pdhQcpRStQ": "D",
+        "EE8Eqygt2A": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-RLqPRISnZ6": {
+      "contractId": "9tzczCQ208",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-04-regular-general",
+          "office": "house",
+          "key": "PA-4"
+        }
+      ],
+      "answerParties": {
+        "PUStRpAnUq": "D",
+        "tqR82ggPCu": "R",
+        "qqZ5hOnzzZ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-zu6SRPyqQy": {
+      "contractId": "2zRzccSqZC",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-05-regular-general",
+          "office": "house",
+          "key": "PA-5"
+        }
+      ],
+      "answerParties": {
+        "LslgzQhSI5": "D",
+        "OC00S60Pzu": "R",
+        "cpE2cP6s8Q": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-2l56QzlPzy": {
+      "contractId": "6uChshszzU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-06-regular-general",
+          "office": "house",
+          "key": "PA-6"
+        }
+      ],
+      "answerParties": {
+        "QuhACthzZN": "D",
+        "6IUlEzqpPQ": "R",
+        "2RpILlUyEy": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-6RZddnpc8p": {
+      "contractId": "Ed6q8UPp6q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-09-regular-general",
+          "office": "house",
+          "key": "PA-9"
+        }
+      ],
+      "answerParties": {
+        "Pu8OgdQOzn": "D",
+        "hEI9ygIy5I": "R",
+        "CgcnnQCSz5": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-s2pul9RLAu": {
+      "contractId": "5IAqlIpQ0S",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-11-regular-general",
+          "office": "house",
+          "key": "PA-11"
+        }
+      ],
+      "answerParties": {
+        "hRE0P2Lu8c": "D",
+        "hz90A8S2Ln": "R",
+        "nRhRCZgpsL": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-p2ROn0ts6N": {
+      "contractId": "LShRdqSzLL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-12-regular-general",
+          "office": "house",
+          "key": "PA-12"
+        }
+      ],
+      "answerParties": {
+        "SqZO828EPu": "D",
+        "yPnUpchgC6": "R",
+        "Z8dICEnzAc": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-nLnclngpc8": {
+      "contractId": "gClNUqtpSE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-13-regular-general",
+          "office": "house",
+          "key": "PA-13"
+        }
+      ],
+      "answerParties": {
+        "AhOUO8RNSN": "D",
+        "zyNEpyRSh0": "R",
+        "PqZd9gQz9E": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ZuRSUzzspI": {
+      "contractId": "ES2q6Rnlhc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-14-regular-general",
+          "office": "house",
+          "key": "PA-14"
+        }
+      ],
+      "answerParties": {
+        "ctPltl9yI9": "D",
+        "I5IZq502R5": "R",
+        "zZLdcIOCpR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-S0EL0AhOCZ": {
+      "contractId": "NdQ6hQz9hL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-15-regular-general",
+          "office": "house",
+          "key": "PA-15"
+        }
+      ],
+      "answerParties": {
+        "S5gp5Zzhds": "D",
+        "NqlnROI0qg": "R",
+        "gCOS8lp5A6": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cEZPQhd8Q6": {
+      "contractId": "qQ0EZtOPL2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-16-regular-general",
+          "office": "house",
+          "key": "PA-16"
+        }
+      ],
+      "answerParties": {
+        "pAU6p9PPtC": "D",
+        "schp9Qny9q": "R",
+        "qdZuhgpcIU": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-tuZn82d9E8": {
+      "contractId": "USSEdh8h5p",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-RI-01-regular-general",
+          "office": "house",
+          "key": "RI-1"
+        }
+      ],
+      "answerParties": {
+        "yZnnEh2yCL": "D",
+        "pZs5ULEEsC": "R",
+        "SpPIhhI6UP": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-InlQgAN0hA": {
+      "contractId": "qOC5schc9h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-RI-02-regular-general",
+          "office": "house",
+          "key": "RI-2"
+        }
+      ],
+      "answerParties": {
+        "UcEnC8c0cA": "D",
+        "IzgLCsupgE": "R",
+        "2Zn0u0nPyL": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-POlpyQ8s86": {
+      "contractId": "zg60cQUscP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-01-regular-general",
+          "office": "house",
+          "key": "SC-1"
+        }
+      ],
+      "answerParties": {
+        "udh9CgSqsE": "D",
+        "8hhpC6ZRNp": "R",
+        "uhIdcOEdgS": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-pnPCqRqIEA": {
+      "contractId": "u298Z9dSRS",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-02-regular-general",
+          "office": "house",
+          "key": "SC-2"
+        }
+      ],
+      "answerParties": {
+        "PlICdhcuqn": "D",
+        "I8dEUICUlu": "R",
+        "2SE60LAOyt": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-qL26EPOEl2": {
+      "contractId": "0dun2Z8zQc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-03-regular-general",
+          "office": "house",
+          "key": "SC-3"
+        }
+      ],
+      "answerParties": {
+        "SZ8E8sq05E": "D",
+        "qs88RZuh9l": "R",
+        "d0SAcg9cPu": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-A026Ez0QL9": {
+      "contractId": "dqOhpdIlgc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-04-regular-general",
+          "office": "house",
+          "key": "SC-4"
+        }
+      ],
+      "answerParties": {
+        "PhO8t9cCO8": "D",
+        "ALcsASnRz2": "R",
+        "QNR9SUsAlg": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-gsZzALZucy": {
+      "contractId": "ENctc28hSc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-05-regular-general",
+          "office": "house",
+          "key": "SC-5"
+        }
+      ],
+      "answerParties": {
+        "2nRUSPz9SZ": "D",
+        "6yEyI6Nggs": "R",
+        "qtEChQEs92": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-Ez2pyRgCyp": {
+      "contractId": "9UqIqq9g6I",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-06-regular-general",
+          "office": "house",
+          "key": "SC-6"
+        }
+      ],
+      "answerParties": {
+        "90gqgEPEON": "D",
+        "0hZ0LnPzlh": "R",
+        "6NZAll0UCR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-h5OOlLglSI": {
+      "contractId": "OEAlQnSy2S",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-07-regular-general",
+          "office": "house",
+          "key": "SC-7"
+        }
+      ],
+      "answerParties": {
+        "LgROqyEdpg": "D",
+        "0qPpPEsqLz": "R",
+        "cIAR9PCAU5": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-R0URuqnyPh": {
+      "contractId": "RnuOgZcccL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SD-00-regular-general",
+          "office": "house",
+          "key": "SD-0"
+        }
+      ],
+      "answerParties": {
+        "zOnZEUhcg8": "D",
+        "2QALzC8shC": "R",
+        "CL2C6CUpI8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-h5Qt2phNl2": {
+      "contractId": "0SlCdn6dLd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-01-regular-general",
+          "office": "house",
+          "key": "TN-1"
+        }
+      ],
+      "answerParties": {
+        "u5NRuL9CZ8": "D",
+        "98OsOlU55A": "R",
+        "lRc2sdLc8p": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-LylPtnydqh": {
+      "contractId": "Ozt0SppqqL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-02-regular-general",
+          "office": "house",
+          "key": "TN-2"
+        }
+      ],
+      "answerParties": {
+        "l9cOO8u2sh": "D",
+        "QA2INU66cA": "R",
+        "nNIItQu6cg": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-pcA0hzOdN0": {
+      "contractId": "Qtd6lCO6OI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-03-regular-general",
+          "office": "house",
+          "key": "TN-3"
+        }
+      ],
+      "answerParties": {
+        "EC9lc9pP9R": "D",
+        "5zl8hNC8ch": "R",
+        "0z860cI2qR": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-P5yl8Sqc0L": {
+      "contractId": "l2zRgIlyP0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-04-regular-general",
+          "office": "house",
+          "key": "TN-4"
+        }
+      ],
+      "answerParties": {
+        "tplhhcd6Uc": "D",
+        "SIygNAnNlt": "R",
+        "s9plcNO2EC": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-OANdLz9PEP": {
+      "contractId": "6nQypEE5OO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-05-regular-general",
+          "office": "house",
+          "key": "TN-5"
+        }
+      ],
+      "answerParties": {
+        "NAgs6AP6yO": "D",
+        "tQQEgAAg5Z": "R",
+        "6uRu5pyIq0": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-zh6q8ECSyU": {
+      "contractId": "QgAOA9RIc0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-06-regular-general",
+          "office": "house",
+          "key": "TN-6"
+        }
+      ],
+      "answerParties": {
+        "L6lLO0L6q2": "D",
+        "R0gysgu6yC": "R",
+        "I5tyPQ0gnI": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-hcL6Q5lpCq": {
+      "contractId": "8ssEIdEcpu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-07-regular-general",
+          "office": "house",
+          "key": "TN-7"
+        }
+      ],
+      "answerParties": {
+        "uNUcUSQUlR": "D",
+        "2Q0UQAOgUI": "R",
+        "pzp9SILNcE": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-hpsAtu5RyO": {
+      "contractId": "5yO52CclhI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-08-regular-general",
+          "office": "house",
+          "key": "TN-8"
+        }
+      ],
+      "answerParties": {
+        "SAZyCc2PqA": "D",
+        "pq8CEl6EsA": "R",
+        "Ss0CUpyQOn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-A0IOCys2np": {
+      "contractId": "SlRuIpcug6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-01-regular-general",
+          "office": "house",
+          "key": "UT-1"
+        }
+      ],
+      "answerParties": {
+        "QL8shsQE6n": "D",
+        "5dAnpIUn2P": "R",
+        "0nUptU0CgO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-pZu6nSdR8S": {
+      "contractId": "nCgzqQIRCN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-02-regular-general",
+          "office": "house",
+          "key": "UT-2"
+        }
+      ],
+      "answerParties": {
+        "Zz9L6IEZpE": "D",
+        "ONgzEnC6CL": "R",
+        "qSUNNA0gdU": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-P5Udn9zzpg": {
+      "contractId": "Ctgl0yRt6h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-03-regular-general",
+          "office": "house",
+          "key": "UT-3"
+        }
+      ],
+      "answerParties": {
+        "ndsQuUUN2l": "D",
+        "zOgyApq8Ey": "R",
+        "p8hRzECZyy": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-c55nh0NtyA": {
+      "contractId": "CzgsysIR6h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-04-regular-general",
+          "office": "house",
+          "key": "UT-4"
+        }
+      ],
+      "answerParties": {
+        "2OU6OS2S0P": "D",
+        "zZnSPqqUyl": "R",
+        "8lyZQ0sN02": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-dCuE0luZuN": {
+      "contractId": "p0uUEuzhCh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VT-00-regular-general",
+          "office": "house",
+          "key": "VT-0"
+        }
+      ],
+      "answerParties": {
+        "gE5h9qQq9g": "D",
+        "6Otyqp95ZQ": "R",
+        "ZdsCcNgLy9": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-SccypgC59u": {
+      "contractId": "q60L0OPUuQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-03-regular-general",
+          "office": "house",
+          "key": "VA-3"
+        }
+      ],
+      "answerParties": {
+        "cscUNd5AAq": "D",
+        "tIUtzOPyty": "R",
+        "luI5cShntA": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-Q2spygAZ0g": {
+      "contractId": "lzAlSpqO60",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-04-regular-general",
+          "office": "house",
+          "key": "VA-4"
+        }
+      ],
+      "answerParties": {
+        "nnAnIAQPSU": "D",
+        "9gu2nlc6sR": "R",
+        "2ynpu2SLsP": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-u20udsRnP2": {
+      "contractId": "n0OpUzhZNS",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-05-regular-general",
+          "office": "house",
+          "key": "VA-5"
+        }
+      ],
+      "answerParties": {
+        "yOhUpQN9sR": "D",
+        "z2NsqIg2L9": "R",
+        "ULZ9yIuR9d": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-09cP6OhlIc": {
+      "contractId": "6pCh6IApE5",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-06-regular-general",
+          "office": "house",
+          "key": "VA-6"
+        }
+      ],
+      "answerParties": {
+        "QIQ2qZQddO": "D",
+        "S6OcLEzp8U": "R",
+        "RQul6qNl8N": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-sRsQgqQ9dq": {
+      "contractId": "PP8uuS92Al",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-08-regular-general",
+          "office": "house",
+          "key": "VA-8"
+        }
+      ],
+      "answerParties": {
+        "tAlOsqQghS": "D",
+        "clQIdLgEyq": "R",
+        "6uyE0qL5sl": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-dztqcg2C8s": {
+      "contractId": "Ecc5EtlhQu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-09-regular-general",
+          "office": "house",
+          "key": "VA-9"
+        }
+      ],
+      "answerParties": {
+        "ZINcNR2Rz2": "D",
+        "A6nsNthO9A": "R",
+        "yLnQpICRN8": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-yI5AIAIuch": {
+      "contractId": "ZyIEhc6Oz6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-11-regular-general",
+          "office": "house",
+          "key": "VA-11"
+        }
+      ],
+      "answerParties": {
+        "UguzqI5NdI": "D",
+        "AZAzNPysnS": "R",
+        "pUntCslLZQ": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-lsgp28slIq": {
+      "contractId": "qs90ptSLnR",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-01-regular-general",
+          "office": "house",
+          "key": "WA-1"
+        }
+      ],
+      "answerParties": {
+        "AC6O0S90nR": "D",
+        "yRl2pcl8A2": "R",
+        "ut56RhLsEg": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-l6qstCtENz": {
+      "contractId": "qU2cgq6qcn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-02-regular-general",
+          "office": "house",
+          "key": "WA-2"
+        }
+      ],
+      "answerParties": {
+        "NZU2Eccq99": "D",
+        "dEhN9uCcQI": "R",
+        "ZE6Ou6pgQ0": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-5qOEEIZE9s": {
+      "contractId": "ygttREpZyE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-04-regular-general",
+          "office": "house",
+          "key": "WA-4"
+        }
+      ],
+      "answerParties": {
+        "nsEgAZEOgp": "D",
+        "UgqEuhU5pL": "R",
+        "cRN6Q6chNO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-ggPNU6pPqz": {
+      "contractId": "ulpEdOOczu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-05-regular-general",
+          "office": "house",
+          "key": "WA-5"
+        }
+      ],
+      "answerParties": {
+        "Cqqtzl2Ucz": "D",
+        "gOg2L502hP": "R",
+        "gLSR059sIn": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-EQq0g05uzc": {
+      "contractId": "0EOOdRAzZE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-06-regular-general",
+          "office": "house",
+          "key": "WA-6"
+        }
+      ],
+      "answerParties": {
+        "cU5qnsZ58d": "D",
+        "9Cdh8IcsUq": "R",
+        "6dCUdtCqNN": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-26QsLSOc2E": {
+      "contractId": "2hOLCtQnC9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-07-regular-general",
+          "office": "house",
+          "key": "WA-7"
+        }
+      ],
+      "answerParties": {
+        "Q85zhz5zq9": "D",
+        "n5IZUpzs5O": "R",
+        "gQqPnOORId": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-Z8dgUdn6Iu": {
+      "contractId": "nthtOls2Zq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-10-regular-general",
+          "office": "house",
+          "key": "WA-10"
+        }
+      ],
+      "answerParties": {
+        "tzOQdt9Rth": "D",
+        "CZ6E00ILAh": "R",
+        "2cplphcdO2": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-cSsnu8g8q2": {
+      "contractId": "Stt5ElnRun",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WV-01-regular-general",
+          "office": "house",
+          "key": "WV-1"
+        }
+      ],
+      "answerParties": {
+        "ySns68URd0": "D",
+        "dU5068RO9t": "R",
+        "R2n9508RNh": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-NySsEEAhZd": {
+      "contractId": "s0tyEdLt9y",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WV-02-regular-general",
+          "office": "house",
+          "key": "WV-2"
+        }
+      ],
+      "answerParties": {
+        "UuEZ6cqEnZ": "D",
+        "nNNnqz8n9U": "R",
+        "s6dQZ6g0tc": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-N6phUIcLZ0": {
+      "contractId": "cpzdn65OSl",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-04-regular-general",
+          "office": "house",
+          "key": "WI-4"
+        }
+      ],
+      "answerParties": {
+        "sg58AO2A0E": "D",
+        "nIOPEUOQpu": "R",
+        "PNgQl65sQP": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-EQAPAdq58E": {
+      "contractId": "qSEt9Z2LdO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-05-regular-general",
+          "office": "house",
+          "key": "WI-5"
+        }
+      ],
+      "answerParties": {
+        "Eg5sgS0CPg": "D",
+        "A8hZpNNPS9": "R",
+        "86R2UOd95R": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-l8qqSquIuC": {
+      "contractId": "Ph2LE9l6qI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-06-regular-general",
+          "office": "house",
+          "key": "WI-6"
+        }
+      ],
+      "answerParties": {
+        "pnscZ5y0CZ": "D",
+        "qtZgUcn85Q": "R",
+        "y92ptqstpU": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-pAq2unZs2z": {
+      "contractId": "PzpAPERLgn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-08-regular-general",
+          "office": "house",
+          "key": "WI-8"
+        }
+      ],
+      "answerParties": {
+        "2QqPu2ggLt": "D",
+        "gOzI6R0nu5": "R",
+        "0lq8d52S2s": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
+    },
+    "which-party-will-win-the-2026-us-ho-8CQSyC80ZC": {
+      "contractId": "zu82nEU6nc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WY-00-regular-general",
+          "office": "house",
+          "key": "WY-0"
+        }
+      ],
+      "answerParties": {
+        "2Rl6Rz8OlC": "D",
+        "0ZhpEc9hdt": "R",
+        "0lghs6u0SO": "other"
+      },
+      "caveats": [
+        "Dev rehearsal market created by create-election-markets.ts on dev."
+      ]
     }
   },
   "sameParty": {
