@@ -1,3 +1,4 @@
+import { DEV_LAUNCH_GOVERNORS } from './dev-launch-markets'
 import { StateElectionMarket } from './elections-data'
 
 export const governors2024: StateElectionMarket[] = [
@@ -112,3 +113,10 @@ export const governorCandidates2026: StateElectionMarket[] = [
   // NY card removed: it lists Delgado and Stefanik (both out) and not the
   // Republican nominee Bruce Blakeman.
 ]
+
+// DEV REHEARSAL ONLY: prefer the markets create-election-markets.ts made on dev.
+for (const m of DEV_LAUNCH_GOVERNORS) {
+  const i = governors2026.findIndex((x) => x.state === m.state)
+  if (i >= 0) governors2026.splice(i, 1, m)
+  else governors2026.push(m)
+}

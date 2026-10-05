@@ -1,3 +1,4 @@
+import { DEV_LAUNCH_SENATE } from './dev-launch-markets'
 import { StateElectionMarket } from './elections-data'
 
 export const senate2024: StateElectionMarket[] = [
@@ -512,4 +513,11 @@ export const senateHeldSeats2026: Record<
   VA: { name: 'Tim Kaine', party: 'Democrat' },
   WV: { name: 'Jim Justice', party: 'Republican' },
   WY: { name: 'John Barrasso', party: 'Republican' },
+}
+
+// DEV REHEARSAL ONLY: prefer the markets create-election-markets.ts made on dev.
+for (const m of DEV_LAUNCH_SENATE) {
+  const i = senate2026.findIndex((x) => x.state === m.state)
+  if (i >= 0) senate2026.splice(i, 1, m)
+  else senate2026.push(m)
 }

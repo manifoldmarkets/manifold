@@ -1,3 +1,4 @@
+import { DEV_LAUNCH_HOUSE } from './dev-launch-markets'
 // Sources reviewed in the October 3 DB audit; many retain sparse criteria.
 // The original portfolio stays first. Conditional sources are documented in
 // backend/scripts/elections-2026/audit and remain distinct from verified
@@ -109,3 +110,10 @@ export const HOUSE_RACE_MARKETS: {
     slug: 'republicans-win-wisconsin-7th-congr',
   },
 ]
+
+// DEV REHEARSAL ONLY: prefer the markets create-election-markets.ts made on dev.
+for (const m of DEV_LAUNCH_HOUSE) {
+  const i = HOUSE_RACE_MARKETS.findIndex((x) => x.district === m.district)
+  if (i >= 0) HOUSE_RACE_MARKETS.splice(i, 1, m)
+  else HOUSE_RACE_MARKETS.push(m)
+}
