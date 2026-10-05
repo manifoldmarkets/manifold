@@ -30,6 +30,7 @@ const makeAnswer = (
   createdTime: 0,
   poolYes: 100,
   poolNo: 100,
+  p: 0.5,
   prob,
   totalLiquidity: 100,
   subsidyPool: 0,

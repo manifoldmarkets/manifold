@@ -16,7 +16,7 @@ import { Governor } from 'web/public/custom-components/governor'
 import { ElectionBalance } from './election-balance'
 import { sourceAudit } from './audited-sources'
 import { candidateForParty } from './election-candidates'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 import { Modal } from 'web/components/layout/modal'
@@ -1126,7 +1126,7 @@ export function ElectionExplorer(props: Props) {
                           : 'No Manifold market is linked yet. This race is excluded from priced seat estimates.'}
                       </p>
                     ) : selectedRace.answerId &&
-                      selectedRace.contract.mechanism === 'cpmm-multi-1' &&
+                      isMultiCpmm(selectedRace.contract) &&
                       selectedRace.contract.outcomeType ===
                         'MULTIPLE_CHOICE' ? (
                       <>
@@ -1480,7 +1480,7 @@ function BallotCandidates({ race }: { race: Race }) {
 function RaceMarket({ contract }: { contract: Contract }) {
   const audit = sourceAudit(contract.slug)
   const answerColors =
-    audit && contract.mechanism === 'cpmm-multi-1'
+    audit && isMultiCpmm(contract)
       ? Object.fromEntries(
           contract.answers.map((a) => [
             a.id,
@@ -1494,7 +1494,7 @@ function RaceMarket({ contract }: { contract: Contract }) {
       : undefined
   return (
     <>
-      {contract.mechanism === 'cpmm-multi-1' ? (
+      {isMultiCpmm(contract) ? (
         <PartyPanel
           contract={contract}
           compact

@@ -1,5 +1,5 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { getPerpBackingPool } from 'common/perps/amm'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'common/util/formatNumber'
@@ -116,7 +116,7 @@ export const liquidityColumn = {
   content: (props: { contract: Contract }) => {
     const { contract } = props
 
-    const hasAnswers = contract.mechanism === 'cpmm-multi-1'
+    const hasAnswers = isMultiCpmm(contract)
     const isPerp = contract.mechanism === 'perp'
     const isCashContract = contract.token === 'CASH'
     const totalLiquidity = isPerp

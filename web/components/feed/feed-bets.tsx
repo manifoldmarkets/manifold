@@ -1,7 +1,12 @@
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
 import { Bet, fill } from 'common/bet'
-import { Contract, isBinaryMulti, MarketContract } from 'common/contract'
+import {
+  Contract,
+  isBinaryMulti,
+  isMultiCpmm,
+  MarketContract,
+} from 'common/contract'
 import { versusSide, versusSideOutcome, versusSideProb } from 'common/versus'
 import { getBetSharePrice } from 'common/share-bet'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -50,7 +55,7 @@ const isNormalLimitOrder = (bet: Bet) =>
   bet.limitProb !== undefined && bet.orderAmount !== undefined && !bet.silent
 
 const getAnswerFromContract = (contract: Contract, answerId?: string) =>
-  contract.mechanism === 'cpmm-multi-1' && answerId && 'answers' in contract
+  isMultiCpmm(contract) && answerId && 'answers' in contract
     ? contract.answers?.find((answer) => answer.id === answerId)
     : undefined
 
@@ -61,8 +66,7 @@ function BetTooltipContent(props: {
 }) {
   const { bet, isCashContract, contract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoneyWithDecimals
-  const answerId =
-    contract.mechanism === 'cpmm-multi-1' ? bet.answerId : undefined
+  const answerId = isMultiCpmm(contract) ? bet.answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, answerId)
   const { answer: fetchedAnswer } = useAnswer(answerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -259,8 +263,7 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
       </span>
     ) : null
 
-  const resolvedAnswerId =
-    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const resolvedAnswerId = isMultiCpmm(contract) ? answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -641,8 +644,7 @@ export function BetStatusesText(props: {
   const { amount, outcome, createdTime, answerId, userId } = bets[0]
   const user = useDisplayUserById(userId)
   const isCashContract = contract.token === 'CASH'
-  const resolvedAnswerId =
-    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const resolvedAnswerId = isMultiCpmm(contract) ? answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -735,8 +737,7 @@ export function BetStatusText(props: {
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
 
-  const resolvedAnswerId =
-    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const resolvedAnswerId = isMultiCpmm(contract) ? answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -864,7 +865,7 @@ function BetActions(props: {
           }
           answer={
             versusSide(contract, bet)?.answer.text ??
-            (contract.mechanism === 'cpmm-multi-1'
+            (isMultiCpmm(contract)
               ? contract.answers?.find((a) => a.id === bet.answerId)?.text
               : undefined)
           }
@@ -972,7 +973,7 @@ function BetActionsWithGraph(props: {
           }
           answer={
             versusSide(contract, bet)?.answer.text ??
-            (contract.mechanism === 'cpmm-multi-1'
+            (isMultiCpmm(contract)
               ? contract.answers?.find((a) => a.id === bet.answerId)?.text
               : undefined)
           }

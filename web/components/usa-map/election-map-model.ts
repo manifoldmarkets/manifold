@@ -1,5 +1,5 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 import { senate2026 } from 'web/public/data/senate-state-data'
 import {
@@ -107,7 +107,7 @@ export function electionOdds(
         : { dem: 0, rep, other: 0, notRep: 1 - rep }
     )
   }
-  if (contract.mechanism !== 'cpmm-multi-1' || !contract.shouldAnswersSumToOne)
+  if (!isMultiCpmm(contract) || !contract.shouldAnswersSumToOne)
     return undefined
   const odds = { dem: 0, rep: 0, other: 0 }
   for (const answer of contract.answers) {
@@ -256,7 +256,7 @@ export function buildRaces(
   ]) {
     if (
       !contract ||
-      contract.mechanism !== 'cpmm-multi-1' ||
+      !isMultiCpmm(contract) ||
       contract.shouldAnswersSumToOne ||
       contract.resolution === 'CANCEL'
     )
