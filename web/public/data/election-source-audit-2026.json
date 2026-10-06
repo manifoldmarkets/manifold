@@ -6970,6 +6970,26 @@
       "party": "D",
       "candidate": "Maxwell Frost",
       "basis": "Unopposed after qualifying; not printed on the November ballot and deemed elected (Fla. Stat. 101.151(7))"
+    },
+    "MA-2": {
+      "party": "D",
+      "candidate": "Jim McGovern",
+      "basis": "Uncontested: the only candidate printed on the November 3 ballot; a write-in line exists (MGL c.54 §42) and no declared write-in campaign was found (October 2026 audit)"
+    },
+    "MA-5": {
+      "party": "D",
+      "candidate": "Katherine Clark",
+      "basis": "Uncontested: the only candidate printed on the November 3 ballot; a write-in line exists (MGL c.54 §42) and no declared write-in campaign was found (October 2026 audit)"
+    },
+    "MA-7": {
+      "party": "D",
+      "candidate": "Ayanna Pressley",
+      "basis": "Uncontested: the only candidate printed on the November 3 ballot; a write-in line exists (MGL c.54 §42) and no declared write-in campaign was found (October 2026 audit)"
+    },
+    "WI-2": {
+      "party": "D",
+      "candidate": "Mark Pocan",
+      "basis": "Uncontested: the only candidate printed on the November 3 ballot; write-ins count only for candidates registered by noon October 30 (Wis. Stat. 7.50(2)(em))"
     }
   }
 }

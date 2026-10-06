@@ -129,8 +129,8 @@ test('balance separates held seats from forecasts and keeps unknown House races 
   assert.deepEqual(
     house.map((s) => [s.id, s.count]),
     [
-      ['fixed-d', 9],
-      ['unpriced', 425],
+      ['fixed-d', 13],
+      ['unpriced', 421],
       ['fixed-r', 1],
     ]
   )
@@ -303,8 +303,8 @@ test('reviewed state portfolios add coverage without replacing curated races', (
     races.find((r) => r.id === 'TX-1')?.contract,
     additional['which-texas-house-districts-will-th']
   )
-  // 9 same-party ballots and FL-10 (decided) count without a market.
-  assert.equal(seatSummary(races, 'house').leaders.unpriced, 423)
+  // 9 same-party ballots, FL-10 and four uncontested seats count without a market.
+  assert.equal(seatSummary(races, 'house').leaders.unpriced, 419)
 })
 
 test('a cancelled source falls back, while malformed district portfolios do not price races', () => {

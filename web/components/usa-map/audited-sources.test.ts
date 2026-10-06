@@ -325,7 +325,8 @@ test('all nine California ballots remain searchable and counted once with unavai
       assert.ok(matchesRaceQuery(race, race.basis.finalists[0]))
   }
   const summary = seatSummary(races, 'house')
-  assert.equal(summary.counts['fixed-d'], 9) // Eight CA seats plus FL-10.
+  // Eight CA seats, FL-10 and the uncontested MA-2, MA-5, MA-7 and WI-2.
+  assert.equal(summary.counts['fixed-d'], 13)
   assert.equal(summary.counts['fixed-r'], 1)
   assert.equal(summary.counts['safe-d'], 0)
   assert.equal(summary.total, 435)
