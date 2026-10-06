@@ -292,10 +292,7 @@ export const formatOutcomeLabel = (
   if (outcomePseudonym) {
     return outcomePseudonym
   }
-  if (
-    contract.outcomeType === 'BINARY' ||
-    isMultiCpmm(contract)
-  ) {
+  if (contract.outcomeType === 'BINARY' || isMultiCpmm(contract)) {
     return outcomeLabel
   }
   if (contract.outcomeType === 'STONK') {

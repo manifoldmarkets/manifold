@@ -244,10 +244,7 @@ export const resolveMarketHelper = async (
         subsidyPool: 0,
       })
       await updateAnswer(tx, answerId, props)
-    } else if (
-      updateAnswerAttrs &&
-      isMultiCpmm(resolvedContract)
-    ) {
+    } else if (updateAnswerAttrs && isMultiCpmm(resolvedContract)) {
       const answerUpdates = resolvedContract.answers.map((a) =>
         removeUndefinedProps({
           id: a.id,

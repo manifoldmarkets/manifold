@@ -78,11 +78,7 @@ export const getPayouts = (
       resolutionProbability ?? prob
     )
   }
-  if (
-    isMultiCpmm(contract) &&
-    !contract.shouldAnswersSumToOne &&
-    answerId
-  ) {
+  if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne && answerId) {
     const answer = contract.answers.find((a) => a.id === answerId)
     if (!answer) {
       throw new Error('getPayouts: answer not found for cpmm-multi-1')

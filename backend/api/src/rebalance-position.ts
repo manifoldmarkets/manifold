@@ -42,10 +42,7 @@ export const rebalancePosition: APIHandler<
 
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found.')
-  if (
-    !isMultiCpmm(contract) ||
-    !contract.shouldAnswersSumToOne
-  ) {
+  if (!isMultiCpmm(contract) || !contract.shouldAnswersSumToOne) {
     throw new APIError(
       400,
       'Rebalance is only supported on sum-to-one multi-choice markets.'

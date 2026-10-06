@@ -144,9 +144,7 @@ export async function superBanUserCore(
 
     try {
       for (const contract of contracts.filter(
-        (c) =>
-          (c.mechanism === 'cpmm-1' || isMultiCpmm(c)) &&
-          !c.isResolved
+        (c) => (c.mechanism === 'cpmm-1' || isMultiCpmm(c)) && !c.isResolved
       )) {
         await resolveMarketHelper(
           contract as MarketContract,

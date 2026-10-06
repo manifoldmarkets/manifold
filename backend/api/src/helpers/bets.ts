@@ -402,8 +402,7 @@ export const getUserBalancesAndMetrics = async (
   const startTime = Date.now()
   const { id: contractId } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
-  const sumsToOne =
-    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
+  const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const results = await pgTrans.multi(
     `
       SELECT balance, id FROM users WHERE id = ANY($1);
