@@ -745,10 +745,11 @@
 }
 @media (min-width: 851px) {
   .explorer {
-    --map-height: clamp(280px, calc(100svh - 350px), 420px);
+    --map-height: clamp(320px, calc(100svh - 260px), 720px);
   }
   .map {
-    height: var(--map-height);
+    aspect-ratio: 8 / 5;
+    max-height: var(--map-height);
   }
   .details {
     max-height: min(
