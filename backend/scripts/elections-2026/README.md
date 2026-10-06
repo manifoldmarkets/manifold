@@ -75,6 +75,52 @@ The state file is rewritten atomically after every request. Use one apply proces
 
 After apply, `out/dashboard-mapping.prod.json` holds the rows in the shapes the dashboard uses (`senate2026`, `governors2026` and `HOUSE_RACE_MARKETS`), with real IDs, answer IDs and audited party/candidate metadata.
 
+## Link the production launch to the page
+
+Market creation does **not** update the website's source lists. Merge #4114 first, then launch on production, and put the generated page-data changes in a small follow-up PR based on current main. This keeps real production IDs out of this integration until the launch completes. Do not use rehearsal/dev outputs.
+
+From the repository root, use the two output directories produced by the launch wrapper. Each must contain both `state.prod.json` and `dashboard-mapping.prod.json`:
+
+```powershell
+$launchOutputs = 'C:\Users\tod\Documents\Codex\2026-09-30\can-you-ch\outputs'
+$raceOutput = Join-Path $launchOutputs 'election-production'
+$ballotOutput = Join-Path $launchOutputs 'ballot-production'
+
+# Preview local source changes. No network, credentials, or market writes.
+node backend/scripts/wire-election-markets.cjs --races $raceOutput --ballots $ballotOutput
+
+# After the preview reports 225 races and 102 ballots, write local files.
+node backend/scripts/wire-election-markets.cjs --races $raceOutput --ballots $ballotOutput --write
+git diff --stat
+git diff -- web/public/data web/components/usa-map/ballot-measures-model.test.ts
+```
+
+For direct CLI launches with the README's default output folders, substitute `backend/scripts/elections-2026/out` and `backend/scripts/elections-2026/ballot-measures/out`. Keep the corresponding production state files alongside the mappings (the wrapper already does).
+
+The importer verifies the production API binding, manifest series, completion/publication/seed status, contract and answer identities, audited party metadata, and ballot page keys before writing anything. It refuses partial launches and conflicting existing page sources. Held entries remain unlinked. Repeating an already-imported launch makes no changes.
+
+The current launch changes exactly these five files:
+
+- `web/public/data/house-market-data.ts`: 224 individual House markets, retaining the manifest's portfolio preference.
+- `web/public/data/governors-data.ts`: Rhode Island governor.
+- `web/public/data/election-source-audit-2026.json`: explicit contract/answer party identities for the 225 race sources.
+- `web/public/data/ballot-measures-2026.json`: 102 approval binaries, joined through the audited page keys. Existing sources and held measures are retained.
+- `web/components/usa-map/ballot-measures-model.test.ts`: expected linked count becomes 122 (20 existing + 102 new).
+
+Run web typechecking, the map tests, and the importer regression tests on that follow-up before committing:
+
+```powershell
+yarn typecheck:web
+$env:TS_NODE_PROJECT = 'web/tsconfig.json'
+$env:TS_NODE_TRANSPILE_ONLY = '1'
+$env:TS_NODE_COMPILER_OPTIONS = '{"module":"commonjs","moduleResolution":"node","jsx":"react-jsx"}'
+$mapTests = @(Get-ChildItem web/components/usa-map/*.test.ts | ForEach-Object FullName)
+node -r ts-node/register -r tsconfig-paths/register --test @mapTests
+node --test backend/scripts/elections-2026/wire-election-markets.test.cjs
+```
+
+Between creation and the follow-up web deployment, the new markets are public and tradable on their own market pages and can appear in ordinary search/feed results. The election map continues using its deployed source lists: existing quotes stay, uncovered races stay unpriced, and unlinked ballot measures retain their no-market message. The map begins using the new IDs only after the data update is deployed; its page data revalidates every 60 seconds. Creating markets alone never switches map sources automatically.
+
 ## Tests
 
 ```sh

@@ -4,7 +4,6 @@ import clsx from 'clsx'
 import { Answer, answerP } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
-  isMultiCpmm,
   CPMMMultiContract,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,

@@ -34,6 +34,21 @@ const multi = (
     })),
   } as Contract)
 
+test('v2 election markets use each answer p for party odds', () => {
+  const contract = {
+    mechanism: 'cpmm-multi-2',
+    shouldAnswersSumToOne: true,
+    answers: [
+      { id: 'd', text: 'Democratic Party', poolYes: 100, poolNo: 100, p: 0.65 },
+      { id: 'r', text: 'Republican Party', poolYes: 100, poolNo: 100, p: 0.35 },
+    ],
+  } as Contract
+  const odds = electionOdds(contract)!
+  assert.equal(odds.dem, 0.65)
+  assert.equal(odds.rep, 0.35)
+  assert.equal(leadingParty(odds), 'dem')
+})
+
 test('district search matches exact numbers and state codes without unrelated substrings', () => {
   const races = buildRaces('house', {})
   for (const query of ['TX-1', 'TX 01', 'tx1', 'TX–1']) {

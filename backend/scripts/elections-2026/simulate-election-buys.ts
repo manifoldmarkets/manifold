@@ -24,6 +24,7 @@ import { getBinaryCpmmBetInfo, getNewMultiCpmmBetInfo } from 'common/new-bet'
 import { getNewContract } from 'common/new-contract'
 import { getAnte } from 'common/economy'
 import { User } from 'common/user'
+import { isMultiCpmmMechanism } from 'common/contract'
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce<[string, string][]>((acc, a, i, all) => {
@@ -93,7 +94,7 @@ function summarise(bet: any) {
 const round = (x: number, d = 4) =>
   Number.isFinite(x) ? Math.round(x * 10 ** d) / 10 ** d : x
 
-function simulateMarket(
+export function simulateMarket(
   m: any,
   orders: LimitBet[],
   balances: Record<string, number>,
@@ -124,6 +125,8 @@ function simulateMarket(
       }
     return out
   }
+  if (!isMultiCpmmMechanism(m.mechanism))
+    throw new Error(`Unsupported simulation mechanism: ${m.mechanism}`)
   const answers = m.answers
     .filter((a: any) => !a.resolution)
     .map((a: any) => ({
@@ -134,6 +137,7 @@ function simulateMarket(
       poolYes: a.poolYes,
       poolNo: a.poolNo,
       prob: a.prob,
+      p: a.p ?? 0.5,
       totalLiquidity: a.totalLiquidity,
       subsidyPool: a.subsidyPool,
       isOther: a.isOther,
@@ -145,7 +149,7 @@ function simulateMarket(
   const contract: any = {
     id: m.id,
     outcomeType: 'MULTIPLE_CHOICE',
-    mechanism: 'cpmm-multi-1',
+    mechanism: m.mechanism,
     shouldAnswersSumToOne: m.shouldAnswersSumToOne,
     answers,
     collectedFees: { creatorFee: 0, platformFee: 0, liquidityFee: 0 },
@@ -187,7 +191,7 @@ function simulateMarket(
   return out
 }
 
-function syntheticMarket(entry: any) {
+export function syntheticMarket(entry: any) {
   const p = entry.payload
   if (p.outcomeType === 'BINARY') {
     // Ballot-measure binaries: the same pool the API builds for this tier and
@@ -245,10 +249,8 @@ function syntheticMarket(entry: any) {
     timezone: undefined,
   } as any)
   return {
+    ...c,
     id: entry.raceKey,
-    outcomeType: 'MULTIPLE_CHOICE',
-    shouldAnswersSumToOne: true,
-    answers: c.answers,
   }
 }
 
@@ -323,4 +325,4 @@ function main() {
   )
 }
 
-main()
+if (require.main === module) main()

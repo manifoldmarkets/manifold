@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
-  isMultiCpmm,
   Contract,
   CPMMMultiContract,
   MultiContract,
