@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { clampRaceCard, placeRaceCard } from './race-card-position'
+import {
+  clampRaceCard,
+  placeBesideRace,
+  placeRaceCard,
+} from './race-card-position'
 
 const bounds = { left: 250, right: 1400, top: 8, bottom: 992 }
 const size = { width: 345, height: 130 }
@@ -62,5 +66,53 @@ test('switching to a taller card keeps its position when it still fits', () => {
   assert.deepEqual(
     clampRaceCard(pinned, { ...size, height: 400 }, bounds),
     pinned
+  )
+})
+
+test('pinned cards dock beside their race and stay on screen', () => {
+  const card = { width: 345, height: 420 }
+  // Room on the right: just right of the shape.
+  assert.deepEqual(
+    placeBesideRace(
+      { left: 500, right: 560, top: 300, bottom: 340 },
+      card,
+      bounds
+    ),
+    { x: 576, y: 276 }
+  )
+  // Near the right edge (Maine): on the left of the shape.
+  assert.deepEqual(
+    placeBesideRace(
+      { left: 1200, right: 1260, top: 200, bottom: 300 },
+      card,
+      bounds
+    ),
+    { x: 839, y: 176 }
+  )
+  // Near the bottom: lifted so the whole card fits.
+  assert.equal(
+    placeBesideRace(
+      { left: 500, right: 560, top: 900, bottom: 940 },
+      card,
+      bounds
+    ).y,
+    bounds.bottom - card.height
+  )
+  // Never above the toolbar.
+  const below = { ...bounds, top: 120 }
+  assert.equal(
+    placeBesideRace({ left: 500, right: 560, top: 60, bottom: 90 }, card, below)
+      .y,
+    120
+  )
+  // No room on either side: against the right edge.
+  const narrow = { left: 0, right: 600, top: 8, bottom: 992 }
+  assert.equal(
+    placeBesideRace(
+      { left: 200, right: 400, top: 300, bottom: 340 },
+      card,
+      narrow
+    ).x,
+    255
   )
 })
