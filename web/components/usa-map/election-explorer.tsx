@@ -1,0 +1,1678 @@
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import clsx from 'clsx'
+import Image from 'next/image'
+import {
+  MapIcon,
+  ViewGridIcon,
+  SearchIcon,
+  AnnotationIcon,
+  ClipboardCheckIcon,
+} from '@heroicons/react/outline'
+import { CongressHouse } from 'web/public/custom-components/congress_house'
+import { CongressSenate } from 'web/public/custom-components/congress_senate'
+import { CongressCenter } from 'web/public/custom-components/congress_center'
+import { Congress } from 'web/public/custom-components/congress'
+import { Governor } from 'web/public/custom-components/governor'
+import { ElectionBalance } from './election-balance'
+import { sourceAudit } from './audited-sources'
+import { candidateForParty } from './election-candidates'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
+import { formatPercent } from 'common/util/format'
+import { MapContractsDictionary } from 'web/public/data/elections-data'
+import { Modal } from 'web/components/layout/modal'
+import { PartyPanel } from 'web/components/us-elections/contracts/party-panel/party-panel'
+import { StateBinaryPartyPanel } from 'web/components/us-elections/contracts/party-panel/binary-party-panel'
+import { BetDialog } from 'web/components/bet/bet-dialog'
+import { DistrictBetButtons } from './district-bet-buttons'
+import { RaceDetailsPanel } from './race-details-panel'
+import { useMapCamera } from './use-map-camera'
+import { Point } from './map-camera'
+import { BallotMeasureCard } from './ballot-measure-card'
+import {
+  BALLOT_MEASURES,
+  approvalChance,
+  matchesMeasureQuery,
+  measureColor,
+} from './ballot-measures-model'
+import {
+  getHeldOffice,
+  getIncumbentGroups,
+  HELD_COLORS,
+} from './election-incumbents'
+import { DATA } from './usa-map-data'
+import { DEM_COLOR, REP_COLOR, isColorLight } from './state-election-map'
+import {
+  Atlas,
+  buildRaces,
+  districtId,
+  electionOdds,
+  ElectionMode,
+  leadingParty,
+  matchesRaceQuery,
+  matchesStateQuery,
+  OTHER_COLOR,
+  COMPLEMENT_COLOR,
+  outcomeLabel,
+  Race,
+  raceColor,
+  raceTier,
+  seatSummary,
+  Tier,
+  TIERS,
+} from './election-map-model'
+import styles from './election-explorer.module.css'
+import interactions from '../us-elections/election-interactions.module.css'
+
+type Props = {
+  senate: MapContractsDictionary
+  governor: MapContractsDictionary
+  senateCandidates: MapContractsDictionary
+  governorCandidates: MapContractsDictionary
+  house: Contract | null
+  additionalHouse?: MapContractsDictionary
+  houseControl: Contract | null
+  senateControl: Contract | null
+  measures?: MapContractsDictionary
+}
+type ExplorerMode = ElectionMode | 'measures'
+const MODES: ExplorerMode[] = ['house', 'senate', 'governor', 'measures']
+const modeName = (mode: ExplorerMode) =>
+  mode === 'measures'
+    ? 'Ballot measures'
+    : mode[0].toUpperCase() + mode.slice(1)
+const pct = (p: number) => formatPercent(p)
+
+export function ElectionExplorer(props: Props) {
+  const [mode, setMode] = useState<ExplorerMode>('senate')
+  const isMeasures = mode === 'measures'
+  const raceMode = isMeasures ? 'senate' : mode
+  const [view, setView] = useState<'map' | 'cartogram'>('map')
+  const [labels, setLabels] = useState(true)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<Tier>()
+  const [selected, setSelected] = useState<string>()
+  const [hovered, setHovered] = useState<string>()
+  const mapPointer = useRef<Point>()
+  const [sources, setSources] = useState(false)
+  const [atlas, setAtlas] = useState<Atlas>()
+  const [mapError, setMapError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const selectionOrigin = useRef<HTMLElement | SVGElement | null>(null)
+  const explorerRef = useRef<HTMLElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const {
+    svgRef,
+    camera,
+    dragged,
+    viewBox,
+    resetView,
+    zoom: zoomMap,
+  } = useMapCamera(!!atlas)
+  const patternId = `unpriced-${useId().replace(/:/g, '')}`
+  const races = useMemo(
+    () =>
+      isMeasures
+        ? []
+        : buildRaces(
+            raceMode,
+            mode === 'senate' ? props.senate : props.governor,
+            props.house,
+            props.additionalHouse
+          ),
+    [
+      mode,
+      isMeasures,
+      raceMode,
+      props.senate,
+      props.governor,
+      props.house,
+      props.additionalHouse,
+    ]
+  )
+  const raceById = useMemo(() => new Map(races.map((r) => [r.id, r])), [races])
+  const summary = seatSummary(races, raceMode)
+  const measuresByState = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.keys(DATA).map((state) => [
+          state,
+          BALLOT_MEASURES.filter((m) => m.state === state),
+        ])
+      ),
+    []
+  )
+  const measureMatches = BALLOT_MEASURES.filter((m) =>
+    matchesMeasureQuery(m, query, DATA[m.state].name)
+  )
+  const measureCount = (state: string) => measuresByState[state]?.length ?? 0
+  const measureQuote = (key: string) => {
+    const m = BALLOT_MEASURES.find((m) => m.key === key)!
+    return approvalChance(
+      m,
+      m.source ? props.measures?.[m.source.contractId] : undefined
+    )
+  }
+  const measureStateLabel = (state: string) =>
+    measureCount(state)
+      ? `${measureCount(state)} statewide measure${
+          measureCount(state) === 1 ? '' : 's'
+        }`
+      : 'No statewide measures'
+  const selectedRace = selected ? raceById.get(selected) : undefined
+  const hoverRace = hovered ? raceById.get(hovered) : undefined
+  const selectedNoRace =
+    !isMeasures && mode !== 'house' && selected && !selectedRace
+      ? DATA[selected]
+      : undefined
+  const hoveredNoRace =
+    !isMeasures && mode !== 'house' && hovered && !hoverRace
+      ? DATA[hovered]
+      : undefined
+  const detailId = selected ?? hovered
+  const detailRace = detailId ? raceById.get(detailId) : undefined
+  const detailTitle =
+    detailRace?.label ?? (detailId ? DATA[detailId]?.name : undefined)
+  const matches = (race: Race) =>
+    (!filter || raceTier(race) === filter) && matchesRaceQuery(race, query)
+  const filtered = races.filter(matches)
+  const noElectionMatches =
+    mode === 'house' || filter || !query.trim()
+      ? []
+      : Object.entries(DATA).filter(
+          ([state]) =>
+            state !== 'DC' &&
+            (isMeasures ? !measureCount(state) : !raceById.has(state)) &&
+            matchesStateQuery(state, query)
+        )
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus()
+  }, [searchOpen])
+
+  useEffect(() => {
+    const abort = new AbortController()
+    setMapError(false)
+    fetch('/data/election-atlas.json', { signal: abort.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error('Map unavailable')
+        return r.json()
+      })
+      .then(setAtlas)
+      .catch((e) => {
+        if (e.name !== 'AbortError') setMapError(true)
+      })
+    return () => abort.abort()
+  }, [attempt])
+  useEffect(() => {
+    if (selected) return
+    const clear = () => setHovered(undefined)
+    window.addEventListener('scroll', clear, true)
+    return () => window.removeEventListener('scroll', clear, true)
+  }, [selected])
+  useEffect(() => {
+    if (!selected) return
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) {
+        setSelected(undefined)
+        selectionOrigin.current?.focus({ preventScroll: true })
+      }
+    }
+    window.addEventListener('keydown', escape)
+    return () => window.removeEventListener('keydown', escape)
+  }, [selected])
+
+  const closeDetails = () => {
+    setSelected(undefined)
+    selectionOrigin.current?.focus({ preventScroll: true })
+  }
+  const focusMap = () => {
+    if (
+      window.innerWidth <= 850 &&
+      (explorerRef.current?.getBoundingClientRect().top ?? 0) > 8
+    )
+      explorerRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      })
+  }
+  const zoom = (factor: number) => {
+    setHovered(undefined)
+    zoomMap(factor)
+    focusMap()
+  }
+  const choose = (id: string, element: HTMLElement | SVGElement) => {
+    selectionOrigin.current = element
+    setSelected(id)
+    setSearchOpen(false)
+    focusMap()
+  }
+  const changeMode = (next: ExplorerMode) => {
+    setMode(next)
+    setSelected(undefined)
+    setHovered(undefined)
+    setFilter(undefined)
+    setQuery('')
+    resetView()
+  }
+
+  const shapeProps = (id: string) => {
+    const race = raceById.get(id)
+    const noElection = mode !== 'house' && !race && !!DATA[id] && id !== 'DC'
+    const selectable = !!race || noElection
+    const held =
+      noElection && !isMeasures ? getHeldOffice(raceMode, id) : undefined
+    return {
+      fill: isMeasures
+        ? measureColor(measureCount(id))
+        : race
+        ? raceColor(race) ?? `url(#${patternId})`
+        : held
+        ? `url(#${patternId}-${held.control})`
+        : undefined,
+      className: clsx(
+        styles.shape,
+        !race && !held && (!isMeasures || !measureCount(id)) && styles.noRace,
+        selected === id && styles.selected
+      ),
+      opacity: isMeasures
+        ? query &&
+          !measureMatches.some((m) => m.state === id) &&
+          !matchesStateQuery(id, query)
+          ? 0.15
+          : 1
+        : race && !matches(race)
+        ? 0.15
+        : 1,
+      role: selectable ? 'button' : undefined,
+      tabIndex: (race && matches(race)) || noElection ? 0 : -1,
+      'aria-label': isMeasures
+        ? `${DATA[id]?.name ?? id}: ${measureStateLabel(
+            id
+          )} on November 3, 2026`
+        : race
+        ? `${race.label}, ${
+            race.basis?.kind === 'ballot'
+              ? `${race.basis.party} same-party ballot`
+              : race.basis?.kind === 'decided'
+              ? `${race.basis.candidate} elected unopposed`
+              : race.basis?.kind === 'candidate-only'
+              ? 'candidate market only'
+              : race.odds
+              ? `${pct(Math.max(...Object.values(race.odds)))} ${
+                  leadingParty(race.odds)
+                    ? outcomeLabel(leadingParty(race.odds)!)
+                    : 'tied'
+                }`
+              : 'unpriced'
+          }`
+        : `${DATA[id]?.name ?? id}: no ${modeName(mode)} election in 2026${
+            held
+              ? `. ${held.members
+                  .map((m) => `${m.name}, ${m.party}`)
+                  .join('; ')}`
+              : ''
+          }`,
+      'aria-pressed': selectable ? selected === id : undefined,
+      'data-race-id': selectable ? id : undefined,
+      onClick: (e: React.MouseEvent<SVGElement>) => {
+        if (selectable && !dragged.current) choose(id, e.currentTarget)
+      },
+      onKeyDown: (e: React.KeyboardEvent<SVGElement>) => {
+        if (selectable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          choose(id, e.currentTarget)
+        }
+      },
+    }
+  }
+  const trackHover = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.pointerType !== 'mouse' || window.innerWidth <= 850) return
+    mapPointer.current = { x: e.clientX, y: e.clientY }
+    if (e.buttons) {
+      if (dragged.current) setHovered(undefined)
+      return
+    }
+    const id =
+      (e.target as Element)
+        .closest('[data-race-id]')
+        ?.getAttribute('data-race-id') ?? undefined
+    if (id !== hovered) setHovered(id)
+  }
+  const labelColor = (state: string) => {
+    if (isMeasures) {
+      const color = measureColor(measureCount(state))
+      return color ? (isColorLight(color) ? '#1e293b' : '#fff') : undefined
+    }
+    if (getHeldOffice(raceMode, state)) return '#fff'
+    const race = raceById.get(state)
+    const color = race && raceColor(race)
+    return color ? (isColorLight(color) ? '#1e293b' : '#fff') : undefined
+  }
+  const hex = atlas?.hex
+  const hexScale = hex ? Math.min(900 / hex.width, 530 / hex.height) : 1
+  const hexPath = (x: number, y: number, r: number) =>
+    Array.from({ length: 6 }, (_, i) => {
+      const angle = (Math.PI / 3) * i - Math.PI / 2
+      return `${i ? 'L' : 'M'}${x + Math.cos(angle) * r},${
+        y + Math.sin(angle) * r
+      }`
+    }).join(' ') + 'Z'
+  const candidate =
+    selectedRace && mode !== 'house'
+      ? (mode === 'senate' ? props.senateCandidates : props.governorCandidates)[
+          selectedRace.state
+        ]
+      : null
+
+  return (
+    <div className={clsx(styles.layout, interactions.scope)}>
+      <div className={styles.controls} aria-label="Chamber control">
+        <ControlCard label="Senate" contract={props.senateControl} />
+        <ControlCard label="House" contract={props.houseControl} />
+      </div>
+      <section
+        ref={explorerRef}
+        className={styles.explorer}
+        aria-label="2026 election explorer"
+      >
+        <header className={styles.header}>
+          {isMeasures ? (
+            <div className={styles.measureOverview}>
+              <strong>145 statewide questions</strong>
+              <span>39 states · November 3</span>
+            </div>
+          ) : (
+            <ElectionBalance
+              summary={summary}
+              mode={raceMode}
+              filter={filter}
+              onFilter={(tier) => {
+                setFilter(filter === tier ? undefined : tier)
+                setSelected(undefined)
+              }}
+            />
+          )}
+          <div className={styles.toolbar}>
+            <label className={styles.mobileMode}>
+              <ChamberIcon mode={mode} />
+              <select
+                aria-label="Election type"
+                value={mode}
+                onChange={(e) => changeMode(e.target.value as ExplorerMode)}
+              >
+                {MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {m === 'measures' ? 'Measures' : modeName(m)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <ChamberTabs mode={mode} onChange={changeMode} />
+
+            <button
+              className={styles.viewToggle}
+              aria-label={`Switch to ${
+                view === 'map'
+                  ? isMeasures
+                    ? 'state tiles'
+                    : 'cartogram'
+                  : 'geographic map'
+              }`}
+              title={`Switch to ${
+                view === 'map'
+                  ? isMeasures
+                    ? 'state tiles'
+                    : 'cartogram'
+                  : 'geographic map'
+              }`}
+              onClick={() => {
+                setView(view === 'map' ? 'cartogram' : 'map')
+                resetView()
+                setHovered(undefined)
+              }}
+            >
+              {view === 'map' ? (
+                <MapIcon aria-hidden />
+              ) : (
+                <ViewGridIcon aria-hidden />
+              )}
+              <span>
+                {view === 'map' ? 'Map' : isMeasures ? 'Tiles' : 'Cartogram'}
+              </span>
+            </button>
+            <button
+              className={clsx(styles.toolButton, labels && styles.activeTool)}
+              aria-label="State labels"
+              title="State labels"
+              aria-pressed={labels}
+              onClick={() => setLabels(!labels)}
+            >
+              <AnnotationIcon aria-hidden />
+              <span>Labels</span>
+            </button>
+            <div className={styles.searchSlot}>
+              <button
+                className={clsx(
+                  styles.searchToggle,
+                  (searchOpen || query) && styles.activeTool
+                )}
+                aria-label={
+                  isMeasures ? 'Search ballot measures' : 'Search races'
+                }
+                aria-expanded={searchOpen}
+                title={isMeasures ? 'Search ballot measures' : 'Search races'}
+                onClick={() => setSearchOpen(!searchOpen)}
+              >
+                <SearchIcon aria-hidden />
+              </button>
+              <label className={styles.search} data-open={searchOpen}>
+                <SearchIcon aria-hidden />
+                <input
+                  ref={searchRef}
+                  aria-label={
+                    isMeasures
+                      ? 'Find a state, proposition or topic'
+                      : 'Find a state or district'
+                  }
+                  placeholder={
+                    isMeasures ? 'State, prop or topic' : 'Find a race'
+                  }
+                  value={query}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchOpen(false)
+                      e.currentTarget
+                        .closest('div')
+                        ?.querySelector('button')
+                        ?.focus()
+                    }
+                  }}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    setSelected(undefined)
+                  }}
+                />
+                {query && (
+                  <button
+                    aria-label="Clear search"
+                    onClick={() => setQuery('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+            </div>
+            <div
+              className={styles.zoomControls}
+              role="group"
+              aria-label="Map zoom controls"
+            >
+              <button
+                aria-label="Zoom in"
+                disabled={camera.k >= 6}
+                onClick={() => zoom(1.5)}
+              >
+                +
+              </button>
+              <button
+                aria-label="Zoom out"
+                disabled={camera.k <= 1}
+                onClick={() => zoom(1 / 1.5)}
+              >
+                −
+              </button>
+              <button
+                aria-label="Reset map view"
+                title="Reset view"
+                onClick={resetView}
+              >
+                ↺
+              </button>
+            </div>
+          </div>
+        </header>
+        {isMeasures ? (
+          <div className={styles.coverage}>
+            <span>
+              {
+                BALLOT_MEASURES.filter((m) => measureQuote(m.key) !== undefined)
+                  .length
+              }{' '}
+              of {BALLOT_MEASURES.length} measures with market odds
+            </span>
+            <span>Shading shows number of measures, not chance of passage</span>
+          </div>
+        ) : (
+          <div className={styles.coverage}>
+            <span>
+              {
+                races.filter(
+                  (r) =>
+                    r.odds &&
+                    r.basis?.kind !== 'ballot' &&
+                    r.basis?.kind !== 'decided'
+                ).length
+              }{' '}
+              of {races.length} seats with party odds
+              {mode === 'house' &&
+                ` · ${
+                  summary.counts['fixed-d'] + summary.counts['fixed-r']
+                } determined by ballot`}
+              {mode === 'senate' && ' · 65 seats not on the ballot'}
+            </span>
+            <span>
+              {summary.leaders.unpriced > 0 &&
+                `${summary.leaders.unpriced} without party odds`}
+              {summary.leaders.other > 0 && ` · ${summary.leaders.other} other`}
+              {summary.leaders.tied > 0 && ` · ${summary.leaders.tied} tied`}
+            </span>
+          </div>
+        )}
+        {!isMeasures &&
+          (summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+            <p className={styles.note}>
+              {[
+                summary.leaders.notDem > 0 &&
+                  `${summary.leaders.notDem} races favor a non-Democratic winner`,
+                summary.leaders.notRep > 0 &&
+                  `${summary.leaders.notRep} races favor a non-Republican winner`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              . These outcomes are counted separately from party wins.
+            </p>
+          )}
+        {(filter || query) && (
+          <div className={styles.filterNotice} role="status">
+            {isMeasures
+              ? `${measureMatches.length} matching measures`
+              : `${filtered.length} matching races`}
+            {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
+            {noElectionMatches.length > 0 &&
+              ` · ${noElectionMatches.length} with no ${
+                isMeasures ? 'statewide measures' : 'election'
+              }`}
+            <button
+              onClick={() => {
+                setQuery('')
+                setFilter(undefined)
+              }}
+            >
+              Clear filters ×
+            </button>
+          </div>
+        )}
+        {query.trim() && (
+          <div
+            className={styles.results}
+            role="region"
+            aria-label={
+              isMeasures
+                ? 'Ballot measure search results'
+                : 'Race search results'
+            }
+          >
+            {isMeasures &&
+              measureMatches.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={(e) => choose(m.state, e.currentTarget)}
+                >
+                  <span>
+                    {DATA[m.state].name} · {m.designation ?? m.title}
+                  </span>
+                  <span>
+                    {measureQuote(m.key) === undefined
+                      ? 'No odds'
+                      : `${pct(measureQuote(m.key)!)} pass`}
+                  </span>
+                </button>
+              ))}
+            {filtered.map((r) => (
+              <button key={r.id} onClick={(e) => choose(r.id, e.currentTarget)}>
+                {r.label} <RaceQuote race={r} />
+              </button>
+            ))}
+            {noElectionMatches.map(([state, data]) => (
+              <button
+                key={state}
+                onClick={(e) => choose(state, e.currentTarget)}
+              >
+                {data.name}{' '}
+                <span>
+                  {isMeasures
+                    ? 'No statewide measures'
+                    : `No ${modeName(mode)} election`}
+                </span>
+              </button>
+            ))}
+            {(isMeasures ? measureMatches.length : filtered.length) === 0 &&
+              noElectionMatches.length === 0 && (
+                <span>
+                  {isMeasures
+                    ? 'No matching measures. Try a state, Prop 39 or a topic.'
+                    : 'No matching races. Try a state name or TX-15.'}
+                </span>
+              )}
+          </div>
+        )}
+
+        <div className={styles.stage}>
+          {!atlas ? (
+            <div className={styles.mapLoading} role="status">
+              {mapError ? (
+                <>
+                  The map couldn’t load.{' '}
+                  <button onClick={() => setAttempt((a) => a + 1)}>
+                    Try again
+                  </button>
+                </>
+              ) : (
+                'Loading election map…'
+              )}
+            </div>
+          ) : (
+            <svg
+              ref={svgRef}
+              viewBox={viewBox}
+              aria-label={`${modeName(mode)} ${
+                view === 'map'
+                  ? 'geographic map'
+                  : isMeasures
+                  ? 'state tiles'
+                  : 'equal-seat cartogram'
+              }`}
+              className={styles.map}
+              data-mode={mode}
+              data-zoomed={camera.k > 1}
+              style={{ touchAction: camera.k > 1 ? 'none' : 'pan-y' }}
+              onWheel={() => setHovered(undefined)}
+              onPointerEnter={trackHover}
+              onPointerMove={trackHover}
+              onPointerLeave={() => {
+                mapPointer.current = undefined
+                setHovered(undefined)
+              }}
+            >
+              <defs>
+                {Object.entries(HELD_COLORS).map(([party, colors]) => (
+                  <pattern
+                    key={party}
+                    id={`${patternId}-${party}`}
+                    width="8"
+                    height="8"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <rect width="8" height="8" fill={colors.background} />
+                    <path
+                      d="M0 0L8 8M8 0L0 8"
+                      stroke={colors.hatch}
+                      strokeWidth="2"
+                    />
+                  </pattern>
+                ))}
+                <pattern
+                  id={patternId}
+                  width="6"
+                  height="6"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(35)"
+                >
+                  <rect width="6" height="6" className={styles.hatchBase} />
+                  <path
+                    d="M0 0V6"
+                    className={styles.hatchLine}
+                    strokeWidth="2"
+                  />
+                </pattern>
+              </defs>
+              <g
+                transform={`translate(${camera.x} ${camera.y}) scale(${camera.k})`}
+              >
+                {view === 'map' ? (
+                  <>
+                    {mode === 'house' ? (
+                      <>
+                        {atlas.districts.map((d) => (
+                          <path
+                            key={districtId(d.state, d.district)}
+                            d={d.path}
+                            {...shapeProps(districtId(d.state, d.district))}
+                          />
+                        ))}
+                        {atlas.states.map((s) => (
+                          <path
+                            key={s.state}
+                            d={s.path}
+                            className={styles.stateOutline}
+                          />
+                        ))}
+                      </>
+                    ) : (
+                      atlas.states.map((s) => (
+                        <path
+                          key={s.state}
+                          d={s.path}
+                          {...shapeProps(s.state)}
+                        />
+                      ))
+                    )}
+                    {labels &&
+                      atlas.states
+                        .filter(
+                          (s) =>
+                            ![
+                              'DC',
+                              'RI',
+                              'DE',
+                              'CT',
+                              'MA',
+                              'MD',
+                              'NJ',
+                            ].includes(s.state)
+                        )
+                        .map((s) => (
+                          <text
+                            key={s.state}
+                            x={s.state === 'FL' ? 785 : s.center[0]}
+                            y={s.state === 'FL' ? 496 : s.center[1]}
+                            className={styles.stateLabel}
+                            style={{
+                              fill: labelColor(s.state),
+                              ...(s.state === 'FL' && {
+                                stroke:
+                                  labelColor(s.state) === '#fff'
+                                    ? '#1e293bcc'
+                                    : '#ffffffcc',
+                                strokeWidth: 2,
+                              }),
+                            }}
+                          >
+                            {s.state}
+                          </text>
+                        ))}
+                    {labels &&
+                      ['MA', 'RI', 'CT', 'NJ', 'DE', 'MD'].map((state, i) => {
+                        const s = atlas.states.find((s) => s.state === state)!
+                        return (
+                          <g key={state}>
+                            <path
+                              d={`M${s.center[0]} ${s.center[1]}L916 ${
+                                245 + i * 29
+                              }`}
+                              className={styles.labelLine}
+                            />
+                            <text
+                              x="930"
+                              y={249 + i * 29}
+                              className={styles.stateLabel}
+                            >
+                              {state}
+                            </text>
+                          </g>
+                        )
+                      })}
+                  </>
+                ) : mode === 'house' && hex ? (
+                  <g
+                    transform={`translate(${
+                      (960 - hex.width * hexScale) / 2
+                    } 35) scale(${hexScale})`}
+                  >
+                    {hex.hexes.map((h) => (
+                      <path
+                        key={districtId(h.state, h.district)}
+                        d={hexPath(h.x, h.y, hex.size * 0.92)}
+                        {...shapeProps(districtId(h.state, h.district))}
+                      />
+                    ))}
+                    {labels &&
+                      atlas.states
+                        .filter((s) => s.state !== 'DC')
+                        .map((s) => {
+                          const seats = hex.hexes.filter(
+                            (h) => h.state === s.state
+                          )
+                          const top = seats.reduce((a, b) =>
+                            a.y < b.y ? a : b
+                          )
+                          return (
+                            <text
+                              key={s.state}
+                              x={top.x}
+                              y={top.y - 14}
+                              className={styles.hexLabel}
+                            >
+                              {s.state}
+                            </text>
+                          )
+                        })}
+                  </g>
+                ) : (
+                  <g transform="translate(76 20)">
+                    {atlas.tiles
+                      .filter((t) => t.state !== 'DC')
+                      .map((t) => (
+                        <g key={t.state}>
+                          <rect
+                            x={t.col * 73}
+                            y={t.row * 70}
+                            width="65"
+                            height="62"
+                            rx="6"
+                            {...shapeProps(t.state)}
+                          />
+                          <text
+                            x={t.col * 73 + 32.5}
+                            y={t.row * 70 + 36}
+                            className={styles.tileLabel}
+                            style={{ fill: labelColor(t.state) }}
+                          >
+                            {t.state}
+                          </text>
+                        </g>
+                      ))}
+                  </g>
+                )}
+              </g>
+            </svg>
+          )}
+        </div>
+        {isMeasures ? (
+          <div className={styles.legend}>
+            <div className={styles.legendKeys}>
+              {[0, 1, 3, 6, 10].map((n, i) => (
+                <span key={n}>
+                  <i
+                    style={{
+                      background: measureColor(n) ?? 'var(--no-measures)',
+                      border: '1px solid var(--line)',
+                    }}
+                  />
+                  {['None', '1–2', '3–5', '6–9', '10+'][i]}
+                </span>
+              ))}
+              <span>statewide measures</span>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.legend}>
+            <div className={styles.ramp}>
+              <div>
+                <span>Republican</span>
+                <span>50 / 50</span>
+                <span>Democratic</span>
+              </div>
+              <div className={styles.gradient} />
+            </div>
+            <div className={styles.legendKeys}>
+              <span>
+                <i style={{ background: OTHER_COLOR }} />
+                Other leads
+              </span>
+              {(summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
+                <span>
+                  <i style={{ background: COMPLEMENT_COLOR }} />
+                  Any other winner
+                </span>
+              )}
+              <span>
+                <i className={styles.hatchSwatch} />
+                No party odds
+              </span>
+              {mode !== 'house' && (
+                <span>
+                  <i className={styles.noRaceSwatch} />
+                  Not on ballot · current party
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+        <p className={styles.hint}>
+          {view === 'cartogram'
+            ? `Each ${
+                mode === 'house'
+                  ? 'hexagon is one House seat'
+                  : 'tile is one state'
+              }. `
+            : ''}
+          {isMeasures
+            ? 'Select a state to explore its ballot measures.'
+            : 'Select a race to explore the odds.'}{' '}
+          Scroll or pinch to zoom; drag to move the map.{' '}
+          <button onClick={() => setSources(true)}>More info</button>
+        </p>
+
+        {detailTitle && (
+          <RaceDetailsPanel
+            title={detailTitle}
+            eyebrow={
+              detailRace
+                ? `${modeName(mode)} · ${detailRace.shortLabel}`
+                : `2026 · ${modeName(mode)}`
+            }
+            label={`${detailTitle} ${
+              isMeasures ? 'ballot measures' : 'details'
+            }`}
+            chartLink={
+              selectedRace?.contract && (
+                <MarketDetailsLink contract={selectedRace.contract} />
+              )
+            }
+            closeRef={closeRef}
+            pinned={!!selected}
+            pointer={mapPointer}
+            onClose={closeDetails}
+          >
+            {!selected ? (
+              isMeasures ? (
+                <span>{measureStateLabel(detailId!)} on November 3</span>
+              ) : hoverRace ? (
+                <>
+                  <RaceQuote race={hoverRace} />
+                  <BallotCandidates race={hoverRace} />
+                  <IncumbentDetails
+                    mode={raceMode}
+                    state={hoverRace.state}
+                    district={hoverRace.district}
+                  />
+                </>
+              ) : hoveredNoRace ? (
+                <>
+                  <span className={styles.note}>
+                    No {modeName(mode)} election in 2026
+                  </span>
+                  <IncumbentDetails mode={raceMode} state={hovered!} />
+                </>
+              ) : null
+            ) : (
+              <>
+                {isMeasures && DATA[selected] && (
+                  <>
+                    {measureCount(selected) === 0 ? (
+                      <p className={styles.note}>
+                        No statewide measures on the November 3, 2026 ballot.
+                      </p>
+                    ) : (
+                      <>
+                        <p className={styles.note}>
+                          {measureStateLabel(selected)}. Pass means approval of
+                          the ballot question, including a question proposing
+                          repeal.
+                        </p>
+                        {(query
+                          ? measureMatches.filter((m) => m.state === selected)
+                          : measuresByState[selected]
+                        ).map((m) => (
+                          <BallotMeasureCard
+                            key={m.key}
+                            measure={m}
+                            contract={
+                              m.source
+                                ? props.measures?.[m.source.contractId]
+                                : undefined
+                            }
+                          />
+                        ))}
+                        {query && (
+                          <button
+                            className={styles.chartLink}
+                            onClick={() => setQuery('')}
+                          >
+                            Show all {measureCount(selected)} measures →
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+                {selectedNoRace && (
+                  <>
+                    <p className={styles.empty}>
+                      No {mode === 'governor' ? 'gubernatorial' : 'Senate'}{' '}
+                      election in 2026.
+                    </p>
+                    <IncumbentDetails mode={raceMode} state={selected!} />
+                    <button
+                      className={styles.exploreState}
+                      onClick={() => {
+                        const name = selectedNoRace.name
+                        changeMode('house')
+                        setQuery(name)
+                      }}
+                    >
+                      Explore House districts →
+                    </button>
+                  </>
+                )}
+
+                {selectedRace && (
+                  <>
+                    <div className={styles.detailSummary}>
+                      <span
+                        style={{
+                          color: TIERS.find(
+                            (t) => t.id === raceTier(selectedRace)
+                          )?.color,
+                        }}
+                      >
+                        {selectedRace.basis?.kind === 'candidate-only'
+                          ? 'Candidate market'
+                          : TIERS.find((t) => t.id === raceTier(selectedRace))
+                              ?.label}
+                      </span>
+                      {selectedRace.odds && <RaceQuote race={selectedRace} />}
+                    </div>
+                    {selectedRace.odds &&
+                      selectedRace.basis?.kind !== 'ballot' &&
+                      selectedRace.basis?.kind !== 'decided' && (
+                        <div className={styles.raceBar}>
+                          {(
+                            [
+                              'dem',
+                              'rep',
+                              'other',
+                              'notDem',
+                              'notRep',
+                              'unknown',
+                            ] as const
+                          ).map((p, i) => (
+                            <span
+                              key={p}
+                              style={{
+                                width: `${(selectedRace.odds![p] ?? 0) * 100}%`,
+                                background: [
+                                  DEM_COLOR,
+                                  REP_COLOR,
+                                  OTHER_COLOR,
+                                  COMPLEMENT_COLOR,
+                                  COMPLEMENT_COLOR,
+                                  COMPLEMENT_COLOR,
+                                ][i],
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    {selectedRace.basis?.kind === 'ballot' && (
+                      <p className={styles.note}>
+                        Both November finalists are{' '}
+                        {selectedRace.basis.party === 'D'
+                          ? 'Democrats'
+                          : 'Republicans'}
+                        : {selectedRace.basis.finalists.join(' and ')}. This
+                        seat counts by the certified ballot. Candidate odds are
+                        separate.
+                      </p>
+                    )}
+                    {selectedRace.basis?.kind === 'decided' && (
+                      <p className={styles.note}>
+                        {selectedRace.basis.candidate} is unopposed and deemed
+                        elected. This seat is not on the November ballot.
+                      </p>
+                    )}
+                    <BallotCandidates race={selectedRace} />
+                    {!selectedRace.contract ? (
+                      <p className={styles.empty}>
+                        {selectedRace.basis?.kind === 'decided'
+                          ? 'No election market is needed for this decided seat.'
+                          : selectedRace.basis?.kind === 'ballot'
+                          ? 'No candidate market is linked yet; the ballot party still counts in the balance.'
+                          : 'No Manifold market is linked yet. This race is excluded from priced seat estimates.'}
+                      </p>
+                    ) : selectedRace.answerId &&
+                      isMultiCpmm(selectedRace.contract) &&
+                      selectedRace.contract.outcomeType ===
+                        'MULTIPLE_CHOICE' ? (
+                      <>
+                        <DistrictBetButtons
+                          contract={selectedRace.contract}
+                          answer={
+                            selectedRace.contract.answers.find(
+                              (a) => a.id === selectedRace.answerId
+                            )!
+                          }
+                          label={selectedRace.label}
+                          matchup={selectedRace.matchup}
+                        />
+                      </>
+                    ) : (
+                      <RaceMarket contract={selectedRace.contract} />
+                    )}
+                    <IncumbentDetails
+                      mode={raceMode}
+                      state={selectedRace.state}
+                      district={selectedRace.district}
+                    />
+                    {candidate &&
+                      candidate.id !== selectedRace.contract?.id &&
+                      sourceAudit(selectedRace.contract?.slug)?.kind !==
+                        'candidate' && (
+                        <div className={styles.candidates}>
+                          <div className={styles.candidateHeading}>
+                            <span className={styles.eyebrow}>
+                              Candidate market
+                            </span>
+                            <MarketDetailsLink contract={candidate} />
+                          </div>
+                          <RaceMarket contract={candidate} />
+                        </div>
+                      )}
+                  </>
+                )}
+              </>
+            )}
+          </RaceDetailsPanel>
+        )}
+
+        <Modal
+          open={sources}
+          setOpen={setSources}
+          ariaLabel="How to read the election map"
+        >
+          <div className={clsx(styles.sources, interactions.scope)}>
+            <h2>How to read the map</h2>
+            {isMeasures ? (
+              <>
+                <p>
+                  State shading shows how many statewide questions are on the
+                  November 3, 2026 ballot. They do not combine the odds of
+                  unrelated measures.
+                </p>
+                <p>
+                  Each measure has its own approval odds and Pass/Fail bets. A
+                  repeal question passes when voters approve the repeal.
+                  Portfolio questions are traded independently; their
+                  probabilities do not need to add to 100%.
+                </p>
+                <p>
+                  Ballot identities and market criteria were audited on October
+                  3. Conditional sources carry a criteria note. Questions
+                  without a suitable source have no odds; uncertain identities
+                  stay under review. Official voter information and the market’s
+                  own rules are linked in each card.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Colors show the chance of winning implied by Manifold markets,
+                  not vote share. Darker colors mean a stronger favorite. Teal
+                  means an independent or other outcome leads; gray hatching
+                  means no usable market odds. A gray “any other winner” quote
+                  is the NO side of a party-win question, including all other
+                  parties. It is counted separately from Democratic and
+                  Republican wins.
+                </p>
+                <p>
+                  Colored crosshatching marks offices not on the 2026 ballot and
+                  shows their current party, not election odds. Purple indicates
+                  a split Senate delegation. Select or hover over a state to see
+                  its sitting officeholders; Senate control colors group
+                  independents with their caucus.
+                </p>
+                <p>
+                  Held Senate seats are hatched at the ends of the balance bar;
+                  safe forecasts are separate. House seats determined by the
+                  certified ballot have separate D/R by ballot segments: nine
+                  same-party California contests and Florida’s unopposed 10th
+                  district. Candidate bets remain available independently of
+                  that classification. Other missing prices never imply a safe
+                  or held seat. Unclassified probability includes unknown or
+                  withdrawn candidates and does not count as an independent win.
+                </p>
+                <p>
+                  Officeholders were checked on October 3, 2026 against the{' '}
+                  <a
+                    href="https://clerk.house.gov/xml/lists/MemberData.xml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    House Clerk
+                  </a>
+                  ,{' '}
+                  <a
+                    href="https://www.senate.gov/senators/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Senate
+                  </a>{' '}
+                  and{' '}
+                  <a
+                    href="https://www.nga.org/governors/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    National Governors Association
+                  </a>
+                  . House incumbents refer to current district numbers in the
+                  119th Congress; 2026 boundaries may differ. Incumbents are not
+                  necessarily candidates for reelection.
+                </p>
+                <p>
+                  Candidate markets price the listed people. Their party colors
+                  come from the answer labels; check the market description for
+                  how other winners or replacement candidates are handled.
+                </p>
+                <p>
+                  The seat bar counts each seat once for its leading outcome.
+                  Exact ties and unpriced races stay separate. Senate totals
+                  include 34 Democratic-caucus and 31 Republican seats not on
+                  the ballot. Republicans control a 50–50 Senate through the
+                  Vice President’s tie-breaking vote.
+                </p>
+                <p>
+                  Safe: 90% or higher. Likely: 75–90%. Lean: 60–75%. Toss-up:
+                  neither side reaches 60%. Select a segment to filter races.
+                </p>
+                <p>
+                  House coverage combines the curated competitive-district
+                  market with reviewed state-wide district and individual winner
+                  markets. Unlinked districts are unpriced, including safe
+                  seats; that does not mean there is no market anywhere on
+                  Manifold. Chamber-control odds are separate markets, not
+                  derived from the seat totals.
+                </p>
+                <p>
+                  District boundaries reflect a September 24, 2026 snapshot
+                  based on Census geography and redistricting research. Missouri
+                  uses its 2022 map pending litigation.
+                </p>
+                <p>
+                  Prices update through Manifold’s subscriptions. Community
+                  markets may be thinly traded; an unchanged price is not a new
+                  forecast. Outcomes are normalized within each race for map
+                  colors.
+                </p>
+              </>
+            )}
+            <p className={styles.sourceCredit}>
+              Map data:{' '}
+              <a
+                href="https://drops.mts.now/midterms/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                MTS
+              </a>
+            </p>
+            <button
+              className={styles.dismiss}
+              onClick={() => setSources(false)}
+            >
+              Got it
+            </button>
+          </div>
+        </Modal>
+      </section>
+    </div>
+  )
+}
+
+function ChamberTabs({
+  mode,
+  onChange,
+}: {
+  mode: ExplorerMode
+  onChange: (mode: ExplorerMode) => void
+}) {
+  const tab = (m: ExplorerMode) => (
+    <button
+      role="tab"
+      aria-label={modeName(m)}
+      title={modeName(m)}
+      aria-selected={mode === m}
+      tabIndex={mode === m ? 0 : -1}
+      onClick={() => onChange(m)}
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+        e.preventDefault()
+        const next =
+          (MODES.indexOf(m) + (e.key === 'ArrowRight' ? 1 : MODES.length - 1)) %
+          MODES.length
+        onChange(MODES[next])
+        e.currentTarget
+          .closest('[role="tablist"]')
+          ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+          [next]?.focus()
+      }}
+    >
+      {(m === 'governor' || m === 'measures') && <ChamberIcon mode={m} />}
+      <span>{m === 'measures' ? 'Measures' : modeName(m)}</span>
+    </button>
+  )
+  return (
+    <div className={styles.tabs} role="tablist" aria-label="Election type">
+      <div className={styles.capitolTabs}>
+        {tab('house')}
+        <span className={styles.capitol} aria-hidden>
+          {/* Reuse the original left wing, dome and right wing as one building. */}
+          <CongressSenate
+            className={clsx(mode === 'house' && styles.selectedWing)}
+          />
+          <CongressCenter />
+          <CongressHouse
+            className={clsx(mode === 'senate' && styles.selectedWing)}
+          />
+        </span>
+        {tab('senate')}
+      </div>
+      {tab('governor')}
+      {tab('measures')}
+    </div>
+  )
+}
+
+function ChamberIcon({ mode }: { mode: ExplorerMode }) {
+  return (
+    <span className={styles.tabIcon} aria-hidden>
+      {mode === 'house' || mode === 'senate' ? (
+        <Congress height={6} />
+      ) : mode === 'measures' ? (
+        <ClipboardCheckIcon />
+      ) : (
+        <Governor height={6} />
+      )}
+    </span>
+  )
+}
+
+function IncumbentDetails({
+  mode,
+  state,
+  district,
+}: {
+  mode: ElectionMode
+  state: string
+  district?: number
+}) {
+  const groups = getIncumbentGroups(mode, state, district)
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.label} className={styles.incumbents}>
+          <span className={styles.eyebrow}>{group.label}</span>
+          {group.members.length === 0 && <span>Vacant</span>}
+          {group.members.map((member) => (
+            <span key={member.name}>
+              <i
+                style={{
+                  background:
+                    member.party === 'Democrat'
+                      ? DEM_COLOR
+                      : member.party === 'Republican'
+                      ? REP_COLOR
+                      : OTHER_COLOR,
+                }}
+              />
+              {member.name}{' '}
+              <small>
+                ({member.party === 'Independent' ? 'I' : member.party[0]})
+              </small>
+            </span>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+function RaceQuote({ race }: { race: Race }) {
+  const party = leadingParty(race.odds)
+  const candidate = candidateForParty(race, party)
+  return (
+    <span
+      className={styles.quote}
+      style={{
+        color:
+          party === 'dem'
+            ? DEM_COLOR
+            : party === 'rep'
+            ? REP_COLOR
+            : party === 'other'
+            ? OTHER_COLOR
+            : undefined,
+      }}
+    >
+      {race.basis?.kind === 'ballot'
+        ? `${race.basis.party} · same-party ballot`
+        : race.basis?.kind === 'decided'
+        ? `${race.basis.party} · elected unopposed`
+        : race.basis?.kind === 'candidate-only'
+        ? 'Candidate market only'
+        : !race.odds
+        ? 'Unpriced'
+        : !party
+        ? 'Tied'
+        : `${outcomeLabel(party)} ${pct(race.odds[party] ?? 0)}`}
+      {candidate && <span className={styles.quoteName}> · {candidate}</span>}
+    </span>
+  )
+}
+
+function BallotCandidates({ race }: { race: Race }) {
+  if (
+    !race.candidates?.length ||
+    race.basis?.kind === 'ballot' ||
+    race.basis?.kind === 'decided'
+  )
+    return null
+  return (
+    <p className={styles.note}>
+      On ballot:{' '}
+      {race.candidates
+        .map((c) =>
+          c.party === 'unknown' || c.party === 'other'
+            ? c.name
+            : `${c.name} (${c.party})`
+        )
+        .join(' · ')}
+    </p>
+  )
+}
+
+function RaceMarket({ contract }: { contract: Contract }) {
+  const audit = sourceAudit(contract.slug)
+  const answerColors =
+    audit && isMultiCpmm(contract)
+      ? Object.fromEntries(
+          contract.answers.map((a) => [
+            a.id,
+            audit.answerParties?.[a.id] === 'D'
+              ? '#adc4e3'
+              : audit.answerParties?.[a.id] === 'R'
+              ? '#ecbab5'
+              : '#9E9FBD',
+          ])
+        )
+      : undefined
+  return (
+    <>
+      {isMultiCpmm(contract) ? (
+        <PartyPanel
+          contract={contract}
+          compact
+          answerColors={answerColors}
+          hidePartyNote={!!audit}
+        />
+      ) : contract.mechanism === 'cpmm-1' &&
+        contract.outcomeType === 'BINARY' ? (
+        <StateBinaryPartyPanel contract={contract} compact />
+      ) : null}
+      {audit?.kind === 'candidate' && (
+        <p className={styles.note}>
+          Candidate market. Prices apply to the named candidates; replacement
+          and unlisted-winner rules depend on this market.
+        </p>
+      )}
+      {audit?.kind === 'candidate-binary' && (
+        <p className={styles.note}>
+          YES means {audit.candidate ?? 'the named candidate'} wins. NO means
+          any other winner, including someone from the same party. This bet does
+          not price party control.
+        </p>
+      )}
+      {audit?.confidence === 'conditional' && (
+        <p className={styles.note}>
+          Some resolution rules are unspecified. See chart for the market’s
+          criteria and comments.
+        </p>
+      )}
+      {contract.id === '0L8uQURR06' && (
+        <p className={styles.note}>
+          The title asks which party wins, but the Republican answer names “Dan
+          Sullivan.” Two candidates share that name; the intended scope needs
+          clarification.
+        </p>
+      )}
+    </>
+  )
+}
+
+function MarketDetailsLink({ contract }: { contract: Contract }) {
+  return (
+    <a
+      className={styles.chartLink}
+      href={contractPath(contract)}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Read description and comments: ${contract.question} (opens in a new tab)`}
+    >
+      chart →
+    </a>
+  )
+}
+
+function ControlCard({
+  label,
+  contract,
+}: {
+  label: string
+  contract: Contract | null
+}) {
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>()
+  const odds = electionOdds(contract, true)
+  const rep = odds && odds.rep > odds.dem
+  const noLabel = 'Democratic'
+  const tradable =
+    contract?.mechanism === 'cpmm-1' &&
+    contract.outcomeType === 'BINARY' &&
+    !contract.isResolved &&
+    (contract.closeTime == null || contract.closeTime > Date.now())
+  const content = (
+    <>
+      <span className={styles.controlIcon}>
+        <Image
+          src={`/politics-party/${rep ? 'republican' : 'democrat'}_symbol.png`}
+          alt={rep ? 'Republican elephant' : 'Democratic donkey'}
+          width={32}
+          height={32}
+        />
+      </span>
+      <span className={styles.controlLeader}>
+        <strong style={{ color: rep ? REP_COLOR : DEM_COLOR }}>
+          {odds ? pct(rep ? odds.rep : odds.dem) : '—'}
+        </strong>
+      </span>
+      <span className={styles.controlParty}>
+        {odds ? (rep ? 'Republican' : noLabel) : 'Unavailable'}
+      </span>
+    </>
+  )
+  return (
+    <>
+      <div className={styles.controlCard}>
+        <div className={styles.controlTop}>
+          <span className={styles.controlLabel}>
+            {label} control
+            {label === 'Senate' && (
+              <details className={styles.controlInfo}>
+                <summary aria-label="About Senate control">ⓘ</summary>
+                <p>Dem = no Republican majority; includes independents.</p>
+              </details>
+            )}
+          </span>
+          {contract && (
+            <a
+              className={styles.chartLink}
+              href={contractPath(contract)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${label} control chart, description and comments (opens in a new tab)`}
+            >
+              chart →
+            </a>
+          )}
+        </div>
+        <button
+          className={styles.controlMain}
+          aria-label={`Bet on ${label} control`}
+          aria-haspopup="dialog"
+          disabled={!tradable}
+          onClick={() => setOutcome(rep ? 'YES' : 'NO')}
+        >
+          {content}
+        </button>
+        <div className={styles.controlBar}>
+          {odds && (
+            <>
+              <i
+                style={{ width: `${odds.dem * 100}%`, background: DEM_COLOR }}
+              />
+              <i
+                style={{ width: `${odds.rep * 100}%`, background: REP_COLOR }}
+              />
+            </>
+          )}
+        </div>
+        {odds && (
+          <div className={styles.controlBets}>
+            <button
+              disabled={!tradable}
+              aria-haspopup="dialog"
+              aria-label={`Bet ${noLabel} ${label} control`}
+              onClick={() => setOutcome('NO')}
+              style={{ color: DEM_COLOR }}
+            >
+              <span>Dem</span> <strong>{pct(odds.dem)}</strong>
+            </button>
+            <button
+              disabled={!tradable}
+              aria-haspopup="dialog"
+              aria-label={`Bet Republican ${label} control`}
+              onClick={() => setOutcome('YES')}
+              style={{ color: REP_COLOR }}
+            >
+              <span>Rep</span> <strong>{pct(odds.rep)}</strong>
+            </button>
+          </div>
+        )}
+      </div>
+      {outcome &&
+        contract?.mechanism === 'cpmm-1' &&
+        contract.outcomeType === 'BINARY' && (
+          <BetDialog
+            contract={contract}
+            open
+            setOpen={(open) => !open && setOutcome(undefined)}
+            initialOutcome={outcome}
+            trackingLocation="election map control"
+            questionPseudonym={`${label} control`}
+            binaryPseudonym={{
+              YES: { pseudonymName: 'Republican', pseudonymColor: 'sienna' },
+              NO: {
+                pseudonymName: noLabel,
+                pseudonymColor: 'azure',
+              },
+            }}
+          />
+        )}
+    </>
+  )
+}

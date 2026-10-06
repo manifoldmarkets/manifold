@@ -1,0 +1,3399 @@
+{
+  "generated": "2026-10-03",
+  "note": "Audited source semantics for the 2026 election dashboard. Generated from the October 3, 2026 audit (backend/scripts/elections-2026/audit). Party values are ballot party at the election, never inferred from answer text.",
+  "sources": {
+    "which-party-will-win-the-2026-alaba": {
+      "contractId": "cPIhILst2U",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-AL-class2-regular-general",
+          "office": "senate",
+          "key": "AL"
+        }
+      ],
+      "answerParties": {
+        "lQNlcgyyyq": "R",
+        "8lUd0sUq6N": "D"
+      },
+      "caveats": [
+        "No Other answer; only R and D are listed on the ballot, so low risk.",
+        "Thin pool (k~50) but safe seat (R 0.97)."
+      ]
+    },
+    "what-party-will-win-the-2026-alaska": {
+      "contractId": "hPnINuRzt8",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-AK-class2-regular-general",
+          "office": "senate",
+          "key": "AK"
+        }
+      ],
+      "answerParties": {
+        "IUORqRPncC": "R",
+        "OdPQQynnqd": "D",
+        "cI2yZnOAqL": "other"
+      },
+      "caveats": [
+        "Very thin: per-answer liquidity field 35.4, pool k~35, no limit orders, 26 bettors; subsidy needed before featuring.",
+        "Empty description: party definition (ballot registration vs caucus) and RCV timing are unspecified, hence conditional.",
+        "Closes 2026-11-04 07:00 UTC, ~2h after Alaska polls close.",
+        "If the PR prefers to keep 0L8uQURR06 (more traders, 5.5k Peltola YES limit depth), first get creator/mod text saying it resolves to the winner's ballot party and that any Republican (incl. Dan J. Sullivan, Heikes) resolves \"Dan Sullivan (R)\"."
+      ]
+    },
+    "what-party-will-win-the-2026-arkans": {
+      "contractId": "9RzRPRtgNg",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-AR-class2-regular-general",
+          "office": "senate",
+          "key": "AR"
+        }
+      ],
+      "answerParties": {
+        "PU08ClzcSc": "R",
+        "gQlq5ChuQ5": "D",
+        "zZz6znAIQq": "other"
+      },
+      "caveats": [
+        "Thin (k~35); safe seat (R 0.93)."
+      ]
+    },
+    "which-party-will-win-the-2026-color": {
+      "contractId": "OEc2QzlS2l",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-CO-class2-regular-general",
+          "office": "senate",
+          "key": "CO"
+        }
+      ],
+      "answerParties": {
+        "6g5l6hUzUZ": "R",
+        "hpnOUQqQUL": "D"
+      },
+      "caveats": [
+        "No Other answer although four minor-party candidates are on the ballot; outcome handling unspecified.",
+        "Safe seat (D 0.98)."
+      ]
+    },
+    "which-party-will-win-the-2026-delaw": {
+      "contractId": "c9sUL8EsOy",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-DE-class2-regular-general",
+          "office": "senate",
+          "key": "DE"
+        }
+      ],
+      "answerParties": {
+        "9zZZCl8znN": "R",
+        "cNZznCAdq5": "D"
+      },
+      "caveats": [
+        "Safe seat (D 0.98); only R and D on ballot."
+      ]
+    },
+    "which-party-will-win-the-2026-us-se": {
+      "contractId": "cOqt565CRZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-GA-class2-regular-general",
+          "office": "senate",
+          "key": "GA"
+        }
+      ],
+      "answerParties": {
+        "06uy8EyC9y": "D",
+        "cALSRLpUOs": "R"
+      },
+      "caveats": [
+        "Live limit book on Democratic YES is mostly unfunded (32,581 remaining, 600 balance-funded).",
+        "Pool k~139; D 0.96."
+      ]
+    },
+    "which-party-will-win-the-2026-idaho-2PNUOhCEyR": {
+      "contractId": "NLt0U0pC9n",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-ID-class2-regular-general",
+          "office": "senate",
+          "key": "ID"
+        }
+      ],
+      "answerParties": {
+        "Anp6ZzL2A5": "R",
+        "PAq6dQhzEQ": "I"
+      },
+      "caveats": [
+        "No Other answer; Fleming (I) and Loesby (L) unpriced (creator: N/A).",
+        "Per-answer liquidity field 50 but pool k~254 (1,700 total liquidity)."
+      ]
+    },
+    "which-party-will-win-the-2026-illin": {
+      "contractId": "n8czNPuEOU",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-IL-class2-regular-general",
+          "office": "senate",
+          "key": "IL"
+        }
+      ],
+      "answerParties": {
+        "SSnCcNIp0A": "D",
+        "C2EsQC9L2P": "R"
+      },
+      "caveats": [
+        "No Other answer; Harrington (I) on ballot, handling unspecified.",
+        "Safe seat (D 0.98); k~80."
+      ]
+    },
+    "who-will-win-the-2026-united-states-u09U0PqQSn": {
+      "contractId": "I9QNz9Q2L2",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-IA-class2-regular-general",
+          "office": "senate",
+          "key": "IA"
+        }
+      ],
+      "answerParties": {
+        "p2LLUsgOu6": "D",
+        "ldIP8EnhtN": "R"
+      },
+      "caveats": [
+        "Candidate market: a party replacement or a Laehn/write-in win has no answer and no stated rule; expect N/A, which would make the race unpriced on election night.",
+        "isCandidateLabelledAnswer() returns false for these labels, so the UI shows no candidate/party note; the explorer tells users to \"check the market description\", which is only a poll screenshot.",
+        "Closes 2026-11-03 23:59 UTC, before Iowa polls close.",
+        "Prices agree with the party markets (Turek 0.448 vs TheDucksFan D 0.443, kl938 0.46)."
+      ]
+    },
+    "which-party-will-win-the-2026-kansa": {
+      "contractId": "nZsucEQ8gQ",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-KS-class2-regular-general",
+          "office": "senate",
+          "key": "KS"
+        }
+      ],
+      "answerParties": {
+        "9lc6CP5p6C": "D",
+        "ygdL6S98nQ": "R",
+        "lqdUy0Eq0t": "other"
+      },
+      "caveats": [
+        "Competitive-ish (D 0.35). Per-answer liquidity field (35.4) understates the real pool (k~563-574, 2,600 total)."
+      ]
+    },
+    "which-party-will-win-the-kentucky-s": {
+      "contractId": "LnRZCqd2Ig",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-KY-class2-regular-general",
+          "office": "senate",
+          "key": "KY"
+        }
+      ],
+      "answerParties": {
+        "p6ld0ylu8u": "D",
+        "A2ungcLuSp": "R"
+      },
+      "caveats": [
+        "No Other answer; Campbell (I) on ballot.",
+        "Description is background only (no rules).",
+        "Safe-ish (R 0.95); k~50."
+      ]
+    },
+    "which-party-will-win-the-2026-louis": {
+      "contractId": "y5lqNSOcnU",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-LA-class2-regular-general",
+          "office": "senate",
+          "key": "LA"
+        }
+      ],
+      "answerParties": {
+        "CuOt6szy0c": "R",
+        "yhS5lLgszs": "D"
+      },
+      "caveats": [
+        "Safe seat (R 0.93); only R and D on ballot."
+      ]
+    },
+    "will-the-democratic-party-candidate-NQOPZAnOA8": {
+      "contractId": "RcL0Q9O0EU",
+      "kind": "party-binary",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-ME-class2-regular-general",
+          "office": "senate",
+          "key": "ME"
+        }
+      ],
+      "binaryYes": "D",
+      "caveats": [
+        "Blocked on a code/data change: add per-source binary orientation.",
+        "Remove candidate card who-will-maines-us-senate-election (66g2hSPynI): it shows Collins 0.99 because it N/As unless Platner/Mills/Collins wins (creator b1w004pnjwk). It is hidden today only because the current source is a candidate-labelled multi; switching to a binary would expose it.",
+        "Limit depth negligible; AMM depth k~9,978."
+      ]
+    },
+    "which-party-will-win-the-2026-us-se-dqI00SN65q": {
+      "contractId": "s9lU80QdlO",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-MA-class2-regular-general",
+          "office": "senate",
+          "key": "MA"
+        }
+      ],
+      "answerParties": {
+        "lQhZCQRNAs": "R",
+        "0gncPgRUtN": "D"
+      },
+      "caveats": [
+        "No Other answer; Ayyadurai (I) and Tache (PSL) on ballot.",
+        "Safe seat (D 0.98)."
+      ]
+    },
+    "which-party-will-win-the-2026-michi": {
+      "contractId": "Ad6z6OsuQ5",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-MI-class2-regular-general",
+          "office": "senate",
+          "key": "MI"
+        }
+      ],
+      "answerParties": {
+        "sIpZCI0zny": "D",
+        "yAZRR9cQPZ": "R",
+        "0phpENnu8c": "other"
+      },
+      "caveats": [
+        "Pool k~35: a 100-mana trade moves it sharply; subsidy recommended.",
+        "Party resolution not confirmed by creator."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-RLNdnAsdEg": {
+      "contractId": "QcRNIRZSNg",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-MN-class2-regular-general",
+          "office": "senate",
+          "key": "MN"
+        }
+      ],
+      "answerParties": {
+        "yA6p25udpE": "R",
+        "UZqStNNdRP": "D"
+      },
+      "caveats": [
+        "No Other answer; Simonetti (I), Whiting (L) on ballot.",
+        "Limit orders shown (R NO 11,785; D YES 8,953) are unfunded (maker balance 0).",
+        "D 0.93; k~100."
+      ]
+    },
+    "which-party-will-win-the-2026-missi": {
+      "contractId": "ZRSP0ZAd0q",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-MS-class2-regular-general",
+          "office": "senate",
+          "key": "MS"
+        }
+      ],
+      "answerParties": {
+        "uPyNdg6uPA": "R",
+        "ChOy2OQIC6": "D"
+      },
+      "caveats": [
+        "No Other answer; Ty Pinkins (I) on ballot.",
+        "R 0.90; k~89."
+      ]
+    },
+    "who-will-win-the-2026-montana-senat": {
+      "contractId": "tydQt5d26u",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-MT-class2-regular-general",
+          "office": "senate",
+          "key": "MT"
+        }
+      ],
+      "answerParties": {
+        "RSCc0lpsNt": "D",
+        "L5dSc92I5L": "I",
+        "lPtldCU006": "R",
+        "ttscR9Q8lu": "unknown"
+      },
+      "caveats": [
+        "Thin per-answer field (28.9) but pools k~96-330 (2,000 total).",
+        "Bankhead NO limit 25,000 @0.01; Alme YES 1,000 unfunded."
+      ]
+    },
+    "which-party-will-win-the-2026-nebra": {
+      "contractId": "6I5SSguQ8I",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-NE-class2-regular-general",
+          "office": "senate",
+          "key": "NE"
+        }
+      ],
+      "answerParties": {
+        "clSgS2SccU": "R",
+        "LAnE022dZS": "D",
+        "tpSUC5EEyL": "I",
+        "dPLhUQdlQt": "I"
+      },
+      "caveats": [
+        "Minor-party candidates (America First, LMN, Working People) have no answer.",
+        "Republican YES limit 2,827 is unfunded."
+      ]
+    },
+    "which-party-will-win-the-2026-new-h": {
+      "contractId": "lRd6Sz0dC8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-NH-class2-regular-general",
+          "office": "senate",
+          "key": "NH"
+        }
+      ],
+      "answerParties": {
+        "2gAgUyIlnl": "R",
+        "cZ95Uuqpz6": "D"
+      },
+      "caveats": [
+        "k~96; Republicans NO limit 2,562 mostly unfunded (30 funded).",
+        "D 0.87."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-L2SAyPRu9l": {
+      "contractId": "l96q6LRqsg",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-NJ-class2-regular-general",
+          "office": "senate",
+          "key": "NJ"
+        }
+      ],
+      "answerParties": {
+        "hz2ugLNU6S": "R",
+        "OE6gl6QPtQ": "D"
+      },
+      "caveats": [
+        "No Other; Fernandez (I), Kuniansky (SWP) on ballot.",
+        "Safe (D 0.97)."
+      ]
+    },
+    "which-party-will-win-the-2026-new-m": {
+      "contractId": "cZIqAcCZ05",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-NM-class2-regular-general",
+          "office": "senate",
+          "key": "NM"
+        }
+      ],
+      "answerParties": {
+        "It2ynphQOh": "R",
+        "5C6EqUZzny": "D"
+      },
+      "caveats": [
+        "Safe (D 0.98); only R and D on ballot."
+      ]
+    },
+    "which-party-will-win-the-2026-north": {
+      "contractId": "9EALhuO9dp",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-NC-class2-regular-general",
+          "office": "senate",
+          "key": "NC"
+        }
+      ],
+      "answerParties": {
+        "05LQ6gOyOE": "R",
+        "NqP2APdCAn": "D"
+      },
+      "caveats": [
+        "No Other; Bray (L), Dublin (G) on ballot.",
+        "Republicans NO limit wall 81,000 funded @0.04-0.08 (deep on the D side).",
+        "D 0.964; k~88."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-uSIZt2dAUq": {
+      "contractId": "d8ShtZz98g",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-OK-class2-regular-general",
+          "office": "senate",
+          "key": "OK"
+        }
+      ],
+      "answerParties": {
+        "yNg6Uuyd9U": "R",
+        "C9QdqCQ8p9": "D"
+      },
+      "caveats": [
+        "No Other; two independents and a Libertarian on ballot.",
+        "Safe (R 0.97)."
+      ]
+    },
+    "which-party-will-win-the-2026-us-se-ltdn9uyhqI": {
+      "contractId": "2ASA8q6Zt9",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-OR-class2-regular-general",
+          "office": "senate",
+          "key": "OR"
+        }
+      ],
+      "answerParties": {
+        "ISt0S5Quhp": "D",
+        "0UgchzNLUy": "R"
+      },
+      "caveats": [
+        "No Other; Libertarian and Pacific Green on ballot.",
+        "Safe (D 0.98)."
+      ]
+    },
+    "which-party-will-win-the-2026-us-se-npU0Adq2gh": {
+      "contractId": "Ztsy99QUyP",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-RI-class2-regular-general",
+          "office": "senate",
+          "key": "RI"
+        }
+      ],
+      "answerParties": {
+        "cInt8E2yAS": "D",
+        "0q0dA8gyzg": "R"
+      },
+      "caveats": [
+        "No Other; Bahry (I) on ballot.",
+        "Safe (D 0.98)."
+      ]
+    },
+    "which-party-will-win-the-2026-south": {
+      "contractId": "LsEpnppAcc",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-SC-class2-regular-general",
+          "office": "senate",
+          "key": "SC"
+        }
+      ],
+      "answerParties": {
+        "q60ccsOzPE": "R",
+        "zhN8I989EN": "D",
+        "26Ut2N5SCR": "other"
+      },
+      "caveats": [
+        "R 0.857 (D 0.143); creator silent, empty description."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-OCp8sREOUZ": {
+      "contractId": "sshNUOnpCZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-SD-class2-regular-general",
+          "office": "senate",
+          "key": "SD"
+        }
+      ],
+      "answerParties": {
+        "C8QtcURuZR": "R",
+        "9zNRu0RANh": "I"
+      },
+      "caveats": [
+        "Safe (R 0.92); k~84."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-I2ZRR8czlU": {
+      "contractId": "IUNRCEs0zs",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-TN-class2-regular-general",
+          "office": "senate",
+          "key": "TN"
+        }
+      ],
+      "answerParties": {
+        "u552yuSZZR": "R",
+        "9n6CALyNAZ": "D"
+      },
+      "caveats": [
+        "No Other; eight independents on ballot.",
+        "Safe (R 0.977)."
+      ]
+    },
+    "which-party-will-win-the-2026-texas": {
+      "contractId": "tdA9NqRnpZ",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-TX-class2-regular-general",
+          "office": "senate",
+          "key": "TX"
+        }
+      ],
+      "answerParties": {
+        "nPzz86h29l": "D",
+        "0zuOCZ6I0P": "R",
+        "u9qRLthPSO": "other"
+      },
+      "caveats": [
+        "Per-answer liquidity field (35.4) badly understates the pool (k~3,464).",
+        "Creator kl938 silent; party reading rests on title + non-creator statement."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-p2Q8cz2qqZ": {
+      "contractId": "tgPtN825A2",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-VA-class2-regular-general",
+          "office": "senate",
+          "key": "VA"
+        }
+      ],
+      "answerParties": {
+        "Lypc9CE2n5": "R",
+        "OS08uLlAun": "D"
+      },
+      "caveats": [
+        "Safe (D 0.97); only R and D on ballot.",
+        "Republicans NO limit 393 unfunded."
+      ]
+    },
+    "which-party-will-will-the-2026-us-s": {
+      "contractId": "QEIy2CItpZ",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-WV-class2-regular-general",
+          "office": "senate",
+          "key": "WV"
+        }
+      ],
+      "answerParties": {
+        "25ZyS0pnZu": "R",
+        "gPu9CqQI6I": "D",
+        "uh2Sn9Qtdt": "other"
+      },
+      "caveats": [
+        "Safe (R 0.975)."
+      ]
+    },
+    "which-party-will-win-the-2026-senat-OdACN5q9PP": {
+      "contractId": "9UsuPpP8Ph",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-WY-class2-regular-general",
+          "office": "senate",
+          "key": "WY"
+        }
+      ],
+      "answerParties": {
+        "IZs6PNUEEt": "R",
+        "CpdqLPZI9g": "D"
+      },
+      "caveats": [
+        "Safe (R 0.97)."
+      ]
+    },
+    "will-a-republican-win-the-us-senate": {
+      "contractId": "CcysACRQAh",
+      "kind": "party-binary",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-FL-class3-special-general",
+          "office": "senate",
+          "key": "FL"
+        }
+      ],
+      "binaryYes": "R",
+      "caveats": [
+        "R 0.886; k~1,000; no limit orders.",
+        "Close 2026-11-11 13:29 UTC."
+      ]
+    },
+    "what-party-will-win-the-special-ele": {
+      "contractId": "Eg96Z2066n",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-senate-OH-class3-special-general",
+          "office": "senate",
+          "key": "OH"
+        }
+      ],
+      "answerParties": {
+        "8yytutRcdC": "D",
+        "5yZzuR8hAZ": "R",
+        "UpQ2l900Qp": "other"
+      },
+      "caveats": [
+        "Last trade 2026-09-01: price (D 0.564) is stale vs ~0.59 elsewhere; expect it to re-price once featured.",
+        "Closes 2026-11-04 05:59 UTC, ~5.5h after Ohio polls close (late trading on returns possible).",
+        "Switching un-hides the OH candidate card zOEtNZNClS (valid market; fine)."
+      ]
+    },
+    "which-party-will-win-the-2026-alaba-Sg9ROtngq6": {
+      "contractId": "Qlg62L5zAE",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-AL-regular-general",
+          "office": "governor",
+          "key": "AL"
+        }
+      ],
+      "answerParties": {
+        "lzPNlIs89A": "D",
+        "dO6L9ZpgPq": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer)."
+      ]
+    },
+    "which-party-will-win-the-alaska-gov": {
+      "contractId": "UEnlNUy92z",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-AK-regular-general",
+          "office": "governor",
+          "key": "AK"
+        }
+      ],
+      "answerParties": {
+        "UPy5yPzLhc": "D",
+        "uSzdnNPcpQ": "R",
+        "URuLAzLyZ9": "other"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "35 mana per answer despite 1100 total liquidity.",
+        "Closes 2026-11-04 23:59 UTC; RCV tabulation (if needed) comes ~2 weeks later, so final price may sit pre-tabulation."
+      ]
+    },
+    "arizona-governors-race-which-party": {
+      "contractId": "kM41Ov078DlxVyqciouN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-AZ-regular-general",
+          "office": "governor",
+          "key": "AZ"
+        }
+      ],
+      "answerParties": {
+        "f0f0c7f7d77e": "D",
+        "96dd939952f1": "R",
+        "9f0b45f24c45": "other"
+      },
+      "caveats": [
+        "Democratic YES limit orders are fully unfunded (maker balance 0)."
+      ]
+    },
+    "which-party-will-win-the-arkansas-g": {
+      "contractId": "zUEPLyNN0P",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-AR-regular-general",
+          "office": "governor",
+          "key": "AR"
+        }
+      ],
+      "answerParties": {
+        "0tE26QSs82": "D",
+        "A9EElnuPPl": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer)."
+      ]
+    },
+    "california-governors-race-which-par": {
+      "contractId": "pRsyVoO38fHU2psY5PBf",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-CA-regular-general",
+          "office": "governor",
+          "key": "CA"
+        }
+      ],
+      "answerParties": {
+        "06191a8bf18a": "D",
+        "ad46a782d989": "R",
+        "cfb1dec9dc6c": "other"
+      },
+      "caveats": [
+        "Democratic YES limit orders are unfunded (maker balance 0).",
+        "Candidate card who-will-be-elected-governor-of-cal (AEAqQL09gN) is display-only; its description is empty and 7 of 9 named answers are eliminated candidates. Prefer KmbNYfuOrUnI1w1GSHdb for the card (see notes)."
+      ]
+    },
+    "who-will-win-the-2026-colorado-gube": {
+      "contractId": "8ustL98CUg",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-CO-regular-general",
+          "office": "governor",
+          "key": "CO"
+        }
+      ],
+      "answerParties": {
+        "RpZn08CUAd": "D",
+        "hqOcnlQt8y": "R",
+        "quQNO2qSRt": "other",
+        "QENENZqtuq": "other",
+        "C8ACs22EpI": "other"
+      },
+      "caveats": [
+        "One-line description; call vs certification unspecified.",
+        "Only 8 bettors despite 1000 liquidity (250 per answer)."
+      ]
+    },
+    "which-party-will-win-the-2026-conne": {
+      "contractId": "8dOsCEc9ZL",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-CT-regular-general",
+          "office": "governor",
+          "key": "CT"
+        }
+      ],
+      "answerParties": {
+        "tLnZQdSUls": "D",
+        "sSRlzlssd0": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "5 bettors; last trade 2026-06-27 (stale)."
+      ]
+    },
+    "will-a-republican-win-the-florida-g": {
+      "contractId": "uODgxBgIoHZWqFqHGPbe",
+      "kind": "party-binary",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-FL-regular-general",
+          "office": "governor",
+          "key": "FL"
+        }
+      ],
+      "binaryYes": "R",
+      "caveats": [
+        "Closes 2026-11-03 04:59 UTC (before polls open), so no election-night trading.",
+        "YES limit orders only half funded (100 of 200)."
+      ]
+    },
+    "georgia-governors-race-which-party": {
+      "contractId": "JCkqQkGivcOi59ArT0BY",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-GA-regular-general",
+          "office": "governor",
+          "key": "GA"
+        }
+      ],
+      "answerParties": {
+        "c477b457126f": "D",
+        "730d3cadebb4": "R",
+        "625a0faa41b9": "other"
+      },
+      "caveats": [
+        "Closes 2026-11-04 07:59 UTC, before a possible Dec 1 runoff; price would freeze pre-runoff."
+      ]
+    },
+    "which-party-will-win-the-2026-hawai": {
+      "contractId": "6IgNyCCSUn",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-HI-regular-general",
+          "office": "governor",
+          "key": "HI"
+        }
+      ],
+      "answerParties": {
+        "sO6QdS22Nh": "D",
+        "uNAcUN82IQ": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "Last trade 2026-06-27."
+      ]
+    },
+    "which-party-will-win-the-2026-idaho-qdpIthLqnl": {
+      "contractId": "lhIcPAERzU",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-ID-regular-general",
+          "office": "governor",
+          "key": "ID"
+        }
+      ],
+      "answerParties": {
+        "tuLnI06Ozp": "D",
+        "chhULpRtZI": "R",
+        "nlzA6dQ8us": "other"
+      },
+      "caveats": [
+        "Empty description; 35 mana per answer; 5 bettors; last trade 2026-06-23."
+      ]
+    },
+    "which-party-will-win-the-2026-illin-q5Nnz0zzcd": {
+      "contractId": "Pyl66EshPl",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-IL-regular-general",
+          "office": "governor",
+          "key": "IL"
+        }
+      ],
+      "answerParties": {
+        "ydRsR2llsL": "D",
+        "t2qzE8ALht": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "Democrats answer has never traded (vol 0); 5 bettors."
+      ]
+    },
+    "which-party-will-win-iowas-2026-gub": {
+      "contractId": "8NuShEdyCh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-IA-regular-general",
+          "office": "governor",
+          "key": "IA"
+        }
+      ],
+      "answerParties": {
+        "2L02PIAyyZ": "D",
+        "5tgNdL95n5": "R",
+        "dA5z8AuElA": "other"
+      },
+      "caveats": [
+        "Closes 2027-01-25; resolves on inauguration, so it settles later than an election-call market."
+      ]
+    },
+    "will-the-republicans-win-the-2026-k": {
+      "contractId": "n2A2ySggys",
+      "kind": "party-binary",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-KS-regular-general",
+          "office": "governor",
+          "key": "KS"
+        }
+      ],
+      "binaryYes": "R",
+      "caveats": [
+        "Thin pool (184 liquidity, 8 bettors); subsidy recommended.",
+        "Shows D as gray \"Not R\" rather than blue."
+      ]
+    },
+    "which-party-will-in-the-2026-maine": {
+      "contractId": "lypQhntEzA",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-ME-regular-general",
+          "office": "governor",
+          "key": "ME"
+        }
+      ],
+      "answerParties": {
+        "U8QgsIEAuE": "D",
+        "69Suy0CQUt": "R",
+        "cgNLPNczlR": "other"
+      },
+      "caveats": [
+        "Empty description; 35 mana per answer; independent handling inferred from the Other answer, not stated.",
+        "A Bennett-named candidate multi would price the independent explicitly (optional creation, see notes)."
+      ]
+    },
+    "which-party-will-win-the-2026-maryl": {
+      "contractId": "yqOnLgpc6C",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-MD-regular-general",
+          "office": "governor",
+          "key": "MD"
+        }
+      ],
+      "answerParties": {
+        "dh9RESOQpU": "D",
+        "y82CLPRp66": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "Democrats answer never traded (vol 0)."
+      ]
+    },
+    "massachusetts-governors-race-which": {
+      "contractId": "Hvlx213sUvoKxeP9do21",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-MA-regular-general",
+          "office": "governor",
+          "key": "MA"
+        }
+      ],
+      "answerParties": {
+        "86ab3c5475e9": "D",
+        "efb33a713999": "R",
+        "df68096ce077": "other"
+      },
+      "caveats": []
+    },
+    "who-will-the-2026-michigan-governor": {
+      "contractId": "LE6s82ZcAp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-MI-regular-general",
+          "office": "governor",
+          "key": "MI"
+        }
+      ],
+      "answerParties": {
+        "APdNQPnyyd": "D",
+        "Q9886CEuyC": "R",
+        "RyECgAgy0U": "withdrawn",
+        "ACISIOd95N": "other"
+      },
+      "caveats": [
+        "Created 2026-05-21 05:03 UTC, about 10 h before Duggan withdrew; his answer still holds 0.3%.",
+        "Thin rules: no call/certification or cancellation language."
+      ]
+    },
+    "which-party-will-win-the-2026-nebra-hCZdznyt5s": {
+      "contractId": "QcRqudlpPl",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-NE-regular-general",
+          "office": "governor",
+          "key": "NE"
+        }
+      ],
+      "answerParties": {
+        "6Lt5RtA8nN": "D",
+        "NQcCd9qC5S": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "A Lindstrom or Beard win has no answer; outcome unspecified."
+      ]
+    },
+    "which-party-will-win-the-2026-nevad": {
+      "contractId": "qdC0cQduhC",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-NV-regular-general",
+          "office": "governor",
+          "key": "NV"
+        }
+      ],
+      "answerParties": {
+        "n529qt2g2Z": "D",
+        "5gOuSygt29": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "Republican NO limit orders are unfunded (balance-capped 0)."
+      ]
+    },
+    "which-party-will-win-the-2026-new-h-2UlpPIy0NQ": {
+      "contractId": "L20yNCI9nt",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-NH-regular-general",
+          "office": "governor",
+          "key": "NH"
+        }
+      ],
+      "answerParties": {
+        "I52A9yEUUZ": "D",
+        "029Nyqslhh": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer)."
+      ]
+    },
+    "which-party-will-win-the-2026-new-m-EyudAL0LqQ": {
+      "contractId": "U2AgLROnZC",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-NM-regular-general",
+          "office": "governor",
+          "key": "NM"
+        }
+      ],
+      "answerParties": {
+        "9E8lStUl6g": "D",
+        "ONhcyLE2In": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified."
+      ]
+    },
+    "new-york-governors-race-which-party": {
+      "contractId": "5ElGq01XrCeDtPRsFjUM",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-NY-regular-general",
+          "office": "governor",
+          "key": "NY"
+        }
+      ],
+      "answerParties": {
+        "de4f9a05fd02": "D",
+        "b5f67add8cd3": "R",
+        "122bf8f3245b": "other"
+      },
+      "caveats": [
+        "Candidate card ON06RhC0dn names two non-candidates (Delgado, Stefanik) and omits the R nominee Blakeman (priced only via Other); recommend dropping or replacing the card."
+      ]
+    },
+    "2026-ohio-governor-election-winner": {
+      "contractId": "tyqgQCS0zd",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-OH-regular-general",
+          "office": "governor",
+          "key": "OH"
+        }
+      ],
+      "answerParties": {
+        "IuA6698sQ5": "D",
+        "Iyupdhg02n": "R"
+      },
+      "caveats": [
+        "Creator comment is a dashboard request, not a rule.",
+        "Only 9 bettors; price (Acton 0.63) agrees with the 192-bettor Ramaswamy binary (0.37)."
+      ]
+    },
+    "which-party-will-win-the-2026-oklah": {
+      "contractId": "ECpCNAhRlE",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-OK-regular-general",
+          "office": "governor",
+          "key": "OK"
+        }
+      ],
+      "answerParties": {
+        "hsRqstnlAs": "D",
+        "lIuqESggdQ": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "Three independents on the ballot; last trade 2026-06-22."
+      ]
+    },
+    "2026-oregon-governor-election-winne": {
+      "contractId": "InE0tLCOC0",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-OR-regular-general",
+          "office": "governor",
+          "key": "OR"
+        }
+      ],
+      "answerParties": {
+        "EuqpzQntR2": "D",
+        "sgszQZN5pn": "R"
+      },
+      "caveats": [
+        "Only 6 bettors; Kotek 0.73 vs D 0.867 in the stale TheDucksFan party market."
+      ]
+    },
+    "which-party-will-win-the-2026-penns": {
+      "contractId": "QcPEg95OS6",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-PA-regular-general",
+          "office": "governor",
+          "key": "PA"
+        }
+      ],
+      "answerParties": {
+        "sQl6cEPdt9": "D",
+        "y0A6Adndp0": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "5 bettors; last trade 2026-07-03."
+      ]
+    },
+    "which-party-will-win-the-2026-south-E22N0t2lNg": {
+      "contractId": "0Ep202R8RS",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-SC-regular-general",
+          "office": "governor",
+          "key": "SC"
+        }
+      ],
+      "answerParties": {
+        "SUA588UAQp": "D",
+        "C2nESRQ0uc": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer)."
+      ]
+    },
+    "which-party-will-win-the-2026-south-IPqyQsUU0z": {
+      "contractId": "88upNEt2tn",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-SD-regular-general",
+          "office": "governor",
+          "key": "SD"
+        }
+      ],
+      "answerParties": {
+        "d8LIZq9nC6": "D",
+        "hCLy65QhOC": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer)."
+      ]
+    },
+    "which-party-will-win-the-2026-tenne": {
+      "contractId": "SIsCPzP6sZ",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-TN-regular-general",
+          "office": "governor",
+          "key": "TN"
+        }
+      ],
+      "answerParties": {
+        "QSSOp0CUlu": "D",
+        "zpOCESlcZ5": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "13 independents on the ballot, none with an answer; last trade 2026-06-29."
+      ]
+    },
+    "texas-governors-race-which-party-wi": {
+      "contractId": "OZv5O8iPqPQhdavqQOSQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-TX-regular-general",
+          "office": "governor",
+          "key": "TX"
+        }
+      ],
+      "answerParties": {
+        "b610ee309e18": "D",
+        "02d712c45fbb": "R",
+        "c035f0e9e4ac": "other"
+      },
+      "caveats": []
+    },
+    "which-party-will-win-the-2026-vermo": {
+      "contractId": "ungp6gZIzh",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-VT-regular-general",
+          "office": "governor",
+          "key": "VT"
+        }
+      ],
+      "answerParties": {
+        "QqN96RZQZQ": "D",
+        "pASqQLzcc5": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "If no majority, \"win\" could mean the plurality leader or the legislature's pick; unspecified."
+      ]
+    },
+    "which-party-will-win-the-2026-wisco": {
+      "contractId": "qScqn2tS8Q",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-WI-regular-general",
+          "office": "governor",
+          "key": "WI"
+        }
+      ],
+      "answerParties": {
+        "cIQZl6QUlE": "D",
+        "AgQdZn2hq9": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "The Jack1 D binary g0zN5ghS90 (10,118 liquidity, 82 bettors, same 0.84) is far deeper and preferable if the PR adds YES=D binary support."
+      ]
+    },
+    "what-party-will-win-the-2026-wyomin": {
+      "contractId": "dtZA0OZ8yZ",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-WY-regular-general",
+          "office": "governor",
+          "key": "WY"
+        }
+      ],
+      "answerParties": {
+        "d0U88LcEEQ": "D",
+        "InQZRpQsuR": "R"
+      },
+      "caveats": [
+        "Empty description: proposition rests on the title only; resolution rules unspecified.",
+        "Thin AMM (50 mana per answer).",
+        "Last trade 2026-06-14."
+      ]
+    },
+    "who-will-win-the-alaska-house-elect": {
+      "contractId": "9zPhhzEnCc",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-AK-00-regular-general",
+          "office": "house",
+          "key": "AK-0"
+        }
+      ],
+      "answerParties": {
+        "AP0zQpUcug": "R",
+        "ytQ5UsCccN": "unknown",
+        "AzEt0Qtnu9": "I",
+        "cAALtNgyhc": "unknown"
+      },
+      "caveats": [
+        "PR today classifies Schultz (D) 0.009 as Democratic and the real Democrat Hafner (inside Other) as other.",
+        "If Hafner wins, the market resolves Other and the dashboard would count a Democratic win as other.",
+        "addAnswers=ONLY_CREATOR: creator can add Hafner/McDermott; adding moves probability out of Other.",
+        "Per-answer totalLiquidity field 289 matches pool k=289."
+      ]
+    },
+    "will-a-democrat-win-these-us-house": {
+      "contractId": "sqUzOZN8Cs",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-01-regular-general",
+          "office": "house",
+          "key": "AZ-1"
+        },
+        {
+          "raceKey": "2026-house-AZ-02-regular-general",
+          "office": "house",
+          "key": "AZ-2"
+        },
+        {
+          "raceKey": "2026-house-AZ-06-regular-general",
+          "office": "house",
+          "key": "AZ-6"
+        },
+        {
+          "raceKey": "2026-house-CA-03-regular-general",
+          "office": "house",
+          "key": "CA-3"
+        },
+        {
+          "raceKey": "2026-house-CA-09-regular-general",
+          "office": "house",
+          "key": "CA-9"
+        },
+        {
+          "raceKey": "2026-house-CA-13-regular-general",
+          "office": "house",
+          "key": "CA-13"
+        },
+        {
+          "raceKey": "2026-house-CA-21-regular-general",
+          "office": "house",
+          "key": "CA-21"
+        },
+        {
+          "raceKey": "2026-house-CA-22-regular-general",
+          "office": "house",
+          "key": "CA-22"
+        },
+        {
+          "raceKey": "2026-house-CA-27-regular-general",
+          "office": "house",
+          "key": "CA-27"
+        },
+        {
+          "raceKey": "2026-house-CA-41-regular-general",
+          "office": "house",
+          "key": "CA-41"
+        },
+        {
+          "raceKey": "2026-house-CA-45-regular-general",
+          "office": "house",
+          "key": "CA-45"
+        },
+        {
+          "raceKey": "2026-house-CA-47-regular-general",
+          "office": "house",
+          "key": "CA-47"
+        },
+        {
+          "raceKey": "2026-house-CA-49-regular-general",
+          "office": "house",
+          "key": "CA-49"
+        },
+        {
+          "raceKey": "2026-house-CO-03-regular-general",
+          "office": "house",
+          "key": "CO-3"
+        },
+        {
+          "raceKey": "2026-house-CO-08-regular-general",
+          "office": "house",
+          "key": "CO-8"
+        },
+        {
+          "raceKey": "2026-house-MT-01-regular-general",
+          "office": "house",
+          "key": "MT-1"
+        },
+        {
+          "raceKey": "2026-house-NV-01-regular-general",
+          "office": "house",
+          "key": "NV-1"
+        },
+        {
+          "raceKey": "2026-house-NV-03-regular-general",
+          "office": "house",
+          "key": "NV-3"
+        },
+        {
+          "raceKey": "2026-house-NV-04-regular-general",
+          "office": "house",
+          "key": "NV-4"
+        },
+        {
+          "raceKey": "2026-house-NM-02-regular-general",
+          "office": "house",
+          "key": "NM-2"
+        },
+        {
+          "raceKey": "2026-house-OR-05-regular-general",
+          "office": "house",
+          "key": "OR-5"
+        },
+        {
+          "raceKey": "2026-house-WA-03-regular-general",
+          "office": "house",
+          "key": "WA-3"
+        },
+        {
+          "raceKey": "2026-house-WA-08-regular-general",
+          "office": "house",
+          "key": "WA-8"
+        },
+        {
+          "raceKey": "2026-house-FL-13-regular-general",
+          "office": "house",
+          "key": "FL-13"
+        },
+        {
+          "raceKey": "2026-house-FL-23-regular-general",
+          "office": "house",
+          "key": "FL-23"
+        },
+        {
+          "raceKey": "2026-house-NC-01-regular-general",
+          "office": "house",
+          "key": "NC-1"
+        },
+        {
+          "raceKey": "2026-house-TX-15-regular-general",
+          "office": "house",
+          "key": "TX-15"
+        },
+        {
+          "raceKey": "2026-house-TX-28-regular-general",
+          "office": "house",
+          "key": "TX-28"
+        },
+        {
+          "raceKey": "2026-house-TX-34-regular-general",
+          "office": "house",
+          "key": "TX-34"
+        },
+        {
+          "raceKey": "2026-house-VA-01-regular-general",
+          "office": "house",
+          "key": "VA-1"
+        },
+        {
+          "raceKey": "2026-house-VA-02-regular-general",
+          "office": "house",
+          "key": "VA-2"
+        },
+        {
+          "raceKey": "2026-house-VA-07-regular-general",
+          "office": "house",
+          "key": "VA-7"
+        },
+        {
+          "raceKey": "2026-house-VA-10-regular-general",
+          "office": "house",
+          "key": "VA-10"
+        },
+        {
+          "raceKey": "2026-house-CT-05-regular-general",
+          "office": "house",
+          "key": "CT-5"
+        },
+        {
+          "raceKey": "2026-house-IL-17-regular-general",
+          "office": "house",
+          "key": "IL-17"
+        },
+        {
+          "raceKey": "2026-house-IN-01-regular-general",
+          "office": "house",
+          "key": "IN-1"
+        },
+        {
+          "raceKey": "2026-house-IA-01-regular-general",
+          "office": "house",
+          "key": "IA-1"
+        },
+        {
+          "raceKey": "2026-house-IA-03-regular-general",
+          "office": "house",
+          "key": "IA-3"
+        },
+        {
+          "raceKey": "2026-house-ME-02-regular-general",
+          "office": "house",
+          "key": "ME-2"
+        },
+        {
+          "raceKey": "2026-house-MI-03-regular-general",
+          "office": "house",
+          "key": "MI-3"
+        },
+        {
+          "raceKey": "2026-house-MI-04-regular-general",
+          "office": "house",
+          "key": "MI-4"
+        },
+        {
+          "raceKey": "2026-house-MI-07-regular-general",
+          "office": "house",
+          "key": "MI-7"
+        },
+        {
+          "raceKey": "2026-house-MI-08-regular-general",
+          "office": "house",
+          "key": "MI-8"
+        },
+        {
+          "raceKey": "2026-house-MI-10-regular-general",
+          "office": "house",
+          "key": "MI-10"
+        },
+        {
+          "raceKey": "2026-house-NE-02-regular-general",
+          "office": "house",
+          "key": "NE-2"
+        },
+        {
+          "raceKey": "2026-house-NH-01-regular-general",
+          "office": "house",
+          "key": "NH-1"
+        },
+        {
+          "raceKey": "2026-house-NH-02-regular-general",
+          "office": "house",
+          "key": "NH-2"
+        },
+        {
+          "raceKey": "2026-house-NJ-05-regular-general",
+          "office": "house",
+          "key": "NJ-5"
+        },
+        {
+          "raceKey": "2026-house-NJ-07-regular-general",
+          "office": "house",
+          "key": "NJ-7"
+        },
+        {
+          "raceKey": "2026-house-NJ-09-regular-general",
+          "office": "house",
+          "key": "NJ-9"
+        },
+        {
+          "raceKey": "2026-house-NY-03-regular-general",
+          "office": "house",
+          "key": "NY-3"
+        },
+        {
+          "raceKey": "2026-house-NY-04-regular-general",
+          "office": "house",
+          "key": "NY-4"
+        },
+        {
+          "raceKey": "2026-house-NY-17-regular-general",
+          "office": "house",
+          "key": "NY-17"
+        },
+        {
+          "raceKey": "2026-house-NY-18-regular-general",
+          "office": "house",
+          "key": "NY-18"
+        },
+        {
+          "raceKey": "2026-house-NY-19-regular-general",
+          "office": "house",
+          "key": "NY-19"
+        },
+        {
+          "raceKey": "2026-house-NY-22-regular-general",
+          "office": "house",
+          "key": "NY-22"
+        },
+        {
+          "raceKey": "2026-house-OH-01-regular-general",
+          "office": "house",
+          "key": "OH-1"
+        },
+        {
+          "raceKey": "2026-house-OH-09-regular-general",
+          "office": "house",
+          "key": "OH-9"
+        },
+        {
+          "raceKey": "2026-house-OH-13-regular-general",
+          "office": "house",
+          "key": "OH-13"
+        },
+        {
+          "raceKey": "2026-house-PA-01-regular-general",
+          "office": "house",
+          "key": "PA-1"
+        },
+        {
+          "raceKey": "2026-house-PA-07-regular-general",
+          "office": "house",
+          "key": "PA-7"
+        },
+        {
+          "raceKey": "2026-house-PA-08-regular-general",
+          "office": "house",
+          "key": "PA-8"
+        },
+        {
+          "raceKey": "2026-house-PA-10-regular-general",
+          "office": "house",
+          "key": "PA-10"
+        },
+        {
+          "raceKey": "2026-house-PA-17-regular-general",
+          "office": "house",
+          "key": "PA-17"
+        },
+        {
+          "raceKey": "2026-house-WI-01-regular-general",
+          "office": "house",
+          "key": "WI-1"
+        },
+        {
+          "raceKey": "2026-house-WI-03-regular-general",
+          "office": "house",
+          "key": "WI-3"
+        }
+      ],
+      "answers": {
+        "O62Zz9APd0": "AZ-1",
+        "CCluI6IShq": "AZ-2",
+        "n5sSyZgd09": "AZ-6",
+        "pR0z02sUPQ": "CA-3",
+        "s8zLZuOgOE": "CA-9",
+        "80nQURS8S9": "CA-13",
+        "hhsIgO50Qc": "CA-21",
+        "n2nAZnRR0d": "CA-22",
+        "n9SZuQyAzO": "CA-27",
+        "A6p85R6LZE": "CA-41",
+        "ycNAuCsShI": "CA-45",
+        "IPRqcZ0uZQ": "CA-47",
+        "hRl2PcqQzC": "CA-49",
+        "Psgzgy6cs6": "CO-3",
+        "sOylP22QI6": "CO-8",
+        "20QdthsQ0y": "MT-1",
+        "NE0C8l5yqP": "NV-1",
+        "9C6LCLtRPN": "NV-3",
+        "hhnCUdcNlS": "NV-4",
+        "8ZuO0RtpgS": "NM-2",
+        "zz82RUNRll": "OR-5",
+        "9yqpqUhUhQ": "WA-3",
+        "Q0RyUnOQPZ": "WA-8",
+        "s0nu50PCn8": "FL-13",
+        "sqlqdcN5tn": "FL-23",
+        "N9065U0utg": "NC-1",
+        "nZt6lOtuyN": "TX-15",
+        "CIzdu6Ad6c": "TX-28",
+        "PctUcttthN": "TX-34",
+        "nLn5L6SUnL": "VA-1",
+        "2n8UUEnRZP": "VA-2",
+        "6cZUtl2AZy": "VA-7",
+        "025h0OCn2A": "VA-10",
+        "EELLZ2cCQz": "CT-5",
+        "2ZdZ95Sch6": "IL-17",
+        "hpgplLZtRN": "IN-1",
+        "zQSdNSZ0p5": "IA-1",
+        "2Uq5l8RnQE": "IA-3",
+        "R6UZNEIts0": "ME-2",
+        "y6NtIE6d8A": "MI-3",
+        "zq5qO8ulEy": "MI-4",
+        "cEIzNR9hC2": "MI-7",
+        "QClzQUZLuC": "MI-8",
+        "ddQhLzhn0h": "MI-10",
+        "QAqhgqAdpL": "NE-2",
+        "N8n8RtPZs8": "NH-1",
+        "uS06ghINUp": "NH-2",
+        "AytPlC2t9p": "NJ-5",
+        "6O2UUCcLEC": "NJ-7",
+        "n0hQutnAEd": "NJ-9",
+        "hzcyAttqcO": "NY-3",
+        "hLqqOCtg80": "NY-4",
+        "Nh2lQzdgdc": "NY-17",
+        "0sCqPuOOCs": "NY-18",
+        "NSL92C2tdN": "NY-19",
+        "L2tyQ56NZS": "NY-22",
+        "spIRq2snU0": "OH-1",
+        "Ons5IdIdyq": "OH-9",
+        "2NgzuzdNpI": "OH-13",
+        "0Rgcpgqd9R": "PA-1",
+        "NdsN5sQh8z": "PA-7",
+        "dAyEZZ22Eu": "PA-8",
+        "9cult65LPy": "PA-10",
+        "ygnhypStdC": "PA-17",
+        "gq6qL5IOqZ": "WI-1",
+        "s289dU8Lyz": "WI-3"
+      },
+      "caveats": [
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=419.7 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=571.4 after the 50k contract subsidy; treat the field as stale.",
+        "Label names Nez (D) v. Crane (R); Libertarian Goodwin also on ballot and is a NO outcome.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=397.9 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=279 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=256.5 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=299.2 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=276.9 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=350.5 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=305.3 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=278.2 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=294.9 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=277.4 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=274.6 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=535.8 after the 50k contract subsidy; treat the field as stale.",
+        "Label names Romero (D) v. Hurd (R); Brown (I) and Robertson (L) also on ballot and are NO outcomes.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=409.2 after the 50k contract subsidy; treat the field as stale.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 50 / NO 997 shares after the market-level 50k subsidy; answer volume 1062.",
+        "Answer prob 0.253; answer volume 406; answer pool YES 822/NO 279 (k=479).",
+        "answer.totalLiquidity field reads 10 but the pool constant k reflects the 50k contract subsidy; treat k as effective depth.",
+        "Answer created Feb 2025 by district number; where 2026 lines differ (FL, NC, TX redrawn) prices/labels imply the 2026 district; no creator ruling.",
+        "Answer prob 0.950; answer volume 2612; answer pool YES 46/NO 874 (k=200).",
+        "Live YES limit order 1,967 @0.95 has 0 balance-funded mana (phantom depth).",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 36 / NO 1229 shares after the market-level 50k subsidy; answer volume 4251.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 68 / NO 1290 shares after the market-level 50k subsidy; answer volume 2560.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 202 / NO 1147 shares after the market-level 50k subsidy; answer volume 2722.",
+        "Independent Michael Bridgford on ballot: an independent win resolves NO (Not D).",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 283 / NO 849 shares after the market-level 50k subsidy; answer volume 1511.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 758 / NO 423 shares after the market-level 50k subsidy; answer volume 923.",
+        "Names in the label are cosmetic (added by non-creator @Gen); the \"(D)/(R)\" tags are not the rule, ballot affiliation is.",
+        "Maine uses RCV for House generals; the market is silent on RCV but its \"certified results\" rule implies the final tabulated round.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 63 / NO 987 shares after the market-level 50k subsidy; answer volume 468.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 640 / NO 568 shares after the market-level 50k subsidy; answer volume 711.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 466 / NO 671 shares after the market-level 50k subsidy; answer volume 1130.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 56 / NO 1341 shares after the market-level 50k subsidy; answer volume 1150.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 433 / NO 820 shares after the market-level 50k subsidy; answer volume 415.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=510.4 after the 50k contract subsidy; treat the field as stale.",
+        "Label names Forstag (D) v. Flint (R); Libertarian Sheedy also on ballot (NO).",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 102 / NO 1029 shares after the market-level 50k subsidy; answer volume 2910.",
+        "Open seat (Bacon retiring); Libertarian Eric Foreman on ballot -> NO if he won.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=283.6 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=307.2 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=242.5 after the 50k contract subsidy; treat the field as stale.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 65 / NO 1025 shares after the market-level 50k subsidy; answer volume 1242.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 72 / NO 963 shares after the market-level 50k subsidy; answer volume 359.",
+        "Independent Robbie Mahrou on ballot -> NO if he won.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 36 / NO 860 shares after the market-level 50k subsidy; answer volume 1424.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 157 / NO 1222 shares after the market-level 50k subsidy; answer volume 1581.",
+        "Libertarian and independent also on ballot -> NO if either won.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 40 / NO 760 shares after the market-level 50k subsidy; answer volume 992.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=318.1 after the 50k contract subsidy; treat the field as stale.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 110 / NO 826 shares after the market-level 50k subsidy; answer volume 4019.",
+        "Suozzi listed on the Democratic line only (no WFP line); fusion rule not needed here.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 102 / NO 1026 shares after the market-level 50k subsidy; answer volume 1524.",
+        "Gillen listed on the Democratic line only; Libertarian also on ballot.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 416 / NO 709 shares after the market-level 50k subsidy; answer volume 1577.",
+        "Conley runs on Democratic + Working Families lines; the description explicitly counts a Dem on a fusion ticket.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 48 / NO 1112 shares after the market-level 50k subsidy; answer volume 5662.",
+        "Ryan runs on Democratic + WFP lines; explicitly covered by the fusion rule.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 58 / NO 1520 shares after the market-level 50k subsidy; answer volume 1193.",
+        "Riley runs on Democratic + WFP lines; explicitly covered by the fusion rule. NY portfolio hidden answer prices only 0.64.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 63 / NO 981 shares after the market-level 50k subsidy; answer volume 3004.",
+        "Mannion runs on Democratic + WFP lines; explicitly covered by the fusion rule.",
+        "Answer prob 0.600; answer volume 444; answer pool YES 542/NO 813 (k=663).",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 123 / NO 820 shares after the market-level 50k subsidy; answer volume 1788.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 348 / NO 811 shares after the market-level 50k subsidy; answer volume 944.",
+        "Libertarian Matthew Althaus on ballot -> NO if he won.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 82 / NO 1278 shares after the market-level 50k subsidy; answer volume 1071.",
+        "Independent Sandeep Dixit on ballot -> NO if he won.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=180.5 after the 50k contract subsidy; treat the field as stale.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 958 / NO 539 shares after the market-level 50k subsidy; answer volume 699.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 204 / NO 869 shares after the market-level 50k subsidy; answer volume 754.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 407 / NO 865 shares after the market-level 50k subsidy; answer volume 649.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 221 / NO 832 shares after the market-level 50k subsidy; answer volume 493.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 58 / NO 1042 shares after the market-level 50k subsidy; answer volume 1608.",
+        "Answer prob 0.800; answer volume 1785; answer pool YES 324/NO 1296 (k=648).",
+        "Answer prob 0.880; answer volume 1004; answer pool YES 149/NO 1094 (k=404).",
+        "Answer prob 0.820; answer volume 685; answer pool YES 219/NO 999 (k=468).",
+        "Answer prob 0.470; answer volume 1572; answer pool YES 730/NO 647 (k=687).",
+        "Answer prob 0.800; answer volume 314; answer pool YES 230/NO 920 (k=460).",
+        "Answer prob 0.940; answer volume 428; answer pool YES 67/NO 1050 (k=265).",
+        "Live YES limit order shows 0 balance-funded mana (phantom depth).",
+        "Answer prob 0.929; answer volume 162; answer pool YES 62/NO 809 (k=224).",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=346.5 after the 50k contract subsidy; treat the field as stale.",
+        "Per-answer totalLiquidity field reads 10 but the answer pool holds k=142.4 after the 50k contract subsidy; treat the field as stale.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 802 / NO 413 shares after the market-level 50k subsidy; answer volume 1627.",
+        "Answer totalLiquidity field is 10, but the answer pool holds YES 315 / NO 810 shares after the market-level 50k subsidy; answer volume 416.",
+        "Two independents on ballot -> NO if either won."
+      ]
+    },
+    "which-california-house-districts-wi": {
+      "contractId": "USqLR8OSCI",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-01-regular-general",
+          "office": "house",
+          "key": "CA-1"
+        },
+        {
+          "raceKey": "2026-house-CA-02-regular-general",
+          "office": "house",
+          "key": "CA-2"
+        },
+        {
+          "raceKey": "2026-house-CA-05-regular-general",
+          "office": "house",
+          "key": "CA-5"
+        },
+        {
+          "raceKey": "2026-house-CA-06-regular-general",
+          "office": "house",
+          "key": "CA-6"
+        },
+        {
+          "raceKey": "2026-house-CA-08-regular-general",
+          "office": "house",
+          "key": "CA-8"
+        },
+        {
+          "raceKey": "2026-house-CA-10-regular-general",
+          "office": "house",
+          "key": "CA-10"
+        },
+        {
+          "raceKey": "2026-house-CA-15-regular-general",
+          "office": "house",
+          "key": "CA-15"
+        },
+        {
+          "raceKey": "2026-house-CA-16-regular-general",
+          "office": "house",
+          "key": "CA-16"
+        },
+        {
+          "raceKey": "2026-house-CA-17-regular-general",
+          "office": "house",
+          "key": "CA-17"
+        },
+        {
+          "raceKey": "2026-house-CA-18-regular-general",
+          "office": "house",
+          "key": "CA-18"
+        },
+        {
+          "raceKey": "2026-house-CA-19-regular-general",
+          "office": "house",
+          "key": "CA-19"
+        },
+        {
+          "raceKey": "2026-house-CA-20-regular-general",
+          "office": "house",
+          "key": "CA-20"
+        },
+        {
+          "raceKey": "2026-house-CA-23-regular-general",
+          "office": "house",
+          "key": "CA-23"
+        },
+        {
+          "raceKey": "2026-house-CA-24-regular-general",
+          "office": "house",
+          "key": "CA-24"
+        },
+        {
+          "raceKey": "2026-house-CA-25-regular-general",
+          "office": "house",
+          "key": "CA-25"
+        },
+        {
+          "raceKey": "2026-house-CA-26-regular-general",
+          "office": "house",
+          "key": "CA-26"
+        },
+        {
+          "raceKey": "2026-house-CA-28-regular-general",
+          "office": "house",
+          "key": "CA-28"
+        },
+        {
+          "raceKey": "2026-house-CA-30-regular-general",
+          "office": "house",
+          "key": "CA-30"
+        },
+        {
+          "raceKey": "2026-house-CA-31-regular-general",
+          "office": "house",
+          "key": "CA-31"
+        },
+        {
+          "raceKey": "2026-house-CA-32-regular-general",
+          "office": "house",
+          "key": "CA-32"
+        },
+        {
+          "raceKey": "2026-house-CA-33-regular-general",
+          "office": "house",
+          "key": "CA-33"
+        },
+        {
+          "raceKey": "2026-house-CA-35-regular-general",
+          "office": "house",
+          "key": "CA-35"
+        },
+        {
+          "raceKey": "2026-house-CA-36-regular-general",
+          "office": "house",
+          "key": "CA-36"
+        },
+        {
+          "raceKey": "2026-house-CA-38-regular-general",
+          "office": "house",
+          "key": "CA-38"
+        },
+        {
+          "raceKey": "2026-house-CA-39-regular-general",
+          "office": "house",
+          "key": "CA-39"
+        },
+        {
+          "raceKey": "2026-house-CA-42-regular-general",
+          "office": "house",
+          "key": "CA-42"
+        },
+        {
+          "raceKey": "2026-house-CA-43-regular-general",
+          "office": "house",
+          "key": "CA-43"
+        },
+        {
+          "raceKey": "2026-house-CA-44-regular-general",
+          "office": "house",
+          "key": "CA-44"
+        },
+        {
+          "raceKey": "2026-house-CA-46-regular-general",
+          "office": "house",
+          "key": "CA-46"
+        },
+        {
+          "raceKey": "2026-house-CA-48-regular-general",
+          "office": "house",
+          "key": "CA-48"
+        },
+        {
+          "raceKey": "2026-house-CA-50-regular-general",
+          "office": "house",
+          "key": "CA-50"
+        },
+        {
+          "raceKey": "2026-house-CA-51-regular-general",
+          "office": "house",
+          "key": "CA-51"
+        },
+        {
+          "raceKey": "2026-house-CA-52-regular-general",
+          "office": "house",
+          "key": "CA-52"
+        }
+      ],
+      "answers": {
+        "LnII0l8gS2": "CA-1",
+        "RqRu2lZ5sz": "CA-2",
+        "Z8Q9A9S6nI": "CA-5",
+        "lhIQAZQdqS": "CA-6",
+        "t8NSqQOI0E": "CA-8",
+        "qP6PqNzuqP": "CA-10",
+        "tIsqygn0gq": "CA-15",
+        "stcRsQU0tL": "CA-16",
+        "cIU5UURLqR": "CA-17",
+        "5tp6IPLssC": "CA-18",
+        "9QSs6ZLd9z": "CA-19",
+        "0QPAnACIlc": "CA-20",
+        "8PNRggSCZA": "CA-23",
+        "nQznyA5dAd": "CA-24",
+        "hIP2R9ulLc": "CA-25",
+        "UPnuuszctd": "CA-26",
+        "ylNp66c2tS": "CA-28",
+        "zshU6IAZQC": "CA-30",
+        "yItppsOpgs": "CA-31",
+        "UszZzZ0ct8": "CA-32",
+        "cg0nhI8sZR": "CA-33",
+        "unILpAn6CO": "CA-35",
+        "5zlZNSO8lE": "CA-36",
+        "ERn2ulu80C": "CA-38",
+        "AdQ9tRZUSU": "CA-39",
+        "IUqqh9qldl": "CA-42",
+        "82sz22tlAO": "CA-43",
+        "RlZ0g5ylg9": "CA-44",
+        "8R5S0hsn8P": "CA-46",
+        "ISIUsnpC9g": "CA-48",
+        "LEPcptsSIU": "CA-50",
+        "ZCUCQCp5Pt": "CA-51",
+        "PCSgh88PPE": "CA-52"
+      },
+      "caveats": [
+        "Per-answer liquidity 25 and 7 bettors contract-wide: thin.",
+        "addAnswersMode=ANYONE: new district answers can appear later and change precedence.",
+        "Kiley binary 0ld2tRulOS must not be added to HOUSE_RACE_MARKETS: the PR reads a binary as YES = Republican, which would count NPP Kiley as R."
+      ]
+    },
+    "who-will-win-the-ca4-house-election-0suAR0A066": {
+      "contractId": "yZRqg50ddy",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-04-regular-general",
+          "office": "house",
+          "key": "CA-4"
+        }
+      ],
+      "answerParties": {
+        "SNIyON6Etq": "D",
+        "IEd5ECNILI": "D"
+      },
+      "caveats": [
+        "\"primaries\" dashboard link is boilerplate shared with Jack1's primary markets; round is inferred, not stated.",
+        "Closes 10:59 UTC on election day (before polls close)."
+      ]
+    },
+    "2026-us-house-ca-7-winner": {
+      "contractId": "OuAAPuqpzE",
+      "kind": "candidate",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-07-regular-general",
+          "office": "house",
+          "key": "CA-7"
+        }
+      ],
+      "answerParties": {
+        "AEZqP5zhth": "D",
+        "shNId9sNL9": "D"
+      },
+      "caveats": [
+        "Per-answer totalLiquidity field 50 but pool k=1000 per answer (2000 contract liquidity)."
+      ]
+    },
+    "who-will-win-the-2026-election-for-AndtddsLn0": {
+      "contractId": "8uzA88lE2A",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-11-regular-general",
+          "office": "house",
+          "key": "CA-11"
+        }
+      ],
+      "answerParties": {
+        "tU0QqQ5qsz": "unknown",
+        "P6yR5yzy0A": "D",
+        "UqRhpQQPLl": "D",
+        "yqULs0yAE5": "R",
+        "t6S2gZcAqp": "unknown",
+        "QpyLpSn8h9": "unknown",
+        "8090CpzU09": "D",
+        "QNuN5glcUR": "unknown",
+        "P0PqNy0tEL": "unknown"
+      },
+      "caveats": [
+        "All 9 answers untagged: PR label classifier would put 100% into \"other\". Needs ballot-composition basis or per-answer party metadata.",
+        "PartyPanel maxAnswers=5 hides 4 tradable answers; show finalists + Other at minimum, keep all answer IDs.",
+        "Per-answer totalLiquidity fields (18-34) understate pools (k 524-3712)."
+      ]
+    },
+    "will-jamie-joyce-win-the-2026-12th": {
+      "contractId": "PsPO6z5zZt",
+      "kind": "candidate-binary",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-12-regular-general",
+          "office": "house",
+          "key": "CA-12"
+        }
+      ],
+      "candidate": "Jamie Joyce",
+      "caveats": [
+        "Requires a candidate-binary presentation; until then use UyqlzUzdAQ.",
+        "NO-side limit wall: 150,000 mana balance-funded at 0.04-0.09 caps Joyce near 4%."
+      ]
+    },
+    "who-will-win-the-2026-election-for-chQddtRLUt": {
+      "contractId": "zU5S55uNOA",
+      "kind": "candidate",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-14-regular-general",
+          "office": "house",
+          "key": "CA-14"
+        }
+      ],
+      "answerParties": {
+        "QCp0CESZpP": "D",
+        "h5lCZSsnlS": "unknown",
+        "L25ctuRCul": "D",
+        "h0csOsty2h": "D",
+        "ddR2nzZlEU": "unknown"
+      },
+      "caveats": [
+        "All 5 answers open and tradable (Ortega, Qadir non-finalists unresolved); preserve every answer ID.",
+        "Untagged: PR classifier would show \"Other leads\"."
+      ]
+    },
+    "2026-us-house-ca34-winner": {
+      "contractId": "N0sqEU0nCn",
+      "kind": "candidate",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-34-regular-general",
+          "office": "house",
+          "key": "CA-34"
+        }
+      ],
+      "answerParties": {
+        "OnII50cIZc": "D",
+        "lCUnONs9cQ": "D"
+      },
+      "caveats": [
+        "Closes 2026-12-31 10:59 UTC (after election).",
+        "Per-answer totalLiquidity field 500 vs pool k=1000."
+      ]
+    },
+    "2026-californias-37th-congressional": {
+      "contractId": "PLdO9EPtLN",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-37-regular-general",
+          "office": "house",
+          "key": "CA-37"
+        }
+      ],
+      "answerParties": {
+        "sS9gU8Sdpz": "D",
+        "Uldssu0AuP": "D"
+      },
+      "caveats": [
+        "2 bettors, liq 200; one-day-old market."
+      ]
+    },
+    "who-will-win-the-us-house-race-in-c": {
+      "contractId": "U9PL8hI5sU",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-40-regular-general",
+          "office": "house",
+          "key": "CA-40"
+        }
+      ],
+      "answerParties": {
+        "IqlglZsEA2": "R",
+        "8lSPE9LRSc": "R"
+      },
+      "caveats": [
+        "Needs preferOverPortfolio: true (original portfolio prices CA-40) AND ballot-composition party basis; with label classification alone it would show \"Other leads 100%\".",
+        "Empty description; year inferred from creation/close dates."
+      ]
+    },
+    "who-will-win-colorado-house-distric": {
+      "contractId": "uZUpQyzOOE",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CO-01-regular-general",
+          "office": "house",
+          "key": "CO-1"
+        }
+      ],
+      "answerParties": {
+        "I6L0pthcEn": "unknown",
+        "Ics5yAyEIC": "unknown",
+        "sEICAldpyy": "D",
+        "SyRcO9yRI5": "R",
+        "qRNPQCgdSc": "L",
+        "SCz2uu8Pty": "unknown",
+        "NS88QuL60q": "I",
+        "l0pgzzNqlt": "unknown"
+      },
+      "caveats": [
+        "Closes 2026-11-03 06:59 UTC (election eve)."
+      ]
+    },
+    "will-lauren-boebert-be-reelected-to": {
+      "contractId": "5EIC9A05cU",
+      "kind": "candidate-binary",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CO-04-regular-general",
+          "office": "house",
+          "key": "CO-4"
+        }
+      ],
+      "candidate": "Lauren Boebert",
+      "caveats": [
+        "PR binary path labels YES \"Republican\"; acceptable numerically only while Boebert remains the R nominee. Prefer candidate-binary labels.",
+        "Description AI-generated."
+      ]
+    },
+    "which-nevada-us-house-seats-will-de": {
+      "contractId": "ps6uhP6ttd",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-NV-02-regular-general",
+          "office": "house",
+          "key": "NV-2"
+        }
+      ],
+      "answers": {
+        "yqnZt6CEcO": "NV-2"
+      },
+      "caveats": [
+        "Open seat; 6 bettors contract-wide; liq 25 per answer."
+      ]
+    },
+    "who-will-win-washingtons-9th-house": {
+      "contractId": "ndRP5ZOA55",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-09-regular-general",
+          "office": "house",
+          "key": "WA-9"
+        }
+      ],
+      "answerParties": {
+        "yOQluRtcu0": "D",
+        "Ahs952IALP": "unknown",
+        "8AZgutO285": "unknown",
+        "IgP8UPuUE8": "unknown"
+      },
+      "caveats": [
+        "Answer set omits the R finalist Doug Basler (inventory).",
+        "Untagged: PR classifier would show \"Other leads\".",
+        "2 bettors, liq 100."
+      ]
+    },
+    "will-democrat-shomari-figures-win-a": {
+      "contractId": "2gnh0c6NqI",
+      "kind": "candidate-binary",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-02-regular-general",
+          "office": "house",
+          "key": "AL-2"
+        }
+      ],
+      "candidate": "Shomari Figures",
+      "caveats": [
+        "Prob 0.30; binary pool YES 1098/NO 955.",
+        "No written resolution source or certification rule beyond the title.",
+        "Close 2026-12-31 (after the election; acceptable)."
+      ]
+    },
+    "which-florida-house-districts-will": {
+      "contractId": "cN025dzLdO",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-FL-01-regular-general",
+          "office": "house",
+          "key": "FL-1"
+        },
+        {
+          "raceKey": "2026-house-FL-02-regular-general",
+          "office": "house",
+          "key": "FL-2"
+        },
+        {
+          "raceKey": "2026-house-FL-03-regular-general",
+          "office": "house",
+          "key": "FL-3"
+        },
+        {
+          "raceKey": "2026-house-FL-04-regular-general",
+          "office": "house",
+          "key": "FL-4"
+        },
+        {
+          "raceKey": "2026-house-FL-05-regular-general",
+          "office": "house",
+          "key": "FL-5"
+        },
+        {
+          "raceKey": "2026-house-FL-06-regular-general",
+          "office": "house",
+          "key": "FL-6"
+        },
+        {
+          "raceKey": "2026-house-FL-07-regular-general",
+          "office": "house",
+          "key": "FL-7"
+        },
+        {
+          "raceKey": "2026-house-FL-08-regular-general",
+          "office": "house",
+          "key": "FL-8"
+        },
+        {
+          "raceKey": "2026-house-FL-09-regular-general",
+          "office": "house",
+          "key": "FL-9"
+        },
+        {
+          "raceKey": "2026-house-FL-11-regular-general",
+          "office": "house",
+          "key": "FL-11"
+        },
+        {
+          "raceKey": "2026-house-FL-12-regular-general",
+          "office": "house",
+          "key": "FL-12"
+        },
+        {
+          "raceKey": "2026-house-FL-14-regular-general",
+          "office": "house",
+          "key": "FL-14"
+        },
+        {
+          "raceKey": "2026-house-FL-15-regular-general",
+          "office": "house",
+          "key": "FL-15"
+        },
+        {
+          "raceKey": "2026-house-FL-16-regular-general",
+          "office": "house",
+          "key": "FL-16"
+        },
+        {
+          "raceKey": "2026-house-FL-17-regular-general",
+          "office": "house",
+          "key": "FL-17"
+        },
+        {
+          "raceKey": "2026-house-FL-18-regular-general",
+          "office": "house",
+          "key": "FL-18"
+        },
+        {
+          "raceKey": "2026-house-FL-19-regular-general",
+          "office": "house",
+          "key": "FL-19"
+        },
+        {
+          "raceKey": "2026-house-FL-20-regular-general",
+          "office": "house",
+          "key": "FL-20"
+        },
+        {
+          "raceKey": "2026-house-FL-21-regular-general",
+          "office": "house",
+          "key": "FL-21"
+        },
+        {
+          "raceKey": "2026-house-FL-22-regular-general",
+          "office": "house",
+          "key": "FL-22"
+        },
+        {
+          "raceKey": "2026-house-FL-24-regular-general",
+          "office": "house",
+          "key": "FL-24"
+        },
+        {
+          "raceKey": "2026-house-FL-25-regular-general",
+          "office": "house",
+          "key": "FL-25"
+        },
+        {
+          "raceKey": "2026-house-FL-26-regular-general",
+          "office": "house",
+          "key": "FL-26"
+        },
+        {
+          "raceKey": "2026-house-FL-27-regular-general",
+          "office": "house",
+          "key": "FL-27"
+        },
+        {
+          "raceKey": "2026-house-FL-28-regular-general",
+          "office": "house",
+          "key": "FL-28"
+        }
+      ],
+      "answers": {
+        "SsLEs0ZNl6": "FL-1",
+        "IpydUsqhhP": "FL-2",
+        "SU6U852g2Q": "FL-3",
+        "PyqCt5y0zI": "FL-4",
+        "AhtC0s5ncz": "FL-5",
+        "gg8Ul8QOUQ": "FL-6",
+        "yNNIlztSRl": "FL-7",
+        "2yAEQS899p": "FL-8",
+        "Lnu9zN8ILh": "FL-9",
+        "9Qu8y5tdRh": "FL-11",
+        "qI88lqOCyl": "FL-12",
+        "l59Ry5OLSs": "FL-14",
+        "Oh8pnynnU8": "FL-15",
+        "SCIPltAnnE": "FL-16",
+        "sdt8hdyIUP": "FL-17",
+        "R0c8nz5NUs": "FL-18",
+        "gsAddCPyNA": "FL-19",
+        "Shh96PA9NP": "FL-20",
+        "hsd8q8EnZy": "FL-21",
+        "RQ0lthEspl": "FL-22",
+        "gppRQszZcd": "FL-24",
+        "6l9dh9qpyQ": "FL-25",
+        "nssQL5pl8h": "FL-26",
+        "lOLA6C25d6": "FL-27",
+        "UCSyzqyhdU": "FL-28"
+      },
+      "caveats": [
+        "Answer prob 0.038; answer volume 100; answer pool YES 125/NO 5 (k=25).",
+        "Empty description: equivalence to the original market is not established; show as conditional.",
+        "Portfolio subsidy recommended once for the whole market (see subsidyRecommendation / notes).",
+        "Answer prob 0.129; answer volume 40; answer pool YES 65/NO 10 (k=25).",
+        "Answer prob 0.200; answer volume 25; answer pool YES 50/NO 12 (k=25).",
+        "Answer prob 0.072; answer volume 65; answer pool YES 90/NO 7 (k=25).",
+        "Answer prob 0.065; answer volume 70; answer pool YES 95/NO 7 (k=25).",
+        "Answer prob 0.325; answer volume 11; answer pool YES 36/NO 17 (k=25).",
+        "Answer prob 0.100; answer volume 50; answer pool YES 75/NO 8 (k=25).",
+        "Answer prob 0.236; answer volume 20; answer pool YES 45/NO 14 (k=25).",
+        "Answer prob 0.171; answer volume 30; answer pool YES 55/NO 11 (k=25).",
+        "Answer prob 0.182; answer volume 28; answer pool YES 53/NO 12 (k=25).",
+        "Answer prob 0.590; answer volume 5; answer pool YES 21/NO 30 (k=25).",
+        "Answer prob 0.148; answer volume 35; answer pool YES 60/NO 10 (k=25).",
+        "Answer prob 0.218; answer volume 34; answer pool YES 47/NO 13 (k=25).",
+        "Answer prob 0.080; answer volume 60; answer pool YES 85/NO 7 (k=25).",
+        "Answer prob 0.935; answer volume 70; answer pool YES 7/NO 95 (k=25).",
+        "Answer prob 0.129; answer volume 120; answer pool YES 65/NO 10 (k=25).",
+        "Answer prob 0.410; answer volume 5; answer pool YES 30/NO 21 (k=25).",
+        "Answer prob 0.606; answer volume 6; answer pool YES 20/NO 31 (k=25).",
+        "Answer prob 0.253; answer volume 18; answer pool YES 43/NO 15 (k=25)."
+      ]
+    },
+    "which-party-will-win-ga01-in-the-20": {
+      "contractId": "EyzOtEtsgP",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-01-regular-general",
+          "office": "house",
+          "key": "GA-1"
+        }
+      ],
+      "answerParties": {
+        "QqEQCUURyE": "R",
+        "NAspPdN6sP": "D",
+        "999PuydQ9s": "other"
+      },
+      "caveats": [
+        "Republican 0.865, Democratic 0.129, Other 0.006",
+        "Empty description; created 2025-05-28 before nominees were known."
+      ]
+    },
+    "who-will-win-kentuckys-6th-congress": {
+      "contractId": "65ShsdN2Oh",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-06-regular-general",
+          "office": "house",
+          "key": "KY-6"
+        }
+      ],
+      "answerParties": {
+        "dtLL2dlAp5": "R",
+        "yUs5l60IpC": "D"
+      },
+      "caveats": [
+        "Ralph Alvarado (R) 0.720, Zach Dembo (D) 0.280",
+        "Two-answer constraint forces third-party probability to 0 by construction."
+      ]
+    },
+    "will-richard-ojeda-win-north-caroli": {
+      "contractId": "RZSnU2csSI",
+      "kind": "candidate-binary",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-09-regular-general",
+          "office": "house",
+          "key": "NC-9"
+        }
+      ],
+      "candidate": "Richard Ojeda",
+      "caveats": [
+        "Prob 0.24; binary pool YES 49/NO 112.",
+        "Explicit November-winner criterion; 19 bettors, 6.8k volume, but only 101 liquidity."
+      ]
+    },
+    "nc11-house-winner": {
+      "contractId": "ZLcuNpd9ZS",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-11-regular-general",
+          "office": "house",
+          "key": "NC-11"
+        }
+      ],
+      "answerParties": {
+        "lPNslAhSRU": "D",
+        "putNNAZOU8": "R"
+      },
+      "caveats": [
+        "Jamie Ager (D) 0.640, Jennifer Balkcom (R) 0.360",
+        "Only 2 bettors; close is 2027-11-03 (a year after the election)."
+      ]
+    },
+    "which-texas-us-house-districts-will": {
+      "contractId": "SRynqNSuEL",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-TX-01-regular-general",
+          "office": "house",
+          "key": "TX-1"
+        },
+        {
+          "raceKey": "2026-house-TX-02-regular-general",
+          "office": "house",
+          "key": "TX-2"
+        },
+        {
+          "raceKey": "2026-house-TX-05-regular-general",
+          "office": "house",
+          "key": "TX-5"
+        },
+        {
+          "raceKey": "2026-house-TX-09-regular-general",
+          "office": "house",
+          "key": "TX-9"
+        },
+        {
+          "raceKey": "2026-house-TX-12-regular-general",
+          "office": "house",
+          "key": "TX-12"
+        },
+        {
+          "raceKey": "2026-house-TX-17-regular-general",
+          "office": "house",
+          "key": "TX-17"
+        },
+        {
+          "raceKey": "2026-house-TX-23-regular-general",
+          "office": "house",
+          "key": "TX-23"
+        },
+        {
+          "raceKey": "2026-house-TX-32-regular-general",
+          "office": "house",
+          "key": "TX-32"
+        },
+        {
+          "raceKey": "2026-house-TX-35-regular-general",
+          "office": "house",
+          "key": "TX-35"
+        }
+      ],
+      "answers": {
+        "RcusN8PCnp": "TX-1",
+        "cnshyE56hc": "TX-2",
+        "pgP06tZC8Q": "TX-5",
+        "5Rc9AUSqPP": "TX-9",
+        "0PN5Qgl5pO": "TX-12",
+        "zPRpRnIpsc": "TX-17",
+        "qzAQl0ZuLU": "TX-23",
+        "pE6Cgt95d9": "TX-32",
+        "IQSLgun8IL": "TX-35"
+      },
+      "caveats": [
+        "Answer prob 0.050; answer volume 710; answer pool YES 437/NO 23 (k=100).",
+        "Caucus-based rule: an independent caucusing with Democrats would be YES here but NO in the original market.",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 1st District\" -> TX-1).",
+        "Answer prob 0.060; answer volume 818; answer pool YES 397/NO 25 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 2nd District\" -> TX-2).",
+        "Answer prob 0.123; answer volume 820; answer pool YES 267/NO 37 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 5th District\" -> TX-5).",
+        "Answer prob 0.190; answer volume 21839; answer pool YES 206/NO 48 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 9th district\" -> TX-9).",
+        "Answer volume 21,839 (most-traded South portfolio answer).",
+        "Answer prob 0.098; answer volume 666; answer pool YES 304/NO 33 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 12th District\" -> TX-12).",
+        "Answer prob 0.080; answer volume 823; answer pool YES 339/NO 29 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 17th district\" -> TX-17).",
+        "Answer prob 0.360; answer volume 1876; answer pool YES 133/NO 75 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 23rd district\" -> TX-23).",
+        "Answer prob 0.097; answer volume 561; answer pool YES 305/NO 33 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 32nd District\" -> TX-32).",
+        "Answer prob 0.620; answer volume 3148; answer pool YES 78/NO 128 (k=100).",
+        "Switch = add which-texas-us-house-districts-will to HOUSE_DISTRICT_MARKETS ahead of which-texas-house-districts-will-th (parse verified: \"Texas 35th district\" -> TX-35)."
+      ]
+    },
+    "which-texas-house-districts-will-th": {
+      "contractId": "NZuO50NCLg",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-TX-03-regular-general",
+          "office": "house",
+          "key": "TX-3"
+        },
+        {
+          "raceKey": "2026-house-TX-04-regular-general",
+          "office": "house",
+          "key": "TX-4"
+        },
+        {
+          "raceKey": "2026-house-TX-06-regular-general",
+          "office": "house",
+          "key": "TX-6"
+        },
+        {
+          "raceKey": "2026-house-TX-07-regular-general",
+          "office": "house",
+          "key": "TX-7"
+        },
+        {
+          "raceKey": "2026-house-TX-08-regular-general",
+          "office": "house",
+          "key": "TX-8"
+        },
+        {
+          "raceKey": "2026-house-TX-10-regular-general",
+          "office": "house",
+          "key": "TX-10"
+        },
+        {
+          "raceKey": "2026-house-TX-11-regular-general",
+          "office": "house",
+          "key": "TX-11"
+        },
+        {
+          "raceKey": "2026-house-TX-13-regular-general",
+          "office": "house",
+          "key": "TX-13"
+        },
+        {
+          "raceKey": "2026-house-TX-14-regular-general",
+          "office": "house",
+          "key": "TX-14"
+        },
+        {
+          "raceKey": "2026-house-TX-16-regular-general",
+          "office": "house",
+          "key": "TX-16"
+        },
+        {
+          "raceKey": "2026-house-TX-18-regular-general",
+          "office": "house",
+          "key": "TX-18"
+        },
+        {
+          "raceKey": "2026-house-TX-19-regular-general",
+          "office": "house",
+          "key": "TX-19"
+        },
+        {
+          "raceKey": "2026-house-TX-20-regular-general",
+          "office": "house",
+          "key": "TX-20"
+        },
+        {
+          "raceKey": "2026-house-TX-21-regular-general",
+          "office": "house",
+          "key": "TX-21"
+        },
+        {
+          "raceKey": "2026-house-TX-22-regular-general",
+          "office": "house",
+          "key": "TX-22"
+        },
+        {
+          "raceKey": "2026-house-TX-24-regular-general",
+          "office": "house",
+          "key": "TX-24"
+        },
+        {
+          "raceKey": "2026-house-TX-25-regular-general",
+          "office": "house",
+          "key": "TX-25"
+        },
+        {
+          "raceKey": "2026-house-TX-26-regular-general",
+          "office": "house",
+          "key": "TX-26"
+        },
+        {
+          "raceKey": "2026-house-TX-27-regular-general",
+          "office": "house",
+          "key": "TX-27"
+        },
+        {
+          "raceKey": "2026-house-TX-29-regular-general",
+          "office": "house",
+          "key": "TX-29"
+        },
+        {
+          "raceKey": "2026-house-TX-30-regular-general",
+          "office": "house",
+          "key": "TX-30"
+        },
+        {
+          "raceKey": "2026-house-TX-31-regular-general",
+          "office": "house",
+          "key": "TX-31"
+        },
+        {
+          "raceKey": "2026-house-TX-33-regular-general",
+          "office": "house",
+          "key": "TX-33"
+        },
+        {
+          "raceKey": "2026-house-TX-36-regular-general",
+          "office": "house",
+          "key": "TX-36"
+        },
+        {
+          "raceKey": "2026-house-TX-37-regular-general",
+          "office": "house",
+          "key": "TX-37"
+        },
+        {
+          "raceKey": "2026-house-TX-38-regular-general",
+          "office": "house",
+          "key": "TX-38"
+        }
+      ],
+      "answers": {
+        "68n0S8uI5s": "TX-3",
+        "Eu8tNRNdzp": "TX-4",
+        "CzyqZnhgNs": "TX-6",
+        "9hs8d2LS9q": "TX-7",
+        "Al9sq008NS": "TX-8",
+        "Q5gEUy5NRu": "TX-10",
+        "CRy25I2hZS": "TX-11",
+        "ssAgSzEhNz": "TX-13",
+        "pyNUpZCR5c": "TX-14",
+        "9hgul0ghQ9": "TX-16",
+        "Og09CtPUcP": "TX-18",
+        "tARyyc8c9U": "TX-19",
+        "gtn9RPnLsO": "TX-20",
+        "zRId2ds2PS": "TX-21",
+        "ZL0AEds5CQ": "TX-22",
+        "ERzNl99dpA": "TX-24",
+        "5QyhZyhZ28": "TX-25",
+        "I0OPlltdQ9": "TX-26",
+        "qPh9260tl5": "TX-27",
+        "hSAPghhsPA": "TX-29",
+        "hPE6SNL0tU": "TX-30",
+        "hSnsPcR9s5": "TX-31",
+        "9ghSLQltOc": "TX-33",
+        "lNzzglZCqP": "TX-36",
+        "Ry8RtC2unh": "TX-37",
+        "IpIl6U8P9E": "TX-38"
+      },
+      "caveats": [
+        "Answer prob 0.118; answer volume 67; answer pool YES 68/NO 9 (k=25).",
+        "Empty description: equivalence to the original market is not established; show as conditional.",
+        "Portfolio subsidy recommended once for the whole market (see notes).",
+        "Answer prob 0.136; answer volume 52; answer pool YES 63/NO 10 (k=25).",
+        "Answer prob 0.884; answer volume 86; answer pool YES 9/NO 69 (k=25).",
+        "Answer prob 0.117; answer volume 76; answer pool YES 69/NO 9 (k=25).",
+        "Answer prob 0.185; answer volume 43; answer pool YES 52/NO 12 (k=25).",
+        "Answer prob 0.104; answer volume 81; answer pool YES 74/NO 8 (k=25).",
+        "Answer prob 0.126; answer volume 69; answer pool YES 66/NO 10 (k=25).",
+        "Answer prob 0.869; answer volume 81; answer pool YES 10/NO 64 (k=25).",
+        "Answer prob 0.927; answer volume 126; answer pool YES 7/NO 89 (k=25).",
+        "Answer prob 0.092; answer volume 87; answer pool YES 78/NO 8 (k=25).",
+        "Answer prob 0.180; answer volume 42; answer pool YES 53/NO 12 (k=25).",
+        "Answer prob 0.199; answer volume 35; answer pool YES 50/NO 12 (k=25).",
+        "Answer prob 0.168; answer volume 49; answer pool YES 56/NO 11 (k=25).",
+        "Answer prob 0.195; answer volume 44; answer pool YES 51/NO 12 (k=25).",
+        "Answer prob 0.146; answer volume 55; answer pool YES 60/NO 10 (k=25).",
+        "Answer prob 0.896; answer volume 81; answer pool YES 8/NO 74 (k=25).",
+        "Answer prob 0.897; answer volume 91; answer pool YES 8/NO 74 (k=25).",
+        "Answer prob 0.898; answer volume 131; answer pool YES 8/NO 74 (k=25)."
+      ]
+    },
+    "which-party-will-win-the-iowas-2nd": {
+      "contractId": "A2h85Z6ZSU",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-IA-02-regular-general",
+          "office": "house",
+          "key": "IA-2"
+        }
+      ],
+      "answerParties": {
+        "dCcZlp5CdO": "D",
+        "2N6npIn0Qg": "R"
+      },
+      "caveats": [
+        "Found by this audit via read-only prod query; NOT in markets.json/dossier — re-verify before mapping.",
+        "Sum-to-one with no Other: an independent/Libertarian winner is unhandled.",
+        "Marginal upgrade: explicit November rule and 2x per-answer liquidity vs the empty-description portfolio; keeping the portfolio is also defensible."
+      ]
+    },
+    "which-iowa-congressional-districts": {
+      "contractId": "Qzqdd2ptO6",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-IA-04-regular-general",
+          "office": "house",
+          "key": "IA-4"
+        }
+      ],
+      "answers": {
+        "LcOudZdt0h": "IA-4"
+      },
+      "caveats": [
+        "Thin: answer liquidity 25, pool YES 85.2 / NO 7.3, answer volume 100.",
+        "Proposition is CONDITIONAL: empty description; certification, independents and caucus timing unspecified."
+      ]
+    },
+    "who-will-win-the-us-house-seat-for": {
+      "contractId": "zCz2z5p5St",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-01-regular-general",
+          "office": "house",
+          "key": "MN-1"
+        }
+      ],
+      "answerParties": {
+        "pC2UuEPzpd": "R",
+        "cPRscthtLS": "D",
+        "lcCzSCcQ9A": "I",
+        "09sAp00zgE": "unknown"
+      },
+      "caveats": [
+        "Candidate, not party: a replacement DFL nominee would resolve as Other.",
+        "Stale: last bet 2026-08-19; groups mis-tagged 2024-us-presidential-election.",
+        "PR code change needed (answer->party override) before mapping."
+      ]
+    },
+    "which-us-house-districts-in-the-mid": {
+      "contractId": "s2uNNQ2N5I",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-02-regular-general",
+          "office": "house",
+          "key": "MN-2"
+        },
+        {
+          "raceKey": "2026-house-OH-10-regular-general",
+          "office": "house",
+          "key": "OH-10"
+        }
+      ],
+      "answers": {
+        "SSlgtzn9gz": "MN-2",
+        "8p5pl6cgSE": "OH-10"
+      },
+      "caveats": [
+        "Thin: answer liquidity 25, pool YES 9.5 / NO 66.0, answer volume 290.",
+        "Proposition is CONDITIONAL: empty description; title has no year.",
+        "Label fails parseHouseAnswer (trailing \"(...)\" tag): needs an explicit answer-id mapping or parser change; adding the slug to HOUSE_DISTRICT_MARKETS alone prices nothing.",
+        "Open DFL seat (Craig running for Senate). Label \"(OPEN-D)\" for a DFL seat hints the creator treats DFL as D, but no rule says so.",
+        "Thin: answer liquidity 25, pool YES 49.0 / NO 12.8, answer volume 161.",
+        "Libertarian Thomas McMasters also on ballot -> NO if he won."
+      ],
+      "answerDistricts": {
+        "SSlgtzn9gz": "MN-2",
+        "8p5pl6cgSE": "OH-10"
+      }
+    },
+    "which-new-york-house-districts-will": {
+      "contractId": "9nS9P2scql",
+      "kind": "dem-win-portfolio-answer",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-NY-01-regular-general",
+          "office": "house",
+          "key": "NY-1"
+        },
+        {
+          "raceKey": "2026-house-NY-02-regular-general",
+          "office": "house",
+          "key": "NY-2"
+        },
+        {
+          "raceKey": "2026-house-NY-05-regular-general",
+          "office": "house",
+          "key": "NY-5"
+        },
+        {
+          "raceKey": "2026-house-NY-06-regular-general",
+          "office": "house",
+          "key": "NY-6"
+        },
+        {
+          "raceKey": "2026-house-NY-07-regular-general",
+          "office": "house",
+          "key": "NY-7"
+        },
+        {
+          "raceKey": "2026-house-NY-08-regular-general",
+          "office": "house",
+          "key": "NY-8"
+        },
+        {
+          "raceKey": "2026-house-NY-09-regular-general",
+          "office": "house",
+          "key": "NY-9"
+        },
+        {
+          "raceKey": "2026-house-NY-10-regular-general",
+          "office": "house",
+          "key": "NY-10"
+        },
+        {
+          "raceKey": "2026-house-NY-11-regular-general",
+          "office": "house",
+          "key": "NY-11"
+        },
+        {
+          "raceKey": "2026-house-NY-12-regular-general",
+          "office": "house",
+          "key": "NY-12"
+        },
+        {
+          "raceKey": "2026-house-NY-13-regular-general",
+          "office": "house",
+          "key": "NY-13"
+        },
+        {
+          "raceKey": "2026-house-NY-14-regular-general",
+          "office": "house",
+          "key": "NY-14"
+        },
+        {
+          "raceKey": "2026-house-NY-15-regular-general",
+          "office": "house",
+          "key": "NY-15"
+        },
+        {
+          "raceKey": "2026-house-NY-16-regular-general",
+          "office": "house",
+          "key": "NY-16"
+        },
+        {
+          "raceKey": "2026-house-NY-20-regular-general",
+          "office": "house",
+          "key": "NY-20"
+        },
+        {
+          "raceKey": "2026-house-NY-21-regular-general",
+          "office": "house",
+          "key": "NY-21"
+        },
+        {
+          "raceKey": "2026-house-NY-23-regular-general",
+          "office": "house",
+          "key": "NY-23"
+        },
+        {
+          "raceKey": "2026-house-NY-24-regular-general",
+          "office": "house",
+          "key": "NY-24"
+        },
+        {
+          "raceKey": "2026-house-NY-25-regular-general",
+          "office": "house",
+          "key": "NY-25"
+        },
+        {
+          "raceKey": "2026-house-NY-26-regular-general",
+          "office": "house",
+          "key": "NY-26"
+        }
+      ],
+      "answers": {
+        "g0qNu90ypt": "NY-1",
+        "sR5Qq5szZ5": "NY-2",
+        "l6u0L9Eg6O": "NY-5",
+        "8EPOsuqs00": "NY-6",
+        "SRd8sI00ny": "NY-7",
+        "LhLCLRZL9I": "NY-8",
+        "dAu2Q9EPNP": "NY-9",
+        "NqnsCLOyA8": "NY-10",
+        "Pp2IUnCg0z": "NY-11",
+        "zuzU2n0dqh": "NY-12",
+        "PNLC02hN8l": "NY-13",
+        "gRgZENNuhI": "NY-14",
+        "pUP8RL8c85": "NY-15",
+        "y28CnulyCR": "NY-16",
+        "Aq569SgNch": "NY-20",
+        "RLENIpAIcU": "NY-21",
+        "g6ySOLAAPQ": "NY-23",
+        "U5PIIuPEhR": "NY-24",
+        "Cp6hd5pPLZ": "NY-25",
+        "OtdRztNyt5": "NY-26"
+      },
+      "caveats": [
+        "Thin: answer liquidity 25, pool YES 44.9 / NO 13.9, answer volume 52.",
+        "Proposition is CONDITIONAL: empty description — fusion, certification, independents and caucus timing all unspecified.",
+        "LaLota runs on R + Conservative lines; irrelevant to a Dem-win proposition.",
+        "Thin: answer liquidity 25, pool YES 61.8 / NO 10.1, answer volume 129.",
+        "Halpin runs on D + WFP lines; fusion treatment unspecified here but he also holds the Democratic line.",
+        "Thin: answer liquidity 25, pool YES 14.2 / NO 44.1, answer volume 204.",
+        "D+24 safe seat priced only 0.757 — a thin-book artifact.",
+        "Thin: answer liquidity 25, pool YES 13.7 / NO 45.5, answer volume 145.",
+        "Thin: answer liquidity 25, pool YES 13.7 / NO 45.5, answer volume 245.",
+        "Valdez on D + WFP lines (also holds the Democratic line).",
+        "Thin: answer liquidity 25, pool YES 10.2 / NO 61.6, answer volume 193.",
+        "Thin: answer liquidity 25, pool YES 10.3 / NO 60.8, answer volume 204.",
+        "Thin: answer liquidity 25, pool YES 2.5 / NO 248.7, answer volume 431.",
+        "Lander on D + WFP lines (also holds the Democratic line).",
+        "Thin: answer liquidity 25, pool YES 75.0 / NO 8.3, answer volume 90.",
+        "Thin: answer liquidity 25, pool YES 9.1 / NO 69.0, answer volume 50.",
+        "Two independents on ballot.",
+        "Thin: answer liquidity 25, pool YES 10.5 / NO 59.5, answer volume 73.",
+        "Avila Chevalier on D + WFP lines. Espaillat (lost primary) is not on the certified list, so no WFP-only Democrat splits the vote.",
+        "Thin: answer liquidity 25, pool YES 11.6 / NO 53.8, answer volume 67.",
+        "AOC on D + WFP lines.",
+        "Thin: answer liquidity 25, pool YES 9.5 / NO 66.0, answer volume 45.",
+        "R (Sapaskis) and Conservative (Duran) lines run separate candidates; irrelevant to Dem-win but NO pools them.",
+        "Thin: answer liquidity 25, pool YES 10.7 / NO 58.5, answer volume 74.",
+        "Thin: answer liquidity 25, pool YES 11.6 / NO 54.1, answer volume 33.",
+        "Tonko on D + WFP lines.",
+        "Thin: answer liquidity 25, pool YES 35.0 / NO 17.9, answer volume 14.",
+        "Open R seat (Stefanik retiring); Constantino listed on R line only.",
+        "Thin: answer liquidity 25, pool YES 55.0 / NO 11.4, answer volume 34.",
+        "Gies on D + WFP lines.",
+        "Ellman on D + WFP lines.",
+        "Thin: answer liquidity 25, pool YES 11.2 / NO 56.0, answer volume 35.",
+        "Morelle on D + WFP lines.",
+        "Kennedy on Democratic line only."
+      ]
+    },
+    "which-party-wins-ohio-7th-congressi": {
+      "contractId": "2s6nul8lsu",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-07-regular-general",
+          "office": "house",
+          "key": "OH-7"
+        }
+      ],
+      "answerParties": {
+        "nqEZI8qdOZ": "D",
+        "9sZRccZSN6": "R"
+      },
+      "caveats": [
+        "No creator comments; rules are one line.",
+        "Prices diverge: party market D 0.79, candidate market Poindexter 0.769, Midwest portfolio 0.617."
+      ]
+    },
+    "which-party-will-win-ohios-15th-con": {
+      "contractId": "Rn8zlNdz62",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-15-regular-general",
+          "office": "house",
+          "key": "OH-15"
+        }
+      ],
+      "answerParties": {
+        "At5tC2O9cu": "R",
+        "gNAR0ZC5y5": "D"
+      },
+      "caveats": [
+        "Weakest-specified PR source in these regions: title-only proposition, no comments."
+      ]
+    },
+    "republicans-win-wisconsin-7th-congr": {
+      "contractId": "g8pgO2Q9zP",
+      "kind": "party-binary",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-07-regular-general",
+          "office": "house",
+          "key": "WI-7"
+        }
+      ],
+      "binaryYes": "R",
+      "caveats": [
+        "Pool YES 112 / NO 204; volume 3,864 on 125 liquidity.",
+        "Open seat (Tiffany running for governor)."
+      ]
+    },
+    "democrats-win-2026-minnesota-gubern": {
+      "contractId": "LNPL28tA80",
+      "kind": "party-binary",
+      "binaryYes": "D",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-governor-MN-regular-general",
+          "office": "governor",
+          "key": "MN"
+        }
+      ],
+      "caveats": [
+        "Background text is stale (says Walz is running); the resolution sentence is clear.",
+        "\"Democratic nominee\" taken to mean the DFL nominee; not stated explicitly.",
+        "100 liquidity, 11 bettors."
+      ]
+    },
+    "which-party-will-win-the-2026-alask": {
+      "contractId": "0L8uQURR06",
+      "kind": "ballot-party",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-senate-AK-class2-regular-general",
+          "office": "senate",
+          "key": "AK"
+        }
+      ],
+      "answerParties": {
+        "PlyNQRgP2g": "D",
+        "nSqcNyOyNz": "R",
+        "Qu8NyOCANu": "other"
+      },
+      "caveats": [
+        "Empty description; the Republican answer is named Dan Sullivan, which is ambiguous with two Dan Sullivans on the ballot. The title asks which party wins."
+      ]
+    },
+    "will-dan-sullivan-win-reelection-to": {
+      "contractId": "ULun8EOAAn",
+      "kind": "candidate-binary",
+      "confidence": "confirmed",
+      "candidate": "Dan S. Sullivan (incumbent)",
+      "races": [
+        {
+          "raceKey": "2026-senate-AK-class2-regular-general",
+          "office": "senate",
+          "key": "AK"
+        }
+      ],
+      "caveats": [
+        "YES means incumbent Dan S. Sullivan wins; NO includes other Republicans. Creator clarification e4tzmrmydy."
+      ]
+    },
+    "2026-california-12th-congressional": {
+      "contractId": "UyqlzUzdAQ",
+      "kind": "candidate",
+      "confidence": "conditional",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-12-regular-general",
+          "office": "house",
+          "key": "CA-12"
+        }
+      ],
+      "answerParties": {
+        "9lICQQPSZL": "D",
+        "Onh5QO9udq": "D"
+      }
+    }
+  },
+  "sameParty": {
+    "CA-4": {
+      "party": "D",
+      "finalists": [
+        "Mike Thompson",
+        "Eric Jones"
+      ],
+      "basis": "CA SOS certified list for the Nov 3 2026 general (8/27/2026): both finalists Party Preference Democratic"
+    },
+    "CA-7": {
+      "party": "D",
+      "finalists": [
+        "Doris Matsui",
+        "Mai Vang"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-11": {
+      "party": "D",
+      "finalists": [
+        "Scott Wiener",
+        "Connie Chan"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-12": {
+      "party": "D",
+      "finalists": [
+        "Lateefah Simon",
+        "Jamie Joyce"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-14": {
+      "party": "D",
+      "finalists": [
+        "Aisha Wahab",
+        "Melissa Hernandez"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-29": {
+      "party": "D",
+      "finalists": [
+        "Luz Maria Rivas",
+        "Angélica María Dueñas"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-34": {
+      "party": "D",
+      "finalists": [
+        "Jimmy Gomez",
+        "Angela Gonzales-Torres"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-37": {
+      "party": "D",
+      "finalists": [
+        "Sydney Kamlager-Dove",
+        "Samantha Mota"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
+    },
+    "CA-40": {
+      "party": "R",
+      "finalists": [
+        "Ken Calvert",
+        "Young Kim"
+      ],
+      "basis": "CA SOS certified list (8/27/2026): both finalists Republican"
+    }
+  },
+  "decided": {
+    "FL-10": {
+      "party": "D",
+      "candidate": "Maxwell Frost",
+      "basis": "Unopposed after qualifying; not printed on the November ballot and deemed elected (Fla. Stat. 101.151(7))"
+    }
+  }
+}

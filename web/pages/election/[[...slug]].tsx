@@ -40,7 +40,7 @@ export default function Elections(props: ElectionsPageProps) {
   useSaveCampaign()
 
   return (
-    <Page trackPageView="us midterms page 2026">
+    <Page trackPageView="us midterms page 2026" className="lg:col-span-10">
       {/* The share thumbnail quotes the same live markets the page shows —
           House/Senate control and the 2028 presidency — and refreshes with
           `revalidate`, so it can't drift from what's on the page. The map

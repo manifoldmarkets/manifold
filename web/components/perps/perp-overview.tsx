@@ -85,7 +85,11 @@ const useOracleFreshness = (contract: PerpContract) => {
   return now == null ? null : getPerpOracleFreshness(contract, now)
 }
 
-export const PerpOverview = (props: { contract: PerpContract }) => {
+export const PerpOverview = (props: {
+  contract: PerpContract
+  tradeOnly?: boolean
+  initialDirection?: 'long' | 'short'
+}) => {
   const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
   const [chartMode, setChartMode] = useState<'price' | 'funding'>('price')
   // Single polled positions source shared by the chart overlays, position
@@ -126,69 +130,73 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
 
   return (
     <Col className="gap-4">
-      <Row className="flex-wrap items-baseline justify-between gap-2">
-        {/* Wraps so Funding drops under the price on 320px phones instead
+      {!props.tradeOnly && (
+        <Row className="flex-wrap items-baseline justify-between gap-2">
+          {/* Wraps so Funding drops under the price on 320px phones instead
             of the pair overflowing the viewport. */}
-        <Row className="min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2 sm:gap-x-8">
-          <Col>
-            <div className="text-ink-500 text-sm">
-              {contract.isResolved
-                ? 'Final oracle price'
-                : getMnxInstrument(contract.oracleFeedId)?.category ===
-                  'valuation'
-                ? 'MNX valuation futures price'
-                : getMnxInstrument(contract.oracleFeedId)
-                ? 'MNX mark price'
-                : 'Oracle price'}
-            </div>
-            <div
-              className={clsx(
-                'text-3xl font-semibold tabular-nums transition-colors duration-700',
-                flash === 'up' && 'text-teal-500 duration-0',
-                flash === 'down' && 'text-scarlet-500 duration-0'
-              )}
-            >
-              {formatOraclePrice(contract.oracleFeedId, price, priceDecimals)}
-            </div>
-          </Col>
-          {contract.isResolved ? (
+          <Row className="min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2 sm:gap-x-8">
             <Col>
-              <div className="text-ink-500 text-sm">Status</div>
-              <div className="text-ink-900 text-3xl font-semibold">Settled</div>
-              <div className="text-ink-500 text-xs">Trading has ended</div>
+              <div className="text-ink-500 text-sm">
+                {contract.isResolved
+                  ? 'Final oracle price'
+                  : getMnxInstrument(contract.oracleFeedId)?.category ===
+                    'valuation'
+                  ? 'MNX valuation futures price'
+                  : getMnxInstrument(contract.oracleFeedId)
+                  ? 'MNX mark price'
+                  : 'Oracle price'}
+              </div>
+              <div
+                className={clsx(
+                  'text-3xl font-semibold tabular-nums transition-colors duration-700',
+                  flash === 'up' && 'text-teal-500 duration-0',
+                  flash === 'down' && 'text-scarlet-500 duration-0'
+                )}
+              >
+                {formatOraclePrice(contract.oracleFeedId, price, priceDecimals)}
+              </div>
             </Col>
-          ) : (
-            <FundingRateColumn
-              rate={liveFundingRate}
-              lastFundingTime={contract.lastFundingTime}
-              fundingStartTime={contract.createdTime}
-              fundingPeriodMs={getFundingPeriodMs(contract)}
-            />
-          )}
+            {contract.isResolved ? (
+              <Col>
+                <div className="text-ink-500 text-sm">Status</div>
+                <div className="text-ink-900 text-3xl font-semibold">
+                  Settled
+                </div>
+                <div className="text-ink-500 text-xs">Trading has ended</div>
+              </Col>
+            ) : (
+              <FundingRateColumn
+                rate={liveFundingRate}
+                lastFundingTime={contract.lastFundingTime}
+                fundingStartTime={contract.createdTime}
+                fundingPeriodMs={getFundingPeriodMs(contract)}
+              />
+            )}
+          </Row>
+          <Row className="border-ink-200 ml-auto overflow-hidden rounded-md border">
+            <button
+              className={`px-3 py-1 text-sm ${
+                chartMode === 'price'
+                  ? 'bg-primary-500 text-white'
+                  : 'text-ink-700'
+              }`}
+              onClick={() => setChartMode('price')}
+            >
+              Price
+            </button>
+            <button
+              className={`px-3 py-1 text-sm ${
+                chartMode === 'funding'
+                  ? 'bg-primary-500 text-white'
+                  : 'text-ink-700'
+              }`}
+              onClick={() => setChartMode('funding')}
+            >
+              Funding
+            </button>
+          </Row>
         </Row>
-        <Row className="border-ink-200 ml-auto overflow-hidden rounded-md border">
-          <button
-            className={`px-3 py-1 text-sm ${
-              chartMode === 'price'
-                ? 'bg-primary-500 text-white'
-                : 'text-ink-700'
-            }`}
-            onClick={() => setChartMode('price')}
-          >
-            Price
-          </button>
-          <button
-            className={`px-3 py-1 text-sm ${
-              chartMode === 'funding'
-                ? 'bg-primary-500 text-white'
-                : 'text-ink-700'
-            }`}
-            onClick={() => setChartMode('funding')}
-          >
-            Funding
-          </button>
-        </Row>
-      </Row>
+      )}
 
       {!contract.isResolved && oracleTradingPaused && (
         <div
@@ -228,7 +236,9 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         </div>
       )}
 
-      <PerpChart contract={contract} mode={chartMode} positions={positions} />
+      {!props.tradeOnly && (
+        <PerpChart contract={contract} mode={chartMode} positions={positions} />
+      )}
       {/* Source credit for the feed — kept out of the market description so a
           licence credit can't be edited away. See
           common/perps/oracle-attribution.
@@ -256,6 +266,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
       ) : (
         <PerpBetPanel
           contract={contract}
+          initialDirection={props.initialDirection}
           onTrade={refresh}
           positions={positions}
           unsoundPositions={unsoundPositions}

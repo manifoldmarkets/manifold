@@ -1,4 +1,6 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
+import { auditedOdds, sourceAudit } from './audited-sources'
+import { Odds } from './election-odds'
 import { Contract, isMultiCpmm } from 'common/contract'
 import {
   MapContractsDictionary,
@@ -37,7 +39,7 @@ export const ALSO_DEMOCRATIC = [
 // parentheses so "(D)" matches but "(Dem-leaning)" or a stray D does not, and
 // so "(R)" cannot match inside "(Rep)". No /g flag: these are reused across
 // calls and a sticky lastIndex would make .test() alternate true/false.
-const DEM_TAG = /\(\s*D\s*\)/i
+const DEM_TAG = /\(\s*(?:D|DFL)\s*\)/i
 const REP_TAG = /\(\s*R\s*\)/i
 
 /**
@@ -62,8 +64,12 @@ export const isRepublicanAnswer = (text: string) =>
 export const getPartyProbs = (
   contract: Contract | null,
   data?: StateElectionMarket
-): { dem: number; rep: number; other: number } | undefined => {
-  if (!contract) return undefined
+): Odds | undefined => {
+  if (!contract || contract.resolution === 'CANCEL') return undefined
+  const audited = sourceAudit(contract.slug)
+  // Use the same audited meanings as the explorer; do not recast NO or an
+  // independent as a Democratic win on homepage/OG maps.
+  if (audited) return auditedOdds(contract, audited)
 
   let dem: number
   let rep: number
@@ -135,6 +141,12 @@ export const probToColor = (
 ) => {
   const probs = getPartyProbs(contract, data)
   if (!probs) return undefined
+  const known = Math.max(probs.dem, probs.rep)
+  if (
+    Math.max(probs.notDem ?? 0, probs.notRep ?? 0, probs.unknown ?? 0) > known
+  )
+    return '#9e9fbd'
+  if (probs.other > known) return '#318b83'
   return partyProbsToColor(probs.dem, probs.rep)
 }
 

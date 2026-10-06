@@ -1,0 +1,1515 @@
+<title>2026 Election Market Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+/>
+<style>
+  /* Layout: a single reading column (memo), with wide tables allowed to scroll inside their own frames. */
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --fg: #1b2230;
+    --muted: #5b6474;
+    --line: #d9dde5;
+    --accent: #2c4a8a;
+    --dem: #2f5fb3;
+    --rep: #b23a3a;
+    --oth: #2d7f78;
+    --warn: #9a6400;
+    --warn-bg: #fff4dc;
+    --bad: #a3262a;
+    --bad-bg: #fde9e8;
+    --ok: #2c6e3f;
+    --ok-bg: #e5f3e8;
+    --chip: #eef1f6;
+    --display: 'Archivo', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+    --body: 'Public Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #12161d;
+      --surface: #1a2029;
+      --fg: #e4e8ef;
+      --muted: #9aa3b2;
+      --line: #2c3442;
+      --accent: #8fb0f0;
+      --dem: #7fa6ec;
+      --rep: #ec8a8a;
+      --oth: #6cc5bb;
+      --warn: #f0c060;
+      --warn-bg: #3a2e12;
+      --bad: #f19a96;
+      --bad-bg: #3d1d1d;
+      --ok: #8fd3a2;
+      --ok-bg: #173323;
+      --chip: #232b37;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #12161d;
+    --surface: #1a2029;
+    --fg: #e4e8ef;
+    --muted: #9aa3b2;
+    --line: #2c3442;
+    --accent: #8fb0f0;
+    --dem: #7fa6ec;
+    --rep: #ec8a8a;
+    --oth: #6cc5bb;
+    --warn: #f0c060;
+    --warn-bg: #3a2e12;
+    --bad: #f19a96;
+    --bad-bg: #3d1d1d;
+    --ok: #8fd3a2;
+    --ok-bg: #173323;
+    --chip: #232b37;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.6 var(--body);
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 32px 64px;
+    display: grid;
+    gap: 40px;
+  }
+  header {
+    display: grid;
+    gap: 10px;
+    border-bottom: 3px solid var(--fg);
+    padding-bottom: 18px;
+  }
+  .eyebrow {
+    font: 600 12px/1.3 var(--body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font: 800 clamp(30px, 5vw, 46px) / 1.05 var(--display);
+    font-stretch: 82%;
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font: 750 26px/1.15 var(--display);
+    font-stretch: 85%;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font: 700 18px/1.25 var(--display);
+    font-stretch: 92%;
+    margin: 0;
+    text-wrap: balance;
+  }
+  p,
+  li {
+    max-width: 72ch;
+  }
+  p {
+    margin: 0;
+  }
+  ul,
+  ol {
+    margin: 0;
+    padding-left: 1.25em;
+    display: grid;
+    gap: 6px;
+  }
+  section {
+    display: grid;
+    gap: 16px;
+  }
+  .lede {
+    font-size: 17px;
+    color: var(--fg);
+  }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+  code,
+  .mono {
+    font-family: var(--mono);
+    font-size: 0.86em;
+  }
+  code {
+    background: var(--chip);
+    padding: 1px 5px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+  }
+  a {
+    color: var(--accent);
+  }
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .tablewrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13.5px;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    font: 600 11.5px/1.3 var(--body);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--chip);
+    white-space: nowrap;
+  }
+  tr:last-child td {
+    border-bottom: 0;
+  }
+  td.num,
+  th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .chip {
+    display: inline-block;
+    font: 600 11px/1.6 var(--body);
+    letter-spacing: 0.04em;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--chip);
+    color: var(--fg);
+    white-space: nowrap;
+  }
+  .chip.d {
+    color: var(--dem);
+  }
+  .chip.r {
+    color: var(--rep);
+  }
+  .chip.o {
+    color: var(--oth);
+  }
+  .chip.ok {
+    background: var(--ok-bg);
+    color: var(--ok);
+  }
+  .chip.warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+  .chip.bad {
+    background: var(--bad-bg);
+    color: var(--bad);
+  }
+  .callout {
+    border-left: 4px solid var(--warn);
+    background: var(--warn-bg);
+    padding: 12px 14px;
+    border-radius: 0 6px 6px 0;
+    display: grid;
+    gap: 6px;
+  }
+  .callout.bad {
+    border-color: var(--bad);
+    background: var(--bad-bg);
+  }
+  .grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .grid2 > * {
+    min-width: 0;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .kv {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 14px;
+    font-size: 14px;
+  }
+  .kv dt {
+    color: var(--muted);
+  }
+  .kv dd {
+    margin: 0;
+    min-width: 0;
+  }
+  .big {
+    font: 750 30px/1 var(--display);
+    font-stretch: 85%;
+    font-variant-numeric: tabular-nums;
+  }
+  .small {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font: 12.5px/1.55 var(--mono);
+    margin: 0;
+  }
+  details {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  details > summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  details[open] > summary {
+    margin-bottom: 10px;
+  }
+  .bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">
+      Manifold · PR #4114 <span class="mono">codex/elections-map</span> ·
+      read-only audit
+    </div>
+    <h1>2026 Election Market Audit</h1>
+    <p class="lede">
+      Which existing market should price each of the 506 races on the dashboard,
+      what each source actually resolves on, where the PR misreads one, and a
+      reviewed, dry-run-only plan for the races with no suitable market.
+    </p>
+    <div class="meta">
+      <span
+        >DB snapshot <b>2026-10-03 00:50–00:58 UTC</b> (prod, read-only role,
+        read-only transactions)</span
+      >
+      <span>Official checks 2026-10-03</span>
+      <span
+        >No market was created, edited, subsidised, bet on or commented
+        on.</span
+      >
+    </div>
+  </header>
+
+  <section id="summary">
+    <h2>Summary</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Office</th>
+            <th class="num">Races</th>
+            <th class="num">Reuse · confirmed</th>
+            <th class="num">Reuse · conditional</th>
+            <th class="num">Create</th>
+            <th class="num">Held / review</th>
+            <th class="num">Not on ballot</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Senate (33 Class 2 + FL, OH Class 3 specials)</td>
+            <td class="num">35</td>
+            <td class="num">29</td>
+            <td class="num">6</td>
+            <td class="num">0</td>
+            <td class="num">0</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td>Governor</td>
+            <td class="num">36</td>
+            <td class="num">11</td>
+            <td class="num">23</td>
+            <td class="num">1</td>
+            <td class="num">1</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td>House (435 voting seats)</td>
+            <td class="num">435</td>
+            <td class="num">70</td>
+            <td class="num">135</td>
+            <td class="num">224</td>
+            <td class="num">5</td>
+            <td class="num">1</td>
+          </tr>
+          <tr>
+            <td><b>Total</b></td>
+            <td class="num"><b>506</b></td>
+            <td class="num"><b>110</b></td>
+            <td class="num"><b>164</b></td>
+            <td class="num"><b>225</b></td>
+            <td class="num"><b>6</b></td>
+            <td class="num"><b>1</b></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      “Confirmed” means the market text (description or creator comment) matches
+      the race’s general-election proposition. “Conditional” means usable with
+      the caveats listed, usually a title-only market with an empty description.
+      Held: MA-2, MA-5, MA-7 and WI-2 have one printed candidate plus a write-in
+      line; TN-9’s candidate market lacks the Republican nominee; Minnesota
+      governor needs the binary-orientation fix below. Not on ballot: FL-10
+      (Frost unopposed, deemed elected).
+    </p>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Before an apply run</h3>
+        <ul>
+          <li>
+            No budget is approved. The manifest’s
+            <code>review.approved</code> is false and
+            <code>approvedMaxTotalMana</code> is null.
+          </li>
+          <li>
+            Choose the creator account and liquidity option (below). The default
+            plan costs <b>Ṁ306,000</b>.
+          </li>
+          <li>
+            Decide the four uncontested seats (draft payloads included, excluded
+            from apply).
+          </li>
+          <li>
+            Confirm MA-1’s printed ballot label (state page shows none; Neal won
+            the Democratic primary).
+          </li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>PR merge blockers found</h3>
+        <ul>
+          <li>
+            Every binary is read as YES = Republican; several deep sources are
+            YES = Democrat.
+          </li>
+          <li>The homepage map also books a binary’s NO as Democratic.</li>
+          <li>
+            Answer labels decide party: “(D)” tags are summed into prices,
+            untagged names become “Other”, “DFL” is not Democratic.
+          </li>
+          <li>
+            Nine same-party California seats: 3 shown as “D 100%” by label sum,
+            5 missing, CA-40 counted as “Not D”.
+          </li>
+        </ul>
+        <p class="small">
+          A tested patch and helper fix all four; see
+          <a href="#pr">Changes for the PR</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="method">
+    <h2>Scope, method and gaps</h2>
+    <ul>
+      <li>
+        <b>Inventory.</b> 2026 House, Senate and governor tables (Wikipedia
+        wikitext, which cites each state’s certified list), then checked against
+        official sources: CA SOS certified list (8/27/2026), FL DOE, MA list and
+        PD43, LA SOS calendar and Act 7, Georgia code, Vermont constitution,
+        Missouri SOS and the Supreme Court order in 26A388, the House Clerk
+        vacancy list. 435 seats, 35 Senate races, 36 governors confirmed.
+      </li>
+      <li>
+        <b>Market discovery.</b> Every non-deleted market open after June 2026
+        whose title, full-text description or any answer row mentions an office,
+        district, party or election (5,672 markets, 22,597 answers), plus a
+        full-name search for every listed candidate across all 33,950 open
+        binary and multiple-choice markets (which found the CA-11 Wiener binary,
+        CA-17, CA-24, CO-3, CO-4, NC-9, NY-13 and Alaska governor markets the
+        keyword pass missed). All 1,561 public comments on the 815 shortlisted
+        markets and all 1,544 live limit orders, with maker balances, were read.
+      </li>
+      <li>
+        <b>Depth.</b> Pool liquidity, per-answer liquidity and live limit-order
+        depth are reported separately. Ṁ10 and Ṁ100 buys on both sides were
+        simulated with the repository’s own bet code
+        (<code>common/new-bet</code>: CPMM, sum-to-one arbitrage, limit-order
+        matching with maker balance checks) for 96 sources.
+      </li>
+      <li>
+        <b>Gaps.</b> elections.alaska.gov, sos.ga.gov, senate.gov, SC VREMS,
+        elections.wi.gov, the live MA candidate page and the Idaho candidate
+        search were blocked from this location; Alaska and Idaho rest on news
+        reports (Alaska Public Media, ADN). The CA June primary Statement of
+        Vote was not fetched; CA-29’s seed uses AP figures. The atlas’s Alabama
+        shapes were not checked against the 2023 plan. Comments were read only
+        for shortlisted markets.
+      </li>
+    </ul>
+  </section>
+
+  <section id="pr">
+    <h2>Changes for the PR</h2>
+    <p>
+      These are proposals. Nothing in the other agent’s files was changed: the
+      helper is new files on branch <code>claude/elections-market-audit</code>,
+      and the mapping and wiring changes are a patch that applies cleanly to
+      <span class="mono">codex/elections-map@f058d252e</span>. With the patch
+      applied, <code>web</code> type-checks and all 23 map tests pass (14
+      existing, three of them updated to the new expected counts, plus 9 new).
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Problem</th>
+            <th>Example</th>
+            <th>Fix in the helper / patch</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Binary YES assumed Republican</td>
+            <td>
+              Maine’s deepest party market (10k) is YES = Democratic nominee; so
+              are MN governor and WI governor’s 10k binary
+            </td>
+            <td>
+              Per-source <code>binaryYes</code> from the audit; homepage
+              <code>getPartyProbs</code> uses it too
+            </td>
+          </tr>
+          <tr>
+            <td>Candidate binaries used as party quotes</td>
+            <td>
+              Plant’s Sullivan, Joyce (CA-12), Boebert (CO-4), Figures (AL-2),
+              Ojeda (NC-9)
+            </td>
+            <td>
+              <code>candidate-binary</code> sources never feed party totals and
+              never fall back to label parsing
+            </td>
+          </tr>
+          <tr>
+            <td>Labels decide party</td>
+            <td>
+              SD answer “Democrats OR Independents” is now independent Brian
+              Bengs; AK-0 “Matt Schultz (D)” withdrew; CA-40 “Ken
+              Calvert”/“Young Kim” read as Other 100%
+            </td>
+            <td>
+              Audited answer → party map by answer ID; unknown and withdrawn are
+              never D/R
+            </td>
+          </tr>
+          <tr>
+            <td>Same-party ballots</td>
+            <td>CA-4, 7, 11, 12, 14, 29, 34, 37 (D v D) and CA-40 (R v R)</td>
+            <td>
+              <code>sameParty</code> table from the certified list; seat counts
+              once by ballot, candidate market kept for bets
+            </td>
+          </tr>
+          <tr>
+            <td>Decided seats</td>
+            <td>FL-10 is not on the ballot</td>
+            <td><code>decided</code> table</td>
+          </tr>
+          <tr>
+            <td>DFL not Democratic</td>
+            <td>Minnesota answers tagged “(DFL)”</td>
+            <td>Recognised as D</td>
+          </tr>
+          <tr>
+            <td>Stale candidate cards</td>
+            <td>
+              ME card shows Collins 0.99 (N/A unless Platner, Mills or Collins
+              wins); NY card lists Delgado and Stefanik, not nominee Blakeman
+            </td>
+            <td>
+              Removed; CA card moved to Conflux’s market with stated call rules
+            </td>
+          </tr>
+          <tr>
+            <td>Portfolio precedence</td>
+            <td>
+              Jack1’s Texas portfolio has written criteria and ~4× per-answer
+              liquidity but is not used; CA-40’s resolved-NO original answer
+              hides its candidate market
+            </td>
+            <td>
+              Jack1 Texas first; <code>preferOverPortfolio</code> on every
+              same-party source
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      Not fixed by the patch: the Midwest portfolio’s 19 labels (“… (OPEN-R)”)
+      do not pass <code>parseHouseAnswer</code>, so mapping MN-2 and OH-10 needs
+      a parser change. Race-detail copy for the new <code>basis</code> field
+      (“same-party ballot”, “uncontested”, “candidate market only”) is left to
+      the styling work. For YES = Republican binaries the homepage still colours
+      NO as Democratic, as it does today.
+    </p>
+  </section>
+
+  <section id="iowa-alaska-house">
+    <h2>Recent fixes: Iowa Senate and Alaska at-large</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3>
+          Iowa Senate · <span class="mono">I9QNz9Q2L2</span>
+          <span class="chip warn">conditional</span>
+        </h3>
+        <dl class="kv">
+          <dt>Liquidity</dt>
+          <dd>10,000 pool (5,000 per answer) vs 100 before</dd>
+          <dt>Depth</dt>
+          <dd>
+            Turek YES 6,115 funded at 0.39–0.42; Turek NO 3,278 at 0.46–0.48
+          </dd>
+          <dt>Ṁ100 buy</dt>
+          <dd>Turek 44.8% → 45.3% (old source: 46% → 84.5%)</dd>
+        </dl>
+        <p>
+          The description is a single image: a poll table (Echelon, GBAO, Change
+          Research). It has no resolution text. Plant’s only comment
+          (<code>0f1hn9usff4</code>) says the market was created after the
+          primary; it sets no rules.
+        </p>
+        <p>
+          <b>Two named candidates, no Other, answers locked.</b> A replacement
+          nominee, a withdrawal after ballots are printed, or a win by
+          Libertarian Thomas Laehn (on the ballot) has no answer. The likely
+          result is N/A, and a cancelled source would leave Iowa unpriced on
+          election night. The PR counts “Josh Turek (Democrat)” as D through
+          <code>/democrat/i</code>, so no candidate note is shown. Keep it,
+          label it as a candidate market counted as party, and ask Plant for
+          written rules.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>
+          Alaska at-large · <span class="mono">9zPhhzEnCc</span>
+          <span class="chip warn">conditional</span>
+        </h3>
+        <p>
+          The description says “winner of the final round, not first place the
+          primary”. Calls versus certification, replacement and cancellation are
+          unspecified.
+        </p>
+        <p>
+          <b>The answer set does not match the November ballot.</b> “Matt
+          Schultz (D)” (0.9%) withdrew in July. The actual Democrat, Eric
+          Hafner, and Libertarian Jim McDermott sit inside “Other”. Bill Hill
+          (I) is correct as an independent; his exact ballot designation is
+          unverified.
+        </p>
+        <p>
+          Keep the override, since it is the only source that separates Begich
+          (R) from Hill (I). Count answers by the audited map (Begich R, Hill I,
+          Schultz withdrawn, Other mixed) and show no D share from it. The
+          portfolio fallback is sound for a missing or cancelled market but not
+          for a resolution to Other. Ask Jack1 to resolve Schultz NO and add
+          Hafner and McDermott.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="alaska-senate">
+    <h2>Alaska Senate and other competitive Senate sources</h2>
+    <p>
+      The ballot is a top-four ranked-choice general: Mary Peltola (D),
+      incumbent Dan S. Sullivan (R), Dan J. Sullivan (registered R, allowed on
+      by the Alaska Supreme Court) and Gerald Heikes (R).
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Market</th>
+            <th>Proposition</th>
+            <th class="num">Pool liq.</th>
+            <th>Live limit depth</th>
+            <th>Ṁ100 YES on leader</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">0L8uQURR06</span> kl938 (PR now)</td>
+            <td>
+              “Which party”, answers relabelled “Mary Peltola (D)”, “Dan
+              Sullivan (R)”, Other; empty description
+            </td>
+            <td class="num">200</td>
+            <td>Peltola YES 5,537 funded at 0.69–0.70</td>
+            <td>Peltola 70.0% → 83.8%; a Ṁ100 NO fills entirely from orders</td>
+            <td>
+              <span class="chip warn">fallback</span> The “Dan Sullivan (R)”
+              label collides with two Dan Sullivans
+            </td>
+          </tr>
+          <tr>
+            <td><span class="mono">hPnINuRzt8</span> TheDucksFan</td>
+            <td>Republicans / Democrats / Other; empty description</td>
+            <td class="num">100</td>
+            <td>none</td>
+            <td>Democrats 67.8% → 89.0%</td>
+            <td>
+              <span class="chip ok">recommended</span> party-only labels; needs
+              the 2,500 subsidy to be usable
+            </td>
+          </tr>
+          <tr>
+            <td><span class="mono">ULun8EOAAn</span> Plant</td>
+            <td>
+              Candidate binary: YES = incumbent Dan S. Sullivan (creator
+              <code>e4tzmrmydy</code>), NO = any other winner, including two
+              other Republicans
+            </td>
+            <td class="num">1,000</td>
+            <td>YES 2,043 at 0.25–0.31; NO 5,039 funded at 0.32–0.66</td>
+            <td>Sullivan 31.0% → 32.0% (88 of 100 from orders)</td>
+            <td>
+              <span class="chip bad">never a party source</span> Show as a
+              labelled card only
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      Plant’s earlier comment <code>rsjdguxi29</code> loosely calls it “whether
+      a Republican will be re-elected in Alaska”. The written rule (“NO if any
+      other candidate wins”) and the later ruling override that framing, but it
+      shows how easily the market gets misread. No deeper Alaska party market
+      exists.
+    </p>
+
+    <h3>
+      Other competitive Senate sources (Ṁ100 market buys, snapshot prices)
+    </h3>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Race</th>
+            <th>Source</th>
+            <th class="num">Pool liq.</th>
+            <th>Ṁ100 YES on leader</th>
+            <th>Ṁ100 YES on trailer</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ME</td>
+            <td>
+              PR <span class="mono">UzNUOlCZgt</span> → Jack1
+              <span class="mono">RcL0Q9O0EU</span> (YES = Democratic nominee)
+            </td>
+            <td class="num">100 → 10,000</td>
+            <td>Jackson 62.0 → 69.1 · new 63.6 → 63.9</td>
+            <td>Collins 38 → 39 (orders)</td>
+            <td>
+              <span class="chip">switch</span> needs YES = D support; else
+              subsidise 2,500
+            </td>
+          </tr>
+          <tr>
+            <td>OH special</td>
+            <td>
+              PR <span class="mono">9cghzyIpRP</span> →
+              <span class="mono">Eg96Z2066n</span> (D/R/Other, special named)
+            </td>
+            <td class="num">200 → 1,000</td>
+            <td>new: D 56.4 → 62.1</td>
+            <td>old: Husted 41.0 → 64.7</td>
+            <td><span class="chip">switch</span></td>
+          </tr>
+          <tr>
+            <td>TX</td>
+            <td><span class="mono">tdA9NqRnpZ</span></td>
+            <td class="num">10,600</td>
+            <td>Talarico 63.3 → 63.8</td>
+            <td>Paxton 36.7 → 37.6</td>
+            <td>keep (party reading rests on a non-creator comment)</td>
+          </tr>
+          <tr>
+            <td>NE</td>
+            <td>
+              <span class="mono">6I5SSguQ8I</span> (“as identified on the
+              ballot”)
+            </td>
+            <td class="num">1,000</td>
+            <td>R 72.0 → 75.9</td>
+            <td>Osborn 28.0 → 38.8</td>
+            <td>keep, confirmed; Osborn counts as independent</td>
+          </tr>
+          <tr>
+            <td>NH</td>
+            <td><span class="mono">lRd6Sz0dC8</span></td>
+            <td class="num">200</td>
+            <td>D 87.0 → 90.6</td>
+            <td>R 13.0 → 40.0</td>
+            <td>keep + 1,000 subsidy</td>
+          </tr>
+          <tr>
+            <td>MN</td>
+            <td><span class="mono">QcRNIRZSNg</span></td>
+            <td class="num">200</td>
+            <td>D 93.0 → 94.5</td>
+            <td>R 7.0 → 37.6</td>
+            <td>keep; both order books unfunded</td>
+          </tr>
+          <tr>
+            <td>GA</td>
+            <td><span class="mono">cOqt565CRZ</span></td>
+            <td class="num">500</td>
+            <td>D 96.0 → 96.5</td>
+            <td>R 4.0 → 24.2</td>
+            <td>keep, confirmed; runoff covered by “wins the 2026 election”</td>
+          </tr>
+          <tr>
+            <td>IA</td>
+            <td><span class="mono">I9QNz9Q2L2</span></td>
+            <td class="num">10,000</td>
+            <td>Hinson 55.2 → 55.7</td>
+            <td>Turek 44.8 → 45.3</td>
+            <td>keep (conditional, above)</td>
+          </tr>
+          <tr>
+            <td>MT</td>
+            <td>
+              <span class="mono">tydQt5d26u</span> candidates with D / I / R /
+              Other
+            </td>
+            <td class="num">2,000</td>
+            <td>Alme 92.3 → 93.0</td>
+            <td>Bodnar 6.8 → 16.5</td>
+            <td>keep; party market N/As on a Bodnar win</td>
+          </tr>
+          <tr>
+            <td>ID</td>
+            <td>
+              <span class="mono">NLt0U0pC9n</span> Risch (R) / Achilles (I)
+            </td>
+            <td class="num">1,700</td>
+            <td>Risch 92.7 → 93.4</td>
+            <td>Achilles 7.3 → 18.6</td>
+            <td>keep; stop folding Achilles into D</td>
+          </tr>
+          <tr>
+            <td>SD</td>
+            <td><span class="mono">sshNUOnpCZ</span></td>
+            <td class="num">200</td>
+            <td>R 92.0 → 94.1</td>
+            <td>Bengs 8.0 → 44.3</td>
+            <td>keep; count Bengs as independent</td>
+          </tr>
+          <tr>
+            <td>FL special</td>
+            <td><span class="mono">CcysACRQAh</span> (YES = R)</td>
+            <td class="num">1,000</td>
+            <td>R 88.6 → 89.3</td>
+            <td>NO 88.6 → 82.6</td>
+            <td>keep, confirmed</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      Simulations use frozen pools, orders and balances at the snapshot. Each
+      buy is simulated alone. Maker balances are total balances, so order depth
+      can be overstated. Loans, per-user limits and bet delays are ignored. Full
+      results are in <code>audit/simulations/</code>.
+    </p>
+  </section>
+
+  <section id="control">
+    <h2>Senate control: AndrewG’s market</h2>
+    <div class="callout">
+      <p>
+        <b>Ambiguous. There is no creator ruling.</b> The text is about election
+        results: “after the 2026 United States elections members of the
+        Republican party have won at least 51 seats…, or 50 seats with a
+        Republican Vice President”, with elected independents counted by
+        expected caucus. Nothing states when party membership is measured, how
+        post-election switches count, or when it resolves. It closes Dec 1,
+        2026. AndrewG has no comments or updates; Jack1’s question about a Nov
+        30 switch (<code>8aogg3i7lui</code>) is unanswered.
+      </p>
+    </div>
+    <p>
+      <b
+        >Scenario: Democrats win 51 seats, then Fetterman switches on Dec 30.</b
+      >
+      On the natural reading Republicans did not win 51 (or 50 + VP) in the
+      elections, so it resolves NO, and the switch comes after the market
+      closes. A resolver who waits past Dec 30 could argue Fetterman is then a
+      Republican member holding a seat he won, giving 50 + VP and YES. It leans
+      NO, but that is a reading, not a ruling. Label it on the dashboard as
+      “Republicans win ≥51 seats, or 50 + VP, in the 2026 elections
+      (post-election switches not addressed)”.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Alternative</th>
+            <th>Cutoff</th>
+            <th>Fetterman Dec 30</th>
+            <th class="num">Liq.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <span class="mono">BpoEJNtlQoDBpfjBmK0y</span> AndrewG (current)
+            </td>
+            <td>none stated; closes Dec 1</td>
+            <td>unspecified, leans NO</td>
+            <td class="num">20,005</td>
+          </tr>
+          <tr>
+            <td><span class="mono">upscnQcUqt</span> predyx</td>
+            <td>
+              affiliation fixed when AP, Fox and NBC have called both chambers
+            </td>
+            <td>ignored → Democratic Senate</td>
+            <td class="num">5,000</td>
+          </tr>
+          <tr>
+            <td><span class="mono">PlRCt0hEEl</span> Panfilo (seat count)</td>
+            <td>resolves Jan 4, 2027; independents by caucus</td>
+            <td>counted → 50 D</td>
+            <td class="num">12,000</td>
+          </tr>
+          <tr>
+            <td><span class="mono">2qgcn2s2zd</span> MichaelBlume</td>
+            <td>
+              Speaker and Majority Leader both Democrats at any time before Jan
+              31, 2027 (combined with the House)
+            </td>
+            <td>counted</td>
+            <td class="num">10,000</td>
+          </tr>
+          <tr>
+            <td><span class="mono">s8uqRyg2U0</span> DannyOBrien</td>
+            <td>2026 winners plus senators serving on Nov 3, 2026</td>
+            <td>ignored</td>
+            <td class="num">6,000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      A Ṁ100 buy moves AndrewG’s market 35.4% → 35.7%. Another edge case: if
+      Osborn wins and caucuses with neither party, a 50 D / 49 R / 1 I Senate
+      resolves NO, while the dashboard’s control card would show it as
+      Democratic.
+    </p>
+  </section>
+
+  <section id="governors">
+    <h2>Governors</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Recent additions</h3>
+        <ul>
+          <li>
+            <b>Michigan</b> <span class="mono">LE6s82ZcAp</span>
+            <span class="chip ok">confirmed</span>. Duggan withdrew on May 21,
+            ten hours after the market opened, and is not on the ballot. The
+            “Democratic/Republican Party Nominee” answers are true party
+            answers. Duggan’s 0.3% is dead residue. The PR comment is out of
+            date.
+          </li>
+          <li>
+            <b>Florida</b> <span class="mono">uODgxBgIoHZWqFqHGPbe</span>
+            <span class="chip ok">confirmed</span>. YES = a Republican wins; NO
+            = Jolly (D), the Libertarian or any of five independents. Closes
+            11:59 pm ET on Nov 2.
+          </li>
+          <li>
+            <b>Kansas, Ohio, Oregon</b> (Jack1). Named candidates, no Other
+            answer, answers locked, and the descriptions are links only. Each
+            resolves on the person; replacement, third-party and cancellation
+            outcomes are unspecified. The “(D)/(R)” reading is a candidate
+            proxy. Kansas switches to the same creator’s described party binary
+            <span class="mono">n2A2ySggys</span> (YES = R, 184 liquidity,
+            subsidy 1,000). Ohio and Oregon stay conditional.
+          </li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Rounds that are not a Nov 3 plurality</h3>
+        <ul>
+          <li><b>Georgia</b>: majority required; runoff Dec 1.</li>
+          <li>
+            <b>Alaska</b>: top-four ranked choice; tabulation around Nov 18.
+          </li>
+          <li>
+            <b>Vermont</b>: majority required, else the legislature chooses from
+            the top three in January.
+          </li>
+          <li><b>Maine governor</b>: plurality, not ranked choice.</li>
+        </ul>
+        <p class="small">
+          None of these markets addresses its special round, and each closes
+          before that round.
+        </p>
+      </div>
+    </div>
+    <p>
+      Of the 17 unlinked states, 15 now map to existing title-only party markets
+      (conditional, 100–200 liquidity, mostly stale since June). Rhode Island
+      needs a candidate market, because independent Ken Block polls second and
+      the only market has no Other answer. Minnesota’s sources work only with
+      YES = D or DFL support. Colorado and Iowa switch to better-described party
+      markets.
+    </p>
+  </section>
+
+  <section id="california">
+    <h2>California same-party seats</h2>
+    <p>
+      The CA SOS certified list (8/27/2026) shows exactly nine same-party
+      contests. California bars write-ins in a top-two general (Elections Code
+      §8606) and does not refill a ballot vacancy (§8803(b)). Each seat’s party
+      is fixed by the ballot; the markets price only which candidate wins.
+      Jack’s list missed <b>CA-29</b>, which has no market anywhere. The
+      California portfolio omits exactly these nine districts, and anyone can
+      add answers to it.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Seat</th>
+            <th>Finalists (ballot designation)</th>
+            <th>Source</th>
+            <th>Round</th>
+            <th>PR today</th>
+            <th>Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CA-4</td>
+            <td>Mike Thompson, Eric Jones <span class="chip d">D v D</span></td>
+            <td><span class="mono">yZRqg50ddy</span> Jack1</td>
+            <td>
+              November by construction (created after the primary, finalists
+              only); description says “primaries”
+            </td>
+            <td>“D 100%” from summed tags</td>
+            <td>ballot basis; ask Jack1 to state the round</td>
+          </tr>
+          <tr>
+            <td>CA-7</td>
+            <td>Doris Matsui, Mai Vang <span class="chip d">D v D</span></td>
+            <td><span class="mono">OuAAPuqpzE</span></td>
+            <td>explicit November</td>
+            <td>“D 100%”</td>
+            <td>ballot basis</td>
+          </tr>
+          <tr>
+            <td>CA-11</td>
+            <td>Scott Wiener, Connie Chan <span class="chip d">D v D</span></td>
+            <td><span class="mono">8uzA88lE2A</span> BenM (12,225 liq.)</td>
+            <td>2026 election; calls or SOS</td>
+            <td>unpriced</td>
+            <td>add; barak’s 2029 “next person” market stays related-only</td>
+          </tr>
+          <tr>
+            <td>CA-12</td>
+            <td>
+              Lateefah Simon, Jamie Joyce <span class="chip d">D v D</span>
+            </td>
+            <td>
+              <span class="mono">PsPO6z5zZt</span> Joyce binary (fallback
+              <span class="mono">UyqlzUzdAQ</span>)
+            </td>
+            <td>explicit Nov 3; certified SOS</td>
+            <td>unpriced</td>
+            <td>add as candidate binary; “Jamie Joyce(D)” parses as D</td>
+          </tr>
+          <tr>
+            <td>CA-14</td>
+            <td>
+              Aisha Wahab, Melissa Hernandez <span class="chip d">D v D</span>
+            </td>
+            <td><span class="mono">zU5S55uNOA</span> BenM</td>
+            <td>
+              regular election; creator excludes the June special
+              (<code>cnai9n0dlbc</code>)
+            </td>
+            <td>unpriced</td>
+            <td>add; keep all 5 answer IDs</td>
+          </tr>
+          <tr>
+            <td>CA-29</td>
+            <td>
+              Luz Maria Rivas, Angélica María Dueñas
+              <span class="chip d">D v D</span>
+            </td>
+            <td>none</td>
+            <td>—</td>
+            <td>unpriced</td>
+            <td>counts D by ballot; candidate market in the manifest</td>
+          </tr>
+          <tr>
+            <td>CA-34</td>
+            <td>
+              Jimmy Gomez, Angela Gonzales-Torres
+              <span class="chip d">D v D</span>
+            </td>
+            <td><span class="mono">N0sqEU0nCn</span></td>
+            <td>explicit November</td>
+            <td>“D 100%”</td>
+            <td>ballot basis</td>
+          </tr>
+          <tr>
+            <td>CA-37</td>
+            <td>
+              Sydney Kamlager-Dove, Samantha Mota
+              <span class="chip d">D v D</span>
+            </td>
+            <td><span class="mono">PLdO9EPtLN</span></td>
+            <td>implicit (finalists only)</td>
+            <td>unpriced</td>
+            <td>add</td>
+          </tr>
+          <tr>
+            <td>CA-40</td>
+            <td>Ken Calvert, Young Kim <span class="chip r">R v R</span></td>
+            <td><span class="mono">U9PL8hI5sU</span> TheDucksFan</td>
+            <td>
+              implicit (created after primary, finalists only, closes Nov 3)
+            </td>
+            <td>“Not D 100%” from the resolved original answer</td>
+            <td>prefer over portfolio; counts R</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      Untagged answer parties were audited by answer ID from the certified list:
+      CA-11 <code>P6yR5yzy0A</code> Wiener D, <code>8090CpzU09</code> Chan D;
+      CA-14 <code>L25ctuRCul</code> Wahab D, <code>h0csOsty2h</code> Hernandez
+      D, <code>QCp0CESZpP</code> Ortega D (primary only),
+      <code>h5lCZSsnlS</code> Qadir unknown (not a 2026 candidate); CA-40
+      <code>IqlglZsEA2</code> Calvert R, <code>8lSPE9LRSc</code> Kim R.
+      “Unknown” is not independent. CA-6 is Pan (D) v Kiley (No Party
+      Preference): its binary must not be mapped as YES = R.
+    </p>
+    <details>
+      <summary>Acceptance checklist for the nine seats</summary>
+      <ul>
+        <li>
+          Each district polygon and hex exists (verified for all nine) and
+          searching “CA-n” selects it; candidate names become searchable once
+          <code>matchup</code> is filled from the certified names.
+        </li>
+        <li>The headline reads “same-party ballot”, not “D 100%”.</li>
+        <li>
+          Party totals: exactly one seat for the ballot party, labelled
+          ballot-determined, never in Not D, Other or unpriced.
+        </li>
+        <li>
+          Candidate bets: every tradable answer visible (CA-11 has 9 answers,
+          more than <code>maxAnswers=5</code> shows), YES + NO = 1 per answer,
+          NO labelled “any other winner”.
+        </li>
+        <li>
+          No label reinterpretation: untagged names never become Other, and
+          summed tags never become a price.
+        </li>
+        <li>
+          Missing or cancelled source: the seat still counts by ballot and the
+          panel says there is no candidate market.
+        </li>
+        <li>
+          CA-40 beats the original portfolio’s resolved answer; CA-12’s binary
+          never takes the YES = R path.
+        </li>
+      </ul>
+    </details>
+  </section>
+
+  <section id="house">
+    <h2>Other House findings</h2>
+    <ul>
+      <li>
+        <b>Texas.</b> Put Jack1’s <span class="mono">SRynqNSuEL</span> ahead of
+        TheDucksFan’s portfolio for TX-1, 2, 5, 9, 12, 17, 23, 32 and 35. Its
+        criteria are written (a Democratic caucuser counts, so it stays
+        conditional). It has 17 bettors to 5 and 35k volume to 2.5k.
+        TheDucksFan’s safe-R answers add up to about 2.9 phantom Democratic
+        seats (subsidy 1,900).
+      </li>
+      <li>
+        <b>Louisiana.</b> Nov 3 is an open primary for all six seats. A majority
+        winner takes the seat, otherwise the top two (any party) meet on
+        <b>Dec 12</b> (Act 7 of 2026). No district market exists. The Louisiana
+        Senate race is different: a closed-primary general decided by plurality
+        on Nov 3.
+      </li>
+      <li>
+        <b>Georgia.</b> All 14 seats need a majority, with a runoff on Dec 1.
+        GA-13’s incumbent, Everton Blair, won the special but is not on the
+        November ballot (Clark D v Chavez R).
+      </li>
+      <li>
+        <b>Maps.</b> No atlas mismatch. Missouri votes on the 2022 map (Supreme
+        Court order 26A388, Sept 25), though its nominees were picked and
+        certified by district number on 2025 lines; the atlas note “pending
+        litigation” is out of date. Virginia keeps its 2021 map. No House
+        specials are on the Nov 3 ballot; FL-20 and TX-23 stay vacant.
+      </li>
+      <li>
+        <b>New mappings.</b> IA-2 → Jack1
+        <span class="mono">A2h85Z6ZSU</span> (“winner in November”). New leads:
+        MN-1 (candidate market, DFL), WA-9, GA-1 and NC-11, plus AL-2, NC-9 and
+        CO-4, which are candidate binaries. ME-2’s
+        <span class="mono">0spU6nEQ8p</span> closes Oct 31, before the election.
+      </li>
+      <li>
+        <b>Original 68-district market.</b> Sound. It uses ballot party, counts
+        Democratic fusion lines and settles on certified results. Its per-answer
+        liquidity field is stale, and the FL-23, VA-7 and VA-10 limit orders
+        have no funded balance. All six state portfolios have empty
+        descriptions, so they are conditional.
+      </li>
+    </ul>
+  </section>
+
+  <section id="create">
+    <h2>Creation plan (dry run only)</h2>
+    <p>
+      225 races have no suitable market after the full search. These are 224
+      House seats (mostly safe seats outside the portfolios: Illinois 16,
+      Georgia 13, Pennsylvania 12, North Carolina 11) and the Rhode Island
+      governor race. A further four uncontested seats carry draft payloads but
+      are excluded from apply. Every entry records its race key, search
+      evidence, rejected alternatives, the exact payload, answer metadata, seed
+      basis, close time, cost, topics and the dashboard mapping row.
+    </p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Market shape</h3>
+        <ul>
+          <li>
+            <b>Ballot-party multi</b> (223): one answer per major party actually
+            on the ballot, plus “Another party or independent”. The party is the
+            winner’s ballot line, with fusion counted under the nominating party
+            and later switches ignored. Settles on the certified final round
+            (Georgia runoff, Louisiana Dec 12 round, Maine and Alaska ranked
+            choice), or earlier on an AP call with nothing pending. Nominee
+            replacement keeps the party answer; postponement waits and
+            cancellation N/As.
+          </li>
+          <li>
+            <b>Candidate multi</b> (2): CA-29 (two Democrats; no Other answer,
+            since write-ins are barred) and Rhode Island governor (Foulkes,
+            Guckian, Block, Another candidate). Party is metadata, never the
+            label.
+          </li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Seeds and close</h3>
+        <ul>
+          <li>
+            Seeds are not forecasts. They come from the district’s 2026 Cook PVI
+            plus a 3-point incumbent-party bonus through a logistic with a
+            4-point scale, assuming a neutral national environment. They are
+            clamped to 3–97%, with 2% for other candidates.
+          </li>
+          <li>
+            One-major-party ballots seed 95/5. CA-29 uses primary shares; Rhode
+            Island is reviewer-set from the post-primary poll.
+          </li>
+          <li>
+            Markets close 2026-11-03 23:59 UTC. Runoff races need the creator to
+            extend the close.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Cost and price impact</h3>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Tiers</th>
+            <th class="num">Markets</th>
+            <th class="num">Mana</th>
+            <th>Ṁ100 YES on a 3% longshot</th>
+            <th>Ṁ100 YES in a 49/49 race</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Default (manifest)</b></td>
+            <td>9 competitive at 10,000; 216 safe at 1,000</td>
+            <td class="num">225</td>
+            <td class="num"><b>306,000</b></td>
+            <td>3% → 34.4% (safe tier)</td>
+            <td>49% → 49.8% (competitive tier)</td>
+          </tr>
+          <tr>
+            <td>Economy</td>
+            <td>all 1,000</td>
+            <td class="num">225</td>
+            <td class="num">225,000</td>
+            <td>3% → 34.4%</td>
+            <td>49% → 56.4%</td>
+          </tr>
+          <tr>
+            <td>Deep</td>
+            <td>all 10,000</td>
+            <td class="num">225</td>
+            <td class="num">2,250,000</td>
+            <td>3% → 5.7%</td>
+            <td>49% → 49.8%</td>
+          </tr>
+          <tr>
+            <td>Not recommended</td>
+            <td>all 100</td>
+            <td class="num">225</td>
+            <td class="num">22,500</td>
+            <td>3% → 96.4%</td>
+            <td>49% → 86.1%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      Cost is the API ante:
+      <code>max(answers × per-answer cost, tier)</code> plus any
+      <code>extraLiquidity</code>. Trading carries no taker fee, and creation
+      charges nothing else. A 1,000-tier safe market moves a 3% longshot to 34%
+      on one Ṁ100 buy; that is visible on the map until someone trades it back,
+      so add <code>extraLiquidity</code> to marquee safe seats if that matters.
+      The four held uncontested seats would add Ṁ4,000. Existing-market
+      subsidies are separate: 29 markets, Ṁ27,050 in total, listed in
+      <code>audit/subsidy-recommendations.json</code> and not implemented.
+    </p>
+
+    <h3>Duplicate recheck</h3>
+    <p id="online-result">
+      The dry run was repeated against the public API on 2026-10-03, using only
+      unauthenticated GETs. For each entry it checked the reserved ID and ran
+      6–8 searches by district code, ordinal, state and candidate name. No
+      market exists at any reserved ID, and no equivalent market was found. 38
+      entries were held as ambiguous, covering 17 distinct markets:
+    </p>
+    <ul>
+      <li>
+        five unresolved 2024 Oregon House markets whose titles carry no year;
+      </li>
+      <li>the Louisiana and Virginia seat-count markets;</li>
+      <li>a conditional IL-9 market;</li>
+      <li>
+        name collisions: James Bond, three non-election Ilhan Omar questions, an
+        ACX event, a Civilization game, and a vote-share comparison.
+      </li>
+    </ul>
+    <p>
+      All 17 are now recorded in the manifest as reviewed rejections with
+      reasons, so they will not block an apply run. Any new match still will.
+    </p>
+
+    <h3>The script</h3>
+    <ul>
+      <li>
+        <b>Dry run is the default.</b> It needs no credentials and the client
+        cannot write. It produces a readable report, payload and cost JSON, a
+        plan, and a dashboard mapping with
+        <code>PENDING:&lt;raceKey&gt;</code> IDs.
+      </li>
+      <li>
+        <b>Apply has five gates.</b> It requires a reviewed manifest (reviewer
+        and date), an explicit <code>--apply</code>,
+        <code>--creator-username</code> matching the key’s <code>/v0/me</code>,
+        <code>--max-mana</code> for the run, and an approved cap across runs. It
+        stops before any create that would exceed a cap or the balance.
+      </li>
+      <li>
+        <b>Before each create.</b> It reads the reserved ID read-only, then
+        searches by race identity (office, state, district, year, round,
+        candidate names). An equivalent market is skipped and recorded; an
+        ambiguous one is held for review.
+      </li>
+      <li>
+        <b>No duplicates.</b> Each entry gets a deterministic
+        <code>idempotencyKey</code>; the create API uses it as the contract ID
+        and rejects a second create. State is written after every request.
+      </li>
+      <li>
+        <b>Failures.</b> Rate limits wait and retry with the same key. An
+        ambiguous timeout is reconciled with a read-only GET and then stops the
+        run. A 4xx isolates the entry, and a 401 or 403 stops the run.
+      </li>
+      <li>
+        <b>Tests.</b> 20 mocked tests cover dry run (no writes), duplicate
+        avoidance, both budget caps, partial failure and resume, ambiguous
+        timeouts (landed and unconfirmed) and rate limits. All pass.
+      </li>
+    </ul>
+    <pre>
+cd backend/scripts
+# dry run, no credentials
+npx ts-node --transpile-only create-election-markets.ts \
+  --manifest elections-2026/manifest.json --out elections-2026/out [--online]
+
+# apply, only after review (not run by this audit)
+MANIFOLD_API_KEY=… npx ts-node --transpile-only create-election-markets.ts \
+  --manifest elections-2026/manifest.json --state elections-2026/state.prod.json \
+  --env prod --apply --creator-username &lt;account&gt; --max-mana &lt;cap for this run&gt;
+
+# tests
+cd backend/shared && node ../../node_modules/jest/bin/jest.js src/elections</pre
+    >
+    <p class="small">
+      What the API cannot enforce: there is no server-side spend cap and no
+      dry-run endpoint, so the budget and validation checks are client-side.
+      Search is best effort, which is why an ambiguous match blocks creation.
+      The idempotency key protects only within one manifest series. Runoff close
+      times are not extended automatically.
+    </p>
+  </section>
+
+  <section id="files">
+    <h2>Files</h2>
+    <p>
+      Branch <code>claude/elections-market-audit</code> in worktree
+      <code>C:/Projects/manifold-wt-elections-audit</code>, on top of the PR. It
+      is not pushed and touches no existing file.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Path</th>
+            <th>Contents</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <code
+                >backend/scripts/elections-2026/audit/recommended-sources.json</code
+              >
+            </td>
+            <td>
+              276 race → source rows: contract ID, slug, URL, creator, answer
+              IDs with exact labels, meaning and audited party, rules, evidence
+              with comment IDs, liquidity, depth, simulated buys, prior source,
+              alternatives and caveats
+            </td>
+          </tr>
+          <tr>
+            <td><code>…/audit/race-inventory.json</code></td>
+            <td>
+              All 506 races with ballot candidates, final round, PR source and
+              coverage status
+            </td>
+          </tr>
+          <tr>
+            <td><code>…/audit/proposed-mapping-and-wiring.patch</code></td>
+            <td>Mapping, model and homepage changes, with updated tests</td>
+          </tr>
+          <tr>
+            <td>
+              <code>web/components/usa-map/audited-sources.ts</code> + test,
+              <code>web/public/data/election-source-audit-2026.json</code>
+            </td>
+            <td>
+              Helper and audited metadata for 101 sources, 9 same-party seats
+              and 1 decided seat
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <code>backend/scripts/elections-2026/manifest.json</code>,
+              <code>out/</code>
+            </td>
+            <td>Creation manifest (229 entries) and dry-run output</td>
+          </tr>
+          <tr>
+            <td>
+              <code>backend/scripts/create-election-markets.ts</code>,
+              <code>backend/shared/src/elections/</code>
+            </td>
+            <td>CLI, logic and tests</td>
+          </tr>
+          <tr>
+            <td>
+              <code>…/audit/notes/*.md</code>,
+              <code>…/audit/simulations/</code>,
+              <code>…/audit/official-source-verification.json</code>
+            </td>
+            <td>
+              Per-office evidence notes, simulation output and official-source
+              findings
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

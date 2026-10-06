@@ -1,0 +1,346 @@
+{
+  "note": "Recommendations only; nothing was subsidised. One row per market (portfolio subsidies are not multiplied by districts).",
+  "total": 27050,
+  "subsidies": [
+    {
+      "contractId": "hPnINuRzt8",
+      "slug": "what-party-will-win-the-2026-alaska",
+      "amountMana": 2500,
+      "races": ["2026-senate-AK-class2-regular-general"],
+      "reasons": [
+        "Correct party proposition with clean labels but pool k~35; a top-tier race needs depth so 10-100 mana trades do not swing the map."
+      ]
+    },
+    {
+      "contractId": "Ad6z6OsuQ5",
+      "slug": "which-party-will-win-the-2026-michi",
+      "amountMana": 2500,
+      "races": ["2026-senate-MI-class2-regular-general"],
+      "reasons": [
+        "Tier-1 race, k~35; keeps the existing 85-trader price but makes 10-100 mana trades non-disruptive."
+      ]
+    },
+    {
+      "contractId": "USqLR8OSCI",
+      "slug": "which-california-house-districts-wi",
+      "amountMana": 2000,
+      "races": ["2026-house-CA-48-regular-general"],
+      "reasons": [
+        "Contract-level: CA portfolio is the sole displayed source for 33 districts incl. competitive CA-48 (0.796) and CA-6; 25 liquidity per answer. Ask creator for a description first."
+      ]
+    },
+    {
+      "contractId": "NZuO50NCLg",
+      "slug": "which-texas-house-districts-will-th",
+      "amountMana": 1900,
+      "races": [
+        "2026-house-TX-03-regular-general",
+        "2026-house-TX-04-regular-general",
+        "2026-house-TX-06-regular-general",
+        "2026-house-TX-07-regular-general",
+        "2026-house-TX-08-regular-general",
+        "2026-house-TX-10-regular-general",
+        "2026-house-TX-11-regular-general",
+        "2026-house-TX-13-regular-general",
+        "2026-house-TX-14-regular-general",
+        "2026-house-TX-16-regular-general",
+        "2026-house-TX-18-regular-general",
+        "2026-house-TX-19-regular-general",
+        "2026-house-TX-20-regular-general",
+        "2026-house-TX-21-regular-general",
+        "2026-house-TX-22-regular-general",
+        "2026-house-TX-24-regular-general",
+        "2026-house-TX-25-regular-general",
+        "2026-house-TX-26-regular-general",
+        "2026-house-TX-27-regular-general",
+        "2026-house-TX-29-regular-general",
+        "2026-house-TX-30-regular-general",
+        "2026-house-TX-31-regular-general",
+        "2026-house-TX-33-regular-general",
+        "2026-house-TX-36-regular-general",
+        "2026-house-TX-37-regular-general",
+        "2026-house-TX-38-regular-general"
+      ],
+      "reasons": [
+        "SHARED portfolio-level subsidy (one 1,900 for 26 TX answers kept; dedupe by contractId): 25/answer, 5 bettors; safe-R answers priced 7-20% D."
+      ]
+    },
+    {
+      "contractId": "cN025dzLdO",
+      "slug": "which-florida-house-districts-will",
+      "amountMana": 1350,
+      "races": [
+        "2026-house-FL-01-regular-general",
+        "2026-house-FL-02-regular-general",
+        "2026-house-FL-03-regular-general",
+        "2026-house-FL-04-regular-general",
+        "2026-house-FL-05-regular-general",
+        "2026-house-FL-06-regular-general",
+        "2026-house-FL-07-regular-general",
+        "2026-house-FL-08-regular-general",
+        "2026-house-FL-09-regular-general",
+        "2026-house-FL-11-regular-general",
+        "2026-house-FL-12-regular-general",
+        "2026-house-FL-14-regular-general",
+        "2026-house-FL-15-regular-general",
+        "2026-house-FL-16-regular-general",
+        "2026-house-FL-17-regular-general",
+        "2026-house-FL-18-regular-general",
+        "2026-house-FL-19-regular-general",
+        "2026-house-FL-20-regular-general",
+        "2026-house-FL-21-regular-general",
+        "2026-house-FL-22-regular-general",
+        "2026-house-FL-24-regular-general",
+        "2026-house-FL-25-regular-general",
+        "2026-house-FL-26-regular-general",
+        "2026-house-FL-27-regular-general",
+        "2026-house-FL-28-regular-general"
+      ],
+      "reasons": [
+        "SHARED portfolio-level subsidy (one 1,350 for the 25 FL answers mapped; dedupe by contractId): 25/answer, 3 bettors; FL-7/14/22/25 answers have under 15 volume."
+      ]
+    },
+    {
+      "contractId": "9nS9P2scql",
+      "slug": "which-new-york-house-districts-will",
+      "amountMana": 1300,
+      "races": [
+        "2026-house-NY-01-regular-general",
+        "2026-house-NY-02-regular-general",
+        "2026-house-NY-05-regular-general",
+        "2026-house-NY-06-regular-general",
+        "2026-house-NY-07-regular-general",
+        "2026-house-NY-08-regular-general",
+        "2026-house-NY-09-regular-general",
+        "2026-house-NY-10-regular-general",
+        "2026-house-NY-11-regular-general",
+        "2026-house-NY-12-regular-general",
+        "2026-house-NY-13-regular-general",
+        "2026-house-NY-14-regular-general",
+        "2026-house-NY-15-regular-general",
+        "2026-house-NY-16-regular-general",
+        "2026-house-NY-20-regular-general",
+        "2026-house-NY-21-regular-general",
+        "2026-house-NY-23-regular-general",
+        "2026-house-NY-24-regular-general",
+        "2026-house-NY-25-regular-general",
+        "2026-house-NY-26-regular-general"
+      ],
+      "reasons": [
+        "Portfolio-level, apply ONCE (repeated on each NY-portfolio race): 20 displayed districts at 25/answer; safe seats mispriced (NY-5 D+24 at 0.757). Only after creator adds rules."
+      ]
+    },
+    {
+      "contractId": "SRynqNSuEL",
+      "slug": "which-texas-us-house-districts-will",
+      "amountMana": 1200,
+      "races": [
+        "2026-house-TX-01-regular-general",
+        "2026-house-TX-02-regular-general",
+        "2026-house-TX-05-regular-general",
+        "2026-house-TX-09-regular-general",
+        "2026-house-TX-12-regular-general",
+        "2026-house-TX-17-regular-general",
+        "2026-house-TX-23-regular-general",
+        "2026-house-TX-32-regular-general",
+        "2026-house-TX-35-regular-general"
+      ],
+      "reasons": [
+        "SHARED portfolio-level subsidy (one 1,200 for 9 TX answers; dedupe by contractId): doubles 100/answer; creator asked for liquidity (spcn0gjnz4r)."
+      ]
+    },
+    {
+      "contractId": "lRd6Sz0dC8",
+      "slug": "which-party-will-win-the-2026-new-h",
+      "amountMana": 1000,
+      "races": ["2026-senate-NH-class2-regular-general"],
+      "reasons": [
+        "Competitive-tier race with k~96; modest subsidy keeps small trades from swinging the tier."
+      ]
+    },
+    {
+      "contractId": "UEnlNUy92z",
+      "slug": "which-party-will-win-the-alaska-gov",
+      "amountMana": 1000,
+      "races": ["2026-governor-AK-regular-general"],
+      "reasons": ["Competitive open seat; only 35 mana per answer."]
+    },
+    {
+      "contractId": "n2A2ySggys",
+      "slug": "will-the-republicans-win-the-2026-k",
+      "amountMana": 1000,
+      "races": ["2026-governor-KS-regular-general"],
+      "reasons": [
+        "Correct party proposition; only 184 liquidity vs 1000 in the candidate multi it replaces."
+      ]
+    },
+    {
+      "contractId": "QcRqudlpPl",
+      "slug": "which-party-will-win-the-2026-nebra-hCZdznyt5s",
+      "amountMana": 1000,
+      "races": ["2026-governor-NE-regular-general"],
+      "reasons": [
+        "Polls in April showed a close Pillen-Walz race; 50 mana per answer."
+      ]
+    },
+    {
+      "contractId": "qdC0cQduhC",
+      "slug": "which-party-will-win-the-2026-nevad",
+      "amountMana": 1000,
+      "races": ["2026-governor-NV-regular-general"],
+      "reasons": ["Toss-up (R 0.52) with 50 mana per answer."]
+    },
+    {
+      "contractId": "ungp6gZIzh",
+      "slug": "which-party-will-win-the-2026-vermo",
+      "amountMana": 1000,
+      "races": ["2026-governor-VT-regular-general"],
+      "reasons": [
+        "Priced R 0.74 (competitive by market) with 50 mana per answer."
+      ]
+    },
+    {
+      "contractId": "qScqn2tS8Q",
+      "slug": "which-party-will-win-the-2026-wisco",
+      "amountMana": 1000,
+      "races": ["2026-governor-WI-regular-general"],
+      "reasons": [
+        "Competitive open seat; 50 mana per answer (unless the deeper D binary is used instead)."
+      ]
+    },
+    {
+      "contractId": "RZSnU2csSI",
+      "slug": "will-richard-ojeda-win-north-caroli",
+      "amountMana": 900,
+      "races": ["2026-house-NC-09-regular-general"],
+      "reasons": [
+        "Clear November-winner proposition with active trading but 101 liquidity; brings it to ~1,000."
+      ]
+    },
+    {
+      "contractId": "65ShsdN2Oh",
+      "slug": "who-will-win-kentuckys-6th-congress",
+      "amountMana": 800,
+      "races": ["2026-house-KY-06-regular-general"],
+      "reasons": [
+        "Open R+7 seat priced on 200 liquidity/4 bettors; subsidize once the creator states third-party/replacement handling."
+      ]
+    },
+    {
+      "contractId": "Qlg62L5zAE",
+      "slug": "which-party-will-win-the-2026-alaba-Sg9ROtngq6",
+      "amountMana": 500,
+      "races": ["2026-governor-AL-regular-general"],
+      "reasons": [
+        "Correct proposition but 50-mana answers; Jones-vs-Tuberville is a marquee race."
+      ]
+    },
+    {
+      "contractId": "8dOsCEc9ZL",
+      "slug": "which-party-will-win-the-2026-conne",
+      "amountMana": 500,
+      "races": ["2026-governor-CT-regular-general"],
+      "reasons": [
+        "Only usable party source; stale since June with 50-mana answers."
+      ]
+    },
+    {
+      "contractId": "lypQhntEzA",
+      "slug": "which-party-will-in-the-2026-maine",
+      "amountMana": 500,
+      "races": ["2026-governor-ME-regular-general"],
+      "reasons": ["Only usable source; 35 mana per answer in a three-way race."]
+    },
+    {
+      "contractId": "LNPL28tA80",
+      "slug": "democrats-win-2026-minnesota-gubern",
+      "amountMana": 500,
+      "races": ["2026-governor-MN-regular-general"],
+      "reasons": ["Correct party proposition but a 100-liquidity pool."]
+    },
+    {
+      "contractId": "U9PL8hI5sU",
+      "slug": "who-will-win-the-us-house-race-in-c",
+      "amountMana": 500,
+      "races": ["2026-house-CA-40-regular-general"],
+      "reasons": [
+        "Only open market on a genuine member-v-member contest; 200 liquidity, 4 bettors. Fund after the creator adds a description."
+      ]
+    },
+    {
+      "contractId": "A2h85Z6ZSU",
+      "slug": null,
+      "amountMana": 500,
+      "races": ["2026-house-IA-02-regular-general"],
+      "reasons": [
+        "Open toss-up seat (D 0.54) that would be displayed; only 50/answer and 202 volume."
+      ]
+    },
+    {
+      "contractId": "s2uNNQ2N5I",
+      "slug": "which-us-house-districts-in-the-mid",
+      "amountMana": 500,
+      "races": [
+        "2026-house-MN-02-regular-general",
+        "2026-house-OH-10-regular-general"
+      ],
+      "reasons": [
+        "Portfolio-level, apply ONCE (repeated on MN-2/OH-10): 25/answer; only after TW5z0p adds rules (year, certification, DFL)."
+      ]
+    },
+    {
+      "contractId": "2s6nul8lsu",
+      "slug": "which-party-wins-ohio-7th-congressi",
+      "amountMana": 500,
+      "races": ["2026-house-OH-07-regular-general"],
+      "reasons": [
+        "Competitive R+5 seat displayed on the dashboard with 50/answer; prices disagree across three sources."
+      ]
+    },
+    {
+      "contractId": "ps6uhP6ttd",
+      "slug": "which-nevada-us-house-seats-will-de",
+      "amountMana": 400,
+      "races": ["2026-house-NV-02-regular-general"],
+      "reasons": [
+        "Sole source for an open R+7 seat; 100 contract liquidity across 4 answers."
+      ]
+    },
+    {
+      "contractId": "EyzOtEtsgP",
+      "slug": "which-party-will-win-ga01-in-the-20",
+      "amountMana": 400,
+      "races": ["2026-house-GA-01-regular-general"],
+      "reasons": [
+        "Right shape (party multi with Other) for an open R+8 seat but only 100 liquidity and 5 bettors."
+      ]
+    },
+    {
+      "contractId": "yZRqg50ddy",
+      "slug": "who-will-win-the-ca4-house-election-0suAR0A066",
+      "amountMana": 300,
+      "races": ["2026-house-CA-04-regular-general"],
+      "reasons": [
+        "Only sum-to-one source for a live intra-D contest (79/21) with 200 liquidity; fund after creator confirms the Nov 3 round."
+      ]
+    },
+    {
+      "contractId": "Rn8zlNdz62",
+      "slug": "which-party-will-win-ohios-15th-con",
+      "amountMana": 300,
+      "races": ["2026-house-OH-15-regular-general"],
+      "reasons": [
+        "R+5 seat displayed with 50/answer and 8 bettors; subsidise after creator adds a resolution sentence."
+      ]
+    },
+    {
+      "contractId": "PLdO9EPtLN",
+      "slug": "2026-californias-37th-congressional",
+      "amountMana": 200,
+      "races": ["2026-house-CA-37-regular-general"],
+      "reasons": [
+        "Sole source; proposition matches the race; 2 bettors. Low priority (safe intra-D seat)."
+      ]
+    }
+  ]
+}
