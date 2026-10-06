@@ -79,7 +79,8 @@ export const governors2026: StateElectionMarket[] = [
   { state: 'OR', slug: '2026-oregon-governor-election-winne' },
   // Audit 2026-10-03: previously unlinked states. Title-only "which party"
   // markets (empty descriptions, ~50 mana per answer) — CONDITIONAL sources;
-  // see backend/scripts/elections-2026/audit for subsidies and caveats.
+  // see backend/scripts/elections-2026/audit (git tag elections-2026-launch)
+  // for subsidies and caveats.
   { state: 'AL', slug: 'which-party-will-win-the-2026-alaba-Sg9ROtngq6' },
   { state: 'CT', slug: 'which-party-will-win-the-2026-conne' },
   { state: 'HI', slug: 'which-party-will-win-the-2026-hawai' },

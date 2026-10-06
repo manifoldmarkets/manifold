@@ -1,6 +1,6 @@
 {
   "asOf": "2026-10-03",
-  "source": "backend/scripts/elections-2026/audit/race-inventory.json",
+  "source": "backend/scripts/elections-2026/audit/race-inventory.json at git tag elections-2026-launch",
   "note": "Audited ballot candidates, not incumbents or a change to market resolution criteria.",
   "senate": {
     "AL": [
