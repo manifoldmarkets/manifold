@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  Bounds,
   clampCamera,
+  fitCamera,
   gestureCamera,
   INITIAL_CAMERA,
   MapCamera,
@@ -15,6 +17,8 @@ export function useMapCamera(ready: boolean) {
   const cameraRef = useRef(camera)
   const [viewport, setViewport] = useState(mapViewport(960, 600))
   const viewportRef = useRef(viewport)
+  // Screen pixels per map unit at the overview, for touch-sized hit areas.
+  const [pixelsPerUnit, setPixelsPerUnit] = useState(1)
   const dragged = useRef(false)
   const update = (next: MapCamera) => {
     cameraRef.current = next
@@ -30,6 +34,7 @@ export function useMapCamera(ready: boolean) {
       const next = mapViewport(bounds.width, bounds.height)
       viewportRef.current = next
       setViewport(next)
+      setPixelsPerUnit(bounds.width / next.width)
       update(clampCamera(cameraRef.current, next))
     }
     const observer = new ResizeObserver(resize)
@@ -178,6 +183,7 @@ export function useMapCamera(ready: boolean) {
     svgRef,
     camera,
     dragged,
+    pixelsPerUnit,
     viewBox: `${viewport.x} ${viewport.y} ${viewport.width} ${viewport.height}`,
     resetView: () => update(INITIAL_CAMERA),
     zoom: (factor: number) => {
@@ -189,6 +195,14 @@ export function useMapCamera(ready: boolean) {
           viewportRef.current
         )
       )
+    },
+    // Frames the bounds; anything that would barely zoom shows the overview.
+    fit: (bounds: Bounds, maxZoom = 6, shiftPx = 0) => {
+      const view = viewportRef.current
+      const width = svgRef.current?.getBoundingClientRect().width
+      const shiftX = width ? (shiftPx * view.width) / width : 0
+      const next = fitCamera(bounds, view, { maxZoom, shiftX })
+      update(next.k < 1.25 ? INITIAL_CAMERA : next)
     },
   }
 }

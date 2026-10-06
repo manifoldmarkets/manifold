@@ -37,3 +37,28 @@ export function placeRaceCard(
     bounds
   )
 }
+
+type AnchorRect = { left: number; right: number; top: number; bottom: number }
+
+// A pinned race card docks beside its shape: to the right when it fits, else
+// to the left, else against the right edge; vertically next to the shape and
+// kept fully on screen (below the sticky toolbar), so it never opens over
+// the controls or squeezed against the bottom of the window.
+export function placeBesideRace(
+  anchor: AnchorRect,
+  size: CardSize,
+  bounds: CardBounds,
+  gap = 16
+): Point {
+  const x =
+    anchor.right + gap + size.width <= bounds.right
+      ? anchor.right + gap
+      : anchor.left - gap - size.width >= bounds.left
+      ? anchor.left - gap - size.width
+      : bounds.right - size.width
+  return clampRaceCard(
+    { x, y: anchor.top - 24 },
+    { width: size.width, height: Math.max(260, size.height) },
+    bounds
+  )
+}

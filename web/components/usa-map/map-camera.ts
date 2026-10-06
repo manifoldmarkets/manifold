@@ -68,6 +68,37 @@ export function gestureCamera(
   )
 }
 
+export type Bounds = { x0: number; y0: number; x1: number; y1: number }
+
+// Centers the bounds in the viewport, as close as `maxZoom` allows, leaving
+// `padding` map units around them. Small or single districts get a close
+// view; country-wide selections stay at the overview. `shiftX` moves the
+// framed area left (in viewport units), e.g. to clear a side panel.
+export function fitCamera(
+  bounds: Bounds,
+  viewport: MapViewport,
+  {
+    padding = 30,
+    maxZoom = 6,
+    shiftX = 0,
+  }: { padding?: number; maxZoom?: number; shiftX?: number } = {}
+): MapCamera {
+  const width = Math.max(1, bounds.x1 - bounds.x0 + 2 * padding)
+  const height = Math.max(1, bounds.y1 - bounds.y0 + 2 * padding)
+  const fit = Math.min(viewport.width / width, viewport.height / height)
+  const k = Math.max(1, Math.min(maxZoom, 6, Number.isFinite(fit) ? fit : 1))
+  const cx = (bounds.x0 + bounds.x1) / 2
+  const cy = (bounds.y0 + bounds.y1) / 2
+  return clampCamera(
+    {
+      k,
+      x: viewport.x + viewport.width / 2 - shiftX - cx * k,
+      y: viewport.y + viewport.height / 2 - cy * k,
+    },
+    viewport
+  )
+}
+
 export function zoomCamera(
   camera: MapCamera,
   factor: number,
