@@ -6,7 +6,6 @@ import { referralQuery } from 'common/util/share'
 import { useUser } from 'web/hooks/use-user'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { trackShareEvent } from 'web/lib/service/analytics'
-import { sourceAudit } from './audited-sources'
 import { candidateForParty } from './election-candidates'
 import { formatOdds } from './election-display'
 import { getIncumbentGroups } from './election-incumbents'
@@ -18,7 +17,7 @@ import {
   Tier,
 } from './election-map-model'
 import { explorerSearch, ExplorerMode } from './explorer-url'
-import { orderBallot } from './race-outcomes'
+import { orderBallot, sourceNotes, UNSPECIFIED_RULES } from './race-outcomes'
 import { DEM_COLOR, REP_COLOR } from './state-election-map'
 import { OTHER_COLOR } from './election-map-model'
 import styles from './election-explorer.module.css'
@@ -182,35 +181,31 @@ export function CopyRaceLink(props: {
   )
 }
 
+// What a candidate bet means stays visible. Sources whose rules leave cases
+// open get one line in a closed "About this market" disclosure; confirmed
+// sources show nothing. Audit caveats are internal notes and never render.
 export function SourceNotes({ contract }: { contract: Contract }) {
-  const audit = sourceAudit(contract.slug)
+  const { bet, unspecifiedRules } = sourceNotes(contract)
   return (
     <>
-      {audit?.kind === 'candidate' && (
-        <p className={styles.note}>
-          Candidate market. Prices apply to the named candidates; replacement
-          and unlisted-winner rules depend on this market.
-        </p>
-      )}
-      {audit?.kind === 'candidate-binary' && (
-        <p className={styles.note}>
-          Yes means {audit.candidate ?? 'the named candidate'} wins. No means
-          any other winner, including someone from the same party. This bet does
-          not price party control.
-        </p>
-      )}
-      {audit?.confidence === 'conditional' && (
-        <p className={styles.note}>
-          Some resolution rules are unspecified. See chart for the market’s
-          criteria and comments.
-        </p>
-      )}
-      {contract.id === '0L8uQURR06' && (
-        <p className={styles.note}>
-          The title asks which party wins, but the Republican answer names “Dan
-          Sullivan.” Two candidates share that name; the intended scope needs
-          clarification.
-        </p>
+      {bet && <p className={styles.note}>{bet}</p>}
+      {unspecifiedRules && (
+        <details className={styles.marketInfo}>
+          <summary>
+            <span aria-hidden>ⓘ</span> About this market
+          </summary>
+          <p>
+            {UNSPECIFIED_RULES}{' '}
+            <a
+              href={contractPath(contract)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              See the market page for its exact criteria →
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </p>
+        </details>
       )}
     </>
   )

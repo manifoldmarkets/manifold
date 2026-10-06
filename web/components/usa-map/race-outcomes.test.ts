@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { BinaryContract } from 'common/contract'
+import auditData from 'web/public/data/election-source-audit-2026.json'
 import {
   answerParty,
   arrangeOutcomes,
@@ -10,6 +11,8 @@ import {
   orderBallot,
   outcomeRow,
   sameCandidate,
+  sourceNotes,
+  UNSPECIFIED_RULES,
 } from './race-outcomes'
 import { raceCandidates } from './election-candidates'
 
@@ -254,4 +257,51 @@ test('district questions: Democratic vs Republican where one is running', () => 
     candidates: raceCandidates('house', 'CA-6'),
   })
   assert.equal(none[1].party, 'any')
+})
+
+test('source notes are written for readers; audit caveats never render', () => {
+  const audit = auditData as unknown as {
+    sources: Record<
+      string,
+      { contractId: string; confidence: string; caveats?: string[] }
+    >
+  }
+  // Alaska Senate's party market is conditional: only the disclosure.
+  const alaska = sourceNotes({
+    id: '0L8uQURR06',
+    slug: 'which-party-will-win-the-2026-alask',
+  })
+  assert.deepEqual(alaska, { bet: undefined, unspecifiedRules: true })
+  // Maine's party binary is confirmed: no note at all.
+  assert.deepEqual(
+    sourceNotes({
+      id: 'RcL0Q9O0EU',
+      slug: 'will-the-democratic-party-candidate-NQOPZAnOA8',
+    }),
+    { bet: undefined, unspecifiedRules: false }
+  )
+  // A candidate bet explains Yes and No, from code.
+  assert.equal(
+    sourceNotes({
+      id: 'ULun8EOAAn',
+      slug: 'will-dan-sullivan-win-reelection-to',
+    }).bet,
+    'Yes = Dan S. Sullivan wins; No = anyone else, including another candidate from the same party.'
+  )
+  assert.equal(
+    sourceNotes({ id: 'other', slug: 'which-party-will-win-the-2026-alask' })
+      .unspecifiedRules,
+    false
+  )
+  // No source's internal caveat text can reach the panel.
+  for (const [slug, source] of Object.entries(audit.sources)) {
+    const notes = sourceNotes({ id: source.contractId, slug })
+    const text = [
+      notes.bet ?? '',
+      notes.unspecifiedRules ? UNSPECIFIED_RULES : '',
+    ]
+    for (const caveat of source.caveats ?? [])
+      assert.ok(!text.some((t) => t && t.includes(caveat)), slug)
+    assert.equal(notes.unspecifiedRules, source.confidence === 'conditional')
+  }
 })

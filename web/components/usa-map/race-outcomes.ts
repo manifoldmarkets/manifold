@@ -5,7 +5,7 @@
 // computed elsewhere (audited-sources.ts, election-map-model.ts).
 
 import { getDisplayProbability } from 'common/calculate'
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, Contract } from 'common/contract'
 import { AuditedParty, complementParty, sourceAudit } from './audited-sources'
 import type { BallotCandidate } from './election-candidates'
 import type { ElectionMode, Race } from './election-map-model'
@@ -284,4 +284,36 @@ export function districtRows(
         }
       : anyOtherWinner(1 - dem),
   ]
+}
+
+// The reader-facing line inside "About this market" for sources whose own
+// rules leave cases open (audit confidence "conditional").
+export const UNSPECIFIED_RULES =
+  'This market’s own rules don’t spell out every case (such as how independents or recounts are handled).'
+
+// What a race panel says about its source, written here for readers. The
+// audit's `caveats` are internal review notes and are never shown.
+// - `bet`: what a Yes/No means, always visible (candidate bets only).
+// - `unspecifiedRules`: show the closed "About this market" disclosure.
+export function sourceNotes(contract: Pick<Contract, 'id' | 'slug'>): {
+  bet?: string
+  unspecifiedRules: boolean
+} {
+  const audit = sourceAudit(contract.slug)
+  if (!audit || audit.contractId !== contract.id)
+    return { unspecifiedRules: false }
+  const name = audit.candidate
+    ? candidateName(audit.candidate) ?? audit.candidate
+    : undefined
+  return {
+    bet:
+      audit.kind === 'candidate-binary'
+        ? `Yes = ${
+            name ?? 'the named candidate'
+          } wins; No = anyone else, including another candidate from the same party.`
+        : audit.kind === 'candidate'
+        ? 'Bets are on the named candidates, not on their parties.'
+        : undefined,
+    unspecifiedRules: audit.confidence === 'conditional',
+  }
 }

@@ -186,9 +186,51 @@
 .hint button:focus-visible,
 .moreOutcomes:focus-visible,
 .results button:focus-visible,
-.methodology summary:focus-visible {
+.methodology summary:focus-visible,
+.marketInfo summary:focus-visible,
+.marketInfo a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+/* "ⓘ About this market": closed by default, one line when open. */
+.marketInfo {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.marketInfo summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 4px;
+}
+.marketInfo summary::-webkit-details-marker {
+  display: none;
+}
+.marketInfo summary::after {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 150ms;
+}
+.marketInfo[open] summary::after {
+  transform: rotate(90deg);
+}
+.marketInfo summary:hover {
+  color: var(--accent);
+}
+.marketInfo p {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--soft);
+}
+.marketInfo a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .controlParty {
   font-size: 13px;
@@ -1170,7 +1212,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .shape,
-  .controlCard {
+  .controlCard,
+  .marketInfo summary::after {
     transition: none;
   }
 }
