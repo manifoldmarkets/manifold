@@ -1,7 +1,7 @@
 // Sources reviewed in the October 3 DB audit; many retain sparse criteria.
 // The original portfolio stays first. Conditional sources are documented in
-// backend/scripts/elections-2026/audit and remain distinct from verified
-// equivalent ballot-party propositions.
+// backend/scripts/elections-2026/audit (git tag elections-2026-launch) and
+// remain distinct from verified equivalent ballot-party propositions.
 export const HOUSE_DISTRICT_MARKETS = [
   'which-new-york-house-districts-will',
   // Jack1's Texas portfolio first: written criteria, ~4x per-answer liquidity.

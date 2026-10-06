@@ -25,7 +25,9 @@ rounded path centroid; retain the source hex and tile coordinates. Assert
 
 Prices come from existing Manifold contracts and their subscriptions. The October
 3 database audit and integration record are in
-`backend/scripts/elections-2026/audit/INTEGRATION.md`. That record distinguishes
+`backend/scripts/elections-2026/audit/INTEGRATION.md` at the git tag
+`elections-2026-launch` (the launch tooling was removed from main after the
+launch). That record distinguishes
 implemented mappings, conditional sources and recommendations requiring funding.
 The original House portfolio retains priority except for reviewed overrides.
 

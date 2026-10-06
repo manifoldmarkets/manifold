@@ -1,6 +1,6 @@
 {
   "generated": "2026-10-03",
-  "note": "Audited source semantics for the 2026 election dashboard. Generated from the October 3, 2026 audit (backend/scripts/elections-2026/audit). Party values are ballot party at the election, never inferred from answer text.",
+  "note": "Audited source semantics for the 2026 election dashboard. Generated from the October 3, 2026 audit (backend/scripts/elections-2026/audit at git tag elections-2026-launch). Party values are ballot party at the election, never inferred from answer text.",
   "sources": {
     "which-party-will-win-the-2026-alaba": {
       "contractId": "cPIhILst2U",
