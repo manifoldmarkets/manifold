@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
+  isMultiCpmm,
   CPMMMultiContract,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
@@ -218,7 +219,7 @@ export const BuyPanelBody = (props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }

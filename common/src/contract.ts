@@ -490,6 +490,12 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+// Shared detection for election callers before the v2 engine lands. When
+// integrating #4102, keep its v1/v2 implementation of this helper together
+// with its contract types and pricing/trading support.
+export const isMultiCpmm = (contract: Contract): contract is MultiContract =>
+  contract.mechanism === 'cpmm-multi-1'
+
 export const isBinaryMulti = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType !== 'NUMBER' &&

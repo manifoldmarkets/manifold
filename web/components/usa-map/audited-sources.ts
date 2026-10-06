@@ -14,7 +14,7 @@
 // Sources without an audit entry keep the existing label-based reading.
 
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import audit from 'web/public/data/election-source-audit-2026.json'
 import { normalizeOdds, Odds } from './election-odds'
 
@@ -142,10 +142,7 @@ export function auditedOdds(
     )
   }
   if (source.kind === 'ballot-party' || source.kind === 'candidate') {
-    if (
-      contract.mechanism !== 'cpmm-multi-1' ||
-      !contract.shouldAnswersSumToOne
-    )
+    if (!isMultiCpmm(contract) || !contract.shouldAnswersSumToOne)
       return undefined
     const odds: Odds = { dem: 0, rep: 0, other: 0 }
     for (const answer of contract.answers) {

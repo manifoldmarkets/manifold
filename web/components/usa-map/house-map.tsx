@@ -4,7 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
+import {
+  isMultiCpmm,
+  Contract,
+  contractPath,
+  CPMMMultiContract,
+} from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -56,7 +61,7 @@ export function parseDistrict(text: string) {
 }
 
 function districtsForState(contract: Contract, stateKey: string): Answer[] {
-  if (contract.mechanism !== 'cpmm-multi-1') return []
+  if (!isMultiCpmm(contract)) return []
   return contract.answers.filter(
     (a) => parseDistrict(a.text)?.stateCode === stateKey
   )

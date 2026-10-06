@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { BetDialog } from 'web/components/bet/bet-dialog'
@@ -30,8 +30,7 @@ export function BallotMeasureCard({
   const trade = side && tradeFor(measure, side)
   const source = measure.source
   const answer =
-    source?.kind === 'portfolio-answer' &&
-    contract?.mechanism === 'cpmm-multi-1'
+    source?.kind === 'portfolio-answer' && !!contract && isMultiCpmm(contract)
       ? contract.answers.find((a) => a.id === source.answerId)
       : undefined
   const closed =
@@ -142,7 +141,8 @@ export function BallotMeasureCard({
         )}
       {trade &&
         answer &&
-        contract?.mechanism === 'cpmm-multi-1' &&
+        !!contract &&
+        isMultiCpmm(contract) &&
         contract.outcomeType === 'MULTIPLE_CHOICE' && (
           <Modal
             open

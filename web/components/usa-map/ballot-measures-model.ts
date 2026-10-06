@@ -10,7 +10,7 @@
 // Pass/Fail buttons trade the exact contract outcome that matches the side.
 
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import data from 'web/public/data/ballot-measures-2026.json'
 
 export type MeasureSource =
@@ -98,8 +98,7 @@ export function approvalChance(
         : 1 - yes
       : undefined
   }
-  if (contract.mechanism !== 'cpmm-multi-1' || contract.shouldAnswersSumToOne)
-    return undefined
+  if (!isMultiCpmm(contract) || contract.shouldAnswersSumToOne) return undefined
   const answer = contract.answers.find((a) => a.id === s.answerId)
   if (!answer || answer.resolution === 'CANCEL') return undefined
   const chance = getAnswerProbability(contract, answer.id)

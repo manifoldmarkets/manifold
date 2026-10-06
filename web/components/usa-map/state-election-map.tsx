@@ -1,7 +1,7 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { auditedOdds, sourceAudit } from './audited-sources'
 import { Odds } from './election-odds'
-import { Contract } from 'common/contract'
+import { isMultiCpmm, Contract } from 'common/contract'
 import {
   MapContractsDictionary,
   StateElectionMarket,
@@ -81,7 +81,7 @@ export const getPartyProbs = (
   let hasDem: boolean
   let hasRep: boolean
 
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const answers = contract.answers
     const demAnswers = answers.filter((a) => isDemocraticAnswer(a.text))
     const repAnswers = answers.filter((a) => isRepublicanAnswer(a.text))
