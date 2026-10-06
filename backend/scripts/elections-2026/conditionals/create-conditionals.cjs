@@ -1,9 +1,11 @@
-// Midterm conditional pairs: "If Democrats win the House/Senate in 2026, will X?" and
-// "If Republicans keep it, will X?". Each resolves N/A if its condition fails, so the
-// gap between a pair is the market's estimate of what control changes.
+// Conditional pairs for the elections page: "If Democrats win the House/Senate in 2026,
+// will X?" / "If Republicans keep it, will X?", and for 2028 "If the Democratic /
+// Republican nominee wins the presidency, will X?". Each resolves N/A if its condition
+// fails, so the gap between a pair is the market's estimate of what control changes.
 // Seeds anchor on public prediction-market prices where one exists (Trump impeached
 // in his second term ~62%, so ~68% with a Democratic House and ~2% without; 0 Supreme
 // Court confirmations this term ~35%; 2+ shutdowns in 2026 ~65%); the rest are priors.
+// New questions go at the end: the reserved id hashes the race key, not the position.
 // Dry run by default (prints payloads). With --apply, creates as the API key's user
 // (@ManifoldPolitics), idempotently: each market has a reserved id, checked first.
 // Run from backend/scripts:
@@ -19,6 +21,14 @@ const SERIES = 'us-2026-conditionals-v1'
 const APPLY = process.argv.includes('--apply')
 // us-politics, 2026 US congressional elections, elections, 2026 midterms (as the launch markets).
 const GROUP_IDS = ['2e9fc841-389f-4e11-99bb-c26ca54ecac2', 'AjxQR8JMpNyDqtiqoA96', 'i5JOzjrK5ZMHPSkhgzoi', '1f785ecd-2cbc-4a04-8c20-0459dc31e4ad']
+// 2028 US presidential election, us-politics, elections.
+const PRES_GROUP_IDS = ['c83fd20c-226d-4b9e-ad21-b116412d4009', 'AjxQR8JMpNyDqtiqoA96', 'i5JOzjrK5ZMHPSkhgzoi']
+const TOPIC = {
+  economics: 'p88Ycq6yFd5ECKqq9PFO',
+  usEconomy: '36d1e8d5-2e36-481d-b3e0-42e53c37ecbb',
+  stocks: 'QDQfgsFiQrNNlZhsRGf5',
+  bitcoin: 'WBeBD6FyMd0NvSL0qjMb',
+}
 const utc = (s) => Date.parse(s)
 
 const CONDITIONS = {
@@ -38,7 +48,16 @@ const CONDITIONS = {
     short: 'Republicans keep the Senate',
     text: '**Condition:** Republicans control the U.S. Senate when the 120th Congress convenes on January 3, 2027: Republican senators hold at least 50 seats (with the Republican Vice President breaking ties). Otherwise this market resolves **N/A**.',
   },
+  'pres-D': {
+    short: 'the Democratic nominee wins the 2028 presidential election',
+    text: "**Condition:** the Democratic Party's 2028 presidential nominee wins the 2028 presidential election, as determined by Congress's count of electoral votes in January 2029 (or, if no one has a majority, the House's choice). If anyone else wins, this market resolves **N/A**.",
+  },
+  'pres-R': {
+    short: 'the Republican nominee wins the 2028 presidential election',
+    text: "**Condition:** the Republican Party's 2028 presidential nominee wins the 2028 presidential election, as determined by Congress's count of electoral votes in January 2029 (or, if no one has a majority, the House's choice). If anyone else wins, this market resolves **N/A**.",
+  },
 }
+const WHAT_CHANGES = { house: 'control of the House', senate: 'control of the Senate', pres: 'the 2028 presidential winner' }
 
 const QUESTIONS = [
   {
@@ -73,6 +92,134 @@ const QUESTIONS = [
     close: '2029-01-03T17:00:00Z',
     rule: 'Resolves **YES** if the U.S. Senate votes to confirm a nominee to the Supreme Court of the United States between January 3, 2027 and January 3, 2029 (inclusive), for any seat including Chief Justice. Resolves **NO** otherwise.',
   },
+  // ---- 2026 matrix rows (House control) ----
+  {
+    key: 'cabinet-impeach',
+    chamber: 'house',
+    ask: 'will the House impeach a Cabinet member before January 3, 2029?',
+    seeds: { D: 70, R: 4 },
+    close: '2029-01-03T17:00:00Z',
+    rule: 'Resolves **YES** if the U.S. House adopts at least one article of impeachment against a sitting or former Cabinet-level official (the Vice President, the head of an executive department, or another official with Cabinet rank) between January 3, 2027 and January 3, 2029 (inclusive). Impeaching the President does not count. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'vetoes-2027',
+    chamber: 'house',
+    ask: 'will Trump veto at least 5 bills in 2027?',
+    seeds: { D: 35, R: 5 },
+    close: '2027-12-31T23:59:00Z',
+    rule: "Resolves **YES** if Donald Trump vetoes five or more bills or joint resolutions during calendar year 2027, counting regular and pocket vetoes as listed in the U.S. Senate's record of presidential vetoes. Resolves **NO** otherwise.",
+  },
+  {
+    key: 'approval-40',
+    chamber: 'house',
+    ask: "will Trump's approval rating be 40% or higher on January 1, 2028?",
+    seeds: { D: 27, R: 25 },
+    close: '2028-01-02T17:00:00Z',
+    rule: "Resolves **YES** if VoteHub's polling average of Donald Trump's job approval is 40.0% or higher for January 1, 2028 (the value VoteHub shows for that date). If VoteHub's average is unavailable, uses the RealClearPolling average instead. Resolves **NO** otherwise, and **N/A** if Trump is not President on that date.",
+  },
+  {
+    key: 'tariff-law',
+    chamber: 'house',
+    ask: "will a law cutting or ending any of Trump's tariffs be enacted before January 3, 2029?",
+    seeds: { D: 12, R: 6 },
+    close: '2029-01-03T17:00:00Z',
+    extraGroups: [TOPIC.economics, TOPIC.usEconomy],
+    rule: 'Resolves **YES** if a bill or joint resolution becomes law (signed, or passed over a veto) before January 3, 2029 that terminates or reduces any tariff imposed by the Trump administration since January 20, 2025, or ends the emergency it rests on. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'stock-ban',
+    chamber: 'house',
+    ask: 'will Congress ban its members from trading individual stocks before January 3, 2029?',
+    seeds: { D: 25, R: 15 },
+    close: '2029-01-03T17:00:00Z',
+    extraGroups: [TOPIC.stocks],
+    rule: 'Resolves **YES** if a law is enacted before January 3, 2029 that prohibits members of Congress from buying or selling individual stocks (a requirement to divest or use a qualified blind trust counts), even if it takes effect later. A House or Senate rule alone does not count. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'gdp-2027',
+    chamber: 'house',
+    ask: 'will U.S. real GDP shrink in any quarter of 2027?',
+    seeds: { D: 28, R: 28 },
+    close: '2028-02-15T17:00:00Z',
+    extraGroups: [TOPIC.economics, TOPIC.usEconomy],
+    rule: "Resolves **YES** if the Bureau of Economic Analysis's advance estimate of real GDP growth (seasonally adjusted annual rate) is negative for any quarter of 2027. Uses each quarter's advance estimate as first published; later revisions don't count. Resolves once the Q4 2027 advance estimate is out.",
+  },
+  {
+    key: 'btc-150k',
+    chamber: 'house',
+    ask: 'will Bitcoin be above $150,000 at the end of 2027?',
+    seeds: { D: 18, R: 20 },
+    close: '2027-12-31T23:59:00Z',
+    extraGroups: [TOPIC.bitcoin],
+    rule: "Resolves **YES** if Coinbase's BTC-USD price at 00:00 UTC on January 1, 2028 (the daily close for December 31, 2027) is above $150,000. Resolves **NO** otherwise.",
+  },
+  // ---- 2028 matrix rows (presidency) ----
+  {
+    key: 'sp500-2029',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will the S&P 500 close 2029 higher than it closed on Election Day 2028?',
+    seeds: { D: 68, R: 70 },
+    close: '2029-12-31T21:00:00Z',
+    extraGroups: [TOPIC.stocks, TOPIC.economics],
+    rule: "Resolves **YES** if the S&P 500 index's official closing level on its last trading day of 2029 is higher than its official closing level on November 7, 2028 (Election Day). Resolves **NO** if it is equal or lower. Uses S&P Dow Jones Indices' published closes.",
+  },
+  {
+    key: 'gdp-2029-30',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will U.S. real GDP shrink in any quarter of 2029 or 2030?',
+    seeds: { D: 40, R: 40 },
+    close: '2031-02-15T17:00:00Z',
+    extraGroups: [TOPIC.economics, TOPIC.usEconomy],
+    rule: "Resolves **YES** if the Bureau of Economic Analysis's advance estimate of real GDP growth (seasonally adjusted annual rate) is negative for any quarter of 2029 or 2030. Uses each quarter's advance estimate as first published; later revisions don't count. Resolves once the Q4 2030 advance estimate is out.",
+  },
+  {
+    key: 'scotus-size',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will the Supreme Court have more than nine justices before January 20, 2033?',
+    seeds: { D: 12, R: 2 },
+    close: '2033-01-20T17:00:00Z',
+    rule: 'Resolves **YES** if, at any time before January 20, 2033, more than nine justices are serving on the U.S. Supreme Court at once. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'marijuana',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will marijuana be removed from federal drug schedules before January 20, 2033?',
+    seeds: { D: 35, R: 15 },
+    close: '2033-01-20T17:00:00Z',
+    rule: 'Resolves **YES** if marijuana (cannabis) is fully descheduled, removed from every schedule of the federal Controlled Substances Act by law or final rule, with effect before January 20, 2033. Moving it to Schedule III or any other schedule does not count. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'filibuster',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will the Senate end the legislative filibuster before January 3, 2031?',
+    seeds: { D: 30, R: 12 },
+    close: '2031-01-03T17:00:00Z',
+    rule: 'Resolves **YES** if, before January 3, 2031, the Senate changes its rules or sets a precedent so that ordinary legislation (or a whole category of it, such as voting-rights bills) can pass with a simple majority instead of needing 60 votes for cloture. Existing exceptions (nominations, budget reconciliation) and one-off waivers for a single bill do not count. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'abortion-law',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will a federal law protecting abortion rights nationwide be enacted before January 20, 2033?',
+    seeds: { D: 15, R: 1 },
+    close: '2033-01-20T17:00:00Z',
+    rule: 'Resolves **YES** if a federal statute establishing a nationwide legal right to obtain an abortion (for example, codifying the protections of Roe v. Wade) is enacted before January 20, 2033. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'btc-250k',
+    cycle: 2028,
+    chamber: 'pres',
+    ask: 'will Bitcoin be above $250,000 at the end of 2030?',
+    seeds: { D: 22, R: 26 },
+    close: '2030-12-31T23:59:00Z',
+    extraGroups: [TOPIC.bitcoin],
+    rule: "Resolves **YES** if Coinbase's BTC-USD price at 00:00 UTC on January 1, 2031 (the daily close for December 31, 2030) is above $250,000. Resolves **NO** otherwise.",
+  },
 ]
 
 function payloads() {
@@ -80,8 +227,8 @@ function payloads() {
   for (const q of QUESTIONS)
     for (const side of ['D', 'R']) {
       const cond = CONDITIONS[`${q.chamber}-${side}`]
-      const raceKey = `2026-conditional-${q.key}-${q.chamber}-${side}`
-      const question = `If ${cond.short} in 2026, ${q.ask}`
+      const raceKey = `${q.cycle ?? 2026}-conditional-${q.key}-${q.chamber}-${side}`
+      const question = q.chamber === 'pres' ? `If ${cond.short}, ${q.ask}` : `If ${cond.short} in 2026, ${q.ask}`
       const pair = CONDITIONS[`${q.chamber}-${side === 'D' ? 'R' : 'D'}`].short
       out.push({
         raceKey,
@@ -93,7 +240,7 @@ function payloads() {
             '',
             q.rule,
             '',
-            `This is one half of a conditional pair; its twin asks the same question if ${pair}. Comparing the two shows what the market thinks control of the ${q.chamber === 'house' ? 'House' : 'Senate'} changes.`,
+            `This is one half of a conditional pair; its twin asks the same question if ${pair}. Comparing the two shows what the market thinks ${WHAT_CHANGES[q.chamber]} changes.`,
             '',
             'Starting probability is a seed, not a forecast: anchored on public prediction-market prices where a related market exists, otherwise a prior.',
           ].join('\n'),
@@ -101,7 +248,7 @@ function payloads() {
           initialProb: q.seeds[side],
           closeTime: utc(q.close),
           liquidityTier: 1000,
-          groupIds: GROUP_IDS,
+          groupIds: [...(q.chamber === 'pres' ? PRES_GROUP_IDS : GROUP_IDS), ...(q.extraGroups ?? [])],
           visibility: 'public',
         },
       })
