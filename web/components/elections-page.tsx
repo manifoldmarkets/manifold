@@ -2,7 +2,7 @@ import { ReactNode, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 
-import { isMultiCpmm } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { referralQuery } from 'common/util/share'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
@@ -21,6 +21,12 @@ import {
   ConditionalMarketsGrid,
   MarketSpotlightGrid,
 } from './us-elections/market-spotlight'
+import {
+  ConditionalMatrix,
+  LiveConditionOdds,
+} from './us-elections/conditional-matrix'
+import { electionOdds } from './usa-map/election-map-model'
+import { getPartyProbs } from './usa-map/state-election-map'
 import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -31,6 +37,12 @@ import {
   MIDTERM_CONTEST_TOPIC_SLUG,
 } from 'web/lib/politics/election-curation'
 import type { MidtermSpotlightProps } from 'web/lib/politics/home'
+import {
+  ConditionalMatrixRow,
+  HOUSE_2026_COLUMNS,
+  PRESIDENT_2028_COLUMNS,
+  withConditionProbs,
+} from 'web/lib/politics/conditional-matrix'
 import interactions from './us-elections/election-interactions.module.css'
 
 // Kept for legacy political market panels that still reference it.
@@ -97,6 +109,8 @@ export function USElectionsPage(
     trendingContracts,
     contestContracts = [],
     conditionalRows = [],
+    houseMatrixRows = [],
+    presidencyMatrixRows = [],
     hideTitle,
   } = props
 
@@ -229,17 +243,33 @@ export function USElectionsPage(
         </SectionInView>
       )}
 
-      {/* The full joint-distribution market, for trading the exact split. */}
-      {balanceOfPowerContract && (
-        <SectionInView section="balance of power" className="gap-3">
-          <SectionHeader>Balance of Power</SectionHeader>
-          <FeedContractCard
-            contract={balanceOfPowerContract}
-            trackingPostfix="midterms balance of power"
-            showGraph
-            answerColors={balanceOfPowerColors}
+      {/* What the House result changes: the same questions asked under each
+          outcome (web/lib/politics/conditional-matrix.ts). It takes the
+          Balance of Power slot; until it has two complete rows (e.g. before
+          its markets are created) the joint-distribution market shows here
+          instead. */}
+      {houseMatrixRows.length > 0 ? (
+        <SectionInView section="conditional matrix 2026" className="gap-3">
+          <SectionHeader subtitle="The same questions, asked under each outcome of the House race. Click a chance to bet on it.">
+            What a Democratic House would change
+          </SectionHeader>
+          <HouseConditionalMatrix
+            rows={houseMatrixRows}
+            houseControlContract={houseControlContract}
           />
         </SectionInView>
+      ) : (
+        balanceOfPowerContract && (
+          <SectionInView section="balance of power" className="gap-3">
+            <SectionHeader>Balance of Power</SectionHeader>
+            <FeedContractCard
+              contract={balanceOfPowerContract}
+              trackingPostfix="midterms balance of power"
+              showGraph
+              answerColors={balanceOfPowerColors}
+            />
+          </SectionInView>
+        )
       )}
 
       {/* What follows the result: markets conditional on who wins. A curated
@@ -293,6 +323,20 @@ export function USElectionsPage(
         </SectionInView>
       )}
 
+      {/* The 2028 counterpart: questions asked under each party's president.
+          Hidden until it has two complete rows. */}
+      {presidencyMatrixRows.length > 0 && (
+        <SectionInView section="conditional matrix 2028" className="gap-3">
+          <SectionHeader subtitle="The same questions, asked under a Democratic and a Republican president. Click a chance to bet on it.">
+            What the 2028 winner would change
+          </SectionHeader>
+          <PresidencyConditionalMatrix
+            rows={presidencyMatrixRows}
+            partyContract={presidency2028PartyContract}
+          />
+        </SectionInView>
+      )}
+
       {/* Infinite-scroll feed of election markets; topic bubbles sit in their
           own row below the sort/filter controls (Search's extraFilterPills).
           Defaults to Total traders: "Best" surfaced one-trader seeded district
@@ -324,5 +368,52 @@ export function USElectionsPage(
         />
       </SectionInView>
     </Col>
+  )
+}
+
+const MATRIX_FOOTNOTE =
+  "Each market resolves N/A if its condition doesn't happen, so bets only count in that world."
+
+// The 2026 House matrix. Column headers carry the live House control odds
+// (the same market as the map's House card: YES is a Republican majority).
+function HouseConditionalMatrix(props: {
+  rows: ConditionalMatrixRow[]
+  houseControlContract: Contract | null
+}) {
+  return (
+    <LiveConditionOdds
+      contract={props.houseControlContract}
+      read={(c) => electionOdds(c, true)}
+    >
+      {(odds) => (
+        <ConditionalMatrix
+          caption="Chances by House result"
+          columns={withConditionProbs(HOUSE_2026_COLUMNS, odds)}
+          rows={props.rows}
+          trackingName="election conditional matrix 2026"
+          footnote={MATRIX_FOOTNOTE}
+        />
+      )}
+    </LiveConditionOdds>
+  )
+}
+
+// The 2028 matrix, headed by the live odds of the 2028 party market.
+function PresidencyConditionalMatrix(props: {
+  rows: ConditionalMatrixRow[]
+  partyContract: Contract | null
+}) {
+  return (
+    <LiveConditionOdds contract={props.partyContract} read={getPartyProbs}>
+      {(odds) => (
+        <ConditionalMatrix
+          caption="Chances by 2028 presidential winner"
+          columns={withConditionProbs(PRESIDENT_2028_COLUMNS, odds)}
+          rows={props.rows}
+          trackingName="election conditional matrix 2028"
+          footnote={MATRIX_FOOTNOTE}
+        />
+      )}
+    </LiveConditionOdds>
   )
 }
