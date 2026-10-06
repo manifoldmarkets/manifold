@@ -1,0 +1,2553 @@
+{
+  "reviewedAt": "2026-10-06T04:57:10.383Z",
+  "policy": "Exact reviewed identities, never fuzzy matching. A changed hash requires renewed review. These are pricing inputs, not a settlement-equivalence certification.",
+  "matches": [
+    {
+      "raceKey": "2026-measure-AL-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-AL-A1",
+      "manifestIdentity": "f2ed5826729c300a870d60d4ad4d5f5c3e7cb9a8efdf2b37b53c3457550f0052",
+      "marketIdentity": "b91748fe94d94ed090fdc40f7739f098aeb62c4cfc9e9fc493228821c5f26512",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Alabama Amendment 1: Lt. governor vacancy elections and salaries. Source: :: Lt. gov. vacancy; leg. officer pay; If Amendment 1 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AL",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "Lt. governor vacancy elections and salaries",
+        "officialTitle": "Proposing an amendment to the Constitution of Alabama of 2022, to provide for the election of a Lieutenant Governor if the Office of Lieutenant Governor becomes vacant during the first two years of a term, to authorize the Legislature to set the salary of the Lieutenant Governor and officers of the Legislature, and to require any expenditure of legislative funds for travel to be approved by a legislative officer. Proposed by Act 2026-341.",
+        "yesMeaning": "Alabama Amendment 1 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Ala. Const. 2022 §§284-285)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Alabama?",
+        "eventSubtitle": "Alabama",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": ":: Lt. gov. vacancy; leg. officer pay",
+        "yesSubtitle": "Amendment 1",
+        "rulesPrimary": "If Amendment 1 passes in Alabama, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-AL-amendment-2",
+      "ticker": "KXSTATEBALLOTMEASURE-AL-A2",
+      "manifestIdentity": "a337831c521b5afe68b67d28bfc9b23307f84051a3baef8f2ac727aabcbf7060",
+      "marketIdentity": "d4a91fb3450f88f00439d2968bbc78380fbcc8088461ab192d3f90da872797cf",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Alabama Amendment 2: county school system consolidation process. Source: :: County school system consolidation; If Amendment 2 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AL",
+        "designation": {
+          "kind": "amendment",
+          "value": "2",
+          "label": "Amendment 2"
+        },
+        "subject": "county school system consolidation process",
+        "officialTitle": "Proposing an amendment to the Constitution of Alabama of 2022, to provide a process for the creation of a consolidated county school system by merging two or more contiguous county boards of education; to require the State Board of Education to conduct an impact study...; to provide a procedure for protesting a proposed consolidation...; and to require the State Board of Education to adopt rules. Proposed by Act 2026-378.",
+        "yesMeaning": "Alabama Amendment 2 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment statewide (Ala. Const. 2022 §§284-285)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Alabama?",
+        "eventSubtitle": "Alabama",
+        "title": "Will Amendment 2 pass?",
+        "subtitle": ":: County school system consolidation",
+        "yesSubtitle": "Amendment 2",
+        "rulesPrimary": "If Amendment 2 passes in Alabama, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-AL-amendment-4",
+      "ticker": "KXSTATEBALLOTMEASURE-AL-A4",
+      "manifestIdentity": "5e741993b662f94e2d05ef8ef4702d1c31b020e8b3c377c02dda1bfc2df15ab2",
+      "marketIdentity": "59856b40b81e0167c105593fd650fab92af810c8fd85228899e4ea8c6c8e6a80",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Alabama Amendment 4: weekly national anthem in public schools. Source: :: Weekly national anthem in schools; If Amendment 4 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AL",
+        "designation": {
+          "kind": "amendment",
+          "value": "4",
+          "label": "Amendment 4"
+        },
+        "subject": "weekly national anthem in public schools",
+        "officialTitle": "Proposing an amendment to the Constitution of Alabama of 2022, to require local boards of education to adopt policies requiring each public K-12 school to broadcast or sanction the performance of the first stanza of The Star-Spangled Banner at least once per week during school hours. Proposed by Act 2026-424.",
+        "yesMeaning": "Alabama Amendment 4 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Ala. Const. 2022 §§284-285)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Alabama?",
+        "eventSubtitle": "Alabama",
+        "title": "Will Amendment 4 pass?",
+        "subtitle": ":: Weekly national anthem in schools",
+        "yesSubtitle": "Amendment 4",
+        "rulesPrimary": "If Amendment 4 passes in Alabama, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-1",
+      "ticker": "KXSTATEBALLOTMEASURE-AR-HJR1018",
+      "manifestIdentity": "73a62e2c5d7278d622c76cff655093bae8b9e07809de1696c5256165a6a8205f",
+      "marketIdentity": "275973cac0f63726c64ea1d71c840999be94af57ac6f8ea08513e79c1c108f6c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Arkansas Issue 1: citizenship requirement to vote. Source: HJR 1018; If Citizens Only Voting Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AR",
+        "designation": {
+          "kind": "issue",
+          "value": "1",
+          "label": "Issue 1"
+        },
+        "subject": "citizenship requirement to vote",
+        "officialTitle": "A Constitutional Amendment to Be Known as \"The Citizens Only Voting Amendment\" and Providing That Only a Citizen of the United States Meeting the Qualifications of an Elector Under the Arkansas Constitution May Vote in an Election in this State.",
+        "yesMeaning": "Arkansas Issue 1 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment (Ark. Const. art. 19 §22)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Arkansas?",
+        "eventSubtitle": "Arkansas",
+        "title": "Will HJR 1018 pass?",
+        "subtitle": "HJR 1018",
+        "yesSubtitle": "Citizens Only Voting Amendment",
+        "rulesPrimary": "If Citizens Only Voting Amendment passes in Arkansas, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-2",
+      "ticker": "KXSTATEBALLOTMEASURE-AR-SJR11",
+      "manifestIdentity": "8c48955b0b6fa49e861fa218734915df9dea2c63cc8d840aacbcf08b6c70a774",
+      "marketIdentity": "c9304562fd3ec31ac8064443fd1851b317dfe43950459d1856d18da92600519b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Arkansas Issue 2: right to keep and bear arms. Source: SJR 11; If Right to Keep and Bear Arms Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AR",
+        "designation": {
+          "kind": "issue",
+          "value": "2",
+          "label": "Issue 2"
+        },
+        "subject": "right to keep and bear arms",
+        "officialTitle": "A Constitutional Amendment to Amend Arkansas Constitution, Article 2, § 5, to Protect the Right to Keep and Bear Arms.",
+        "yesMeaning": "Arkansas Issue 2 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment (Ark. Const. art. 19 §22)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Arkansas?",
+        "eventSubtitle": "Arkansas",
+        "title": "Will SJR 11 pass?",
+        "subtitle": "SJR 11",
+        "yesSubtitle": "Right to Keep and Bear Arms Amendment",
+        "rulesPrimary": "If Right to Keep and Bear Arms Amendment passes in Arkansas, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-3",
+      "ticker": "KXSTATEBALLOTMEASURE-AR-SJR15",
+      "manifestIdentity": "aacbee6a8b4908efd289a5308488bc37ed611ab2625379f615b73017da82c647",
+      "marketIdentity": "a8840c037c5dfadc49411a878212d9d1bca526bd2a3ae05459a005aff38ee560",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Arkansas Issue 3: economic development districts. Source: SJR 15; If Economic Development Districts Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AR",
+        "designation": {
+          "kind": "issue",
+          "value": "3",
+          "label": "Issue 3"
+        },
+        "subject": "economic development districts",
+        "officialTitle": "A Constitutional Amendment Concerning Economic Development in the State of Arkansas; and Authorizing the General Assembly to Provide for the Creation of Economic Development Districts Within Cities, Counties, or Cooperative Areas to Promote Economic Development Within the Economic Development District.",
+        "yesMeaning": "Arkansas Issue 3 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment (Ark. Const. art. 19 §22)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Arkansas?",
+        "eventSubtitle": "Arkansas",
+        "title": "Will SJR 15 pass?",
+        "subtitle": "SJR 15",
+        "yesSubtitle": "Economic Development Districts Amendment",
+        "rulesPrimary": "If Economic Development Districts Amendment passes in Arkansas, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-4",
+      "ticker": "KXSTATEBALLOTMEASURE-AR-A578",
+      "manifestIdentity": "214ed788a20c57eda81cd19339c454dc21d2ec6a0fe712a54b55f392e69c8f76",
+      "marketIdentity": "eea4af905f03c2972a3bb977b59925dec02efe88869a502a42adaba5a503afed",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Arkansas Issue 4: water and pollution-control facility bonds. Source: Act 578; If Water Infrastructure Bond Question passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "AR",
+        "designation": {
+          "kind": "issue",
+          "value": "4",
+          "label": "Issue 4"
+        },
+        "subject": "water and pollution-control facility bonds",
+        "officialTitle": "Arkansas Water, Waste Disposal, and Pollution Abatement Facilities Financing Act of 2025.",
+        "yesMeaning": "Arkansas Issue 4 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the question (Ark. Const. Amend. 20, state GO bonds)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Arkansas?",
+        "eventSubtitle": "Arkansas",
+        "title": "Will Act 578 pass?",
+        "subtitle": "Act 578",
+        "yesSubtitle": "Water Infrastructure Bond Question",
+        "rulesPrimary": "If Water Infrastructure Bond Question passes in Arkansas, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-1",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR01",
+      "manifestIdentity": "9321c7a6fb27cd3b15b856673869c83b02c75be48913fe783a29a07e0ef9079a",
+      "marketIdentity": "d7d5a6c7a5c9dd310f1ee0efbfce1fabde170a80731cceaec5b57df90ad3fed1",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 1: $11.25B housing bond. Source: Proposition 1:: Veterans & Affordable Housing Bond; If Proposition 1 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "1",
+          "label": "Proposition 1"
+        },
+        "subject": "$11.25B housing bond",
+        "officialTitle": "Authorizes Bonds for Housing Affordability Programs. Legislative Statute.",
+        "yesMeaning": "California Proposition 1 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 1 pass?",
+        "subtitle": "Proposition 1:: Veterans & Affordable Housing Bond",
+        "yesSubtitle": "Proposition 1",
+        "rulesPrimary": "If Proposition 1 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-2",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR02",
+      "manifestIdentity": "8b1fe1c3223d41a168df5a5c0da29c6787b2b4ca69b80e9bc4c82b645b0bf5f0",
+      "marketIdentity": "c89b8998919c398ce938794cff7adbf771a94033bff6b633f7cb0e2524e232c2",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 2: larger state rainy day fund. Source: :: Save for California's Future Act; If Proposition 2 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "2",
+          "label": "Proposition 2"
+        },
+        "subject": "larger state rainy day fund",
+        "officialTitle": "Increases State's Rainy Day Fund. Legislative Constitutional Amendment.",
+        "yesMeaning": "California Proposition 2 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 2 pass?",
+        "subtitle": ":: Save for California's Future Act",
+        "yesSubtitle": "Proposition 2",
+        "rulesPrimary": "If Proposition 2 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-3",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR03",
+      "manifestIdentity": "b01c7a73d0158e6877fc1713796bc7b2d96d0e3150d40d6137799a52eb01e9ca",
+      "marketIdentity": "e83625ea597243c4bfb72b440c421d6e171bd9844119a046db8505e34fb67a15",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 3: extending high-income tax rates. Source: :: Tax extension for schools/healthcare; If Proposition 3 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "3",
+          "label": "Proposition 3"
+        },
+        "subject": "extending high-income tax rates",
+        "officialTitle": "Provides Permanent Funding for Schools and Health Care by Extending Existing Tax on High Incomes. Initiative Constitutional Amendment.",
+        "yesMeaning": "California Proposition 3 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 3 pass?",
+        "subtitle": ":: Tax extension for schools/healthcare",
+        "yesSubtitle": "Proposition 3",
+        "rulesPrimary": "If Proposition 3 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-38",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR38",
+      "manifestIdentity": "29a5884975a0604bb991dbfec75444b047cdd469db6683c213352df3312dad7d",
+      "marketIdentity": "c1c6ab1f8d04b50349d5b05df106d77cf6315890b86aead6559f75f540a48ece",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 38: $8.4B immunology research bond. Source: :: Bonds for immunology research; If Proposition 38 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "38",
+          "label": "Proposition 38"
+        },
+        "subject": "$8.4B immunology research bond",
+        "officialTitle": "Authorizes Bonds for Immunology Medical Research. Initiative Statute.",
+        "yesMeaning": "California Proposition 38 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 38 pass?",
+        "subtitle": ":: Bonds for immunology research",
+        "yesSubtitle": "Proposition 38",
+        "rulesPrimary": "If Proposition 38 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-41",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR41",
+      "manifestIdentity": "ed40400c26977b0054a810417715f2c7e93bd1e0c8a676f18628f681184a56c7",
+      "marketIdentity": "8c4343228cde64a9b0d43dcba086f4b04942e4fa6b32fb87a0351eaf3567470c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 41: tax limits and special-tax audits. Source: :: Audits for new special taxes; If Proposition 41 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "41",
+          "label": "Proposition 41"
+        },
+        "subject": "tax limits and special-tax audits",
+        "officialTitle": "Prohibits New State Taxes That Exclude Revenues from State Spending Limit. Requires Audits for New State Special Taxes. Initiative Constitutional Amendment.",
+        "yesMeaning": "California Proposition 41 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 41 pass?",
+        "subtitle": ":: Audits for new special taxes",
+        "yesSubtitle": "Proposition 41",
+        "rulesPrimary": "If Proposition 41 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-42",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR42",
+      "manifestIdentity": "b9e4de83a0227ac548d058e38d5cd9786d19ae554c1d119be55038b1c7ce0271",
+      "marketIdentity": "48fad6ac12aaaa7c42284d6d84c596268b03853a877c33db0059e4ed34ead088",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 42: ban on new state personal property taxes. Source: :: Prohibits new personal property taxes; If Proposition 42 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "42",
+          "label": "Proposition 42"
+        },
+        "subject": "ban on new state personal property taxes",
+        "officialTitle": "Prohibits New State Personal Property Taxes and Certain Retroactive State Taxes. Initiative Constitutional Amendment.",
+        "yesMeaning": "California Proposition 42 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 42 pass?",
+        "subtitle": ":: Prohibits new personal property taxes",
+        "yesSubtitle": "Proposition 42",
+        "rulesPrimary": "If Proposition 42 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-44",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR44",
+      "manifestIdentity": "e8b5a66a2425b7710d83e8857278cd713ce4fdb156cb1bf55c97746281d630f7",
+      "marketIdentity": "a4517269c4befbc88c9590ae31b5d22778e4b641df8a2e7a5a88817b9c887f79",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 44: 90% spending rule for community clinics. Source: :: 90% clinic revenue on programs; If Proposition 44 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "44",
+          "label": "Proposition 44"
+        },
+        "subject": "90% spending rule for community clinics",
+        "officialTitle": "Requires Community Health Clinics Spend 90% of Revenue on Program Services. Initiative Statute.",
+        "yesMeaning": "California Proposition 44 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 44 pass?",
+        "subtitle": ":: 90% clinic revenue on programs",
+        "yesSubtitle": "Proposition 44",
+        "rulesPrimary": "If Proposition 44 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-45",
+      "ticker": "KXCABALLOTMEASURES-26NOV03-PR45",
+      "manifestIdentity": "52361adc84d3f8587a32c3a6472104c333e4147678d9fc5ca2b6e48aefcfbdd6",
+      "marketIdentity": "7ffa1932d7d569034a6b5bec935657ab6901bb9fc6da1a4d543f444a9da0e53e",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 California Proposition 45: faster CEQA environmental review. Source: :: Modifies environmental review for projects; If Proposition 45 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "CA",
+        "designation": {
+          "kind": "prop",
+          "value": "45",
+          "label": "Proposition 45"
+        },
+        "subject": "faster CEQA environmental review",
+        "officialTitle": "Modifies Environmental Review for Certain Projects. Initiative Statute.",
+        "yesMeaning": "California Proposition 45 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in California?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Proposition 45 pass?",
+        "subtitle": ":: Modifies environmental review for projects",
+        "yesSubtitle": "Proposition 45",
+        "rulesPrimary": "If Proposition 45 passes in California, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-82",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-I177",
+      "manifestIdentity": "4a92437ebf961d9d3f1c713afad67f56bc7b39df07cdcf967da37e9e47fa9d3f",
+      "marketIdentity": "a858b12b34fb41d5d43c470d401ab57b8b572c62c857bf5403bc7a4799d59ed8",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Amendment 82: constitutional right to natural gas. Source: :: Right to purchase natural gas; If Amendment 82 (Initiative #177) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "amendment",
+          "value": "82",
+          "label": "Amendment 82"
+        },
+        "subject": "constitutional right to natural gas",
+        "officialTitle": "Right to Natural Gas",
+        "yesMeaning": "Colorado Amendment 82 is approved by voters at the November 3, 2026 election under: 55% of votes cast on the measure (Colo. Const. art. V §1(4)(b)); SOS: 'Requires 55% approval because it adds language to the state constitution'"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Initiative #177 pass?",
+        "subtitle": ":: Right to purchase natural gas",
+        "yesSubtitle": "Amendment 82",
+        "rulesPrimary": "If Amendment 82 (Initiative #177) passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-83",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-A83",
+      "manifestIdentity": "431113bd34b3ab4350f20f924bb6ea9d0f258dd030077e23978492d9dc0a85e5",
+      "marketIdentity": "5123c1e332652c206f7a59fa0f4803782dc9909f09821c11faa84a6fd25cde38",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Amendment 83: constitutional right to hunt and fish. Source: :: Constitutional right to hunt and fish; If Amendment 83 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "amendment",
+          "value": "83",
+          "label": "Amendment 83"
+        },
+        "subject": "constitutional right to hunt and fish",
+        "officialTitle": "Constitutional Right to Hunt and Fish",
+        "yesMeaning": "Colorado Amendment 83 is approved by voters at the November 3, 2026 election under: 55% of votes cast on the measure (Colo. Const. art. V §1(4)(b)); SOS: 'Requires 55% approval because it adds language to the state constitution'; Blue Book: 'Passes with 55 percent of the vote'"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Amendment 83 pass?",
+        "subtitle": ":: Constitutional right to hunt and fish",
+        "yesSubtitle": "Amendment 83",
+        "rulesPrimary": "If Amendment 83 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-84",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-A84",
+      "manifestIdentity": "4a104782d5fa1bdc4deac5d307e93472a1d507dfef32a8f4d33b1e835c25d36c",
+      "marketIdentity": "b9c23039934e44b7c1c41200f2ec5dec1bb2453f5f74d1c293b7928f6602c1d5",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Amendment 84: ID requirement for mail ballots. Source: :: Mail ballot voter identification; If Amendment 84 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "amendment",
+          "value": "84",
+          "label": "Amendment 84"
+        },
+        "subject": "ID requirement for mail ballots",
+        "officialTitle": "Mail Ballot Voter Identification",
+        "yesMeaning": "Colorado Amendment 84 is approved by voters at the November 3, 2026 election under: 55% of votes cast on the measure (Colo. Const. art. V §1(4)(b)); SOS: 'Requires 55% approval because it adds language to the state constitution'; Blue Book: 'Passes with 55 percent of the vote'"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Amendment 84 pass?",
+        "subtitle": ":: Mail ballot voter identification",
+        "yesSubtitle": "Amendment 84",
+        "rulesPrimary": "If Amendment 84 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-85",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-A85",
+      "manifestIdentity": "5d0568ca0a54a6cc30c1f5d2f9a05e1625d8b0db203b25a90eb93bd1a6bce522",
+      "marketIdentity": "bf24b673502dbf95ceac5989ec9872ecb93d61f0c5b0fcbd50599a607e816af7",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Amendment 85: plain-language ballot titles. Source: :: Plain-language ballot questions; If Amendment 85 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "amendment",
+          "value": "85",
+          "label": "Amendment 85"
+        },
+        "subject": "plain-language ballot titles",
+        "officialTitle": "Plain Language Ballot Questions",
+        "yesMeaning": "Colorado Amendment 85 is approved by voters at the November 3, 2026 election under: 55% of votes cast on the measure (Colo. Const. art. V §1(4)(b)); SOS: 'Requires 55% approval because it adds language to the state constitution'; Blue Book: 'Passes with 55 percent of the vote'"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Amendment 85 pass?",
+        "subtitle": ":: Plain-language ballot questions",
+        "yesSubtitle": "Amendment 85",
+        "rulesPrimary": "If Amendment 85 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-86",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-A86",
+      "manifestIdentity": "d53ef8fa8413568aca35f7e5a59c89288f57d60953439ed340128c8f65418211",
+      "marketIdentity": "6e9a259348fc4da0801d4f18719cb61435b6ca7d237c565d6d3f76b432d5731e",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Amendment 86: off-cycle congressional redistricting limits. Source: :: Congressional redistricting; If Amendment 86 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "amendment",
+          "value": "86",
+          "label": "Amendment 86"
+        },
+        "subject": "off-cycle congressional redistricting limits",
+        "officialTitle": "Congressional Redistricting",
+        "yesMeaning": "Colorado Amendment 86 is approved by voters at the November 3, 2026 election under: 55% of votes cast on the measure (Colo. Const. art. V §1(4)(b)); SOS: 'Requires 55% approval because it adds language to the state constitution'; Blue Book: 'Passes with 55 percent of the vote'"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Amendment 86 pass?",
+        "subtitle": ":: Congressional redistricting",
+        "yesSubtitle": "Amendment 86",
+        "rulesPrimary": "If Amendment 86 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-87",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-A87",
+      "manifestIdentity": "bea9909cef110e25d5fc9491da0242237e894750e231e97ee76993c2458e1fbd",
+      "marketIdentity": "ab2db2f65a7eca4087b17e2363d84314c194f52d0e8a267f6d76f7058aab87e6",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Amendment 87: graduated income tax. Source: :: Graduated income tax; If Amendment 87 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "amendment",
+          "value": "87",
+          "label": "Amendment 87"
+        },
+        "subject": "graduated income tax",
+        "officialTitle": "Graduated Income Tax",
+        "yesMeaning": "Colorado Amendment 87 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure. Blue Book: 'Passes with a majority vote'; constitutional part only repeals TABOR's single-rate sentence (art. V §1(4)(b) repeal exception to 55%). SOS page shows no 55% note."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Amendment 87 pass?",
+        "subtitle": ":: Graduated income tax",
+        "yesSubtitle": "Amendment 87",
+        "rulesPrimary": "If Amendment 87 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-133",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-I108",
+      "manifestIdentity": "95315f04defc5f7d25848112b169158c6d75155584916c3a2ffef52e51fad9da",
+      "marketIdentity": "66ab2f431bcae37c1cd1123794574cd4eee965cfd98c70fa13490c33edeec3ed",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Proposition 133: penalties for trafficking of a minor. Source: :: Life term for child sex trafficking; If Proposition 133 (Initiative #108) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "prop",
+          "value": "133",
+          "label": "Proposition 133"
+        },
+        "subject": "penalties for trafficking of a minor",
+        "officialTitle": "Penalties for Human Trafficking of a Minor",
+        "yesMeaning": "Colorado Proposition 133 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (statutory; SOS/Blue Book: 'Passes with a majority vote')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Initiative #108 pass?",
+        "subtitle": ":: Life term for child sex trafficking",
+        "yesSubtitle": "Proposition 133",
+        "rulesPrimary": "If Proposition 133 (Initiative #108) passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-134",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-I109",
+      "manifestIdentity": "a11bd8ca8180d5a0a89207e24a09ec353fd88b8091593cf5da0041e40c3d558a",
+      "marketIdentity": "27cb0b3dbf81e29bf53600123f268ed462e43cfcd847786148176d8af2e4e777",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Proposition 134: male and female school sports. Source: :: School sports by biological sex; If Proposition 134 (Initiative #109) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "prop",
+          "value": "134",
+          "label": "Proposition 134"
+        },
+        "subject": "male and female school sports",
+        "officialTitle": "Male and Female Participation in School Sports",
+        "yesMeaning": "Colorado Proposition 134 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (statutory; SOS/Blue Book: 'Passes with a majority vote')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Initiative #109 pass?",
+        "subtitle": ":: School sports by biological sex",
+        "yesSubtitle": "Proposition 134",
+        "rulesPrimary": "If Proposition 134 (Initiative #109) passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-135",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-I110",
+      "manifestIdentity": "391e6eb255a8e9e72435a605648726dbc1bcb67379f4eb026b655acc244bb05c",
+      "marketIdentity": "3c666b6a5d48c2523feca9abc8a09c4974aec1b56ec93b16f10171cfbbb55115",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Proposition 135: prohibiting certain surgeries on minors. Source: :: Ban transition surgeries for minors; If Proposition 135 (Initiative #110) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "prop",
+          "value": "135",
+          "label": "Proposition 135"
+        },
+        "subject": "prohibiting certain surgeries on minors",
+        "officialTitle": "Prohibit Certain Surgeries on Minors",
+        "yesMeaning": "Colorado Proposition 135 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (statutory; SOS/Blue Book: 'Passes with a majority vote')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Initiative #110 pass?",
+        "subtitle": ":: Ban transition surgeries for minors",
+        "yesSubtitle": "Proposition 135",
+        "rulesPrimary": "If Proposition 135 (Initiative #110) passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-136",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-P136",
+      "manifestIdentity": "68cf940daccc18647e836be554f6448eb953a89a004bdb74e2f12f17cbcc6a51",
+      "marketIdentity": "19595c439d4337ec53a13ea1e7a04efb505b82909916064c6537f6df17f90e4c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Proposition 136: 4.4% income tax rate cap. Source: :: Income tax rate limit; If Proposition 136 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "prop",
+          "value": "136",
+          "label": "Proposition 136"
+        },
+        "subject": "4.4% income tax rate cap",
+        "officialTitle": "Income Tax Rate Cap",
+        "yesMeaning": "Colorado Proposition 136 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (statutory; SOS/Blue Book: 'Passes with a majority vote')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Proposition 136 pass?",
+        "subtitle": ":: Income tax rate limit",
+        "yesSubtitle": "Proposition 136",
+        "rulesPrimary": "If Proposition 136 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-137",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-P137",
+      "manifestIdentity": "65db6c5491bf0c836a495c2ac0171799483580722e099a8045bc0b65a493fd69",
+      "marketIdentity": "c953a6c26e80848af115ae28280ebefe94401cb7a68e0b4dc0be8c84bf516ae7",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Proposition 137: sporting goods tax for conservation. Source: :: Direct sporting-goods sales tax revenue for conservation; If Proposition 137 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "prop",
+          "value": "137",
+          "label": "Proposition 137"
+        },
+        "subject": "sporting goods tax for conservation",
+        "officialTitle": "Designate Sporting Goods Sales Tax Revenue for Conservation",
+        "yesMeaning": "Colorado Proposition 137 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (statutory; SOS/Blue Book: 'Passes with a majority vote')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Proposition 137 pass?",
+        "subtitle": ":: Direct sporting-goods sales tax revenue for conservation",
+        "yesSubtitle": "Proposition 137",
+        "rulesPrimary": "If Proposition 137 passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-nn",
+      "ticker": "KXSTATEBALLOTMEASURE-CO-PNN",
+      "manifestIdentity": "6e1155280736a570c07d0f95a519983d7b91bc5bf85eb1e94944bd36c70729fd",
+      "marketIdentity": "e4b89b04225d08de4e8c7afec846c9426daf100c6871e512bdc788344113dc04",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Colorado Proposition NN: keeping excess revenue for K-12 schools. Source: :: Keep excess revenue for K-12 schools; If Proposition NN passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "CO",
+        "designation": {
+          "kind": "prop",
+          "value": "NN",
+          "label": "Proposition NN"
+        },
+        "subject": "keeping excess revenue for K-12 schools",
+        "officialTitle": "State Public K-12 Education Funding",
+        "yesMeaning": "Colorado Proposition NN is approved by voters at the November 3, 2026 election under: Simple majority of votes cast (SOS: 'Passes with a majority vote. Referred to the voters by state legislature.')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Colorado?",
+        "eventSubtitle": "Colorado",
+        "title": "Will Proposition NN pass?",
+        "subtitle": ":: Keep excess revenue for K-12 schools",
+        "yesSubtitle": "Proposition NN",
+        "rulesPrimary": "If Proposition NN passes in Colorado, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-FL-amendment-2",
+      "ticker": "KXSTATEBALLOTMEASURE-FL-A2",
+      "manifestIdentity": "82f2b8d29a8827a7ec2498ca108e4f8dcec40c8e9d8b77eb455b767b608fc2d7",
+      "marketIdentity": "3f88f4bac495a98b7666b3f47b627127450a2b5ce3d554fbb2d93f859f3b6b4d",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Florida Amendment 2: agricultural personal property tax exemption. Source: :: Agriculture property-tax exemption; If Amendment 2 passes in Florida, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "FL",
+        "designation": {
+          "kind": "amendment",
+          "value": "2",
+          "label": "Amendment 2"
+        },
+        "subject": "agricultural personal property tax exemption",
+        "officialTitle": "Exemption of Tangible Personal Property on Agricultural Land from Taxation",
+        "yesMeaning": "Florida Amendment 2 is approved by voters at the November 3, 2026 election under: 60% of votes cast on the measure (Fla. Const. art. XI §5(e))"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Florida?",
+        "eventSubtitle": "Florida",
+        "title": "Will Amendment 2 pass?",
+        "subtitle": ":: Agriculture property-tax exemption",
+        "yesSubtitle": "Amendment 2",
+        "rulesPrimary": "If Amendment 2 passes in Florida, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-FL-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-FL-A1",
+      "manifestIdentity": "f4d67763b65cd9493c037539f97a5fe2fb2b5e5722c5d783db80ef9319b1a950",
+      "marketIdentity": "29ea456207a2f0b0afca4c1283d46e0dfbd7cc71122738967d33ecdfb70cbdd0",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Florida Amendment 1: Budget Stabilization Fund changes. Source: Amendment 1:: Raise budget-reserve cap to 25%; If Amendment 1 passes in Florida, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "FL",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "Budget Stabilization Fund changes",
+        "officialTitle": "Budget Stabilization Fund",
+        "yesMeaning": "Florida Amendment 1 is approved by voters at the November 3, 2026 election under: 60% of votes cast on the measure (Fla. Const. art. XI §5(e): 'approved by vote of at least sixty percent of the electors voting on the measure')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Florida?",
+        "eventSubtitle": "Florida",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1:: Raise budget-reserve cap to 25%",
+        "yesSubtitle": "Amendment 1",
+        "rulesPrimary": "If Amendment 1 passes in Florida, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-GA-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-GA-A1",
+      "manifestIdentity": "6fd517709ca2c824d515316274f916ce9881eb805eaea9489fccd4a19ce68667",
+      "marketIdentity": "82218f085cb550929533b7b27659d62397d5b0dbbfec0bf71ee655fb053c9999",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Georgia Amendment 1: conservation use acreage limit increase. Source: Amendment 1; If Increase Acre Limit for Agriculture and Timber Conservation Use Property Tax Classification Amendment passes in Georgia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "GA",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "conservation use acreage limit increase",
+        "officialTitle": "Increases the maximum qualifying acreage for assessment and taxation as bona fide conservation use property.",
+        "yesMeaning": "Georgia Amendment 1 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (Ga. Const. art. X, §I, ¶II: 'ratified by a majority of the electors qualified to vote for members of the General Assembly voting thereon')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Georgia?",
+        "eventSubtitle": "Georgia",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Acre Limit Amendment",
+        "rulesPrimary": "If Increase Acre Limit for Agriculture and Timber Conservation Use Property Tax Classification Amendment passes in Georgia, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-HI-question-1",
+      "ticker": "KXSTATEBALLOTMEASURE-HI-A1",
+      "manifestIdentity": "dc23f4f00f58de3894e64ae3b26b4a902d48fa9015e37c9345136cfc2f9eacb8",
+      "marketIdentity": "ef74d9d2dc6737da6c10f4c3b91fd035a2e4db68348aa4fe9a02dabc05c16e64",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Hawaii Question 1: more Senate time for judicial appointments. Source: Amendment 1; If Increase Time for Senate to Act on Judicial Appointments Amendment passes in Hawaii, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "HI",
+        "designation": {
+          "kind": "question",
+          "value": "1",
+          "label": "Question 1"
+        },
+        "subject": "more Senate time for judicial appointments",
+        "officialTitle": "Increasing the Timeframe for the Hawaii Senate to Consider and Act on Judicial Appointments.",
+        "yesMeaning": "Hawaii Question 1 is approved by voters at the November 3, 2026 election under: Majority of votes tallied on the question AND yes votes ≥50% of all ballots cast at the election (Haw. Const. art. XVII §3; blank/over votes effectively count against). Turnout-style rule: yes votes must be at least 50% of total ballots cast in the general election, not just of votes on the question."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Hawaii?",
+        "eventSubtitle": "Hawaii",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Increase Time for Senate to Act on Judicial Appointments Amendment",
+        "rulesPrimary": "If Increase Time for Senate to Act on Judicial Appointments Amendment passes in Hawaii, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-HI-question-2",
+      "ticker": "KXSTATEBALLOTMEASURE-HI-A2",
+      "manifestIdentity": "aea2e6675b8faabc9f586935ad63b270c2eba95b49acf3c1f4189b9d981b22d7",
+      "marketIdentity": "8cc66311271965e85d31c41eef492600de84ddf014c4e54cae57f6917ac6923e",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Hawaii Question 2: county RISE infrastructure bonds. Source: Amendment 2; If Authorize RISE Bonds Amendment passes in Hawaii, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "HI",
+        "designation": {
+          "kind": "question",
+          "value": "2",
+          "label": "Question 2"
+        },
+        "subject": "county RISE infrastructure bonds",
+        "officialTitle": "Directing the Hawaii State Legislature to Establish Procedures for Counties to Issue RISE Bonds, Exempt from County Debt Limits.",
+        "yesMeaning": "Hawaii Question 2 is approved by voters at the November 3, 2026 election under: Majority of votes tallied on the question AND yes votes ≥50% of all ballots cast at the election (Haw. Const. art. XVII §3; blank/over votes effectively count against). Turnout-style rule: yes votes must be at least 50% of total ballots cast in the general election, not just of votes on the question."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Hawaii?",
+        "eventSubtitle": "Hawaii",
+        "title": "Will Amendment 2 pass?",
+        "subtitle": "Amendment 2",
+        "yesSubtitle": "Authorize RISE Bonds Amendment",
+        "rulesPrimary": "If Authorize RISE Bonds Amendment passes in Hawaii, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-IA-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-IA-A1",
+      "manifestIdentity": "ab6e5eea3c22902089ae2a91df0162ab7a46bf99a991a40a726d28c9469b399c",
+      "marketIdentity": "fdd9c1725ac6bd1447bc78a4afda505424062890ce26e505e5d9910277a55390",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Iowa Amendment 1: two-thirds vote for income tax increases. Source: Amendment 1; If State Income-Tax Supermajority Amendment (S.J.R. 11) passes in Iowa, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "IA",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "two-thirds vote for income tax increases",
+        "officialTitle": "Shall the following amendment to the Constitution be adopted? (new Article XIII: two-thirds vote of each house required to raise income tax rates or create a new income tax)",
+        "yesMeaning": "Iowa Amendment 1 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the amendment (Iowa Const. art. X, sec. 1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Will Iowa vote to require a two-thirds vote to raise the income tax?",
+        "eventSubtitle": "Iowa",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Yes",
+        "rulesPrimary": "If State Income-Tax Supermajority Amendment (S.J.R. 11) passes in Iowa, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-ID-hjr-4",
+      "ticker": "KXSTATEBALLOTMEASURE-ID-HJR4",
+      "manifestIdentity": "94b73a756bf6cb231b4ca3aec6847cba6db9c6cdcdc44112174f212750e17f1a",
+      "marketIdentity": "aef35ecee5a7d8f10d3aa9ea573cfc2339fdeb53f8f71737e42b57af86a0d16f",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Idaho HJR 4: legislative authority over psychoactive drugs. Source: HJR 4; If Drug Legalization Authority Amendment passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "ID",
+        "designation": {
+          "kind": "hjr",
+          "value": "4",
+          "label": "HJR 4"
+        },
+        "subject": "legislative authority over psychoactive drugs",
+        "officialTitle": "Amendment to Idaho Constitution - House Joint Resolution 4 (Section 26, Article III, psychoactive substances)",
+        "yesMeaning": "Idaho HJR 4 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (Idaho Const. art. XX §1, 'majority of the electors')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Idaho?",
+        "eventSubtitle": "Idaho",
+        "title": "Will HJR 4 pass?",
+        "subtitle": "HJR 4",
+        "yesSubtitle": "Drug Legalization Authority Amendment",
+        "rulesPrimary": "If Drug Legalization Authority Amendment passes in Idaho, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-ID-hjr-6",
+      "ticker": "KXSTATEBALLOTMEASURE-ID-HJR6",
+      "manifestIdentity": "a818d6fe2f1650fca85b4c0d315051201570369d894c3a91fff9edce16e8718d",
+      "marketIdentity": "252bb7ef63ddc5f5d6839ef9998cb061d37f154fc8d5d54725859f92c25e5ae6",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Idaho HJR 6: English as official state language. Source: HJR 6; If English as Official State Language Amendment passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "ID",
+        "designation": {
+          "kind": "hjr",
+          "value": "6",
+          "label": "HJR 6"
+        },
+        "subject": "English as official state language",
+        "officialTitle": "Amendment to Idaho Constitution - House Joint Resolution 6 (new Section 8, Article X, English official language)",
+        "yesMeaning": "Idaho HJR 6 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (Idaho Const. art. XX §1, 'majority of the electors')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Idaho?",
+        "eventSubtitle": "Idaho",
+        "title": "Will HJR 6 pass?",
+        "subtitle": "HJR 6",
+        "yesSubtitle": "English as Official State Language Amendment",
+        "rulesPrimary": "If English as Official State Language Amendment passes in Idaho, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-ID-prop-1",
+      "ticker": "KXSTATEBALLOTMEASURE-ID-P1",
+      "manifestIdentity": "e32d5fb2730d27da7d74a56f62ae44d1fabea258cc9ddb294210b3a8815565e2",
+      "marketIdentity": "6b33e52169dde82a474af01e5ff023aa320f6ef9ccb8bfa31f7ac0d46c4dfd40",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Idaho Proposition 1: reproductive freedom and privacy act. Source: Proposition 1; If Reproductive Freedom and Privacy Act passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "ID",
+        "designation": {
+          "kind": "prop",
+          "value": "1",
+          "label": "Proposition 1"
+        },
+        "subject": "reproductive freedom and privacy act",
+        "officialTitle": "Proposition One: Reproductive Freedom & Privacy Act",
+        "yesMeaning": "Idaho Proposition 1 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (initiated statute)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Idaho?",
+        "eventSubtitle": "Idaho",
+        "title": "Will Proposition 1 pass?",
+        "subtitle": "Proposition 1",
+        "yesSubtitle": "Reproductive Freedom and Privacy Act",
+        "rulesPrimary": "If Reproductive Freedom and Privacy Act passes in Idaho, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-IN-question-1",
+      "ticker": "KXSTATEBALLOTMEASURE-IN-PQ1",
+      "manifestIdentity": "e2300e6cd8f020e3b1814dfe773b051610c1515c4aa47224c8051b9fe5932d09",
+      "marketIdentity": "c3f2952235fe17b887cc68db9926340c908a9bc64afba12a385036b942cff7c8",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Indiana Public Question 1: denying bail for public-safety risk. Source: :: Broaden bail denial for public risk; If Public Question 1 passes in Indiana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "IN",
+        "designation": {
+          "kind": "question",
+          "value": "1",
+          "label": "Public Question 1"
+        },
+        "subject": "denying bail for public-safety risk",
+        "officialTitle": "Shall the Constitution of the State of Indiana be amended to provide that a person charged with an offense other than murder or treason is not entitled to bail if: (1) the proof is evident or the presumption strong; and (2) the state proves by clear and convincing evidence that no release conditions will reasonably protect the safety of any other person or the community? (Article 1, Section 17)",
+        "yesMeaning": "Indiana Public Question 1 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the public question (Ind. Const. art. 16, sec. 1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Indiana?",
+        "eventSubtitle": "Indiana",
+        "title": "Will Public Question 1 pass?",
+        "subtitle": ":: Broaden bail denial for public risk",
+        "yesSubtitle": "Public Question 1",
+        "rulesPrimary": "If Public Question 1 passes in Indiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-IN-question-2",
+      "ticker": "KXSTATEBALLOTMEASURE-IN-PQ2",
+      "manifestIdentity": "7f82d072a0903e7354ee1bec4cacc3758fb74a4a5342e4c6258dd3cfe2c56bce",
+      "marketIdentity": "ddcaee1dd8992e90c61aaa9d78e4656a72a47a0f7606e19dcfcddf86ecd0572a",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Indiana Public Question 2: city and town court judge residency. Source: :: City/town court judge residency rules; If Public Question 2 passes in Indiana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "IN",
+        "designation": {
+          "kind": "question",
+          "value": "2",
+          "label": "Public Question 2"
+        },
+        "subject": "city and town court judge residency",
+        "officialTitle": "Shall the Constitution of the State of Indiana be amended to permit the judge of a city or town court to reside in: (1) the county in which the court is located; or (2) the bordering county closest to the city or town in which the court is located? (Article 6, Section 6)",
+        "yesMeaning": "Indiana Public Question 2 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the public question (Ind. Const. art. 16, sec. 1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Indiana?",
+        "eventSubtitle": "Indiana",
+        "title": "Will Public Question 2 pass?",
+        "subtitle": ":: City/town court judge residency rules",
+        "yesSubtitle": "Public Question 2",
+        "rulesPrimary": "If Public Question 2 passes in Indiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-KY-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-KY-A1",
+      "manifestIdentity": "b88d9ecfd6108e717d5999f9b69bf94e2858d540f1fd8194651ee8cfe174d199",
+      "marketIdentity": "557ee34cfe18a9c2f62c4a21a4d32226102a8393dc9ba5dbfac244c2385de3a2",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Kentucky Amendment 1: governor pardon limits near elections. Source: Amendment 1; If Governor’s Pardon and Commutation Amendment passes in Kentucky, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "KY",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "governor pardon limits near elections",
+        "officialTitle": "AN ACT proposing to amend Section 77 of the Constitution of Kentucky relating to limiting the Governor's ability to grant pardons and commute sentences.",
+        "yesMeaning": "Kentucky Amendment 1 is approved by voters at the November 3, 2026 election under: Majority of votes cast for and against the amendment (Ky. Const. §256)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Will Kentucky vote to limit gubernatorial election-period pardons?",
+        "eventSubtitle": "Kentucky",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Yes",
+        "rulesPrimary": "If Governor’s Pardon and Commutation Amendment passes in Kentucky, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-9",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A220",
+      "manifestIdentity": "e0790393d2fd9bc596b241cf0b591b11825757e02520a47bf7e2a9b6fb98b6b6",
+      "marketIdentity": "b7a99f2f4b6fd9c02636481bb5f5eb8b718865b9fbceffc7f2297a380fe7136b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 9: income limit for special assessment level. Source: Act 220 (2025); If the Senior Tax Freeze Income-Limit Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "9",
+          "label": "Amendment 9"
+        },
+        "subject": "income limit for special assessment level",
+        "officialTitle": "Do you support an amendment to increase the maximum amount of income a person may receive and still qualify for the special assessment level for residential property receiving the homestead exemption? (Effective January 1, 2027) (Amends Article VII, Section 18(G)(1)(a)(ii))",
+        "yesMeaning": "Louisiana Amendment 9 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 220 (2025) pass?",
+        "subtitle": "Act 220 (2025)",
+        "yesSubtitle": "Senior Tax Freeze Income-Limit",
+        "rulesPrimary": "If the Senior Tax Freeze Income-Limit Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-8",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A277",
+      "manifestIdentity": "006b701f0541653a33d3a9160dc321f1a0062e50ea2779fbf22e7f06304903a1",
+      "marketIdentity": "f1bc25f001163ec4efabe06746e89bf668a8facd76c92ec4e8c65eb49517ba5b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 8: foreign adversary expropriation ban. Source: Act 277; If the Foreign Adversary Expropriation Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "8",
+          "label": "Amendment 8"
+        },
+        "subject": "foreign adversary expropriation ban",
+        "officialTitle": "Do you support an amendment to prohibit expropriation of property by a foreign adversary or an agent of a foreign adversary? (Amends Article I, Section 4(B)(4))",
+        "yesMeaning": "Louisiana Amendment 8 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 277 pass?",
+        "subtitle": "Act 277",
+        "yesSubtitle": "Foreign Adversary Expropriation",
+        "rulesPrimary": "If the Foreign Adversary Expropriation Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-4",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A414",
+      "manifestIdentity": "defc1b5c6b20c1f3f22462d8cc122fba73423e013622405ff03769fbdfe31c85",
+      "marketIdentity": "e72aaa056caa64e7b532bfc1bfef3d5df312d7aba5322ed02949d6e614c349a8",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 4: lifetime term limit for governor. Source: Act 414; If the Gubernatorial Term Limits Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "4",
+          "label": "Amendment 4"
+        },
+        "subject": "lifetime term limit for governor",
+        "officialTitle": "Do you support an amendment to prohibit a person who has served more than one and one-half terms as governor from being elected as governor for any future term? (Amends Article IV, Section 3(B))",
+        "yesMeaning": "Louisiana Amendment 4 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 414 pass?",
+        "subtitle": "Act 414",
+        "yesSubtitle": "Gubernatorial Term Limits",
+        "rulesPrimary": "If the Gubernatorial Term Limits Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-2",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A273",
+      "manifestIdentity": "f617cdeda0b3bb6f01942274417e63f400def9f6e41df2e49be675da67f5b54f",
+      "marketIdentity": "edff824d7c5bb63b3f8d5b7453e41e56025181cc92f0f330456a713ac89f0e5c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 2: millage rate adjustment authority. Source: Act 273; If the Property Tax Millage Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "2",
+          "label": "Amendment 2"
+        },
+        "subject": "millage rate adjustment authority",
+        "officialTitle": "Do you support an amendment to allow a local taxing authority to continue to levy a lower millage rate without losing its ability to adjust to the maximum authorized millage rate from a prior year's reassessment? (Effective January 1, 2027) (Amends Article VII, Section 23(C))",
+        "yesMeaning": "Louisiana Amendment 2 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 273 pass?",
+        "subtitle": "Act 273",
+        "yesSubtitle": "Property Tax Millage",
+        "rulesPrimary": "If the Property Tax Millage Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-3",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A271",
+      "manifestIdentity": "5ac6b6622a29b93d61a62c6740829013017df0949eb7f05ebc51190508b0113c",
+      "marketIdentity": "51a02717079c061604824a0ca5d13765e2016fdd1c057cb83fcd21e8676f3b7f",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 3: post-conviction bail ban for child offenses. Source: Act 271; If the Post-Conviction Bail Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "3",
+          "label": "Amendment 3"
+        },
+        "subject": "post-conviction bail ban for child offenses",
+        "officialTitle": "Do you support an amendment to prohibit a defendant from being released on any post-conviction bail if the defendant is convicted of an aggravated offense against a minor child? (Adds Article I, Section 18(C))",
+        "yesMeaning": "Louisiana Amendment 3 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 271 pass?",
+        "subtitle": "Act 271",
+        "yesSubtitle": "Post-Conviction Bail",
+        "rulesPrimary": "If the Post-Conviction Bail Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-10",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A272",
+      "manifestIdentity": "90c852bd972a607f7a574a207a34e5cc00634eabaf71642172bb153f95fb9e9d",
+      "marketIdentity": "e8ac8019adc6108c61e4b1119621e0d69169820147204c0b2314af2104a781ef",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 10: tax exemption for rehabilitated property. Source: Act 272; If the Rehabilitated Blighted Property Tax Exemption passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "10",
+          "label": "Amendment 10"
+        },
+        "subject": "tax exemption for rehabilitated property",
+        "officialTitle": "Do you support an amendment to allow property tax exemptions for blighted or derelict properties that have been rehabilitated, and to require the legislature to enact laws providing for administration of these exemptions? (Effective January 1, 2027) (Adds Article VII, Section 21(P))",
+        "yesMeaning": "Louisiana Amendment 10 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 272 pass?",
+        "subtitle": "Act 272",
+        "yesSubtitle": "Rehabilitated Blighted Property Tax Exemption Amendment",
+        "rulesPrimary": "If the Rehabilitated Blighted Property Tax Exemption passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-5",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A606",
+      "manifestIdentity": "ecf3c1c8a27c69fd3f32d7e8a872762cb92854cfab65f2e117485c1c1e9fefe4",
+      "marketIdentity": "08fbe1b26ee86caff2894c5f6ffadb9da4cdfcddda24b3e2a96d794457b3d9cb",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 5: retirement system debt payment order. Source: Act 606; If the Retirement Debt Funding Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "5",
+          "label": "Amendment 5"
+        },
+        "subject": "retirement system debt payment order",
+        "officialTitle": "Do you support an amendment to authorize a state retirement system to apply any nonrecurring state monies it receives to any of its unfunded accrued liability rather than requiring application to its oldest unfunded accrued liability? (Amends Article VII, Section 10(D)(2)(b)(iii))",
+        "yesMeaning": "Louisiana Amendment 5 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 606 pass?",
+        "subtitle": "Act 606",
+        "yesSubtitle": "Retirement Debt Funding",
+        "rulesPrimary": "If the Retirement Debt Funding Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-6",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A274",
+      "manifestIdentity": "aeeb4dfe9e61be8da57110e13886fb3c634026f16a32475475acc16c2754c676",
+      "marketIdentity": "afb638e15d766ce7ab2e640e088411c05228c4459e069a2542287fd043866a15",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 6: local senior property tax exemption. Source: Act 274; If the Senior Property Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "6",
+          "label": "Amendment 6"
+        },
+        "subject": "local senior property tax exemption",
+        "officialTitle": "Do you support an amendment to authorize parishes and municipalities to extend an additional property tax exemption for property subject to the homestead exemption that is owned and occupied by a person who is at least sixty-five years of age and who qualifies for the special assessment level? (Effective January 1, 2028) (Adds Article VII, Section 21(P))",
+        "yesMeaning": "Louisiana Amendment 6 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)). Separately, the exemption applies in a parish/municipality only after a later local majority vote (new §21(P)(3)); that is implementation, not ratification."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 274 pass?",
+        "subtitle": "Act 274",
+        "yesSubtitle": "Senior Property Tax Exemption Amendment",
+        "rulesPrimary": "If the Senior Property Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A39",
+      "manifestIdentity": "d857ff9a22b50c3bdfde2491a73aa35822e99b6d6faf5ea277d561d977291d32",
+      "marketIdentity": "8010066559d2951381ec453f7540d54e22641a8c461a1b54722e46c7a58e47af",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 1: transfer of veteran spouse tax exemption. Source: Act 39; If the Disabled Veteran Spouse Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "transfer of veteran spouse tax exemption",
+        "officialTitle": "Do you support an amendment to allow the surviving spouse of a deceased veteran with a service-connected disability, who receives the additional property tax exemption, to make a one-time transfer of the additional property tax exemption to a subsequent qualifying property? (Effective January 1, 2027) (Amends Article VII, Section 21(K)(1))",
+        "yesMeaning": "Louisiana Amendment 1 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 39 pass?",
+        "subtitle": "Act 39",
+        "yesSubtitle": "Disabled Veteran Spouse Tax Exemption",
+        "rulesPrimary": "If the Disabled Veteran Spouse Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-7",
+      "ticker": "KXSTATEBALLOTMEASURE-LA-A607",
+      "manifestIdentity": "85b6ff36a28e2c17ded620b98de572d22770e512c87dae9bdfccf74d6511be0a",
+      "marketIdentity": "2f7a3b3d754f0aa2a3c3ce2194b2a5c9b4a05919e61421ea7f9b56217f65d30b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Louisiana Amendment 7: public funds for water service lines. Source: Act 607; If the Private Water Line Funding Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "LA",
+        "designation": {
+          "kind": "amendment",
+          "value": "7",
+          "label": "Amendment 7"
+        },
+        "subject": "public funds for water service lines",
+        "officialTitle": "Do you support an amendment to allow for the use of public funds by a political subdivision for the purpose of identifying, inventorying, removing or replacing drinking water utility service lines made of or affected by materials as specified or prescribed by the Lead and Copper Rule Improvements of the United States Environmental Protection Agency, promulgated October 30, 2024, or subsequent promulgation, on property owned by utility customers? (Amends Article VII, Section 14)",
+        "yesMeaning": "Louisiana Amendment 7 is approved by voters at the November 3, 2026 election under: Simple majority of electors voting on the amendment statewide (La. Const. art. XIII §1(C)); no local-majority requirement."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Louisiana?",
+        "eventSubtitle": "Louisiana",
+        "title": "Will Act 607 pass?",
+        "subtitle": "Act 607",
+        "yesSubtitle": "Private Water Line Funding",
+        "rulesPrimary": "If the Private Water Line Funding Amendment passes in Louisiana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MD-question-1",
+      "ticker": "KXSTATEBALLOTMEASURE-MD-Q1",
+      "manifestIdentity": "885bc654bf4fe17bead3db56fefb1ce79970f6ca27bad71cb25f3144ae57bbfe",
+      "marketIdentity": "56b793b4bf35d196ad7db3d41b8122a6ddd4cc393f1573c59b4597333de9e9bd",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Maryland Question 1: funding state employee arbitration awards. Source: :: Fund state-worker bargaining terms; If Question 1 passes in Maryland, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MD",
+        "designation": {
+          "kind": "question",
+          "value": "1",
+          "label": "Question 1"
+        },
+        "subject": "funding state employee arbitration awards",
+        "officialTitle": "Arbitration Reform for State Employees Act of 2026",
+        "yesMeaning": "Maryland Question 1 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (Md. Const. art. XIV, sec. 1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Maryland?",
+        "eventSubtitle": "Maryland",
+        "title": "Will Question 1 pass?",
+        "subtitle": ":: Fund state-worker bargaining terms",
+        "yesSubtitle": "Question 1",
+        "rulesPrimary": "If Question 1 passes in Maryland, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MD-question-2",
+      "ticker": "KXSTATEBALLOTMEASURE-MD-Q2",
+      "manifestIdentity": "a5c284f9eb69cecf26edc9185ec324188e28118f5692524c547edb8e42757186",
+      "marketIdentity": "61cc814ecfb48d0420c8e55f39305164a0fbf63b6680c86235587d454cd1d1bc",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Maryland Question 2: temporary judicial disabilities panel seats. Source: :: Temporary judicial-discipline seats; If Question 2 passes in Maryland, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MD",
+        "designation": {
+          "kind": "question",
+          "value": "2",
+          "label": "Question 2"
+        },
+        "subject": "temporary judicial disabilities panel seats",
+        "officialTitle": "Temporary Appointments on the Commission on Judicial Disabilities",
+        "yesMeaning": "Maryland Question 2 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (Md. Const. art. XIV, sec. 1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Maryland?",
+        "eventSubtitle": "Maryland",
+        "title": "Will Question 2 pass?",
+        "subtitle": ":: Temporary judicial-discipline seats",
+        "yesSubtitle": "Question 2",
+        "rulesPrimary": "If Question 2 passes in Maryland, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MN-permanent-school-fund-distributions",
+      "ticker": "KXSTATEBALLOTMEASURE-MN-CA",
+      "manifestIdentity": "0589d5271c6d55bd2ca9c054a990fdf1e0655bbf015349d91a4c312c597b2a7e",
+      "marketIdentity": "4c161654846056a5608943563c23a14694ada8916d26078ce63df2ce673183cd",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Minnesota unnumbered amendment: permanent school fund distributions. Source: Constitutional Amendment; If the Constitutional Amendment increasing funding to school districts passes in Minnesota, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MN",
+        "designation": null,
+        "subject": "permanent school fund distributions",
+        "officialTitle": "Increasing funding to school districts. Shall the Minnesota Constitution be amended to increase the funding going to all school districts from the permanent school fund, which is a fund that supports school districts without raising individual income or property taxes, effective July 1, 2027?",
+        "yesMeaning": "Minnesota permanent school fund distributions is approved by voters at the November 3, 2026 election under: Majority of ALL voters who cast a ballot in the election, not just those voting on the question (Minn. Const. art. IX, sec. 1) YES votes must exceed 50% of total ballots cast in the Nov 3 election; a blank or skipped answer has the same effect as NO (SOS: 'Failure to vote on a constitutional amendment will have the same effect as voting no on the amendment')."
+      },
+      "referenceMarket": {
+        "eventTitle": "Will Minnesota vote to increase school-fund distributions?",
+        "eventSubtitle": "Minnesota",
+        "title": "Will Constitutional Amendment pass?",
+        "subtitle": "Constitutional Amendment",
+        "yesSubtitle": "Constitutional Amendment",
+        "rulesPrimary": "If the Constitutional Amendment increasing funding to school districts passes in Minnesota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-3",
+      "ticker": "KXREPRODUCTIVEMEASURES-26-MO",
+      "manifestIdentity": "8002b279abefda5ba7429bf0c0b0f92479af55f038e559ada9216c5b01789f51",
+      "marketIdentity": "374f2142457b2fa6e957392d7a20bf763619d63b9a83fcfa7e45cd2bbbd93ddd",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Missouri Amendment 3: repealing 2024 abortion-rights amendment. Source: ; If Missouri Amendment 3, which would repeal abortion protections and prohibit gender transitions for minors in Missouri passes, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "MO",
+        "designation": {
+          "kind": "amendment",
+          "value": "3",
+          "label": "Amendment 3"
+        },
+        "subject": "repealing 2024 abortion-rights amendment",
+        "officialTitle": "Shall the Missouri Constitution be amended to: Repeal the 2024 voter-approved Amendment providing reproductive healthcare rights, including abortion through fetal viability; Allow abortions for rape and incest (under twelve-weeks' gestation), emergencies, and fetal anomalies; Allow legislation regulating abortion; Ensure parental consent for minors' abortions; Prohibit gender transition procedures for minors?",
+        "yesMeaning": "Missouri Amendment 3 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Mo. Const. art. XII, sec. 2(b)); takes effect 30 days after the election."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which abortion-related measures will pass in 2026?",
+        "eventSubtitle": "In 2026",
+        "title": "Will Missouri Amendment 3 in Missouri pass?",
+        "subtitle": "",
+        "yesSubtitle": "Missouri Amendment 3",
+        "rulesPrimary": "If Missouri Amendment 3, which would repeal abortion protections and prohibit gender transitions for minors in Missouri passes, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-7",
+      "ticker": "KXSTATEBALLOTMEASURE-MO-A7",
+      "manifestIdentity": "4313e5788f8fe9a920c2ecb0be3e18770e9cf9aafebaf83473e541553b8ddd98",
+      "marketIdentity": "6356ce795db4478ae3ccc053e03642b74a47587002585e54a02767626cab2e38",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Missouri Amendment 7: permanent fund to replace state taxes. Source: Amendment 7:: Create fund to replace state taxes; If Amendment 7 passes in Missouri, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MO",
+        "designation": {
+          "kind": "amendment",
+          "value": "7",
+          "label": "Amendment 7"
+        },
+        "subject": "permanent fund to replace state taxes",
+        "officialTitle": "Shall the Missouri Constitution be amended to establish a permanent public endowment fund to support state government instead of taxing Missouri residents, prohibit the General Assembly from appropriating or diverting the fund, and eliminate state-imposed taxes once the fund generates sufficient revenue to replace them?",
+        "yesMeaning": "Missouri Amendment 7 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Mo. Const. art. XII, sec. 2(b)); effective 30 days after election."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Missouri?",
+        "eventSubtitle": "Missouri",
+        "title": "Will Amendment 7 pass?",
+        "subtitle": "Amendment 7:: Create fund to replace state taxes",
+        "yesSubtitle": "Amendment 7",
+        "rulesPrimary": "If Amendment 7 passes in Missouri, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-8",
+      "ticker": "KXSTATEBALLOTMEASURE-MO-A8",
+      "manifestIdentity": "98d75060813af3fec3a202b0cb25be487747fd8b694ec895352c56910678f26c",
+      "marketIdentity": "65c2f4cb53444f1091d7dc9ec268d27898194194d94b8d5c563527b393361c44",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Missouri Amendment 8: constitutional office of county sheriff. Source: :: County sheriff election/removal rules; If Amendment 8 passes in Missouri, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MO",
+        "designation": {
+          "kind": "amendment",
+          "value": "8",
+          "label": "Amendment 8"
+        },
+        "subject": "constitutional office of county sheriff",
+        "officialTitle": "Shall the Missouri Constitution be amended to support law enforcement by preserving the right of citizens to elect a county sheriff, prohibiting the removal of a county sheriff except by a writ of quo warranto, and recognizing the office of sheriff as part of the administration of justice?",
+        "yesMeaning": "Missouri Amendment 8 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Mo. Const. art. XII, sec. 2(b)); effective 30 days after election."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Missouri?",
+        "eventSubtitle": "Missouri",
+        "title": "Will Amendment 8 pass?",
+        "subtitle": ":: County sheriff election/removal rules",
+        "yesSubtitle": "Amendment 8",
+        "rulesPrimary": "If Amendment 8 passes in Missouri, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MT-ci-132",
+      "ticker": "KXSTATEBALLOTMEASURE-MT-CI132",
+      "manifestIdentity": "a05d95d93d82d80d9ca8b756591eb7867b2723640570b8aca05afd661dbd5de7",
+      "marketIdentity": "d784d640590e81cd41c76f83fa4c2d3387c1524b3b2979e28f981fc474745670",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Montana CI-132: nonpartisan judicial elections. Source: :: Nonpartisan judicial elections; If CI-132 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MT",
+        "designation": {
+          "kind": "ci",
+          "value": "132",
+          "label": "CI-132"
+        },
+        "subject": "nonpartisan judicial elections",
+        "officialTitle": "CI-132 amends the Montana Constitution to require that judicial elections remain nonpartisan.",
+        "yesMeaning": "Montana CI-132 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (Mont. Const. art. XIV §9)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Montana?",
+        "eventSubtitle": "Montana",
+        "title": "Will CI-132 pass?",
+        "subtitle": ":: Nonpartisan judicial elections",
+        "yesSubtitle": "CI-132",
+        "rulesPrimary": "If CI-132 passes in Montana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MT-ci-133",
+      "ticker": "KXSTATEBALLOTMEASURE-MT-CI133",
+      "manifestIdentity": "dbf1779125ffebea4c5cee45cc97692877c501aa19d8e759d379d2ee73722b40",
+      "marketIdentity": "f60a7c25cc0b29a15aff54c0e552e1d6534eac347ca314c27b37697d5605ca54",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Montana CI-133: right of initiative and referendum. Source: :: Initiative and referendum powers; If CI-133 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MT",
+        "designation": {
+          "kind": "ci",
+          "value": "133",
+          "label": "CI-133"
+        },
+        "subject": "right of initiative and referendum",
+        "officialTitle": "CI-133 amends the constitution to secure the fundamental right of initiative and referendum from interference by the government.",
+        "yesMeaning": "Montana CI-133 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (Mont. Const. art. XIV §9)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Montana?",
+        "eventSubtitle": "Montana",
+        "title": "Will CI-133 pass?",
+        "subtitle": ":: Initiative and referendum powers",
+        "yesSubtitle": "CI-133",
+        "rulesPrimary": "If CI-133 passes in Montana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-MT-i-194",
+      "ticker": "KXSTATEBALLOTMEASURE-MT-I194",
+      "manifestIdentity": "ce46cfe455f6469620461b86732ce882511cf0e84df98e6c8516c64b3dd464c0",
+      "marketIdentity": "5a4949bfdf5e0cbb9bb35c4b5822c7a13b597a1626a92ddc15b2157daed13c7a",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Montana I-194: Montana Plan ban on entity election spending. Source: :: Corporate political spending restriction; If I-194 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "MT",
+        "designation": {
+          "kind": "i",
+          "value": "194",
+          "label": "I-194"
+        },
+        "subject": "Montana Plan ban on entity election spending",
+        "officialTitle": "Initiative No. 194 - The Montana Plan Act",
+        "yesMeaning": "Montana I-194 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Montana?",
+        "eventSubtitle": "Montana",
+        "title": "Will I-194 pass?",
+        "subtitle": ":: Corporate political spending restriction",
+        "yesSubtitle": "I-194",
+        "rulesPrimary": "If I-194 passes in Montana, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NC-3-5-cap-on-state-income-tax-rate",
+      "ticker": "KXSTATEBALLOTMEASURE-NC-A2",
+      "manifestIdentity": "324ce816f8d5146038258f783eea2ac85c1256417c849dc6703a652efa9bb1f9",
+      "marketIdentity": "5a9a61509ed0e672d56247e8bf47ea432213fc6fa2c126521642a89e1a77a28c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 North Carolina unnumbered amendment: 3.5% cap on state income tax rate. Source: Amendment 2; If Income Tax Rate Cap Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NC",
+        "designation": null,
+        "subject": "3.5% cap on state income tax rate",
+        "officialTitle": "Lower Taxes for All NC",
+        "yesMeaning": "North Carolina 3.5% cap on state income tax rate is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (N.C. Const. art. XIII §4)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in North Carolina?",
+        "eventSubtitle": "North Carolina",
+        "title": "Will Amendment 2 pass?",
+        "subtitle": "Amendment 2",
+        "yesSubtitle": "Income Tax Rate Cap Amendment",
+        "rulesPrimary": "If Income Tax Rate Cap Amendment passes in North Carolina, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NC-limits-on-local-property-tax-increases",
+      "ticker": "KXSTATEBALLOTMEASURE-NC-A3",
+      "manifestIdentity": "ed0397fe2468db2ca660a7974399d5fd33ca778b0b4e74d4a473833d9af7b699",
+      "marketIdentity": "e3daf5b5c81629c27b0891e3d8543f7dc9251f69cceb95c2bc44221b19cfc122",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 North Carolina unnumbered amendment: limits on local property tax increases. Source: Amendment 3; If Property Tax Levy Limit Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NC",
+        "designation": null,
+        "subject": "limits on local property tax increases",
+        "officialTitle": "Property Tax Levy Limit",
+        "yesMeaning": "North Carolina limits on local property tax increases is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (N.C. Const. art. XIII §4)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in North Carolina?",
+        "eventSubtitle": "North Carolina",
+        "title": "Will Amendment 3 pass?",
+        "subtitle": "Amendment 3",
+        "yesSubtitle": "Property Tax Levy Limit Amendment",
+        "rulesPrimary": "If Property Tax Levy Limit Amendment passes in North Carolina, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NC-photo-id-for-all-voting-methods",
+      "ticker": "KXSTATEBALLOTMEASURE-NC-A1",
+      "manifestIdentity": "fe5f6152fdb8d4515178119d1192a115fa067e77221f03bc87407d91a9d2fb5b",
+      "marketIdentity": "a89abd5a9ab44739972cdf2c67d130ab5cc31ed8d549889ca4dd4109ab75a5ba",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 North Carolina unnumbered amendment: photo ID for all voting methods. Source: Amendment 1; If Voter Identification Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NC",
+        "designation": null,
+        "subject": "photo ID for all voting methods",
+        "officialTitle": "Require Photo ID for All Voters",
+        "yesMeaning": "North Carolina photo ID for all voting methods is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (N.C. Const. art. XIII §4)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in North Carolina?",
+        "eventSubtitle": "North Carolina",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Voter Identification Amendment",
+        "rulesPrimary": "If Voter Identification Amendment passes in North Carolina, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-ND-measure-1",
+      "ticker": "KXSTATEBALLOTMEASURE-ND-CM1",
+      "manifestIdentity": "b506daf8def3d449421e7273246f556f54b17140d2b6884d742f18d36ce16ed4",
+      "marketIdentity": "efbd4b287a06a2d4e7f5b53be29e3d0e46a1b27da479dcedc7d59e70f0e7f19b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 North Dakota Measure 1: 60% vote for constitutional amendments. Source: :: 60% vote to amend state constitution; If Constitutional Measure 1 passes in North Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "ND",
+        "designation": {
+          "kind": "measure",
+          "value": "1",
+          "label": "Measure 1"
+        },
+        "subject": "60% vote for constitutional amendments",
+        "officialTitle": "Constitutional Measure No. 1 (House Concurrent Resolution No. 3003, 2025 Session Laws, Ch. 614)",
+        "yesMeaning": "North Dakota Measure 1 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (SOS guide: 'a majority vote would result in passage')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in North Dakota?",
+        "eventSubtitle": "North Dakota",
+        "title": "Will Constitutional Measure 1 pass?",
+        "subtitle": ":: 60% vote to amend state constitution",
+        "yesSubtitle": "Constitutional Measure 1",
+        "rulesPrimary": "If Constitutional Measure 1 passes in North Dakota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-ND-measure-2",
+      "ticker": "KXSTATEBALLOTMEASURE-ND-CM2",
+      "manifestIdentity": "215021c62eb41ef8fa310e5ffc5014db93ce3a7e8b296133e8815a72e891a3fb",
+      "marketIdentity": "b784fd071331277002d77964ecdeeb9570d580d65f8ca0b55dacf1517311898f",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 North Dakota Measure 2: free school breakfast and lunch. Source: :: Free school meals guarantee; If Constitutional Measure 2 passes in North Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "ND",
+        "designation": {
+          "kind": "measure",
+          "value": "2",
+          "label": "Measure 2"
+        },
+        "subject": "free school breakfast and lunch",
+        "officialTitle": "Initiated Constitutional Measure No. 2 (funding of school lunches; new section to Article VIII)",
+        "yesMeaning": "North Dakota Measure 2 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the measure (SOS guide: 'a majority vote would result in passage')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in North Dakota?",
+        "eventSubtitle": "North Dakota",
+        "title": "Will Constitutional Measure 2 pass?",
+        "subtitle": ":: Free school meals guarantee",
+        "yesSubtitle": "Constitutional Measure 2",
+        "rulesPrimary": "If Constitutional Measure 2 passes in North Dakota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NE-initiative-442",
+      "ticker": "KXSTATEBALLOTMEASURE-NE26-FFG",
+      "manifestIdentity": "d78c1f734f11f2ac1ee1d6a597712da4a6d4d3fd68374184327d7533a8f0320c",
+      "marketIdentity": "897b3444cd4090fba371ebcd90ceb831cef11a8b807391eac9cacf6d667df538",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Nebraska Initiative Measure 442: sex-based school sports teams. Source: :: Sex-based eligibility for school and college sports; If Fairness for Girls Constitutional Amendment passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NE",
+        "designation": {
+          "kind": "initiative",
+          "value": "442",
+          "label": "Initiative Measure 442"
+        },
+        "subject": "sex-based school sports teams",
+        "officialTitle": "Fairness for Girls: Shall the Nebraska Constitution be amended to provide: (1) Schools must expressly designate each athletic team or sport as one of the following based on biological sex: (a) Males, men, or boys; (b) females, women, or girls; or (c) coed or mixed; and (2) Athletic teams or sports designated for females, women, or girls shall not be open to students of the male sex?",
+        "yesMeaning": "Nebraska Initiative Measure 442 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the measure AND 'For' votes >= 35% of total votes cast at the election (Neb. Const. art. III, sec. 4) 35% rule: even with a majority, 'For' votes must equal at least 35% of all voters casting ballots in the Nov 3 election (e.g., 100 voters -> at least 35 'For')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Nebraska?",
+        "eventSubtitle": "Nebraska",
+        "title": "Will Fairness for Girls Constitutional Amendment pass?",
+        "subtitle": ":: Sex-based eligibility for school and college sports",
+        "yesSubtitle": "Fairness for Girls Constitutional Amendment",
+        "rulesPrimary": "If Fairness for Girls Constitutional Amendment passes in Nebraska, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NE-initiative-440",
+      "ticker": "KXSTATEBALLOTMEASURE-NE26-OSWA",
+      "manifestIdentity": "76adf87d31a3c2d3284252d4afe37913e8a49856c10c18f81094905f77ce1e36",
+      "marketIdentity": "e4a932606ffc0b873847e2c041c28f6f7008473fd774803019c3b5aba3d6ea79",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Nebraska Initiative Measure 440: online sports betting amendment. Source: :: Constitutional authorization for online sports wagering; If Online Sports Wagering Authorization Constitutional Amendment passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NE",
+        "designation": {
+          "kind": "initiative",
+          "value": "440",
+          "label": "Initiative Measure 440"
+        },
+        "subject": "online sports betting amendment",
+        "officialTitle": "Online Sports Wagering Authorization: Shall the Nebraska Constitution be amended to authorize the enactment of laws allowing persons located within Nebraska to place sports wagers through an Internet-based platform when offered by an authorized gaming operator conducting games of chance within a licensed racetrack enclosure in Nebraska?",
+        "yesMeaning": "Nebraska Initiative Measure 440 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the measure AND 'For' votes >= 35% of total votes cast at the election (Neb. Const. art. III, sec. 4) 35% rule: even with a majority, 'For' votes must equal at least 35% of all voters casting ballots in the Nov 3 election (e.g., 100 voters -> at least 35 'For')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Nebraska?",
+        "eventSubtitle": "Nebraska",
+        "title": "Will Online Sports Wagering Authorization Constitutional Amendment pass?",
+        "subtitle": ":: Constitutional authorization for online sports wagering",
+        "yesSubtitle": "Online Sports Wagering Authorization Constitutional Amendment",
+        "rulesPrimary": "If Online Sports Wagering Authorization Constitutional Amendment passes in Nebraska, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NE-initiative-441",
+      "ticker": "KXSTATEBALLOTMEASURE-NE26-OSWR",
+      "manifestIdentity": "9f553d7217dab7c7786de3cb5b1bbb3ec3df10c1bd8d7fb628f80edccae10fec",
+      "marketIdentity": "9c4316455216e8468fbbd654d13b2af323b00d6c4d05fb501d02c843a0b56efd",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Nebraska Initiative Measure 441: online sports betting statute. Source: :: Legalization and regulation of online sports wagering; If Online Sports Wagering Regulation Initiative passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NE",
+        "designation": {
+          "kind": "initiative",
+          "value": "441",
+          "label": "Initiative Measure 441"
+        },
+        "subject": "online sports betting statute",
+        "officialTitle": "Online Sports Wagering Regulation: Shall statutes be enacted that: (1) Allow persons located within Nebraska to place sports wagers through an Internet-based platform when offered by an authorized gaming operator conducting games of chance within a licensed racetrack enclosure in Nebraska or the operator's platform provider; and (2) Regulate such sports wagers?",
+        "yesMeaning": "Nebraska Initiative Measure 441 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the measure AND 'For' votes >= 35% of total votes cast at the election (Neb. Const. art. III, sec. 4) 35% rule: even with a majority, 'For' votes must equal at least 35% of all voters casting ballots in the Nov 3 election (e.g., 100 voters -> at least 35 'For')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Nebraska?",
+        "eventSubtitle": "Nebraska",
+        "title": "Will Online Sports Wagering Regulation Initiative pass?",
+        "subtitle": ":: Legalization and regulation of online sports wagering",
+        "yesSubtitle": "Online Sports Wagering Regulation Initiative",
+        "rulesPrimary": "If Online Sports Wagering Regulation Initiative passes in Nebraska, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-question-3",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-BQ3",
+      "manifestIdentity": "a00d583b91db06a351435113c97335c0dc31d61fc34cc77bf187e2e793549787",
+      "marketIdentity": "f02f0559ef0ddc691189cda10475d53dc42f773fb571789a2dc795b826f0421e",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Bond Question 3: higher education and tribal school bonds. Source: Bond Question 3; If Higher Education Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "question",
+          "value": "3",
+          "label": "Bond Question 3"
+        },
+        "subject": "higher education and tribal school bonds",
+        "officialTitle": "The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of higher education, special schools and tribal schools capital improvement and acquisition bonds.",
+        "yesMeaning": "New Mexico Bond Question 3 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. IX §8)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Bond Question 3 pass?",
+        "subtitle": "Bond Question 3",
+        "yesSubtitle": "Higher Education Bond",
+        "rulesPrimary": "If Higher Education Bond passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-4",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-A4",
+      "manifestIdentity": "e50e01e81e5b8abde11082fdf891c23bffa9f370c844d14453a6f5124584e3e3",
+      "marketIdentity": "ca6aa7a33ac0a3da4dd8f8702a92bbb1f641b5598ef10a8357421e23aaee374c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Amendment 4: salaries for state legislators. Source: Amendment 4; If Legislative Salaries Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "amendment",
+          "value": "4",
+          "label": "Amendment 4"
+        },
+        "subject": "salaries for state legislators",
+        "officialTitle": "Proposing to amend Article 4, Section 10 of the Constitution of New Mexico to allow legislative compensation that is limited to the median household income for New Mexico, to require legislative compensation to be reduced if the median household income for New Mexico falls, to allow legislative compensation to be increased only if the median household income for New Mexico rises and to provide for delayed implementation.",
+        "yesMeaning": "New Mexico Amendment 4 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. XIX §1); SOS guide: none of the 2026 amendments needs the three-fourths supermajority"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Amendment 4 pass?",
+        "subtitle": "Amendment 4",
+        "yesSubtitle": "Legislative Salaries Amendment",
+        "rulesPrimary": "If Legislative Salaries Amendment passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-question-2",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-BQ2",
+      "manifestIdentity": "a7abce1d4062b78a62fad73bbac1bc3f344cdaa1199f58cb1ebfb5c2fc1d08b1",
+      "marketIdentity": "047d042207c6ed71e64078754a1fcf9af903d0420be612d3959c55fe3bbd9c83",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Bond Question 2: library acquisition bonds. Source: Bond Question 2; If Library Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "question",
+          "value": "2",
+          "label": "Bond Question 2"
+        },
+        "subject": "library acquisition bonds",
+        "officialTitle": "The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of library acquisition bonds.",
+        "yesMeaning": "New Mexico Bond Question 2 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. IX §8)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Bond Question 2 pass?",
+        "subtitle": "Bond Question 2",
+        "yesSubtitle": "Library Bond",
+        "rulesPrimary": "If Library Bond passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-A1",
+      "manifestIdentity": "d02447ff1f415528414b53f044a0dade70dd610f02297cbff76b15dca21783b4",
+      "marketIdentity": "1aa6fe67b26ee936998c8d76a0bfb082fb877aea9840adcf73f0fe55253ad61e",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Amendment 1: pocket veto and veto explanations. Source: Amendment 1; If Pocket Veto Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "pocket veto and veto explanations",
+        "officialTitle": "Proposing an amendment to Article 4, Section 22 of the Constitution of New Mexico to require the governor to provide veto messages on all bills vetoed in whole or in part and to provide that all bills passed by the legislature and not acted on by the governor will become law.",
+        "yesMeaning": "New Mexico Amendment 1 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. XIX §1); SOS guide: none of the 2026 amendments needs the three-fourths supermajority"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Pocket Veto Amendment",
+        "rulesPrimary": "If Pocket Veto Amendment passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-3",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-A3",
+      "manifestIdentity": "3dd53bcba5110479f5f4bcd109695f82e54dc91475a2541112c7256c9ac99a38",
+      "marketIdentity": "e28738fb39ea22ef5ce0e6d020cc9e56e2b81e249c60155901081d478c4db8c4",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Amendment 3: nominating committees for university regents. Source: Amendment 3; If Regents Selection Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "amendment",
+          "value": "3",
+          "label": "Amendment 3"
+        },
+        "subject": "nominating committees for university regents",
+        "officialTitle": "Proposing an amendment to Article 12, Section 13 of the Constitution of New Mexico to establish nominating committees to provide lists of nominees to the governor for appointment of nonstudent members to the boards of regents of state educational institutions; student members from a list by an elected student governing body; party-registration-change restriction.",
+        "yesMeaning": "New Mexico Amendment 3 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. XIX §1); SOS guide: none of the 2026 amendments needs the three-fourths supermajority"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Amendment 3 pass?",
+        "subtitle": "Amendment 3",
+        "yesSubtitle": "Regents Selection Amendment",
+        "rulesPrimary": "If Regents Selection Amendment passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-2",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-A2",
+      "manifestIdentity": "c1f2dbff25ce2fe29d28b6153b7f8b518efdf6c4ce4319328ad512c45eea4900",
+      "marketIdentity": "a5401cb8c3e83cc6d4d5420c53a6f4896fff52a77364267f5f09a8d22c1ba7c2",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Amendment 2: combining school and partisan elections. Source: Amendment 2; If School Election Dates Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "amendment",
+          "value": "2",
+          "label": "Amendment 2"
+        },
+        "subject": "combining school and partisan elections",
+        "officialTitle": "Proposing to amend Article 7, Section 1 of the Constitution of New Mexico to remove the requirement that school elections be separate from partisan elections.",
+        "yesMeaning": "New Mexico Amendment 2 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. XIX §1); SOS guide: none of the 2026 amendments needs the three-fourths supermajority (despite amending art. VII §1, a section listed in art. XIX §1's 3/4 rule)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Amendment 2 pass?",
+        "subtitle": "Amendment 2",
+        "yesSubtitle": "School Election Dates Amendment",
+        "rulesPrimary": "If School Election Dates Amendment passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-NM-question-1",
+      "ticker": "KXSTATEBALLOTMEASURE-NM-BQ1",
+      "manifestIdentity": "d0ba7278b40266cb0ec372dae422b004be438a5f4f6be823b68b1fd49c2e629c",
+      "marketIdentity": "1921542de2fed406accded6674630ce0542add8f44381a0a8ceaddb6a9c40a38",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 New Mexico Bond Question 1: senior citizen facility bonds. Source: Bond Question 1; If Senior Citizen Facilities Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "NM",
+        "designation": {
+          "kind": "question",
+          "value": "1",
+          "label": "Bond Question 1"
+        },
+        "subject": "senior citizen facility bonds",
+        "officialTitle": "The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of senior citizen facility improvement, construction and equipment acquisition bonds.",
+        "yesMeaning": "New Mexico Bond Question 1 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (N.M. Const. art. IX §8)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in New Mexico?",
+        "eventSubtitle": "New Mexico",
+        "title": "Will Bond Question 1 pass?",
+        "subtitle": "Bond Question 1",
+        "yesSubtitle": "Senior Citizen Facilities Bond",
+        "rulesPrimary": "If Senior Citizen Facilities Bond passes in New Mexico, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-OH-issue-3",
+      "ticker": "KXSTATEBALLOTMEASURE-OH-IS3",
+      "manifestIdentity": "8e468e16b3ee945c189b3c0ca8dc91f6a7b2fc2f0db4ead23bc5fa254d5d045b",
+      "marketIdentity": "45556283c046264e1557c8ce69090f5c40135b0f5cff00b88190546ed15f71c8",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Ohio Issue 3: voter photo ID amendment. Source: Issue 3; If Issue 3 — In-Person Photo ID Amendment passes in Ohio, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "OH",
+        "designation": {
+          "kind": "issue",
+          "value": "3",
+          "label": "Issue 3"
+        },
+        "subject": "voter photo ID amendment",
+        "officialTitle": "Voters to present photo identification in order to vote (Proposed by Joint Resolution of the General Assembly; to enact Section 5 of Article V of the Ohio Constitution)",
+        "yesMeaning": "Ohio Issue 3 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the issue (ballot: 'A majority yes vote is required for the adoption of Section 5'; Ohio Const. art. XVI, sec. 1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Will Ohio vote to constitutionalize in-person voter ID?",
+        "eventSubtitle": "Ohio",
+        "title": "Will Issue 3 pass?",
+        "subtitle": "Issue 3",
+        "yesSubtitle": "Yes",
+        "rulesPrimary": "If Issue 3 — In-Person Photo ID Amendment passes in Ohio, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-OK-sq-845",
+      "ticker": "KXSTATEBALLOTMEASURE-OK-SQ845",
+      "manifestIdentity": "eb044d5f2e5451b430ea459a0b40a7338be24ec931883e1c7cd8a740110eb485",
+      "marketIdentity": "e475dc8772e48e4c1d1e9e4298930d694b5000cbeae4523dd577ab3213d06203",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Oklahoma State Question 845: Judicial Nominating Commission changes. Source: :: Change judicial nominating commission; If State Question 845 passes in Oklahoma, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "OK",
+        "designation": {
+          "kind": "sq",
+          "value": "845",
+          "label": "State Question 845"
+        },
+        "subject": "Judicial Nominating Commission changes",
+        "officialTitle": "SQ 845, LR 379 Final Ballot Title (Judicial Nominating Commission), as rewritten by the Attorney General",
+        "yesMeaning": "Oklahoma State Question 845 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (Okla. Const. art. XXIV §1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Oklahoma?",
+        "eventSubtitle": "Oklahoma",
+        "title": "Will State Question 845 pass?",
+        "subtitle": ":: Change judicial nominating commission",
+        "yesSubtitle": "State Question 845",
+        "rulesPrimary": "If State Question 845 passes in Oklahoma, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-OK-sq-847",
+      "ticker": "KXSTATEBALLOTMEASURE-OK-SQ847",
+      "manifestIdentity": "d494f9595d53f5ff2dfc007f66272cb0382470db52cc0f510be72e1dbaf75b17",
+      "marketIdentity": "a37c5bab87c991caae77176f74d3f45bf6e33b12349fbe780a0ed83b5a8af5b9",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Oklahoma State Question 847: property value caps and senior freeze. Source: :: Lower caps; change senior tax freeze; If State Question 847 passes in Oklahoma, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "OK",
+        "designation": {
+          "kind": "sq",
+          "value": "847",
+          "label": "State Question 847"
+        },
+        "subject": "property value caps and senior freeze",
+        "officialTitle": "SQ 847, LR 381 Final Ballot Title (Real property valuation), as rewritten by the Attorney General",
+        "yesMeaning": "Oklahoma State Question 847 is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the question (Okla. Const. art. XXIV §1)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Oklahoma?",
+        "eventSubtitle": "Oklahoma",
+        "title": "Will State Question 847 pass?",
+        "subtitle": ":: Lower caps; change senior tax freeze",
+        "yesSubtitle": "State Question 847",
+        "rulesPrimary": "If State Question 847 passes in Oklahoma, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-i",
+      "ticker": "KXSTATEBALLOTMEASURE-SD-AI",
+      "manifestIdentity": "54cbbd40f5f70f625e5968d05e40bd76266909418e69bb0f2237222649263d4c",
+      "marketIdentity": "8cbf23ad9ac0316df14bc1c434f9ea2aa4f14f4ea0f7b8e18f0c2e65b5049c89",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 South Dakota Amendment I: Medicaid expansion federal-funding trigger. Source: :: End expansion below 90% fed share; If Amendment I passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "SD",
+        "designation": {
+          "kind": "amendment",
+          "value": "I",
+          "label": "Amendment I"
+        },
+        "subject": "Medicaid expansion federal-funding trigger",
+        "officialTitle": "An Amendment to the South Dakota Constitution that Repeals Expanded Medicaid Coverage if Federal Funding for the Program Drops below 90%.",
+        "yesMeaning": "South Dakota Amendment I is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (S.D. Const. art. XXIII)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in South Dakota?",
+        "eventSubtitle": "South Dakota",
+        "title": "Will Amendment I pass?",
+        "subtitle": ":: End expansion below 90% fed share",
+        "yesSubtitle": "Amendment I",
+        "rulesPrimary": "If Amendment I passes in South Dakota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-j",
+      "ticker": "KXSTATEBALLOTMEASURE-SD-AJ",
+      "manifestIdentity": "3e145c8289da2da4e4e194b6ee7de18a181e402cf8046277320239397844d537",
+      "marketIdentity": "577cb5b3e6d655962e932f5cb7dd155e994580a44862a2a3d1431d587d126ce6",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 South Dakota Amendment J: citizenship requirement to vote. Source: :: U.S.-citizens-only voting; If Amendment J passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "SD",
+        "designation": {
+          "kind": "amendment",
+          "value": "J",
+          "label": "Amendment J"
+        },
+        "subject": "citizenship requirement to vote",
+        "officialTitle": "An Amendment to the South Dakota Constitution Clarifying that an Individual Must Be a Citizen of the United States to be Eligible to Vote.",
+        "yesMeaning": "South Dakota Amendment J is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (S.D. Const. art. XXIII)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in South Dakota?",
+        "eventSubtitle": "South Dakota",
+        "title": "Will Amendment J pass?",
+        "subtitle": ":: U.S.-citizens-only voting",
+        "yesSubtitle": "Amendment J",
+        "rulesPrimary": "If Amendment J passes in South Dakota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-k",
+      "ticker": "KXSTATEBALLOTMEASURE-SD-AK",
+      "manifestIdentity": "4db7e67a0d5f08269b465e30c7d8ad618109e7f9dd0a1f02505fb72528ba6a8b",
+      "marketIdentity": "79bbd900359a2551a8b8aaa61a6ff3b6a0c3ef1f012419282273e3089fff36d1",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 South Dakota Amendment K: unclaimed property trust fund. Source: :: Unclaimed-property trust fund; If Amendment K passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "SD",
+        "designation": {
+          "kind": "amendment",
+          "value": "K",
+          "label": "Amendment K"
+        },
+        "subject": "unclaimed property trust fund",
+        "officialTitle": "An Amendment to the South Dakota Constitution Establishing the Trust for Unclaimed Property Fund.",
+        "yesMeaning": "South Dakota Amendment K is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (S.D. Const. art. XXIII)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in South Dakota?",
+        "eventSubtitle": "South Dakota",
+        "title": "Will Amendment K pass?",
+        "subtitle": ":: Unclaimed-property trust fund",
+        "yesSubtitle": "Amendment K",
+        "rulesPrimary": "If Amendment K passes in South Dakota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-l",
+      "ticker": "KXSTATEBALLOTMEASURE-SD-AL",
+      "manifestIdentity": "280c07cd5c0a1057b2e88ee81fa7aefbaad7e13b37f2a763208506e10a69dd80",
+      "marketIdentity": "1e62e876da2e39f20f977c3bf75605b9f08e8ee29504e74eee51ce2a888a55aa",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 South Dakota Amendment L: 60% vote for constitutional amendments. Source: :: 60% vote to amend state constitution; If Amendment L passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "SD",
+        "designation": {
+          "kind": "amendment",
+          "value": "L",
+          "label": "Amendment L"
+        },
+        "subject": "60% vote for constitutional amendments",
+        "officialTitle": "An Amendment to the South Dakota Constitution Requiring that a Proposed Constitutional Amendment or Revision Receive an Affirmative Vote of Sixty Percent of the Votes Cast.",
+        "yesMeaning": "South Dakota Amendment L is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (S.D. Const. art. XXIII); L itself needs only a simple majority"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in South Dakota?",
+        "eventSubtitle": "South Dakota",
+        "title": "Will Amendment L pass?",
+        "subtitle": ":: 60% vote to amend state constitution",
+        "yesSubtitle": "Amendment L",
+        "rulesPrimary": "If Amendment L passes in South Dakota, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-TN-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-TN-A1",
+      "manifestIdentity": "43362feb6ab7d74e346ee1cb71f0d246f9409e02c2ba4760b64ea5a5ca1704c4",
+      "marketIdentity": "fa984cf6785d05ec9c4b6886b9fe3b79ade5f1fb8c870e5220c91a5554dc096d",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Tennessee Amendment 1: denying bail for certain offenses. Source: :: Allow bail denial for serious crimes; If Amendment 1 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "TN",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "denying bail for certain offenses",
+        "officialTitle": "Proposed amendment to Article I, Section 15 (bail)",
+        "yesMeaning": "Tennessee Amendment 1 is approved by voters at the November 3, 2026 election under: Two prongs (Tenn. Const. art. XI §3: 'by a majority of all the citizens of the State voting for Governor, voting in their favor'): (1) more YES than NO votes; (2) YES votes > half of all votes cast for governor (50% + 1). YES must exceed 50% of total gubernatorial votes (sum of all governor candidates / 2); undervotes on the amendment effectively count against it. Method upheld in George v. Hargett, 879 F.3d 711 (6th Cir. 2018)."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Tennessee?",
+        "eventSubtitle": "Tennessee",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": ":: Allow bail denial for serious crimes",
+        "yesSubtitle": "Amendment 1",
+        "rulesPrimary": "If Amendment 1 passes in Tennessee, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-TN-amendment-2",
+      "ticker": "KXSTATEBALLOTMEASURE-TN-A2",
+      "manifestIdentity": "5d853164d483b1dd65b85812406537ceb417c4398bb2da49b3423681623e58e7",
+      "marketIdentity": "dac1b8a6ed19bcad29327dc1ad9f78b4e99bc1b348cc5f757eb2991ec7ac1f2f",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Tennessee Amendment 2: ban on a state property tax. Source: :: Ban state property tax; If Amendment 2 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "TN",
+        "designation": {
+          "kind": "amendment",
+          "value": "2",
+          "label": "Amendment 2"
+        },
+        "subject": "ban on a state property tax",
+        "officialTitle": "Proposed amendment to Article II, Section 28 (prohibit state property tax)",
+        "yesMeaning": "Tennessee Amendment 2 is approved by voters at the November 3, 2026 election under: Two prongs (Tenn. Const. art. XI §3): (1) more YES than NO; (2) YES votes > half of all votes cast for governor. YES must exceed 50% of total gubernatorial votes; upheld in George v. Hargett (6th Cir. 2018)."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Tennessee?",
+        "eventSubtitle": "Tennessee",
+        "title": "Will Amendment 2 pass?",
+        "subtitle": ":: Ban state property tax",
+        "yesSubtitle": "Amendment 2",
+        "rulesPrimary": "If Amendment 2 passes in Tennessee, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-TN-amendment-3",
+      "ticker": "KXSTATEBALLOTMEASURE-TN-A3",
+      "manifestIdentity": "0dc39b9350c492d92ba44fdccbd929a2e85a06ac43f0ef61df60e28b73d93d87",
+      "marketIdentity": "b7aaa2ad4976223c9c845d2c813fa0e354bfc4fb58c9bab41a885192b26da307",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Tennessee Amendment 3: Marsy's Law crime victims' rights. Source: :: Constitutional crime-victim rights; If Amendment 3 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "TN",
+        "designation": {
+          "kind": "amendment",
+          "value": "3",
+          "label": "Amendment 3"
+        },
+        "subject": "Marsy's Law crime victims' rights",
+        "officialTitle": "Proposed amendment to Article I, Section 35 (rights of crime victims)",
+        "yesMeaning": "Tennessee Amendment 3 is approved by voters at the November 3, 2026 election under: Two prongs (Tenn. Const. art. XI §3): (1) more YES than NO; (2) YES votes > half of all votes cast for governor. YES must exceed 50% of total gubernatorial votes; upheld in George v. Hargett (6th Cir. 2018)."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Tennessee?",
+        "eventSubtitle": "Tennessee",
+        "title": "Will Amendment 3 pass?",
+        "subtitle": ":: Constitutional crime-victim rights",
+        "yesSubtitle": "Amendment 3",
+        "rulesPrimary": "If Amendment 3 passes in Tennessee, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-UT-amendment-b",
+      "ticker": "KXSTATEBALLOTMEASURE-UT-SJR2",
+      "manifestIdentity": "346b2f53e618a91691b55706e02a0190f722721072dd781fffe9fc1afec762e0",
+      "marketIdentity": "164b631f0ad2be98f294ac5ffd4523bf0793468effaaa6703948f03bccf1fc0f",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Utah Amendment B: 60% vote for tax-increasing initiatives. Source: S.J.R. 2; If the Tax-Raising Initiative Supermajority Amendment passes in Utah, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "UT",
+        "designation": {
+          "kind": "amendment",
+          "value": "B",
+          "label": "Amendment B"
+        },
+        "subject": "60% vote for tax-increasing initiatives",
+        "officialTitle": "Shall the Utah Constitution be amended to require that citizen-proposed laws that increase taxes compared to existing law be approved by at least 60% of voters, instead of a simple majority?",
+        "yesMeaning": "Utah Amendment B is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Utah Const. art. XXIII §1: 'a majority of the electors voting thereon')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Utah?",
+        "eventSubtitle": "Utah",
+        "title": "Will S.J.R. 2 pass?",
+        "subtitle": "S.J.R. 2",
+        "yesSubtitle": "60% Vote for Tax-Raising Initiatives",
+        "rulesPrimary": "If the Tax-Raising Initiative Supermajority Amendment passes in Utah, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-UT-amendment-a",
+      "ticker": "KXSTATEBALLOTMEASURE-UT-HJR10",
+      "manifestIdentity": "d242c43e1759d195ed1d1c0942e7ebc289dd20eca6f48e3fa4aef31192181ec3",
+      "marketIdentity": "0f84257b354ce01abf92eab0bdbf7d9d69212a60678c22dab6db825f00d99d5a",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Utah Amendment A: online publication of proposed amendments. Source: H.J.R. 10; If the Constitutional Amendment Publication Amendment passes in Utah, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "UT",
+        "designation": {
+          "kind": "amendment",
+          "value": "A",
+          "label": "Amendment A"
+        },
+        "subject": "online publication of proposed amendments",
+        "officialTitle": "Shall the Utah Constitution be amended to change how proposed constitutional amendments are published, requiring publication for 60 days immediately before the general election in a manner established by state law instead of in newspapers?",
+        "yesMeaning": "Utah Amendment A is approved by voters at the November 3, 2026 election under: Simple majority of votes cast on the amendment (Utah Const. art. XXIII §1: 'a majority of the electors voting thereon')"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Utah?",
+        "eventSubtitle": "Utah",
+        "title": "Will H.J.R. 10 pass?",
+        "subtitle": "H.J.R. 10",
+        "yesSubtitle": "Constitutional Amendment Publication",
+        "rulesPrimary": "If the Constitutional Amendment Publication Amendment passes in Utah, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-VA-question-1",
+      "ticker": "KXREPRODUCTIVEMEASURES-26-VA",
+      "manifestIdentity": "8a0eb5bfda8f1fd53d8d0abee568f1b232973a25fc3aa61540ec639db47eb045",
+      "marketIdentity": "048a9dec82a7ca9e14db435171b7bc84b3e67fa420e7e86af80352a7247aee8b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Virginia Question 1: right to reproductive freedom. Source: Virginia HJR 1; If the Virginia Right to Reproductive Freedom Amendment, which would establish a fundamental right to abortion, contraception, and IVF in Virginia passes, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+      "manifest": {
+        "state": "VA",
+        "designation": {
+          "kind": "question",
+          "value": "1",
+          "label": "Question 1"
+        },
+        "subject": "right to reproductive freedom",
+        "officialTitle": "Should the Constitution of Virginia be amended to (i) protect the freedom to make personal decisions about prenatal care, childbirth, postpartum care, birth control, abortion, miscarriage management, and fertility care; (ii) protect doctors, nurses, and patients from being punished for these decisions; and (iii) allow for restrictions on access to abortion during the third trimester of pregnancy except when the patient's health is at risk or the pregnancy cannot survive?",
+        "yesMeaning": "Virginia Question 1 is approved by voters at the November 3, 2026 election under: Majority of those voting on the amendment (Va. Const. art. XII, sec. 1); takes effect on the date the General Assembly prescribed when submitting it."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which abortion-related measures will pass in 2026?",
+        "eventSubtitle": "In 2026",
+        "title": "Will the Virginia Right to Reproductive Freedom Amendment in Virginia pass?",
+        "subtitle": "Virginia HJR 1",
+        "yesSubtitle": "Virginia Question 1",
+        "rulesPrimary": "If the Virginia Right to Reproductive Freedom Amendment, which would establish a fundamental right to abortion, contraception, and IVF in Virginia passes, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-VA-question-2",
+      "ticker": "KXSTATEBALLOTMEASURE-VA-Q2",
+      "manifestIdentity": "c870cececf4b24f0caedb076147388488c496020f3c654af107feef94a748d93",
+      "marketIdentity": "1a537ff7da5d853dc18f5df3b62d780d1dd8c010f1b63a400812c1bb404fdae9",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Virginia Question 2: removing same-sex marriage ban. Source: Question 2:: Marriage equality protections; If Question 2 passes in Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "VA",
+        "designation": {
+          "kind": "question",
+          "value": "2",
+          "label": "Question 2"
+        },
+        "subject": "removing same-sex marriage ban",
+        "officialTitle": "Should the Constitution of Virginia be amended to (i) remove the ban on same-sex marriage; (ii) affirm that two adults may marry regardless of sex, gender, or race; and (iii) require all legally valid marriages to be treated equally under the law?",
+        "yesMeaning": "Virginia Question 2 is approved by voters at the November 3, 2026 election under: Majority of those voting on the amendment (Va. Const. art. XII, sec. 1)."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Virginia?",
+        "eventSubtitle": "Virginia",
+        "title": "Will Question 2 pass?",
+        "subtitle": "Question 2:: Marriage equality protections",
+        "yesSubtitle": "Question 2",
+        "rulesPrimary": "If Question 2 passes in Virginia, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-VA-question-3",
+      "ticker": "KXSTATEBALLOTMEASURE-VA-Q3",
+      "manifestIdentity": "8df538e2f3e83de2320886b73ca03401b37ef4689ab7e2d543d17b18c15d451f",
+      "marketIdentity": "c58979e89196d74683a214df6297baa4ddd5bc63eb2e507d644c0cc37ef7fc3b",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Virginia Question 3: voting rights restoration after prison. Source: :: Restore voting rights upon release; If Question 3 passes in Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "VA",
+        "designation": {
+          "kind": "question",
+          "value": "3",
+          "label": "Question 3"
+        },
+        "subject": "voting rights restoration after prison",
+        "officialTitle": "Should the Constitution of Virginia be amended (i) to provide for the fundamental right to vote in the Commonwealth, (ii) to revise the qualifications of voters so that a person convicted of a felony is not entitled to vote during his period of incarceration but is automatically invested with the right to vote upon release from incarceration, and (iii) to update the existing prohibition on voting by persons found to be mentally incompetent to instead apply to persons who have been found to lack the capacity to understand the act of voting?",
+        "yesMeaning": "Virginia Question 3 is approved by voters at the November 3, 2026 election under: Majority of those voting on the amendment (Va. Const. art. XII, sec. 1)."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Virginia?",
+        "eventSubtitle": "Virginia",
+        "title": "Will Question 3 pass?",
+        "subtitle": ":: Restore voting rights upon release",
+        "yesSubtitle": "Question 3",
+        "rulesPrimary": "If Question 3 passes in Virginia, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-VT-proposal-3",
+      "ticker": "KXSTATEBALLOTMEASURE-VT-PR3",
+      "manifestIdentity": "572a68dc1d59e5e6833db2a4fca98cfcf052ea756dead583ee7c662203ae7499",
+      "marketIdentity": "b0553e3e840f7deda9a0c7074c36352158618ce3364f94fd29b5728869ba3ce1",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Vermont Proposal 3: right to collectively bargain. Source: :: Right to collective bargaining; If Proposal 3 passes in Vermont, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "VT",
+        "designation": {
+          "kind": "proposal",
+          "value": "3",
+          "label": "Proposal 3"
+        },
+        "subject": "right to collectively bargain",
+        "officialTitle": "Proposal 3: Article 23 of Chapter I [Right to collectively bargain]",
+        "yesMeaning": "Vermont Proposal 3 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the proposal (Vt. Const. ch. II, sec. 72)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Vermont?",
+        "eventSubtitle": "Vermont",
+        "title": "Will Proposal 3 pass?",
+        "subtitle": ":: Right to collective bargaining",
+        "yesSubtitle": "Proposal 3",
+        "rulesPrimary": "If Proposal 3 passes in Vermont, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-VT-proposal-4",
+      "ticker": "KXSTATEBALLOTMEASURE-VT-PR4",
+      "manifestIdentity": "ff0c6b7f7f96e775664000991c54f91b3fd8672874156638a34b7b6285cd0bf3",
+      "marketIdentity": "6df149dee7670cab1a09b9e965a5d4064f3603a3eb128cebacf130862c63b1a2",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Vermont Proposal 4: equal protection amendment. Source: :: Expanded equal-protection rights; If Proposal 4 passes in Vermont, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "VT",
+        "designation": {
+          "kind": "proposal",
+          "value": "4",
+          "label": "Proposal 4"
+        },
+        "subject": "equal protection amendment",
+        "officialTitle": "Proposal 4: Article 23 of Chapter I [Equality of rights]",
+        "yesMeaning": "Vermont Proposal 4 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the proposal (Vt. Const. ch. II, sec. 72)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Vermont?",
+        "eventSubtitle": "Vermont",
+        "title": "Will Proposal 4 pass?",
+        "subtitle": ":: Expanded equal-protection rights",
+        "yesSubtitle": "Proposal 4",
+        "rulesPrimary": "If Proposal 4 passes in Vermont, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-WA-il26-001",
+      "ticker": "KXSTATEBALLOTMEASURE-WA-IL26001",
+      "manifestIdentity": "d1097b93ca98a2f321bb0f90646d15de9ed93d2809913cc231146bd44355fbd7",
+      "marketIdentity": "03102b10c9c9f0af01c9c41892518552d4054b746241fd93f16ed518d4c2fdb6",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Washington Initiative IL26-001: restoring 2024 parents' rights law. Source: :: Restore 2024 parental-rights law; If Initiative No. IL26-001 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "WA",
+        "designation": {
+          "kind": "il26",
+          "value": "001",
+          "label": "Initiative IL26-001"
+        },
+        "subject": "restoring 2024 parents' rights law",
+        "officialTitle": "Initiative Measure No. IL26-001 concerns parental rights relating to their children in public school.",
+        "yesMeaning": "Washington Initiative IL26-001 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the measure, provided votes on it equal ≥1/3 of all votes cast at the election (Wash. Const. art. II §1(d)); effective 30th day after election (2026-12-03). Votes cast on the measure must equal at least one-third of total votes cast at the election (Wash. Const. art. II §1(d))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Washington?",
+        "eventSubtitle": "Washington",
+        "title": "Will Initiative No. IL26-001 pass?",
+        "subtitle": ":: Restore 2024 parental-rights law",
+        "yesSubtitle": "Initiative No. IL26-001",
+        "rulesPrimary": "If Initiative No. IL26-001 passes in Washington, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-WA-il26-638",
+      "ticker": "KXSTATEBALLOTMEASURE-WA-IL26638",
+      "manifestIdentity": "7c589acd7ba8984128eb1d822cde47ed27b4cc7790633f19839017c8f69006e0",
+      "marketIdentity": "e7a528d4eeceb3cd5a2379a56a76debe6fd88194817527fd421da7f72b29fbbe",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Washington Initiative IL26-638: girls' sports eligibility by sex. Source: :: Sex-based rules for girls' sports; If Initiative No. IL26-638 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "WA",
+        "designation": {
+          "kind": "il26",
+          "value": "638",
+          "label": "Initiative IL26-638"
+        },
+        "subject": "girls' sports eligibility by sex",
+        "officialTitle": "Initiative Measure No. IL26-638 concerns participation in athletics at K-12 schools.",
+        "yesMeaning": "Washington Initiative IL26-638 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the measure, provided votes on it equal ≥1/3 of all votes cast at the election (Wash. Const. art. II §1(d)); effective 30th day after election (2026-12-03). Votes cast on the measure must equal at least one-third of total votes cast at the election (Wash. Const. art. II §1(d))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Washington?",
+        "eventSubtitle": "Washington",
+        "title": "Will Initiative No. IL26-638 pass?",
+        "subtitle": ":: Sex-based rules for girls' sports",
+        "yesSubtitle": "Initiative No. IL26-638",
+        "rulesPrimary": "If Initiative No. IL26-638 passes in Washington, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-WA-other-ip26-645",
+      "ticker": "KXSTATEBALLOTMEASURE-WA-IP26645",
+      "manifestIdentity": "ae61faef5005f216b4dbc514edd273177ca3292ad725cab52d8005640f739545",
+      "marketIdentity": "0ca8188088016c2434c846d117f137da10116bb82aff5a4e89759a7df0c5ce13",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 Washington Initiative IP26-645: income tax repeal and prohibition. Source: :: End and ban state/local income taxes; If Initiative No. IP26-645 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "WA",
+        "designation": {
+          "kind": "other",
+          "value": "IP26-645",
+          "label": "Initiative IP26-645"
+        },
+        "subject": "income tax repeal and prohibition",
+        "officialTitle": "Initiative Measure No. IP26-645 concerns state and local taxes.",
+        "yesMeaning": "Washington Initiative IP26-645 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the measure, provided votes on it equal ≥1/3 of all votes cast at the election (Wash. Const. art. II §1(d)); effective 30th day after election (2026-12-03). Votes cast on the measure must equal at least one-third of total votes cast at the election (Wash. Const. art. II §1(d))."
+      },
+      "referenceMarket": {
+        "eventTitle": "Which ballot measures will pass in Washington?",
+        "eventSubtitle": "Washington",
+        "title": "Will Initiative No. IP26-645 pass?",
+        "subtitle": ":: End and ban state/local income taxes",
+        "yesSubtitle": "Initiative No. IP26-645",
+        "rulesPrimary": "If Initiative No. IP26-645 passes in Washington, then the market resolves to Yes."
+      }
+    },
+    {
+      "raceKey": "2026-measure-WV-amendment-1",
+      "ticker": "KXSTATEBALLOTMEASURE-WV-A1",
+      "manifestIdentity": "74fc396a6404aeadec11762361cebfc224159efe6f5d3af2067e0f0d6f293944",
+      "marketIdentity": "873590022842c4a86f0c6480d987f52a347ca6f28bae91fc980af26a385b275c",
+      "direction": "approval",
+      "evidence": "Reviewed 2026 West Virginia Amendment 1: citizenship requirement to vote. Source: Amendment 1; If Amendment 1 — Citizenship Requirement to Vote in West Virginia Elections Amendment passes in West Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+      "manifest": {
+        "state": "WV",
+        "designation": {
+          "kind": "amendment",
+          "value": "1",
+          "label": "Amendment 1"
+        },
+        "subject": "citizenship requirement to vote",
+        "officialTitle": "Citizenship Requirement to Vote in West Virginia Elections Amendment",
+        "yesMeaning": "West Virginia Amendment 1 is approved by voters at the November 3, 2026 election under: Majority of votes cast on the question (W. Va. Const. art. XIV §2; W. Va. Code §3-11-6)"
+      },
+      "referenceMarket": {
+        "eventTitle": "Will West Virginia require voters to be U.S. and West Virginia citizens?",
+        "eventSubtitle": "West Virginia",
+        "title": "Will Amendment 1 pass?",
+        "subtitle": "Amendment 1",
+        "yesSubtitle": "Yes",
+        "rulesPrimary": "If Amendment 1 — Citizenship Requirement to Vote in West Virginia Elections Amendment passes in West Virginia, then the market resolves to Yes."
+      }
+    }
+  ],
+  "rejections": [
+    {
+      "raceKeys": [
+        "2026-measure-GA-amendment-2",
+        "2026-measure-GA-amendment-3"
+      ],
+      "reason": "The source labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree."
+    },
+    {
+      "raceKeys": [
+        "2026-measure-WI-question-1",
+        "2026-measure-WI-question-2",
+        "2026-measure-WI-question-3"
+      ],
+      "reason": "The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone."
+    },
+    {
+      "raceKeys": ["2026-measure-MD-question-3"],
+      "reason": "The source subtitle says State district rules exclude Congress; audited subject is congressional redistricting. Insufficient matching description to establish exact subject/direction."
+    },
+    {
+      "raceKeys": ["2026-measure-MI-proposal-2", "2026-measure-MO-amendment-6"],
+      "reason": "No matching market found in the public series/event discovery."
+    }
+  ]
+}

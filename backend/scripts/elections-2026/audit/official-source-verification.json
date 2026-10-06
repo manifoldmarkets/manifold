@@ -1,0 +1,268 @@
+[
+  {
+    "item": "1. Senate inventory: 35 races; other specials; Oklahoma and South Carolina appointee seats",
+    "finding": "CONFIRMED: 35 Senate contests are on the Nov 3, 2026 ballot. That is 33 Class-2 regular races, plus 2 Class-3 specials. FLORIDA special (Rubio seat): the FL DOE 2026 general listing shows Ashley Moody (REP, incumbent), Angie Nixon (DEM) and Neil J. Gillespie (NPA). OHIO special: county BOE copies of the SOS certification show 'U.S. Senator, Unexpired term ending 1/3/29' with Sherrod Brown (D), Jon Husted (R), William B. Redpath (L), Greg Levy (other-party) and write-ins. NO OTHER Senate special is on the ballot. Ballotpedia (Sept 2026) counts five Senate vacancies in the 119th Congress, all filled: Vance, Rubio, Justice's delayed oath, Mullin and L. Graham. No later vacancy was found. OKLAHOMA: Mullin resigned 3/23/2026 to become DHS Secretary. Gov. Stitt appointed Alan Armstrong on 3/24 as an interim; by law Armstrong cannot run. Under 26 O.S. 12-101(B), as amended by SB 959 (2021), no special election is called for a Senate vacancy that occurs in an even-numbered year when the term expires the following year. The State Election Board's 2026 candidate book and its Nov 3 election notice each show one 'United States Senator' contest. The only 'unexpired' contests listed are state legislative seats. Nov 3 is therefore the regular Class-2 race: Hern (R), Thomas (D), White (L), Meinhardt (I), Stinnett (I). The statute text also says the regular-election winner 'shall be appointed by the Governor to fill the unexpired term'. That may seat the winner for the final weeks, but it is not a ballot contest. SOUTH CAROLINA: Lindsey Graham, who was already the GOP nominee, died 7/11/2026. Gov. McMaster appointed Darline Graham (EO 2026-16, 7/13) to serve until Jan 3, 2027 under S.C. Code 7-19-20. The SC Election Commission's 'U.S. Senate Special Republican Primary' (8/11, runoff 8/25) only replaced the deceased nominee: 'The nominee resulting from this special filing and primary will be a candidate on November 3, 2026, General Election Ballot.' Darline Graham beat Ralph Norman in the runoff (AP). Nov 3 is the regular Class-2 full-term race, Graham (R) v Annie Andrews (D) plus minor parties. There is no separate contest for the remaining weeks. SOURCE NOTE: senate.gov and governor.sc.gov are geo-blocked (403) from this location. Their content comes from official-page search snippets. The OK, SC Election Commission, FL DOE and OH county-BOE pages were read directly.",
+    "sources": [
+      "https://oklahoma.gov/governor/newsroom/newsroom/2026/governor-stitt-appoints-alan-armstrong-as-us-senator.html",
+      "https://oklahoma.gov/content/dam/ok/en/elections/candidate-filing-archives/2026-candidate-filing-archives/2026-candidate-list-book.pdf",
+      "https://oklahoma.gov/elections/voters/military-overseas-voters/2026-election-notice-general-election.html",
+      "https://www.oklegislature.gov/cf_pdf/2021-22%20ENGR/SB/SB959%20ENGR.PDF",
+      "https://scvotes.gov/u-s-senate-special-republican-party-filing-primary/",
+      "https://governor.sc.gov/news/2026-07/gov-mcmaster-appoints-darline-graham-us-senate",
+      "https://governor.sc.gov/sites/governor/files/Documents/Executive-Orders/2026-07-13%20FINAL%20Executive%20Order%20No.%202026-16%20-%20Appointing%20Darline%20Graham%20to%20U.S.%20Senate.pdf",
+      "https://www.wbtv.com/2026/08/26/darline-graham-wins-special-gop-primary-runoff-us-senate-south-carolina-ap-projects/",
+      "https://dos.elections.myflorida.com/candidates/CanList.asp",
+      "https://wpassets.lakecountyohio.gov/wp-content/uploads/sites/12/2026/08/25154551/2026-Candidate-Filings-3.pdf",
+      "https://news.ballotpedia.org/2026/09/02/everton-blair-jr-takes-office-ending-the-vacancy-in-georgias-13th-congressional-district/",
+      "https://www.senate.gov/senators/Class_II.htm"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-senate-OK-class2-regular-general",
+      "2026-senate-SC-class2-regular-general",
+      "2026-senate-FL-class3-special-general",
+      "2026-senate-OH-class3-special-general"
+    ]
+  },
+  {
+    "item": "2. Governor inventory: 36 states",
+    "finding": "CONFIRMED: 36 regular gubernatorial elections: AK AL AR AZ CA CO CT FL GA HI IA ID IL KS MA MD ME MI MN NE NH NM NY OH OK OR PA RI SC SD TN TX VT WI WY. No special gubernatorial election was found. NH and VT are on 2-year cycles and are included. Spot checks against official lists: MI (Dept. of State listing): Benson D, James R, Hudson L, Brandenburg UST, Campbell G. NE (SOS 9/11/2026 final list): Pillen R, Walz D, Beard LMN, Lindstrom America First. OH (BOE certification): Acton D, Ramaswamy R, Kissick L plus write-ins. Final-round exceptions: GA governor needs a majority (Dec 1 runoff). VT governor needs a majority or the General Assembly elects (see item 3). AK uses RCV. ME governor is plurality. SOURCE NOTE: The 36-state count rests on the constitutional cycle plus AP/CT Public. No single official national list exists. Candidate fields were spot-checked officially only for MI, NE and OH.",
+    "sources": [
+      "https://www.ctpublic.org/2026-05-05/heres-a-look-at-the-36-races-for-governor-this-year",
+      "https://mi-boe.entellitrak.com/etk-mi-boe-prod/page.request.do?page=page.miboePublicReport&electionType=GEN&electionYear=2026",
+      "https://sos.nebraska.gov/sites/default/files/doc/elections/2026/Final_Statewide_General_Candidate_Filing_List_9.11.26.pdf"
+    ],
+    "confidence": "news",
+    "affectsRaces": []
+  },
+  {
+    "item": "3. Final round / runoff / RCV rules for Nov 3, 2026",
+    "finding": "GEORGIA: O.C.G.A. 21-2-501(a)(1) requires a majority for Senate, governor and all 14 House seats. If nobody gets one, the top two meet in a runoff on the 28th day after the election: Tuesday, Dec 1, 2026 (georgia.gov: 'Election Day for the General Election Runoff is December 1, 2026'). LOUISIANA, Senate and House now differ: SENATE uses the closed party-primary system: party primary May 16, second party primary June 27 (Letlow beat Fleming; Davis beat Crockett; Cassidy finished 3rd on May 16). Nov 3 is the 'U.S. Senate General', Letlow (R) v Davis (D), decided by plurality (R.S. 18:512). There is no December round. HOUSE: Act 7 of the 2026 Regular Session (HB 842, signed 5/14/2026) cancelled the 2026 House party primaries and voided votes already cast. Nov 3 is the 'Open U.S. Representative Primary' (all candidates, any party; a majority wins outright under R.S. 18:511). If nobody gets a majority, the top two regardless of party meet on Saturday, Dec 12, 2026 ('Open U.S. Representative General'). The House goes back to closed primaries on 1/1/2027. The same-party candidates in the inventory are therefore correct. For LA House races, Nov 3 is NOT final unless someone clears 50%. ALASKA: top-four primary, RCV general for Senate, House and governor/LG (AS 15.15.350(c), 15.25.100). The 2026 repeal initiative (Ballot Measure 2) is on the Nov 3 ballot, but an initiated law takes effect 90 days after certification, so 2026 races use RCV either way. RCV tabulation is expected about Nov 18, 2026 (15th day; from a Division of Elections snippet, unconfirmed). MAINE: RCV in general elections only for federal offices (Senate: Collins v Troy Jackson; ME-1, ME-2). The governor general is plurality (Me. Const. art. V pt.1 s.3). In 2026 ME 32 (Apr 6, 2026) the justices said extending RCV to governor (LD 1666) would be unconstitutional. MISSISSIPPI: no runoff for the federal general (plurality). The Dec 1, 2026 'General Runoff' on the SOS calendar covers nonpartisan judicial races only. The 2020 majority-plus-runoff amendment covers governor and statewide state offices, which are next up in 2027. VERMONT: the governor (also LG and treasurer) needs a majority ('the major part of the votes', Vt. Const. ch. II s.47). Otherwise the General Assembly elects one of the top three by joint ballot when the new legislature meets (it convenes Jan 6, 2027; the joint assembly is likely about Jan 7, 2027, unverified). OTHERS: Arkansas Dec 1 general runoff is county/municipal only. TX, AL, NC and SD have runoffs only in primaries; their generals are plurality. FL and OH Senate specials are plurality. DC Delegate uses RCV when there are 3+ candidates (D.C. Code 1-1001.08a, from the June 2026 primary on). Territorial delegates: Guam and USVI need a majority with a Nov 17 runoff; American Samoa and CNMI are plurality. No other state uses RCV or a general runoff for Senate, House or governor in 2026. SOURCE NOTE: sos.ga.gov (403) and elections.alaska.gov (captcha) could not be reached. The GA statute text is from FindLaw. The AK tabulation date is from an official-pamphlet snippet only. Mississippi federal plurality rests on Mississippi Today (403) plus the statute via a secondary source. The VT joint-assembly date is inferred. The Maine Senate Democrat is Troy Jackson, nominated by convention 7/25/2026 after Graham Platner withdrew 7/10; the inventory is correct.",
+    "sources": [
+      "https://georgia.gov/node/34081",
+      "https://gordoncountyga.gov/DocumentCenter/View/2009/2026-Election-Calendar-and-Summary-of-Events-PDF",
+      "https://codes.findlaw.com/ga/title-21-elections/ga-code-sect-21-2-501/",
+      "https://www.sos.la.gov/media/p31j4zkc/elections-calendar-2026.pdf",
+      "https://www.sos.la.gov/elections-voting/election-dates",
+      "https://legis.la.gov/legis/BillInfo.aspx?s=26RS&b=HB842&sbi=y",
+      "https://legis.la.gov/legis/Law.aspx?d=81616",
+      "https://legis.la.gov/legis/Law.aspx?d=81617",
+      "https://www.akleg.gov/basis/statutes.asp#15.15.350",
+      "https://alaskapublic.org/news/politics/elections/2026-07-29/alaskans-to-vote-on-ballot-measure-that-would-overhaul-state-election-system",
+      "https://www.maine.gov/sos/cec/elec/upcoming/rankedchoicefaq.html",
+      "https://www.courts.maine.gov/courts/sjc/lawcourt/2026/26me032.pdf",
+      "https://www.sos.ms.gov/sites/default/files/publications/Election%20Calendar_2026.pdf",
+      "https://billstatus.ls.state.ms.us/documents/2020/html/HC/HC0047PS.htm",
+      "https://legislature.vermont.gov/statutes/constitution-of-the-state-of-vermont/",
+      "https://sos.vermont.gov/vsara/learn/elections/majority-election/joint-assembly",
+      "https://sbec.arkansas.gov/wp-content/uploads/2026-Election-Calendar-Rev.-6-2025.pdf",
+      "https://code.dccouncil.gov/us/dc/council/code/sections/1-1001.08a",
+      "https://www.wagmtv.com/2026/07/25/maine-democrats-nominate-troy-jackson-us-senate-candidate-will-face-sen-collins-november/"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-senate-GA-class2-regular-general",
+      "2026-governor-GA-regular-general",
+      "2026-house-GA-01-regular-general",
+      "2026-house-GA-02-regular-general",
+      "2026-house-GA-03-regular-general",
+      "2026-house-GA-04-regular-general",
+      "2026-house-GA-05-regular-general",
+      "2026-house-GA-06-regular-general",
+      "2026-house-GA-07-regular-general",
+      "2026-house-GA-08-regular-general",
+      "2026-house-GA-09-regular-general",
+      "2026-house-GA-10-regular-general",
+      "2026-house-GA-11-regular-general",
+      "2026-house-GA-12-regular-general",
+      "2026-house-GA-13-regular-general",
+      "2026-house-GA-14-regular-general",
+      "2026-senate-LA-class2-regular-general",
+      "2026-house-LA-01-regular-general",
+      "2026-house-LA-02-regular-general",
+      "2026-house-LA-03-regular-general",
+      "2026-house-LA-04-regular-general",
+      "2026-house-LA-05-regular-general",
+      "2026-house-LA-06-regular-general",
+      "2026-senate-AK-class2-regular-general",
+      "2026-governor-AK-regular-general",
+      "2026-house-AK-00-regular-general",
+      "2026-senate-ME-class2-regular-general",
+      "2026-governor-ME-regular-general",
+      "2026-house-ME-01-regular-general",
+      "2026-house-ME-02-regular-general",
+      "2026-governor-VT-regular-general"
+    ]
+  },
+  {
+    "item": "4. Same-party top-two finals (California, Washington) and California write-ins",
+    "finding": "CALIFORNIA. Source: SOS Certified List of Candidates for the Nov 3, 2026 General, dated 8/27/2026, parsed by PDF text coordinates (name and party share a row). 9 of 52 districts have same-party finals. D v D (8): CA-4 Eric Jones (D) v Mike Thompson (D); CA-7 Doris Matsui (D) v Mai Vang (D); CA-11 Connie Chan (D) v Scott Wiener (D); CA-12 Jamie Joyce (D) v Lateefah Simon (D); CA-14 Melissa Hernandez (D) v Aisha Wahab (D); CA-29 Angelica Maria Duenas (D) v Luz Maria Rivas (D); CA-34 Jimmy Gomez (D) v Angela Gonzales-Torres (D); CA-37 Sydney Kamlager-Dove (D) v Samantha Mota (D). R v R (1): CA-40 Ken Calvert (R) v Young Kim (R). There are no others; all 43 remaining districts are D v R or D v NPP. CA-6: Kevin Kiley's ballot party preference is 'No Party Preference' (not 'Independent'), v Richard Pan (D). CA-1: James Gallagher (R) v Mike McGuire (D). Gallagher won the June 2, 2026 special outright under the old lines after Doug LaMalfa's death and was sworn in 6/10/2026. Nov 3 is the regular race on Prop 50 lines; the cert list marks no House incumbents. WRITE-INS: not allowed. Cal. Elec. Code 8606: 'a person may not be a write-in candidate at the general election for a voter-nominated office'. The CA SOS FAQ answers 'No'. For these 9 districts the winner is certainly one of the two printed same-party names, so the party outcome is decided before Nov 3. WASHINGTON. Source: SOS official list, e=899. The finalists match the inventory exactly: WA-1 DelBene D/Silva R; WA-2 Larsen D/Feller R; WA-3 Gluesenkamp Perez D/Braun R; WA-4 Duresky D/McKinney R; WA-5 Conroy D/Baumgartner R; WA-6 Randall D/Fox R; WA-7 Jayapal D/Sheth R; WA-8 Schrier D/Meline R; WA-9 Smith D/Basler R; WA-10 Strickland D/Chung R. No same-party final. Washington DOES allow general-election write-ins (RCW 29A.60.021), counted only for declared write-ins (declaration by 8 pm election day, RCW 29A.24.311). Primary losers cannot file as write-ins for that office.",
+    "sources": [
+      "https://elections.cdn.sos.ca.gov/statewide-elections/2026-general/cert-list-candidates.pdf",
+      "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=ELEC&sectionNum=8606.",
+      "https://www.sos.ca.gov/elections/primary-elections-california",
+      "https://clerk.house.gov/Members/ViewVacancies",
+      "https://voter.votewa.gov/CandidateList.aspx?e=899",
+      "https://app.leg.wa.gov/RCW/default.aspx?cite=29A.60.021",
+      "https://app.leg.wa.gov/RCW/default.aspx?cite=29A.24.311"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-house-CA-04-regular-general",
+      "2026-house-CA-07-regular-general",
+      "2026-house-CA-11-regular-general",
+      "2026-house-CA-12-regular-general",
+      "2026-house-CA-14-regular-general",
+      "2026-house-CA-29-regular-general",
+      "2026-house-CA-34-regular-general",
+      "2026-house-CA-37-regular-general",
+      "2026-house-CA-40-regular-general",
+      "2026-house-CA-06-regular-general",
+      "2026-house-CA-01-regular-general"
+    ]
+  },
+  {
+    "item": "5. Seats not genuinely contested on Nov 3",
+    "finding": "Only five House districts nationwide have fewer than 2 candidates. Inventory scan of 440 rows, cross-checked with the FL official list and 270toWin. FL-10 (Maxwell Frost, D) is NOT ON THE NOV 3 BALLOT. The FL DOE lists him 'Unopposed' for primary and general, and no write-in qualified. Fla. Stat. 101.151(7): 'the names of unopposed candidates shall not appear on the general election ballot. Each unopposed candidate shall be deemed to have voted for himself or herself.' Qualifying (including write-ins) closed in June, so this is final: Frost is effectively elected, and there is no Nov 3 vote to resolve on. MA-2 (James P. McGovern, D), MA-5 (Katherine M. Clark, D) and MA-7 (Ayanna S. Pressley, D) are ON THE BALLOT, with one printed name plus a blank write-in space (M.G.L. c.54 s.42). Massachusetts has no write-in registration, so a write-in winner is legally possible but no declared campaigns were found. WI-2 (Mark Pocan, D) is ON THE BALLOT with one printed name (Dane County 'What's on the Ballot' and the WEC ballot-access report). Write-in votes count only for candidates who register by noon Fri Oct 30, 2026 (Wis. Stat. 7.50(2)(em)). WEC's current registrations could not be read (403). Oklahoma omits unopposed races ('deemed the elected official by default … will not appear on any ballot'), but no OK House district is unopposed: R and D filed in all five. No Senate or governor race has fewer than 2 candidates. Side findings (inventory errors): FL-6 'Michael Gist (Independent)' does not appear on the official FL list; the field is Randy Fine (R), Eric Yonce (D), Andrew Parrott (LPF) plus write-in Alec Pavlik. The official MA list prints MA-1 Richard Neal with no party label (Neal won the Democratic primary per PD43), v Nadia Milleron (unenrolled).",
+    "sources": [
+      "https://dos.elections.myflorida.com/candidates/CanList.asp",
+      "https://dos.elections.myflorida.com/candidates/CanDetail.asp?account=89909",
+      "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0101/Sections/0101.151.html",
+      "https://www.sec.state.ma.us/divisions/elections/research-and-statistics/2026-state-election-candidates.htm",
+      "http://web.archive.org/web/20260928222407/https://www.sec.state.ma.us/divisions/elections/research-and-statistics/2026-state-election-candidates.htm",
+      "https://electionstats.state.ma.us/elections/search/year_from:2026/year_to:2026/office_id:5",
+      "https://elections.countyofdane.com/documents/pdf/What-s-on-the-Ballot-Nov-2026.pdf",
+      "http://web.archive.org/web/20260809152711/https://elections.wi.gov/sites/default/files/documents/D.%20Ballot%20Access%20Report%206.9.2026.pdf",
+      "https://oklahoma.gov/content/dam/ok/en/elections/candidate-filing-archives/2026-candidate-filing-archives/2026-candidate-list-book.pdf",
+      "https://www.270towin.com/2026-house-election-uncontested-races/"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-house-FL-10-regular-general",
+      "2026-house-MA-02-regular-general",
+      "2026-house-MA-05-regular-general",
+      "2026-house-MA-07-regular-general",
+      "2026-house-WI-02-regular-general",
+      "2026-house-FL-06-regular-general",
+      "2026-house-MA-01-regular-general"
+    ]
+  },
+  {
+    "item": "6. House district maps in effect for Nov 3, 2026; atlas match",
+    "finding": "NEW maps in effect on Nov 3: TX (HB 4, 2025; SCOTUS stayed then reversed the LULAC injunction), CA (Prop 50 / AB 604; SCOTUS denied injunction 2/4/2026, 25A839), NC (SB 249, 10/22/2025; PI denied, appeals pending), OH (Redistricting Commission plan 10/31/2025), UT (court-ordered plaintiff map 11/10/2025; challenges denied), FL (HB 1-D signed 5/4/2026; FL Sup. Ct. let it stand for 2026 on 6/10; merits case pending), TN (HB 7003 signed 5/7/2026, splits Memphis; PI denied 7/23), LA (SB 121 / Act 2 signed 5/29/2026 after Louisiana v. Callais), and AL (the 2023 legislative plan SB 5 restored after SCOTUS stayed the Milligan/Singleton injunction 6/2/2026, 25A1314). AL primaries in CD 1, 2, 6 and 7 were re-run 8/11/2026. NOT new: VA uses the 2021 court map (the 4/21/2026 amendment was voided by the Supreme Court of Virginia 5/8/2026; SCOTUS denied a stay 5/15, 25A1240). NY keeps its 2024 map (NY-11 redraw stayed by SCOTUS 3/2/2026, 25A914). GA, MD, MS, IN, SC and others keep their current maps. MISSOURI votes on the 2022 MAP, not the 2025 HB 1 map. The People Not Politicians referendum (2026-R004) was certified sufficient 9/8/2026 and is on the Nov 3 ballot as Proposition A. The Missouri Supreme Court (von Glahn v. Hoskins, 9/3/2026) held HB 1 suspended. SCOTUS denied the Secretary a stay (26A304, 9/8), stayed a federal TRO (26A326, 9/10), and on 9/25/2026 (26A388) stayed the 8th Circuit's order with the instruction: 'should not enjoin or otherwise prohibit the use of the 2022 map in the 2026 congressional election in Missouri.' Ballots printed on the 2022 map have been mailed (UOCAVA 9/18; absentee from 9/22). One caveat: Missouri nominees were chosen in the Aug 4 primary on HB 1 lines, then certified by district number (8/25) and placed in the 2022-map district with the same number. Example: MO-5 is Cleaver (D) v Brattin (R) v Langkraehr (L). A challenge to the MO-5 primary certification was reported, outcome unknown. ATLAS CHECK: MTS (drops.mts.now/midterms) says its map uses newly redistricted maps for TX, CA, FL, NC, OH, UT, TN, LA and AL, and 'Missouri shown on its 2022 map pending litigation'. That is exactly the set in effect, and Missouri's 2022 map is now final for 2026, so no mismatch was found. VA (not redrawn) matches. Not verified geometrically: that MTS's AL geometry is the 2023 SB 5 plan rather than the 2024 court plan, and that its FL/TN/LA geometry is the final enacted plan. The atlas note 'pending litigation' for Missouri is stale and can say 'final for 2026 (SCOTUS 26A388, 9/25/2026)'. SOURCE NOTE: Official sources: SCOTUS dockets, MO SOS, LA SOS, AL SOS, FL DOS. NC, OH, UT and TN rest on news plus the Loyola redistricting tracker. The TX 4/27/2026 summary reversal date is from news only.",
+    "sources": [
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/25A608.html",
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/25A839.html",
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/25A1240.html",
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/25A1314.html",
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/25A914.html",
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/26A304.html",
+      "https://www.supremecourt.gov/docket/docketfiles/html/public/26A388.html",
+      "https://www.sos.mo.gov/petitions/2026BallotMeasures",
+      "https://www.sos.mo.gov/CMSImages/Elections/Petitions/2026-R004WebCert.pdf",
+      "https://www.sos.mo.gov/CMSImages/ElectionCandidates/2026GeneralElectionCertifiedCandidates.pdf",
+      "https://www.pbs.org/newshour/amp/politics/supreme-court-rejects-trump-backed-missouri-congressional-map-for-third-time",
+      "https://redistricting.capitol.texas.gov/2020s_timeline",
+      "https://files.floridados.gov/media/710588/memo-redistricting-2026.pdf",
+      "https://www.flsenate.gov/Session/Bill/2026D/1D",
+      "https://www.sos.la.gov/media/p31j4zkc/elections-calendar-2026.pdf",
+      "https://sos.alabama.gov/node/3665",
+      "https://redistricting.lls.edu/state/north-carolina",
+      "https://redistricting.lls.edu/state/tennessee",
+      "https://www.nbcnews.com/politics/2026-election/federal-court-clears-way-utah-new-congressional-map-take-effect-rcna260304",
+      "https://drops.mts.now/midterms/"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-house-MO-01-regular-general",
+      "2026-house-MO-02-regular-general",
+      "2026-house-MO-03-regular-general",
+      "2026-house-MO-04-regular-general",
+      "2026-house-MO-05-regular-general",
+      "2026-house-MO-06-regular-general",
+      "2026-house-MO-07-regular-general",
+      "2026-house-MO-08-regular-general",
+      "2026-house-AL-01-regular-general",
+      "2026-house-AL-02-regular-general",
+      "2026-house-AL-03-regular-general",
+      "2026-house-AL-04-regular-general",
+      "2026-house-AL-05-regular-general",
+      "2026-house-AL-06-regular-general",
+      "2026-house-AL-07-regular-general",
+      "2026-house-VA-01-regular-general",
+      "2026-house-VA-02-regular-general",
+      "2026-house-VA-03-regular-general",
+      "2026-house-VA-04-regular-general",
+      "2026-house-VA-05-regular-general",
+      "2026-house-VA-06-regular-general",
+      "2026-house-VA-07-regular-general",
+      "2026-house-VA-08-regular-general",
+      "2026-house-VA-09-regular-general",
+      "2026-house-VA-10-regular-general",
+      "2026-house-VA-11-regular-general"
+    ]
+  },
+  {
+    "item": "7. House special elections on the Nov 3 ballot for unexpired 119th-Congress terms",
+    "finding": "NONE. The House Clerk's vacancy list shows only FL-20 (Sheila Cherfilus-McCormick resigned 4/21/2026) and TX-23 (Tony Gonzales resigned 4/14/2026), both 'special election date TBD'. Neither governor has called a special; both seats stay vacant until Jan 3, 2027. The FL DOE special-election menu lists no 2026 U.S. House special. Only the regular FL-20 and TX-23 races are on Nov 3. Specials already held in 2026, whose winners are now incumbents: CA-1: Doug LaMalfa died 1/6/2026; James Gallagher (R) won the 6/2 special outright on the old lines and was sworn in 6/10. He faces Mike McGuire (D) on the Prop 50 lines. CA-14: Eric Swalwell resigned 4/14/2026; Aisha Wahab (D) won the 8/18 runoff and was sworn in 9/2. Nov 3 is Wahab v Melissa Hernandez (both D). GA-13: David Scott died 4/22/2026; Everton Blair Jr. (D) won the 8/25 runoff and was sworn in 9/1. Blair is NOT on the Nov 3 ballot, which is Jasmine Clark (D) v Jonathan Chavez (R), so the incumbent is not running. GA-14: Marjorie Taylor Greene resigned 1/5/2026; Clay Fuller (R) won the 4/7 runoff. NJ-11: Mikie Sherrill resigned 11/20/2025; Analilia Mejia (D) won 4/16/2026. TX-18: Sylvester Turner died 3/5/2025; Christian Menefee (D) won the 1/31/2026 runoff. No Senate unexpired-term specials beyond FL and OH (see item 1). SOURCE NOTE: 'No TX-23 special' rests on the Clerk's 'TBD' plus news. The Texas SOS publishes no proclamation list.",
+    "sources": [
+      "https://clerk.house.gov/Members/ViewVacancies",
+      "https://dos.elections.myflorida.com/candidates/CanList.asp",
+      "https://news.ballotpedia.org/2026/06/15/james-gallagher-takes-office-ending-the-vacancy-in-californias-1st-congressional-district/",
+      "https://news.ballotpedia.org/2026/09/02/everton-blair-jr-takes-office-ending-the-vacancy-in-georgias-13th-congressional-district/",
+      "https://news.ballotpedia.org/2026/04/20/clayton-fuller-takes-office-ending-the-vacancy-in-georgias-14th-congressional-district/"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-house-FL-20-regular-general",
+      "2026-house-TX-23-regular-general",
+      "2026-house-CA-01-regular-general",
+      "2026-house-CA-14-regular-general",
+      "2026-house-GA-13-regular-general",
+      "2026-house-GA-14-regular-general",
+      "2026-house-NJ-11-regular-general",
+      "2026-house-TX-18-regular-general"
+    ]
+  },
+  {
+    "item": "8. Michigan governor: is Mike Duggan on the ballot?",
+    "finding": "NO. Duggan ended his independent campaign in May 2026 (Michigan Advance, 5/21/2026). The Michigan Department of State official candidate listing for the Nov 3, 2026 general shows only five Governor/Lt. Governor tickets: Benson/Brinks (D), James/DeBoyer (R), Hudson/Parmenter (L), Brandenburg/Cowper II (U.S. Taxpayers), Campbell/Clay (Green). No 'No Party Affiliation' ticket. The inventory's omission of Duggan is correct.",
+    "sources": [
+      "https://mi-boe.entellitrak.com/etk-mi-boe-prod/page.request.do?page=page.miboePublicReport&electionType=GEN&electionYear=2026",
+      "https://michiganadvance.com/2026/05/21/duggan-drops-independent-bid-for-governor-remapping-2026-michigan-gubernatorial-landscape/"
+    ],
+    "confidence": "official",
+    "affectsRaces": ["2026-governor-MI-regular-general"]
+  },
+  {
+    "item": "9. Alaska Senate: the four general-election names and how the two Dan Sullivans are listed",
+    "finding": "The general-election four are Mary Peltola (D), Dan S. Sullivan (R, incumbent), Daniel J. 'Dan' Sullivan Jr. (registered R, of Petersburg) and Gerald Heikes (R). This matches the inventory. Certified primary result: Peltola 49.5%, Dan S. Sullivan 41.4%, Dan J. Sullivan 2.5%. Fourth-place David Leslie (Democratic Socialist, 1.1%) withdrew at the Aug 31, 2026 deadline, which elevated Heikes (fifth). Ballot listing: after the Alaska Supreme Court ruled 6/29/2026 that the challenger may appear, the Division of Elections' sample ballot listed him as 'Sullivan, Daniel J. Jr.' with the party line blank, and the senator as 'Sullivan, Dan S.' with '(Registered Republican) Incumbent'. This is confirmed for the PRIMARY sample ballot only. The general-ballot listing was not confirmed from an official source. Final round is RCV (item 3). SOURCE NOTE: elections.alaska.gov returns an AWS-WAF human-verification page (HTTP 405) from this location, so no official Alaska page could be read.",
+    "sources": [
+      "https://www.adn.com/politics/2026/09/01/alaskas-4th-place-us-senate-finisher-drops-out-elevating-gop-candidate-to-ballot/",
+      "https://www.adn.com/politics/2026/06/30/election-officials-sample-ballot-shows-how-they-seek-to-distinguish-two-dan-sullivans-in-us-senate-race/",
+      "https://www.juneauindependent.com/post/updated-sample-ballot-maintains-extraordinary-listings-for-two-dan-sulivans-in-us-senate-race",
+      "https://alaskabeacon.com/2026/06/29/alaska-supreme-court-rules-dan-j-sullivan-eligible-to-run-for-us-senate/"
+    ],
+    "confidence": "news",
+    "affectsRaces": ["2026-senate-AK-class2-regular-general"]
+  },
+  {
+    "item": "10. Nebraska, Idaho and Montana Senate ballots",
+    "finding": "NEBRASKA (official, SOS Final Statewide General Candidate List 9/11/2026): Pete Ricketts (Republican, incumbent), Mike Marvin (Legal Marijuana NOW), Robin Richards (Nebraska Working People), Chuck Conboy (America First), Dan Osborn ('By Petition'). There is NO Democrat: nominee Cindy Burbank withdrew 7/17/2026, the party voted not to fill the vacancy, and the NE Supreme Court rejected a suit to force a replacement (9/10/2026). Osborn is a petition (nonpartisan) candidate, not a party nominee. IDAHO (news): Democratic nominee David Roth filed his withdrawal on Aug 28, 2026, before the deadline, and his name is off the ballot. No Democratic replacement was reported. The ballot is Jim Risch (R), Todd Achilles (Independent; former Democratic legislator), Natalie M. Fleming (Independent), Matt Loesby (Libertarian). This matches the inventory. MONTANA (official, SOS candidate filing system, FEDERAL GENERAL 2026): Kurt Alme (REP), Kyle Austin (LIB), Alani Bankhead (DEM), Seth Bodnar (IND), plus a filed write-in, Jami Dee Woodman. Steve Daines withdrew at filing (marked Withdrawn in the primary list). The SOS reported Bodnar with 21,284 accepted signatures against 13,327 required. SOURCE NOTE: Idaho is news-only. The Idaho SOS candidate search is a JS app behind an API, and the Capital Sun page returned 403. Nebraska and Montana were read from official lists.",
+    "sources": [
+      "https://sos.nebraska.gov/sites/default/files/doc/elections/2026/Final_Statewide_General_Candidate_Filing_List_9.11.26.pdf",
+      "https://sos.nebraska.gov/secretary-state-certifies-dan-osborns-us-senate-candidate-petition",
+      "https://www.wowt.com/2026/09/10/nebraska-supreme-court-rejects-primary-losers-appeal-force-democratic-party-replace-candidate/",
+      "https://idahocapitalsun.com/2026/09/02/idaho-us-senate-candidate-david-roth-removes-name-from-general-election-ballot/",
+      "https://rollcall.com/2026/07/29/idaho-democrat-is-latest-senate-nominee-to-drop-out-in-boost-to-independent-rival/",
+      "https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx?e=450002987",
+      "https://sosmt.gov/counties-submit-candidate-petition-signatures-to-montana-secretary-of-states-office/"
+    ],
+    "confidence": "official",
+    "affectsRaces": [
+      "2026-senate-NE-class2-regular-general",
+      "2026-senate-ID-class2-regular-general",
+      "2026-senate-MT-class2-regular-general"
+    ]
+  }
+]

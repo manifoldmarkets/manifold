@@ -1,0 +1,981 @@
+{
+  "note": "Explicit creation-to-page mapping. Race keys, reserved IDs, payloads and spending are unchanged. All 122 targets have the identical state and official title. The eight non-numbered/designation exceptions were individually checked against their summary, YES meaning and source URL.",
+  "mappings": [
+    {
+      "raceKey": "2026-measure-AK-measure-2",
+      "pageKey": "AK-measure-2",
+      "state": "AK",
+      "matchedBy": "exact-key",
+      "officialTitle": "An Act Restoring Political Party Primaries, Ending Ranked-Choice General Elections, and Repealing Recent Campaign Finance Laws",
+      "officialSourceUrl": "https://www.elections.alaska.gov/"
+    },
+    {
+      "raceKey": "2026-measure-AK-measure-3",
+      "pageKey": "AK-measure-3",
+      "state": "AK",
+      "matchedBy": "exact-key",
+      "officialTitle": "An Act Addressing Voter Qualification",
+      "officialSourceUrl": "https://www.elections.alaska.gov/"
+    },
+    {
+      "raceKey": "2026-measure-AL-amendment-1",
+      "pageKey": "AL-lt-gov-vacancies",
+      "state": "AL",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing an amendment to the Constitution of Alabama of 2022, to provide for the election of a Lieutenant Governor if the Office of Lieutenant Governor becomes vacant during the first two years of a term, to authorize the Legislature to set the salary of the Lieutenant Governor and officers of the Legislature, and to require any expenditure of legislative funds for travel to be approved by a legislative officer. Proposed by Act 2026-341.",
+      "officialSourceUrl": "https://www.sos.alabama.gov/sites/default/files/2026-08/FBCStatewideAmendment-1.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AL-amendment-2",
+      "pageKey": "AL-school-consolidation",
+      "state": "AL",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing an amendment to the Constitution of Alabama of 2022, to provide a process for the creation of a consolidated county school system by merging two or more contiguous county boards of education; to require the State Board of Education to conduct an impact study...; to provide a procedure for protesting a proposed consolidation...; and to require the State Board of Education to adopt rules. Proposed by Act 2026-378.",
+      "officialSourceUrl": "https://www.sos.alabama.gov/sites/default/files/2026-08/FBCStatewideAmendment-2.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AL-amendment-4",
+      "pageKey": "AL-star-spangled-banner",
+      "state": "AL",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing an amendment to the Constitution of Alabama of 2022, to require local boards of education to adopt policies requiring each public K-12 school to broadcast or sanction the performance of the first stanza of The Star-Spangled Banner at least once per week during school hours. Proposed by Act 2026-424.",
+      "officialSourceUrl": "https://www.sos.alabama.gov/sites/default/files/2026-08/FBCStatewideAmendment-4.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-1",
+      "pageKey": "AR-issue-1",
+      "state": "AR",
+      "matchedBy": "exact-key",
+      "officialTitle": "A Constitutional Amendment to Be Known as \"The Citizens Only Voting Amendment\" and Providing That Only a Citizen of the United States Meeting the Qualifications of an Elector Under the Arkansas Constitution May Vote in an Election in this State.",
+      "officialSourceUrl": "https://www.sos.arkansas.gov/uploads/elections/Issue_No._1_HJR_1018_of_2026_.pdf_.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-2",
+      "pageKey": "AR-issue-2",
+      "state": "AR",
+      "matchedBy": "exact-key",
+      "officialTitle": "A Constitutional Amendment to Amend Arkansas Constitution, Article 2, § 5, to Protect the Right to Keep and Bear Arms.",
+      "officialSourceUrl": "https://www.sos.arkansas.gov/uploads/elections/Issue_No._2_SJR_11_of_2026_.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-3",
+      "pageKey": "AR-issue-3",
+      "state": "AR",
+      "matchedBy": "exact-key",
+      "officialTitle": "A Constitutional Amendment Concerning Economic Development in the State of Arkansas; and Authorizing the General Assembly to Provide for the Creation of Economic Development Districts Within Cities, Counties, or Cooperative Areas to Promote Economic Development Within the Economic Development District.",
+      "officialSourceUrl": "https://www.sos.arkansas.gov/uploads/elections/Issue_No._3_SJR_15_of_2026_.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AR-issue-4",
+      "pageKey": "AR-water-bond",
+      "state": "AR",
+      "matchedBy": "exact-title",
+      "officialTitle": "Arkansas Water, Waste Disposal, and Pollution Abatement Facilities Financing Act of 2025.",
+      "officialSourceUrl": "https://www.sos.arkansas.gov/uploads/elections/Issue_No._4_Act_578_of_2026_.pdf"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-141",
+      "pageKey": "AZ-prop-141",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Proposed amendment to the Constitution by the Legislature relating to taxation: Prohibits taxes or fees based on vehicle miles traveled and laws monitoring or limiting vehicle miles traveled without consent.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-142",
+      "pageKey": "AZ-prop-142",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Proposed amendment to the Constitution by the Legislature relating to the prohibition of preferential treatment and discrimination: Adds further details to the constitutional prohibition against preferential treatment or discrimination by the state based on race, ethnicity, or other classes.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-144",
+      "pageKey": "AZ-prop-144",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Proposed amendment to the Constitution by the Legislature relating to election requirements: Requires all voters, including voters who vote by mail, to show government-issued ID to vote in each election; makes other changes to election administration and campaign finance prohibitions.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-316",
+      "pageKey": "AZ-prop-316",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Referred to the people by the Legislature relating to municipal transaction privilege tax: Retroactively prohibits local governments from adopting or increasing a tax on groceries without voter approval and sets a maximum rate of 2%.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-317",
+      "pageKey": "AZ-prop-317",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Referred to the people by the Legislature relating to the Arizona Department of Homeland Security: Declares that drug cartels are terrorist organizations; directs the Arizona Department of Homeland Security to do everything in its authority to address drug cartels.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-319",
+      "pageKey": "AZ-prop-319",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Referred to the people by the Legislature relating to photo enforcement systems: Prohibits state agencies and local governments from using photo enforcement systems for traffic enforcement unless provided by contract as of December 31, 2026; requires local governments to obtain voter approval to continue their use.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-AZ-prop-320",
+      "pageKey": "AZ-prop-320",
+      "state": "AZ",
+      "matchedBy": "exact-key",
+      "officialTitle": "Referred to the people by the Legislature relating to school district budgets: Requires certain school districts to spend at least sixty percent of their operational spending on direct instructional expenses as defined by the Auditor General; reduces certain state funding for non-compliant districts.",
+      "officialSourceUrl": "https://www.azleg.gov/iagenda/House/07082026legislativecouncil.1.2r.docx.htm"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-1",
+      "pageKey": "CA-prop-1",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Authorizes Bonds for Housing Affordability Programs. Legislative Statute.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/1/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-2",
+      "pageKey": "CA-prop-2",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Increases State's Rainy Day Fund. Legislative Constitutional Amendment.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/2/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-3",
+      "pageKey": "CA-prop-3",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Provides Permanent Funding for Schools and Health Care by Extending Existing Tax on High Incomes. Initiative Constitutional Amendment.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/3/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-38",
+      "pageKey": "CA-prop-38",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Authorizes Bonds for Immunology Medical Research. Initiative Statute.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/38/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-41",
+      "pageKey": "CA-prop-41",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Prohibits New State Taxes That Exclude Revenues from State Spending Limit. Requires Audits for New State Special Taxes. Initiative Constitutional Amendment.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/41/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-42",
+      "pageKey": "CA-prop-42",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Prohibits New State Personal Property Taxes and Certain Retroactive State Taxes. Initiative Constitutional Amendment.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/42/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-44",
+      "pageKey": "CA-prop-44",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Requires Community Health Clinics Spend 90% of Revenue on Program Services. Initiative Statute.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/44/"
+    },
+    {
+      "raceKey": "2026-measure-CA-prop-45",
+      "pageKey": "CA-prop-45",
+      "state": "CA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Modifies Environmental Review for Certain Projects. Initiative Statute.",
+      "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/45/"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-81",
+      "pageKey": "CO-amend-81",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Law Enforcement Reporting Requirements to Federal Authorities",
+      "officialSourceUrl": "https://www.coloradosos.gov/pubs/elections/Initiatives/ballot/contacts/2026.html"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-82",
+      "pageKey": "CO-amend-82",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Right to Natural Gas",
+      "officialSourceUrl": "https://www.coloradosos.gov/pubs/elections/Initiatives/ballot/contacts/2026.html"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-83",
+      "pageKey": "CO-amend-83",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Constitutional Right to Hunt and Fish",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/constitutional-right-to-hunt-and-fish-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-84",
+      "pageKey": "CO-amend-84",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Mail Ballot Voter Identification",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/mail-ballot-voter-identification-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-85",
+      "pageKey": "CO-amend-85",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Plain Language Ballot Questions",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/plain-language-ballot-titles-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-86",
+      "pageKey": "CO-amend-86",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Congressional Redistricting",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/requirements-for-off-cycle-congressional-redistricting-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-amendment-87",
+      "pageKey": "CO-amend-87",
+      "state": "CO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Graduated Income Tax",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/graduated-income-tax-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-133",
+      "pageKey": "CO-prop-133",
+      "state": "CO",
+      "matchedBy": "exact-key",
+      "officialTitle": "Penalties for Human Trafficking of a Minor",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/penalties-for-human-trafficking-of-a-minor-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-134",
+      "pageKey": "CO-prop-134",
+      "state": "CO",
+      "matchedBy": "exact-key",
+      "officialTitle": "Male and Female Participation in School Sports",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/male-and-female-participation-in-school-and-collegiate-sports-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-135",
+      "pageKey": "CO-prop-135",
+      "state": "CO",
+      "matchedBy": "exact-key",
+      "officialTitle": "Prohibit Certain Surgeries on Minors",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/prohibit-surgery-on-minors-in-response-to-perception-of-sex-or-gender-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-136",
+      "pageKey": "CO-prop-136",
+      "state": "CO",
+      "matchedBy": "exact-key",
+      "officialTitle": "Income Tax Rate Cap",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/income-tax-rate-limit-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-137",
+      "pageKey": "CO-prop-137",
+      "state": "CO",
+      "matchedBy": "exact-key",
+      "officialTitle": "Designate Sporting Goods Sales Tax Revenue for Conservation",
+      "officialSourceUrl": "https://leg.colorado.gov/ballots/direct-sporting-goods-sales-tax-revenue-for-conservation-2/files/blue-book"
+    },
+    {
+      "raceKey": "2026-measure-CO-prop-nn",
+      "pageKey": "CO-prop-nn",
+      "state": "CO",
+      "matchedBy": "exact-key",
+      "officialTitle": "State Public K-12 Education Funding",
+      "officialSourceUrl": "https://www.coloradosos.gov/pubs/elections/Initiatives/ballot/contacts/2026.html"
+    },
+    {
+      "raceKey": "2026-measure-FL-amendment-2",
+      "pageKey": "FL-ag-property-exemption",
+      "state": "FL",
+      "matchedBy": "exact-title",
+      "officialTitle": "Exemption of Tangible Personal Property on Agricultural Land from Taxation",
+      "officialSourceUrl": "https://www.flsenate.gov/Session/Bill/2025/1215"
+    },
+    {
+      "raceKey": "2026-measure-FL-amendment-3",
+      "pageKey": "FL-amend-3",
+      "state": "FL",
+      "matchedBy": "exact-title",
+      "officialTitle": "Increased Homestead Exemption; Lower Cap on Increases in Non-Homestead Property Assessments",
+      "officialSourceUrl": "https://www.flsenate.gov/Session/Bill/2026F/1F"
+    },
+    {
+      "raceKey": "2026-measure-FL-amendment-1",
+      "pageKey": "FL-budget-stabilization",
+      "state": "FL",
+      "matchedBy": "exact-title",
+      "officialTitle": "Budget Stabilization Fund",
+      "officialSourceUrl": "https://www.flsenate.gov/Session/Bill/2025/5019"
+    },
+    {
+      "raceKey": "2026-measure-GA-amendment-1",
+      "pageKey": "GA-conservation-acres",
+      "state": "GA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Increases the maximum qualifying acreage for assessment and taxation as bona fide conservation use property.",
+      "officialSourceUrl": "https://sos.ga.gov/sites/default/files/2026-09/2026%20Constitutional%20Summaries%20booklet%20FINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-GA-amendment-3",
+      "pageKey": "GA-ng911-fund",
+      "state": "GA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Authorizes creation of Georgia Next Generation 9-1-1 Fund for 9-1-1 systems expansion, maintenance, and operation.",
+      "officialSourceUrl": "https://sos.ga.gov/sites/default/files/2026-09/2026%20Constitutional%20Summaries%20booklet%20FINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-GA-amendment-2",
+      "pageKey": "GA-probate-judges",
+      "state": "GA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Provides for the nonpartisan election of all probate court judges.",
+      "officialSourceUrl": "https://sos.ga.gov/sites/default/files/2026-09/2026%20Constitutional%20Summaries%20booklet%20FINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-HI-question-1",
+      "pageKey": "HI-q-1",
+      "state": "HI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Increasing the Timeframe for the Hawaii Senate to Consider and Act on Judicial Appointments.",
+      "officialSourceUrl": "https://elections.hawaii.gov/voting/2026-proposed-amendments-to-the-hawaii-state-constitution/"
+    },
+    {
+      "raceKey": "2026-measure-HI-question-2",
+      "pageKey": "HI-q-2",
+      "state": "HI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Directing the Hawaii State Legislature to Establish Procedures for Counties to Issue RISE Bonds, Exempt from County Debt Limits.",
+      "officialSourceUrl": "https://elections.hawaii.gov/voting/2026-proposed-amendments-to-the-hawaii-state-constitution/"
+    },
+    {
+      "raceKey": "2026-measure-IA-amendment-1",
+      "pageKey": "IA-amend-1",
+      "state": "IA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the following amendment to the Constitution be adopted? (new Article XIII: two-thirds vote of each house required to raise income tax rates or create a new income tax)",
+      "officialSourceUrl": "https://www.legis.iowa.gov/docs/aco/bulletincontent/06-24-2026.Regulatory%20Analysis_1780517797265.pdf"
+    },
+    {
+      "raceKey": "2026-measure-ID-hjr-4",
+      "pageKey": "ID-hjr-4",
+      "state": "ID",
+      "matchedBy": "exact-key",
+      "officialTitle": "Amendment to Idaho Constitution - House Joint Resolution 4 (Section 26, Article III, psychoactive substances)",
+      "officialSourceUrl": "https://archive.voteidaho.gov/download/2026_Voter_Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-ID-hjr-6",
+      "pageKey": "ID-hjr-6",
+      "state": "ID",
+      "matchedBy": "exact-key",
+      "officialTitle": "Amendment to Idaho Constitution - House Joint Resolution 6 (new Section 8, Article X, English official language)",
+      "officialSourceUrl": "https://archive.voteidaho.gov/download/2026_Voter_Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-ID-prop-1",
+      "pageKey": "ID-prop-1",
+      "state": "ID",
+      "matchedBy": "exact-key",
+      "officialTitle": "Proposition One: Reproductive Freedom & Privacy Act",
+      "officialSourceUrl": "https://archive.voteidaho.gov/download/2026_Voter_Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-IN-question-1",
+      "pageKey": "IN-bail-substantial-risk",
+      "state": "IN",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Constitution of the State of Indiana be amended to provide that a person charged with an offense other than murder or treason is not entitled to bail if: (1) the proof is evident or the presumption strong; and (2) the state proves by clear and convincing evidence that no release conditions will reasonably protect the safety of any other person or the community? (Article 1, Section 17)",
+      "officialSourceUrl": "https://www.in.gov/counties/noble/files/2026-general-election-sample-balllots/P2OUT.pdf"
+    },
+    {
+      "raceKey": "2026-measure-IN-question-2",
+      "pageKey": "IN-judge-residency",
+      "state": "IN",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Constitution of the State of Indiana be amended to permit the judge of a city or town court to reside in: (1) the county in which the court is located; or (2) the bordering county closest to the city or town in which the court is located? (Article 6, Section 6)",
+      "officialSourceUrl": "https://www.in.gov/counties/noble/files/2026-general-election-sample-balllots/P2OUT.pdf"
+    },
+    {
+      "raceKey": "2026-measure-KS-citizen-only-voting-requirement",
+      "pageKey": "KS-citizenship-voting",
+      "state": "KS",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Explanatory statement: This amendment would clarify only a person who is a citizen of the United States is eligible to vote in this state.",
+      "officialSourceUrl": "https://www.kslegislature.gov/li/b2025_26/measures/hcr5004/"
+    },
+    {
+      "raceKey": "2026-measure-KY-amendment-1",
+      "pageKey": "KY-pardon-limits",
+      "state": "KY",
+      "matchedBy": "exact-title",
+      "officialTitle": "AN ACT proposing to amend Section 77 of the Constitution of Kentucky relating to limiting the Governor's ability to grant pardons and commute sentences.",
+      "officialSourceUrl": "https://www.sos.ky.gov/elections/Pages/Constitutional-Amendments.aspx"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-9",
+      "pageKey": "LA-assessment-freeze-income",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to increase the maximum amount of income a person may receive and still qualify for the special assessment level for residential property receiving the homestead exemption? (Effective January 1, 2027) (Amends Article VII, Section 18(G)(1)(a)(ii))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-8",
+      "pageKey": "LA-foreign-adversaries",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to prohibit expropriation of property by a foreign adversary or an agent of a foreign adversary? (Amends Article I, Section 4(B)(4))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-4",
+      "pageKey": "LA-gov-term-limit",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to prohibit a person who has served more than one and one-half terms as governor from being elected as governor for any future term? (Amends Article IV, Section 3(B))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-2",
+      "pageKey": "LA-millage-limits",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to allow a local taxing authority to continue to levy a lower millage rate without losing its ability to adjust to the maximum authorized millage rate from a prior year's reassessment? (Effective January 1, 2027) (Amends Article VII, Section 23(C))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-3",
+      "pageKey": "LA-post-conviction-bail",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to prohibit a defendant from being released on any post-conviction bail if the defendant is convicted of an aggravated offense against a minor child? (Adds Article I, Section 18(C))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-10",
+      "pageKey": "LA-rehab-property",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to allow property tax exemptions for blighted or derelict properties that have been rehabilitated, and to require the legislature to enact laws providing for administration of these exemptions? (Effective January 1, 2027) (Adds Article VII, Section 21(P))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-5",
+      "pageKey": "LA-retirement-ual",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to authorize a state retirement system to apply any nonrecurring state monies it receives to any of its unfunded accrued liability rather than requiring application to its oldest unfunded accrued liability? (Amends Article VII, Section 10(D)(2)(b)(iii))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-6",
+      "pageKey": "LA-senior-exemption",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to authorize parishes and municipalities to extend an additional property tax exemption for property subject to the homestead exemption that is owned and occupied by a person who is at least sixty-five years of age and who qualifies for the special assessment level? (Effective January 1, 2028) (Adds Article VII, Section 21(P))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-1",
+      "pageKey": "LA-veteran-spouse-exemption",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to allow the surviving spouse of a deceased veteran with a service-connected disability, who receives the additional property tax exemption, to make a one-time transfer of the additional property tax exemption to a subsequent qualifying property? (Effective January 1, 2027) (Amends Article VII, Section 21(K)(1))",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-LA-amendment-7",
+      "pageKey": "LA-water-service-lines",
+      "state": "LA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Do you support an amendment to allow for the use of public funds by a political subdivision for the purpose of identifying, inventorying, removing or replacing drinking water utility service lines made of or affected by materials as specified or prescribed by the Lead and Copper Rule Improvements of the United States Environmental Protection Agency, promulgated October 30, 2024, or subsequent promulgation, on property owned by utility customers? (Amends Article VII, Section 14)",
+      "officialSourceUrl": "https://www.sos.la.gov/media/jo2die1s/proposed-constitutional-amendments-2026-nov.pdf"
+    },
+    {
+      "raceKey": "2026-measure-MD-question-1",
+      "pageKey": "MD-q-1",
+      "state": "MD",
+      "matchedBy": "exact-title",
+      "officialTitle": "Arbitration Reform for State Employees Act of 2026",
+      "officialSourceUrl": "https://www.elections.maryland.gov/elections/2026/ballot_questions.html"
+    },
+    {
+      "raceKey": "2026-measure-MD-question-2",
+      "pageKey": "MD-q-2",
+      "state": "MD",
+      "matchedBy": "exact-title",
+      "officialTitle": "Temporary Appointments on the Commission on Judicial Disabilities",
+      "officialSourceUrl": "https://www.elections.maryland.gov/elections/2026/ballot_questions.html"
+    },
+    {
+      "raceKey": "2026-measure-MD-question-3",
+      "pageKey": "MD-q-3",
+      "state": "MD",
+      "matchedBy": "exact-title",
+      "officialTitle": "Electoral Districts - General Assembly and Congressional Representatives",
+      "officialSourceUrl": "https://www.elections.maryland.gov/elections/2026/ballot_questions.html"
+    },
+    {
+      "raceKey": "2026-measure-MI-proposal-1",
+      "pageKey": "MI-prop-1",
+      "state": "MI",
+      "matchedBy": "exact-title",
+      "officialTitle": "A proposal to convene a constitutional convention for the purpose of drafting a general revision of the state constitution",
+      "officialSourceUrl": "https://crcmich.org/?p=16166"
+    },
+    {
+      "raceKey": "2026-measure-MI-proposal-2",
+      "pageKey": "MI-prop-2",
+      "state": "MI",
+      "matchedBy": "exact-title",
+      "officialTitle": "A proposed initiated law to prohibit campaign contributions from certain regulated utilities and government contractors and apply campaign finance laws and regulations to additional types of political communications",
+      "officialSourceUrl": "https://www.michigan.gov/sos/-/media/Project/Websites/sos/BSC-Announcements/2026/MMOP-Staff-Report.pdf"
+    },
+    {
+      "raceKey": "2026-measure-MN-permanent-school-fund-distributions",
+      "pageKey": "MN-permanent-school-fund",
+      "state": "MN",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Increasing funding to school districts. Shall the Minnesota Constitution be amended to increase the funding going to all school districts from the permanent school fund, which is a fund that supports school districts without raising individual income or property taxes, effective July 1, 2027?",
+      "officialSourceUrl": "https://www.sos.mn.gov/elections-voting/whats-on-my-ballot/constitutional-amendments"
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-3",
+      "pageKey": "MO-amend-3",
+      "state": "MO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Missouri Constitution be amended to: Repeal the 2024 voter-approved Amendment providing reproductive healthcare rights, including abortion through fetal viability; Allow abortions for rape and incest (under twelve-weeks' gestation), emergencies, and fetal anomalies; Allow legislation regulating abortion; Ensure parental consent for minors' abortions; Prohibit gender transition procedures for minors?",
+      "officialSourceUrl": "https://www.sos.mo.gov/petitions/2026BallotMeasures"
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-6",
+      "pageKey": "MO-amend-6",
+      "state": "MO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Missouri Constitution be amended to: expand the initiative and referendum petition process by making it a fundamental right; allow courts to revise ballot summaries through lawsuits; prohibit the legislature from weakening initiative or referendum powers; prohibit the legislature from changing or repealing laws enacted through the initiative process, or passing laws similar to those rejected by referendum, without approval from at least 80% of both chambers; and preserve existing majority vote and signature requirements for initiative and referendum petitions?",
+      "officialSourceUrl": "https://www.sos.mo.gov/petitions/2026BallotMeasures"
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-7",
+      "pageKey": "MO-amend-7",
+      "state": "MO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Missouri Constitution be amended to establish a permanent public endowment fund to support state government instead of taxing Missouri residents, prohibit the General Assembly from appropriating or diverting the fund, and eliminate state-imposed taxes once the fund generates sufficient revenue to replace them?",
+      "officialSourceUrl": "https://www.sos.mo.gov/petitions/2026BallotMeasures"
+    },
+    {
+      "raceKey": "2026-measure-MO-amendment-8",
+      "pageKey": "MO-amend-8",
+      "state": "MO",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Missouri Constitution be amended to support law enforcement by preserving the right of citizens to elect a county sheriff, prohibiting the removal of a county sheriff except by a writ of quo warranto, and recognizing the office of sheriff as part of the administration of justice?",
+      "officialSourceUrl": "https://www.sos.mo.gov/petitions/2026BallotMeasures"
+    },
+    {
+      "raceKey": "2026-measure-MT-ci-132",
+      "pageKey": "MT-ci-132",
+      "state": "MT",
+      "matchedBy": "exact-key",
+      "officialTitle": "CI-132 amends the Montana Constitution to require that judicial elections remain nonpartisan.",
+      "officialSourceUrl": "https://sosmt.gov/wp-content/uploads/wpfd/preview_files/CI-132(3a70e31b2fe58baa619ffb1d9b23c8ff).pdf"
+    },
+    {
+      "raceKey": "2026-measure-MT-ci-133",
+      "pageKey": "MT-ci-133",
+      "state": "MT",
+      "matchedBy": "exact-key",
+      "officialTitle": "CI-133 amends the constitution to secure the fundamental right of initiative and referendum from interference by the government.",
+      "officialSourceUrl": "https://sosmt.gov/wp-content/uploads/wpfd/preview_files/CI-133(ba9d97da675a9f26f24b5f9e333b35b7).pdf"
+    },
+    {
+      "raceKey": "2026-measure-MT-i-194",
+      "pageKey": "MT-i-194",
+      "state": "MT",
+      "matchedBy": "exact-key",
+      "officialTitle": "Initiative No. 194 - The Montana Plan Act",
+      "officialSourceUrl": "https://sosmt.gov/wp-content/uploads/wpfd/preview_files/I-194(d4249530242056d948420c5212f6f750).pdf"
+    },
+    {
+      "raceKey": "2026-measure-NC-3-5-cap-on-state-income-tax-rate",
+      "pageKey": "NC-income-tax-cap",
+      "state": "NC",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Lower Taxes for All NC",
+      "officialSourceUrl": "https://s3.amazonaws.com/dl.ncsbe.gov/Elections/2026/Candidate%20Filing/statewide_referendums_20261103.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NC-limits-on-local-property-tax-increases",
+      "pageKey": "NC-property-tax-limit",
+      "state": "NC",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Property Tax Levy Limit",
+      "officialSourceUrl": "https://s3.amazonaws.com/dl.ncsbe.gov/Elections/2026/Candidate%20Filing/statewide_referendums_20261103.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NC-photo-id-for-all-voting-methods",
+      "pageKey": "NC-voter-id",
+      "state": "NC",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Require Photo ID for All Voters",
+      "officialSourceUrl": "https://s3.amazonaws.com/dl.ncsbe.gov/Elections/2026/Candidate%20Filing/statewide_referendums_20261103.pdf"
+    },
+    {
+      "raceKey": "2026-measure-ND-measure-1",
+      "pageKey": "ND-measure-1",
+      "state": "ND",
+      "matchedBy": "exact-key",
+      "officialTitle": "Constitutional Measure No. 1 (House Concurrent Resolution No. 3003, 2025 Session Laws, Ch. 614)",
+      "officialSourceUrl": "https://www.sos.nd.gov/sites/default/files/documents/elections/measures/ballot-language-2026-general-measure1.pdf"
+    },
+    {
+      "raceKey": "2026-measure-ND-measure-2",
+      "pageKey": "ND-measure-2",
+      "state": "ND",
+      "matchedBy": "exact-key",
+      "officialTitle": "Initiated Constitutional Measure No. 2 (funding of school lunches; new section to Article VIII)",
+      "officialSourceUrl": "https://www.sos.nd.gov/sites/default/files/documents/elections/measures/ballot-language-2026-general-measure2.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NE-initiative-442",
+      "pageKey": "NE-sports-sex",
+      "state": "NE",
+      "matchedBy": "exact-title",
+      "officialTitle": "Fairness for Girls: Shall the Nebraska Constitution be amended to provide: (1) Schools must expressly designate each athletic team or sport as one of the following based on biological sex: (a) Males, men, or boys; (b) females, women, or girls; or (c) coed or mixed; and (2) Athletic teams or sports designated for females, women, or girls shall not be open to students of the male sex?",
+      "officialSourceUrl": "https://sos.nebraska.gov/sites/default/files/doc/elections/2026/2026%20Ballot%20Measures%20Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NE-initiative-440",
+      "pageKey": "NE-sports-wagering-amendment",
+      "state": "NE",
+      "matchedBy": "exact-title",
+      "officialTitle": "Online Sports Wagering Authorization: Shall the Nebraska Constitution be amended to authorize the enactment of laws allowing persons located within Nebraska to place sports wagers through an Internet-based platform when offered by an authorized gaming operator conducting games of chance within a licensed racetrack enclosure in Nebraska?",
+      "officialSourceUrl": "https://sos.nebraska.gov/sites/default/files/doc/elections/2026/2026%20Ballot%20Measures%20Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NE-initiative-441",
+      "pageKey": "NE-sports-wagering-statute",
+      "state": "NE",
+      "matchedBy": "exact-title",
+      "officialTitle": "Online Sports Wagering Regulation: Shall statutes be enacted that: (1) Allow persons located within Nebraska to place sports wagers through an Internet-based platform when offered by an authorized gaming operator conducting games of chance within a licensed racetrack enclosure in Nebraska or the operator's platform provider; and (2) Regulate such sports wagers?",
+      "officialSourceUrl": "https://sos.nebraska.gov/sites/default/files/doc/elections/2026/2026%20Ballot%20Measures%20Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NE-legislative-term-limit-of-three-terms",
+      "pageKey": "NE-term-limits",
+      "state": "NE",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "A constitutional amendment to change the limit on legislative terms from two consecutive terms to three consecutive terms.",
+      "officialSourceUrl": "https://sos.nebraska.gov/sites/default/files/doc/elections/2026/LR19CA_Approved_Ballot_Statement_Language.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NH-eliminating-register-of-probate-office",
+      "pageKey": "NH-register-of-probate",
+      "state": "NH",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Are you in favor of eliminating the office of register of probate by amending articles 71 and 81 of the second part of the constitution...?",
+      "officialSourceUrl": "https://bills.nhliberty.org/bills/2026/CACR13"
+    },
+    {
+      "raceKey": "2026-measure-NM-question-3",
+      "pageKey": "NM-higher-ed-bond",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of higher education, special schools and tribal schools capital improvement and acquisition bonds.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-4",
+      "pageKey": "NM-legislator-salary",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing to amend Article 4, Section 10 of the Constitution of New Mexico to allow legislative compensation that is limited to the median household income for New Mexico, to require legislative compensation to be reduced if the median household income for New Mexico falls, to allow legislative compensation to be increased only if the median household income for New Mexico rises and to provide for delayed implementation.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NM-question-2",
+      "pageKey": "NM-library-bond",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of library acquisition bonds.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-1",
+      "pageKey": "NM-pocket-veto",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing an amendment to Article 4, Section 22 of the Constitution of New Mexico to require the governor to provide veto messages on all bills vetoed in whole or in part and to provide that all bills passed by the legislature and not acted on by the governor will become law.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-3",
+      "pageKey": "NM-regents",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing an amendment to Article 12, Section 13 of the Constitution of New Mexico to establish nominating committees to provide lists of nominees to the governor for appointment of nonstudent members to the boards of regents of state educational institutions; student members from a list by an elected student governing body; party-registration-change restriction.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NM-amendment-2",
+      "pageKey": "NM-school-election-dates",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposing to amend Article 7, Section 1 of the Constitution of New Mexico to remove the requirement that school elections be separate from partisan elections.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-NM-question-1",
+      "pageKey": "NM-senior-facilities-bond",
+      "state": "NM",
+      "matchedBy": "exact-title",
+      "officialTitle": "The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of senior citizen facility improvement, construction and equipment acquisition bonds.",
+      "officialSourceUrl": "https://www.sos.nm.gov/wp-content/uploads/2026/09/2026-Voter-Guide-English.pdf"
+    },
+    {
+      "raceKey": "2026-measure-OH-issue-3",
+      "pageKey": "OH-issue-3",
+      "state": "OH",
+      "matchedBy": "exact-key",
+      "officialTitle": "Voters to present photo identification in order to vote (Proposed by Joint Resolution of the General Assembly; to enact Section 5 of Article V of the Ohio Constitution)",
+      "officialSourceUrl": "https://www.ohiosos.gov/assets/2026-11-statewide-issue-3-report.pdf"
+    },
+    {
+      "raceKey": "2026-measure-OK-sq-845",
+      "pageKey": "OK-sq-845",
+      "state": "OK",
+      "matchedBy": "exact-key",
+      "officialTitle": "SQ 845, LR 379 Final Ballot Title (Judicial Nominating Commission), as rewritten by the Attorney General",
+      "officialSourceUrl": "https://www.sos.ok.gov/documents/questions/845.pdf"
+    },
+    {
+      "raceKey": "2026-measure-OK-sq-847",
+      "pageKey": "OK-sq-847",
+      "state": "OK",
+      "matchedBy": "exact-key",
+      "officialTitle": "SQ 847, LR 381 Final Ballot Title (Real property valuation), as rewritten by the Attorney General",
+      "officialSourceUrl": "https://www.sos.ok.gov/documents/questions/847.pdf"
+    },
+    {
+      "raceKey": "2026-measure-RI-question-3",
+      "pageKey": "RI-econ-development-bond",
+      "state": "RI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the action of the general assembly, by an act passed at the January 2026 session, authorizing the issuance of bonds... be approved? Economic Development $100,000,000",
+      "officialSourceUrl": "https://webserver.rilegislature.gov/PublicLaws/law26/law26084-05.htm"
+    },
+    {
+      "raceKey": "2026-measure-RI-question-5",
+      "pageKey": "RI-environment-bond",
+      "state": "RI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the action of the general assembly, by an act passed at the January 2026 session, authorizing the issuance of bonds... be approved? Green Economy Bonds $55,000,000",
+      "officialSourceUrl": "https://webserver.rilegislature.gov/PublicLaws/law26/law26084-05.htm"
+    },
+    {
+      "raceKey": "2026-measure-RI-question-1",
+      "pageKey": "RI-higher-ed-bond",
+      "state": "RI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the action of the general assembly, by an act passed at the January 2026 session, authorizing the issuance of bonds... be approved? Higher Education Facilities $275,000,000",
+      "officialSourceUrl": "https://webserver.rilegislature.gov/PublicLaws/law26/law26084-05.htm"
+    },
+    {
+      "raceKey": "2026-measure-RI-question-4",
+      "pageKey": "RI-history-center-bond",
+      "state": "RI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the action of the general assembly, by an act passed at the January 2026 session, authorizing the issuance of bonds... be approved? Cultural Economy $50,000,000",
+      "officialSourceUrl": "https://webserver.rilegislature.gov/PublicLaws/law26/law26084-05.htm"
+    },
+    {
+      "raceKey": "2026-measure-RI-question-2",
+      "pageKey": "RI-housing-bond",
+      "state": "RI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the action of the general assembly, by an act passed at the January 2026 session, authorizing the issuance of bonds... be approved? Housing and Homeownership $120,000,000",
+      "officialSourceUrl": "https://webserver.rilegislature.gov/PublicLaws/law26/law26084-05.htm"
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-i",
+      "pageKey": "SD-amend-i",
+      "state": "SD",
+      "matchedBy": "exact-title",
+      "officialTitle": "An Amendment to the South Dakota Constitution that Repeals Expanded Medicaid Coverage if Federal Funding for the Program Drops below 90%.",
+      "officialSourceUrl": "https://sdsos.gov/elections-voting/upcoming-elections/general-information/2026%20Election%20Information/2026%20Ballot%20Question%20Information/2026%20Ballot%20Question%20Files/2026%20BQ/2026GeneralBQPamphletFINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-j",
+      "pageKey": "SD-amend-j",
+      "state": "SD",
+      "matchedBy": "exact-title",
+      "officialTitle": "An Amendment to the South Dakota Constitution Clarifying that an Individual Must Be a Citizen of the United States to be Eligible to Vote.",
+      "officialSourceUrl": "https://sdsos.gov/elections-voting/upcoming-elections/general-information/2026%20Election%20Information/2026%20Ballot%20Question%20Information/2026%20Ballot%20Question%20Files/2026%20BQ/2026GeneralBQPamphletFINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-k",
+      "pageKey": "SD-amend-k",
+      "state": "SD",
+      "matchedBy": "exact-title",
+      "officialTitle": "An Amendment to the South Dakota Constitution Establishing the Trust for Unclaimed Property Fund.",
+      "officialSourceUrl": "https://sdsos.gov/elections-voting/upcoming-elections/general-information/2026%20Election%20Information/2026%20Ballot%20Question%20Information/2026%20Ballot%20Question%20Files/2026%20BQ/2026GeneralBQPamphletFINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-SD-amendment-l",
+      "pageKey": "SD-amend-l",
+      "state": "SD",
+      "matchedBy": "exact-title",
+      "officialTitle": "An Amendment to the South Dakota Constitution Requiring that a Proposed Constitutional Amendment or Revision Receive an Affirmative Vote of Sixty Percent of the Votes Cast.",
+      "officialSourceUrl": "https://sdsos.gov/elections-voting/upcoming-elections/general-information/2026%20Election%20Information/2026%20Ballot%20Question%20Information/2026%20Ballot%20Question%20Files/2026%20BQ/2026GeneralBQPamphletFINAL.pdf"
+    },
+    {
+      "raceKey": "2026-measure-TN-amendment-1",
+      "pageKey": "TN-amend-1",
+      "state": "TN",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposed amendment to Article I, Section 15 (bail)",
+      "officialSourceUrl": "https://sos.tn.gov/elections/announcements/2026-proposed-constitutional-amendments"
+    },
+    {
+      "raceKey": "2026-measure-TN-amendment-2",
+      "pageKey": "TN-amend-2",
+      "state": "TN",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposed amendment to Article II, Section 28 (prohibit state property tax)",
+      "officialSourceUrl": "https://sos.tn.gov/elections/announcements/2026-proposed-constitutional-amendments"
+    },
+    {
+      "raceKey": "2026-measure-TN-amendment-3",
+      "pageKey": "TN-amend-3",
+      "state": "TN",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposed amendment to Article I, Section 35 (rights of crime victims)",
+      "officialSourceUrl": "https://sos.tn.gov/elections/announcements/2026-proposed-constitutional-amendments"
+    },
+    {
+      "raceKey": "2026-measure-UT-amendment-b",
+      "pageKey": "UT-60pct-tax-initiatives",
+      "state": "UT",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Utah Constitution be amended to require that citizen-proposed laws that increase taxes compared to existing law be approved by at least 60% of voters, instead of a simple majority?",
+      "officialSourceUrl": "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-UT-amendment-a",
+      "pageKey": "UT-amendment-publication",
+      "state": "UT",
+      "matchedBy": "exact-title",
+      "officialTitle": "Shall the Utah Constitution be amended to change how proposed constitutional amendments are published, requiring publication for 60 days immediately before the general election in a manner established by state law instead of in newspapers?",
+      "officialSourceUrl": "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf"
+    },
+    {
+      "raceKey": "2026-measure-VA-question-1",
+      "pageKey": "VA-q-1",
+      "state": "VA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Should the Constitution of Virginia be amended to (i) protect the freedom to make personal decisions about prenatal care, childbirth, postpartum care, birth control, abortion, miscarriage management, and fertility care; (ii) protect doctors, nurses, and patients from being punished for these decisions; and (iii) allow for restrictions on access to abortion during the third trimester of pregnancy except when the patient's health is at risk or the pregnancy cannot survive?",
+      "officialSourceUrl": "https://www.elections.virginia.gov/election-law/proposed-constitutional-amendment-question-1/"
+    },
+    {
+      "raceKey": "2026-measure-VA-question-2",
+      "pageKey": "VA-q-2",
+      "state": "VA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Should the Constitution of Virginia be amended to (i) remove the ban on same-sex marriage; (ii) affirm that two adults may marry regardless of sex, gender, or race; and (iii) require all legally valid marriages to be treated equally under the law?",
+      "officialSourceUrl": "https://www.elections.virginia.gov/election-law/proposed-constitutional-amendment-question-2/"
+    },
+    {
+      "raceKey": "2026-measure-VA-question-3",
+      "pageKey": "VA-q-3",
+      "state": "VA",
+      "matchedBy": "exact-title",
+      "officialTitle": "Should the Constitution of Virginia be amended (i) to provide for the fundamental right to vote in the Commonwealth, (ii) to revise the qualifications of voters so that a person convicted of a felony is not entitled to vote during his period of incarceration but is automatically invested with the right to vote upon release from incarceration, and (iii) to update the existing prohibition on voting by persons found to be mentally incompetent to instead apply to persons who have been found to lack the capacity to understand the act of voting?",
+      "officialSourceUrl": "https://www.elections.virginia.gov/election-law/proposed-constitutional-amendment-question-3/"
+    },
+    {
+      "raceKey": "2026-measure-VT-proposal-3",
+      "pageKey": "VT-prop-3",
+      "state": "VT",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposal 3: Article 23 of Chapter I [Right to collectively bargain]",
+      "officialSourceUrl": "https://governor.vermont.gov/sites/scott/files/documents/Proclamation%203%20Collective%20Bargaining.pdf"
+    },
+    {
+      "raceKey": "2026-measure-VT-proposal-4",
+      "pageKey": "VT-prop-4",
+      "state": "VT",
+      "matchedBy": "exact-title",
+      "officialTitle": "Proposal 4: Article 23 of Chapter I [Equality of rights]",
+      "officialSourceUrl": "https://governor.vermont.gov/sites/scott/files/documents/Proclamation%204%20Civil%20Rights.pdf"
+    },
+    {
+      "raceKey": "2026-measure-WA-il26-001",
+      "pageKey": "WA-il26-001",
+      "state": "WA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Initiative Measure No. IL26-001 concerns parental rights relating to their children in public school.",
+      "officialSourceUrl": "https://www.sos.wa.gov/elections/data-research/election-data-and-maps/election-results-and-voters-pamphlets/2026-general-election-voters-guide"
+    },
+    {
+      "raceKey": "2026-measure-WA-il26-638",
+      "pageKey": "WA-il26-638",
+      "state": "WA",
+      "matchedBy": "exact-key",
+      "officialTitle": "Initiative Measure No. IL26-638 concerns participation in athletics at K-12 schools.",
+      "officialSourceUrl": "https://www.sos.wa.gov/elections/data-research/election-data-and-maps/election-results-and-voters-pamphlets/2026-general-election-voters-guide"
+    },
+    {
+      "raceKey": "2026-measure-WA-other-ip26-645",
+      "pageKey": "WA-il26-645",
+      "state": "WA",
+      "matchedBy": "reviewed-title-and-source",
+      "officialTitle": "Initiative Measure No. IP26-645 concerns state and local taxes.",
+      "officialSourceUrl": "https://www.sos.wa.gov/elections/data-research/election-data-and-maps/election-results-and-voters-pamphlets/2026-general-election-voters-guide"
+    },
+    {
+      "raceKey": "2026-measure-WI-question-1",
+      "pageKey": "WI-partial-veto",
+      "state": "WI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Partial veto. Shall section 10 (1) (c) of article V of the constitution be amended to prohibit the governor, in exercising his or her partial veto authority, from creating or increasing or authorizing the creation or increase of any tax or fee?",
+      "officialSourceUrl": "https://www.co.portage.wi.gov/DocumentCenter/View/7368/Type-C-Notice-for-Ref-for-November-2026-General-Election_Final-12-PT"
+    },
+    {
+      "raceKey": "2026-measure-WI-question-2",
+      "pageKey": "WI-places-of-worship",
+      "state": "WI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Freedom to gather in places of worship during an emergency. Shall section 18 of article I of the constitution, which deals with religious liberty, be amended to prohibit the state or a political subdivision of the state from ordering the closure of, or forbidding gatherings in, places of worship in response to a state of emergency, including a public health emergency?",
+      "officialSourceUrl": "https://www.co.portage.wi.gov/DocumentCenter/View/7368/Type-C-Notice-for-Ref-for-November-2026-General-Election_Final-12-PT"
+    },
+    {
+      "raceKey": "2026-measure-WI-question-3",
+      "pageKey": "WI-preferential-treatment",
+      "state": "WI",
+      "matchedBy": "exact-title",
+      "officialTitle": "Governmental entity discrimination prohibited. Shall section 27 of article I of the constitution be created to prohibit governmental entities in the state from discriminating against, or granting preferential treatment to, any individual or group on the basis of race, sex, color, ethnicity, or national origin in public employment, public education, public contracting, or public administration?",
+      "officialSourceUrl": "https://www.co.portage.wi.gov/DocumentCenter/View/7368/Type-C-Notice-for-Ref-for-November-2026-General-Election_Final-12-PT"
+    },
+    {
+      "raceKey": "2026-measure-WV-amendment-1",
+      "pageKey": "WV-citizenship-voting",
+      "state": "WV",
+      "matchedBy": "exact-title",
+      "officialTitle": "Citizenship Requirement to Vote in West Virginia Elections Amendment",
+      "officialSourceUrl": "https://sos.wv.gov/article/secretary-warner-issues-public-notice-proposed-amendment-west-virginia-constitution-will"
+    }
+  ]
+}
