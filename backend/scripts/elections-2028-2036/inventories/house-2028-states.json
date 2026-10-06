@@ -1,0 +1,363 @@
+{
+  "description": "U.S. House districts for the 2028 election: 435 districts on the lines in effect for the November 3, 2026 election (the 2020-census apportionment; the 2030 census redraws every state for 2032). The per-district list is derived at generation time from data/presidential-results.json (The Downballot's district table, 2026 lines) and must total the seats below. Map status and redistricting risk are as of 2026-10-06.",
+  "sources": [
+    {
+      "name": "U.S. Census Bureau — 2020 apportionment (seats per state)",
+      "url": "https://www.census.gov/data/tables/2020/dec/2020-apportionment-data.html"
+    },
+    {
+      "name": "Wikipedia — 2025–2026 United States redistricting (state-by-state status of the mid-decade maps)",
+      "url": "https://en.wikipedia.org/wiki/2025%E2%80%932026_United_States_redistricting",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "Wikipedia — 2027–2028 United States redistricting (pending changes aimed at 2028)",
+      "url": "https://en.wikipedia.org/wiki/2027%E2%80%932028_United_States_redistricting",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "Ballotpedia — Redistricting ahead of the 2026 elections",
+      "url": "https://ballotpedia.org/Redistricting_ahead_of_the_2026_elections"
+    },
+    {
+      "name": "SCOTUSblog — Missouri: Supreme Court keeps the 2022 map for 2026 (People Not Politicians v. Onder, 26A388, September 25, 2026)",
+      "url": "https://www.scotusblog.com/2026/09/supreme-court-grants-request-to-prevent-missouri-from-using-congressional-map-expected-to-aid-re/"
+    },
+    {
+      "name": "Louisiana v. Callais (decided April 29, 2026) — CRS summary",
+      "url": "https://www.everycrsreport.com/reports/LSB11431.html"
+    },
+    {
+      "name": "AJC — Georgia's June 2026 special session ended with no redistricting",
+      "url": "https://www.ajc.com/politics/2026/06/georgias-special-legislative-session-ends-with-no-redistricting/"
+    },
+    {
+      "name": "Maryland Matters — Question 3 (congressional redistricting amendment) on the November 2026 ballot",
+      "url": "https://marylandmatters.org/2026/09/03/maryland-supreme-court-redistricting-constitutional-amendment-ruling/"
+    },
+    {
+      "name": "Virginia Mercury — Supreme Court of Virginia voided the April 21, 2026 redistricting referendum (May 8, 2026)",
+      "url": "https://virginiamercury.com/2026/05/08/supreme-court-of-virginia-strikes-down-redistricting-amendment-keeps-current-maps-in-place/"
+    },
+    {
+      "name": "Mississippi Today — special session cancelled May 13, 2026; a 2027 redraw for 2028 is expected",
+      "url": "https://mississippitoday.org/2026/05/17/bennie-thompson-redistricting-tate-reeves-mississippi/"
+    },
+    {
+      "name": "Florida Phoenix / CBS Miami — HB 1D map signed May 4, 2026; Florida Supreme Court declined to block it June 10, 2026; suits pending",
+      "url": "https://www.cbsnews.com/miami/news/florida-congressional-map-lawsuit-hearing-partisan-gerrymandering-2026-elections/"
+    },
+    {
+      "name": "Louisiana Secretary of State — closed party primaries for Congress from 2026 (Act 1 of the 2024 First Extraordinary Session); HB 842 of 2026 made 2026 an open primary with a December 12 runoff for that year only",
+      "url": "https://www.sos.la.gov/elections-voting/closed-party-primary-elections"
+    }
+  ],
+  "riskLevels": {
+    "stable": "No live effort or litigation likely to change the 2028 lines.",
+    "low": "An effort exists but is unlikely to produce a new map before 2028.",
+    "medium": "Litigation or a legislative push could change the lines; outcome unclear.",
+    "high": "A concrete mechanism aimed at 2028 is in motion (ballot question, announced redraw, court process)."
+  },
+  "states": {
+    "AL": {
+      "seats": 7,
+      "mapInUse2026": "Legislature's June 2, 2026 map, after the Supreme Court lifted the Allen v. Milligan injunction (June 2, 2026) in the wake of Callais",
+      "risk": "medium",
+      "note": "Lines changed for 2026 (2020 presidential results are not available on these lines). Litigation against the new map remains possible."
+    },
+    "AK": {
+      "seats": 1,
+      "mapInUse2026": "At-large",
+      "risk": "stable",
+      "note": "Single district. General election uses ranked-choice voting unless the November 3, 2026 repeal initiative passes."
+    },
+    "AZ": {
+      "seats": 9,
+      "mapInUse2026": "2021 commission map",
+      "risk": "stable",
+      "note": ""
+    },
+    "AR": {
+      "seats": 4,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": "Racial-gerrymander challenge rejected June 2025; HJR 1001 died."
+    },
+    "CA": {
+      "seats": 52,
+      "mapInUse2026": "Proposition 50 map (approved November 4, 2025), in force through 2030",
+      "risk": "low",
+      "note": "Federal challenge failed (district court January 2026; Supreme Court denied February 4, 2026). 2020 results are not available on these lines."
+    },
+    "CO": {
+      "seats": 8,
+      "mapInUse2026": "2021 commission map",
+      "risk": "stable",
+      "note": "Colorado Supreme Court held mid-decade redistricting unconstitutional (June 29, 2026); a November 2026 ballot measure would ban it outright."
+    },
+    "CT": {
+      "seats": 5,
+      "mapInUse2026": "2022 court-drawn map",
+      "risk": "stable",
+      "note": ""
+    },
+    "DE": {
+      "seats": 1,
+      "mapInUse2026": "At-large",
+      "risk": "stable",
+      "note": ""
+    },
+    "FL": {
+      "seats": 28,
+      "mapInUse2026": "HB 1D map signed May 4, 2026 (21 of 28 districts redrawn)",
+      "risk": "medium",
+      "note": "Florida Supreme Court declined to block the map for 2026 (June 10, 2026); two Fair Districts suits are pending on the merits and could force a redraw for 2028. 2020 results are not available on these lines."
+    },
+    "GA": {
+      "seats": 14,
+      "mapInUse2026": "2023 court-ordered remedial map",
+      "risk": "high",
+      "note": "Gov. Kemp's June 17, 2026 special session was called to redraw for 2028 after Callais; legislators declined to take up maps. A redraw in the 2027 regular session remains likely to be attempted. Senate and House generals have a majority/runoff rule (runoff December 5, 2028)."
+    },
+    "HI": {
+      "seats": 2,
+      "mapInUse2026": "2022 commission map",
+      "risk": "stable",
+      "note": ""
+    },
+    "ID": {
+      "seats": 2,
+      "mapInUse2026": "2021 commission map",
+      "risk": "stable",
+      "note": ""
+    },
+    "IL": {
+      "seats": 17,
+      "mapInUse2026": "2021 map",
+      "risk": "low",
+      "note": "Democratic leaders discussed a counter-redraw; no formal proposal."
+    },
+    "IN": {
+      "seats": 9,
+      "mapInUse2026": "2021 map",
+      "risk": "medium",
+      "note": "The Indiana Senate rejected a mid-decade map on December 11, 2025; five of the seven Republican senators who voted no lost renomination in May 2026, so a 2027 attempt is plausible."
+    },
+    "IA": {
+      "seats": 4,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "KS": {
+      "seats": 4,
+      "mapInUse2026": "2022 map",
+      "risk": "medium",
+      "note": "A 2026 special-session redraw stalled (about 20 votes short of a veto-proof majority); leadership has said it will try again."
+    },
+    "KY": {
+      "seats": 6,
+      "mapInUse2026": "2022 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "LA": {
+      "seats": 6,
+      "mapInUse2026": "May 29, 2026 map adopted after Louisiana v. Callais struck the 2024 map",
+      "risk": "medium",
+      "note": "New map is under challenge. Election rules: 2026 used a one-year open primary (Nov 3) with a Dec 12 runoff (HB 842); from 2028 congressional races use closed party primaries with a plurality general election (Act 1 of 2024). 2020 results are not available on these lines."
+    },
+    "ME": {
+      "seats": 2,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": "Federal general elections use ranked-choice tabulation."
+    },
+    "MD": {
+      "seats": 8,
+      "mapInUse2026": "2022 map",
+      "risk": "high",
+      "note": "Question 3 on the November 3, 2026 ballot would exempt congressional districts from the state constitution's compactness rules; if approved, a 2027 redraw aimed at 2028 is expected (dismantling MD-01)."
+    },
+    "MA": {
+      "seats": 9,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "MI": {
+      "seats": 13,
+      "mapInUse2026": "2024 commission map (court-ordered remedial)",
+      "risk": "stable",
+      "note": ""
+    },
+    "MN": {
+      "seats": 8,
+      "mapInUse2026": "2022 court-drawn map",
+      "risk": "stable",
+      "note": ""
+    },
+    "MS": {
+      "seats": 4,
+      "mapInUse2026": "2022 map",
+      "risk": "high",
+      "note": "Gov. Reeves cancelled the May 20, 2026 special session; a redraw targeting MS-02 is expected to be attempted in 2027 for 2028."
+    },
+    "MO": {
+      "seats": 8,
+      "mapInUse2026": "2022 map, by order of the U.S. Supreme Court (September 25, 2026, 26A388) pending the referendum on the 2025 map",
+      "risk": "high",
+      "note": "Proposition A on the November 3, 2026 ballot decides whether the 2025 map (which splits Kansas City) takes effect; if approved, 2028 uses the 2025 map and MO-05 changes character. The inventory keys districts by number on the 2022 map."
+    },
+    "MT": {
+      "seats": 2,
+      "mapInUse2026": "2023 commission map",
+      "risk": "stable",
+      "note": ""
+    },
+    "NE": {
+      "seats": 3,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "NV": {
+      "seats": 4,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "NH": {
+      "seats": 2,
+      "mapInUse2026": "2022 court-drawn map",
+      "risk": "stable",
+      "note": "Gov. Ayotte declined a mid-decade redraw."
+    },
+    "NJ": {
+      "seats": 12,
+      "mapInUse2026": "2021 commission map",
+      "risk": "low",
+      "note": "Gov. Sherrill open to a redraw after 2026; would need a constitutional referendum."
+    },
+    "NM": {
+      "seats": 3,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "NY": {
+      "seats": 26,
+      "mapInUse2026": "2024 map",
+      "risk": "medium",
+      "note": "A constitutional amendment allowing a mid-decade redraw passed first reading June 3, 2026; it needs second passage in 2027 and a November 2027 referendum to apply in 2028. The Supreme Court blocked a court-ordered NY-11 redraw on March 2, 2026."
+    },
+    "NC": {
+      "seats": 14,
+      "mapInUse2026": "October 22, 2025 map (NC-01 redrawn)",
+      "risk": "low",
+      "note": "A three-judge panel allowed the map (November 26, 2025). 2020 results are not available on these lines."
+    },
+    "ND": {
+      "seats": 1,
+      "mapInUse2026": "At-large",
+      "risk": "stable",
+      "note": ""
+    },
+    "OH": {
+      "seats": 15,
+      "mapInUse2026": "October 31, 2025 commission map (unanimous), in force through 2031",
+      "risk": "stable",
+      "note": "2020 results are not available on these lines."
+    },
+    "OK": {
+      "seats": 5,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "OR": {
+      "seats": 6,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "PA": {
+      "seats": 17,
+      "mapInUse2026": "2022 court-drawn map",
+      "risk": "stable",
+      "note": ""
+    },
+    "RI": {
+      "seats": 2,
+      "mapInUse2026": "2022 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "SC": {
+      "seats": 7,
+      "mapInUse2026": "2022 map",
+      "risk": "medium",
+      "note": "A May 2026 push to redraw SC-06 for 2026 failed in the state Senate; a 2027 attempt for 2028 is possible after Callais."
+    },
+    "SD": {
+      "seats": 1,
+      "mapInUse2026": "At-large",
+      "risk": "stable",
+      "note": ""
+    },
+    "TN": {
+      "seats": 9,
+      "mapInUse2026": "May 7, 2026 map (TN-09 redrawn)",
+      "risk": "medium",
+      "note": "A federal judge declined to block the map (May 26, 2026); ACLU litigation continues. 2020 results are not available on these lines."
+    },
+    "TX": {
+      "seats": 38,
+      "mapInUse2026": "August 29, 2025 map",
+      "risk": "medium",
+      "note": "The Supreme Court stayed the November 2025 injunction (December 4, 2025) and reversed the district court in April 2026 (Abbott v. LULAC); merits litigation continues. 2020 results are not available on these lines."
+    },
+    "UT": {
+      "seats": 4,
+      "mapInUse2026": "Court-ordered map (November 10, 2025) creating a Salt Lake City district under Proposition 4",
+      "risk": "medium",
+      "note": "A Republican effort to repeal Proposition 4 failed to qualify (March 26, 2026); the legislature could adopt a new Prop-4-compliant map for 2028. 2020 results are not available on these lines."
+    },
+    "VT": {
+      "seats": 1,
+      "mapInUse2026": "At-large",
+      "risk": "stable",
+      "note": ""
+    },
+    "VA": {
+      "seats": 11,
+      "mapInUse2026": "2021 commission map (the April 21, 2026 referendum map was voided by the Supreme Court of Virginia on May 8, 2026)",
+      "risk": "medium",
+      "note": "Democrats can restart the amendment process (passage in two sessions around the November 2027 House of Delegates election, then a referendum) — tight for 2028."
+    },
+    "WA": {
+      "seats": 10,
+      "mapInUse2026": "2022 commission map (as amended by court order 2024)",
+      "risk": "low",
+      "note": "A redraw needs a constitutional amendment; leadership calls 2028 unlikely."
+    },
+    "WV": {
+      "seats": 2,
+      "mapInUse2026": "2021 map",
+      "risk": "stable",
+      "note": ""
+    },
+    "WI": {
+      "seats": 8,
+      "mapInUse2026": "2022 map",
+      "risk": "medium",
+      "note": "The Wisconsin Supreme Court heard a Democratic challenge to the congressional map in September 2026; a decision could order new lines for 2028."
+    },
+    "WY": {
+      "seats": 1,
+      "mapInUse2026": "At-large",
+      "risk": "stable",
+      "note": ""
+    }
+  }
+}

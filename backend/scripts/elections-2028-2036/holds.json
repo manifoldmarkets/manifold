@@ -1,0 +1,4 @@
+{
+  "_comment": "Races to hold out of a launch: each entry is {pattern, reason}; pattern is a regex on the raceKey. Held entries stay in the manifest as status 'unresolved' (no payload, no cost); the dry run lists them and apply skips them. Example for the four states most likely to redraw their House map for 2028: {\"pattern\": \"^2028-house-(GA|MD|MO|MS)-\", \"reason\": \"map likely to change for 2028 (see inventories/house-2028-states.json)\"}. Empty until Tod decides.",
+  "holds": []
+}

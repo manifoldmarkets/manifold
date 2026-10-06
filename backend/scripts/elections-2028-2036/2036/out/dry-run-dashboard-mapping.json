@@ -1,0 +1,3032 @@
+[
+  {
+    "raceKey": "2036-senate-AZ-regular-general",
+    "list": "senate2036",
+    "key": "AZ",
+    "slug": "PENDING:2036-senate-AZ-regular-general",
+    "contractId": "PENDING:2036-senate-AZ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-AZ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-AZ-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-AZ-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-CA-regular-general",
+    "list": "senate2036",
+    "key": "CA",
+    "slug": "PENDING:2036-senate-CA-regular-general",
+    "contractId": "PENDING:2036-senate-CA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-CA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-CA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-CA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-CT-regular-general",
+    "list": "senate2036",
+    "key": "CT",
+    "slug": "PENDING:2036-senate-CT-regular-general",
+    "contractId": "PENDING:2036-senate-CT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-CT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-CT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-CT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-DE-regular-general",
+    "list": "senate2036",
+    "key": "DE",
+    "slug": "PENDING:2036-senate-DE-regular-general",
+    "contractId": "PENDING:2036-senate-DE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-DE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-DE-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-DE-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-FL-regular-general",
+    "list": "senate2036",
+    "key": "FL",
+    "slug": "PENDING:2036-senate-FL-regular-general",
+    "contractId": "PENDING:2036-senate-FL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-FL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-FL-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-FL-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-HI-regular-general",
+    "list": "senate2036",
+    "key": "HI",
+    "slug": "PENDING:2036-senate-HI-regular-general",
+    "contractId": "PENDING:2036-senate-HI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-HI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-HI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-HI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-IN-regular-general",
+    "list": "senate2036",
+    "key": "IN",
+    "slug": "PENDING:2036-senate-IN-regular-general",
+    "contractId": "PENDING:2036-senate-IN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-IN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-IN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-IN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-ME-regular-general",
+    "list": "senate2036",
+    "key": "ME",
+    "slug": "PENDING:2036-senate-ME-regular-general",
+    "contractId": "PENDING:2036-senate-ME-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-ME-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-ME-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-ME-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MD-regular-general",
+    "list": "senate2036",
+    "key": "MD",
+    "slug": "PENDING:2036-senate-MD-regular-general",
+    "contractId": "PENDING:2036-senate-MD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MD-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MD-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MA-regular-general",
+    "list": "senate2036",
+    "key": "MA",
+    "slug": "PENDING:2036-senate-MA-regular-general",
+    "contractId": "PENDING:2036-senate-MA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MI-regular-general",
+    "list": "senate2036",
+    "key": "MI",
+    "slug": "PENDING:2036-senate-MI-regular-general",
+    "contractId": "PENDING:2036-senate-MI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MN-regular-general",
+    "list": "senate2036",
+    "key": "MN",
+    "slug": "PENDING:2036-senate-MN-regular-general",
+    "contractId": "PENDING:2036-senate-MN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MS-regular-general",
+    "list": "senate2036",
+    "key": "MS",
+    "slug": "PENDING:2036-senate-MS-regular-general",
+    "contractId": "PENDING:2036-senate-MS-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MS-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MS-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MS-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MO-regular-general",
+    "list": "senate2036",
+    "key": "MO",
+    "slug": "PENDING:2036-senate-MO-regular-general",
+    "contractId": "PENDING:2036-senate-MO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MO-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MO-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-MT-regular-general",
+    "list": "senate2036",
+    "key": "MT",
+    "slug": "PENDING:2036-senate-MT-regular-general",
+    "contractId": "PENDING:2036-senate-MT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-MT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-MT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-MT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-NE-regular-general",
+    "list": "senate2036",
+    "key": "NE",
+    "slug": "PENDING:2036-senate-NE-regular-general",
+    "contractId": "PENDING:2036-senate-NE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-NE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-NE-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-NE-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-NV-regular-general",
+    "list": "senate2036",
+    "key": "NV",
+    "slug": "PENDING:2036-senate-NV-regular-general",
+    "contractId": "PENDING:2036-senate-NV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-NV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-NV-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-NV-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-NJ-regular-general",
+    "list": "senate2036",
+    "key": "NJ",
+    "slug": "PENDING:2036-senate-NJ-regular-general",
+    "contractId": "PENDING:2036-senate-NJ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-NJ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-NJ-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-NJ-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-NM-regular-general",
+    "list": "senate2036",
+    "key": "NM",
+    "slug": "PENDING:2036-senate-NM-regular-general",
+    "contractId": "PENDING:2036-senate-NM-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-NM-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-NM-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-NM-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-NY-regular-general",
+    "list": "senate2036",
+    "key": "NY",
+    "slug": "PENDING:2036-senate-NY-regular-general",
+    "contractId": "PENDING:2036-senate-NY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-NY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-NY-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-NY-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-ND-regular-general",
+    "list": "senate2036",
+    "key": "ND",
+    "slug": "PENDING:2036-senate-ND-regular-general",
+    "contractId": "PENDING:2036-senate-ND-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-ND-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-ND-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-ND-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-OH-regular-general",
+    "list": "senate2036",
+    "key": "OH",
+    "slug": "PENDING:2036-senate-OH-regular-general",
+    "contractId": "PENDING:2036-senate-OH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-OH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-OH-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-OH-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-PA-regular-general",
+    "list": "senate2036",
+    "key": "PA",
+    "slug": "PENDING:2036-senate-PA-regular-general",
+    "contractId": "PENDING:2036-senate-PA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-PA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-PA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-PA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-RI-regular-general",
+    "list": "senate2036",
+    "key": "RI",
+    "slug": "PENDING:2036-senate-RI-regular-general",
+    "contractId": "PENDING:2036-senate-RI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-RI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-RI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-RI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-TN-regular-general",
+    "list": "senate2036",
+    "key": "TN",
+    "slug": "PENDING:2036-senate-TN-regular-general",
+    "contractId": "PENDING:2036-senate-TN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-TN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-TN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-TN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-TX-regular-general",
+    "list": "senate2036",
+    "key": "TX",
+    "slug": "PENDING:2036-senate-TX-regular-general",
+    "contractId": "PENDING:2036-senate-TX-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-TX-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-TX-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-TX-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-UT-regular-general",
+    "list": "senate2036",
+    "key": "UT",
+    "slug": "PENDING:2036-senate-UT-regular-general",
+    "contractId": "PENDING:2036-senate-UT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-UT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-UT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-UT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-VT-regular-general",
+    "list": "senate2036",
+    "key": "VT",
+    "slug": "PENDING:2036-senate-VT-regular-general",
+    "contractId": "PENDING:2036-senate-VT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-VT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-VT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-VT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-VA-regular-general",
+    "list": "senate2036",
+    "key": "VA",
+    "slug": "PENDING:2036-senate-VA-regular-general",
+    "contractId": "PENDING:2036-senate-VA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-VA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-VA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-VA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-WA-regular-general",
+    "list": "senate2036",
+    "key": "WA",
+    "slug": "PENDING:2036-senate-WA-regular-general",
+    "contractId": "PENDING:2036-senate-WA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-WA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-WA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-WA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-WV-regular-general",
+    "list": "senate2036",
+    "key": "WV",
+    "slug": "PENDING:2036-senate-WV-regular-general",
+    "contractId": "PENDING:2036-senate-WV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-WV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-WV-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-WV-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-WI-regular-general",
+    "list": "senate2036",
+    "key": "WI",
+    "slug": "PENDING:2036-senate-WI-regular-general",
+    "contractId": "PENDING:2036-senate-WI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-WI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-WI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-WI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-senate-WY-regular-general",
+    "list": "senate2036",
+    "key": "WY",
+    "slug": "PENDING:2036-senate-WY-regular-general",
+    "contractId": "PENDING:2036-senate-WY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-senate-WY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-senate-WY-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-senate-WY-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-DE-regular-general",
+    "list": "governors2036",
+    "key": "DE",
+    "slug": "PENDING:2036-governor-DE-regular-general",
+    "contractId": "PENDING:2036-governor-DE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-DE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-DE-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-DE-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-IN-regular-general",
+    "list": "governors2036",
+    "key": "IN",
+    "slug": "PENDING:2036-governor-IN-regular-general",
+    "contractId": "PENDING:2036-governor-IN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-IN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-IN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-IN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-MO-regular-general",
+    "list": "governors2036",
+    "key": "MO",
+    "slug": "PENDING:2036-governor-MO-regular-general",
+    "contractId": "PENDING:2036-governor-MO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-MO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-MO-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-MO-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-MT-regular-general",
+    "list": "governors2036",
+    "key": "MT",
+    "slug": "PENDING:2036-governor-MT-regular-general",
+    "contractId": "PENDING:2036-governor-MT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-MT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-MT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-MT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-NH-regular-general",
+    "list": "governors2036",
+    "key": "NH",
+    "slug": "PENDING:2036-governor-NH-regular-general",
+    "contractId": "PENDING:2036-governor-NH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-NH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-NH-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-NH-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-NC-regular-general",
+    "list": "governors2036",
+    "key": "NC",
+    "slug": "PENDING:2036-governor-NC-regular-general",
+    "contractId": "PENDING:2036-governor-NC-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-NC-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-NC-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-NC-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-ND-regular-general",
+    "list": "governors2036",
+    "key": "ND",
+    "slug": "PENDING:2036-governor-ND-regular-general",
+    "contractId": "PENDING:2036-governor-ND-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-ND-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-ND-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-ND-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-UT-regular-general",
+    "list": "governors2036",
+    "key": "UT",
+    "slug": "PENDING:2036-governor-UT-regular-general",
+    "contractId": "PENDING:2036-governor-UT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-UT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-UT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-UT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-VT-regular-general",
+    "list": "governors2036",
+    "key": "VT",
+    "slug": "PENDING:2036-governor-VT-regular-general",
+    "contractId": "PENDING:2036-governor-VT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-VT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-VT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-VT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-WA-regular-general",
+    "list": "governors2036",
+    "key": "WA",
+    "slug": "PENDING:2036-governor-WA-regular-general",
+    "contractId": "PENDING:2036-governor-WA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-WA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-WA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-WA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-governor-WV-regular-general",
+    "list": "governors2036",
+    "key": "WV",
+    "slug": "PENDING:2036-governor-WV-regular-general",
+    "contractId": "PENDING:2036-governor-WV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-governor-WV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-governor-WV-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-governor-WV-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-AK-general",
+    "list": "president2036",
+    "key": "AK",
+    "slug": "PENDING:2036-president-AK-general",
+    "contractId": "PENDING:2036-president-AK-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-AK-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-AK-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-AK-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-AL-general",
+    "list": "president2036",
+    "key": "AL",
+    "slug": "PENDING:2036-president-AL-general",
+    "contractId": "PENDING:2036-president-AL-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-AL-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-AL-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-AL-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-AR-general",
+    "list": "president2036",
+    "key": "AR",
+    "slug": "PENDING:2036-president-AR-general",
+    "contractId": "PENDING:2036-president-AR-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-AR-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-AR-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-AR-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-AZ-general",
+    "list": "president2036",
+    "key": "AZ",
+    "slug": "PENDING:2036-president-AZ-general",
+    "contractId": "PENDING:2036-president-AZ-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-AZ-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-AZ-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-AZ-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-CA-general",
+    "list": "president2036",
+    "key": "CA",
+    "slug": "PENDING:2036-president-CA-general",
+    "contractId": "PENDING:2036-president-CA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-CA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-CA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-CA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-CO-general",
+    "list": "president2036",
+    "key": "CO",
+    "slug": "PENDING:2036-president-CO-general",
+    "contractId": "PENDING:2036-president-CO-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-CO-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-CO-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-CO-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-CT-general",
+    "list": "president2036",
+    "key": "CT",
+    "slug": "PENDING:2036-president-CT-general",
+    "contractId": "PENDING:2036-president-CT-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-CT-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-CT-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-CT-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-DC-general",
+    "list": "president2036",
+    "key": "DC",
+    "slug": "PENDING:2036-president-DC-general",
+    "contractId": "PENDING:2036-president-DC-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-DC-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-DC-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-DC-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-DE-general",
+    "list": "president2036",
+    "key": "DE",
+    "slug": "PENDING:2036-president-DE-general",
+    "contractId": "PENDING:2036-president-DE-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-DE-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-DE-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-DE-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-FL-general",
+    "list": "president2036",
+    "key": "FL",
+    "slug": "PENDING:2036-president-FL-general",
+    "contractId": "PENDING:2036-president-FL-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-FL-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-FL-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-FL-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-GA-general",
+    "list": "president2036",
+    "key": "GA",
+    "slug": "PENDING:2036-president-GA-general",
+    "contractId": "PENDING:2036-president-GA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-GA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-GA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-GA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-HI-general",
+    "list": "president2036",
+    "key": "HI",
+    "slug": "PENDING:2036-president-HI-general",
+    "contractId": "PENDING:2036-president-HI-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-HI-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-HI-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-HI-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-IA-general",
+    "list": "president2036",
+    "key": "IA",
+    "slug": "PENDING:2036-president-IA-general",
+    "contractId": "PENDING:2036-president-IA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-IA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-IA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-IA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-ID-general",
+    "list": "president2036",
+    "key": "ID",
+    "slug": "PENDING:2036-president-ID-general",
+    "contractId": "PENDING:2036-president-ID-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-ID-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-ID-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-ID-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-IL-general",
+    "list": "president2036",
+    "key": "IL",
+    "slug": "PENDING:2036-president-IL-general",
+    "contractId": "PENDING:2036-president-IL-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-IL-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-IL-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-IL-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-IN-general",
+    "list": "president2036",
+    "key": "IN",
+    "slug": "PENDING:2036-president-IN-general",
+    "contractId": "PENDING:2036-president-IN-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-IN-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-IN-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-IN-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-KS-general",
+    "list": "president2036",
+    "key": "KS",
+    "slug": "PENDING:2036-president-KS-general",
+    "contractId": "PENDING:2036-president-KS-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-KS-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-KS-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-KS-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-KY-general",
+    "list": "president2036",
+    "key": "KY",
+    "slug": "PENDING:2036-president-KY-general",
+    "contractId": "PENDING:2036-president-KY-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-KY-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-KY-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-KY-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-LA-general",
+    "list": "president2036",
+    "key": "LA",
+    "slug": "PENDING:2036-president-LA-general",
+    "contractId": "PENDING:2036-president-LA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-LA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-LA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-LA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MA-general",
+    "list": "president2036",
+    "key": "MA",
+    "slug": "PENDING:2036-president-MA-general",
+    "contractId": "PENDING:2036-president-MA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MD-general",
+    "list": "president2036",
+    "key": "MD",
+    "slug": "PENDING:2036-president-MD-general",
+    "contractId": "PENDING:2036-president-MD-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MD-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MD-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MD-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-ME-general",
+    "list": "president2036",
+    "key": "ME",
+    "slug": "PENDING:2036-president-ME-general",
+    "contractId": "PENDING:2036-president-ME-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-ME-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-ME-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-ME-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MI-general",
+    "list": "president2036",
+    "key": "MI",
+    "slug": "PENDING:2036-president-MI-general",
+    "contractId": "PENDING:2036-president-MI-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MI-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MI-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MI-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MN-general",
+    "list": "president2036",
+    "key": "MN",
+    "slug": "PENDING:2036-president-MN-general",
+    "contractId": "PENDING:2036-president-MN-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MN-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MN-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MN-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MO-general",
+    "list": "president2036",
+    "key": "MO",
+    "slug": "PENDING:2036-president-MO-general",
+    "contractId": "PENDING:2036-president-MO-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MO-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MO-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MO-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MS-general",
+    "list": "president2036",
+    "key": "MS",
+    "slug": "PENDING:2036-president-MS-general",
+    "contractId": "PENDING:2036-president-MS-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MS-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MS-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MS-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-MT-general",
+    "list": "president2036",
+    "key": "MT",
+    "slug": "PENDING:2036-president-MT-general",
+    "contractId": "PENDING:2036-president-MT-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-MT-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-MT-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-MT-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NC-general",
+    "list": "president2036",
+    "key": "NC",
+    "slug": "PENDING:2036-president-NC-general",
+    "contractId": "PENDING:2036-president-NC-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NC-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NC-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NC-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-ND-general",
+    "list": "president2036",
+    "key": "ND",
+    "slug": "PENDING:2036-president-ND-general",
+    "contractId": "PENDING:2036-president-ND-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-ND-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-ND-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-ND-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NE-general",
+    "list": "president2036",
+    "key": "NE",
+    "slug": "PENDING:2036-president-NE-general",
+    "contractId": "PENDING:2036-president-NE-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NE-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NE-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NE-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NH-general",
+    "list": "president2036",
+    "key": "NH",
+    "slug": "PENDING:2036-president-NH-general",
+    "contractId": "PENDING:2036-president-NH-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NH-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NH-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NH-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NJ-general",
+    "list": "president2036",
+    "key": "NJ",
+    "slug": "PENDING:2036-president-NJ-general",
+    "contractId": "PENDING:2036-president-NJ-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NJ-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NJ-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NJ-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NM-general",
+    "list": "president2036",
+    "key": "NM",
+    "slug": "PENDING:2036-president-NM-general",
+    "contractId": "PENDING:2036-president-NM-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NM-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NM-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NM-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NV-general",
+    "list": "president2036",
+    "key": "NV",
+    "slug": "PENDING:2036-president-NV-general",
+    "contractId": "PENDING:2036-president-NV-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NV-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NV-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NV-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NY-general",
+    "list": "president2036",
+    "key": "NY",
+    "slug": "PENDING:2036-president-NY-general",
+    "contractId": "PENDING:2036-president-NY-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NY-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NY-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NY-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-OH-general",
+    "list": "president2036",
+    "key": "OH",
+    "slug": "PENDING:2036-president-OH-general",
+    "contractId": "PENDING:2036-president-OH-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-OH-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-OH-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-OH-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-OK-general",
+    "list": "president2036",
+    "key": "OK",
+    "slug": "PENDING:2036-president-OK-general",
+    "contractId": "PENDING:2036-president-OK-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-OK-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-OK-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-OK-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-OR-general",
+    "list": "president2036",
+    "key": "OR",
+    "slug": "PENDING:2036-president-OR-general",
+    "contractId": "PENDING:2036-president-OR-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-OR-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-OR-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-OR-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-PA-general",
+    "list": "president2036",
+    "key": "PA",
+    "slug": "PENDING:2036-president-PA-general",
+    "contractId": "PENDING:2036-president-PA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-PA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-PA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-PA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-RI-general",
+    "list": "president2036",
+    "key": "RI",
+    "slug": "PENDING:2036-president-RI-general",
+    "contractId": "PENDING:2036-president-RI-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-RI-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-RI-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-RI-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-SC-general",
+    "list": "president2036",
+    "key": "SC",
+    "slug": "PENDING:2036-president-SC-general",
+    "contractId": "PENDING:2036-president-SC-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-SC-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-SC-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-SC-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-SD-general",
+    "list": "president2036",
+    "key": "SD",
+    "slug": "PENDING:2036-president-SD-general",
+    "contractId": "PENDING:2036-president-SD-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-SD-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-SD-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-SD-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-TN-general",
+    "list": "president2036",
+    "key": "TN",
+    "slug": "PENDING:2036-president-TN-general",
+    "contractId": "PENDING:2036-president-TN-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-TN-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-TN-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-TN-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-TX-general",
+    "list": "president2036",
+    "key": "TX",
+    "slug": "PENDING:2036-president-TX-general",
+    "contractId": "PENDING:2036-president-TX-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-TX-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-TX-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-TX-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-UT-general",
+    "list": "president2036",
+    "key": "UT",
+    "slug": "PENDING:2036-president-UT-general",
+    "contractId": "PENDING:2036-president-UT-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-UT-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-UT-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-UT-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-VA-general",
+    "list": "president2036",
+    "key": "VA",
+    "slug": "PENDING:2036-president-VA-general",
+    "contractId": "PENDING:2036-president-VA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-VA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-VA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-VA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-VT-general",
+    "list": "president2036",
+    "key": "VT",
+    "slug": "PENDING:2036-president-VT-general",
+    "contractId": "PENDING:2036-president-VT-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-VT-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-VT-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-VT-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-WA-general",
+    "list": "president2036",
+    "key": "WA",
+    "slug": "PENDING:2036-president-WA-general",
+    "contractId": "PENDING:2036-president-WA-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-WA-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-WA-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-WA-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-WI-general",
+    "list": "president2036",
+    "key": "WI",
+    "slug": "PENDING:2036-president-WI-general",
+    "contractId": "PENDING:2036-president-WI-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-WI-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-WI-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-WI-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-WV-general",
+    "list": "president2036",
+    "key": "WV",
+    "slug": "PENDING:2036-president-WV-general",
+    "contractId": "PENDING:2036-president-WV-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-WV-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-WV-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-WV-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-WY-general",
+    "list": "president2036",
+    "key": "WY",
+    "slug": "PENDING:2036-president-WY-general",
+    "contractId": "PENDING:2036-president-WY-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-WY-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-WY-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-WY-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-ME-01-general",
+    "list": "president2036",
+    "key": "ME-1",
+    "slug": "PENDING:2036-president-ME-01-general",
+    "contractId": "PENDING:2036-president-ME-01-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-ME-01-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-ME-01-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-ME-01-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-ME-02-general",
+    "list": "president2036",
+    "key": "ME-2",
+    "slug": "PENDING:2036-president-ME-02-general",
+    "contractId": "PENDING:2036-president-ME-02-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-ME-02-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-ME-02-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-ME-02-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NE-01-general",
+    "list": "president2036",
+    "key": "NE-1",
+    "slug": "PENDING:2036-president-NE-01-general",
+    "contractId": "PENDING:2036-president-NE-01-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NE-01-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NE-01-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NE-01-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NE-02-general",
+    "list": "president2036",
+    "key": "NE-2",
+    "slug": "PENDING:2036-president-NE-02-general",
+    "contractId": "PENDING:2036-president-NE-02-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NE-02-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NE-02-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NE-02-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-NE-03-general",
+    "list": "president2036",
+    "key": "NE-3",
+    "slug": "PENDING:2036-president-NE-03-general",
+    "contractId": "PENDING:2036-president-NE-03-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-NE-03-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-NE-03-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-NE-03-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2036-president-US-general",
+    "list": "president2036",
+    "key": "US",
+    "slug": "PENDING:2036-president-US-general",
+    "contractId": "PENDING:2036-president-US-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2036-president-US-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2036-president-US-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2036-president-US-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  }
+]

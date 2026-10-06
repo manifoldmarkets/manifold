@@ -1,0 +1,93 @@
+{
+  "description": "Units that award presidential electors: the 50 states and the District of Columbia (winner-take-all), plus the congressional-district electors of Maine (2 districts) and Nebraska (3 districts). Electoral votes are the 2020-census apportionment used for 2024 and 2028. The national market (key US) resolves on the Electoral College winner.",
+  "sources": [
+    {
+      "name": "FEC — Official 2024 Presidential General Election Results (electoral votes per state; ME 3/1 and NE 4/1 splits)",
+      "url": "https://www.fec.gov/resources/cms-content/documents/2024presgeresults.xlsx",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "U.S. Census Bureau — 2020 apportionment results (House seats per state; ME 2, NE 3)",
+      "url": "https://www.census.gov/data/tables/2020/dec/2020-apportionment-data.html",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "The Downballot — presidential results by congressional district (ME-01/02, NE-01/02/03 exact totals, 2020 and 2024)",
+      "url": "https://www.the-downballot.com/p/the-downballots-calculations-of-presidential",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "Nebraska Examiner — winner-take-all initiative petitions submitted for the 2026 ballot (status unresolved on 2026-10-06)",
+      "url": "https://nebraskaexaminer.com/2025/10/14/nebraska-group-starts-ballot-push-for-winner-take-all-hand-counting-votes/",
+      "fetchedAt": "2026-10-06"
+    }
+  ],
+  "notes": [
+    "Counts: 51 statewide units + 5 district units + 1 national = 57 markets per cycle, as the brief expected.",
+    "2028 uses the 2020-census apportionment (538 electors). 2032 and 2036 use the 2030-census apportionment: state elector counts will change and Maine or Nebraska could gain or lose a district. A district that no longer exists resolves N/A; the statewide markets are unaffected.",
+    "Nebraska: a winner-take-all constitutional amendment was pushed by initiative petition for the 2026 ballot and by LR24CA in the Legislature (which failed). If Nebraska stops awarding electors by district before an election, the NE-1/2/3 markets for that election resolve N/A.",
+    "Maine awards electors by district under 21-A M.R.S. § 802; ranked-choice tabulation applies to presidential electors in Maine (since 2020) and, while its 2020 system stands, in Alaska.",
+    "Georgia's majority/runoff rule does not apply to presidential electors (O.C.G.A. § 21-2-501: 'no slate of candidates shall be required to receive a majority')."
+  ],
+  "electoralVotes2024": {
+    "AL": 9,
+    "AK": 3,
+    "AZ": 11,
+    "AR": 6,
+    "CA": 54,
+    "CO": 10,
+    "CT": 7,
+    "DE": 3,
+    "DC": 3,
+    "FL": 30,
+    "GA": 16,
+    "HI": 4,
+    "ID": 4,
+    "IL": 19,
+    "IN": 11,
+    "IA": 6,
+    "KS": 6,
+    "KY": 8,
+    "LA": 8,
+    "ME": 4,
+    "MD": 10,
+    "MA": 11,
+    "MI": 15,
+    "MN": 10,
+    "MS": 6,
+    "MO": 10,
+    "MT": 4,
+    "NE": 5,
+    "NV": 6,
+    "NH": 4,
+    "NJ": 14,
+    "NM": 5,
+    "NY": 28,
+    "NC": 16,
+    "ND": 3,
+    "OH": 17,
+    "OK": 7,
+    "OR": 8,
+    "PA": 19,
+    "RI": 4,
+    "SC": 9,
+    "SD": 3,
+    "TN": 11,
+    "TX": 40,
+    "UT": 6,
+    "VT": 3,
+    "VA": 13,
+    "WA": 12,
+    "WV": 4,
+    "WI": 10,
+    "WY": 3
+  },
+  "districtUnits": [
+    { "key": "ME-01", "state": "ME", "district": 1, "electors": 1 },
+    { "key": "ME-02", "state": "ME", "district": 2, "electors": 1 },
+    { "key": "NE-01", "state": "NE", "district": 1, "electors": 1 },
+    { "key": "NE-02", "state": "NE", "district": 2, "electors": 1 },
+    { "key": "NE-03", "state": "NE", "district": 3, "electors": 1 }
+  ],
+  "national": { "key": "US", "electorsToWin": 270, "totalElectors": 538 }
+}

@@ -1,0 +1,4 @@
+{
+  "_comment": "raceKey → contract ids a reviewer has looked at and REJECTED as not equivalent (or decided to supersede with the official market). The generator copies them into reviewedRejectedContractIds, so they stop blocking creation. Take ids from <cycle>/out/dry-run-online.json or online-findings-2026-10-06.md. Keys starting with _ are ignored. Empty until Tod reviews.",
+  "_example": ["2028-president-US-general: [\"gUpCZZnNQz\", \"6AlnL5h85P\"]"]
+}

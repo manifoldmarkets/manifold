@@ -1,0 +1,163 @@
+{
+  "description": "U.S. Senate seats by class. A class is up for its regular six-year election in the cycle listed; the incumbent is the senator holding the seat on 2026-10-06 (informational only — the generic markets name nobody).",
+  "sources": [
+    {
+      "name": "U.S. Senate — Class I (terms expire 2031)",
+      "url": "https://www.senate.gov/senators/Class_I.htm",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "U.S. Senate — Class II (terms expire 2027)",
+      "url": "https://www.senate.gov/senators/Class_II.htm",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "U.S. Senate — Class III (terms expire 2029)",
+      "url": "https://www.senate.gov/senators/Class_III.htm",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "Wikipedia — 2028 United States Senate elections (cross-check: 34 Class 3 seats, election day November 7, 2028)",
+      "url": "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+      "fetchedAt": "2026-10-06"
+    }
+  ],
+  "notes": [
+    "Class 3 (34 seats) is up in 2028, Class 2 (33) in 2032 and Class 1 (33) in 2036. The counts match the task brief.",
+    "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
+    "Special elections for seats vacated after this inventory was written are out of scope; add them when they are called, as the brief says.",
+    "Vermont has no Class 2 seat and Nebraska/Alaska have no Class 3 / Class 1 seat respectively, so the 'Another party or independent' exceptions in SEEDS.md apply only to the cycles in which those states actually vote."
+  ],
+  "classes": {
+    "3": {
+      "cycle": 2028,
+      "termsExpire": "2029-01-03",
+      "seats": [
+        { "state": "AL", "incumbent": "Katie Britt", "party": "R" },
+        { "state": "AK", "incumbent": "Lisa Murkowski", "party": "R" },
+        { "state": "AZ", "incumbent": "Mark Kelly", "party": "D" },
+        { "state": "AR", "incumbent": "John Boozman", "party": "R" },
+        { "state": "CA", "incumbent": "Alex Padilla", "party": "D" },
+        { "state": "CO", "incumbent": "Michael Bennet", "party": "D" },
+        { "state": "CT", "incumbent": "Richard Blumenthal", "party": "D" },
+        {
+          "state": "FL",
+          "incumbent": "Ashley Moody",
+          "party": "R",
+          "note": "Appointed January 2025 (Rubio seat); special election for the unexpired term on 2026-11-03; regular full-term election 2028."
+        },
+        { "state": "GA", "incumbent": "Raphael Warnock", "party": "D" },
+        { "state": "HI", "incumbent": "Brian Schatz", "party": "D" },
+        { "state": "ID", "incumbent": "Mike Crapo", "party": "R" },
+        { "state": "IL", "incumbent": "Tammy Duckworth", "party": "D" },
+        { "state": "IN", "incumbent": "Todd Young", "party": "R" },
+        { "state": "IA", "incumbent": "Chuck Grassley", "party": "R" },
+        { "state": "KS", "incumbent": "Jerry Moran", "party": "R" },
+        { "state": "KY", "incumbent": "Rand Paul", "party": "R" },
+        { "state": "LA", "incumbent": "John Kennedy", "party": "R" },
+        { "state": "MD", "incumbent": "Chris Van Hollen", "party": "D" },
+        { "state": "MO", "incumbent": "Eric Schmitt", "party": "R" },
+        { "state": "NV", "incumbent": "Catherine Cortez Masto", "party": "D" },
+        { "state": "NH", "incumbent": "Maggie Hassan", "party": "D" },
+        { "state": "NY", "incumbent": "Chuck Schumer", "party": "D" },
+        { "state": "NC", "incumbent": "Ted Budd", "party": "R" },
+        { "state": "ND", "incumbent": "John Hoeven", "party": "R" },
+        {
+          "state": "OH",
+          "incumbent": "Jon Husted",
+          "party": "R",
+          "note": "Appointed January 2025 (Vance seat); special election for the unexpired term on 2026-11-03; regular full-term election 2028."
+        },
+        { "state": "OK", "incumbent": "James Lankford", "party": "R" },
+        { "state": "OR", "incumbent": "Ron Wyden", "party": "D" },
+        { "state": "PA", "incumbent": "John Fetterman", "party": "D" },
+        { "state": "SC", "incumbent": "Tim Scott", "party": "R" },
+        { "state": "SD", "incumbent": "John Thune", "party": "R" },
+        { "state": "UT", "incumbent": "Mike Lee", "party": "R" },
+        { "state": "VT", "incumbent": "Peter Welch", "party": "D" },
+        { "state": "WA", "incumbent": "Patty Murray", "party": "D" },
+        { "state": "WI", "incumbent": "Ron Johnson", "party": "R" }
+      ]
+    },
+    "2": {
+      "cycle": 2032,
+      "termsExpire": "2033-01-03",
+      "note": "Incumbents listed are the holders before the November 3, 2026 election; the 2032 election is for the term beginning January 3, 2033.",
+      "seats": [
+        { "state": "AL", "incumbent": "Tommy Tuberville", "party": "R" },
+        { "state": "AK", "incumbent": "Dan Sullivan", "party": "R" },
+        { "state": "AR", "incumbent": "Tom Cotton", "party": "R" },
+        { "state": "CO", "incumbent": "John Hickenlooper", "party": "D" },
+        { "state": "DE", "incumbent": "Chris Coons", "party": "D" },
+        { "state": "GA", "incumbent": "Jon Ossoff", "party": "D" },
+        { "state": "ID", "incumbent": "Jim Risch", "party": "R" },
+        { "state": "IL", "incumbent": "Dick Durbin", "party": "D" },
+        { "state": "IA", "incumbent": "Joni Ernst", "party": "R" },
+        { "state": "KS", "incumbent": "Roger Marshall", "party": "R" },
+        { "state": "KY", "incumbent": "Mitch McConnell", "party": "R" },
+        { "state": "LA", "incumbent": "Bill Cassidy", "party": "R" },
+        { "state": "ME", "incumbent": "Susan Collins", "party": "R" },
+        { "state": "MA", "incumbent": "Ed Markey", "party": "D" },
+        { "state": "MI", "incumbent": "Gary Peters", "party": "D" },
+        { "state": "MN", "incumbent": "Tina Smith", "party": "D" },
+        { "state": "MS", "incumbent": "Cindy Hyde-Smith", "party": "R" },
+        { "state": "MT", "incumbent": "Steve Daines", "party": "R" },
+        { "state": "NE", "incumbent": "Pete Ricketts", "party": "R" },
+        { "state": "NH", "incumbent": "Jeanne Shaheen", "party": "D" },
+        { "state": "NJ", "incumbent": "Cory Booker", "party": "D" },
+        { "state": "NM", "incumbent": "Ben Ray Luján", "party": "D" },
+        { "state": "NC", "incumbent": "Thom Tillis", "party": "R" },
+        { "state": "OK", "incumbent": "Alan Armstrong", "party": "R" },
+        { "state": "OR", "incumbent": "Jeff Merkley", "party": "D" },
+        { "state": "RI", "incumbent": "Jack Reed", "party": "D" },
+        { "state": "SC", "incumbent": "Darline Graham", "party": "R" },
+        { "state": "SD", "incumbent": "Mike Rounds", "party": "R" },
+        { "state": "TN", "incumbent": "Bill Hagerty", "party": "R" },
+        { "state": "TX", "incumbent": "John Cornyn", "party": "R" },
+        { "state": "VA", "incumbent": "Mark Warner", "party": "D" },
+        { "state": "WV", "incumbent": "Shelley Moore Capito", "party": "R" },
+        { "state": "WY", "incumbent": "Cynthia Lummis", "party": "R" }
+      ]
+    },
+    "1": {
+      "cycle": 2036,
+      "termsExpire": "2037-01-03",
+      "note": "Class 1 is also up in 2030; the 2036 election is for the term beginning January 3, 2037.",
+      "seats": [
+        { "state": "AZ", "incumbent": "Ruben Gallego", "party": "D" },
+        { "state": "CA", "incumbent": "Adam Schiff", "party": "D" },
+        { "state": "CT", "incumbent": "Chris Murphy", "party": "D" },
+        { "state": "DE", "incumbent": "Lisa Blunt Rochester", "party": "D" },
+        { "state": "FL", "incumbent": "Rick Scott", "party": "R" },
+        { "state": "HI", "incumbent": "Mazie Hirono", "party": "D" },
+        { "state": "IN", "incumbent": "Jim Banks", "party": "R" },
+        { "state": "ME", "incumbent": "Angus King", "party": "I" },
+        { "state": "MD", "incumbent": "Angela Alsobrooks", "party": "D" },
+        { "state": "MA", "incumbent": "Elizabeth Warren", "party": "D" },
+        { "state": "MI", "incumbent": "Elissa Slotkin", "party": "D" },
+        { "state": "MN", "incumbent": "Amy Klobuchar", "party": "D" },
+        { "state": "MS", "incumbent": "Roger Wicker", "party": "R" },
+        { "state": "MO", "incumbent": "Josh Hawley", "party": "R" },
+        { "state": "MT", "incumbent": "Tim Sheehy", "party": "R" },
+        { "state": "NE", "incumbent": "Deb Fischer", "party": "R" },
+        { "state": "NV", "incumbent": "Jacky Rosen", "party": "D" },
+        { "state": "NJ", "incumbent": "Andy Kim", "party": "D" },
+        { "state": "NM", "incumbent": "Martin Heinrich", "party": "D" },
+        { "state": "NY", "incumbent": "Kirsten Gillibrand", "party": "D" },
+        { "state": "ND", "incumbent": "Kevin Cramer", "party": "R" },
+        { "state": "OH", "incumbent": "Bernie Moreno", "party": "R" },
+        { "state": "PA", "incumbent": "David McCormick", "party": "R" },
+        { "state": "RI", "incumbent": "Sheldon Whitehouse", "party": "D" },
+        { "state": "TN", "incumbent": "Marsha Blackburn", "party": "R" },
+        { "state": "TX", "incumbent": "Ted Cruz", "party": "R" },
+        { "state": "UT", "incumbent": "John Curtis", "party": "R" },
+        { "state": "VT", "incumbent": "Bernie Sanders", "party": "I" },
+        { "state": "VA", "incumbent": "Tim Kaine", "party": "D" },
+        { "state": "WA", "incumbent": "Maria Cantwell", "party": "D" },
+        { "state": "WV", "incumbent": "Jim Justice", "party": "R" },
+        { "state": "WI", "incumbent": "Tammy Baldwin", "party": "D" },
+        { "state": "WY", "incumbent": "John Barrasso", "party": "R" }
+      ]
+    }
+  }
+}

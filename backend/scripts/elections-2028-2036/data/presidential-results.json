@@ -1,0 +1,5951 @@
+{
+  "generatedAt": "2026-10-06T10:33:13.252Z",
+  "sources": {
+    "fec2024": "https://www.fec.gov/resources/cms-content/documents/2024presgeresults.xlsx",
+    "fec2020": "https://www.fec.gov/resources/cms-content/documents/federalelections2020.xlsx (Table 2)",
+    "downballot": "https://docs.google.com/spreadsheets/d/1eZfaFI-c-PFOoKx1-zZA2MP0_dxRq_LVK0re3BOQqy0 (exact totals tab, 2024 results on 2026 district lines; 2020 only where lines are unchanged), via https://www.the-downballot.com/p/the-downballots-calculations-of-presidential"
+  },
+  "states": {
+    "AL": {
+      "2020": {
+        "d": 849624,
+        "r": 1441170,
+        "total": 2323282,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 772412,
+        "r": 1462616,
+        "total": 2265090,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "AK": {
+      "2020": {
+        "d": 153778,
+        "r": 189951,
+        "total": 359530,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 140026,
+        "r": 184458,
+        "total": 338177,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "AZ": {
+      "2020": {
+        "d": 1672143,
+        "r": 1661686,
+        "total": 3387326,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1582860,
+        "r": 1770242,
+        "total": 3390161,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "AR": {
+      "2020": {
+        "d": 423932,
+        "r": 760647,
+        "total": 1219069,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 396905,
+        "r": 759241,
+        "total": 1182676,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "CA": {
+      "2020": {
+        "d": 11110639,
+        "r": 6006518,
+        "total": 17501380,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 9276179,
+        "r": 6081697,
+        "total": 15865475,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "CO": {
+      "2020": {
+        "d": 1804352,
+        "r": 1364607,
+        "total": 3256980,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1728159,
+        "r": 1377441,
+        "total": 3192745,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "CT": {
+      "2020": {
+        "d": 1080831,
+        "r": 714717,
+        "total": 1823857,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 992053,
+        "r": 736918,
+        "total": 1759010,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "DE": {
+      "2020": {
+        "d": 296268,
+        "r": 200603,
+        "total": 504346,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 289758,
+        "r": 214351,
+        "total": 512912,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "DC": {
+      "2020": {
+        "d": 317323,
+        "r": 18586,
+        "total": 344356,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 294185,
+        "r": 21076,
+        "total": 325869,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "FL": {
+      "2020": {
+        "d": 5297045,
+        "r": 5668731,
+        "total": 11067456,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 4683038,
+        "r": 6110125,
+        "total": 10893752,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "GA": {
+      "2020": {
+        "d": 2473633,
+        "r": 2461854,
+        "total": 4999960,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2548017,
+        "r": 2663117,
+        "total": 5250905,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "HI": {
+      "2020": {
+        "d": 366130,
+        "r": 196864,
+        "total": 574469,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 313044,
+        "r": 193661,
+        "total": 516701,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "ID": {
+      "2020": {
+        "d": 287021,
+        "r": 554119,
+        "total": 867934,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 274972,
+        "r": 605246,
+        "total": 905057,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "IL": {
+      "2020": {
+        "d": 3471915,
+        "r": 2446891,
+        "total": 6033744,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 3062863,
+        "r": 2449079,
+        "total": 5633310,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "IN": {
+      "2020": {
+        "d": 1242498,
+        "r": 1729857,
+        "total": 3033210,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1163603,
+        "r": 1720347,
+        "total": 2936677,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "IA": {
+      "2020": {
+        "d": 759061,
+        "r": 897672,
+        "total": 1690871,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 707278,
+        "r": 927019,
+        "total": 1663506,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "KS": {
+      "2020": {
+        "d": 570323,
+        "r": 771406,
+        "total": 1373986,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 544853,
+        "r": 758802,
+        "total": 1327591,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "KY": {
+      "2020": {
+        "d": 772474,
+        "r": 1326646,
+        "total": 2136768,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 704043,
+        "r": 1337494,
+        "total": 2074530,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "LA": {
+      "2020": {
+        "d": 856034,
+        "r": 1255776,
+        "total": 2148062,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 766870,
+        "r": 1208505,
+        "total": 2006975,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "ME": {
+      "2020": {
+        "d": 435072,
+        "r": 360737,
+        "total": 819461,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 435652,
+        "r": 377977,
+        "total": 831375,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MD": {
+      "2020": {
+        "d": 1985023,
+        "r": 976414,
+        "total": 3037030,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1902577,
+        "r": 1035550,
+        "total": 3038334,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MA": {
+      "2020": {
+        "d": 2382202,
+        "r": 1167202,
+        "total": 3631402,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2126518,
+        "r": 1251303,
+        "total": 3473668,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MI": {
+      "2020": {
+        "d": 2804040,
+        "r": 2649852,
+        "total": 5539302,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2736533,
+        "r": 2816636,
+        "total": 5664186,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MN": {
+      "2020": {
+        "d": 1717077,
+        "r": 1484065,
+        "total": 3277171,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1656979,
+        "r": 1519032,
+        "total": 3253920,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MS": {
+      "2020": {
+        "d": 539398,
+        "r": 756764,
+        "total": 1313759,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 466668,
+        "r": 747744,
+        "total": 1228008,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MO": {
+      "2020": {
+        "d": 1253014,
+        "r": 1718736,
+        "total": 3025962,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1200599,
+        "r": 1751986,
+        "total": 2995327,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "MT": {
+      "2020": {
+        "d": 244786,
+        "r": 343602,
+        "total": 603674,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 231906,
+        "r": 352079,
+        "total": 602990,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NE": {
+      "2020": {
+        "d": 374583,
+        "r": 556846,
+        "total": 956383,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 369995,
+        "r": 564816,
+        "total": 952182,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NV": {
+      "2020": {
+        "d": 703486,
+        "r": 669890,
+        "total": 1405376,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 705197,
+        "r": 751205,
+        "total": 1484840,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NH": {
+      "2020": {
+        "d": 424937,
+        "r": 365660,
+        "total": 806205,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 418488,
+        "r": 395523,
+        "total": 826189,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NJ": {
+      "2020": {
+        "d": 2608400,
+        "r": 1883313,
+        "total": 4549457,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2220713,
+        "r": 1968215,
+        "total": 4272725,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NM": {
+      "2020": {
+        "d": 501614,
+        "r": 401894,
+        "total": 923965,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 478802,
+        "r": 423391,
+        "total": 923403,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NY": {
+      "2020": {
+        "d": 5244886,
+        "r": 3251997,
+        "total": 8616861,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 4619195,
+        "r": 3578899,
+        "total": 8262495,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "NC": {
+      "2020": {
+        "d": 2684292,
+        "r": 2758775,
+        "total": 5524804,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2715375,
+        "r": 2898423,
+        "total": 5699141,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "ND": {
+      "2020": {
+        "d": 115042,
+        "r": 235751,
+        "total": 362024,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 112327,
+        "r": 246505,
+        "total": 368155,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "OH": {
+      "2020": {
+        "d": 2679165,
+        "r": 3154834,
+        "total": 5922202,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2533699,
+        "r": 3180116,
+        "total": 5767788,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "OK": {
+      "2020": {
+        "d": 503890,
+        "r": 1020280,
+        "total": 1560699,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 499599,
+        "r": 1036213,
+        "total": 1566173,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "OR": {
+      "2020": {
+        "d": 1340383,
+        "r": 958448,
+        "total": 2374321,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1240600,
+        "r": 919480,
+        "total": 2244493,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "PA": {
+      "2020": {
+        "d": 3458229,
+        "r": 3377674,
+        "total": 6936976,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 3423042,
+        "r": 3543308,
+        "total": 7058732,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "RI": {
+      "2020": {
+        "d": 307486,
+        "r": 199922,
+        "total": 517757,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 285156,
+        "r": 214406,
+        "total": 513386,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "SC": {
+      "2020": {
+        "d": 1091541,
+        "r": 1385103,
+        "total": 2513329,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1028452,
+        "r": 1483747,
+        "total": 2548140,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "SD": {
+      "2020": {
+        "d": 150471,
+        "r": 261043,
+        "total": 422609,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 146859,
+        "r": 272081,
+        "total": 428922,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "TN": {
+      "2020": {
+        "d": 1143711,
+        "r": 1852475,
+        "total": 3053851,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1056265,
+        "r": 1966865,
+        "total": 3063942,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "TX": {
+      "2020": {
+        "d": 5259126,
+        "r": 5890347,
+        "total": 11315056,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 4835250,
+        "r": 6393597,
+        "total": 11388674,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "UT": {
+      "2020": {
+        "d": 560282,
+        "r": 865140,
+        "total": 1488289,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 562566,
+        "r": 883818,
+        "total": 1488494,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "VT": {
+      "2020": {
+        "d": 242820,
+        "r": 112704,
+        "total": 367428,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 235791,
+        "r": 119395,
+        "total": 369422,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "VA": {
+      "2020": {
+        "d": 2413568,
+        "r": 1962430,
+        "total": 4460524,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2333778,
+        "r": 2074097,
+        "total": 4503288,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "WA": {
+      "2020": {
+        "d": 2369612,
+        "r": 1584651,
+        "total": 4087631,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 2245849,
+        "r": 1530923,
+        "total": 3924243,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "WV": {
+      "2020": {
+        "d": 235984,
+        "r": 545382,
+        "total": 794731,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 214309,
+        "r": 533556,
+        "total": 762582,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "WI": {
+      "2020": {
+        "d": 1630866,
+        "r": 1610184,
+        "total": 3298041,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 1668229,
+        "r": 1697626,
+        "total": 3422918,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    },
+    "WY": {
+      "2020": {
+        "d": 73491,
+        "r": 193559,
+        "total": 276765,
+        "source": "FEC Federal Elections 2020, Table 2 (federalelections2020.xlsx)"
+      },
+      "2024": {
+        "d": 69527,
+        "r": 192633,
+        "total": 269048,
+        "source": "FEC Official 2024 Presidential General Election Results (2024presgeresults.xlsx, Jan 16 2025)"
+      }
+    }
+  },
+  "districts": {
+    "AK-AL": {
+      "2020": {
+        "d": 153778,
+        "r": 189951,
+        "total": 357569
+      },
+      "2024": {
+        "d": 140026,
+        "r": 184458,
+        "total": 338177
+      },
+      "incumbent": "Nick Begich",
+      "party": "(R)"
+    },
+    "AL-01": {
+      "2024": {
+        "d": 103117,
+        "r": 220873,
+        "total": 326952
+      },
+      "incumbent": "Barry Moore",
+      "party": "(R)"
+    },
+    "AL-02": {
+      "2024": {
+        "d": 123966,
+        "r": 165891,
+        "total": 292303
+      },
+      "incumbent": "Shomari Figures",
+      "party": "(D)"
+    },
+    "AL-03": {
+      "2024": {
+        "d": 82654,
+        "r": 229676,
+        "total": 314869
+      },
+      "incumbent": "Mike Rogers",
+      "party": "(R)"
+    },
+    "AL-04": {
+      "2024": {
+        "d": 53098,
+        "r": 267953,
+        "total": 323449
+      },
+      "incumbent": "Robert Aderholt",
+      "party": "(R)"
+    },
+    "AL-05": {
+      "2024": {
+        "d": 122344,
+        "r": 224704,
+        "total": 351650
+      },
+      "incumbent": "Dale Strong",
+      "party": "(R)"
+    },
+    "AL-06": {
+      "2024": {
+        "d": 111288,
+        "r": 231122,
+        "total": 346221
+      },
+      "incumbent": "Gary Palmer",
+      "party": "(R)"
+    },
+    "AL-07": {
+      "2024": {
+        "d": 175944,
+        "r": 122397,
+        "total": 300907
+      },
+      "incumbent": "Terri Sewell",
+      "party": "(D)"
+    },
+    "AR-01": {
+      "2020": {
+        "d": 80516,
+        "r": 197832,
+        "total": 286792
+      },
+      "2024": {
+        "d": 72183,
+        "r": 196035,
+        "total": 273446
+      },
+      "incumbent": "Rick Crawford",
+      "party": "(R)"
+    },
+    "AR-02": {
+      "2020": {
+        "d": 140254,
+        "r": 183964,
+        "total": 333041
+      },
+      "2024": {
+        "d": 131089,
+        "r": 180710,
+        "total": 319500
+      },
+      "incumbent": "French Hill",
+      "party": "(R)"
+    },
+    "AR-03": {
+      "2020": {
+        "d": 110479,
+        "r": 180794,
+        "total": 300274
+      },
+      "2024": {
+        "d": 112073,
+        "r": 189161,
+        "total": 309672
+      },
+      "incumbent": "Steve Womack",
+      "party": "(R)"
+    },
+    "AR-04": {
+      "2020": {
+        "d": 92683,
+        "r": 198057,
+        "total": 298962
+      },
+      "2024": {
+        "d": 81560,
+        "r": 193335,
+        "total": 280058
+      },
+      "incumbent": "Bruce Westerman",
+      "party": "(R)"
+    },
+    "AZ-01": {
+      "2020": {
+        "d": 231887,
+        "r": 225013,
+        "total": 462784
+      },
+      "2024": {
+        "d": 216232,
+        "r": 230237,
+        "total": 450734
+      },
+      "incumbent": "David Schweikert",
+      "party": "(R)"
+    },
+    "AZ-02": {
+      "2020": {
+        "d": 183714,
+        "r": 215659,
+        "total": 405633
+      },
+      "2024": {
+        "d": 174969,
+        "r": 237306,
+        "total": 416477
+      },
+      "incumbent": "Eli Crane",
+      "party": "(R)"
+    },
+    "AZ-03": {
+      "2020": {
+        "d": 170840,
+        "r": 54754,
+        "total": 229285
+      },
+      "2024": {
+        "d": 147522,
+        "r": 62762,
+        "total": 213222
+      },
+      "incumbent": "Yassamin Ansari",
+      "party": "(D)"
+    },
+    "AZ-04": {
+      "2020": {
+        "d": 201238,
+        "r": 162975,
+        "total": 371497
+      },
+      "2024": {
+        "d": 182893,
+        "r": 159723,
+        "total": 347506
+      },
+      "incumbent": "Greg Stanton",
+      "party": "(D)"
+    },
+    "AZ-05": {
+      "2020": {
+        "d": 171278,
+        "r": 239646,
+        "total": 417419
+      },
+      "2024": {
+        "d": 175673,
+        "r": 264571,
+        "total": 445025
+      },
+      "incumbent": "Andy Biggs",
+      "party": "(R)"
+    },
+    "AZ-06": {
+      "2020": {
+        "d": 214896,
+        "r": 214580,
+        "total": 436079
+      },
+      "2024": {
+        "d": 216024,
+        "r": 219323,
+        "total": 440175
+      },
+      "incumbent": "Juan Ciscomani",
+      "party": "(R)"
+    },
+    "AZ-07": {
+      "2020": {
+        "d": 194860,
+        "r": 97580,
+        "total": 296840
+      },
+      "2024": {
+        "d": 170352,
+        "r": 108028,
+        "total": 281685
+      },
+      "incumbent": "Adelita Grijalva",
+      "party": "(D)"
+    },
+    "AZ-08": {
+      "2020": {
+        "d": 171266,
+        "r": 225761,
+        "total": 402630
+      },
+      "2024": {
+        "d": 162183,
+        "r": 226186,
+        "total": 392023
+      },
+      "incumbent": "Abe Hamadeh",
+      "party": "(R)"
+    },
+    "AZ-09": {
+      "2020": {
+        "d": 132165,
+        "r": 225719,
+        "total": 363126
+      },
+      "2024": {
+        "d": 137012,
+        "r": 262106,
+        "total": 402472
+      },
+      "incumbent": "Paul Gosar",
+      "party": "(R)"
+    },
+    "CA-01": {
+      "2024": {
+        "d": 186337,
+        "r": 144548,
+        "total": 341947
+      },
+      "incumbent": "James Gallagher",
+      "party": "(R)"
+    },
+    "CA-02": {
+      "2024": {
+        "d": 236586,
+        "r": 140619,
+        "total": 389445
+      },
+      "incumbent": "Jared Huffman",
+      "party": "(D)"
+    },
+    "CA-03": {
+      "2024": {
+        "d": 195618,
+        "r": 158363,
+        "total": 366674
+      },
+      "incumbent": "Kevin Kiley",
+      "party": "(I)"
+    },
+    "CA-04": {
+      "2024": {
+        "d": 191846,
+        "r": 141949,
+        "total": 344131
+      },
+      "incumbent": "Mike Thompson",
+      "party": "(D)"
+    },
+    "CA-05": {
+      "2024": {
+        "d": 139318,
+        "r": 214442,
+        "total": 362880
+      },
+      "incumbent": "Tom McClintock",
+      "party": "(R)"
+    },
+    "CA-06": {
+      "2024": {
+        "d": 176946,
+        "r": 148674,
+        "total": 336566
+      },
+      "incumbent": "Ami Bera",
+      "party": "(D)"
+    },
+    "CA-07": {
+      "2024": {
+        "d": 189995,
+        "r": 145560,
+        "total": 346796
+      },
+      "incumbent": "Doris Matsui",
+      "party": "(D)"
+    },
+    "CA-08": {
+      "2024": {
+        "d": 204669,
+        "r": 98182,
+        "total": 312678
+      },
+      "incumbent": "John Garamendi",
+      "party": "(D)"
+    },
+    "CA-09": {
+      "2024": {
+        "d": 145369,
+        "r": 114699,
+        "total": 268495
+      },
+      "incumbent": "Josh Harder",
+      "party": "(D)"
+    },
+    "CA-10": {
+      "2024": {
+        "d": 246231,
+        "r": 119354,
+        "total": 378177
+      },
+      "incumbent": "Mark DeSaulnier",
+      "party": "(D)"
+    },
+    "CA-11": {
+      "2024": {
+        "d": 295463,
+        "r": 50870,
+        "total": 361182
+      },
+      "incumbent": "Nancy Pelosi",
+      "party": "(D)"
+    },
+    "CA-12": {
+      "2024": {
+        "d": 269144,
+        "r": 33875,
+        "total": 318388
+      },
+      "incumbent": "Lateefah Simon",
+      "party": "(D)"
+    },
+    "CA-13": {
+      "2024": {
+        "d": 101906,
+        "r": 101125,
+        "total": 208792
+      },
+      "incumbent": "Adam Gray",
+      "party": "(D)"
+    },
+    "CA-14": {
+      "2024": {
+        "d": 186745,
+        "r": 87471,
+        "total": 285569
+      },
+      "incumbent": "Aisha Wahab",
+      "party": "(D)"
+    },
+    "CA-15": {
+      "2024": {
+        "d": 220603,
+        "r": 74250,
+        "total": 305590
+      },
+      "incumbent": "Kevin Mullin",
+      "party": "(D)"
+    },
+    "CA-16": {
+      "2024": {
+        "d": 246022,
+        "r": 82261,
+        "total": 340419
+      },
+      "incumbent": "Sam Liccardo",
+      "party": "(D)"
+    },
+    "CA-17": {
+      "2024": {
+        "d": 177917,
+        "r": 74911,
+        "total": 264340
+      },
+      "incumbent": "Ro Khanna",
+      "party": "(D)"
+    },
+    "CA-18": {
+      "2024": {
+        "d": 148835,
+        "r": 81258,
+        "total": 237523
+      },
+      "incumbent": "Zoe Lofgren",
+      "party": "(D)"
+    },
+    "CA-19": {
+      "2024": {
+        "d": 246254,
+        "r": 116802,
+        "total": 376248
+      },
+      "incumbent": "Jimmy Panetta",
+      "party": "(D)"
+    },
+    "CA-20": {
+      "2024": {
+        "d": 103310,
+        "r": 204962,
+        "total": 315411
+      },
+      "incumbent": "Vince Fong",
+      "party": "(R)"
+    },
+    "CA-21": {
+      "2024": {
+        "d": 104289,
+        "r": 92237,
+        "total": 201925
+      },
+      "incumbent": "Jim Costa",
+      "party": "(D)"
+    },
+    "CA-22": {
+      "2024": {
+        "d": 81817,
+        "r": 84994,
+        "total": 171356
+      },
+      "incumbent": "David Valadao",
+      "party": "(R)"
+    },
+    "CA-23": {
+      "2024": {
+        "d": 108128,
+        "r": 161911,
+        "total": 277288
+      },
+      "incumbent": "Jay Obernolte",
+      "party": "(R)"
+    },
+    "CA-24": {
+      "2024": {
+        "d": 214293,
+        "r": 126559,
+        "total": 351804
+      },
+      "incumbent": "Salud Carbajal",
+      "party": "(D)"
+    },
+    "CA-25": {
+      "2024": {
+        "d": 140058,
+        "r": 124338,
+        "total": 270412
+      },
+      "incumbent": "Raul Ruiz",
+      "party": "(D)"
+    },
+    "CA-26": {
+      "2024": {
+        "d": 193294,
+        "r": 140781,
+        "total": 343771
+      },
+      "incumbent": "Julia Brownley",
+      "party": "(D)"
+    },
+    "CA-27": {
+      "2024": {
+        "d": 158101,
+        "r": 129273,
+        "total": 296345
+      },
+      "incumbent": "George Whitesides",
+      "party": "(D)"
+    },
+    "CA-28": {
+      "2024": {
+        "d": 199379,
+        "r": 116724,
+        "total": 326913
+      },
+      "incumbent": "Judy Chu",
+      "party": "(D)"
+    },
+    "CA-29": {
+      "2024": {
+        "d": 156025,
+        "r": 75625,
+        "total": 239016
+      },
+      "incumbent": "Luz Rivas",
+      "party": "(D)"
+    },
+    "CA-30": {
+      "2024": {
+        "d": 233119,
+        "r": 96524,
+        "total": 341310
+      },
+      "incumbent": "Laura Friedman",
+      "party": "(D)"
+    },
+    "CA-31": {
+      "2024": {
+        "d": 159494,
+        "r": 123786,
+        "total": 292043
+      },
+      "incumbent": "Gil Cisneros",
+      "party": "(D)"
+    },
+    "CA-32": {
+      "2024": {
+        "d": 219603,
+        "r": 129673,
+        "total": 359755
+      },
+      "incumbent": "Brad Sherman",
+      "party": "(D)"
+    },
+    "CA-33": {
+      "2024": {
+        "d": 132891,
+        "r": 108565,
+        "total": 248705
+      },
+      "incumbent": "Pete Aguilar",
+      "party": "(D)"
+    },
+    "CA-34": {
+      "2024": {
+        "d": 156729,
+        "r": 48090,
+        "total": 214525
+      },
+      "incumbent": "Jimmy Gomez",
+      "party": "(D)"
+    },
+    "CA-35": {
+      "2024": {
+        "d": 136179,
+        "r": 115899,
+        "total": 259995
+      },
+      "incumbent": "Norma Torres",
+      "party": "(D)"
+    },
+    "CA-36": {
+      "2024": {
+        "d": 261912,
+        "r": 111107,
+        "total": 385621
+      },
+      "incumbent": "Ted Lieu",
+      "party": "(D)"
+    },
+    "CA-37": {
+      "2024": {
+        "d": 184950,
+        "r": 42949,
+        "total": 235124
+      },
+      "incumbent": "Sydney Kamlager-Dove",
+      "party": "(D)"
+    },
+    "CA-38": {
+      "2024": {
+        "d": 142634,
+        "r": 110393,
+        "total": 261716
+      },
+      "incumbent": "Linda Sanchez",
+      "party": "(D)"
+    },
+    "CA-39": {
+      "2024": {
+        "d": 125382,
+        "r": 103042,
+        "total": 235647
+      },
+      "incumbent": "Mark Takano",
+      "party": "(D)"
+    },
+    "CA-40": {
+      "2024": {
+        "d": 161640,
+        "r": 208262,
+        "total": 381211
+      },
+      "incumbent": "Young Kim",
+      "party": "(R)"
+    },
+    "CA-41": {
+      "2024": {
+        "d": 172854,
+        "r": 128694,
+        "total": 311081
+      },
+      "incumbent": "Ken Calvert",
+      "party": "(R)"
+    },
+    "CA-42": {
+      "2024": {
+        "d": 192323,
+        "r": 146391,
+        "total": 349703
+      },
+      "incumbent": "Robert Garcia",
+      "party": "(D)"
+    },
+    "CA-43": {
+      "2024": {
+        "d": 162845,
+        "r": 53434,
+        "total": 223448
+      },
+      "incumbent": "Maxine Waters",
+      "party": "(D)"
+    },
+    "CA-44": {
+      "2024": {
+        "d": 145093,
+        "r": 67784,
+        "total": 219843
+      },
+      "incumbent": "Nanette Barragan",
+      "party": "(D)"
+    },
+    "CA-45": {
+      "2024": {
+        "d": 151772,
+        "r": 139943,
+        "total": 300410
+      },
+      "incumbent": "Derek Tran",
+      "party": "(D)"
+    },
+    "CA-46": {
+      "2024": {
+        "d": 128647,
+        "r": 91851,
+        "total": 227640
+      },
+      "incumbent": "Lou Correa",
+      "party": "(D)"
+    },
+    "CA-47": {
+      "2024": {
+        "d": 190293,
+        "r": 154229,
+        "total": 357880
+      },
+      "incumbent": "Dave Min",
+      "party": "(D)"
+    },
+    "CA-48": {
+      "2024": {
+        "d": 165733,
+        "r": 154575,
+        "total": 328887
+      },
+      "incumbent": "Darrell Issa",
+      "party": "(R)"
+    },
+    "CA-49": {
+      "2024": {
+        "d": 211077,
+        "r": 164262,
+        "total": 386796
+      },
+      "incumbent": "Mike Levin",
+      "party": "(D)"
+    },
+    "CA-50": {
+      "2024": {
+        "d": 214644,
+        "r": 146603,
+        "total": 372726
+      },
+      "incumbent": "Scott Peters",
+      "party": "(D)"
+    },
+    "CA-51": {
+      "2024": {
+        "d": 205156,
+        "r": 140215,
+        "total": 355711
+      },
+      "incumbent": "Sara Jacobs",
+      "party": "(D)"
+    },
+    "CA-52": {
+      "2024": {
+        "d": 156713,
+        "r": 108809,
+        "total": 272674
+      },
+      "incumbent": "Juan Vargas",
+      "party": "(D)"
+    },
+    "CO-01": {
+      "2020": {
+        "d": 315904,
+        "r": 72379,
+        "total": 397310
+      },
+      "2024": {
+        "d": 280661,
+        "r": 75479,
+        "total": 365908
+      },
+      "incumbent": "Diana DeGette",
+      "party": "(D)"
+    },
+    "CO-02": {
+      "2020": {
+        "d": 306400,
+        "r": 128491,
+        "total": 446260
+      },
+      "2024": {
+        "d": 295692,
+        "r": 123973,
+        "total": 431634
+      },
+      "incumbent": "Joe Neguse",
+      "party": "(D)"
+    },
+    "CO-03": {
+      "2020": {
+        "d": 184181,
+        "r": 218187,
+        "total": 412128
+      },
+      "2024": {
+        "d": 178501,
+        "r": 218065,
+        "total": 406672
+      },
+      "incumbent": "Jeff Hurd",
+      "party": "(R)"
+    },
+    "CO-04": {
+      "2020": {
+        "d": 174553,
+        "r": 256585,
+        "total": 442183
+      },
+      "2024": {
+        "d": 182901,
+        "r": 267114,
+        "total": 461367
+      },
+      "incumbent": "Lauren Boebert",
+      "party": "(R)"
+    },
+    "CO-05": {
+      "2020": {
+        "d": 160880,
+        "r": 198614,
+        "total": 373408
+      },
+      "2024": {
+        "d": 165522,
+        "r": 199615,
+        "total": 375301
+      },
+      "incumbent": "Jeff Crank",
+      "party": "(R)"
+    },
+    "CO-06": {
+      "2020": {
+        "d": 232517,
+        "r": 141195,
+        "total": 383771
+      },
+      "2024": {
+        "d": 210533,
+        "r": 139305,
+        "total": 360149
+      },
+      "incumbent": "Jason Crow",
+      "party": "(D)"
+    },
+    "CO-07": {
+      "2020": {
+        "d": 256166,
+        "r": 190987,
+        "total": 459940
+      },
+      "2024": {
+        "d": 249924,
+        "r": 183164,
+        "total": 445524
+      },
+      "incumbent": "Brittany Pettersen",
+      "party": "(D)"
+    },
+    "CO-08": {
+      "2020": {
+        "d": 173751,
+        "r": 158170,
+        "total": 341951
+      },
+      "2024": {
+        "d": 164425,
+        "r": 170726,
+        "total": 344318
+      },
+      "incumbent": "Gabe Evans",
+      "party": "(R)"
+    },
+    "CT-01": {
+      "2020": {
+        "d": 227830,
+        "r": 126759,
+        "total": 359895
+      },
+      "2024": {
+        "d": 208405,
+        "r": 129726,
+        "total": 343851
+      },
+      "incumbent": "John Larson",
+      "party": "(D)"
+    },
+    "CT-02": {
+      "2020": {
+        "d": 214158,
+        "r": 169366,
+        "total": 391348
+      },
+      "2024": {
+        "d": 205994,
+        "r": 175984,
+        "total": 388477
+      },
+      "incumbent": "Joe Courtney",
+      "party": "(D)"
+    },
+    "CT-03": {
+      "2020": {
+        "d": 213122,
+        "r": 142174,
+        "total": 359820
+      },
+      "2024": {
+        "d": 191831,
+        "r": 143737,
+        "total": 342110
+      },
+      "incumbent": "Rosa DeLauro",
+      "party": "(D)"
+    },
+    "CT-04": {
+      "2020": {
+        "d": 230411,
+        "r": 120230,
+        "total": 355456
+      },
+      "2024": {
+        "d": 206080,
+        "r": 127034,
+        "total": 338387
+      },
+      "incumbent": "Jim Himes",
+      "party": "(D)"
+    },
+    "CT-05": {
+      "2020": {
+        "d": 195160,
+        "r": 156762,
+        "total": 357217
+      },
+      "2024": {
+        "d": 179743,
+        "r": 160437,
+        "total": 345604
+      },
+      "incumbent": "Jahana Hayes",
+      "party": "(D)"
+    },
+    "DE-AL": {
+      "2020": {
+        "d": 296268,
+        "r": 200603,
+        "total": 504010
+      },
+      "2024": {
+        "d": 289758,
+        "r": 214351,
+        "total": 511697
+      },
+      "incumbent": "Sarah McBride",
+      "party": "(D)"
+    },
+    "FL-01": {
+      "2024": {
+        "d": 130210,
+        "r": 287054,
+        "total": 421568
+      },
+      "incumbent": "Jimmy Patronis",
+      "party": "(R)"
+    },
+    "FL-02": {
+      "2024": {
+        "d": 166158,
+        "r": 239978,
+        "total": 410127
+      },
+      "incumbent": "Neal Dunn",
+      "party": "(R)"
+    },
+    "FL-03": {
+      "2024": {
+        "d": 155748,
+        "r": 240137,
+        "total": 399639
+      },
+      "incumbent": "Kat Cammack",
+      "party": "(R)"
+    },
+    "FL-04": {
+      "2024": {
+        "d": 173072,
+        "r": 220106,
+        "total": 397132
+      },
+      "incumbent": "Aaron Bean",
+      "party": "(R)"
+    },
+    "FL-05": {
+      "2024": {
+        "d": 168926,
+        "r": 262439,
+        "total": 436333
+      },
+      "incumbent": "John Rutherford",
+      "party": "(R)"
+    },
+    "FL-06": {
+      "2024": {
+        "d": 152754,
+        "r": 285616,
+        "total": 441578
+      },
+      "incumbent": "Randy Fine",
+      "party": "(R)"
+    },
+    "FL-07": {
+      "2024": {
+        "d": 184389,
+        "r": 237638,
+        "total": 426813
+      },
+      "incumbent": "Cory Mills",
+      "party": "(R)"
+    },
+    "FL-08": {
+      "2024": {
+        "d": 177979,
+        "r": 247784,
+        "total": 430519
+      },
+      "incumbent": "Mike Haridopolos",
+      "party": "(R)"
+    },
+    "FL-09": {
+      "2024": {
+        "d": 152204,
+        "r": 218731,
+        "total": 374281
+      },
+      "incumbent": "Darren Soto",
+      "party": "(D)"
+    },
+    "FL-10": {
+      "2024": {
+        "d": 183316,
+        "r": 111658,
+        "total": 298720
+      },
+      "incumbent": "Maxwell Frost",
+      "party": "(D)"
+    },
+    "FL-11": {
+      "2024": {
+        "d": 187154,
+        "r": 257599,
+        "total": 449051
+      },
+      "incumbent": "Daniel Webster",
+      "party": "(R)"
+    },
+    "FL-12": {
+      "2024": {
+        "d": 159991,
+        "r": 218927,
+        "total": 382929
+      },
+      "incumbent": "Gus Bilirakis",
+      "party": "(R)"
+    },
+    "FL-13": {
+      "2024": {
+        "d": 174640,
+        "r": 228933,
+        "total": 407551
+      },
+      "incumbent": "Anna Paulina Luna",
+      "party": "(R)"
+    },
+    "FL-14": {
+      "2024": {
+        "d": 171479,
+        "r": 212233,
+        "total": 387748
+      },
+      "incumbent": "Kathy Castor",
+      "party": "(D)"
+    },
+    "FL-15": {
+      "2024": {
+        "d": 157389,
+        "r": 236552,
+        "total": 398740
+      },
+      "incumbent": "Laurel Lee",
+      "party": "(R)"
+    },
+    "FL-16": {
+      "2024": {
+        "d": 184331,
+        "r": 243409,
+        "total": 431341
+      },
+      "incumbent": "Vern Buchanan",
+      "party": "(R)"
+    },
+    "FL-17": {
+      "2024": {
+        "d": 174418,
+        "r": 274197,
+        "total": 451668
+      },
+      "incumbent": "Greg Steube",
+      "party": "(R)"
+    },
+    "FL-18": {
+      "2024": {
+        "d": 152345,
+        "r": 215207,
+        "total": 370821
+      },
+      "incumbent": "Scott Franklin",
+      "party": "(R)"
+    },
+    "FL-19": {
+      "2024": {
+        "d": 145965,
+        "r": 273572,
+        "total": 422283
+      },
+      "incumbent": "Byron Donalds",
+      "party": "(R)"
+    },
+    "FL-20": {
+      "2024": {
+        "d": 221091,
+        "r": 100494,
+        "total": 324521
+      },
+      "incumbent": "VACANT (Cherfilus-McCormick)",
+      "party": "(D)"
+    },
+    "FL-21": {
+      "2024": {
+        "d": 186001,
+        "r": 259006,
+        "total": 448209
+      },
+      "incumbent": "Brian Mast",
+      "party": "(R)"
+    },
+    "FL-22": {
+      "2024": {
+        "d": 173837,
+        "r": 214070,
+        "total": 391475
+      },
+      "incumbent": "Lois Frankel",
+      "party": "(D)"
+    },
+    "FL-23": {
+      "2024": {
+        "d": 190174,
+        "r": 143874,
+        "total": 337102
+      },
+      "incumbent": "Jared Moskowitz",
+      "party": "(D)"
+    },
+    "FL-24": {
+      "2024": {
+        "d": 191546,
+        "r": 83962,
+        "total": 277976
+      },
+      "incumbent": "Frederica Wilson",
+      "party": "(D)"
+    },
+    "FL-25": {
+      "2024": {
+        "d": 169440,
+        "r": 203850,
+        "total": 376289
+      },
+      "incumbent": "Debbie Wasserman Schultz",
+      "party": "(D)"
+    },
+    "FL-26": {
+      "2024": {
+        "d": 131758,
+        "r": 191736,
+        "total": 326115
+      },
+      "incumbent": "Mario Diaz-Balart",
+      "party": "(R)"
+    },
+    "FL-27": {
+      "2024": {
+        "d": 142685,
+        "r": 191853,
+        "total": 337184
+      },
+      "incumbent": "Maria Elvira Salazar",
+      "party": "(R)"
+    },
+    "FL-28": {
+      "2024": {
+        "d": 124039,
+        "r": 209509,
+        "total": 335833
+      },
+      "incumbent": "Carlos Gimenez",
+      "party": "(R)"
+    },
+    "GA-01": {
+      "2020": {
+        "d": 144314,
+        "r": 189725,
+        "total": 338574
+      },
+      "2024": {
+        "d": 152070,
+        "r": 209540,
+        "total": 363589
+      },
+      "incumbent": "Buddy Carter",
+      "party": "(R)"
+    },
+    "GA-02": {
+      "2020": {
+        "d": 173621,
+        "r": 140787,
+        "total": 317280
+      },
+      "2024": {
+        "d": 169577,
+        "r": 145474,
+        "total": 316317
+      },
+      "incumbent": "Sanford Bishop",
+      "party": "(D)"
+    },
+    "GA-03": {
+      "2020": {
+        "d": 132438,
+        "r": 248375,
+        "total": 385533
+      },
+      "2024": {
+        "d": 145886,
+        "r": 270196,
+        "total": 418554
+      },
+      "incumbent": "Brian Jack",
+      "party": "(R)"
+    },
+    "GA-04": {
+      "2020": {
+        "d": 248593,
+        "r": 65346,
+        "total": 317482
+      },
+      "2024": {
+        "d": 234429,
+        "r": 71937,
+        "total": 309663
+      },
+      "incumbent": "Hank Johnson",
+      "party": "(D)"
+    },
+    "GA-05": {
+      "2020": {
+        "d": 298038,
+        "r": 45300,
+        "total": 347583
+      },
+      "2024": {
+        "d": 299983,
+        "r": 48165,
+        "total": 351733
+      },
+      "incumbent": "Nikema Williams",
+      "party": "(D)"
+    },
+    "GA-06": {
+      "2020": {
+        "d": 272649,
+        "r": 90780,
+        "total": 367715
+      },
+      "2024": {
+        "d": 280411,
+        "r": 92612,
+        "total": 376079
+      },
+      "incumbent": "Lucy McBath",
+      "party": "(D)"
+    },
+    "GA-07": {
+      "2020": {
+        "d": 160882,
+        "r": 240034,
+        "total": 406792
+      },
+      "2024": {
+        "d": 166264,
+        "r": 261716,
+        "total": 432786
+      },
+      "incumbent": "Rich McCormick",
+      "party": "(R)"
+    },
+    "GA-08": {
+      "2020": {
+        "d": 117889,
+        "r": 209159,
+        "total": 330441
+      },
+      "2024": {
+        "d": 119340,
+        "r": 225184,
+        "total": 345955
+      },
+      "incumbent": "Austin Scott",
+      "party": "(R)"
+    },
+    "GA-09": {
+      "2020": {
+        "d": 121352,
+        "r": 239320,
+        "total": 365489
+      },
+      "2024": {
+        "d": 130776,
+        "r": 267538,
+        "total": 401323
+      },
+      "incumbent": "Andrew Clyde",
+      "party": "(R)"
+    },
+    "GA-10": {
+      "2020": {
+        "d": 146057,
+        "r": 226098,
+        "total": 376859
+      },
+      "2024": {
+        "d": 162887,
+        "r": 249036,
+        "total": 414479
+      },
+      "incumbent": "Mike Collins",
+      "party": "(R)"
+    },
+    "GA-11": {
+      "2020": {
+        "d": 149016,
+        "r": 234589,
+        "total": 390136
+      },
+      "2024": {
+        "d": 159023,
+        "r": 257070,
+        "total": 420016
+      },
+      "incumbent": "Barry Loudermilk",
+      "party": "(R)"
+    },
+    "GA-12": {
+      "2020": {
+        "d": 151146,
+        "r": 185743,
+        "total": 340948
+      },
+      "2024": {
+        "d": 149015,
+        "r": 198465,
+        "total": 349195
+      },
+      "incumbent": "Rick Allen",
+      "party": "(R)"
+    },
+    "GA-13": {
+      "2020": {
+        "d": 248807,
+        "r": 104096,
+        "total": 356696
+      },
+      "2024": {
+        "d": 257537,
+        "r": 103350,
+        "total": 364212
+      },
+      "incumbent": "Everton Blair",
+      "party": "(D)"
+    },
+    "GA-14": {
+      "2020": {
+        "d": 108830,
+        "r": 242501,
+        "total": 356187
+      },
+      "2024": {
+        "d": 120819,
+        "r": 262833,
+        "total": 386145
+      },
+      "incumbent": "Clay Fuller",
+      "party": "(R)"
+    },
+    "HI-01": {
+      "2020": {
+        "d": 178660,
+        "r": 96350,
+        "total": 279670
+      },
+      "2024": {
+        "d": 153039,
+        "r": 91498,
+        "total": 248840
+      },
+      "incumbent": "Ed Case",
+      "party": "(D)"
+    },
+    "HI-02": {
+      "2020": {
+        "d": 187470,
+        "r": 100514,
+        "total": 294799
+      },
+      "2024": {
+        "d": 160005,
+        "r": 102163,
+        "total": 267861
+      },
+      "incumbent": "Jill Tokuda",
+      "party": "(D)"
+    },
+    "IA-01": {
+      "2020": {
+        "d": 203400,
+        "r": 215742,
+        "total": 426927
+      },
+      "2024": {
+        "d": 190502,
+        "r": 226309,
+        "total": 422996
+      },
+      "incumbent": "Mariannette Miller-Meeks",
+      "party": "(R)"
+    },
+    "IA-02": {
+      "2020": {
+        "d": 203246,
+        "r": 222312,
+        "total": 433378
+      },
+      "2024": {
+        "d": 186017,
+        "r": 227941,
+        "total": 419694
+      },
+      "incumbent": "Ashley Hinson",
+      "party": "(R)"
+    },
+    "IA-03": {
+      "2020": {
+        "d": 205591,
+        "r": 207043,
+        "total": 420101
+      },
+      "2024": {
+        "d": 199043,
+        "r": 217645,
+        "total": 422161
+      },
+      "incumbent": "Zach Nunn",
+      "party": "(R)"
+    },
+    "IA-04": {
+      "2020": {
+        "d": 146824,
+        "r": 252575,
+        "total": 406128
+      },
+      "2024": {
+        "d": 131716,
+        "r": 255124,
+        "total": 391998
+      },
+      "incumbent": "Randy Feenstra",
+      "party": "(R)"
+    },
+    "ID-01": {
+      "2020": {
+        "d": 132085,
+        "r": 302868,
+        "total": 447457
+      },
+      "2024": {
+        "d": 126556,
+        "r": 343893,
+        "total": 482249
+      },
+      "incumbent": "Russ Fulcher",
+      "party": "(R)"
+    },
+    "ID-02": {
+      "2020": {
+        "d": 154936,
+        "r": 251251,
+        "total": 419904
+      },
+      "2024": {
+        "d": 148416,
+        "r": 261353,
+        "total": 422563
+      },
+      "incumbent": "Mike Simpson",
+      "party": "(R)"
+    },
+    "IL-01": {
+      "2020": {
+        "d": 260631,
+        "r": 103984,
+        "total": 369753
+      },
+      "2024": {
+        "d": 214180,
+        "r": 109215,
+        "total": 327524
+      },
+      "incumbent": "Jonathan Jackson",
+      "party": "(D)"
+    },
+    "IL-02": {
+      "2020": {
+        "d": 231924,
+        "r": 98000,
+        "total": 334668
+      },
+      "2024": {
+        "d": 196188,
+        "r": 97557,
+        "total": 297831
+      },
+      "incumbent": "Robin Kelly",
+      "party": "(D)"
+    },
+    "IL-03": {
+      "2020": {
+        "d": 207342,
+        "r": 84147,
+        "total": 297395
+      },
+      "2024": {
+        "d": 172024,
+        "r": 88947,
+        "total": 264637
+      },
+      "incumbent": "Delia Ramirez",
+      "party": "(D)"
+    },
+    "IL-04": {
+      "2020": {
+        "d": 175301,
+        "r": 62731,
+        "total": 242543
+      },
+      "2024": {
+        "d": 133997,
+        "r": 74150,
+        "total": 211284
+      },
+      "incumbent": "Chuy Garcia",
+      "party": "(D)"
+    },
+    "IL-05": {
+      "2020": {
+        "d": 275679,
+        "r": 117237,
+        "total": 400256
+      },
+      "2024": {
+        "d": 254128,
+        "r": 115335,
+        "total": 373934
+      },
+      "incumbent": "Mike Quigley",
+      "party": "(D)"
+    },
+    "IL-06": {
+      "2020": {
+        "d": 216368,
+        "r": 173185,
+        "total": 396914
+      },
+      "2024": {
+        "d": 190484,
+        "r": 170365,
+        "total": 366334
+      },
+      "incumbent": "Sean Casten",
+      "party": "(D)"
+    },
+    "IL-07": {
+      "2020": {
+        "d": 274896,
+        "r": 41082,
+        "total": 321060
+      },
+      "2024": {
+        "d": 227588,
+        "r": 46357,
+        "total": 277166
+      },
+      "incumbent": "Danny Davis",
+      "party": "(D)"
+    },
+    "IL-08": {
+      "2020": {
+        "d": 189430,
+        "r": 138017,
+        "total": 333628
+      },
+      "2024": {
+        "d": 162610,
+        "r": 141333,
+        "total": 307970
+      },
+      "incumbent": "Raja Krishnamoorthi",
+      "party": "(D)"
+    },
+    "IL-09": {
+      "2020": {
+        "d": 267524,
+        "r": 108596,
+        "total": 382482
+      },
+      "2024": {
+        "d": 234534,
+        "r": 107886,
+        "total": 346306
+      },
+      "incumbent": "Jan Schakowsky",
+      "party": "(D)"
+    },
+    "IL-10": {
+      "2020": {
+        "d": 220357,
+        "r": 128416,
+        "total": 355522
+      },
+      "2024": {
+        "d": 198884,
+        "r": 126235,
+        "total": 329534
+      },
+      "incumbent": "Brad Schneider",
+      "party": "(D)"
+    },
+    "IL-11": {
+      "2020": {
+        "d": 215328,
+        "r": 157129,
+        "total": 380478
+      },
+      "2024": {
+        "d": 198860,
+        "r": 157499,
+        "total": 361856
+      },
+      "incumbent": "Bill Foster",
+      "party": "(D)"
+    },
+    "IL-12": {
+      "2020": {
+        "d": 106204,
+        "r": 270198,
+        "total": 383257
+      },
+      "2024": {
+        "d": 102645,
+        "r": 264477,
+        "total": 372700
+      },
+      "incumbent": "Mike Bost",
+      "party": "(R)"
+    },
+    "IL-13": {
+      "2020": {
+        "d": 195393,
+        "r": 155142,
+        "total": 358904
+      },
+      "2024": {
+        "d": 180464,
+        "r": 145725,
+        "total": 331866
+      },
+      "incumbent": "Nikki Budzinski",
+      "party": "(D)"
+    },
+    "IL-14": {
+      "2020": {
+        "d": 191028,
+        "r": 151016,
+        "total": 348998
+      },
+      "2024": {
+        "d": 173949,
+        "r": 156554,
+        "total": 335428
+      },
+      "incumbent": "Lauren Underwood",
+      "party": "(D)"
+    },
+    "IL-15": {
+      "2020": {
+        "d": 117057,
+        "r": 270236,
+        "total": 395434
+      },
+      "2024": {
+        "d": 111678,
+        "r": 263292,
+        "total": 381405
+      },
+      "incumbent": "Mary Miller",
+      "party": "(R)"
+    },
+    "IL-16": {
+      "2020": {
+        "d": 152633,
+        "r": 238789,
+        "total": 400519
+      },
+      "2024": {
+        "d": 147743,
+        "r": 236254,
+        "total": 390305
+      },
+      "incumbent": "Darin LaHood",
+      "party": "(R)"
+    },
+    "IL-17": {
+      "2020": {
+        "d": 174821,
+        "r": 148985,
+        "total": 331627
+      },
+      "2024": {
+        "d": 162905,
+        "r": 147899,
+        "total": 316290
+      },
+      "incumbent": "Eric Sorensen",
+      "party": "(D)"
+    },
+    "IN-01": {
+      "2020": {
+        "d": 181832,
+        "r": 153364,
+        "total": 340700
+      },
+      "2024": {
+        "d": 161625,
+        "r": 160330,
+        "total": 327083
+      },
+      "incumbent": "Frank Mrvan",
+      "party": "(D)"
+    },
+    "IN-02": {
+      "2020": {
+        "d": 117687,
+        "r": 187968,
+        "total": 311424
+      },
+      "2024": {
+        "d": 107778,
+        "r": 187182,
+        "total": 299603
+      },
+      "incumbent": "Rudy Yakym",
+      "party": "(R)"
+    },
+    "IN-03": {
+      "2020": {
+        "d": 111650,
+        "r": 209890,
+        "total": 328584
+      },
+      "2024": {
+        "d": 107772,
+        "r": 207946,
+        "total": 321172
+      },
+      "incumbent": "Marlin Stutzman",
+      "party": "(R)"
+    },
+    "IN-04": {
+      "2020": {
+        "d": 118417,
+        "r": 219029,
+        "total": 345309
+      },
+      "2024": {
+        "d": 114999,
+        "r": 213001,
+        "total": 333994
+      },
+      "incumbent": "Jim Baird",
+      "party": "(R)"
+    },
+    "IN-05": {
+      "2020": {
+        "d": 151397,
+        "r": 210212,
+        "total": 369022
+      },
+      "2024": {
+        "d": 150105,
+        "r": 212150,
+        "total": 369170
+      },
+      "incumbent": "Victoria Spartz",
+      "party": "(R)"
+    },
+    "IN-06": {
+      "2020": {
+        "d": 109391,
+        "r": 215307,
+        "total": 331748
+      },
+      "2024": {
+        "d": 107012,
+        "r": 212902,
+        "total": 325612
+      },
+      "incumbent": "Jefferson Shreve",
+      "party": "(R)"
+    },
+    "IN-07": {
+      "2020": {
+        "d": 213498,
+        "r": 84813,
+        "total": 303734
+      },
+      "2024": {
+        "d": 189586,
+        "r": 77134,
+        "total": 271247
+      },
+      "incumbent": "Andre Carson",
+      "party": "(D)"
+    },
+    "IN-08": {
+      "2020": {
+        "d": 112346,
+        "r": 225275,
+        "total": 343948
+      },
+      "2024": {
+        "d": 103784,
+        "r": 223051,
+        "total": 332397
+      },
+      "incumbent": "Mark Messmer",
+      "party": "(R)"
+    },
+    "IN-09": {
+      "2020": {
+        "d": 126197,
+        "r": 223661,
+        "total": 356696
+      },
+      "2024": {
+        "d": 121011,
+        "r": 226651,
+        "total": 353491
+      },
+      "incumbent": "Erin Houchin",
+      "party": "(R)"
+    },
+    "KS-01": {
+      "2020": {
+        "d": 110422,
+        "r": 206364,
+        "total": 323819
+      },
+      "2024": {
+        "d": 103889,
+        "r": 200988,
+        "total": 310550
+      },
+      "incumbent": "Tracey Mann",
+      "party": "(R)"
+    },
+    "KS-02": {
+      "2020": {
+        "d": 130954,
+        "r": 183352,
+        "total": 321754
+      },
+      "2024": {
+        "d": 120738,
+        "r": 181316,
+        "total": 307903
+      },
+      "incumbent": "Derek Schmidt",
+      "party": "(R)"
+    },
+    "KS-03": {
+      "2020": {
+        "d": 205621,
+        "r": 187731,
+        "total": 401921
+      },
+      "2024": {
+        "d": 203405,
+        "r": 187105,
+        "total": 397590
+      },
+      "incumbent": "Sharice Davids",
+      "party": "(D)"
+    },
+    "KS-04": {
+      "2020": {
+        "d": 123326,
+        "r": 193958,
+        "total": 324810
+      },
+      "2024": {
+        "d": 116821,
+        "r": 189393,
+        "total": 311548
+      },
+      "incumbent": "Ron Estes",
+      "party": "(R)"
+    },
+    "KY-01": {
+      "2020": {
+        "d": 98100,
+        "r": 248460,
+        "total": 351824
+      },
+      "2024": {
+        "d": 88125,
+        "r": 250232,
+        "total": 342750
+      },
+      "incumbent": "James Comer",
+      "party": "(R)"
+    },
+    "KY-02": {
+      "2020": {
+        "d": 108502,
+        "r": 237998,
+        "total": 352498
+      },
+      "2024": {
+        "d": 100536,
+        "r": 245734,
+        "total": 351285
+      },
+      "incumbent": "Brett Guthrie",
+      "party": "(R)"
+    },
+    "KY-03": {
+      "2020": {
+        "d": 220429,
+        "r": 138649,
+        "total": 365965
+      },
+      "2024": {
+        "d": 194712,
+        "r": 131797,
+        "total": 332190
+      },
+      "incumbent": "Morgan McGarvey",
+      "party": "(D)"
+    },
+    "KY-04": {
+      "2020": {
+        "d": 122980,
+        "r": 244777,
+        "total": 374537
+      },
+      "2024": {
+        "d": 117644,
+        "r": 250916,
+        "total": 374804
+      },
+      "incumbent": "Thomas Massie",
+      "party": "(R)"
+    },
+    "KY-05": {
+      "2020": {
+        "d": 64435,
+        "r": 258817,
+        "total": 327397
+      },
+      "2024": {
+        "d": 55275,
+        "r": 257630,
+        "total": 316756
+      },
+      "incumbent": "Hal Rogers",
+      "party": "(R)"
+    },
+    "KY-06": {
+      "2020": {
+        "d": 158028,
+        "r": 197944,
+        "total": 363215
+      },
+      "2024": {
+        "d": 147751,
+        "r": 201185,
+        "total": 355524
+      },
+      "incumbent": "Andy Barr",
+      "party": "(R)"
+    },
+    "LA-01": {
+      "2024": {
+        "d": 108441,
+        "r": 246801,
+        "total": 361900
+      },
+      "incumbent": "Steve Scalise",
+      "party": "(R)"
+    },
+    "LA-02": {
+      "2024": {
+        "d": 222904,
+        "r": 77618,
+        "total": 306729
+      },
+      "incumbent": "Troy Carter",
+      "party": "(D)"
+    },
+    "LA-03": {
+      "2024": {
+        "d": 105523,
+        "r": 226788,
+        "total": 336856
+      },
+      "incumbent": "Clay Higgins",
+      "party": "(R)"
+    },
+    "LA-04": {
+      "2024": {
+        "d": 103444,
+        "r": 213190,
+        "total": 320591
+      },
+      "incumbent": "Mike Johnson",
+      "party": "(R)"
+    },
+    "LA-05": {
+      "2024": {
+        "d": 103796,
+        "r": 212946,
+        "total": 320662
+      },
+      "incumbent": "Julia Letlow",
+      "party": "(R)"
+    },
+    "LA-06": {
+      "2024": {
+        "d": 122761,
+        "r": 231162,
+        "total": 360237
+      },
+      "incumbent": "Cleo Fields",
+      "party": "(D)"
+    },
+    "MA-01": {
+      "2020": {
+        "d": 235190,
+        "r": 150037,
+        "total": 393141
+      },
+      "2024": {
+        "d": 211784,
+        "r": 160045,
+        "total": 379806
+      },
+      "incumbent": "Richard Neal",
+      "party": "(D)"
+    },
+    "MA-02": {
+      "2020": {
+        "d": 254528,
+        "r": 132546,
+        "total": 395665
+      },
+      "2024": {
+        "d": 231966,
+        "r": 141308,
+        "total": 382912
+      },
+      "incumbent": "Jim McGovern",
+      "party": "(D)"
+    },
+    "MA-03": {
+      "2020": {
+        "d": 233536,
+        "r": 131375,
+        "total": 372676
+      },
+      "2024": {
+        "d": 208626,
+        "r": 140854,
+        "total": 357054
+      },
+      "incumbent": "Lori Trahan",
+      "party": "(D)"
+    },
+    "MA-04": {
+      "2020": {
+        "d": 263669,
+        "r": 145121,
+        "total": 416487
+      },
+      "2024": {
+        "d": 237730,
+        "r": 158054,
+        "total": 403966
+      },
+      "incumbent": "Jake Auchincloss",
+      "party": "(D)"
+    },
+    "MA-05": {
+      "2020": {
+        "d": 298842,
+        "r": 94405,
+        "total": 399703
+      },
+      "2024": {
+        "d": 265591,
+        "r": 97371,
+        "total": 372437
+      },
+      "incumbent": "Katherine Clark",
+      "party": "(D)"
+    },
+    "MA-06": {
+      "2020": {
+        "d": 283226,
+        "r": 158963,
+        "total": 450070
+      },
+      "2024": {
+        "d": 255729,
+        "r": 166654,
+        "total": 430682
+      },
+      "incumbent": "Seth Moulton",
+      "party": "(D)"
+    },
+    "MA-07": {
+      "2020": {
+        "d": 269381,
+        "r": 41245,
+        "total": 314904
+      },
+      "2024": {
+        "d": 222693,
+        "r": 47009,
+        "total": 278443
+      },
+      "incumbent": "Ayanna Pressley",
+      "party": "(D)"
+    },
+    "MA-08": {
+      "2020": {
+        "d": 277534,
+        "r": 130407,
+        "total": 414844
+      },
+      "2024": {
+        "d": 242623,
+        "r": 139502,
+        "total": 390362
+      },
+      "incumbent": "Stephen Lynch",
+      "party": "(D)"
+    },
+    "MA-09": {
+      "2020": {
+        "d": 266296,
+        "r": 183101,
+        "total": 457586
+      },
+      "2024": {
+        "d": 249776,
+        "r": 200506,
+        "total": 457746
+      },
+      "incumbent": "Bill Keating",
+      "party": "(D)"
+    },
+    "MD-01": {
+      "2020": {
+        "d": 171268,
+        "r": 230930,
+        "total": 410539
+      },
+      "2024": {
+        "d": 171555,
+        "r": 243356,
+        "total": 424523
+      },
+      "incumbent": "Andy Harris",
+      "party": "(R)"
+    },
+    "MD-02": {
+      "2020": {
+        "d": 232384,
+        "r": 150927,
+        "total": 391029
+      },
+      "2024": {
+        "d": 227194,
+        "r": 154843,
+        "total": 392005
+      },
+      "incumbent": "Johnny Olszewski",
+      "party": "(D)"
+    },
+    "MD-03": {
+      "2020": {
+        "d": 255249,
+        "r": 149743,
+        "total": 413425
+      },
+      "2024": {
+        "d": 249542,
+        "r": 151360,
+        "total": 413154
+      },
+      "incumbent": "Sarah Elfreth",
+      "party": "(D)"
+    },
+    "MD-04": {
+      "2020": {
+        "d": 271589,
+        "r": 26247,
+        "total": 302947
+      },
+      "2024": {
+        "d": 240880,
+        "r": 33369,
+        "total": 281855
+      },
+      "incumbent": "Glenn Ivey",
+      "party": "(D)"
+    },
+    "MD-05": {
+      "2020": {
+        "d": 280898,
+        "r": 128846,
+        "total": 416761
+      },
+      "2024": {
+        "d": 280941,
+        "r": 138217,
+        "total": 428752
+      },
+      "incumbent": "Steny Hoyer",
+      "party": "(D)"
+    },
+    "MD-06": {
+      "2020": {
+        "d": 200375,
+        "r": 163848,
+        "total": 371676
+      },
+      "2024": {
+        "d": 200040,
+        "r": 177658,
+        "total": 387773
+      },
+      "incumbent": "April McClain Delaney",
+      "party": "(D)"
+    },
+    "MD-07": {
+      "2020": {
+        "d": 251751,
+        "r": 54327,
+        "total": 310936
+      },
+      "2024": {
+        "d": 236171,
+        "r": 58128,
+        "total": 302076
+      },
+      "incumbent": "Kweisi Mfume",
+      "party": "(D)"
+    },
+    "MD-08": {
+      "2020": {
+        "d": 321508,
+        "r": 71547,
+        "total": 399296
+      },
+      "2024": {
+        "d": 296254,
+        "r": 78619,
+        "total": 385512
+      },
+      "incumbent": "Jamie Raskin",
+      "party": "(D)"
+    },
+    "ME-01": {
+      "2020": {
+        "d": 258001,
+        "r": 159932,
+        "total": 430096
+      },
+      "2024": {
+        "d": 258863,
+        "r": 165214,
+        "total": 433356
+      },
+      "incumbent": "Chellie Pingree",
+      "party": "(D)"
+    },
+    "ME-02": {
+      "2020": {
+        "d": 177070,
+        "r": 200803,
+        "total": 389278
+      },
+      "2024": {
+        "d": 176789,
+        "r": 212763,
+        "total": 397438
+      },
+      "incumbent": "Jared Golden",
+      "party": "(D)"
+    },
+    "MI-01": {
+      "2020": {
+        "d": 182977,
+        "r": 274971,
+        "total": 465104
+      },
+      "2024": {
+        "d": 187850,
+        "r": 290869,
+        "total": 485753
+      },
+      "incumbent": "Jack Bergman",
+      "party": "(R)"
+    },
+    "MI-02": {
+      "2020": {
+        "d": 145196,
+        "r": 262155,
+        "total": 414538
+      },
+      "2024": {
+        "d": 151066,
+        "r": 283908,
+        "total": 441509
+      },
+      "incumbent": "John Moolenaar",
+      "party": "(R)"
+    },
+    "MI-03": {
+      "2020": {
+        "d": 222098,
+        "r": 186701,
+        "total": 416906
+      },
+      "2024": {
+        "d": 226857,
+        "r": 193356,
+        "total": 427349
+      },
+      "incumbent": "Hillary Scholten",
+      "party": "(D)"
+    },
+    "MI-04": {
+      "2020": {
+        "d": 196696,
+        "r": 213155,
+        "total": 417516
+      },
+      "2024": {
+        "d": 201773,
+        "r": 225809,
+        "total": 434160
+      },
+      "incumbent": "Bill Huizenga",
+      "party": "(R)"
+    },
+    "MI-05": {
+      "2020": {
+        "d": 150368,
+        "r": 248430,
+        "total": 405836
+      },
+      "2024": {
+        "d": 151092,
+        "r": 265192,
+        "total": 422272
+      },
+      "incumbent": "Tim Walberg",
+      "party": "(R)"
+    },
+    "MI-06": {
+      "2020": {
+        "d": 286146,
+        "r": 164381,
+        "total": 456503
+      },
+      "2024": {
+        "d": 280089,
+        "r": 171949,
+        "total": 464014
+      },
+      "incumbent": "Debbie Dingell",
+      "party": "(D)"
+    },
+    "MI-07": {
+      "2020": {
+        "d": 219465,
+        "r": 217141,
+        "total": 444296
+      },
+      "2024": {
+        "d": 224740,
+        "r": 230678,
+        "total": 462734
+      },
+      "incumbent": "Tom Barrett",
+      "party": "(R)"
+    },
+    "MI-08": {
+      "2020": {
+        "d": 215710,
+        "r": 207003,
+        "total": 429213
+      },
+      "2024": {
+        "d": 209502,
+        "r": 218093,
+        "total": 433716
+      },
+      "incumbent": "Kristen McDonald Rivet",
+      "party": "(D)"
+    },
+    "MI-09": {
+      "2020": {
+        "d": 160590,
+        "r": 297475,
+        "total": 464737
+      },
+      "2024": {
+        "d": 161552,
+        "r": 319082,
+        "total": 487198
+      },
+      "incumbent": "Lisa McClain",
+      "party": "(R)"
+    },
+    "MI-10": {
+      "2020": {
+        "d": 209969,
+        "r": 214177,
+        "total": 429829
+      },
+      "2024": {
+        "d": 199324,
+        "r": 227882,
+        "total": 436216
+      },
+      "incumbent": "John James",
+      "party": "(R)"
+    },
+    "MI-11": {
+      "2020": {
+        "d": 273915,
+        "r": 182229,
+        "total": 462280
+      },
+      "2024": {
+        "d": 262389,
+        "r": 188361,
+        "total": 460276
+      },
+      "incumbent": "Haley Stevens",
+      "party": "(D)"
+    },
+    "MI-12": {
+      "2020": {
+        "d": 285642,
+        "r": 97508,
+        "total": 387609
+      },
+      "2024": {
+        "d": 249017,
+        "r": 106983,
+        "total": 374126
+      },
+      "incumbent": "Rashida Tlaib",
+      "party": "(D)"
+    },
+    "MI-13": {
+      "2020": {
+        "d": 252697,
+        "r": 83907,
+        "total": 340610
+      },
+      "2024": {
+        "d": 231273,
+        "r": 94471,
+        "total": 333169
+      },
+      "incumbent": "Shri Thanedar",
+      "party": "(D)"
+    },
+    "MN-01": {
+      "2020": {
+        "d": 172285,
+        "r": 208058,
+        "total": 388718
+      },
+      "2024": {
+        "d": 167186,
+        "r": 213794,
+        "total": 388291
+      },
+      "incumbent": "Brad Finstad",
+      "party": "(R)"
+    },
+    "MN-02": {
+      "2020": {
+        "d": 221003,
+        "r": 190819,
+        "total": 420650
+      },
+      "2024": {
+        "d": 220555,
+        "r": 195780,
+        "total": 424818
+      },
+      "incumbent": "Angie Craig",
+      "party": "(D)"
+    },
+    "MN-03": {
+      "2020": {
+        "d": 258543,
+        "r": 167402,
+        "total": 434448
+      },
+      "2024": {
+        "d": 251783,
+        "r": 161925,
+        "total": 422632
+      },
+      "incumbent": "Kelly Morrison",
+      "party": "(D)"
+    },
+    "MN-04": {
+      "2020": {
+        "d": 268967,
+        "r": 119722,
+        "total": 396499
+      },
+      "2024": {
+        "d": 251495,
+        "r": 117085,
+        "total": 376783
+      },
+      "incumbent": "Betty McCollum",
+      "party": "(D)"
+    },
+    "MN-05": {
+      "2020": {
+        "d": 319407,
+        "r": 69135,
+        "total": 396493
+      },
+      "2024": {
+        "d": 292800,
+        "r": 65271,
+        "total": 367777
+      },
+      "incumbent": "Ilhan Omar",
+      "party": "(D)"
+    },
+    "MN-06": {
+      "2020": {
+        "d": 165862,
+        "r": 238872,
+        "total": 413782
+      },
+      "2024": {
+        "d": 168603,
+        "r": 253253,
+        "total": 430366
+      },
+      "incumbent": "Tom Emmer",
+      "party": "(R)"
+    },
+    "MN-07": {
+      "2020": {
+        "d": 128550,
+        "r": 260007,
+        "total": 395801
+      },
+      "2024": {
+        "d": 123652,
+        "r": 269504,
+        "total": 399799
+      },
+      "incumbent": "Michelle Fischbach",
+      "party": "(R)"
+    },
+    "MN-08": {
+      "2020": {
+        "d": 182461,
+        "r": 230050,
+        "total": 420814
+      },
+      "2024": {
+        "d": 180905,
+        "r": 242420,
+        "total": 430450
+      },
+      "incumbent": "Pete Stauber",
+      "party": "(R)"
+    },
+    "MO-01": {
+      "2020": {
+        "d": 278269,
+        "r": 71037,
+        "total": 355000
+      },
+      "2024": {
+        "d": 244275,
+        "r": 64567,
+        "total": 314220
+      },
+      "incumbent": "Wesley Bell",
+      "party": "(D)"
+    },
+    "MO-02": {
+      "2020": {
+        "d": 198823,
+        "r": 232845,
+        "total": 438960
+      },
+      "2024": {
+        "d": 196255,
+        "r": 230556,
+        "total": 433971
+      },
+      "incumbent": "Ann Wagner",
+      "party": "(R)"
+    },
+    "MO-03": {
+      "2020": {
+        "d": 142584,
+        "r": 247108,
+        "total": 397210
+      },
+      "2024": {
+        "d": 146055,
+        "r": 254638,
+        "total": 406388
+      },
+      "incumbent": "Bob Onder",
+      "party": "(R)"
+    },
+    "MO-04": {
+      "2020": {
+        "d": 109920,
+        "r": 257315,
+        "total": 374598
+      },
+      "2024": {
+        "d": 106163,
+        "r": 265110,
+        "total": 375940
+      },
+      "incumbent": "Mark Alford",
+      "party": "(R)"
+    },
+    "MO-05": {
+      "2020": {
+        "d": 217895,
+        "r": 125686,
+        "total": 350584
+      },
+      "2024": {
+        "d": 205020,
+        "r": 126971,
+        "total": 337623
+      },
+      "incumbent": "Emanuel Cleaver",
+      "party": "(D)"
+    },
+    "MO-06": {
+      "2020": {
+        "d": 115548,
+        "r": 255727,
+        "total": 377863
+      },
+      "2024": {
+        "d": 114818,
+        "r": 263613,
+        "total": 382953
+      },
+      "incumbent": "Sam Graves",
+      "party": "(R)"
+    },
+    "MO-07": {
+      "2020": {
+        "d": 103423,
+        "r": 254241,
+        "total": 364374
+      },
+      "2024": {
+        "d": 105495,
+        "r": 265470,
+        "total": 375382
+      },
+      "incumbent": "Eric Burlison",
+      "party": "(R)"
+    },
+    "MO-08": {
+      "2020": {
+        "d": 86552,
+        "r": 274779,
+        "total": 366570
+      },
+      "2024": {
+        "d": 82518,
+        "r": 281060,
+        "total": 367119
+      },
+      "incumbent": "Jason Smith",
+      "party": "(R)"
+    },
+    "MS-01": {
+      "2020": {
+        "d": 111535,
+        "r": 217291,
+        "total": 333728
+      },
+      "2024": {
+        "d": 99872,
+        "r": 219885,
+        "total": 324057
+      },
+      "incumbent": "Trent Kelly",
+      "party": "(R)"
+    },
+    "MS-02": {
+      "2020": {
+        "d": 208159,
+        "r": 121206,
+        "total": 333247
+      },
+      "2024": {
+        "d": 170917,
+        "r": 112590,
+        "total": 286455
+      },
+      "incumbent": "Bennie Thompson",
+      "party": "(D)"
+    },
+    "MS-03": {
+      "2020": {
+        "d": 128386,
+        "r": 212321,
+        "total": 345011
+      },
+      "2024": {
+        "d": 113023,
+        "r": 207443,
+        "total": 323626
+      },
+      "incumbent": "Michael Guest",
+      "party": "(R)"
+    },
+    "MS-04": {
+      "2020": {
+        "d": 91318,
+        "r": 205946,
+        "total": 301772
+      },
+      "2024": {
+        "d": 82856,
+        "r": 207826,
+        "total": 293870
+      },
+      "incumbent": "Mike Ezell",
+      "party": "(R)"
+    },
+    "MT-01": {
+      "2020": {
+        "d": 143417,
+        "r": 165189,
+        "total": 316603
+      },
+      "2024": {
+        "d": 137405,
+        "r": 174604,
+        "total": 322059
+      },
+      "incumbent": "Ryan Zinke",
+      "party": "(R)"
+    },
+    "MT-02": {
+      "2020": {
+        "d": 101369,
+        "r": 178413,
+        "total": 287037
+      },
+      "2024": {
+        "d": 94501,
+        "r": 177475,
+        "total": 280904
+      },
+      "incumbent": "Troy Downing",
+      "party": "(R)"
+    },
+    "NC-01": {
+      "2024": {
+        "d": 182616,
+        "r": 230734,
+        "total": 416748
+      },
+      "incumbent": "Don Davis",
+      "party": "(D)"
+    },
+    "NC-02": {
+      "2024": {
+        "d": 271376,
+        "r": 132352,
+        "total": 410662
+      },
+      "incumbent": "Deborah Ross",
+      "party": "(D)"
+    },
+    "NC-03": {
+      "2024": {
+        "d": 147727,
+        "r": 194854,
+        "total": 345647
+      },
+      "incumbent": "Greg Murphy",
+      "party": "(R)"
+    },
+    "NC-04": {
+      "2024": {
+        "d": 312671,
+        "r": 115458,
+        "total": 435313
+      },
+      "incumbent": "Valerie Foushee",
+      "party": "(D)"
+    },
+    "NC-05": {
+      "2024": {
+        "d": 165367,
+        "r": 237737,
+        "total": 407131
+      },
+      "incumbent": "Virginia Foxx",
+      "party": "(R)"
+    },
+    "NC-06": {
+      "2024": {
+        "d": 159318,
+        "r": 226306,
+        "total": 390326
+      },
+      "incumbent": "Addison McDowell",
+      "party": "(R)"
+    },
+    "NC-07": {
+      "2024": {
+        "d": 188984,
+        "r": 250257,
+        "total": 443261
+      },
+      "incumbent": "David Rouzer",
+      "party": "(R)"
+    },
+    "NC-08": {
+      "2024": {
+        "d": 162688,
+        "r": 241935,
+        "total": 408938
+      },
+      "incumbent": "Mark Harris",
+      "party": "(R)"
+    },
+    "NC-09": {
+      "2024": {
+        "d": 158667,
+        "r": 219161,
+        "total": 381829
+      },
+      "incumbent": "Richard Hudson",
+      "party": "(R)"
+    },
+    "NC-10": {
+      "2024": {
+        "d": 168721,
+        "r": 242317,
+        "total": 415176
+      },
+      "incumbent": "Pat Harrigan",
+      "party": "(R)"
+    },
+    "NC-11": {
+      "2024": {
+        "d": 196320,
+        "r": 238092,
+        "total": 439574
+      },
+      "incumbent": "Chuck Edwards",
+      "party": "(R)"
+    },
+    "NC-12": {
+      "2024": {
+        "d": 254841,
+        "r": 91752,
+        "total": 352991
+      },
+      "incumbent": "Alma Adams",
+      "party": "(D)"
+    },
+    "NC-13": {
+      "2024": {
+        "d": 175125,
+        "r": 245091,
+        "total": 424917
+      },
+      "incumbent": "Brad Knott",
+      "party": "(R)"
+    },
+    "NC-14": {
+      "2024": {
+        "d": 170950,
+        "r": 232364,
+        "total": 407378
+      },
+      "incumbent": "Tim Moore",
+      "party": "(R)"
+    },
+    "ND-AL": {
+      "2020": {
+        "d": 114902,
+        "r": 235595,
+        "total": 359890
+      },
+      "2024": {
+        "d": 112327,
+        "r": 246505,
+        "total": 365059
+      },
+      "incumbent": "Julie Fedorchak",
+      "party": "(R)"
+    },
+    "NE-01": {
+      "2020": {
+        "d": 136956,
+        "r": 171957,
+        "total": 316440
+      },
+      "2024": {
+        "d": 136153,
+        "r": 177666,
+        "total": 318304
+      },
+      "incumbent": "Mike Flood",
+      "party": "(R)"
+    },
+    "NE-02": {
+      "2020": {
+        "d": 163239,
+        "r": 143429,
+        "total": 312940
+      },
+      "2024": {
+        "d": 163541,
+        "r": 148905,
+        "total": 316690
+      },
+      "incumbent": "Don Bacon",
+      "party": "(R)"
+    },
+    "NE-03": {
+      "2020": {
+        "d": 74388,
+        "r": 241459,
+        "total": 322332
+      },
+      "2024": {
+        "d": 70301,
+        "r": 238245,
+        "total": 312165
+      },
+      "incumbent": "Adrian Smith",
+      "party": "(R)"
+    },
+    "NH-01": {
+      "2020": {
+        "d": 210310,
+        "r": 186410,
+        "total": 403198
+      },
+      "2024": {
+        "d": 208186,
+        "r": 199942,
+        "total": 411957
+      },
+      "incumbent": "Chris Pappas",
+      "party": "(D)"
+    },
+    "NH-02": {
+      "2020": {
+        "d": 214627,
+        "r": 179250,
+        "total": 400635
+      },
+      "2024": {
+        "d": 210302,
+        "r": 195581,
+        "total": 410159
+      },
+      "incumbent": "Maggie Goodlander",
+      "party": "(D)"
+    },
+    "NJ-01": {
+      "2020": {
+        "d": 247693,
+        "r": 149375,
+        "total": 402495
+      },
+      "2024": {
+        "d": 220600,
+        "r": 150098,
+        "total": 376377
+      },
+      "incumbent": "Donald Norcross",
+      "party": "(D)"
+    },
+    "NJ-02": {
+      "2020": {
+        "d": 192481,
+        "r": 212664,
+        "total": 410535
+      },
+      "2024": {
+        "d": 166360,
+        "r": 214917,
+        "total": 386844
+      },
+      "incumbent": "Jeff Van Drew",
+      "party": "(R)"
+    },
+    "NJ-03": {
+      "2020": {
+        "d": 248284,
+        "r": 186603,
+        "total": 440666
+      },
+      "2024": {
+        "d": 212712,
+        "r": 179400,
+        "total": 398668
+      },
+      "incumbent": "Herb Conaway",
+      "party": "(D)"
+    },
+    "NJ-04": {
+      "2020": {
+        "d": 163106,
+        "r": 259059,
+        "total": 427724
+      },
+      "2024": {
+        "d": 142650,
+        "r": 268072,
+        "total": 416430
+      },
+      "incumbent": "Chris Smith",
+      "party": "(R)"
+    },
+    "NJ-05": {
+      "2020": {
+        "d": 240209,
+        "r": 186611,
+        "total": 432269
+      },
+      "2024": {
+        "d": 200624,
+        "r": 194528,
+        "total": 402838
+      },
+      "incumbent": "Josh Gottheimer",
+      "party": "(D)"
+    },
+    "NJ-06": {
+      "2020": {
+        "d": 197825,
+        "r": 133268,
+        "total": 335439
+      },
+      "2024": {
+        "d": 167151,
+        "r": 146484,
+        "total": 321741
+      },
+      "incumbent": "Frank Pallone",
+      "party": "(D)"
+    },
+    "NJ-07": {
+      "2020": {
+        "d": 235951,
+        "r": 218151,
+        "total": 461600
+      },
+      "2024": {
+        "d": 216349,
+        "r": 221591,
+        "total": 446499
+      },
+      "incumbent": "Tom Kean",
+      "party": "(R)"
+    },
+    "NJ-08": {
+      "2020": {
+        "d": 173894,
+        "r": 64633,
+        "total": 241039
+      },
+      "2024": {
+        "d": 135328,
+        "r": 81523,
+        "total": 222455
+      },
+      "incumbent": "Rob Menendez",
+      "party": "(D)"
+    },
+    "NJ-09": {
+      "2020": {
+        "d": 185603,
+        "r": 126054,
+        "total": 315019
+      },
+      "2024": {
+        "d": 137598,
+        "r": 140858,
+        "total": 286539
+      },
+      "incumbent": "Nellie Pou",
+      "party": "(D)"
+    },
+    "NJ-10": {
+      "2020": {
+        "d": 234076,
+        "r": 53928,
+        "total": 290354
+      },
+      "2024": {
+        "d": 196329,
+        "r": 62565,
+        "total": 263460
+      },
+      "incumbent": "LaMonica McIver",
+      "party": "(D)"
+    },
+    "NJ-11": {
+      "2020": {
+        "d": 252859,
+        "r": 178835,
+        "total": 437161
+      },
+      "2024": {
+        "d": 219563,
+        "r": 183688,
+        "total": 411672
+      },
+      "incumbent": "Analilia Mejia",
+      "party": "(D)"
+    },
+    "NJ-12": {
+      "2020": {
+        "d": 236355,
+        "r": 114094,
+        "total": 355052
+      },
+      "2024": {
+        "d": 205449,
+        "r": 124491,
+        "total": 339201
+      },
+      "incumbent": "Bonnie Watson Coleman",
+      "party": "(D)"
+    },
+    "NM-01": {
+      "2020": {
+        "d": 201158,
+        "r": 149225,
+        "total": 359557
+      },
+      "2024": {
+        "d": 194851,
+        "r": 150029,
+        "total": 353920
+      },
+      "incumbent": "Melanie Stansbury",
+      "party": "(D)"
+    },
+    "NM-02": {
+      "2020": {
+        "d": 137449,
+        "r": 121889,
+        "total": 264675
+      },
+      "2024": {
+        "d": 130539,
+        "r": 135451,
+        "total": 271659
+      },
+      "incumbent": "Gabe Vasquez",
+      "party": "(D)"
+    },
+    "NM-03": {
+      "2020": {
+        "d": 163007,
+        "r": 130780,
+        "total": 299733
+      },
+      "2024": {
+        "d": 153411,
+        "r": 137911,
+        "total": 297824
+      },
+      "incumbent": "Teresa Leger Fernandez",
+      "party": "(D)"
+    },
+    "NV-01": {
+      "2020": {
+        "d": 172621,
+        "r": 144973,
+        "total": 324286
+      },
+      "2024": {
+        "d": 168452,
+        "r": 160877,
+        "total": 335276
+      },
+      "incumbent": "Dina Titus",
+      "party": "(D)"
+    },
+    "NV-02": {
+      "2020": {
+        "d": 173063,
+        "r": 217348,
+        "total": 401970
+      },
+      "2024": {
+        "d": 176315,
+        "r": 235008,
+        "total": 421161
+      },
+      "incumbent": "Mark Amodei",
+      "party": "(R)"
+    },
+    "NV-03": {
+      "2020": {
+        "d": 190167,
+        "r": 166069,
+        "total": 363064
+      },
+      "2024": {
+        "d": 187997,
+        "r": 190836,
+        "total": 385188
+      },
+      "incumbent": "Susie Lee",
+      "party": "(D)"
+    },
+    "NV-04": {
+      "2020": {
+        "d": 167635,
+        "r": 141501,
+        "total": 316056
+      },
+      "2024": {
+        "d": 172433,
+        "r": 164484,
+        "total": 343215
+      },
+      "incumbent": "Steven Horsford",
+      "party": "(D)"
+    },
+    "NY-01": {
+      "2020": {
+        "d": 207858,
+        "r": 215362,
+        "total": 428299
+      },
+      "2024": {
+        "d": 190070,
+        "r": 233206,
+        "total": 429463
+      },
+      "incumbent": "Nick LaLota",
+      "party": "(R)"
+    },
+    "NY-02": {
+      "2020": {
+        "d": 176297,
+        "r": 185233,
+        "total": 365862
+      },
+      "2024": {
+        "d": 153928,
+        "r": 204363,
+        "total": 362137
+      },
+      "incumbent": "Andrew Garbarino",
+      "party": "(R)"
+    },
+    "NY-03": {
+      "2020": {
+        "d": 216926,
+        "r": 172453,
+        "total": 393286
+      },
+      "2024": {
+        "d": 178099,
+        "r": 194286,
+        "total": 378302
+      },
+      "incumbent": "Tom Suozzi",
+      "party": "(D)"
+    },
+    "NY-04": {
+      "2020": {
+        "d": 223909,
+        "r": 166538,
+        "total": 394485
+      },
+      "2024": {
+        "d": 194428,
+        "r": 189465,
+        "total": 388579
+      },
+      "incumbent": "Laura Gillen",
+      "party": "(D)"
+    },
+    "NY-05": {
+      "2020": {
+        "d": 216607,
+        "r": 49624,
+        "total": 267734
+      },
+      "2024": {
+        "d": 170189,
+        "r": 68170,
+        "total": 242000
+      },
+      "incumbent": "Gregory Meeks",
+      "party": "(D)"
+    },
+    "NY-06": {
+      "2020": {
+        "d": 149718,
+        "r": 81324,
+        "total": 232973
+      },
+      "2024": {
+        "d": 109480,
+        "r": 96065,
+        "total": 209347
+      },
+      "incumbent": "Grace Meng",
+      "party": "(D)"
+    },
+    "NY-07": {
+      "2020": {
+        "d": 199115,
+        "r": 48083,
+        "total": 249547
+      },
+      "2024": {
+        "d": 168187,
+        "r": 60343,
+        "total": 235013
+      },
+      "incumbent": "Nydia Velazquez",
+      "party": "(D)"
+    },
+    "NY-08": {
+      "2020": {
+        "d": 203603,
+        "r": 57647,
+        "total": 262973
+      },
+      "2024": {
+        "d": 170067,
+        "r": 64988,
+        "total": 238931
+      },
+      "incumbent": "Hakeem Jeffries",
+      "party": "(D)"
+    },
+    "NY-09": {
+      "2020": {
+        "d": 204222,
+        "r": 63657,
+        "total": 269726
+      },
+      "2024": {
+        "d": 173762,
+        "r": 71900,
+        "total": 250858
+      },
+      "incumbent": "Yvette Clarke",
+      "party": "(D)"
+    },
+    "NY-10": {
+      "2020": {
+        "d": 242638,
+        "r": 40374,
+        "total": 285858
+      },
+      "2024": {
+        "d": 218940,
+        "r": 51536,
+        "total": 276966
+      },
+      "incumbent": "Dan Goldman",
+      "party": "(D)"
+    },
+    "NY-11": {
+      "2020": {
+        "d": 134698,
+        "r": 157208,
+        "total": 294600
+      },
+      "2024": {
+        "d": 100628,
+        "r": 167092,
+        "total": 272725
+      },
+      "incumbent": "Nicole Malliotakis",
+      "party": "(R)"
+    },
+    "NY-12": {
+      "2020": {
+        "d": 291127,
+        "r": 47209,
+        "total": 341717
+      },
+      "2024": {
+        "d": 273954,
+        "r": 58314,
+        "total": 339053
+      },
+      "incumbent": "Jerry Nadler",
+      "party": "(D)"
+    },
+    "NY-13": {
+      "2020": {
+        "d": 242303,
+        "r": 30463,
+        "total": 274962
+      },
+      "2024": {
+        "d": 188808,
+        "r": 46800,
+        "total": 239540
+      },
+      "incumbent": "Adriano Espaillat",
+      "party": "(D)"
+    },
+    "NY-14": {
+      "2020": {
+        "d": 178061,
+        "r": 50782,
+        "total": 230638
+      },
+      "2024": {
+        "d": 131879,
+        "r": 67385,
+        "total": 203123
+      },
+      "incumbent": "Alexandria Ocasio-Cortez",
+      "party": "(D)"
+    },
+    "NY-15": {
+      "2020": {
+        "d": 184830,
+        "r": 31368,
+        "total": 217537
+      },
+      "2024": {
+        "d": 137445,
+        "r": 47283,
+        "total": 186840
+      },
+      "incumbent": "Ritchie Torres",
+      "party": "(D)"
+    },
+    "NY-16": {
+      "2020": {
+        "d": 240156,
+        "r": 91069,
+        "total": 334406
+      },
+      "2024": {
+        "d": 216167,
+        "r": 108141,
+        "total": 326298
+      },
+      "incumbent": "George Latimer",
+      "party": "(D)"
+    },
+    "NY-17": {
+      "2020": {
+        "d": 210419,
+        "r": 171537,
+        "total": 386305
+      },
+      "2024": {
+        "d": 194302,
+        "r": 192139,
+        "total": 389343
+      },
+      "incumbent": "Mike Lawler",
+      "party": "(R)"
+    },
+    "NY-18": {
+      "2020": {
+        "d": 196151,
+        "r": 163003,
+        "total": 364815
+      },
+      "2024": {
+        "d": 190672,
+        "r": 178297,
+        "total": 371412
+      },
+      "incumbent": "Pat Ryan",
+      "party": "(D)"
+    },
+    "NY-19": {
+      "2020": {
+        "d": 196149,
+        "r": 179038,
+        "total": 382878
+      },
+      "2024": {
+        "d": 194147,
+        "r": 187279,
+        "total": 384909
+      },
+      "incumbent": "Josh Riley",
+      "party": "(D)"
+    },
+    "NY-20": {
+      "2020": {
+        "d": 224446,
+        "r": 151042,
+        "total": 383264
+      },
+      "2024": {
+        "d": 211181,
+        "r": 158272,
+        "total": 373934
+      },
+      "incumbent": "Paul Tonko",
+      "party": "(D)"
+    },
+    "NY-21": {
+      "2020": {
+        "d": 146580,
+        "r": 202300,
+        "total": 355821
+      },
+      "2024": {
+        "d": 140758,
+        "r": 214512,
+        "total": 357087
+      },
+      "incumbent": "Elise Stefanik",
+      "party": "(R)"
+    },
+    "NY-22": {
+      "2020": {
+        "d": 202853,
+        "r": 160638,
+        "total": 371578
+      },
+      "2024": {
+        "d": 194091,
+        "r": 166358,
+        "total": 362520
+      },
+      "incumbent": "John Mannion",
+      "party": "(D)"
+    },
+    "NY-23": {
+      "2020": {
+        "d": 160038,
+        "r": 232952,
+        "total": 401042
+      },
+      "2024": {
+        "d": 154446,
+        "r": 237489,
+        "total": 395169
+      },
+      "incumbent": "Nick Langworthy",
+      "party": "(R)"
+    },
+    "NY-24": {
+      "2020": {
+        "d": 146388,
+        "r": 222914,
+        "total": 377792
+      },
+      "2024": {
+        "d": 143256,
+        "r": 229987,
+        "total": 375663
+      },
+      "incumbent": "Claudia Tenney",
+      "party": "(R)"
+    },
+    "NY-25": {
+      "2020": {
+        "d": 231293,
+        "r": 150712,
+        "total": 390473
+      },
+      "2024": {
+        "d": 220540,
+        "r": 151196,
+        "total": 375956
+      },
+      "incumbent": "Joe Morelle",
+      "party": "(D)"
+    },
+    "NY-26": {
+      "2020": {
+        "d": 218507,
+        "r": 129475,
+        "total": 354198
+      },
+      "2024": {
+        "d": 200098,
+        "r": 134624,
+        "total": 339786
+      },
+      "incumbent": "Tim Kennedy",
+      "party": "(D)"
+    },
+    "OH-01": {
+      "2024": {
+        "d": 191603,
+        "r": 201912,
+        "total": 397245
+      },
+      "incumbent": "Greg Landsman",
+      "party": "(D)"
+    },
+    "OH-02": {
+      "2024": {
+        "d": 107317,
+        "r": 265831,
+        "total": 376021
+      },
+      "incumbent": "David Taylor",
+      "party": "(R)"
+    },
+    "OH-03": {
+      "2024": {
+        "d": 249431,
+        "r": 105242,
+        "total": 358345
+      },
+      "incumbent": "Joyce Beatty",
+      "party": "(D)"
+    },
+    "OH-04": {
+      "2024": {
+        "d": 111939,
+        "r": 280926,
+        "total": 396332
+      },
+      "incumbent": "Jim Jordan",
+      "party": "(R)"
+    },
+    "OH-05": {
+      "2024": {
+        "d": 145963,
+        "r": 238011,
+        "total": 387529
+      },
+      "incumbent": "Bob Latta",
+      "party": "(R)"
+    },
+    "OH-06": {
+      "2024": {
+        "d": 118027,
+        "r": 244558,
+        "total": 365517
+      },
+      "incumbent": "Michael Rulli",
+      "party": "(R)"
+    },
+    "OH-07": {
+      "2024": {
+        "d": 187657,
+        "r": 234764,
+        "total": 425993
+      },
+      "incumbent": "Max Miller",
+      "party": "(R)"
+    },
+    "OH-08": {
+      "2024": {
+        "d": 167929,
+        "r": 230832,
+        "total": 402581
+      },
+      "incumbent": "Warren Davidson",
+      "party": "(R)"
+    },
+    "OH-09": {
+      "2024": {
+        "d": 168625,
+        "r": 208946,
+        "total": 381140
+      },
+      "incumbent": "Marcy Kaptur",
+      "party": "(D)"
+    },
+    "OH-10": {
+      "2024": {
+        "d": 172976,
+        "r": 202499,
+        "total": 379148
+      },
+      "incumbent": "Mike Turner",
+      "party": "(R)"
+    },
+    "OH-11": {
+      "2024": {
+        "d": 247406,
+        "r": 70879,
+        "total": 320576
+      },
+      "incumbent": "Shontel Brown",
+      "party": "(D)"
+    },
+    "OH-12": {
+      "2024": {
+        "d": 141593,
+        "r": 265025,
+        "total": 410145
+      },
+      "incumbent": "Troy Balderson",
+      "party": "(R)"
+    },
+    "OH-13": {
+      "2024": {
+        "d": 199820,
+        "r": 186969,
+        "total": 390353
+      },
+      "incumbent": "Emilia Sykes",
+      "party": "(D)"
+    },
+    "OH-14": {
+      "2024": {
+        "d": 162914,
+        "r": 247100,
+        "total": 413435
+      },
+      "incumbent": "Dave Joyce",
+      "party": "(R)"
+    },
+    "OH-15": {
+      "2024": {
+        "d": 160501,
+        "r": 196623,
+        "total": 360656
+      },
+      "incumbent": "Mike Carey",
+      "party": "(R)"
+    },
+    "OK-01": {
+      "2020": {
+        "d": 121877,
+        "r": 190291,
+        "total": 320384
+      },
+      "2024": {
+        "d": 120251,
+        "r": 188080,
+        "total": 314998
+      },
+      "incumbent": "Kevin Hern",
+      "party": "(R)"
+    },
+    "OK-02": {
+      "2020": {
+        "d": 71996,
+        "r": 243602,
+        "total": 321500
+      },
+      "2024": {
+        "d": 69690,
+        "r": 250807,
+        "total": 325621
+      },
+      "incumbent": "Josh Brecheen",
+      "party": "(R)"
+    },
+    "OK-03": {
+      "2020": {
+        "d": 72507,
+        "r": 194433,
+        "total": 273182
+      },
+      "2024": {
+        "d": 71499,
+        "r": 195379,
+        "total": 272017
+      },
+      "incumbent": "Frank Lucas",
+      "party": "(R)"
+    },
+    "OK-04": {
+      "2020": {
+        "d": 101711,
+        "r": 199240,
+        "total": 308407
+      },
+      "2024": {
+        "d": 100216,
+        "r": 202952,
+        "total": 309092
+      },
+      "incumbent": "Tom Cole",
+      "party": "(R)"
+    },
+    "OK-05": {
+      "2020": {
+        "d": 135799,
+        "r": 192715,
+        "total": 337226
+      },
+      "2024": {
+        "d": 137942,
+        "r": 198995,
+        "total": 344446
+      },
+      "incumbent": "Stephanie Bice",
+      "party": "(R)"
+    },
+    "OR-01": {
+      "2020": {
+        "d": 268141,
+        "r": 113977,
+        "total": 392100
+      },
+      "2024": {
+        "d": 245504,
+        "r": 107459,
+        "total": 365289
+      },
+      "incumbent": "Suzanne Bonamici",
+      "party": "(D)"
+    },
+    "OR-02": {
+      "2020": {
+        "d": 139315,
+        "r": 232311,
+        "total": 380527
+      },
+      "2024": {
+        "d": 128285,
+        "r": 227462,
+        "total": 365481
+      },
+      "incumbent": "Cliff Bentz",
+      "party": "(R)"
+    },
+    "OR-03": {
+      "2020": {
+        "d": 280510,
+        "r": 97552,
+        "total": 386700
+      },
+      "2024": {
+        "d": 248772,
+        "r": 88286,
+        "total": 349066
+      },
+      "incumbent": "Maxine Dexter",
+      "party": "(D)"
+    },
+    "OR-04": {
+      "2020": {
+        "d": 224343,
+        "r": 172448,
+        "total": 407431
+      },
+      "2024": {
+        "d": 211870,
+        "r": 164979,
+        "total": 388781
+      },
+      "incumbent": "Val Hoyle",
+      "party": "(D)"
+    },
+    "OR-05": {
+      "2020": {
+        "d": 225723,
+        "r": 188094,
+        "total": 424112
+      },
+      "2024": {
+        "d": 217317,
+        "r": 182131,
+        "total": 411960
+      },
+      "incumbent": "Janelle Bynum",
+      "party": "(D)"
+    },
+    "OR-06": {
+      "2020": {
+        "d": 202351,
+        "r": 154067,
+        "total": 366361
+      },
+      "2024": {
+        "d": 188852,
+        "r": 149163,
+        "total": 348891
+      },
+      "incumbent": "Andrea Salinas",
+      "party": "(D)"
+    },
+    "PA-01": {
+      "2020": {
+        "d": 241484,
+        "r": 219852,
+        "total": 466243
+      },
+      "2024": {
+        "d": 235106,
+        "r": 233595,
+        "total": 473307
+      },
+      "incumbent": "Brian Fitzpatrick",
+      "party": "(R)"
+    },
+    "PA-02": {
+      "2020": {
+        "d": 221374,
+        "r": 88089,
+        "total": 311819
+      },
+      "2024": {
+        "d": 198759,
+        "r": 93169,
+        "total": 295441
+      },
+      "incumbent": "Brendan Boyle",
+      "party": "(D)"
+    },
+    "PA-03": {
+      "2020": {
+        "d": 357581,
+        "r": 36721,
+        "total": 396651
+      },
+      "2024": {
+        "d": 346947,
+        "r": 42317,
+        "total": 394010
+      },
+      "incumbent": "Dwight Evans",
+      "party": "(D)"
+    },
+    "PA-04": {
+      "2020": {
+        "d": 269159,
+        "r": 182686,
+        "total": 456857
+      },
+      "2024": {
+        "d": 268429,
+        "r": 194501,
+        "total": 467793
+      },
+      "incumbent": "Madeleine Dean",
+      "party": "(D)"
+    },
+    "PA-05": {
+      "2020": {
+        "d": 276153,
+        "r": 140480,
+        "total": 420263
+      },
+      "2024": {
+        "d": 267143,
+        "r": 147243,
+        "total": 418792
+      },
+      "incumbent": "Mary Gay Scanlon",
+      "party": "(D)"
+    },
+    "PA-06": {
+      "2020": {
+        "d": 235154,
+        "r": 174191,
+        "total": 414329
+      },
+      "2024": {
+        "d": 234605,
+        "r": 186113,
+        "total": 425061
+      },
+      "incumbent": "Chrissy Houlahan",
+      "party": "(D)"
+    },
+    "PA-07": {
+      "2020": {
+        "d": 197117,
+        "r": 194660,
+        "total": 396503
+      },
+      "2024": {
+        "d": 196712,
+        "r": 209881,
+        "total": 410973
+      },
+      "incumbent": "Ryan Mackenzie",
+      "party": "(R)"
+    },
+    "PA-08": {
+      "2020": {
+        "d": 183189,
+        "r": 194267,
+        "total": 381336
+      },
+      "2024": {
+        "d": 177063,
+        "r": 210245,
+        "total": 390434
+      },
+      "incumbent": "Rob Bresnahan",
+      "party": "(R)"
+    },
+    "PA-09": {
+      "2020": {
+        "d": 119969,
+        "r": 261281,
+        "total": 386871
+      },
+      "2024": {
+        "d": 121820,
+        "r": 272975,
+        "total": 398386
+      },
+      "incumbent": "Dan Meuser",
+      "party": "(R)"
+    },
+    "PA-10": {
+      "2020": {
+        "d": 188632,
+        "r": 205148,
+        "total": 399568
+      },
+      "2024": {
+        "d": 192758,
+        "r": 214297,
+        "total": 411782
+      },
+      "incumbent": "Scott Perry",
+      "party": "(R)"
+    },
+    "PA-11": {
+      "2020": {
+        "d": 153327,
+        "r": 237723,
+        "total": 397039
+      },
+      "2024": {
+        "d": 160194,
+        "r": 248332,
+        "total": 412566
+      },
+      "incumbent": "Lloyd Smucker",
+      "party": "(R)"
+    },
+    "PA-12": {
+      "2020": {
+        "d": 255322,
+        "r": 169617,
+        "total": 429696
+      },
+      "2024": {
+        "d": 253699,
+        "r": 171382,
+        "total": 429050
+      },
+      "incumbent": "Summer Lee",
+      "party": "(D)"
+    },
+    "PA-13": {
+      "2020": {
+        "d": 107198,
+        "r": 288121,
+        "total": 400132
+      },
+      "2024": {
+        "d": 110815,
+        "r": 298877,
+        "total": 413001
+      },
+      "incumbent": "John Joyce",
+      "party": "(R)"
+    },
+    "PA-14": {
+      "2020": {
+        "d": 138892,
+        "r": 268695,
+        "total": 412038
+      },
+      "2024": {
+        "d": 138813,
+        "r": 279274,
+        "total": 421084
+      },
+      "incumbent": "Guy Reschenthaler",
+      "party": "(R)"
+    },
+    "PA-15": {
+      "2020": {
+        "d": 119459,
+        "r": 263001,
+        "total": 387754
+      },
+      "2024": {
+        "d": 121693,
+        "r": 272691,
+        "total": 397753
+      },
+      "incumbent": "Glenn Thompson",
+      "party": "(R)"
+    },
+    "PA-16": {
+      "2020": {
+        "d": 158730,
+        "r": 242664,
+        "total": 406695
+      },
+      "2024": {
+        "d": 159531,
+        "r": 254619,
+        "total": 417676
+      },
+      "incumbent": "Mike Kelly",
+      "party": "(R)"
+    },
+    "PA-17": {
+      "2020": {
+        "d": 237707,
+        "r": 211205,
+        "total": 454479
+      },
+      "2024": {
+        "d": 238954,
+        "r": 213797,
+        "total": 457096
+      },
+      "incumbent": "Chris Deluzio",
+      "party": "(D)"
+    },
+    "RI-01": {
+      "2020": {
+        "d": 152956,
+        "r": 83225,
+        "total": 239685
+      },
+      "2024": {
+        "d": 140825,
+        "r": 88794,
+        "total": 234822
+      },
+      "incumbent": "Gabe Amo",
+      "party": "(D)"
+    },
+    "RI-02": {
+      "2020": {
+        "d": 154530,
+        "r": 116697,
+        "total": 275313
+      },
+      "2024": {
+        "d": 144331,
+        "r": 125612,
+        "total": 275837
+      },
+      "incumbent": "Seth Magaziner",
+      "party": "(D)"
+    },
+    "SC-01": {
+      "2020": {
+        "d": 171781,
+        "r": 204848,
+        "total": 383006
+      },
+      "2024": {
+        "d": 171105,
+        "r": 223189,
+        "total": 400369
+      },
+      "incumbent": "Nancy Mace",
+      "party": "(R)"
+    },
+    "SC-02": {
+      "2020": {
+        "d": 161002,
+        "r": 199780,
+        "total": 366492
+      },
+      "2024": {
+        "d": 154783,
+        "r": 205695,
+        "total": 365954
+      },
+      "incumbent": "Joe Wilson",
+      "party": "(R)"
+    },
+    "SC-03": {
+      "2020": {
+        "d": 106461,
+        "r": 236981,
+        "total": 348346
+      },
+      "2024": {
+        "d": 99185,
+        "r": 252655,
+        "total": 356369
+      },
+      "incumbent": "Sheri Biggs",
+      "party": "(R)"
+    },
+    "SC-04": {
+      "2020": {
+        "d": 138171,
+        "r": 202545,
+        "total": 347082
+      },
+      "2024": {
+        "d": 132540,
+        "r": 216077,
+        "total": 354343
+      },
+      "incumbent": "William Timmons",
+      "party": "(R)"
+    },
+    "SC-05": {
+      "2020": {
+        "d": 147073,
+        "r": 213484,
+        "total": 365450
+      },
+      "2024": {
+        "d": 141510,
+        "r": 226473,
+        "total": 373054
+      },
+      "incumbent": "Ralph Norman",
+      "party": "(R)"
+    },
+    "SC-06": {
+      "2020": {
+        "d": 219768,
+        "r": 111769,
+        "total": 336352
+      },
+      "2024": {
+        "d": 189648,
+        "r": 118611,
+        "total": 313271
+      },
+      "incumbent": "Jim Clyburn",
+      "party": "(D)"
+    },
+    "SC-07": {
+      "2020": {
+        "d": 147285,
+        "r": 215696,
+        "total": 366601
+      },
+      "2024": {
+        "d": 139681,
+        "r": 241046,
+        "total": 384780
+      },
+      "incumbent": "Russell Fry",
+      "party": "(R)"
+    },
+    "SD-AL": {
+      "2020": {
+        "d": 150471,
+        "r": 261043,
+        "total": 422609
+      },
+      "2024": {
+        "d": 146859,
+        "r": 272081,
+        "total": 428922
+      },
+      "incumbent": "Dusty Johnson",
+      "party": "(R)"
+    },
+    "TN-01": {
+      "2024": {
+        "d": 71649,
+        "r": 273159,
+        "total": 348378
+      },
+      "incumbent": "Diana Harshbarger",
+      "party": "(R)"
+    },
+    "TN-02": {
+      "2024": {
+        "d": 118769,
+        "r": 242922,
+        "total": 366738
+      },
+      "incumbent": "Tim Burchett",
+      "party": "(R)"
+    },
+    "TN-03": {
+      "2024": {
+        "d": 114326,
+        "r": 244099,
+        "total": 363212
+      },
+      "incumbent": "Chuck Fleischmann",
+      "party": "(R)"
+    },
+    "TN-04": {
+      "2024": {
+        "d": 113665,
+        "r": 186545,
+        "total": 304625
+      },
+      "incumbent": "Scott DesJarlais",
+      "party": "(R)"
+    },
+    "TN-05": {
+      "2024": {
+        "d": 118678,
+        "r": 191148,
+        "total": 314014
+      },
+      "incumbent": "Andy Ogles",
+      "party": "(R)"
+    },
+    "TN-06": {
+      "2024": {
+        "d": 130625,
+        "r": 226645,
+        "total": 362088
+      },
+      "incumbent": "John Rose",
+      "party": "(R)"
+    },
+    "TN-07": {
+      "2024": {
+        "d": 137704,
+        "r": 218702,
+        "total": 361621
+      },
+      "incumbent": "Matt Van Epps",
+      "party": "(R)"
+    },
+    "TN-08": {
+      "2024": {
+        "d": 126043,
+        "r": 190777,
+        "total": 321369
+      },
+      "incumbent": "David Kustoff",
+      "party": "(R)"
+    },
+    "TN-09": {
+      "2024": {
+        "d": 124805,
+        "r": 192867,
+        "total": 321897
+      },
+      "incumbent": "Steve Cohen",
+      "party": "(D)"
+    },
+    "TX-01": {
+      "2024": {
+        "d": 80862,
+        "r": 241964,
+        "total": 325197
+      },
+      "incumbent": "Nathaniel Moran",
+      "party": "(R)"
+    },
+    "TX-02": {
+      "2024": {
+        "d": 127853,
+        "r": 204813,
+        "total": 336883
+      },
+      "incumbent": "Dan Crenshaw",
+      "party": "(R)"
+    },
+    "TX-03": {
+      "2024": {
+        "d": 136992,
+        "r": 223426,
+        "total": 368925
+      },
+      "incumbent": "Keith Self",
+      "party": "(R)"
+    },
+    "TX-04": {
+      "2024": {
+        "d": 134683,
+        "r": 225234,
+        "total": 366423
+      },
+      "incumbent": "Pat Fallon",
+      "party": "(R)"
+    },
+    "TX-05": {
+      "2024": {
+        "d": 113123,
+        "r": 176357,
+        "total": 292447
+      },
+      "incumbent": "Lance Gooden",
+      "party": "(R)"
+    },
+    "TX-06": {
+      "2024": {
+        "d": 116801,
+        "r": 187665,
+        "total": 309019
+      },
+      "incumbent": "Jake Ellzey",
+      "party": "(R)"
+    },
+    "TX-07": {
+      "2024": {
+        "d": 153470,
+        "r": 93876,
+        "total": 254346
+      },
+      "incumbent": "Lizzie Fletcher",
+      "party": "(D)"
+    },
+    "TX-08": {
+      "2024": {
+        "d": 109554,
+        "r": 194737,
+        "total": 308175
+      },
+      "incumbent": "Morgan Luttrell",
+      "party": "(R)"
+    },
+    "TX-09": {
+      "2024": {
+        "d": 78360,
+        "r": 117461,
+        "total": 197551
+      },
+      "incumbent": "Al Green",
+      "party": "(D)"
+    },
+    "TX-10": {
+      "2024": {
+        "d": 134089,
+        "r": 213901,
+        "total": 352462
+      },
+      "incumbent": "Michael McCaul",
+      "party": "(R)"
+    },
+    "TX-11": {
+      "2024": {
+        "d": 94204,
+        "r": 194660,
+        "total": 292136
+      },
+      "incumbent": "August Pfluger",
+      "party": "(R)"
+    },
+    "TX-12": {
+      "2024": {
+        "d": 117738,
+        "r": 192720,
+        "total": 313973
+      },
+      "incumbent": "Craig Goldman",
+      "party": "(R)"
+    },
+    "TX-13": {
+      "2024": {
+        "d": 80112,
+        "r": 220273,
+        "total": 303401
+      },
+      "incumbent": "Ronny Jackson",
+      "party": "(R)"
+    },
+    "TX-14": {
+      "2024": {
+        "d": 124939,
+        "r": 206368,
+        "total": 335083
+      },
+      "incumbent": "Randy Weber",
+      "party": "(R)"
+    },
+    "TX-15": {
+      "2024": {
+        "d": 92602,
+        "r": 133305,
+        "total": 227763
+      },
+      "incumbent": "Monica De La Cruz",
+      "party": "(R)"
+    },
+    "TX-16": {
+      "2024": {
+        "d": 131985,
+        "r": 94333,
+        "total": 229164
+      },
+      "incumbent": "Veronica Escobar",
+      "party": "(D)"
+    },
+    "TX-17": {
+      "2024": {
+        "d": 123152,
+        "r": 192421,
+        "total": 319807
+      },
+      "incumbent": "Pete Sessions",
+      "party": "(R)"
+    },
+    "TX-18": {
+      "2024": {
+        "d": 186785,
+        "r": 53113,
+        "total": 243159
+      },
+      "incumbent": "Christian Menefee",
+      "party": "(D)"
+    },
+    "TX-19": {
+      "2024": {
+        "d": 66869,
+        "r": 212716,
+        "total": 282163
+      },
+      "incumbent": "Jodey Arrington",
+      "party": "(R)"
+    },
+    "TX-20": {
+      "2024": {
+        "d": 144232,
+        "r": 79589,
+        "total": 226547
+      },
+      "incumbent": "Joaquin Castro",
+      "party": "(D)"
+    },
+    "TX-21": {
+      "2024": {
+        "d": 159498,
+        "r": 249916,
+        "total": 413976
+      },
+      "incumbent": "Chip Roy",
+      "party": "(R)"
+    },
+    "TX-22": {
+      "2024": {
+        "d": 126555,
+        "r": 201006,
+        "total": 334308
+      },
+      "incumbent": "Troy Nehls",
+      "party": "(R)"
+    },
+    "TX-23": {
+      "2024": {
+        "d": 133974,
+        "r": 181162,
+        "total": 318247
+      },
+      "incumbent": "VACANT (Gonzales)",
+      "party": "(R)"
+    },
+    "TX-24": {
+      "2024": {
+        "d": 153071,
+        "r": 213066,
+        "total": 371849
+      },
+      "incumbent": "Beth Van Duyne",
+      "party": "(R)"
+    },
+    "TX-25": {
+      "2024": {
+        "d": 115616,
+        "r": 189996,
+        "total": 308938
+      },
+      "incumbent": "Roger Williams",
+      "party": "(R)"
+    },
+    "TX-26": {
+      "2024": {
+        "d": 144975,
+        "r": 237258,
+        "total": 387287
+      },
+      "incumbent": "Brandon Gill",
+      "party": "(R)"
+    },
+    "TX-27": {
+      "2024": {
+        "d": 125717,
+        "r": 194406,
+        "total": 323547
+      },
+      "incumbent": "Michael Cloud",
+      "party": "(R)"
+    },
+    "TX-28": {
+      "2024": {
+        "d": 88388,
+        "r": 109037,
+        "total": 198843
+      },
+      "incumbent": "Henry Cuellar",
+      "party": "(D)"
+    },
+    "TX-29": {
+      "2024": {
+        "d": 115999,
+        "r": 61308,
+        "total": 179633
+      },
+      "incumbent": "Sylvia Garcia",
+      "party": "(D)"
+    },
+    "TX-30": {
+      "2024": {
+        "d": 177408,
+        "r": 62649,
+        "total": 243308
+      },
+      "incumbent": "Jasmine Crockett",
+      "party": "(D)"
+    },
+    "TX-31": {
+      "2024": {
+        "d": 134738,
+        "r": 211396,
+        "total": 350339
+      },
+      "incumbent": "John Carter",
+      "party": "(R)"
+    },
+    "TX-32": {
+      "2024": {
+        "d": 129765,
+        "r": 187174,
+        "total": 322779
+      },
+      "incumbent": "Julie Johnson",
+      "party": "(D)"
+    },
+    "TX-33": {
+      "2024": {
+        "d": 136369,
+        "r": 68173,
+        "total": 208214
+      },
+      "incumbent": "Marc Veasey",
+      "party": "(D)"
+    },
+    "TX-34": {
+      "2024": {
+        "d": 106939,
+        "r": 131299,
+        "total": 240225
+      },
+      "incumbent": "Vicente Gonzalez",
+      "party": "(D)"
+    },
+    "TX-35": {
+      "2024": {
+        "d": 133334,
+        "r": 164830,
+        "total": 301076
+      },
+      "incumbent": "Greg Casar",
+      "party": "(D)"
+    },
+    "TX-36": {
+      "2024": {
+        "d": 115202,
+        "r": 193288,
+        "total": 312445
+      },
+      "incumbent": "Brian Babin",
+      "party": "(R)"
+    },
+    "TX-37": {
+      "2024": {
+        "d": 252341,
+        "r": 67677,
+        "total": 326198
+      },
+      "incumbent": "Lloyd Doggett",
+      "party": "(D)"
+    },
+    "TX-38": {
+      "2024": {
+        "d": 136856,
+        "r": 210921,
+        "total": 354063
+      },
+      "incumbent": "Wesley Hunt",
+      "party": "(R)"
+    },
+    "UT-01": {
+      "2024": {
+        "d": 197686,
+        "r": 120327,
+        "total": 327439
+      },
+      "incumbent": "Blake Moore",
+      "party": "(R)"
+    },
+    "UT-02": {
+      "2024": {
+        "d": 125234,
+        "r": 232185,
+        "total": 368805
+      },
+      "incumbent": "Celeste Maloy",
+      "party": "(R)"
+    },
+    "UT-03": {
+      "2024": {
+        "d": 108469,
+        "r": 268284,
+        "total": 386198
+      },
+      "incumbent": "Mike Kennedy",
+      "party": "(R)"
+    },
+    "UT-04": {
+      "2024": {
+        "d": 131176,
+        "r": 263022,
+        "total": 405509
+      },
+      "incumbent": "Burgess Owens",
+      "party": "(R)"
+    },
+    "VA-01": {
+      "2020": {
+        "d": 215574,
+        "r": 244413,
+        "total": 466892
+      },
+      "2024": {
+        "d": 227038,
+        "r": 250959,
+        "total": 484061
+      },
+      "incumbent": "Rob Wittman",
+      "party": "(R)"
+    },
+    "VA-02": {
+      "2020": {
+        "d": 201896,
+        "r": 194173,
+        "total": 402884
+      },
+      "2024": {
+        "d": 203279,
+        "r": 204307,
+        "total": 412555
+      },
+      "incumbent": "Jen Kiggans",
+      "party": "(R)"
+    },
+    "VA-03": {
+      "2020": {
+        "d": 230576,
+        "r": 101134,
+        "total": 337411
+      },
+      "2024": {
+        "d": 213026,
+        "r": 102168,
+        "total": 319745
+      },
+      "incumbent": "Bobby Scott",
+      "party": "(D)"
+    },
+    "VA-04": {
+      "2020": {
+        "d": 260886,
+        "r": 122375,
+        "total": 388140
+      },
+      "2024": {
+        "d": 251005,
+        "r": 125941,
+        "total": 382432
+      },
+      "incumbent": "Jennifer McClellan",
+      "party": "(D)"
+    },
+    "VA-05": {
+      "2020": {
+        "d": 194989,
+        "r": 230682,
+        "total": 431686
+      },
+      "2024": {
+        "d": 191726,
+        "r": 246040,
+        "total": 442168
+      },
+      "incumbent": "John McGuire",
+      "party": "(R)"
+    },
+    "VA-06": {
+      "2020": {
+        "d": 133543,
+        "r": 208274,
+        "total": 347395
+      },
+      "2024": {
+        "d": 154344,
+        "r": 252669,
+        "total": 411692
+      },
+      "incumbent": "Ben Cline",
+      "party": "(R)"
+    },
+    "VA-07": {
+      "2020": {
+        "d": 204951,
+        "r": 178472,
+        "total": 389585
+      },
+      "2024": {
+        "d": 203204,
+        "r": 191696,
+        "total": 402228
+      },
+      "incumbent": "Eugene Vindman",
+      "party": "(D)"
+    },
+    "VA-08": {
+      "2020": {
+        "d": 305118,
+        "r": 84142,
+        "total": 394439
+      },
+      "2024": {
+        "d": 285003,
+        "r": 92724,
+        "total": 386512
+      },
+      "incumbent": "Don Beyer",
+      "party": "(D)"
+    },
+    "VA-09": {
+      "2020": {
+        "d": 114163,
+        "r": 282093,
+        "total": 401051
+      },
+      "2024": {
+        "d": 112209,
+        "r": 291608,
+        "total": 407182
+      },
+      "incumbent": "Morgan Griffith",
+      "party": "(R)"
+    },
+    "VA-10": {
+      "2020": {
+        "d": 238976,
+        "r": 164941,
+        "total": 410021
+      },
+      "2024": {
+        "d": 221123,
+        "r": 186190,
+        "total": 417946
+      },
+      "incumbent": "Suhas Subramanyam",
+      "party": "(D)"
+    },
+    "VA-11": {
+      "2020": {
+        "d": 295688,
+        "r": 121172,
+        "total": 422707
+      },
+      "2024": {
+        "d": 273439,
+        "r": 130784,
+        "total": 416054
+      },
+      "incumbent": "James Walkinshaw",
+      "party": "(D)"
+    },
+    "VT-AL": {
+      "2020": {
+        "d": 242820,
+        "r": 112704,
+        "total": 365486
+      },
+      "2024": {
+        "d": 235791,
+        "r": 119395,
+        "total": 366389
+      },
+      "incumbent": "Becca Balint",
+      "party": "(D)"
+    },
+    "WA-01": {
+      "2020": {
+        "d": 250877,
+        "r": 130740,
+        "total": 392183
+      },
+      "2024": {
+        "d": 232691,
+        "r": 126084,
+        "total": 371555
+      },
+      "incumbent": "Suzan DelBene",
+      "party": "(D)"
+    },
+    "WA-02": {
+      "2020": {
+        "d": 263073,
+        "r": 162798,
+        "total": 437403
+      },
+      "2024": {
+        "d": 254400,
+        "r": 154441,
+        "total": 422346
+      },
+      "incumbent": "Rick Larsen",
+      "party": "(D)"
+    },
+    "WA-03": {
+      "2020": {
+        "d": 196218,
+        "r": 213902,
+        "total": 420817
+      },
+      "2024": {
+        "d": 197986,
+        "r": 211907,
+        "total": 421693
+      },
+      "incumbent": "Marie Gluesenkamp Perez",
+      "party": "(D)"
+    },
+    "WA-04": {
+      "2020": {
+        "d": 130107,
+        "r": 184863,
+        "total": 323034
+      },
+      "2024": {
+        "d": 119032,
+        "r": 183219,
+        "total": 310462
+      },
+      "incumbent": "Dan Newhouse",
+      "party": "(R)"
+    },
+    "WA-05": {
+      "2020": {
+        "d": 180838,
+        "r": 222224,
+        "total": 415270
+      },
+      "2024": {
+        "d": 173909,
+        "r": 217375,
+        "total": 402950
+      },
+      "incumbent": "Michael Baumgartner",
+      "party": "(R)"
+    },
+    "WA-06": {
+      "2020": {
+        "d": 253641,
+        "r": 177178,
+        "total": 444191
+      },
+      "2024": {
+        "d": 251826,
+        "r": 168264,
+        "total": 433649
+      },
+      "incumbent": "Emily Randall",
+      "party": "(D)"
+    },
+    "WA-07": {
+      "2020": {
+        "d": 395386,
+        "r": 51351,
+        "total": 455644
+      },
+      "2024": {
+        "d": 373392,
+        "r": 47188,
+        "total": 434984
+      },
+      "incumbent": "Pramila Jayapal",
+      "party": "(D)"
+    },
+    "WA-08": {
+      "2020": {
+        "d": 226804,
+        "r": 197508,
+        "total": 435843
+      },
+      "2024": {
+        "d": 218294,
+        "r": 193710,
+        "total": 425522
+      },
+      "incumbent": "Kim Schrier",
+      "party": "(D)"
+    },
+    "WA-09": {
+      "2020": {
+        "d": 255762,
+        "r": 94177,
+        "total": 357484
+      },
+      "2024": {
+        "d": 219426,
+        "r": 88121,
+        "total": 318654
+      },
+      "incumbent": "Adam Smith",
+      "party": "(D)"
+    },
+    "WA-10": {
+      "2020": {
+        "d": 216906,
+        "r": 149910,
+        "total": 378511
+      },
+      "2024": {
+        "d": 204893,
+        "r": 140614,
+        "total": 357020
+      },
+      "incumbent": "Marilyn Strickland",
+      "party": "(D)"
+    },
+    "WI-01": {
+      "2020": {
+        "d": 190050,
+        "r": 197950,
+        "total": 393706
+      },
+      "2024": {
+        "d": 189560,
+        "r": 207736,
+        "total": 403219
+      },
+      "incumbent": "Bryan Steil",
+      "party": "(R)"
+    },
+    "WI-02": {
+      "2020": {
+        "d": 310866,
+        "r": 125928,
+        "total": 442951
+      },
+      "2024": {
+        "d": 324784,
+        "r": 136735,
+        "total": 468398
+      },
+      "incumbent": "Mark Pocan",
+      "party": "(D)"
+    },
+    "WI-03": {
+      "2020": {
+        "d": 185088,
+        "r": 203589,
+        "total": 395551
+      },
+      "2024": {
+        "d": 191708,
+        "r": 222857,
+        "total": 421044
+      },
+      "incumbent": "Derrick Van Orden",
+      "party": "(R)"
+    },
+    "WI-04": {
+      "2020": {
+        "d": 260145,
+        "r": 78292,
+        "total": 342657
+      },
+      "2024": {
+        "d": 258176,
+        "r": 80483,
+        "total": 344679
+      },
+      "incumbent": "Gwen Moore",
+      "party": "(D)"
+    },
+    "WI-05": {
+      "2020": {
+        "d": 175986,
+        "r": 282390,
+        "total": 464784
+      },
+      "2024": {
+        "d": 183713,
+        "r": 290101,
+        "total": 480204
+      },
+      "incumbent": "Scott Fitzgerald",
+      "party": "(R)"
+    },
+    "WI-06": {
+      "2020": {
+        "d": 171949,
+        "r": 237088,
+        "total": 415757
+      },
+      "2024": {
+        "d": 175452,
+        "r": 245778,
+        "total": 426849
+      },
+      "incumbent": "Glenn Grothman",
+      "party": "(R)"
+    },
+    "WI-07": {
+      "2020": {
+        "d": 165850,
+        "r": 250173,
+        "total": 422463
+      },
+      "2024": {
+        "d": 167604,
+        "r": 266844,
+        "total": 441048
+      },
+      "incumbent": "Tom Tiffany",
+      "party": "(R)"
+    },
+    "WI-08": {
+      "2020": {
+        "d": 170932,
+        "r": 234773,
+        "total": 412078
+      },
+      "2024": {
+        "d": 177232,
+        "r": 247092,
+        "total": 429772
+      },
+      "incumbent": "Tony Wied",
+      "party": "(R)"
+    },
+    "WV-01": {
+      "2020": {
+        "d": 112947,
+        "r": 273523,
+        "total": 392576
+      },
+      "2024": {
+        "d": 98066,
+        "r": 259831,
+        "total": 364662
+      },
+      "incumbent": "Carol Miller",
+      "party": "(R)"
+    },
+    "WV-02": {
+      "2020": {
+        "d": 123037,
+        "r": 271859,
+        "total": 402076
+      },
+      "2024": {
+        "d": 116243,
+        "r": 273725,
+        "total": 397728
+      },
+      "incumbent": "Riley Moore",
+      "party": "(R)"
+    },
+    "WY-AL": {
+      "2020": {
+        "d": 73491,
+        "r": 193559,
+        "total": 275026
+      },
+      "2024": {
+        "d": 69527,
+        "r": 192633,
+        "total": 266353
+      },
+      "incumbent": "Harriet Hageman",
+      "party": "(R)"
+    }
+  }
+}

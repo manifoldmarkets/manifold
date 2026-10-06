@@ -1,0 +1,1009 @@
+{
+  "cycle": 2032,
+  "electionDate": "2032-11-02",
+  "series": "us-2032-general-v1",
+  "counts": {
+    "senate": 33,
+    "governor": 11,
+    "president": 57
+  },
+  "total": 101,
+  "sources": {
+    "senate": [
+      {
+        "name": "U.S. Senate — Class I (terms expire 2031)",
+        "url": "https://www.senate.gov/senators/Class_I.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Senate — Class II (terms expire 2027)",
+        "url": "https://www.senate.gov/senators/Class_II.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Senate — Class III (terms expire 2029)",
+        "url": "https://www.senate.gov/senators/Class_III.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "Wikipedia — 2028 United States Senate elections (cross-check: 34 Class 3 seats, election day November 7, 2028)",
+        "url": "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+        "fetchedAt": "2026-10-06"
+      }
+    ],
+    "governors": [
+      {
+        "name": "Wikipedia — 2028 United States gubernatorial elections (11 states; election day November 7, 2028; NH and VT two-year terms)",
+        "url": "https://en.wikipedia.org/wiki/2028_United_States_gubernatorial_elections",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "National Governors Association — Governors' terms and term limits",
+        "url": "https://www.nga.org/governors/",
+        "fetchedAt": "2026-10-06",
+        "note": "Term lengths: four years everywhere except New Hampshire and Vermont (two years)."
+      }
+    ],
+    "president": [
+      {
+        "name": "FEC — Official 2024 Presidential General Election Results (electoral votes per state; ME 3/1 and NE 4/1 splits)",
+        "url": "https://www.fec.gov/resources/cms-content/documents/2024presgeresults.xlsx",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Census Bureau — 2020 apportionment results (House seats per state; ME 2, NE 3)",
+        "url": "https://www.census.gov/data/tables/2020/dec/2020-apportionment-data.html",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "The Downballot — presidential results by congressional district (ME-01/02, NE-01/02/03 exact totals, 2020 and 2024)",
+        "url": "https://www.the-downballot.com/p/the-downballots-calculations-of-presidential",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "Nebraska Examiner — winner-take-all initiative petitions submitted for the 2026 ballot (status unresolved on 2026-10-06)",
+        "url": "https://nebraskaexaminer.com/2025/10/14/nebraska-group-starts-ballot-push-for-winner-take-all-hand-counting-votes/",
+        "fetchedAt": "2026-10-06"
+      }
+    ]
+  },
+  "notes": {
+    "senate": [
+      "Class 3 (34 seats) is up in 2028, Class 2 (33) in 2032 and Class 1 (33) in 2036. The counts match the task brief.",
+      "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
+      "Special elections for seats vacated after this inventory was written are out of scope; add them when they are called, as the brief says.",
+      "Vermont has no Class 2 seat and Nebraska/Alaska have no Class 3 / Class 1 seat respectively, so the 'Another party or independent' exceptions in SEEDS.md apply only to the cycles in which those states actually vote."
+    ],
+    "governors": [
+      "The brief expected 11 presidential-year governor races; confirmed: DE, IN, MO, MT, NH, NC, ND, UT, VT, WA, WV.",
+      "Puerto Rico and American Samoa also elect governors in presidential years; territories are out of scope.",
+      "Incumbents are as of 2026-10-06 and informational only. NH and VT hold elections on 2026-11-03, so their 2028 incumbents are unknown.",
+      "Vermont: Vt. Const. ch. II, § 47 — if no candidate has a majority, the General Assembly elects the governor from the top three by joint ballot in January. The market resolves to the party of whoever is finally elected by that process.",
+      "Washington: top-two general election (two candidates advance from the August primary; the general is decided by plurality of the two).",
+      "No presidential-year governor race has a general-election runoff."
+    ],
+    "president": [
+      "Counts: 51 statewide units + 5 district units + 1 national = 57 markets per cycle, as the brief expected.",
+      "2028 uses the 2020-census apportionment (538 electors). 2032 and 2036 use the 2030-census apportionment: state elector counts will change and Maine or Nebraska could gain or lose a district. A district that no longer exists resolves N/A; the statewide markets are unaffected.",
+      "Nebraska: a winner-take-all constitutional amendment was pushed by initiative petition for the 2026 ballot and by LR24CA in the Legislature (which failed). If Nebraska stops awarding electors by district before an election, the NE-1/2/3 markets for that election resolve N/A.",
+      "Maine awards electors by district under 21-A M.R.S. § 802; ranked-choice tabulation applies to presidential electors in Maine (since 2020) and, while its 2020 system stands, in Alaska.",
+      "Georgia's majority/runoff rule does not apply to presidential electors (O.C.G.A. § 21-2-501: 'no slate of candidates shall be required to receive a majority')."
+    ]
+  },
+  "races": [
+    {
+      "raceKey": "2032-senate-AL-regular-general",
+      "office": "senate",
+      "state": "AL",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Tommy Tuberville (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-AK-regular-general",
+      "office": "senate",
+      "state": "AK",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Dan Sullivan (R) as of October 2026",
+      "round": "the November 2, 2032 general election under the system Alaska uses for it: the final round of ranked-choice tabulation under the current top-four system, or a plurality if voters repeal that system (a repeal initiative is on the November 3, 2026 ballot)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-AR-regular-general",
+      "office": "senate",
+      "state": "AR",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Tom Cotton (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-CO-regular-general",
+      "office": "senate",
+      "state": "CO",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "John Hickenlooper (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-DE-regular-general",
+      "office": "senate",
+      "state": "DE",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Chris Coons (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-GA-regular-general",
+      "office": "senate",
+      "state": "GA",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Jon Ossoff (D) as of October 2026",
+      "round": "the November 2, 2032 general election if a candidate wins a majority of the votes; otherwise the November 30, 2032 runoff between the top two (O.C.G.A. § 21-2-501: majority required, runoff on the 28th day after)",
+      "closeTimeUtc": "2032-12-01T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-ID-regular-general",
+      "office": "senate",
+      "state": "ID",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Jim Risch (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-IL-regular-general",
+      "office": "senate",
+      "state": "IL",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Dick Durbin (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-IA-regular-general",
+      "office": "senate",
+      "state": "IA",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Joni Ernst (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-KS-regular-general",
+      "office": "senate",
+      "state": "KS",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Roger Marshall (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-KY-regular-general",
+      "office": "senate",
+      "state": "KY",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Mitch McConnell (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-LA-regular-general",
+      "office": "senate",
+      "state": "LA",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Bill Cassidy (R) as of October 2026",
+      "round": "the November 2, 2032 general election, decided by plurality among the party nominees chosen in Louisiana's closed party primaries and any other qualified candidates (La. Act 1 of the 2024 First Extraordinary Session; the 2026-only open primary with a December runoff under HB 842 of 2026 does not apply to this election). If Louisiana adopts a system with a later deciding round for this election, that round counts and the creator will extend the close time",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-ME-regular-general",
+      "office": "senate",
+      "state": "ME",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Susan Collins (R) as of October 2026",
+      "round": "the November 2, 2032 general election, using the final round of ranked-choice tabulation if no candidate has a first-round majority (21-A M.R.S. § 723-A)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-MA-regular-general",
+      "office": "senate",
+      "state": "MA",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Ed Markey (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-MI-regular-general",
+      "office": "senate",
+      "state": "MI",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Gary Peters (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-MN-regular-general",
+      "office": "senate",
+      "state": "MN",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Tina Smith (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-MS-regular-general",
+      "office": "senate",
+      "state": "MS",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Cindy Hyde-Smith (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality; Mississippi's majority/runoff rule applies to state offices, not to federal ones)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-MT-regular-general",
+      "office": "senate",
+      "state": "MT",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Steve Daines (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-NE-regular-general",
+      "office": "senate",
+      "state": "NE",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Pete Ricketts (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-NH-regular-general",
+      "office": "senate",
+      "state": "NH",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Jeanne Shaheen (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-NJ-regular-general",
+      "office": "senate",
+      "state": "NJ",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Cory Booker (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-NM-regular-general",
+      "office": "senate",
+      "state": "NM",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Ben Ray Luján (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-NC-regular-general",
+      "office": "senate",
+      "state": "NC",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Thom Tillis (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-OK-regular-general",
+      "office": "senate",
+      "state": "OK",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Alan Armstrong (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-OR-regular-general",
+      "office": "senate",
+      "state": "OR",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Jeff Merkley (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-RI-regular-general",
+      "office": "senate",
+      "state": "RI",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Jack Reed (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-SC-regular-general",
+      "office": "senate",
+      "state": "SC",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Darline Graham (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-SD-regular-general",
+      "office": "senate",
+      "state": "SD",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Mike Rounds (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-TN-regular-general",
+      "office": "senate",
+      "state": "TN",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Bill Hagerty (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-TX-regular-general",
+      "office": "senate",
+      "state": "TX",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "John Cornyn (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-VA-regular-general",
+      "office": "senate",
+      "state": "VA",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Mark Warner (D) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-WV-regular-general",
+      "office": "senate",
+      "state": "WV",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Shelley Moore Capito (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-senate-WY-regular-general",
+      "office": "senate",
+      "state": "WY",
+      "seat": "Class 2 seat; term beginning January 3, 2033",
+      "incumbentOctober2026": "Cynthia Lummis (R) as of October 2026",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-DE-regular-general",
+      "office": "governor",
+      "state": "DE",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Matt Meyer (D) as of October 2026; Eligible to run again.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-IN-regular-general",
+      "office": "governor",
+      "state": "IN",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Mike Braun (R) as of October 2026; Eligible to run again.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-MO-regular-general",
+      "office": "governor",
+      "state": "MO",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Mike Kehoe (R) as of October 2026; Eligible to run again.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-MT-regular-general",
+      "office": "governor",
+      "state": "MT",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Greg Gianforte (R) as of October 2026; Term-limited in 2028.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-NH-regular-general",
+      "office": "governor",
+      "state": "NH",
+      "seat": "2-year term beginning January 2033",
+      "incumbentOctober2026": "Kelly Ayotte (R) as of October 2026; Two-year term; also elected 2026-11-03.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-NC-regular-general",
+      "office": "governor",
+      "state": "NC",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Josh Stein (D) as of October 2026; Eligible to run again.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-ND-regular-general",
+      "office": "governor",
+      "state": "ND",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Kelly Armstrong (R) as of October 2026; Eligible to run again.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-UT-regular-general",
+      "office": "governor",
+      "state": "UT",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Spencer Cox (R) as of October 2026; Has said he will not run in 2028.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-VT-regular-general",
+      "office": "governor",
+      "state": "VT",
+      "seat": "2-year term beginning January 2033",
+      "incumbentOctober2026": "Phil Scott (R) as of October 2026; Two-year term; also elected 2026-11-03. General Assembly chooses if no majority.",
+      "round": "the November 2, 2032 general election if a candidate wins a majority; if no one does, the Vermont General Assembly elects the governor from the top three by joint ballot in January 2033 (Vt. Const. ch. II, § 47), and the market resolves to the party of the person it elects",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-WA-regular-general",
+      "office": "governor",
+      "state": "WA",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Bob Ferguson (D) as of October 2026; Eligible to run again. Top-two general.",
+      "round": "the November 2, 2032 top-two general election (the two candidates who advance from the August primary; plurality of the two)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-governor-WV-regular-general",
+      "office": "governor",
+      "state": "WV",
+      "seat": "4-year term beginning January 2033",
+      "incumbentOctober2026": "Patrick Morrisey (R) as of October 2026; Eligible to run again.",
+      "round": "the November 2, 2032 general election (plurality winner)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-AK-general",
+      "office": "president",
+      "state": "AK",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors under the system Alaska uses for it: the final round of ranked-choice tabulation under the current system, or a plurality if voters repeal it (a repeal initiative is on the November 3, 2026 ballot)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-AL-general",
+      "office": "president",
+      "state": "AL",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 9,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-AR-general",
+      "office": "president",
+      "state": "AR",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-AZ-general",
+      "office": "president",
+      "state": "AZ",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-CA-general",
+      "office": "president",
+      "state": "CA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 54,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-CO-general",
+      "office": "president",
+      "state": "CO",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-CT-general",
+      "office": "president",
+      "state": "CT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 7,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-DC-general",
+      "office": "president",
+      "state": "DC",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-DE-general",
+      "office": "president",
+      "state": "DE",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-FL-general",
+      "office": "president",
+      "state": "FL",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 30,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-GA-general",
+      "office": "president",
+      "state": "GA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 16,
+      "round": "the November 2, 2032 general election for presidential electors, by plurality (Georgia's majority/runoff rule does not apply to presidential electors: O.C.G.A. § 21-2-501)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-HI-general",
+      "office": "president",
+      "state": "HI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-IA-general",
+      "office": "president",
+      "state": "IA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-ID-general",
+      "office": "president",
+      "state": "ID",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-IL-general",
+      "office": "president",
+      "state": "IL",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 19,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-IN-general",
+      "office": "president",
+      "state": "IN",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-KS-general",
+      "office": "president",
+      "state": "KS",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-KY-general",
+      "office": "president",
+      "state": "KY",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 8,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-LA-general",
+      "office": "president",
+      "state": "LA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 8,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MA-general",
+      "office": "president",
+      "state": "MA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MD-general",
+      "office": "president",
+      "state": "MD",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-ME-general",
+      "office": "president",
+      "state": "ME",
+      "seat": "the two at-large electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors, using the final round of ranked-choice tabulation if no ticket has a first-round majority (21-A M.R.S. § 723-A applies to presidential electors)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MI-general",
+      "office": "president",
+      "state": "MI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 15,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MN-general",
+      "office": "president",
+      "state": "MN",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MO-general",
+      "office": "president",
+      "state": "MO",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MS-general",
+      "office": "president",
+      "state": "MS",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-MT-general",
+      "office": "president",
+      "state": "MT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NC-general",
+      "office": "president",
+      "state": "NC",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 16,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-ND-general",
+      "office": "president",
+      "state": "ND",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NE-general",
+      "office": "president",
+      "state": "NE",
+      "seat": "the two at-large electors (statewide popular vote)",
+      "electoralVotes": 5,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NH-general",
+      "office": "president",
+      "state": "NH",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NJ-general",
+      "office": "president",
+      "state": "NJ",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 14,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NM-general",
+      "office": "president",
+      "state": "NM",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 5,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NV-general",
+      "office": "president",
+      "state": "NV",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NY-general",
+      "office": "president",
+      "state": "NY",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 28,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-OH-general",
+      "office": "president",
+      "state": "OH",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 17,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-OK-general",
+      "office": "president",
+      "state": "OK",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 7,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-OR-general",
+      "office": "president",
+      "state": "OR",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 8,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-PA-general",
+      "office": "president",
+      "state": "PA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 19,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-RI-general",
+      "office": "president",
+      "state": "RI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-SC-general",
+      "office": "president",
+      "state": "SC",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 9,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-SD-general",
+      "office": "president",
+      "state": "SD",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-TN-general",
+      "office": "president",
+      "state": "TN",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-TX-general",
+      "office": "president",
+      "state": "TX",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 40,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-UT-general",
+      "office": "president",
+      "state": "UT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-VA-general",
+      "office": "president",
+      "state": "VA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 13,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-VT-general",
+      "office": "president",
+      "state": "VT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-WA-general",
+      "office": "president",
+      "state": "WA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 12,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-WI-general",
+      "office": "president",
+      "state": "WI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-WV-general",
+      "office": "president",
+      "state": "WV",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-WY-general",
+      "office": "president",
+      "state": "WY",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-ME-01-general",
+      "office": "president",
+      "state": "ME",
+      "district": 1,
+      "seat": "the one elector allocated to the 1st congressional district",
+      "electoralVotes": 1,
+      "round": "the November 2, 2032 general election for presidential electors, using the final round of ranked-choice tabulation if no ticket has a first-round majority (21-A M.R.S. § 723-A applies to presidential electors)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-ME-02-general",
+      "office": "president",
+      "state": "ME",
+      "district": 2,
+      "seat": "the one elector allocated to the 2nd congressional district",
+      "electoralVotes": 1,
+      "round": "the November 2, 2032 general election for presidential electors, using the final round of ranked-choice tabulation if no ticket has a first-round majority (21-A M.R.S. § 723-A applies to presidential electors)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NE-01-general",
+      "office": "president",
+      "state": "NE",
+      "district": 1,
+      "seat": "the one elector allocated to the 1st congressional district",
+      "electoralVotes": 1,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NE-02-general",
+      "office": "president",
+      "state": "NE",
+      "district": 2,
+      "seat": "the one elector allocated to the 2nd congressional district",
+      "electoralVotes": 1,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-NE-03-general",
+      "office": "president",
+      "state": "NE",
+      "district": 3,
+      "seat": "the one elector allocated to the 3rd congressional district",
+      "electoralVotes": 1,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2032-president-US-general",
+      "office": "president",
+      "state": "US",
+      "seat": "270 of 538 electoral votes, or a contingent election in the House",
+      "electoralVotes": 538,
+      "round": "the November 2, 2032 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2032-11-03T12:00:00.000Z"
+    }
+  ]
+}

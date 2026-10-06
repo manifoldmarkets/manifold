@@ -1226,3 +1226,311 @@ describe('quiet creation', () => {
     expect(api.publishMarket).not.toHaveBeenCalled()
   })
 })
+
+// ---------------------------------------------------------------------------
+// 2028+ generic markets: cycle-aware classification and the president office
+// ---------------------------------------------------------------------------
+
+const genericEntry = (
+  office: 'senate' | 'governor' | 'house' | 'president',
+  state: string,
+  stateName: string,
+  district?: number
+): ManifestEntry => ({
+  ...partyEntry(state, stateName),
+  raceKey:
+    office === 'president'
+      ? `2028-president-${state}${
+          district !== undefined ? `-0${district}` : ''
+        }-general`
+      : `2028-${office}-${state}${
+          district !== undefined ? `-0${district}` : ''
+        }-regular-general`,
+  identity: {
+    cycle: 2028,
+    office,
+    state,
+    stateName,
+    ...(district !== undefined ? { district } : {}),
+    election: 'regular',
+    round: 'Nov 7, 2028 general',
+    candidateNames: [],
+  },
+  payload: {
+    ...partyEntry(state, stateName).payload!,
+    question: `Which party will win the 2028 ${stateName} ${office} election?`,
+    closeTime: Date.UTC(2028, 10, 8, 12),
+  },
+  dashboard: {
+    list: `${office === 'governor' ? 'governors' : office}2028`,
+    key: state,
+  },
+})
+const partyMulti = (id: string, question: string): MarketLike => ({
+  id,
+  question,
+  outcomeType: 'MULTIPLE_CHOICE',
+  answers: [
+    { id: 'a', text: 'Democrats' },
+    { id: 'b', text: 'Republicans' },
+    { id: 'c', text: 'Other' },
+  ],
+})
+const binary = (id: string, question: string): MarketLike => ({
+  id,
+  question,
+  outcomeType: 'BINARY',
+})
+const verdict = (entry: ManifestEntry, m: MarketLike) =>
+  classifyExistingMarket(entry, m).verdict
+
+describe('generic 2028+ classification', () => {
+  const national = genericEntry('president', 'US', 'United States')
+  const pa = genericEntry('president', 'PA', 'Pennsylvania')
+  const dc = genericEntry('president', 'DC', 'District of Columbia')
+  const ne = genericEntry('president', 'NE', 'Nebraska')
+  const ne2 = genericEntry('president', 'NE', 'Nebraska', 2)
+  const houseNe2 = genericEntry('house', 'NE', 'Nebraska', 2)
+  const senateGa = genericEntry('senate', 'GA', 'Georgia')
+
+  test('the national market matches party multis about the 2028 presidency only', () => {
+    expect(
+      verdict(
+        national,
+        partyMulti('1', 'Which party will win the 2028 presidential election?')
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        national,
+        partyMulti(
+          '2',
+          'Which party will win the 2028 presidential election in Nebraskas 2nd Congressional District?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        national,
+        partyMulti(
+          '3',
+          'Which party will win the 2028 presidential election in DC?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        national,
+        partyMulti('4', 'Which party will win the 2032 presidential election?')
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        national,
+        partyMulti(
+          '5',
+          'Which party will win the popular vote in the 2028 Presidential election?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        national,
+        partyMulti(
+          '6',
+          'Which party will win the 2028 presidential election? / Will prediction markets be legal in 2030?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        national,
+        binary(
+          '7',
+          'Will Democrats win all 7 swing states in the 2028 presidential election?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        national,
+        binary(
+          '8',
+          'In 2028, will democrats have a major presidential candidate from the centrist wing of the party?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        national,
+        binary(
+          '9',
+          'Will JD Vance refuse to certify any electoral college votes in the 2028 election?'
+        )
+      )
+    ).toBe('unrelated')
+  })
+
+  test('binary party markets are held for review after 2026, not treated as equivalent', () => {
+    expect(
+      verdict(
+        national,
+        binary('10', 'Will a Democrat win the 2028 Presidential Election?')
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        senateGa,
+        binary('11', 'Democrats win 2028 Georgia Senate election?')
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        partyEntry('GA', 'Georgia'),
+        binary('12', 'Will a Democrat win the 2026 Georgia governor election?')
+      )
+    ).toBe('equivalent')
+  })
+
+  test('state and district presidential markets', () => {
+    expect(
+      verdict(
+        pa,
+        partyMulti(
+          '13',
+          'Which party will win the 2028 presidential election in Pennsylvania?'
+        )
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        pa,
+        binary(
+          '14',
+          'Will the 2028 Democratic Candidate for President win Pennsylvania?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        pa,
+        binary('15', 'Will Georgia be bluer than Pennsylvania in 2028?')
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        dc,
+        partyMulti(
+          '16',
+          'Which party will win the 2028 presidential election in DC?'
+        )
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        ne,
+        partyMulti(
+          '17',
+          'Which party will win the 2028 presidential election in Nebraskas 2nd Congressional District?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        ne2,
+        partyMulti(
+          '18',
+          'Which party will win the 2028 presidential election in Nebraskas 2nd Congressional District?'
+        )
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        ne2,
+        partyMulti(
+          '19',
+          'Which party will win the 2028 presidential election in Nebraska?'
+        )
+      )
+    ).toBe('unrelated')
+  })
+
+  test('a House entry ignores presidential elector-district markets and Senate markets', () => {
+    expect(
+      verdict(
+        houseNe2,
+        partyMulti(
+          '20',
+          'Which party will win the 2028 presidential election in Nebraskas 2nd Congressional District?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        houseNe2,
+        partyMulti(
+          '21',
+          'Which party will win the 2028 U.S. House election in NE-2?'
+        )
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        houseNe2,
+        partyMulti(
+          '22',
+          'Which party will win the 2028 Nebraska Senate election?'
+        )
+      )
+    ).toBe('unrelated')
+  })
+
+  test('a Senate entry accepts a party multi for the seat and holds candidate markets for review', () => {
+    expect(
+      verdict(
+        senateGa,
+        partyMulti('23', 'Who will win the 2028 senate election in Georgia?')
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        senateGa,
+        binary(
+          '24',
+          'Will Raphael Warnock win the 2028 Georgia Senate election?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        senateGa,
+        partyMulti('25', '2028 Georgia Senate Democratic Primary Winner?')
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        senateGa,
+        partyMulti(
+          '26',
+          'Which party will win the 2026 Georgia Senate election?'
+        )
+      )
+    ).toBe('unrelated')
+  })
+
+  test('validation ties the race key to the identity for every cycle', () => {
+    const ok = genericEntry('senate', 'GA', 'Georgia')
+    expect(validateManifest(manifest([ok]), NOW)).toEqual([])
+    const wrongCycle = { ...ok, raceKey: '2032-senate-GA-regular-general' }
+    expect(validateManifest(manifest([wrongCycle]), NOW).join(' ')).toMatch(
+      /cycle 2032 must match identity.cycle 2028/
+    )
+    const candidatePresident = {
+      ...genericEntry('president', 'US', 'United States'),
+      proposition: 'candidate' as const,
+    }
+    expect(
+      validateManifest(manifest([candidatePresident]), NOW).join(' ')
+    ).toMatch(/resolve by party/)
+  })
+})

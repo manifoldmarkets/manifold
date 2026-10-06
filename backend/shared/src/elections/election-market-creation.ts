@@ -31,7 +31,15 @@ const KEY_LENGTH = 10
 const MIN_ANSWER_PROB = 1
 const MAX_ANSWER_PROB = 99
 
-export type Office = 'senate' | 'governor' | 'house'
+// 'president' covers the state (and ME/NE district) elector markets and the
+// national Electoral College winner (state code 'US').
+export type Office = 'senate' | 'governor' | 'house' | 'president'
+export const OFFICES: readonly Office[] = [
+  'senate',
+  'governor',
+  'house',
+  'president',
+]
 export type PartyCode = 'D' | 'R' | 'I' | 'L' | 'G' | 'other' | 'unknown'
 
 export type CreatePayload = {
@@ -61,17 +69,31 @@ export type AnswerMeta = {
 }
 
 export type RaceIdentity = {
-  cycle: 2026
+  // Election year: 2026 for the midterm manifests, 2028/2032/2036 for the
+  // generic presidential-cycle manifests. The raceKey starts with it.
+  cycle: number
   office: Office
-  state: string
+  state: string // 'US' for the national presidential market
   stateName: string
-  district?: number // 0 = at-large
+  district?: number // 0 = at-large; for president: a ME/NE elector district
   election: 'regular' | 'special'
   round: string
   // Names that identify this race's candidates; used to recognise a market
   // created after the audit that names candidates instead of the office.
+  // Empty for the generic party markets, which deliberately name nobody.
   candidateNames: string[]
 }
+
+// Page list names: the 2026 launch used `senate2026`, `governors2026` and
+// `HOUSE_RACE_MARKETS`; later cycles use `<office>s?<cycle>`.
+export type DashboardList =
+  | 'senate2026'
+  | 'governors2026'
+  | 'HOUSE_RACE_MARKETS'
+  | `senate${number}`
+  | `governors${number}`
+  | `house${number}`
+  | `president${number}`
 
 export type RaceManifestEntry = {
   kind?: 'race'
@@ -90,8 +112,12 @@ export type RaceManifestEntry = {
   reviewedRejectedContractIds?: string[]
   searchTerms: string[]
   dashboard: {
-    list: 'senate2026' | 'governors2026' | 'HOUSE_RACE_MARKETS'
-    key: string // state code, or district id like "CA-29"
+    list: DashboardList
+    key: string // state code, or district id like "CA-29"; "US" nationally
+    // Filled consistently by the 2028+ generator so a future page can be
+    // wired from the mapping output alone.
+    cycle?: number
+    office?: Office
     preferOverPortfolio?: boolean
   }
   evidence?: Record<string, unknown>
@@ -509,8 +535,26 @@ export function validateEntry(entry: AnyManifestEntry, now = Date.now()) {
   if (isMeasureEntry(entry)) return validateMeasureEntry(entry, now)
   const errors: string[] = []
   const e = (m: string) => errors.push(`${entry.raceKey}: ${m}`)
-  if (!/^2026-(senate|governor|house)-[A-Z]{2}-/.test(entry.raceKey))
-    e('raceKey must start with 2026-<office>-<ST>-')
+  const keyParts = entry.raceKey.match(
+    /^(\d{4})-(senate|governor|house|president)-([A-Z]{2})-/
+  )
+  if (!keyParts) e('raceKey must start with <cycle>-<office>-<ST>-')
+  else {
+    const id = entry.identity
+    if (Number(keyParts[1]) !== id?.cycle)
+      e(`raceKey cycle ${keyParts[1]} must match identity.cycle ${id?.cycle}`)
+    if (keyParts[2] !== id?.office)
+      e(
+        `raceKey office ${keyParts[2]} must match identity.office ${id?.office}`
+      )
+    if (keyParts[3] !== id?.state)
+      e(`raceKey state ${keyParts[3]} must match identity.state ${id?.state}`)
+  }
+  if (
+    entry.identity?.office === 'president' &&
+    entry.proposition !== 'ballot-party'
+  )
+    e('presidential markets resolve by party, not by candidate')
   if (entry.status !== 'ready') return errors
   const p = entry.payload
   if (!p) return [...errors, `${entry.raceKey}: ready entry has no payload`]
@@ -660,21 +704,48 @@ const ORDINAL = (n: number) =>
   }`
 
 const EXCLUDE =
-  /\b(primar(y|ies)|nominee|nomination|margin|by more than|vote share|turnout|percent|%|if |conditional|county|debate|endorse|poll(s|ing)?\b|how many|seats)\b/i
+  /\b(primar(y|ies)|nominee|nomination|margin|by more than|vote share|turnout|percent|%|if |conditional|county|debate|endorse|poll(s|ing)?\b|how many|seats|popular vote|tie|faithless|vice[- ]?president|VP|trifecta|both|and will|sweep|bluer|redder|closest|last called|run(s|ning)? for|candidate for|unanimous|landslide|recession|every|all \d+|all of|all the|swing states?|ticket|socialist|aged?|taller|mog|catholic|female|millennial|first-time|years old|survive|third term|sworn in|runner-up)\b/i
 const OFFICE_RE: Record<Office, RegExp> = {
   senate: /\bsenat/i,
   // "governor(s|ship)", not "government".
   governor: /\bgovernor|gubernator/i,
   house: /\bhouse\b|congress|\bdistrict\b|\bcd[- ]?\d|representative/i,
+  president: /\bpresiden|\belectoral (college|vote)|\bwhite house\b/i,
 }
 // Offices that are never one of ours ("Speaker of the House" included): a
 // market about them is a different proposition even when an answer names
-// one of our candidates.
-const OTHER_OFFICE_RE =
-  /\bpresiden|\bspeaker\b|\b(majority|minority) leader|\bmayor\b|\bsecretary\b|\battorney general\b|\bcabinet\b|\bsupreme court\b/i
+// one of our candidates. The planned office's own pattern is left out.
+const OTHER_OFFICE_PARTS: Record<string, string> = {
+  president: '\\bpresiden',
+  speaker: '\\bspeaker\\b',
+  leader: '\\b(majority|minority) leader',
+  mayor: '\\bmayor\\b',
+  secretary: '\\bsecretary\\b',
+  ag: '\\battorney general\\b',
+  cabinet: '\\bcabinet\\b',
+  scotus: '\\bsupreme court\\b',
+}
+const otherOfficeRe = (office: Office) =>
+  new RegExp(
+    Object.entries(OTHER_OFFICE_PARTS)
+      .filter(([k]) => k !== office)
+      .map(([, re]) => re)
+      .join('|'),
+    'i'
+  )
+// A presidential market must be about winning the election (or the state's
+// electors); anything else about the presidency is a different proposition.
+const WIN_RE =
+  /\bwins?\b|\bwinning\b|\bwon\b|\bwinners?\b|\belect(ed)?\b|\bcarr(y|ies)\b|\bbe (the )?(next )?president\b|\bflip\b|\bhold\b/i
+// Two questions in one market ("A? / B?", "A && B") never equal one race.
+const COMBINED_RE = /\/\/| \/ |&&|\|\|/
+// Elector-district wording ("ME-2", "Nebraska's 2nd district"): a statewide
+// presidential entry must not treat a district market as equivalent.
+const ELECTOR_DISTRICT_RE =
+  /\b(ME|NE)[- ]?0?[1-3]\b|\b(1st|2nd|3rd|first|second|third) (congressional )?district\b/i
 
 function mentionsDistrict(text: string, id: RaceIdentity) {
-  if (id.office !== 'house' || id.district === undefined) return true
+  if (id.district === undefined) return true
   if (id.district === 0) return /at[- ]large|\bAL\b/i.test(text)
   const n = id.district
   return new RegExp(
@@ -753,12 +824,14 @@ export function statesNamedIn(text: string) {
   for (const [code, name] of Object.entries(US_STATE_NAMES).sort(
     (a, b) => b[1].length - a[1].length
   )) {
-    const re = new RegExp(`\\b${name}\\b`, 'gi')
+    // Possessives with or without the apostrophe ("Nebraskas 2nd").
+    const re = new RegExp(`\\b${name}(?:['’]?s)?\\b`, 'gi')
     if (re.test(t)) {
       found.add(code)
       t = t.replace(re, ' ')
     }
   }
+  if (/\bD\.?C\.?\b|\bDistrict of Columbia\b/i.test(text)) found.add('DC')
   for (const m of text.matchAll(
     /\b([A-Z]{2})\s*(?:Prop(?:osition)?|Q(?:uestion)?|Amendment|Issue|Measure|SQ)\b/g
   ))
@@ -941,9 +1014,15 @@ export function classifyExistingMarket(
     }
   const answerText = (m.answers ?? []).map((a) => a.text).join(' ')
   const text = `${m.question} ${answerText}`
-  const statePresent =
-    new RegExp(`\\b${id.stateName}\\b`, 'i').test(text) ||
-    new RegExp(`\\b${id.state}[- ]?(\\d{1,2}|AL)\\b`).test(text)
+  const cycle = String(id.cycle)
+  const national = id.office === 'president' && id.state === 'US'
+  // The national market is "present" when no particular state is named.
+  const statePresent = national
+    ? statesNamedIn(m.question).size === 0
+    : id.state === 'DC'
+    ? /\bD\.?C\.?\b|\bDistrict of Columbia\b/i.test(text)
+    : new RegExp(`\\b${id.stateName}(?:['’]?s)?\\b`, 'i').test(text) ||
+      new RegExp(`\\b${id.state}[- ]?(\\d{1,2}|AL)\\b`).test(text)
   // A surname is enough in the question; an answer must carry the full name.
   // Answers are long lists of people (drivers, cabinet picks, Speaker
   // hopefuls), where bare surnames like "Carson" match unrelated markets.
@@ -959,10 +1038,11 @@ export function classifyExistingMarket(
   })
   const office = OFFICE_RE[id.office].test(m.question)
   const year =
-    /\b2026\b/.test(text) || /\bnovember\b|\bgeneral\b|\bmidterm/i.test(text)
+    new RegExp(`\\b${cycle}\\b`).test(text) ||
+    /\bnovember\b|\bgeneral\b|\bmidterm|\bpresidential election/i.test(text)
   const otherYear =
-    (m.question.match(/\b20\d\d\b/g) ?? []).some((y) => y !== '2026') &&
-    !/\b2026\b/.test(m.question)
+    (m.question.match(/\b20\d\d\b/g) ?? []).some((y) => y !== cycle) &&
+    !new RegExp(`\\b${cycle}\\b`).test(m.question)
   if (!statePresent && names.length === 0)
     return {
       verdict: 'unrelated',
@@ -979,7 +1059,7 @@ export function classifyExistingMarket(
   )
   if (
     !namesOurOffice &&
-    (OTHER_OFFICE_RE.test(m.question) ||
+    (otherOfficeRe(id.office).test(m.question) ||
       Object.entries(OFFICE_RE).some(
         ([o, re]) => o !== id.office && re.test(m.question)
       ))
@@ -990,12 +1070,43 @@ export function classifyExistingMarket(
     return { verdict: 'unrelated', reason: 'question names only other states' }
   if (!office && names.length === 0)
     return { verdict: 'unrelated', reason: 'different office' }
+  if (id.office === 'president' && !WIN_RE.test(m.question))
+    return {
+      verdict: 'unrelated',
+      reason: 'about the presidency, but not who wins',
+    }
   if (EXCLUDE.test(m.question))
     return {
       verdict: office && statePresent ? 'ambiguous' : 'unrelated',
       reason: 'primary/margin/conditional/derivative wording',
     }
-  if (id.office === 'house' && !mentionsDistrict(text, id))
+  if (
+    COMBINED_RE.test(m.question) ||
+    (m.question.match(/\?/g) ?? []).length > 1
+  )
+    return {
+      verdict: office && statePresent ? 'ambiguous' : 'unrelated',
+      reason: 'combined or multi-part question',
+    }
+  if (
+    id.office === 'president' &&
+    id.district === undefined &&
+    !national &&
+    ELECTOR_DISTRICT_RE.test(m.question)
+  )
+    return { verdict: 'unrelated', reason: 'an elector-district market' }
+  // "Congressional district" names the House office, but a presidential
+  // elector-district market is about the presidency, not the House seat.
+  if (
+    id.office === 'house' &&
+    OFFICE_RE.president.test(m.question) &&
+    !/\bhouse\b|representative/i.test(m.question)
+  )
+    return {
+      verdict: 'unrelated',
+      reason: 'a presidential elector-district market, not the House seat',
+    }
+  if (id.district !== undefined && !mentionsDistrict(text, id))
     return names.length
       ? {
           verdict: 'ambiguous',
@@ -1011,6 +1122,8 @@ export function classifyExistingMarket(
       reason: 'regular/special election wording differs',
     }
   if (!year) return { verdict: 'ambiguous', reason: 'year/round not stated' }
+  if (new Set(m.question.match(/\b20\d\d\b/g) ?? []).size > 1)
+    return { verdict: 'ambiguous', reason: 'names more than one year' }
   // Office, state, district and year match. Party-proposition markets are
   // equivalent to a planned party market; anything else needs a reviewer.
   const partyAnswers =
@@ -1020,17 +1133,29 @@ export function classifyExistingMarket(
     )
   const partyBinary =
     m.outcomeType === 'BINARY' &&
-    /will (a|the) (democrat|republican)/i.test(m.question)
-  if (
-    entry.proposition === 'ballot-party' &&
-    (partyAnswers || partyBinary) &&
-    office &&
-    statePresent
-  )
-    return {
-      verdict: 'equivalent',
-      reason: 'same office/state/district/year with party outcomes',
-    }
+    (/will (a|the) (democrat|republican)/i.test(m.question) ||
+      (/\b(democrat|republican)/i.test(m.question) &&
+        /\bwin|\bflip\b|\bhold\b|\bcarr(y|ies)\b/i.test(m.question)))
+  if (entry.proposition === 'ballot-party' && office && statePresent) {
+    if (partyAnswers)
+      return {
+        verdict: 'equivalent',
+        reason: 'same office/state/district/year with party outcomes',
+      }
+    // The 2026 launch accepted a binary party market as equivalent. The
+    // generic 2028+ markets are three-way and meant to be a uniform official
+    // set, so a binary is held for review instead of blocking creation.
+    if (partyBinary)
+      return id.cycle === 2026
+        ? {
+            verdict: 'equivalent',
+            reason: 'same office/state/district/year with party outcomes',
+          }
+        : {
+            verdict: 'ambiguous',
+            reason: 'binary party market for this race; ours is three-way',
+          }
+  }
   if (
     entry.proposition === 'candidate' &&
     office &&
@@ -1681,9 +1806,19 @@ export function makeHttpApi(opts: {
   fetch?: FetchLike
   readTimeoutMs?: number
   createTimeoutMs?: number
+  // Minimum spacing between requests. Cloudflare blocks an IP for about two
+  // minutes after roughly 500 requests a minute; 250 ms keeps a long online
+  // dry run at 240/min at most.
+  paceMs?: number
 }): ElectionApi {
   const f: FetchLike = opts.fetch ?? (globalThis.fetch as unknown as FetchLike)
   const url = (path: string) => `${opts.apiBase.replace(/\/$/, '')}/${path}`
+  let lastRequestAt = 0
+  const pace = async () => {
+    const wait = (opts.paceMs ?? 0) - (Date.now() - lastRequestAt)
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait))
+    lastRequestAt = Date.now()
+  }
   const timeout = (ms: number) => AbortSignal.timeout(ms)
   const classify = async (
     res: Awaited<ReturnType<FetchLike>>,
@@ -1713,6 +1848,7 @@ export function makeHttpApi(opts: {
     for (let attempt = 0; ; attempt++) {
       let res
       try {
+        await pace()
         res = await f(url(path), {
           headers,
           signal: timeout(opts.readTimeoutMs ?? 20_000),

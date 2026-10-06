@@ -21,6 +21,14 @@
 // every create, persists the state file after every request, stops on any
 // ambiguous outcome, and never creates an entry twice. See
 // backend/shared/src/elections/election-market-creation.ts.
+//
+// Options added for the 2028–2036 batches:
+//   --only <regex>      restrict the run (dry or apply) to entries whose
+//                       raceKey matches, e.g. --only 2028-president-US
+//   --pace-ms <ms>      minimum spacing between API requests (default 250
+//                       online); stays well under Cloudflare's ~500/min block
+//   --resume-online     with --online: reuse <out>/dry-run-online.json from
+//                       an interrupted run and only check the remaining entries
 
 import * as fs from 'fs'
 import * as path from 'path'
@@ -234,7 +242,20 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   const manifestFile = String(args.manifest ?? '')
   if (!manifestFile) throw new Error('--manifest <file> is required')
-  const manifest = readJson<Manifest>(manifestFile)
+  const loaded = readJson<Manifest>(manifestFile)
+  const only = args.only ? new RegExp(String(args.only)) : undefined
+  const manifest: Manifest = only
+    ? { ...loaded, entries: loaded.entries.filter((e) => only.test(e.raceKey)) }
+    : loaded
+  if (only && !manifest.entries.length)
+    throw new Error(`--only ${args.only} matches no entry`)
+  if (only)
+    console.error(
+      `--only ${args.only}: ${manifest.entries.length} of ${loaded.entries.length} entries selected`
+    )
+  const paceMs = args['pace-ms'] ? Number(args['pace-ms']) : 250
+  if (!Number.isFinite(paceMs) || paceMs < 0)
+    throw new Error('--pace-ms must be a non-negative number')
   const outDir = String(
     args.out ?? path.join(path.dirname(manifestFile), 'out')
   )
@@ -256,11 +277,25 @@ async function main() {
     // Dry run: the client below cannot write, and no key is read or sent.
     let online: Record<string, string[]> | undefined
     if (args.online) {
-      const api = makeHttpApi({ apiBase, allowWrites: false })
-      online = {}
-      for (const entry of manifest.entries.filter(
-        (e) => e.status === 'ready'
-      )) {
+      const api = makeHttpApi({ apiBase, allowWrites: false, paceMs })
+      // Partial results survive an interrupted run (one JSON write per entry).
+      const onlineFile = path.join(outDir, 'dry-run-online.json')
+      online =
+        args['resume-online'] && fs.existsSync(onlineFile)
+          ? readJson<Record<string, string[]>>(onlineFile)
+          : {}
+      const ready = manifest.entries.filter((e) => e.status === 'ready')
+      const startedAt = Date.now()
+      let done = 0
+      for (const entry of ready) {
+        done++
+        if (online[entry.raceKey]) continue
+        if (done % 10 === 1 || done === ready.length)
+          console.error(
+            `online check ${done}/${ready.length} ${
+              entry.raceKey
+            } (${Math.round((Date.now() - startedAt) / 1000)}s)`
+          )
         const key = idempotencyKeyFor(manifest.series, entry.raceKey)
         const atKey = await api.getMarket(key)
         const found = await findExisting(entry, api)
@@ -277,6 +312,7 @@ async function main() {
             (v) => `AMBIGUOUS ${v.m.id} "${v.m.question}" (${v.reason})`
           ),
         ]
+        writeAtomic(onlineFile, online)
         await new Promise((r) => setTimeout(r, 300))
       }
     }
@@ -368,7 +404,7 @@ async function main() {
       `${lockFile} exists: another apply may be running on this state file. Delete it only if none is.`
     )
   }
-  const api = makeHttpApi({ apiBase, apiKey, allowWrites: true })
+  const api = makeHttpApi({ apiBase, apiKey, allowWrites: true, paceMs })
   let state: CreationState
   let result
   try {

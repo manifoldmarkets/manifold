@@ -1,0 +1,5912 @@
+{
+  "validationErrors": [],
+  "plan": [
+    {
+      "raceKey": "2028-senate-AL-regular-general",
+      "action": "create",
+      "idempotencyKey": "N89U92tZcy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-AK-regular-general",
+      "action": "create",
+      "idempotencyKey": "dc98qQuqq6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-AZ-regular-general",
+      "action": "create",
+      "idempotencyKey": "CSECtyycAs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-AR-regular-general",
+      "action": "create",
+      "idempotencyKey": "5Qss5Q65Pp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-CA-regular-general",
+      "action": "create",
+      "idempotencyKey": "ENpECppCI8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-CO-regular-general",
+      "action": "create",
+      "idempotencyKey": "lEuQAUQd0A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-CT-regular-general",
+      "action": "create",
+      "idempotencyKey": "cZNshL8Nlh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-FL-regular-general",
+      "action": "create",
+      "idempotencyKey": "unPg5ql0CO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-GA-regular-general",
+      "action": "create",
+      "idempotencyKey": "yP6NOsP9z6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-HI-regular-general",
+      "action": "create",
+      "idempotencyKey": "gQs05ZPqQL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-ID-regular-general",
+      "action": "create",
+      "idempotencyKey": "ytR9LRCLcZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-IL-regular-general",
+      "action": "create",
+      "idempotencyKey": "EOEtCtqtLq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-IN-regular-general",
+      "action": "create",
+      "idempotencyKey": "U2QUI095Ig",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-IA-regular-general",
+      "action": "create",
+      "idempotencyKey": "2tCZQL5d90",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-KS-regular-general",
+      "action": "create",
+      "idempotencyKey": "PAld56RuL5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-KY-regular-general",
+      "action": "create",
+      "idempotencyKey": "8005R9LyA5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-LA-regular-general",
+      "action": "create",
+      "idempotencyKey": "UZuIPlAEs9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-MD-regular-general",
+      "action": "create",
+      "idempotencyKey": "I6hdP669Pz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-MO-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ugp5A2hZPu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-NV-regular-general",
+      "action": "create",
+      "idempotencyKey": "ENZ5y5RyqZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-NH-regular-general",
+      "action": "create",
+      "idempotencyKey": "0yLNE2cLUE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-NY-regular-general",
+      "action": "create",
+      "idempotencyKey": "hq9g9pgAcy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-NC-regular-general",
+      "action": "create",
+      "idempotencyKey": "s0uPPs0CAy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-ND-regular-general",
+      "action": "create",
+      "idempotencyKey": "OEAUQuzhnp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-OH-regular-general",
+      "action": "create",
+      "idempotencyKey": "CqPI0COyUs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-OK-regular-general",
+      "action": "create",
+      "idempotencyKey": "tAPlzRd2Ry",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-OR-regular-general",
+      "action": "create",
+      "idempotencyKey": "Z859cpsRC0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-PA-regular-general",
+      "action": "create",
+      "idempotencyKey": "E5pIllnNq5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-SC-regular-general",
+      "action": "create",
+      "idempotencyKey": "8C2d0yAcCC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-SD-regular-general",
+      "action": "create",
+      "idempotencyKey": "8czPdAO2yN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-UT-regular-general",
+      "action": "create",
+      "idempotencyKey": "lQqsO6dZhs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-VT-regular-general",
+      "action": "create",
+      "idempotencyKey": "u0OdRLCNRs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-WA-regular-general",
+      "action": "create",
+      "idempotencyKey": "CtcCc9QqRA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-senate-WI-regular-general",
+      "action": "create",
+      "idempotencyKey": "t5Zy9QpCQz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-DE-regular-general",
+      "action": "create",
+      "idempotencyKey": "lp9qq5PQlu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-IN-regular-general",
+      "action": "create",
+      "idempotencyKey": "lCUQNCptZZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-MO-regular-general",
+      "action": "create",
+      "idempotencyKey": "sdRhdcnIPP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-MT-regular-general",
+      "action": "create",
+      "idempotencyKey": "PIPAgdgUsU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-NH-regular-general",
+      "action": "create",
+      "idempotencyKey": "5l5t5uNN9s",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-NC-regular-general",
+      "action": "create",
+      "idempotencyKey": "2P5tSqSuC5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-ND-regular-general",
+      "action": "create",
+      "idempotencyKey": "qAL98Inu0h",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-UT-regular-general",
+      "action": "create",
+      "idempotencyKey": "p9Ip2tOCn6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-VT-regular-general",
+      "action": "create",
+      "idempotencyKey": "sI0P5OyNU5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-WA-regular-general",
+      "action": "create",
+      "idempotencyKey": "CZ6RSlqPO0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-governor-WV-regular-general",
+      "action": "create",
+      "idempotencyKey": "LylZZElRyg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AK-general",
+      "action": "create",
+      "idempotencyKey": "ygRP550O2S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AL-general",
+      "action": "create",
+      "idempotencyKey": "hC8yEAhLLU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AR-general",
+      "action": "create",
+      "idempotencyKey": "LdS0ulnN8S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AZ-general",
+      "action": "create",
+      "idempotencyKey": "UIhNLC5q5A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-CA-general",
+      "action": "create",
+      "idempotencyKey": "clnqghA2Il",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-CO-general",
+      "action": "create",
+      "idempotencyKey": "qRhlLzhIuA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-CT-general",
+      "action": "create",
+      "idempotencyKey": "ztE9Qy9LS0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-DC-general",
+      "action": "create",
+      "idempotencyKey": "LQzugAuNny",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-DE-general",
+      "action": "create",
+      "idempotencyKey": "ORqz9LqOgC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-FL-general",
+      "action": "create",
+      "idempotencyKey": "EdcpOnUqPQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-GA-general",
+      "action": "create",
+      "idempotencyKey": "t2nqpLENQl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-HI-general",
+      "action": "create",
+      "idempotencyKey": "UpQulLdE20",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-IA-general",
+      "action": "create",
+      "idempotencyKey": "AhOCUACQSg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ID-general",
+      "action": "create",
+      "idempotencyKey": "82l2AlqPlC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-IL-general",
+      "action": "create",
+      "idempotencyKey": "8QUNzNpqOS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-IN-general",
+      "action": "create",
+      "idempotencyKey": "9QO5yAzyy6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-KS-general",
+      "action": "create",
+      "idempotencyKey": "PS892Pgcdn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-KY-general",
+      "action": "create",
+      "idempotencyKey": "0dLhEqc69n",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-LA-general",
+      "action": "create",
+      "idempotencyKey": "nspUqRlEtd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MA-general",
+      "action": "create",
+      "idempotencyKey": "EphPt0zqPq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MD-general",
+      "action": "create",
+      "idempotencyKey": "lt0Lqn5Rqy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ME-general",
+      "action": "create",
+      "idempotencyKey": "ZIQps8NRhA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MI-general",
+      "action": "create",
+      "idempotencyKey": "RZ9ISZCPIl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MN-general",
+      "action": "create",
+      "idempotencyKey": "tCz5c9ROSt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MO-general",
+      "action": "create",
+      "idempotencyKey": "cn8CPCzut0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MS-general",
+      "action": "create",
+      "idempotencyKey": "6thqgSgLUQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MT-general",
+      "action": "create",
+      "idempotencyKey": "psOU5CyOpd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NC-general",
+      "action": "create",
+      "idempotencyKey": "9zA8lRA6On",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ND-general",
+      "action": "create",
+      "idempotencyKey": "uEUnz5hPsp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NE-general",
+      "action": "create",
+      "idempotencyKey": "nt9PzSycQ6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NH-general",
+      "action": "create",
+      "idempotencyKey": "yCCESzRycs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NJ-general",
+      "action": "create",
+      "idempotencyKey": "Sz0PpP0EL5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NM-general",
+      "action": "create",
+      "idempotencyKey": "U8zn9q8d2p",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NV-general",
+      "action": "create",
+      "idempotencyKey": "ECCcOUOnlO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NY-general",
+      "action": "create",
+      "idempotencyKey": "8lLIlNOdLt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-OH-general",
+      "action": "create",
+      "idempotencyKey": "ycd0pN8y8A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-OK-general",
+      "action": "create",
+      "idempotencyKey": "h0pcs0hOOA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-OR-general",
+      "action": "create",
+      "idempotencyKey": "SQcgczRnQz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-PA-general",
+      "action": "create",
+      "idempotencyKey": "dtcNCqg09A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-RI-general",
+      "action": "create",
+      "idempotencyKey": "55ASlqltOR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-SC-general",
+      "action": "create",
+      "idempotencyKey": "SlSAdIC22S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-SD-general",
+      "action": "create",
+      "idempotencyKey": "CN95Elns9t",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-TN-general",
+      "action": "create",
+      "idempotencyKey": "qqs0tdElsy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-TX-general",
+      "action": "create",
+      "idempotencyKey": "Oy0uCNNg9I",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-UT-general",
+      "action": "create",
+      "idempotencyKey": "g5InI5s89O",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-VA-general",
+      "action": "create",
+      "idempotencyKey": "5PZ6nOAuL6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-VT-general",
+      "action": "create",
+      "idempotencyKey": "EUsAQ995yt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WA-general",
+      "action": "create",
+      "idempotencyKey": "COz2IO5hch",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WI-general",
+      "action": "create",
+      "idempotencyKey": "zUqALQ62dL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WV-general",
+      "action": "create",
+      "idempotencyKey": "ducgR0uI6u",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WY-general",
+      "action": "create",
+      "idempotencyKey": "5nAtEssZpS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ME-01-general",
+      "action": "create",
+      "idempotencyKey": "98C5qnt2uh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ME-02-general",
+      "action": "create",
+      "idempotencyKey": "NIgP5tpLLg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NE-01-general",
+      "action": "create",
+      "idempotencyKey": "NddRhpNytp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NE-02-general",
+      "action": "create",
+      "idempotencyKey": "IgdAISyOgZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NE-03-general",
+      "action": "create",
+      "idempotencyKey": "N99tAp9UCA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-US-general",
+      "action": "create",
+      "idempotencyKey": "PhINOuC86C",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AK-00-regular-general",
+      "action": "create",
+      "idempotencyKey": "6t5lUNltRI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "P80AUSNh9S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "6OROdg82Sc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "yyz6p65Lqg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "lSyh0lQuyL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "5pSAItqOzC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "EslSzhp6Ps",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AL-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "pySylznyZS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AR-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "gp8h9gPRqO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AR-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ss5pzIds95",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AR-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "RIZSyluspq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AR-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "gdNLPAPCl6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "Cy9p2OlLEU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "AtpA6gdCnd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "6NZ6zQQEz0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "EspcSyOhdI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "L9u2gLPcSt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "hZIpCsZlnZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "zcnOLlShut",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "IqqQsyPES9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-AZ-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "c0ngCCSU6C",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "s82g98Ss8s",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "5uA6PL5Uh8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "6c5qClPLcu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "5S6lc09SI9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "hcsnOqQP9I",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "gZ9Q2gOIOq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "yEPPInLqPU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "CSsSLgNZyA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "AhALCznLtd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "nUlSInSq80",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "5RzyIOuASZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "gZASz5LS08",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "LI8LhcqquP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "QhcpQNAhQQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "hpphpnPzuS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-16-regular-general",
+      "action": "create",
+      "idempotencyKey": "LchScSA2zU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-17-regular-general",
+      "action": "create",
+      "idempotencyKey": "S2AEcNNpEn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-18-regular-general",
+      "action": "create",
+      "idempotencyKey": "9hzNSnsNR8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-19-regular-general",
+      "action": "create",
+      "idempotencyKey": "yPcCqydc2L",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-20-regular-general",
+      "action": "create",
+      "idempotencyKey": "StStcELCsS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-21-regular-general",
+      "action": "create",
+      "idempotencyKey": "ELZ6nS9pU8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-22-regular-general",
+      "action": "create",
+      "idempotencyKey": "2CRZNnqZL8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-23-regular-general",
+      "action": "create",
+      "idempotencyKey": "h6zOgAz9g8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-24-regular-general",
+      "action": "create",
+      "idempotencyKey": "SsRlyZhsuz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-25-regular-general",
+      "action": "create",
+      "idempotencyKey": "0cOqnzAs9U",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-26-regular-general",
+      "action": "create",
+      "idempotencyKey": "l6S0gcSAg5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-27-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZCZ5C0dSdL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-28-regular-general",
+      "action": "create",
+      "idempotencyKey": "PUPPR99EAE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-29-regular-general",
+      "action": "create",
+      "idempotencyKey": "EqdScCZPRs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-30-regular-general",
+      "action": "create",
+      "idempotencyKey": "qC0q99sZ0s",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-31-regular-general",
+      "action": "create",
+      "idempotencyKey": "yIhhzsyZLL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-32-regular-general",
+      "action": "create",
+      "idempotencyKey": "hsSzZANuNq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-33-regular-general",
+      "action": "create",
+      "idempotencyKey": "dcS8RNQlC2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-34-regular-general",
+      "action": "create",
+      "idempotencyKey": "ngtln56tqQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-35-regular-general",
+      "action": "create",
+      "idempotencyKey": "l0yz59QAO5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-36-regular-general",
+      "action": "create",
+      "idempotencyKey": "8sC9sg2yp9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-37-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ishul6tOpZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-38-regular-general",
+      "action": "create",
+      "idempotencyKey": "OnPLP2N9dp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-39-regular-general",
+      "action": "create",
+      "idempotencyKey": "sl0lnAcNLu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-40-regular-general",
+      "action": "create",
+      "idempotencyKey": "CQhu2yEQtC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-41-regular-general",
+      "action": "create",
+      "idempotencyKey": "RzQU2tzNI8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-42-regular-general",
+      "action": "create",
+      "idempotencyKey": "0nO2sCOtp6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-43-regular-general",
+      "action": "create",
+      "idempotencyKey": "LNLUhZLILI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-44-regular-general",
+      "action": "create",
+      "idempotencyKey": "LcER5LLLA5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-45-regular-general",
+      "action": "create",
+      "idempotencyKey": "PZSNtUupL2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-46-regular-general",
+      "action": "create",
+      "idempotencyKey": "9sIhgLhEEq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-47-regular-general",
+      "action": "create",
+      "idempotencyKey": "dhOIRC6uuO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-48-regular-general",
+      "action": "create",
+      "idempotencyKey": "qls00LsULl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-49-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ol0cCsRIq8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-50-regular-general",
+      "action": "create",
+      "idempotencyKey": "2CcLyO8h9U",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-51-regular-general",
+      "action": "create",
+      "idempotencyKey": "ShgpRE0Acc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CA-52-regular-general",
+      "action": "create",
+      "idempotencyKey": "yh9lZd2qcC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "L8Q9IAOSOQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "LAA9uPIyA9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "RCtLIc586O",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ly0nhc6Q6g",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "ChNtPs502C",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "zZhC99pP9l",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "ttSPUANqEQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CO-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "IQyhuz8EI0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CT-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "R9ZEu6zdEZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CT-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "yUtnyOgQyS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CT-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "0cn5OsU92s",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CT-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "zdc82uI9Qc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-CT-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "5slQhls6z2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-DE-00-regular-general",
+      "action": "create",
+      "idempotencyKey": "dgnOpIdyg5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "5uUA5tcgOR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "NL0cdzdOOh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "h5PdIQOlgh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "c6npN8Q28A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "CsSS0uIgqq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "cSlQuuShll",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "pnPInE2OlL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "IIhClE6E60",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "gE2520Aldt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "CNpg0u55dA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "ght9A8O922",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "5NtSlEqstQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "shAzqS9s9h",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "9At908y9u0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "sR9cPtz6Il",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-16-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ol6ZZuSOcz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-17-regular-general",
+      "action": "create",
+      "idempotencyKey": "UIIuzQgCug",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-18-regular-general",
+      "action": "create",
+      "idempotencyKey": "RhCgR9IRL5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-19-regular-general",
+      "action": "create",
+      "idempotencyKey": "g5lydlquc6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-20-regular-general",
+      "action": "create",
+      "idempotencyKey": "QdhlzqhyZS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-21-regular-general",
+      "action": "create",
+      "idempotencyKey": "Q5py2qyZqP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-22-regular-general",
+      "action": "create",
+      "idempotencyKey": "zL8c9L69Sl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-23-regular-general",
+      "action": "create",
+      "idempotencyKey": "sPUO889lLO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-24-regular-general",
+      "action": "create",
+      "idempotencyKey": "gRnUllUAuR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-25-regular-general",
+      "action": "create",
+      "idempotencyKey": "C95LL50nCu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-26-regular-general",
+      "action": "create",
+      "idempotencyKey": "RgIUSLAsQC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-27-regular-general",
+      "action": "create",
+      "idempotencyKey": "scLPEcsQ2N",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-FL-28-regular-general",
+      "action": "create",
+      "idempotencyKey": "S0tRU2AOds",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "lIPL0pt292",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "cEpZqLPU0N",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "StdLRcn5IU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "9R2Zu5hIyU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "pZQU2yU0pQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "ptlgpOC20N",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "NZtOnZ9Lcg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "5EP5PnZp9d",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "uSPcPuydlO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "LAAqZnZRlh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "02Z80hNZIc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "0nPNPAgQtI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "UZAsp2IynS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-GA-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "8qIn5hu9gP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-HI-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "pL5InSy6hq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-HI-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "dpqI92cL9Q",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "O2tqSQ8Lzc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "2c56ntZZAL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "Qn2UCnsEUq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "E8nt9u2UC0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-ID-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "0gLqQqggcs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-ID-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "cpzL6RS9RO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "8uq6cAUqnU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "dtQshcU5lg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "2y00520PRd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "Cg8SOp09yU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "P56l6lz02c",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "0du0plzRS5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "AQuP6y60EU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "AAculCEyds",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "QnOQQstunI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "LnS2gzn8CQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "PhZLZRQA6c",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "cpUqLgSg8P",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "SRqgCP6IQ0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "dlAcuU2ygQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "lPdOtnZ95n",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-16-regular-general",
+      "action": "create",
+      "idempotencyKey": "S99c5QOtuC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IL-17-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZPI98RICuN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "6U0ucldulU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "CURzslgQR2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "yhAQq5gASq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "cISznhqPIP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "0s5lgn5cN8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "cgUZUZ9n88",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "AEPh8PNzP9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "nCtgp6CC2L",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-IN-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "dyLg6pA0UQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KS-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "gUIAqP6sCE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KS-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "98UnPCR25t",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KS-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "SUZdu5Q9NN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KS-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "gyRUIPIgqc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KY-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "NRd6I59CCy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KY-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "nA5SOgLIpR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KY-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "Agd8NycU9g",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KY-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "PccSyh6Acg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KY-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "sudsghhOsL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-KY-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "8ELAOUSc5A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-LA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "S2Zg8uNuQy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-LA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "CgARlyZ2Lh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-LA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "0uh9h9p6hl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-LA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "E2ONpcUIhI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-LA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "hulsg5Cly8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-LA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "zULnp2dQ8s",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "LuSdNI0cq0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "NRCZNpy2Uh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "cRdsQ8uU6y",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "5CyAhh0AgO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "dyduqSnu62",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZqpSzyugIE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "5dEd5Pl0EZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "qPq5ZgpAlZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MA-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "hSIUl55dPs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "5pchgpqh8c",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "AuRz2Aunn6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "II5p5RucEg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "slRgsch8pu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "nRPQgONc0g",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "Edn6AtIgl9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "0IIn8EL5EU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MD-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "0c0l0QtQLz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-ME-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "UcpctC0d68",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-ME-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "IUUdqyLzzO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "26S9I525Qy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "EcpCS6StOq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "ctAUOtSPpp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "tLUdypEIyP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "lLLPE85A0S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "2l9dPqlPRZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "NQunAdEhzR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "I2UhgUsOcp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "gShz0QtyLE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "l9nEQ9ZQh0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "EphLpPA8gg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "QIEQhZ8usd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MI-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "qgNCN9Ctt6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "Qucn98QOs0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "QZqu9hsd2z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "ChELgltLUs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "LsNNQ2dRuP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "Cz5qAOUS6N",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "LQCEL6IssU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "6dLRthnSZC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MN-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "yyZdzQ69On",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "sddRO8sqPR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "Slzy6pEZy0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "6hPgQU05Ul",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "5ZOuICyygl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "gQuCE8ZsAU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "zN9p2PIUgt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "z8tlPEZPng",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MO-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "dUNROhRzUS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MS-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ihc22shPgt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MS-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "Sz9L8Ss95n",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MS-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "8z8AgUzCUt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MS-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "60ICdChO6S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MT-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZUNN22tZ6s",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-MT-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "sAcncqu2lE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "yRqCSLPq9E",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "PqRIsOENUc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "lPRgU2gzPy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "RCtsQ0hPlI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "qPIpZNs6Z0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "6PINEyS2nL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "0nSPqZ5cNU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "p5qcqSlIzQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "LgUQhuUUOP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "Qu8U95UqUC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "8A9huSN8dz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "zINRynSzhc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "sC6tANcRg8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NC-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "uh6uIL6U2l",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-ND-00-regular-general",
+      "action": "create",
+      "idempotencyKey": "ULRAtZusyN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NE-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "0ytLOZIgLs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NE-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "08pZA5Cnq6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NE-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "Nqgzlg5ZIZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NH-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "Lyg9Epuyus",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NH-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "LlZP9qhEQy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "NPIytpRI9q",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "qnC0Ut60An",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "yqt08c9p69",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "RZ0LA8c6nt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "NlLydE8PAs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "NAzOgULqEu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "9gC58udzCP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "ccCLzS0sCq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "tgEPNCLSPS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "zCUAEcPAzq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "yqphzLZ0Nz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NJ-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "NElZqLu9yy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NM-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "cdNpCcP9q9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NM-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "stlhptL8Lq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NM-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "unRSSu9lNU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NV-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "UO2S6RPUCP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NV-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "Z6nUhunc9p",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NV-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "d2uQ8ZP9QE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NV-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "QIzguSplhO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "9EuSsS2E88",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "U9AS8pg29d",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "zZUuznqOsc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "ELEcyEqtS5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "AnsACp6Rnz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "8Q8690s5EE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "hIddhgc58O",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "sqRnQl9NRA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "ULsPyORINt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "RZ0plcRRRg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "ELOunz2qtc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "CZllPNhzNn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "gQRpQE85nR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "yCc5UsSQLE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "ylIAnCCAPE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-16-regular-general",
+      "action": "create",
+      "idempotencyKey": "qZqQOZt0yp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-17-regular-general",
+      "action": "create",
+      "idempotencyKey": "A6gqSIA6Nc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-18-regular-general",
+      "action": "create",
+      "idempotencyKey": "R2gSh22S8U",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-19-regular-general",
+      "action": "create",
+      "idempotencyKey": "Zsl6qIlzSN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-20-regular-general",
+      "action": "create",
+      "idempotencyKey": "zuuqIcgSts",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-21-regular-general",
+      "action": "create",
+      "idempotencyKey": "NQL8lsInRC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-22-regular-general",
+      "action": "create",
+      "idempotencyKey": "upUd06qOcQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-23-regular-general",
+      "action": "create",
+      "idempotencyKey": "Zc5NUQdc28",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-24-regular-general",
+      "action": "create",
+      "idempotencyKey": "qZE5shtpcl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-25-regular-general",
+      "action": "create",
+      "idempotencyKey": "pEEu58lI8l",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-NY-26-regular-general",
+      "action": "create",
+      "idempotencyKey": "p55ARQSP8Z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "9ICSSI6IPt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "tRtzqggAAC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "tnR59qhhtc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "Pc5St522CN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "69gLytcNcI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "ShNAZAAdIO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "6PIsqRzz9p",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "R5AtNNlAnP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "PtsL0IgOPZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "A5LcNp0Sgn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "0EZ00Uq2RR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "ELUQ9PUy9g",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZngS5AEsUQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "QPSyOOlsdg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OH-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "gIn2yzOcns",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OK-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "uyn82ct05c",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OK-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "qSlycUNyCQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OK-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZClZPCcq0h",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OK-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "620OsIQ82E",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OK-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "CR9ULl525P",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OR-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "lLSPnOSLSZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OR-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "A55C5Cu0up",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OR-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "Q6qgREQQUO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OR-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ph99Il2N08",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OR-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "EZPEOlpluA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-OR-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "dc0ZQlUlCU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "5hPLyPpZ8z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "lsNnSpRlEN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "pZQ9pyASNN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "q5pz02U96p",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "OlALP0qcZ2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "gycOIEp22h",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "OLUhlgUPUR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "EnstdE559Z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "chUqpPtA5S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "Uc9zzNRqZ5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "8dgN0nQQsO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "y0PIQuSu9Z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "QhSudq5Ssq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "LQ6cdtlOgS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "8n5R5PcyZz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-16-regular-general",
+      "action": "create",
+      "idempotencyKey": "hNuhpsnS2z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-PA-17-regular-general",
+      "action": "create",
+      "idempotencyKey": "S6lgOzg2uO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-RI-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "qARlQqQsNn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-RI-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "LPtO0Nh0EL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "SRppQcO5yS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "gppllp8dcR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "lCUP9CnQ5P",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "lysRccyqhn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "CAQU8AZ09Q",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "QlthyIRRuy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SC-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "8y28tOtNI0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-SD-00-regular-general",
+      "action": "create",
+      "idempotencyKey": "yAzhhCgUcZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "6EUPEysnR5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "9CSZRqClCh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "RZddOQQZn2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "qO96EEIZhd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "9ZRz8udnlU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "9L6InuhZSn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "pOhqlst09C",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "nQN8IplCLy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TN-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "Lz6UquPh5y",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "cgQhQ9lzOC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "Up9tRqlusO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "SUnAyQ6yu8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "ysdAP98shh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "SyqzRUISSE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "L8690RpcuU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "Z8Ls8uuASN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "UpEplulUut",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "dsUuqL5yy5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "AdCc9EQRy8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "SSSnhz6PcP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-12-regular-general",
+      "action": "create",
+      "idempotencyKey": "N2g9lshItZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-13-regular-general",
+      "action": "create",
+      "idempotencyKey": "l5U5yQP20u",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-14-regular-general",
+      "action": "create",
+      "idempotencyKey": "NduyItgEIt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-15-regular-general",
+      "action": "create",
+      "idempotencyKey": "ySI5zgZ2Lp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-16-regular-general",
+      "action": "create",
+      "idempotencyKey": "h2hlCuhAS5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-17-regular-general",
+      "action": "create",
+      "idempotencyKey": "yU2Oql6290",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-18-regular-general",
+      "action": "create",
+      "idempotencyKey": "OpSQC8pyRp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-19-regular-general",
+      "action": "create",
+      "idempotencyKey": "NCNl2EUqSg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-20-regular-general",
+      "action": "create",
+      "idempotencyKey": "NNL8zgLq9z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-21-regular-general",
+      "action": "create",
+      "idempotencyKey": "y95NuEhCcO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-22-regular-general",
+      "action": "create",
+      "idempotencyKey": "ysqUhygIQq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-23-regular-general",
+      "action": "create",
+      "idempotencyKey": "6tnhAUNqAd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-24-regular-general",
+      "action": "create",
+      "idempotencyKey": "t5hnUgPARn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-25-regular-general",
+      "action": "create",
+      "idempotencyKey": "gEcyQ8AOEQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-26-regular-general",
+      "action": "create",
+      "idempotencyKey": "Rn9qUnELOS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-27-regular-general",
+      "action": "create",
+      "idempotencyKey": "SqUzAcLgNs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-28-regular-general",
+      "action": "create",
+      "idempotencyKey": "IEl0Az20pO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-29-regular-general",
+      "action": "create",
+      "idempotencyKey": "OdZsn2IyZ9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-30-regular-general",
+      "action": "create",
+      "idempotencyKey": "lAyZsQRRZA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-31-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZqC820dtpE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-32-regular-general",
+      "action": "create",
+      "idempotencyKey": "OZhIlnUZRI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-33-regular-general",
+      "action": "create",
+      "idempotencyKey": "A6Sp808uth",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-34-regular-general",
+      "action": "create",
+      "idempotencyKey": "sRUsCRPC5n",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-35-regular-general",
+      "action": "create",
+      "idempotencyKey": "569gst8l5n",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-36-regular-general",
+      "action": "create",
+      "idempotencyKey": "zRIz0uNcs9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-37-regular-general",
+      "action": "create",
+      "idempotencyKey": "uNA665u0py",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-TX-38-regular-general",
+      "action": "create",
+      "idempotencyKey": "AZ69pZnA9I",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-UT-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "Lg9dEg0CtA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-UT-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "ydO6Pc0cny",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-UT-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "RCOCnpdq2I",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-UT-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "Ncp50nplhq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "8ydsQptl6t",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "A0LCI2cQpy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "R2Pyz5IC2S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "qARcOUNONI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "RtssSUPchU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "pznn8Z9qSE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "Utzqcn5QgN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "Eg52029zI0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "tRldQLsOZI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "yPOustRLg8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VA-11-regular-general",
+      "action": "create",
+      "idempotencyKey": "yhUzC0d0AC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-VT-00-regular-general",
+      "action": "create",
+      "idempotencyKey": "LgnZ0Z0gI5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "qAQSdggSzg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "ULPOlyPqyI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "E9Ad9EOUSq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "L5I2pS5uAp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "dhlLLyhN2Q",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "UdP5g2URlh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "2nZQACSUZI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "LILdlh50qz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-09-regular-general",
+      "action": "create",
+      "idempotencyKey": "z8thtz5qPZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WA-10-regular-general",
+      "action": "create",
+      "idempotencyKey": "R2Rnpq6AO8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "A256uhNENQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "Chly2lzZdO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-03-regular-general",
+      "action": "create",
+      "idempotencyKey": "58Oz6IZggZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-04-regular-general",
+      "action": "create",
+      "idempotencyKey": "uR9c5AQ6U9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-05-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZuRpcZqshR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-06-regular-general",
+      "action": "create",
+      "idempotencyKey": "Q0OhLZuhuC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-07-regular-general",
+      "action": "create",
+      "idempotencyKey": "q9RPpO8h0t",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WI-08-regular-general",
+      "action": "create",
+      "idempotencyKey": "uzcLP8nQgC",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WV-01-regular-general",
+      "action": "create",
+      "idempotencyKey": "5LCScQRURh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WV-02-regular-general",
+      "action": "create",
+      "idempotencyKey": "6RuqpIdzng",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-house-WY-00-regular-general",
+      "action": "create",
+      "idempotencyKey": "dccuZQpO8A",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    }
+  ]
+}

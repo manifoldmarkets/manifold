@@ -1,0 +1,1116 @@
+{
+  "validationErrors": [],
+  "plan": [
+    {
+      "raceKey": "2036-senate-AZ-regular-general",
+      "action": "create",
+      "idempotencyKey": "dCUA9O9ccd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-CA-regular-general",
+      "action": "create",
+      "idempotencyKey": "SlgO889CQy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-CT-regular-general",
+      "action": "create",
+      "idempotencyKey": "u62n2utOQ8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-DE-regular-general",
+      "action": "create",
+      "idempotencyKey": "syyAsUd9Ec",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-FL-regular-general",
+      "action": "create",
+      "idempotencyKey": "20yQ8qCc9N",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-HI-regular-general",
+      "action": "create",
+      "idempotencyKey": "5ly8ngguUq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-IN-regular-general",
+      "action": "create",
+      "idempotencyKey": "NcyEAgqLQZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-ME-regular-general",
+      "action": "create",
+      "idempotencyKey": "2IRR2sOst2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MD-regular-general",
+      "action": "create",
+      "idempotencyKey": "8nQCcq0ON9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MA-regular-general",
+      "action": "create",
+      "idempotencyKey": "szOcINOyns",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MI-regular-general",
+      "action": "create",
+      "idempotencyKey": "9s6NClpydl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MN-regular-general",
+      "action": "create",
+      "idempotencyKey": "A0A2LO6cn8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MS-regular-general",
+      "action": "create",
+      "idempotencyKey": "Up5nNs5N99",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MO-regular-general",
+      "action": "create",
+      "idempotencyKey": "N0tCSZLqtg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-MT-regular-general",
+      "action": "create",
+      "idempotencyKey": "9zNs5lEhpq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-NE-regular-general",
+      "action": "create",
+      "idempotencyKey": "9Ad5dQdlIq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-NV-regular-general",
+      "action": "create",
+      "idempotencyKey": "lqLNp95S85",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-NJ-regular-general",
+      "action": "create",
+      "idempotencyKey": "g8S0du6Ig5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-NM-regular-general",
+      "action": "create",
+      "idempotencyKey": "pPPPtIlt2I",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-NY-regular-general",
+      "action": "create",
+      "idempotencyKey": "5UgqUlPSgL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-ND-regular-general",
+      "action": "create",
+      "idempotencyKey": "nhQyUgUSdU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-OH-regular-general",
+      "action": "create",
+      "idempotencyKey": "qEcEnEszzS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-PA-regular-general",
+      "action": "create",
+      "idempotencyKey": "sStNhAR5qO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-RI-regular-general",
+      "action": "create",
+      "idempotencyKey": "89y0dPA9ht",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-TN-regular-general",
+      "action": "create",
+      "idempotencyKey": "gns0z85U8C",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-TX-regular-general",
+      "action": "create",
+      "idempotencyKey": "AC5ANu8PcA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-UT-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZU5ESNq29S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-VT-regular-general",
+      "action": "create",
+      "idempotencyKey": "n9u8stNQEL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-VA-regular-general",
+      "action": "create",
+      "idempotencyKey": "RC8AsQ5s00",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-WA-regular-general",
+      "action": "create",
+      "idempotencyKey": "Lu6O06uy6P",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-WV-regular-general",
+      "action": "create",
+      "idempotencyKey": "zgIZRIytt5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-WI-regular-general",
+      "action": "create",
+      "idempotencyKey": "U0Ohytq5Zp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-senate-WY-regular-general",
+      "action": "create",
+      "idempotencyKey": "p09ALZENEL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-DE-regular-general",
+      "action": "create",
+      "idempotencyKey": "hdc5ZhZ8yc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-IN-regular-general",
+      "action": "create",
+      "idempotencyKey": "pASysncqll",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-MO-regular-general",
+      "action": "create",
+      "idempotencyKey": "A6gAC8u9u8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-MT-regular-general",
+      "action": "create",
+      "idempotencyKey": "2RZcCn8Rps",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-NH-regular-general",
+      "action": "create",
+      "idempotencyKey": "q00glyURhd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-NC-regular-general",
+      "action": "create",
+      "idempotencyKey": "ZydE96Q96d",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-ND-regular-general",
+      "action": "create",
+      "idempotencyKey": "AOERtC5LIh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-UT-regular-general",
+      "action": "create",
+      "idempotencyKey": "yR8Ln9OLzl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-VT-regular-general",
+      "action": "create",
+      "idempotencyKey": "hgtct2h5SE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-WA-regular-general",
+      "action": "create",
+      "idempotencyKey": "8tlN0dC95S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-governor-WV-regular-general",
+      "action": "create",
+      "idempotencyKey": "nnctp2E58C",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-AK-general",
+      "action": "create",
+      "idempotencyKey": "IlpEuQ9hcL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-AL-general",
+      "action": "create",
+      "idempotencyKey": "sqtqEN9uO0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-AR-general",
+      "action": "create",
+      "idempotencyKey": "u0CpQn6c5g",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-AZ-general",
+      "action": "create",
+      "idempotencyKey": "8EEA9RAuqU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-CA-general",
+      "action": "create",
+      "idempotencyKey": "2py2dqN95g",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-CO-general",
+      "action": "create",
+      "idempotencyKey": "nP8ygIUqE0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-CT-general",
+      "action": "create",
+      "idempotencyKey": "hQgIQcyUuI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-DC-general",
+      "action": "create",
+      "idempotencyKey": "q2c00hIqyl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-DE-general",
+      "action": "create",
+      "idempotencyKey": "hPO0Scuqq0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-FL-general",
+      "action": "create",
+      "idempotencyKey": "R6qCzLcsPl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-GA-general",
+      "action": "create",
+      "idempotencyKey": "LzdpcCdcIg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-HI-general",
+      "action": "create",
+      "idempotencyKey": "2UnOLyR9qQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-IA-general",
+      "action": "create",
+      "idempotencyKey": "P2OI69N68L",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-ID-general",
+      "action": "create",
+      "idempotencyKey": "AyUc5E6nu9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-IL-general",
+      "action": "create",
+      "idempotencyKey": "LEpLSpOuN0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-IN-general",
+      "action": "create",
+      "idempotencyKey": "SncLqqlPdz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-KS-general",
+      "action": "create",
+      "idempotencyKey": "RSdNEPtCqs",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-KY-general",
+      "action": "create",
+      "idempotencyKey": "gRNAP89s9P",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-LA-general",
+      "action": "create",
+      "idempotencyKey": "RcLuhIzESI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MA-general",
+      "action": "create",
+      "idempotencyKey": "lzPz02t262",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MD-general",
+      "action": "create",
+      "idempotencyKey": "5NZEuSgZOq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-ME-general",
+      "action": "create",
+      "idempotencyKey": "9dU5LCPZ8d",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MI-general",
+      "action": "create",
+      "idempotencyKey": "25g9nnOEI6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MN-general",
+      "action": "create",
+      "idempotencyKey": "9ZyIS8sUcE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MO-general",
+      "action": "create",
+      "idempotencyKey": "ucSLCzyupA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MS-general",
+      "action": "create",
+      "idempotencyKey": "6ss9sClUOZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-MT-general",
+      "action": "create",
+      "idempotencyKey": "EL5UpldCqZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NC-general",
+      "action": "create",
+      "idempotencyKey": "lhnhtqZ8OU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-ND-general",
+      "action": "create",
+      "idempotencyKey": "uS25pnEzLZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NE-general",
+      "action": "create",
+      "idempotencyKey": "0I9dLclAUl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NH-general",
+      "action": "create",
+      "idempotencyKey": "t0gcuUzLzn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NJ-general",
+      "action": "create",
+      "idempotencyKey": "SssU2ctQIN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NM-general",
+      "action": "create",
+      "idempotencyKey": "ULZ65qlPpl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NV-general",
+      "action": "create",
+      "idempotencyKey": "NsSn9Ec2lP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NY-general",
+      "action": "create",
+      "idempotencyKey": "nqszIyn6SL",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-OH-general",
+      "action": "create",
+      "idempotencyKey": "2gqqSIdEL8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-OK-general",
+      "action": "create",
+      "idempotencyKey": "h8LugLl5gz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-OR-general",
+      "action": "create",
+      "idempotencyKey": "nC6AdO5yZ9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-PA-general",
+      "action": "create",
+      "idempotencyKey": "8ly8p5C2Nh",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-RI-general",
+      "action": "create",
+      "idempotencyKey": "cZOtgQygUz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-SC-general",
+      "action": "create",
+      "idempotencyKey": "gcQ8spS9Ly",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-SD-general",
+      "action": "create",
+      "idempotencyKey": "Q5QdhtpA09",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-TN-general",
+      "action": "create",
+      "idempotencyKey": "y8qdPPt55u",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-TX-general",
+      "action": "create",
+      "idempotencyKey": "hpcZscpNNZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-UT-general",
+      "action": "create",
+      "idempotencyKey": "lspp9gu5c2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-VA-general",
+      "action": "create",
+      "idempotencyKey": "R9P8lCSupO",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-VT-general",
+      "action": "create",
+      "idempotencyKey": "RQsI9Iud2U",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-WA-general",
+      "action": "create",
+      "idempotencyKey": "q9QZ6udgu8",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-WI-general",
+      "action": "create",
+      "idempotencyKey": "dtEQESuPhy",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-WV-general",
+      "action": "create",
+      "idempotencyKey": "nIyOyPRLqI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-WY-general",
+      "action": "create",
+      "idempotencyKey": "5Uq5gOUSy6",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-ME-01-general",
+      "action": "create",
+      "idempotencyKey": "8lc6RShlIn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-ME-02-general",
+      "action": "create",
+      "idempotencyKey": "dtzdcAsLqA",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NE-01-general",
+      "action": "create",
+      "idempotencyKey": "slqPCIQnSp",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NE-02-general",
+      "action": "create",
+      "idempotencyKey": "h20CdQ9u96",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-NE-03-general",
+      "action": "create",
+      "idempotencyKey": "CsALZQE6g2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2036-president-US-general",
+      "action": "create",
+      "idempotencyKey": "z89QsEnnZE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "description": "Governorships elected in presidential years. Nine states elect governors to four-year terms in presidential years; New Hampshire and Vermont elect every two years, so they vote in every cycle. The same eleven states vote in 2028, 2032 and 2036.",
+  "sources": [
+    {
+      "name": "Wikipedia — 2028 United States gubernatorial elections (11 states; election day November 7, 2028; NH and VT two-year terms)",
+      "url": "https://en.wikipedia.org/wiki/2028_United_States_gubernatorial_elections",
+      "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "National Governors Association — Governors' terms and term limits",
+      "url": "https://www.nga.org/governors/",
+      "fetchedAt": "2026-10-06",
+      "note": "Term lengths: four years everywhere except New Hampshire and Vermont (two years)."
+    }
+  ],
+  "notes": [
+    "The brief expected 11 presidential-year governor races; confirmed: DE, IN, MO, MT, NH, NC, ND, UT, VT, WA, WV.",
+    "Puerto Rico and American Samoa also elect governors in presidential years; territories are out of scope.",
+    "Incumbents are as of 2026-10-06 and informational only. NH and VT hold elections on 2026-11-03, so their 2028 incumbents are unknown.",
+    "Vermont: Vt. Const. ch. II, § 47 — if no candidate has a majority, the General Assembly elects the governor from the top three by joint ballot in January. The market resolves to the party of whoever is finally elected by that process.",
+    "Washington: top-two general election (two candidates advance from the August primary; the general is decided by plurality of the two).",
+    "No presidential-year governor race has a general-election runoff."
+  ],
+  "states": [
+    {
+      "state": "DE",
+      "incumbent": "Matt Meyer",
+      "party": "D",
+      "termYears": 4,
+      "note": "Eligible to run again."
+    },
+    {
+      "state": "IN",
+      "incumbent": "Mike Braun",
+      "party": "R",
+      "termYears": 4,
+      "note": "Eligible to run again."
+    },
+    {
+      "state": "MO",
+      "incumbent": "Mike Kehoe",
+      "party": "R",
+      "termYears": 4,
+      "note": "Eligible to run again."
+    },
+    {
+      "state": "MT",
+      "incumbent": "Greg Gianforte",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited in 2028."
+    },
+    {
+      "state": "NH",
+      "incumbent": "Kelly Ayotte",
+      "party": "R",
+      "termYears": 2,
+      "note": "Two-year term; also elected 2026-11-03."
+    },
+    {
+      "state": "NC",
+      "incumbent": "Josh Stein",
+      "party": "D",
+      "termYears": 4,
+      "note": "Eligible to run again."
+    },
+    {
+      "state": "ND",
+      "incumbent": "Kelly Armstrong",
+      "party": "R",
+      "termYears": 4,
+      "note": "Eligible to run again."
+    },
+    {
+      "state": "UT",
+      "incumbent": "Spencer Cox",
+      "party": "R",
+      "termYears": 4,
+      "note": "Has said he will not run in 2028."
+    },
+    {
+      "state": "VT",
+      "incumbent": "Phil Scott",
+      "party": "R",
+      "termYears": 2,
+      "note": "Two-year term; also elected 2026-11-03. General Assembly chooses if no majority."
+    },
+    {
+      "state": "WA",
+      "incumbent": "Bob Ferguson",
+      "party": "D",
+      "termYears": 4,
+      "note": "Eligible to run again. Top-two general."
+    },
+    {
+      "state": "WV",
+      "incumbent": "Patrick Morrisey",
+      "party": "R",
+      "termYears": 4,
+      "note": "Eligible to run again."
+    }
+  ]
+}

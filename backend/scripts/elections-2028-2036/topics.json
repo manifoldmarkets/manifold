@@ -1,0 +1,76 @@
+{
+  "description": "Prod topics (groups) for the 2028/2032/2036 markets. `existing` maps slug → id as read from GET https://api.manifold.markets/search-groups and /v0/group/by-id on 2026-10-06. `missing` lists topics that do not exist yet: Tod creates them (creation fails with a 404 on a missing id), adds the ids under `existing`, and regenerates. The generator attaches at most 5 topics per market (MAX_GROUPS_PER_MARKET) and silently drops missing slugs, listing them in topics-needed.md.",
+  "existing": {
+    "us-politics": "AjxQR8JMpNyDqtiqoA96",
+    "elections": "i5JOzjrK5ZMHPSkhgzoi",
+    "us-senate": "Scdb6UrBLNsi1zvLGSD5",
+    "us-congress": "e722513e-30fa-4116-80c1-594b8dfd0685",
+    "governor": "fbeb997f-3b2f-4220-ac54-ccba38fc2cbe",
+    "2028-us-presidential-election": "aa5ce4dd-faf2-47a3-85a2-030f9579c65a",
+    "2028-us-elections": "e5e38ea8-fdbc-4f79-9ab1-c28259c7c0aa",
+    "2032-us-presidential-election": "fb851aab-ea02-4aa3-8cbb-1ee2336ba396",
+    "2036-us-presidential-election": "25ae6316-429b-4257-a760-0d345bba413a"
+  },
+  "existingNotes": {
+    "2028-us-presidential-election": "Prod slug is 2028-us-presidential-election-6tdsp26zly (43 members; the one the /election page feed uses). A near-duplicate slug 2028-us-presidential-election (id c83fd20c-226d-4b9e-ad21-b116412d4009, 9 members) exists; not used.",
+    "2028-us-elections": "Slug 2028-us-elections (2 members). Used as the cycle umbrella for every 2028 market.",
+    "governor": "Slug governor (1 member, public). Tod may prefer a new 'US Governors' topic; swap the id here.",
+    "2032-us-presidential-election": "1 member; public.",
+    "2036-us-presidential-election": "1 member; public."
+  },
+  "missing": [
+    {
+      "slug": "2028-us-congressional-elections",
+      "suggestedName": "2028 US Congressional Elections",
+      "usedBy": ["2028 senate", "2028 house"],
+      "modelledOn": "2026-us-congressional-elections (1f785ecd-2cbc-4a04-8c20-0459dc31e4ad)"
+    },
+    {
+      "slug": "2032-us-elections",
+      "suggestedName": "2032 US Elections",
+      "usedBy": ["every 2032 market"],
+      "modelledOn": "2028-us-elections"
+    },
+    {
+      "slug": "2036-us-elections",
+      "suggestedName": "2036 US Elections",
+      "usedBy": ["every 2036 market"],
+      "modelledOn": "2028-us-elections"
+    },
+    {
+      "slug": "2032-us-congressional-elections",
+      "suggestedName": "2032 US Congressional Elections",
+      "usedBy": ["2032 senate"],
+      "modelledOn": "2026-us-congressional-elections"
+    },
+    {
+      "slug": "2036-us-congressional-elections",
+      "suggestedName": "2036 US Congressional Elections",
+      "usedBy": ["2036 senate"],
+      "modelledOn": "2026-us-congressional-elections"
+    }
+  ],
+  "assignments": {
+    "president": [
+      "us-politics",
+      "elections",
+      "<cycle>-us-presidential-election",
+      "<cycle>-us-elections"
+    ],
+    "senate": [
+      "us-politics",
+      "elections",
+      "us-senate",
+      "<cycle>-us-elections",
+      "<cycle>-us-congressional-elections"
+    ],
+    "house": [
+      "us-politics",
+      "elections",
+      "us-congress",
+      "<cycle>-us-elections",
+      "<cycle>-us-congressional-elections"
+    ],
+    "governor": ["us-politics", "elections", "governor", "<cycle>-us-elections"]
+  }
+}

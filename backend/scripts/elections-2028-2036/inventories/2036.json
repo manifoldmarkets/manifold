@@ -1,0 +1,1009 @@
+{
+  "cycle": 2036,
+  "electionDate": "2036-11-04",
+  "series": "us-2036-general-v1",
+  "counts": {
+    "senate": 33,
+    "governor": 11,
+    "president": 57
+  },
+  "total": 101,
+  "sources": {
+    "senate": [
+      {
+        "name": "U.S. Senate — Class I (terms expire 2031)",
+        "url": "https://www.senate.gov/senators/Class_I.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Senate — Class II (terms expire 2027)",
+        "url": "https://www.senate.gov/senators/Class_II.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Senate — Class III (terms expire 2029)",
+        "url": "https://www.senate.gov/senators/Class_III.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "Wikipedia — 2028 United States Senate elections (cross-check: 34 Class 3 seats, election day November 7, 2028)",
+        "url": "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+        "fetchedAt": "2026-10-06"
+      }
+    ],
+    "governors": [
+      {
+        "name": "Wikipedia — 2028 United States gubernatorial elections (11 states; election day November 7, 2028; NH and VT two-year terms)",
+        "url": "https://en.wikipedia.org/wiki/2028_United_States_gubernatorial_elections",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "National Governors Association — Governors' terms and term limits",
+        "url": "https://www.nga.org/governors/",
+        "fetchedAt": "2026-10-06",
+        "note": "Term lengths: four years everywhere except New Hampshire and Vermont (two years)."
+      }
+    ],
+    "president": [
+      {
+        "name": "FEC — Official 2024 Presidential General Election Results (electoral votes per state; ME 3/1 and NE 4/1 splits)",
+        "url": "https://www.fec.gov/resources/cms-content/documents/2024presgeresults.xlsx",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Census Bureau — 2020 apportionment results (House seats per state; ME 2, NE 3)",
+        "url": "https://www.census.gov/data/tables/2020/dec/2020-apportionment-data.html",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "The Downballot — presidential results by congressional district (ME-01/02, NE-01/02/03 exact totals, 2020 and 2024)",
+        "url": "https://www.the-downballot.com/p/the-downballots-calculations-of-presidential",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "Nebraska Examiner — winner-take-all initiative petitions submitted for the 2026 ballot (status unresolved on 2026-10-06)",
+        "url": "https://nebraskaexaminer.com/2025/10/14/nebraska-group-starts-ballot-push-for-winner-take-all-hand-counting-votes/",
+        "fetchedAt": "2026-10-06"
+      }
+    ]
+  },
+  "notes": {
+    "senate": [
+      "Class 3 (34 seats) is up in 2028, Class 2 (33) in 2032 and Class 1 (33) in 2036. The counts match the task brief.",
+      "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
+      "Special elections for seats vacated after this inventory was written are out of scope; add them when they are called, as the brief says.",
+      "Vermont has no Class 2 seat and Nebraska/Alaska have no Class 3 / Class 1 seat respectively, so the 'Another party or independent' exceptions in SEEDS.md apply only to the cycles in which those states actually vote."
+    ],
+    "governors": [
+      "The brief expected 11 presidential-year governor races; confirmed: DE, IN, MO, MT, NH, NC, ND, UT, VT, WA, WV.",
+      "Puerto Rico and American Samoa also elect governors in presidential years; territories are out of scope.",
+      "Incumbents are as of 2026-10-06 and informational only. NH and VT hold elections on 2026-11-03, so their 2028 incumbents are unknown.",
+      "Vermont: Vt. Const. ch. II, § 47 — if no candidate has a majority, the General Assembly elects the governor from the top three by joint ballot in January. The market resolves to the party of whoever is finally elected by that process.",
+      "Washington: top-two general election (two candidates advance from the August primary; the general is decided by plurality of the two).",
+      "No presidential-year governor race has a general-election runoff."
+    ],
+    "president": [
+      "Counts: 51 statewide units + 5 district units + 1 national = 57 markets per cycle, as the brief expected.",
+      "2028 uses the 2020-census apportionment (538 electors). 2032 and 2036 use the 2030-census apportionment: state elector counts will change and Maine or Nebraska could gain or lose a district. A district that no longer exists resolves N/A; the statewide markets are unaffected.",
+      "Nebraska: a winner-take-all constitutional amendment was pushed by initiative petition for the 2026 ballot and by LR24CA in the Legislature (which failed). If Nebraska stops awarding electors by district before an election, the NE-1/2/3 markets for that election resolve N/A.",
+      "Maine awards electors by district under 21-A M.R.S. § 802; ranked-choice tabulation applies to presidential electors in Maine (since 2020) and, while its 2020 system stands, in Alaska.",
+      "Georgia's majority/runoff rule does not apply to presidential electors (O.C.G.A. § 21-2-501: 'no slate of candidates shall be required to receive a majority')."
+    ]
+  },
+  "races": [
+    {
+      "raceKey": "2036-senate-AZ-regular-general",
+      "office": "senate",
+      "state": "AZ",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Ruben Gallego (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-CA-regular-general",
+      "office": "senate",
+      "state": "CA",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Adam Schiff (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-CT-regular-general",
+      "office": "senate",
+      "state": "CT",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Chris Murphy (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-DE-regular-general",
+      "office": "senate",
+      "state": "DE",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Lisa Blunt Rochester (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-FL-regular-general",
+      "office": "senate",
+      "state": "FL",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Rick Scott (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-HI-regular-general",
+      "office": "senate",
+      "state": "HI",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Mazie Hirono (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-IN-regular-general",
+      "office": "senate",
+      "state": "IN",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Jim Banks (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-ME-regular-general",
+      "office": "senate",
+      "state": "ME",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Angus King (I) as of October 2026",
+      "round": "the November 4, 2036 general election, using the final round of ranked-choice tabulation if no candidate has a first-round majority (21-A M.R.S. § 723-A)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MD-regular-general",
+      "office": "senate",
+      "state": "MD",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Angela Alsobrooks (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MA-regular-general",
+      "office": "senate",
+      "state": "MA",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Elizabeth Warren (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MI-regular-general",
+      "office": "senate",
+      "state": "MI",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Elissa Slotkin (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MN-regular-general",
+      "office": "senate",
+      "state": "MN",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Amy Klobuchar (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MS-regular-general",
+      "office": "senate",
+      "state": "MS",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Roger Wicker (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality; Mississippi's majority/runoff rule applies to state offices, not to federal ones)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MO-regular-general",
+      "office": "senate",
+      "state": "MO",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Josh Hawley (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-MT-regular-general",
+      "office": "senate",
+      "state": "MT",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Tim Sheehy (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-NE-regular-general",
+      "office": "senate",
+      "state": "NE",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Deb Fischer (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-NV-regular-general",
+      "office": "senate",
+      "state": "NV",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Jacky Rosen (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-NJ-regular-general",
+      "office": "senate",
+      "state": "NJ",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Andy Kim (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-NM-regular-general",
+      "office": "senate",
+      "state": "NM",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Martin Heinrich (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-NY-regular-general",
+      "office": "senate",
+      "state": "NY",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Kirsten Gillibrand (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-ND-regular-general",
+      "office": "senate",
+      "state": "ND",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Kevin Cramer (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-OH-regular-general",
+      "office": "senate",
+      "state": "OH",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Bernie Moreno (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-PA-regular-general",
+      "office": "senate",
+      "state": "PA",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "David McCormick (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-RI-regular-general",
+      "office": "senate",
+      "state": "RI",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Sheldon Whitehouse (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-TN-regular-general",
+      "office": "senate",
+      "state": "TN",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Marsha Blackburn (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-TX-regular-general",
+      "office": "senate",
+      "state": "TX",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Ted Cruz (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-UT-regular-general",
+      "office": "senate",
+      "state": "UT",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "John Curtis (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-VT-regular-general",
+      "office": "senate",
+      "state": "VT",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Bernie Sanders (I) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-VA-regular-general",
+      "office": "senate",
+      "state": "VA",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Tim Kaine (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-WA-regular-general",
+      "office": "senate",
+      "state": "WA",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Maria Cantwell (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-WV-regular-general",
+      "office": "senate",
+      "state": "WV",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Jim Justice (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-WI-regular-general",
+      "office": "senate",
+      "state": "WI",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "Tammy Baldwin (D) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-senate-WY-regular-general",
+      "office": "senate",
+      "state": "WY",
+      "seat": "Class 1 seat; term beginning January 3, 2037",
+      "incumbentOctober2026": "John Barrasso (R) as of October 2026",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-DE-regular-general",
+      "office": "governor",
+      "state": "DE",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Matt Meyer (D) as of October 2026; Eligible to run again.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-IN-regular-general",
+      "office": "governor",
+      "state": "IN",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Mike Braun (R) as of October 2026; Eligible to run again.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-MO-regular-general",
+      "office": "governor",
+      "state": "MO",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Mike Kehoe (R) as of October 2026; Eligible to run again.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-MT-regular-general",
+      "office": "governor",
+      "state": "MT",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Greg Gianforte (R) as of October 2026; Term-limited in 2028.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-NH-regular-general",
+      "office": "governor",
+      "state": "NH",
+      "seat": "2-year term beginning January 2037",
+      "incumbentOctober2026": "Kelly Ayotte (R) as of October 2026; Two-year term; also elected 2026-11-03.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-NC-regular-general",
+      "office": "governor",
+      "state": "NC",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Josh Stein (D) as of October 2026; Eligible to run again.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-ND-regular-general",
+      "office": "governor",
+      "state": "ND",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Kelly Armstrong (R) as of October 2026; Eligible to run again.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-UT-regular-general",
+      "office": "governor",
+      "state": "UT",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Spencer Cox (R) as of October 2026; Has said he will not run in 2028.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-VT-regular-general",
+      "office": "governor",
+      "state": "VT",
+      "seat": "2-year term beginning January 2037",
+      "incumbentOctober2026": "Phil Scott (R) as of October 2026; Two-year term; also elected 2026-11-03. General Assembly chooses if no majority.",
+      "round": "the November 4, 2036 general election if a candidate wins a majority; if no one does, the Vermont General Assembly elects the governor from the top three by joint ballot in January 2037 (Vt. Const. ch. II, § 47), and the market resolves to the party of the person it elects",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-WA-regular-general",
+      "office": "governor",
+      "state": "WA",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Bob Ferguson (D) as of October 2026; Eligible to run again. Top-two general.",
+      "round": "the November 4, 2036 top-two general election (the two candidates who advance from the August primary; plurality of the two)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-governor-WV-regular-general",
+      "office": "governor",
+      "state": "WV",
+      "seat": "4-year term beginning January 2037",
+      "incumbentOctober2026": "Patrick Morrisey (R) as of October 2026; Eligible to run again.",
+      "round": "the November 4, 2036 general election (plurality winner)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-AK-general",
+      "office": "president",
+      "state": "AK",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors under the system Alaska uses for it: the final round of ranked-choice tabulation under the current system, or a plurality if voters repeal it (a repeal initiative is on the November 3, 2026 ballot)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-AL-general",
+      "office": "president",
+      "state": "AL",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 9,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-AR-general",
+      "office": "president",
+      "state": "AR",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-AZ-general",
+      "office": "president",
+      "state": "AZ",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-CA-general",
+      "office": "president",
+      "state": "CA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 54,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-CO-general",
+      "office": "president",
+      "state": "CO",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-CT-general",
+      "office": "president",
+      "state": "CT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 7,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-DC-general",
+      "office": "president",
+      "state": "DC",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-DE-general",
+      "office": "president",
+      "state": "DE",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-FL-general",
+      "office": "president",
+      "state": "FL",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 30,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-GA-general",
+      "office": "president",
+      "state": "GA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 16,
+      "round": "the November 4, 2036 general election for presidential electors, by plurality (Georgia's majority/runoff rule does not apply to presidential electors: O.C.G.A. § 21-2-501)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-HI-general",
+      "office": "president",
+      "state": "HI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-IA-general",
+      "office": "president",
+      "state": "IA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-ID-general",
+      "office": "president",
+      "state": "ID",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-IL-general",
+      "office": "president",
+      "state": "IL",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 19,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-IN-general",
+      "office": "president",
+      "state": "IN",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-KS-general",
+      "office": "president",
+      "state": "KS",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-KY-general",
+      "office": "president",
+      "state": "KY",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 8,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-LA-general",
+      "office": "president",
+      "state": "LA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 8,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MA-general",
+      "office": "president",
+      "state": "MA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MD-general",
+      "office": "president",
+      "state": "MD",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-ME-general",
+      "office": "president",
+      "state": "ME",
+      "seat": "the two at-large electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors, using the final round of ranked-choice tabulation if no ticket has a first-round majority (21-A M.R.S. § 723-A applies to presidential electors)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MI-general",
+      "office": "president",
+      "state": "MI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 15,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MN-general",
+      "office": "president",
+      "state": "MN",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MO-general",
+      "office": "president",
+      "state": "MO",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MS-general",
+      "office": "president",
+      "state": "MS",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-MT-general",
+      "office": "president",
+      "state": "MT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NC-general",
+      "office": "president",
+      "state": "NC",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 16,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-ND-general",
+      "office": "president",
+      "state": "ND",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NE-general",
+      "office": "president",
+      "state": "NE",
+      "seat": "the two at-large electors (statewide popular vote)",
+      "electoralVotes": 5,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NH-general",
+      "office": "president",
+      "state": "NH",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NJ-general",
+      "office": "president",
+      "state": "NJ",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 14,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NM-general",
+      "office": "president",
+      "state": "NM",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 5,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NV-general",
+      "office": "president",
+      "state": "NV",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NY-general",
+      "office": "president",
+      "state": "NY",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 28,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-OH-general",
+      "office": "president",
+      "state": "OH",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 17,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-OK-general",
+      "office": "president",
+      "state": "OK",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 7,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-OR-general",
+      "office": "president",
+      "state": "OR",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 8,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-PA-general",
+      "office": "president",
+      "state": "PA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 19,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-RI-general",
+      "office": "president",
+      "state": "RI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-SC-general",
+      "office": "president",
+      "state": "SC",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 9,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-SD-general",
+      "office": "president",
+      "state": "SD",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-TN-general",
+      "office": "president",
+      "state": "TN",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 11,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-TX-general",
+      "office": "president",
+      "state": "TX",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 40,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-UT-general",
+      "office": "president",
+      "state": "UT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 6,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-VA-general",
+      "office": "president",
+      "state": "VA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 13,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-VT-general",
+      "office": "president",
+      "state": "VT",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-WA-general",
+      "office": "president",
+      "state": "WA",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 12,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-WI-general",
+      "office": "president",
+      "state": "WI",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 10,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-WV-general",
+      "office": "president",
+      "state": "WV",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 4,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-WY-general",
+      "office": "president",
+      "state": "WY",
+      "seat": "all of the state’s electors (statewide popular vote)",
+      "electoralVotes": 3,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-ME-01-general",
+      "office": "president",
+      "state": "ME",
+      "district": 1,
+      "seat": "the one elector allocated to the 1st congressional district",
+      "electoralVotes": 1,
+      "round": "the November 4, 2036 general election for presidential electors, using the final round of ranked-choice tabulation if no ticket has a first-round majority (21-A M.R.S. § 723-A applies to presidential electors)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-ME-02-general",
+      "office": "president",
+      "state": "ME",
+      "district": 2,
+      "seat": "the one elector allocated to the 2nd congressional district",
+      "electoralVotes": 1,
+      "round": "the November 4, 2036 general election for presidential electors, using the final round of ranked-choice tabulation if no ticket has a first-round majority (21-A M.R.S. § 723-A applies to presidential electors)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NE-01-general",
+      "office": "president",
+      "state": "NE",
+      "district": 1,
+      "seat": "the one elector allocated to the 1st congressional district",
+      "electoralVotes": 1,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NE-02-general",
+      "office": "president",
+      "state": "NE",
+      "district": 2,
+      "seat": "the one elector allocated to the 2nd congressional district",
+      "electoralVotes": 1,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-NE-03-general",
+      "office": "president",
+      "state": "NE",
+      "district": 3,
+      "seat": "the one elector allocated to the 3rd congressional district",
+      "electoralVotes": 1,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2036-president-US-general",
+      "office": "president",
+      "state": "US",
+      "seat": "270 of 538 electoral votes, or a contingent election in the House",
+      "electoralVotes": 538,
+      "round": "the November 4, 2036 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2036-11-05T12:00:00.000Z"
+    }
+  ]
+}
