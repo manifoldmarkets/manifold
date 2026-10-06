@@ -476,8 +476,17 @@ export function SimpleAnswerBars(props: {
   maxAnswers?: number
   barColor?: string
   feedReason?: string
+  // Per-answer color overrides by answer id, for pages that color answers by
+  // meaning (e.g. party). Answers not listed keep their usual color.
+  answerColors?: Record<string, string>
 }) {
-  const { contract, maxAnswers = Infinity, barColor, feedReason } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    barColor,
+    feedReason,
+    answerColors,
+  } = props
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
   const user = useUser()
@@ -507,7 +516,7 @@ export function SimpleAnswerBars(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getAnswerColor(answer)}
+              color={answerColors?.[answer.id] ?? getAnswerColor(answer)}
               barColor={barColor}
               shouldShowLimitOrderChart={isAdvancedTrader}
               feedReason={feedReason}

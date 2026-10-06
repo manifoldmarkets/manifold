@@ -72,6 +72,8 @@ export function FeedContractCard(props: {
   hideBottomRow?: boolean
   hideTags?: boolean
   feedReason?: string
+  // Multiple-choice answer colors by answer id (see SimpleAnswerBars).
+  answerColors?: Record<string, string>
 }) {
   const {
     trackingPostfix,
@@ -83,6 +85,7 @@ export function FeedContractCard(props: {
     size = 'md',
     hideTags,
     feedReason,
+    answerColors,
   } = props
   const user = useUser()
 
@@ -304,6 +307,7 @@ export function FeedContractCard(props: {
             contract={contract}
             maxAnswers={4}
             feedReason={feedReason}
+            answerColors={answerColors}
           />
         )}
 

@@ -1,5 +1,10 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useMemo, useState } from 'react'
 import clsx from 'clsx'
+import Link from 'next/link'
+
+import { isMultiCpmm } from 'common/contract'
+import { referralQuery } from 'common/util/share'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Row } from './layout/row'
 import { LiveElectionMap } from './usa-map/live-election-map'
@@ -7,18 +12,25 @@ import { TrendingMidtermsCarousel } from './us-elections/trending-midterms-carou
 import { FeedContractCard } from './contract/feed-contract-card'
 import { Presidency2028Section } from './us-elections/presidency-2028-section'
 import { BackButton } from './contract/back-button'
-import { ContractsTable } from './contract/contracts-table'
 import { Search } from './search'
 import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { SectionInView } from './us-elections/section-in-view'
 import { PollingPerpsRow } from './us-elections/polling-perps-row'
+import {
+  ConditionalMarketsGrid,
+  MarketSpotlightGrid,
+} from './us-elections/market-spotlight'
 import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { referralQuery } from 'common/util/share'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { buildShareUrl } from 'web/lib/util/share-url'
+import {
+  balanceOfPowerAnswerColor,
+  MIDTERM_CONTEST_TOPIC_SLUG,
+} from 'web/lib/politics/election-curation'
+import type { MidtermSpotlightProps } from 'web/lib/politics/home'
 import interactions from './us-elections/election-interactions.module.css'
 
 // Kept for legacy political market panels that still reference it.
@@ -40,22 +52,33 @@ const ELECTION_FEED_TOPICS = [
   { slug: 'elections', label: 'All elections' },
 ]
 
-// One consistent, left-aligned section divider used throughout the page.
-function SectionHeader(props: { children: ReactNode; subtitle?: string }) {
+// One consistent, left-aligned section heading used throughout the page. An
+// h2 under the page's h1, styled as before.
+function SectionHeader(props: {
+  children: ReactNode
+  subtitle?: ReactNode
+  action?: ReactNode
+}) {
+  // The action (e.g. "See all") sits under the subtitle on phones and at the
+  // right from sm up, so it never squeezes the title.
   return (
-    <Col className="gap-0.5">
-      <div className="text-primary-700 text-xl font-semibold sm:text-2xl">
-        {props.children}
-      </div>
-      {props.subtitle && (
-        <div className="text-ink-500 text-sm">{props.subtitle}</div>
-      )}
-    </Col>
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+      <Col className="gap-0.5">
+        <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
+          {props.children}
+        </h2>
+        {props.subtitle && (
+          <div className="text-ink-600 text-sm">{props.subtitle}</div>
+        )}
+      </Col>
+      {props.action}
+    </div>
   )
 }
 
 export function USElectionsPage(
-  props: ElectionsPageProps & { hideTitle?: boolean }
+  props: ElectionsPageProps &
+    Partial<MidtermSpotlightProps> & { hideTitle?: boolean }
 ) {
   const {
     presidency2028Contract,
@@ -71,8 +94,9 @@ export function USElectionsPage(
     additionalHouseContracts,
     ballotMeasureContracts,
     pollingPerpContracts,
-    redistrictingContracts,
     trendingContracts,
+    contestContracts = [],
+    conditionalRows = [],
     hideTitle,
   } = props
 
@@ -84,29 +108,62 @@ export function USElectionsPage(
   // level so it works even when trending is absent).
   useSaveReferral(user)
 
-  // Share the page itself, tagged with the sharer's referral code so sign-ups
-  // from the link are credited.
-  const shareUrl = `https://${ENV_CONFIG.domain}/election${
-    user?.username ? referralQuery(user.username) : ''
-  }`
+  // Share the page as it is being viewed: the current path and query, so an
+  // explorer deep link (?office=senate&race=ME) survives, tagged with the
+  // sharer's referral code so sign-ups from the link are credited. Read at
+  // click time, because the explorer can update the URL without re-rendering
+  // this component. shareUrl is the server-rendered fallback, as before.
+  const referral = user?.username ? referralQuery(user.username) : undefined
+  const shareUrl = buildShareUrl({
+    domain: ENV_CONFIG.domain,
+    pathname: '/election',
+    search: '',
+    referralQuery: referral,
+  })
+  const getShareUrl = () =>
+    buildShareUrl({
+      domain: ENV_CONFIG.domain,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      referralQuery: referral,
+    })
+
+  // Color the Balance of Power answers by what they mean (Democratic sweep
+  // blue, Republican sweep red, the two splits purple) instead of the default
+  // answer palette. Display only: the market itself is untouched.
+  const balanceOfPowerColors = useMemo(
+    () =>
+      balanceOfPowerContract && isMultiCpmm(balanceOfPowerContract)
+        ? Object.fromEntries(
+            balanceOfPowerContract.answers.map((a) => [
+              a.id,
+              balanceOfPowerAnswerColor(a.text),
+            ])
+          )
+        : undefined,
+    [balanceOfPowerContract]
+  )
 
   return (
     <Col
       className={clsx(interactions.scope, 'isolate mb-8 gap-6 px-1 sm:px-2')}
     >
-      {/* Hero with back navigation, left-aligned (back sits left of the title). */}
+      {/* Hero with back navigation, left-aligned (back sits left of the title).
+          A visitor arriving from a shared link has no Manifold history to go
+          back to, so the arrow goes Home instead of off-site. */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
-        <BackButton />
+        <BackButton homeFallback />
         <Col className={clsx(hideTitle && 'hidden')}>
-          <div className="text-primary-700 text-3xl font-normal sm:text-4xl">
+          <h1 className="text-primary-700 text-3xl font-normal sm:text-4xl">
             Elections
-          </div>
-          <div className="text-ink-500 text-sm sm:text-base">
+          </h1>
+          <div className="text-ink-600 text-sm sm:text-base">
             Live prediction market odds on US elections
           </div>
         </Col>
         <CopyLinkOrShareButton
           url={shareUrl}
+          getUrl={getShareUrl}
           eventTrackingName="share elections page"
           tooltip="Share this page"
           color="gray-outline"
@@ -138,24 +195,36 @@ export function USElectionsPage(
           so they keep moving instead of settling like a binary market. */}
       {pollingPerpContracts.length > 0 && (
         <SectionInView section="polling" className="gap-3">
-          <SectionHeader subtitle="Live VoteHub polling averages, traded as perpetuals">
+          <SectionHeader subtitle="VoteHub's live polling averages. Bet on whether they go higher or lower.">
             Polling averages
           </SectionHeader>
           <PollingPerpsRow contracts={pollingPerpContracts} />
         </SectionInView>
       )}
 
-      {/* Mid-decade redistricting — its own watch-list so these don't crowd the
-          Trending block. Shown once a few are live. */}
-      {redistrictingContracts.length > 0 && (
-        <SectionInView section="redistricting" className="gap-3">
-          <SectionHeader subtitle="Mid-decade map fights that could swing House seats">
-            Redistricting
+      {/* The Manifold Midterm Contest — community questions about the campaign
+          itself that no other prediction site lists. Replaces the retired
+          Redistricting watch-list, whose questions had all settled. Selected
+          server-side by traders, then recent volume (rankContestMarkets). */}
+      {contestContracts.length > 0 && (
+        <SectionInView section="midterm contest" className="gap-3">
+          <SectionHeader
+            subtitle="Only on Manifold: the community's contest questions about the campaign trail, from candidate visits to winning margins."
+            action={
+              <Link
+                href={`/topic/${MIDTERM_CONTEST_TOPIC_SLUG}`}
+                className="text-primary-700 hover:text-primary-800 shrink-0 whitespace-nowrap text-sm font-medium hover:underline"
+                onClick={() => track('click election contest see all')}
+              >
+                See all contest markets →
+              </Link>
+            }
+          >
+            Manifold Midterm Contest
           </SectionHeader>
-          <ContractsTable
-            contracts={redistrictingContracts}
-            hideAvatar
-            trackingPostfix="election redistricting"
+          <MarketSpotlightGrid
+            contracts={contestContracts}
+            trackingPostfix="election midterm contest"
           />
         </SectionInView>
       )}
@@ -168,26 +237,43 @@ export function USElectionsPage(
             contract={balanceOfPowerContract}
             trackingPostfix="midterms balance of power"
             showGraph
+            answerColors={balanceOfPowerColors}
+          />
+        </SectionInView>
+      )}
+
+      {/* What follows the result: markets conditional on who wins. A curated
+          list (web/lib/politics/midterm-conditionals.ts); pairs of "If
+          Democrats win / If Republicans win" markets sit side by side. */}
+      {conditionalRows.length > 0 && (
+        <SectionInView section="conditional markets" className="gap-3">
+          <SectionHeader subtitle="Bets on what happens next, depending on who wins. Each is refunded (resolves N/A) if its condition isn't met.">
+            If Democrats win… or Republicans do
+          </SectionHeader>
+          <ConditionalMarketsGrid
+            rows={conditionalRows}
+            trackingPostfix="election conditional"
           />
         </SectionInView>
       )}
 
       {/* Trending — the hottest open midterm markets right now, auto-selected
-          by daily score server-side (getTrendingMidtermContracts) and
-          refreshed on every revalidation, so it needs no curation. It sits
+          by daily score server-side and curated for launch
+          (curateTrendingMarkets: federal and governor races, 10+ traders, at
+          most two per creator, nothing shown elsewhere on the page). It sits
           below the midterms sections: the map and the control markets are
           what this page is uniquely for. */}
       {trendingContracts.length > 0 && (
         <SectionInView section="trending" className="gap-2">
           <Col className="gap-0.5">
-            <Row className="text-primary-700 w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
-              <span className="relative h-4 w-4">
+            <h2 className="text-primary-700 flex w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
+              <span className="relative h-4 w-4" aria-hidden>
                 <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
                 <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
               </span>
               Trending
-            </Row>
-            <div className="text-ink-500 text-sm">
+            </h2>
+            <div className="text-ink-600 text-sm">
               The hottest midterm markets right now
             </div>
           </Col>
@@ -208,17 +294,20 @@ export function USElectionsPage(
       )}
 
       {/* Infinite-scroll feed of election markets; topic bubbles sit in their
-          own row below the sort/filter controls (Search's extraFilterPills). */}
+          own row below the sort/filter controls (Search's extraFilterPills).
+          Defaults to Total traders: "Best" surfaced one-trader seeded district
+          markets first. The persist key changed with the default so returning
+          visitors pick it up. */}
       <SectionInView section="feed" className="gap-3">
         <SectionHeader>More election markets</SectionHeader>
         <Search
           key={feedTopic.slug}
-          persistPrefix="election-page-markets"
+          persistPrefix="election-page-markets-v2"
           topicSlug={feedTopic.slug}
           contractsOnly
           hideSearchTypes
           useUrlParams={false}
-          defaultSort="score"
+          defaultSort="most-popular"
           defaultFilter="open"
           extraFilterPills={ELECTION_FEED_TOPICS.map((t) => (
             <FilterPill
