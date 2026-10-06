@@ -22,7 +22,7 @@ import { NumberResolutionOrExpectation } from 'web/components/contract/contract-
 import { SliderColor } from '../widgets/slider'
 import { getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
-import { versusSideProb } from 'common/versus'
+import { showsSideProbability, versusSideProb } from 'common/versus'
 
 export function BetDialog(props: {
   contract: BinaryContract
@@ -57,6 +57,9 @@ export function BetDialog(props: {
   }
 
   const initialProb = getProbability(contract)
+  // Named sides (e.g. Republican/Democratic) show the chosen side's chance;
+  // plain YES/NO shows the YES chance, which buying NO moves down.
+  const sideProb = showsSideProbability(contract, pseudonym)
   return (
     <Modal
       open={open}
@@ -85,12 +88,17 @@ export function BetDialog(props: {
               </Link>
               <Row className="items-baseline justify-between gap-2">
                 <span className="text-ink-500 text-sm">
-                  {pseudonym[selectedOutcome ?? 'YES'].pseudonymName}{' '}
-                  probability
+                  {sideProb
+                    ? `${
+                        pseudonym[selectedOutcome ?? 'YES'].pseudonymName
+                      } probability`
+                    : 'Probability'}
                 </span>
                 <span className="text-2xl">
                   {formatPercent(
-                    versusSideProb(selectedOutcome ?? 'YES', initialProb)
+                    sideProb
+                      ? versusSideProb(selectedOutcome ?? 'YES', initialProb)
+                      : initialProb
                   )}
                 </span>
               </Row>

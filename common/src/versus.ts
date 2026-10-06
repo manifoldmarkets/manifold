@@ -107,6 +107,34 @@ export const versusSideOutcome = (
 export const versusSideProb = (outcome: string, prob: number) =>
   outcome === 'YES' ? prob : 1 - prob
 
+type SideNames = {
+  YES: { pseudonymName: string }
+  NO: { pseudonymName: string }
+}
+
+/**
+ * Whether to show a bet's probabilities for the side being bought, so buying
+ * NO reads as the NO side's chance going up, instead of as the answer's (or a
+ * binary market's YES) chance going down.
+ *
+ * Only when NO is a named opponent: on a versus market, or on a two-outcome
+ * binary market whose sides a caller has renamed (e.g. Republican vs
+ * Democratic). Generic YES/NO labels, and named sides on a market with more
+ * than two outcomes (where NO on an answer is "any other answer"), keep the
+ * answer's own probability.
+ */
+export const showsSideProbability = (
+  contract: Contract,
+  sideNames?: SideNames
+) => {
+  if (isBinaryMulti(contract)) return true
+  if (!sideNames || contract.outcomeType !== 'BINARY') return false
+  const generic = (name: string) => /^(yes|no)$/i.test(name.trim())
+  return !(
+    generic(sideNames.YES.pseudonymName) && generic(sideNames.NO.pseudonymName)
+  )
+}
+
 /**
  * The probabilities of a bet or limit order, expressed as the probability of
  * the side the bettor is backing (what the versus UI should display).
