@@ -10,12 +10,16 @@
 // - same-party ballots (both finalists of one party, per the certified list)
 //   count once for that party by ballot composition, not by a market price;
 // - seats decided before Election Day (unopposed, not on the ballot) count by
-//   that fact.
+//   that fact;
+// - a one-sided price ("will the Democrat win?") counts its complement as the
+//   other major party wherever that party has a nominee (complementParty).
 // Sources without an audit entry keep the existing label-based reading.
 
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import audit from 'web/public/data/election-source-audit-2026.json'
+import { raceCandidates } from './election-candidates'
+import type { ElectionMode } from './election-map-model'
 import { normalizeOdds, Odds } from './election-odds'
 
 export type AuditedParty =
@@ -67,12 +71,59 @@ const DATA = audit as unknown as {
 export const sourceAudit = (slug?: string): SourceAudit | undefined =>
   slug ? DATA.sources[slug] : undefined
 
+const ELECTION_MODES: string[] = ['house', 'senate', 'governor']
+const sourceRace = (source: SourceAudit) => {
+  const race = source.races[0]
+  return race && ELECTION_MODES.includes(race.office)
+    ? { mode: race.office as ElectionMode, id: race.key }
+    : undefined
+}
+
+// The party a one-sided outcome ("not the Democrat", "not the Republican") is
+// counted as: the other major party, whenever it has a nominee on this race's
+// general-election ballot or the ballot isn't recorded. Without one, e.g. a
+// top-two race between a Democrat and an independent, the complement stays a
+// separate outcome.
+export function complementParty(
+  mode: ElectionMode,
+  raceId: string,
+  side: 'D' | 'R'
+): 'D' | 'R' | undefined {
+  const other = side === 'D' ? 'R' : 'D'
+  const ballot = raceCandidates(mode, raceId)
+  return ballot.length === 0 || ballot.some((c) => c.party === other)
+    ? other
+    : undefined
+}
+
+// Moves notDem into rep and notRep into dem where complementParty allows.
+export function foldComplement(
+  mode: ElectionMode,
+  raceId: string,
+  odds: Odds | undefined
+): Odds | undefined {
+  if (!odds) return odds
+  const { notDem, notRep, ...rest } = odds
+  const toRep = !!notDem && complementParty(mode, raceId, 'D') === 'R'
+  const toDem = !!notRep && complementParty(mode, raceId, 'R') === 'D'
+  if (!toRep && !toDem) return odds
+  return normalizeOdds({
+    ...rest,
+    dem: rest.dem + (toDem ? notRep ?? 0 : 0),
+    rep: rest.rep + (toRep ? notDem ?? 0 : 0),
+    ...(notDem !== undefined && !toRep ? { notDem } : {}),
+    ...(notRep !== undefined && !toDem ? { notRep } : {}),
+  })
+}
+
 export function binaryElectionLabels(contract: Contract) {
   const source = sourceAudit(contract.slug)
   const matched = source?.contractId === contract.id ? source : undefined
   const party = matched?.kind === 'party-binary' ? matched.binaryYes : undefined
   const candidate =
     matched?.kind === 'candidate-binary' ? matched.candidate : undefined
+  const race = matched && party ? sourceRace(matched) : undefined
+  const noParty = race ? complementParty(race.mode, race.id, party!) : undefined
   return {
     YES: {
       pseudonymName:
@@ -86,8 +137,20 @@ export function binaryElectionLabels(contract: Contract) {
           : ('gray' as const),
     },
     NO: {
-      pseudonymName: party || candidate ? 'Any other winner' : 'No',
-      pseudonymColor: 'gray' as const,
+      pseudonymName:
+        noParty === 'R'
+          ? 'Republican'
+          : noParty === 'D'
+          ? 'Democratic'
+          : party || candidate
+          ? 'Any other winner'
+          : 'No',
+      pseudonymColor:
+        noParty === 'R'
+          ? ('sienna' as const)
+          : noParty === 'D'
+          ? ('azure' as const)
+          : ('gray' as const),
     },
   }
 }
@@ -135,11 +198,13 @@ export function auditedOdds(
     )
       return undefined
     const p = getDisplayProbability(contract)
-    return normalizeOdds(
+    const odds = normalizeOdds(
       source.binaryYes === 'D'
         ? { dem: p, rep: 0, other: 0, notDem: 1 - p }
         : { dem: 0, rep: p, other: 0, notRep: 1 - p }
     )
+    const race = sourceRace(source)
+    return race ? foldComplement(race.mode, race.id, odds) : odds
   }
   if (source.kind === 'ballot-party' || source.kind === 'candidate') {
     if (!isMultiCpmm(contract) || !contract.shouldAnswersSumToOne)
@@ -166,6 +231,7 @@ export function auditedOdds(
 
 // One call for the map: what to count for this race, and why.
 export function raceOdds(
+  mode: ElectionMode,
   raceId: string,
   contract: Contract | null | undefined,
   slug: string | undefined,
@@ -175,12 +241,21 @@ export function raceOdds(
   const fixed = basisOdds(basis)
   if (fixed) return { odds: fixed, basis, audited: true }
   const source = sourceAudit(slug)
-  if (!source) return { odds: fallback(contract), basis, audited: false }
+  if (!source)
+    return {
+      odds: foldComplement(mode, raceId, fallback(contract)),
+      basis,
+      audited: false,
+    }
   if (source.kind === 'candidate-binary')
     return {
       odds: undefined,
       basis: { kind: 'candidate-only', candidate: source.candidate ?? null },
       audited: true,
     }
-  return { odds: auditedOdds(contract, source), basis, audited: true }
+  return {
+    odds: foldComplement(mode, raceId, auditedOdds(contract, source)),
+    basis,
+    audited: true,
+  }
 }

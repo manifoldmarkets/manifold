@@ -32,7 +32,10 @@ implemented mappings, conditional sources and recommendations requiring funding.
 The original House portfolio retains priority except for reviewed overrides.
 
 Audited sources use explicit contract/answer identities and binary orientation.
-Democratic NO and Republican NO are complements, never the other party's quote.
+Democratic NO and Republican NO are complements, never the other party's quote,
+but the map counts a complement as the other major party wherever that party has a
+nominee on the race's ballot (`election-candidates-2026.json`); without one, as
+in a top-two race against an independent, it stays a separate outcome.
 Candidate binaries supply candidate bets only. Candidate multi markets can supply
 party estimates by audited affiliation, with visible candidate-market caveats;
 unknown, withdrawn and mixed outcomes remain unclassified. Historical unaudited

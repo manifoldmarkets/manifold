@@ -1137,6 +1137,7 @@ export function ElectionExplorer(props: Props) {
                               (a) => a.id === selectedRace.answerId
                             )!
                           }
+                          raceId={selectedRace.id}
                           label={selectedRace.label}
                           matchup={selectedRace.matchup}
                         />
