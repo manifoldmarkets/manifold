@@ -25,6 +25,7 @@ import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { buildShareUrl } from 'web/lib/util/share-url'
 import {
   balanceOfPowerAnswerColor,
   MIDTERM_CONTEST_TOPIC_SLUG,
@@ -107,11 +108,25 @@ export function USElectionsPage(
   // level so it works even when trending is absent).
   useSaveReferral(user)
 
-  // Share the page itself, tagged with the sharer's referral code so sign-ups
-  // from the link are credited.
-  const shareUrl = `https://${ENV_CONFIG.domain}/election${
-    user?.username ? referralQuery(user.username) : ''
-  }`
+  // Share the page as it is being viewed: the current path and query, so an
+  // explorer deep link (?office=senate&race=ME) survives, tagged with the
+  // sharer's referral code so sign-ups from the link are credited. Read at
+  // click time, because the explorer can update the URL without re-rendering
+  // this component. shareUrl is the server-rendered fallback, as before.
+  const referral = user?.username ? referralQuery(user.username) : undefined
+  const shareUrl = buildShareUrl({
+    domain: ENV_CONFIG.domain,
+    pathname: '/election',
+    search: '',
+    referralQuery: referral,
+  })
+  const getShareUrl = () =>
+    buildShareUrl({
+      domain: ENV_CONFIG.domain,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      referralQuery: referral,
+    })
 
   // Color the Balance of Power answers by what they mean (Democratic sweep
   // blue, Republican sweep red, the two splits purple) instead of the default
@@ -148,6 +163,7 @@ export function USElectionsPage(
         </Col>
         <CopyLinkOrShareButton
           url={shareUrl}
+          getUrl={getShareUrl}
           eventTrackingName="share elections page"
           tooltip="Share this page"
           color="gray-outline"
