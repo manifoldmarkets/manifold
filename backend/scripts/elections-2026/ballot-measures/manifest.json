@@ -7,7 +7,7 @@
     "approved": false,
     "reviewedBy": "Tod (owner launch approval after independent audit)",
     "reviewedAt": "2026-10-03T11:02:35.312Z",
-    "notes": "Owner authorized proceeding on October 3, 2026 after the independent audit fixes were integrated and tested. The 90 flagged ready ballot seeds use an explicitly accepted neutral 50%; individual seed review is waived. Other audited ballot seeds and the existing race seeds are retained. Creator: @ManifoldPolitics. Combined spending ceiling: 410,000 mana; this manifest allocation: 103000; current combined planned spend: 408,000. Held entries, optional liquidity upgrades and subsidies remain excluded. Start with a small race batch to verify production multi-answer seed support. Duplicate/idempotency checks and all runtime stops remain enabled.\nKalshi seed refresh 2026-10-06T05:05:26.008Z: usable prices replaced starting seeds where an exact match passed the quote checks. Tod must review kalshi-reseed-report.md and approve this manifest again before creation."
+    "notes": "Owner authorized proceeding on October 3, 2026 after the independent audit fixes were integrated and tested. The 90 flagged ready ballot seeds use an explicitly accepted neutral 50%; individual seed review is waived. Other audited ballot seeds and the existing race seeds are retained. Creator: @ManifoldPolitics. Combined spending ceiling: 410,000 mana; this manifest allocation: 103000; current combined planned spend: 408,000. Held entries, optional liquidity upgrades and subsidies remain excluded. Start with a small race batch to verify production multi-answer seed support. Duplicate/idempotency checks and all runtime stops remain enabled.\nMarket-price seed refresh 2026-10-06T05:05:26.008Z: usable prices replaced starting seeds where an exact match passed the quote checks. Tod must review market-reseed-report.md and approve this manifest again before creation."
   },
   "budget": {
     "approvedMaxTotalMana": 103000
@@ -279,11 +279,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AL-A1"
           ],
@@ -401,11 +402,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AL-A2"
           ],
@@ -528,11 +530,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A4. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AL-A4"
           ],
@@ -656,11 +659,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-HJR1018. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-HJR1018. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AR-HJR1018"
           ],
@@ -774,11 +778,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-SJR11. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-SJR11. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AR-SJR11"
           ],
@@ -892,11 +897,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-SJR15. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-SJR15. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 55%. Talk Business & Politics-Hendrix College poll, Aug 11-12, 2026, 1,217 likely voters: 37% for / 25% against / 38% undecided (https://talkbusiness.net/2026/08/poll-voters-weigh-in-on-4-ballot-proposals/). High undecided share, so the seed is only a slight lean.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AR-SJR15"
           ],
@@ -1012,11 +1018,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-A578. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-A578. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-AR-A578"
           ],
@@ -1847,11 +1854,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR01. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR01. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 60%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 55% yes / 43% no / 2% DK - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR01"
           ],
@@ -2000,11 +2008,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR02. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR02. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR02"
           ],
@@ -2129,11 +2138,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR03. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR03. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR03"
           ],
@@ -2269,11 +2279,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR38. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR38. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 58%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 55% yes / 42% no / 3% DK - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR38"
           ],
@@ -2414,11 +2425,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR41. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR41. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 45%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 51/44/5 - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/; Berkeley IGS Poll, Sep 15-20 2026, 4,512 likely voters: 37/33/30 - https://escholarship.org/uc/item/3w14s99c",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR41"
           ],
@@ -2722,11 +2734,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR44. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR44. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR44"
           ],
@@ -2903,11 +2916,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR45. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR45. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 45%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 49% yes / 46% no / 5% DK - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXCABALLOTMEASURES-26NOV03-PR45"
           ],
@@ -3143,11 +3157,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I177. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I177. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-I177"
           ],
@@ -3257,11 +3272,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A83. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A83. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-A83"
           ],
@@ -3372,11 +3388,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A84. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A84. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-A84"
           ],
@@ -3488,11 +3505,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A85. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A85. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-A85"
           ],
@@ -3604,11 +3622,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A86. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A86. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-A86"
           ],
@@ -3730,11 +3749,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A87. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A87. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-A87"
           ],
@@ -3847,11 +3867,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I108. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I108. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-I108"
           ],
@@ -3964,11 +3985,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I109. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I109. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-I109"
           ],
@@ -4080,11 +4102,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I110. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I110. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-I110"
           ],
@@ -4296,11 +4319,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-P137. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-P137. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-P137"
           ],
@@ -4414,11 +4438,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-PNN. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-PNN. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-CO-PNN"
           ],
@@ -4531,11 +4556,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-FL-A2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-FL-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-FL-A2"
           ],
@@ -4779,11 +4805,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-FL-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-FL-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-FL-A1"
           ],
@@ -4904,11 +4931,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-GA-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-GA-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-GA-A1"
           ],
@@ -5221,11 +5249,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-HI-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-HI-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-HI-A1"
           ],
@@ -5337,11 +5366,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-HI-A2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-HI-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-HI-A2"
           ],
@@ -5451,11 +5481,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IA-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IA-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 45%. Suffolk University, Aug 20-23 2026, 500 LV, ±4.4: 33% yes / 36% no / 30% undecided. https://www.kcrg.com/2026/08/28/iowa-likely-voters-closely-split-income-tax-constitutional-amendment-poll-finds/",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-IA-A1"
           ],
@@ -5568,11 +5599,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-HJR4. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-HJR4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-ID-HJR4"
           ],
@@ -5681,11 +5713,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-HJR6. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-HJR6. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-ID-HJR6"
           ],
@@ -5795,11 +5828,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-P1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-P1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 55%. Boise State SPS poll (field dates not found; reported 2026-07-10): ~61% support / 28% oppose / 12% unsure (https://stateline.org/2026/07/10/in-deep-red-idaho-support-for-ballot-question-on-abortion-access-is-spread-across-party-lines/). Seed shaded below the poll: deep-red state and the poll may be old.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-ID-P1"
           ],
@@ -5914,11 +5948,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IN-PQ1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IN-PQ1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-IN-PQ1"
           ],
@@ -6029,11 +6064,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IN-PQ2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IN-PQ2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-IN-PQ2"
           ],
@@ -6252,11 +6288,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-KY-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-KY-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-KY-A1"
           ],
@@ -6378,11 +6415,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A220. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A220. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A220"
           ],
@@ -6501,11 +6539,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A277. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A277. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A277"
           ],
@@ -6625,11 +6664,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A414. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A414. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A414"
           ],
@@ -6750,11 +6790,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A273. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A273. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A273"
           ],
@@ -6872,11 +6913,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A271. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A271. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A271"
           ],
@@ -6995,11 +7037,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A272. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A272. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A272"
           ],
@@ -7119,11 +7162,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A606. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A606. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A606"
           ],
@@ -7242,11 +7286,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A274. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A274. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A274"
           ],
@@ -7364,11 +7409,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A39. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A39. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A39"
           ],
@@ -7488,11 +7534,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A607. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A607. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-LA-A607"
           ],
@@ -7606,11 +7653,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MD-Q1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MD-Q1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MD-Q1"
           ],
@@ -7717,11 +7765,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MD-Q2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MD-Q2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MD-Q2"
           ],
@@ -8141,11 +8190,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MN-CA. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MN-CA. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MN-CA"
           ],
@@ -8259,11 +8309,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXREPRODUCTIVEMEASURES-26-MO. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXREPRODUCTIVEMEASURES-26-MO. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXREPRODUCTIVEMEASURES-26-MO"
           ],
@@ -8520,11 +8571,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MO-A7. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MO-A7. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MO-A7"
           ],
@@ -8638,11 +8690,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MO-A8. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MO-A8. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MO-A8"
           ],
@@ -8755,11 +8808,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-CI132. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-CI132. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MT-CI132"
           ],
@@ -8869,11 +8923,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-CI133. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-CI133. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MT-CI133"
           ],
@@ -8987,11 +9042,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-I194. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-I194. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-MT-I194"
           ],
@@ -9102,11 +9158,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NC-A2"
           ],
@@ -9213,11 +9270,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NC-A3"
           ],
@@ -9326,11 +9384,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NC-A1"
           ],
@@ -9443,11 +9502,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ND-CM1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ND-CM1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: a broader 2024 ND Measure 2 (single subject + 60% + double vote) reportedly failed ~44-56.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-ND-CM1"
           ],
@@ -9561,11 +9621,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ND-CM2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ND-CM2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: sponsor-aligned 2025 poll showed 79% support for free school lunches in general, not for this measure.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-ND-CM2"
           ],
@@ -9680,11 +9741,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-FFG. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-FFG. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NE26-FFG"
           ],
@@ -9798,11 +9860,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-OSWA. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-OSWA. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 60%. UNL Bureau of Sociological Research, April 2026, likely voters: 58% support / 31% oppose / 11% undecided on legalizing online sports betting (cited Aug 6 2026). https://www.deucescracked.com/blog/nebraska-sports-betting-2026-ballot-november-vote",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NE26-OSWA"
           ],
@@ -9917,11 +9980,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-OSWR. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-OSWR. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 60%. UNL Bureau of Sociological Research, April 2026, likely voters: 58% support / 31% oppose / 11% undecided on legalizing online sports betting. https://www.deucescracked.com/blog/nebraska-sports-betting-2026-ballot-november-vote",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NE26-OSWR"
           ],
@@ -10222,11 +10286,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-BQ3"
           ],
@@ -10338,11 +10403,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A4. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-A4"
           ],
@@ -10453,11 +10519,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-BQ2"
           ],
@@ -10568,11 +10635,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-A1"
           ],
@@ -10684,11 +10752,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-A3"
           ],
@@ -10800,11 +10869,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-A2"
           ],
@@ -10915,11 +10985,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-NM-BQ1"
           ],
@@ -11030,11 +11101,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OH-IS3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OH-IS3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 75%. Honest Elections Project Action (sponsor, pro-ID), May 27-Jun 2 2026, n=800: 76% would vote for enshrining photo ID in the Ohio constitution. https://thefederalist.com/2026/06/08/poll-finds-76-percent-of-ohio-voters-support-enshrining-photo-id-in-state-constitution/",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-OH-IS3"
           ],
@@ -11156,11 +11228,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OK-SQ845. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OK-SQ845. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-OK-SQ845"
           ],
@@ -11273,11 +11346,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OK-SQ847. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OK-SQ847. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-OK-SQ847"
           ],
@@ -11878,11 +11952,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AI. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AI. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-SD-AI"
           ],
@@ -11992,11 +12067,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AJ. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AJ. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 85%. Prior results for similar measures: 2024 citizenship-to-vote amendments passed in all 8 states, 62%-86% (https://www.nbcnews.com/politics/2024-election/ballot-measures-targeting-noncitizen-voting-approved-8-states-rcna178888). No SD poll.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-SD-AJ"
           ],
@@ -12105,11 +12181,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AK. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AK. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-SD-AK"
           ],
@@ -12217,11 +12294,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AL. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AL. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 35%. Prior SD results: a 2018 supermajority proposal and 2022 Amendment C (60% for tax measures) both failed, the latter about 2-to-1 (https://news.ballotpedia.org/2025/03/11/south-dakota-voters-to-decide-on-60-supermajority-requirement-for-constitutional-amendments-after-rejecting-similar-requirement-for-tax-related-measures-in-2022/). No 2026 poll.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-SD-AL"
           ],
@@ -12333,11 +12411,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: all four 2022 TN amendments passed easily (https://tennesseelookout.com/2022/11/10/amended-all-four-amendments-to-tennessees-constitution-pass-overwhelmingly/).",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-TN-A1"
           ],
@@ -12452,11 +12531,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: all four 2022 TN amendments passed easily (see TN-amend-1).",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-TN-A2"
           ],
@@ -12570,11 +12650,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: all four 2022 TN amendments passed easily (see TN-amend-1).",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-TN-A3"
           ],
@@ -12688,11 +12769,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-UT-SJR2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-UT-SJR2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-UT-SJR2"
           ],
@@ -12804,11 +12886,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-UT-HJR10. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-UT-HJR10. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-UT-HJR10"
           ],
@@ -12923,11 +13006,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXREPRODUCTIVEMEASURES-26-VA. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXREPRODUCTIVEMEASURES-26-VA. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 70%. Wason Center (CNU) poll, Jan 2026: 66% support a reproductive-rights amendment (https://www.whsv.com/2026/01/29/wason-center-releases-results-new-poll-various-virginia-issues/). Poll is ~8 months old.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXREPRODUCTIVEMEASURES-26-VA"
           ],
@@ -13051,11 +13135,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VA-Q2. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VA-Q2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-VA-Q2"
           ],
@@ -13171,11 +13256,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VA-Q3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VA-Q3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 70%. Wason Center (CNU) poll, Jan 2026: 64% support automatic restoration on release (https://www.whsv.com/2026/01/29/wason-center-releases-results-new-poll-various-virginia-issues/). Poll is ~8 months old.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-VA-Q3"
           ],
@@ -13296,11 +13382,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VT-PR3. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VT-PR3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-VT-PR3"
           ],
@@ -13412,11 +13499,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VT-PR4. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VT-PR4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-VT-PR4"
           ],
@@ -13529,11 +13617,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IL26001. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IL26001. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-WA-IL26001"
           ],
@@ -13648,11 +13737,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IL26638. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IL26638. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-WA-IL26638"
           ],
@@ -13772,11 +13862,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IP26645. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IP26645. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 35%. DHM Research, Sep 14-21 2026, 800 residents, with official ballot language: 35% yes / 57% no / 8% DK (40/44/16 without fiscal statement) - https://www.nwprogressive.org/weblog/2026/09/poll-watch-dhm-research-finds-washingtonians-likely-to-uphold-million-dollar-earners-tax-by-rejecting-brian-heywoods-645.html REVIEW: Seed review: DHM sampled residents, not likely voters; industry-side polls report majority opposition to the income tax.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-WA-IP26645"
           ],
@@ -14196,11 +14287,12 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Kalshi public order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WV-A1. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.",
+        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WV-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 85%. Prior results for similar measures: 2024 citizenship-to-vote amendments passed in all 8 states, 62%-86% (https://www.nbcnews.com/politics/2024-election/ballot-measures-targeting-noncitizen-voting-approved-8-states-rcna178888). No WV poll.",
         "needsReview": false,
         "source": {
-          "kind": "kalshi",
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
           "tickers": [
             "KXSTATEBALLOTMEASURE-WV-A1"
           ],

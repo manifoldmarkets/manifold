@@ -11309,8 +11309,8 @@
         "KXSTATEBALLOTMEASURE-AL"
       ],
       "matching": [
-        "Reviewed 2026 Alabama Amendment 1: Lt. governor vacancy elections and salaries. Kalshi: :: Lt. gov. vacancy; leg. officer pay; If Amendment 1 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Alabama Amendment 1: Lt. governor vacancy elections and salaries. Source: :: Lt. gov. vacancy; leg. officer pay; If Amendment 1 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11345,8 +11345,8 @@
         "KXSTATEBALLOTMEASURE-AL"
       ],
       "matching": [
-        "Reviewed 2026 Alabama Amendment 2: county school system consolidation process. Kalshi: :: County school system consolidation; If Amendment 2 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Alabama Amendment 2: county school system consolidation process. Source: :: County school system consolidation; If Amendment 2 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11381,8 +11381,8 @@
         "KXSTATEBALLOTMEASURE-AL"
       ],
       "matching": [
-        "Reviewed 2026 Alabama Amendment 4: weekly national anthem in public schools. Kalshi: :: Weekly national anthem in schools; If Amendment 4 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Alabama Amendment 4: weekly national anthem in public schools. Source: :: Weekly national anthem in schools; If Amendment 4 passes in Alabama, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11417,8 +11417,8 @@
         "KXSTATEBALLOTMEASURE-AR"
       ],
       "matching": [
-        "Reviewed 2026 Arkansas Issue 1: citizenship requirement to vote. Kalshi: HJR 1018; If Citizens Only Voting Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Arkansas Issue 1: citizenship requirement to vote. Source: HJR 1018; If Citizens Only Voting Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11453,8 +11453,8 @@
         "KXSTATEBALLOTMEASURE-AR"
       ],
       "matching": [
-        "Reviewed 2026 Arkansas Issue 2: right to keep and bear arms. Kalshi: SJR 11; If Right to Keep and Bear Arms Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Arkansas Issue 2: right to keep and bear arms. Source: SJR 11; If Right to Keep and Bear Arms Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11489,8 +11489,8 @@
         "KXSTATEBALLOTMEASURE-AR"
       ],
       "matching": [
-        "Reviewed 2026 Arkansas Issue 3: economic development districts. Kalshi: SJR 15; If Economic Development Districts Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Arkansas Issue 3: economic development districts. Source: SJR 15; If Economic Development Districts Amendment passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11525,8 +11525,8 @@
         "KXSTATEBALLOTMEASURE-AR"
       ],
       "matching": [
-        "Reviewed 2026 Arkansas Issue 4: water and pollution-control facility bonds. Kalshi: Act 578; If Water Infrastructure Bond Question passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Arkansas Issue 4: water and pollution-control facility bonds. Source: Act 578; If Water Infrastructure Bond Question passes in Arkansas, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11680,8 +11680,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 1: $11.25B housing bond. Kalshi: Proposition 1:: Veterans & Affordable Housing Bond; If Proposition 1 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 1: $11.25B housing bond. Source: Proposition 1:: Veterans & Affordable Housing Bond; If Proposition 1 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11716,8 +11716,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 2: larger state rainy day fund. Kalshi: :: Save for California's Future Act; If Proposition 2 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 2: larger state rainy day fund. Source: :: Save for California's Future Act; If Proposition 2 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11752,8 +11752,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 3: extending high-income tax rates. Kalshi: :: Tax extension for schools/healthcare; If Proposition 3 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 3: extending high-income tax rates. Source: :: Tax extension for schools/healthcare; If Proposition 3 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11788,8 +11788,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 38: $8.4B immunology research bond. Kalshi: :: Bonds for immunology research; If Proposition 38 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 38: $8.4B immunology research bond. Source: :: Bonds for immunology research; If Proposition 38 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11824,8 +11824,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 41: tax limits and special-tax audits. Kalshi: :: Audits for new special taxes; If Proposition 41 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 41: tax limits and special-tax audits. Source: :: Audits for new special taxes; If Proposition 41 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11860,8 +11860,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 42: ban on new state personal property taxes. Kalshi: :: Prohibits new personal property taxes; If Proposition 42 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 42: ban on new state personal property taxes. Source: :: Prohibits new personal property taxes; If Proposition 42 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "thin",
       "reason": "spread 37.00c exceeds 10c",
@@ -11886,8 +11886,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 44: 90% spending rule for community clinics. Kalshi: :: 90% clinic revenue on programs; If Proposition 44 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 44: 90% spending rule for community clinics. Source: :: 90% clinic revenue on programs; If Proposition 44 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11922,8 +11922,8 @@
         "KXCABALLOTMEASURES-26NOV03"
       ],
       "matching": [
-        "Reviewed 2026 California Proposition 45: faster CEQA environmental review. Kalshi: :: Modifies environmental review for projects; If Proposition 45 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 California Proposition 45: faster CEQA environmental review. Source: :: Modifies environmental review for projects; If Proposition 45 passes in California, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -11975,8 +11975,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Amendment 82: constitutional right to natural gas. Kalshi: :: Right to purchase natural gas; If Amendment 82 (Initiative #177) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Amendment 82: constitutional right to natural gas. Source: :: Right to purchase natural gas; If Amendment 82 (Initiative #177) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12011,8 +12011,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Amendment 83: constitutional right to hunt and fish. Kalshi: :: Constitutional right to hunt and fish; If Amendment 83 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Amendment 83: constitutional right to hunt and fish. Source: :: Constitutional right to hunt and fish; If Amendment 83 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12047,8 +12047,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Amendment 84: ID requirement for mail ballots. Kalshi: :: Mail ballot voter identification; If Amendment 84 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Amendment 84: ID requirement for mail ballots. Source: :: Mail ballot voter identification; If Amendment 84 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12083,8 +12083,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Amendment 85: plain-language ballot titles. Kalshi: :: Plain-language ballot questions; If Amendment 85 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Amendment 85: plain-language ballot titles. Source: :: Plain-language ballot questions; If Amendment 85 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12119,8 +12119,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Amendment 86: off-cycle congressional redistricting limits. Kalshi: :: Congressional redistricting; If Amendment 86 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Amendment 86: off-cycle congressional redistricting limits. Source: :: Congressional redistricting; If Amendment 86 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12155,8 +12155,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Amendment 87: graduated income tax. Kalshi: :: Graduated income tax; If Amendment 87 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Amendment 87: graduated income tax. Source: :: Graduated income tax; If Amendment 87 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12191,8 +12191,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Proposition 133: penalties for trafficking of a minor. Kalshi: :: Life term for child sex trafficking; If Proposition 133 (Initiative #108) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Proposition 133: penalties for trafficking of a minor. Source: :: Life term for child sex trafficking; If Proposition 133 (Initiative #108) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12227,8 +12227,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Proposition 134: male and female school sports. Kalshi: :: School sports by biological sex; If Proposition 134 (Initiative #109) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Proposition 134: male and female school sports. Source: :: School sports by biological sex; If Proposition 134 (Initiative #109) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12263,8 +12263,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Proposition 135: prohibiting certain surgeries on minors. Kalshi: :: Ban transition surgeries for minors; If Proposition 135 (Initiative #110) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Proposition 135: prohibiting certain surgeries on minors. Source: :: Ban transition surgeries for minors; If Proposition 135 (Initiative #110) passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12299,8 +12299,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Proposition 136: 4.4% income tax rate cap. Kalshi: :: Income tax rate limit; If Proposition 136 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Proposition 136: 4.4% income tax rate cap. Source: :: Income tax rate limit; If Proposition 136 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "thin",
       "reason": "spread 16.00c exceeds 10c",
@@ -12325,8 +12325,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Proposition 137: sporting goods tax for conservation. Kalshi: :: Direct sporting-goods sales tax revenue for conservation; If Proposition 137 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Proposition 137: sporting goods tax for conservation. Source: :: Direct sporting-goods sales tax revenue for conservation; If Proposition 137 passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12361,8 +12361,8 @@
         "KXSTATEBALLOTMEASURE-CO"
       ],
       "matching": [
-        "Reviewed 2026 Colorado Proposition NN: keeping excess revenue for K-12 schools. Kalshi: :: Keep excess revenue for K-12 schools; If Proposition NN passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Colorado Proposition NN: keeping excess revenue for K-12 schools. Source: :: Keep excess revenue for K-12 schools; If Proposition NN passes in Colorado, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12397,8 +12397,8 @@
         "KXSTATEBALLOTMEASURE-FL"
       ],
       "matching": [
-        "Reviewed 2026 Florida Amendment 2: agricultural personal property tax exemption. Kalshi: :: Agriculture property-tax exemption; If Amendment 2 passes in Florida, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Florida Amendment 2: agricultural personal property tax exemption. Source: :: Agriculture property-tax exemption; If Amendment 2 passes in Florida, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12450,8 +12450,8 @@
         "KXSTATEBALLOTMEASURE-FL"
       ],
       "matching": [
-        "Reviewed 2026 Florida Amendment 1: Budget Stabilization Fund changes. Kalshi: Amendment 1:: Raise budget-reserve cap to 25%; If Amendment 1 passes in Florida, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Florida Amendment 1: Budget Stabilization Fund changes. Source: Amendment 1:: Raise budget-reserve cap to 25%; If Amendment 1 passes in Florida, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12486,8 +12486,8 @@
         "KXSTATEBALLOTMEASURE-GA"
       ],
       "matching": [
-        "Reviewed 2026 Georgia Amendment 1: conservation use acreage limit increase. Kalshi: Amendment 1; If Increase Acre Limit for Agriculture and Timber Conservation Use Property Tax Classification Amendment passes in Georgia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Georgia Amendment 1: conservation use acreage limit increase. Source: Amendment 1; If Increase Acre Limit for Agriculture and Timber Conservation Use Property Tax Classification Amendment passes in Georgia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12517,7 +12517,7 @@
     "2026-measure-GA-amendment-3": {
       "status": "unmatched",
       "tickers": [],
-      "reason": "Kalshi labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree.",
+      "reason": "The source labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree.",
       "raceKey": "2026-measure-GA-amendment-3",
       "office": "ballot",
       "old": [
@@ -12534,7 +12534,7 @@
     "2026-measure-GA-amendment-2": {
       "status": "unmatched",
       "tickers": [],
-      "reason": "Kalshi labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree.",
+      "reason": "The source labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree.",
       "raceKey": "2026-measure-GA-amendment-2",
       "office": "ballot",
       "old": [
@@ -12556,8 +12556,8 @@
         "KXSTATEBALLOTMEASURE-HI"
       ],
       "matching": [
-        "Reviewed 2026 Hawaii Question 1: more Senate time for judicial appointments. Kalshi: Amendment 1; If Increase Time for Senate to Act on Judicial Appointments Amendment passes in Hawaii, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Hawaii Question 1: more Senate time for judicial appointments. Source: Amendment 1; If Increase Time for Senate to Act on Judicial Appointments Amendment passes in Hawaii, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12592,8 +12592,8 @@
         "KXSTATEBALLOTMEASURE-HI"
       ],
       "matching": [
-        "Reviewed 2026 Hawaii Question 2: county RISE infrastructure bonds. Kalshi: Amendment 2; If Authorize RISE Bonds Amendment passes in Hawaii, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Hawaii Question 2: county RISE infrastructure bonds. Source: Amendment 2; If Authorize RISE Bonds Amendment passes in Hawaii, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12628,8 +12628,8 @@
         "KXSTATEBALLOTMEASURE-IA"
       ],
       "matching": [
-        "Reviewed 2026 Iowa Amendment 1: two-thirds vote for income tax increases. Kalshi: Amendment 1; If State Income-Tax Supermajority Amendment (S.J.R. 11) passes in Iowa, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Iowa Amendment 1: two-thirds vote for income tax increases. Source: Amendment 1; If State Income-Tax Supermajority Amendment (S.J.R. 11) passes in Iowa, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12664,8 +12664,8 @@
         "KXSTATEBALLOTMEASURE-ID"
       ],
       "matching": [
-        "Reviewed 2026 Idaho HJR 4: legislative authority over psychoactive drugs. Kalshi: HJR 4; If Drug Legalization Authority Amendment passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Idaho HJR 4: legislative authority over psychoactive drugs. Source: HJR 4; If Drug Legalization Authority Amendment passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12700,8 +12700,8 @@
         "KXSTATEBALLOTMEASURE-ID"
       ],
       "matching": [
-        "Reviewed 2026 Idaho HJR 6: English as official state language. Kalshi: HJR 6; If English as Official State Language Amendment passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Idaho HJR 6: English as official state language. Source: HJR 6; If English as Official State Language Amendment passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12736,8 +12736,8 @@
         "KXSTATEBALLOTMEASURE-ID"
       ],
       "matching": [
-        "Reviewed 2026 Idaho Proposition 1: reproductive freedom and privacy act. Kalshi: Proposition 1; If Reproductive Freedom and Privacy Act passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Idaho Proposition 1: reproductive freedom and privacy act. Source: Proposition 1; If Reproductive Freedom and Privacy Act passes in Idaho, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12772,8 +12772,8 @@
         "KXSTATEBALLOTMEASURE-IN"
       ],
       "matching": [
-        "Reviewed 2026 Indiana Public Question 1: denying bail for public-safety risk. Kalshi: :: Broaden bail denial for public risk; If Public Question 1 passes in Indiana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Indiana Public Question 1: denying bail for public-safety risk. Source: :: Broaden bail denial for public risk; If Public Question 1 passes in Indiana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12808,8 +12808,8 @@
         "KXSTATEBALLOTMEASURE-IN"
       ],
       "matching": [
-        "Reviewed 2026 Indiana Public Question 2: city and town court judge residency. Kalshi: :: City/town court judge residency rules; If Public Question 2 passes in Indiana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Indiana Public Question 2: city and town court judge residency. Source: :: City/town court judge residency rules; If Public Question 2 passes in Indiana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12861,8 +12861,8 @@
         "KXSTATEBALLOTMEASURE-KY"
       ],
       "matching": [
-        "Reviewed 2026 Kentucky Amendment 1: governor pardon limits near elections. Kalshi: Amendment 1; If Governor’s Pardon and Commutation Amendment passes in Kentucky, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Kentucky Amendment 1: governor pardon limits near elections. Source: Amendment 1; If Governor’s Pardon and Commutation Amendment passes in Kentucky, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12897,8 +12897,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 9: income limit for special assessment level. Kalshi: Act 220 (2025); If the Senior Tax Freeze Income-Limit Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 9: income limit for special assessment level. Source: Act 220 (2025); If the Senior Tax Freeze Income-Limit Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12933,8 +12933,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 8: foreign adversary expropriation ban. Kalshi: Act 277; If the Foreign Adversary Expropriation Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 8: foreign adversary expropriation ban. Source: Act 277; If the Foreign Adversary Expropriation Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -12969,8 +12969,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 4: lifetime term limit for governor. Kalshi: Act 414; If the Gubernatorial Term Limits Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 4: lifetime term limit for governor. Source: Act 414; If the Gubernatorial Term Limits Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13005,8 +13005,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 2: millage rate adjustment authority. Kalshi: Act 273; If the Property Tax Millage Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 2: millage rate adjustment authority. Source: Act 273; If the Property Tax Millage Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13041,8 +13041,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 3: post-conviction bail ban for child offenses. Kalshi: Act 271; If the Post-Conviction Bail Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 3: post-conviction bail ban for child offenses. Source: Act 271; If the Post-Conviction Bail Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13077,8 +13077,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 10: tax exemption for rehabilitated property. Kalshi: Act 272; If the Rehabilitated Blighted Property Tax Exemption passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 10: tax exemption for rehabilitated property. Source: Act 272; If the Rehabilitated Blighted Property Tax Exemption passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13113,8 +13113,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 5: retirement system debt payment order. Kalshi: Act 606; If the Retirement Debt Funding Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 5: retirement system debt payment order. Source: Act 606; If the Retirement Debt Funding Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13149,8 +13149,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 6: local senior property tax exemption. Kalshi: Act 274; If the Senior Property Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 6: local senior property tax exemption. Source: Act 274; If the Senior Property Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13185,8 +13185,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 1: transfer of veteran spouse tax exemption. Kalshi: Act 39; If the Disabled Veteran Spouse Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 1: transfer of veteran spouse tax exemption. Source: Act 39; If the Disabled Veteran Spouse Tax Exemption Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13221,8 +13221,8 @@
         "KXSTATEBALLOTMEASURE-LA"
       ],
       "matching": [
-        "Reviewed 2026 Louisiana Amendment 7: public funds for water service lines. Kalshi: Act 607; If the Private Water Line Funding Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Louisiana Amendment 7: public funds for water service lines. Source: Act 607; If the Private Water Line Funding Amendment passes in Louisiana, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13257,8 +13257,8 @@
         "KXSTATEBALLOTMEASURE-MD"
       ],
       "matching": [
-        "Reviewed 2026 Maryland Question 1: funding state employee arbitration awards. Kalshi: :: Fund state-worker bargaining terms; If Question 1 passes in Maryland, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Maryland Question 1: funding state employee arbitration awards. Source: :: Fund state-worker bargaining terms; If Question 1 passes in Maryland, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13293,8 +13293,8 @@
         "KXSTATEBALLOTMEASURE-MD"
       ],
       "matching": [
-        "Reviewed 2026 Maryland Question 2: temporary judicial disabilities panel seats. Kalshi: :: Temporary judicial-discipline seats; If Question 2 passes in Maryland, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Maryland Question 2: temporary judicial disabilities panel seats. Source: :: Temporary judicial-discipline seats; If Question 2 passes in Maryland, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13324,7 +13324,7 @@
     "2026-measure-MD-question-3": {
       "status": "unmatched",
       "tickers": [],
-      "reason": "Kalshi subtitle says State district rules exclude Congress; audited subject is congressional redistricting. Insufficient matching description to establish exact subject/direction.",
+      "reason": "The source subtitle says State district rules exclude Congress; audited subject is congressional redistricting. Insufficient matching description to establish exact subject/direction.",
       "raceKey": "2026-measure-MD-question-3",
       "office": "ballot",
       "old": [
@@ -13380,8 +13380,8 @@
         "KXSTATEBALLOTMEASURE-MN"
       ],
       "matching": [
-        "Reviewed 2026 Minnesota unnumbered amendment: permanent school fund distributions. Kalshi: Constitutional Amendment; If the Constitutional Amendment increasing funding to school districts passes in Minnesota, then the market resolves to Yes.. Official ballot is unnumbered; Kalshi numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Minnesota unnumbered amendment: permanent school fund distributions. Source: Constitutional Amendment; If the Constitutional Amendment increasing funding to school districts passes in Minnesota, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13416,8 +13416,8 @@
         "KXREPRODUCTIVEMEASURES-26"
       ],
       "matching": [
-        "Reviewed 2026 Missouri Amendment 3: repealing 2024 abortion-rights amendment. Kalshi: ; If Missouri Amendment 3, which would repeal abortion protections and prohibit gender transitions for minors in Missouri passes, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Missouri Amendment 3: repealing 2024 abortion-rights amendment. Source: ; If Missouri Amendment 3, which would repeal abortion protections and prohibit gender transitions for minors in Missouri passes, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13469,8 +13469,8 @@
         "KXSTATEBALLOTMEASURE-MO"
       ],
       "matching": [
-        "Reviewed 2026 Missouri Amendment 7: permanent fund to replace state taxes. Kalshi: Amendment 7:: Create fund to replace state taxes; If Amendment 7 passes in Missouri, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Missouri Amendment 7: permanent fund to replace state taxes. Source: Amendment 7:: Create fund to replace state taxes; If Amendment 7 passes in Missouri, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13505,8 +13505,8 @@
         "KXSTATEBALLOTMEASURE-MO"
       ],
       "matching": [
-        "Reviewed 2026 Missouri Amendment 8: constitutional office of county sheriff. Kalshi: :: County sheriff election/removal rules; If Amendment 8 passes in Missouri, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Missouri Amendment 8: constitutional office of county sheriff. Source: :: County sheriff election/removal rules; If Amendment 8 passes in Missouri, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13541,8 +13541,8 @@
         "KXSTATEBALLOTMEASURE-MT"
       ],
       "matching": [
-        "Reviewed 2026 Montana CI-132: nonpartisan judicial elections. Kalshi: :: Nonpartisan judicial elections; If CI-132 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Montana CI-132: nonpartisan judicial elections. Source: :: Nonpartisan judicial elections; If CI-132 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13577,8 +13577,8 @@
         "KXSTATEBALLOTMEASURE-MT"
       ],
       "matching": [
-        "Reviewed 2026 Montana CI-133: right of initiative and referendum. Kalshi: :: Initiative and referendum powers; If CI-133 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Montana CI-133: right of initiative and referendum. Source: :: Initiative and referendum powers; If CI-133 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13613,8 +13613,8 @@
         "KXSTATEBALLOTMEASURE-MT"
       ],
       "matching": [
-        "Reviewed 2026 Montana I-194: Montana Plan ban on entity election spending. Kalshi: :: Corporate political spending restriction; If I-194 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Montana I-194: Montana Plan ban on entity election spending. Source: :: Corporate political spending restriction; If I-194 passes in Montana, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13649,8 +13649,8 @@
         "KXSTATEBALLOTMEASURE-NC"
       ],
       "matching": [
-        "Reviewed 2026 North Carolina unnumbered amendment: 3.5% cap on state income tax rate. Kalshi: Amendment 2; If Income Tax Rate Cap Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Kalshi numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 North Carolina unnumbered amendment: 3.5% cap on state income tax rate. Source: Amendment 2; If Income Tax Rate Cap Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13685,8 +13685,8 @@
         "KXSTATEBALLOTMEASURE-NC"
       ],
       "matching": [
-        "Reviewed 2026 North Carolina unnumbered amendment: limits on local property tax increases. Kalshi: Amendment 3; If Property Tax Levy Limit Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Kalshi numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 North Carolina unnumbered amendment: limits on local property tax increases. Source: Amendment 3; If Property Tax Levy Limit Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13721,8 +13721,8 @@
         "KXSTATEBALLOTMEASURE-NC"
       ],
       "matching": [
-        "Reviewed 2026 North Carolina unnumbered amendment: photo ID for all voting methods. Kalshi: Amendment 1; If Voter Identification Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Kalshi numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 North Carolina unnumbered amendment: photo ID for all voting methods. Source: Amendment 1; If Voter Identification Amendment passes in North Carolina, then the market resolves to Yes.. Official ballot is unnumbered; Source numbering is an internal label and the full amendment subject identifies it. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13757,8 +13757,8 @@
         "KXSTATEBALLOTMEASURE-ND"
       ],
       "matching": [
-        "Reviewed 2026 North Dakota Measure 1: 60% vote for constitutional amendments. Kalshi: :: 60% vote to amend state constitution; If Constitutional Measure 1 passes in North Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 North Dakota Measure 1: 60% vote for constitutional amendments. Source: :: 60% vote to amend state constitution; If Constitutional Measure 1 passes in North Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13793,8 +13793,8 @@
         "KXSTATEBALLOTMEASURE-ND"
       ],
       "matching": [
-        "Reviewed 2026 North Dakota Measure 2: free school breakfast and lunch. Kalshi: :: Free school meals guarantee; If Constitutional Measure 2 passes in North Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 North Dakota Measure 2: free school breakfast and lunch. Source: :: Free school meals guarantee; If Constitutional Measure 2 passes in North Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13829,8 +13829,8 @@
         "KXSTATEBALLOTMEASURE-NE26"
       ],
       "matching": [
-        "Reviewed 2026 Nebraska Initiative Measure 442: sex-based school sports teams. Kalshi: :: Sex-based eligibility for school and college sports; If Fairness for Girls Constitutional Amendment passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Nebraska Initiative Measure 442: sex-based school sports teams. Source: :: Sex-based eligibility for school and college sports; If Fairness for Girls Constitutional Amendment passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13865,8 +13865,8 @@
         "KXSTATEBALLOTMEASURE-NE26"
       ],
       "matching": [
-        "Reviewed 2026 Nebraska Initiative Measure 440: online sports betting amendment. Kalshi: :: Constitutional authorization for online sports wagering; If Online Sports Wagering Authorization Constitutional Amendment passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Nebraska Initiative Measure 440: online sports betting amendment. Source: :: Constitutional authorization for online sports wagering; If Online Sports Wagering Authorization Constitutional Amendment passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13901,8 +13901,8 @@
         "KXSTATEBALLOTMEASURE-NE26"
       ],
       "matching": [
-        "Reviewed 2026 Nebraska Initiative Measure 441: online sports betting statute. Kalshi: :: Legalization and regulation of online sports wagering; If Online Sports Wagering Regulation Initiative passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Nebraska Initiative Measure 441: online sports betting statute. Source: :: Legalization and regulation of online sports wagering; If Online Sports Wagering Regulation Initiative passes in Nebraska, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -13971,8 +13971,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Bond Question 3: higher education and tribal school bonds. Kalshi: Bond Question 3; If Higher Education Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Bond Question 3: higher education and tribal school bonds. Source: Bond Question 3; If Higher Education Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14007,8 +14007,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Amendment 4: salaries for state legislators. Kalshi: Amendment 4; If Legislative Salaries Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Amendment 4: salaries for state legislators. Source: Amendment 4; If Legislative Salaries Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14043,8 +14043,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Bond Question 2: library acquisition bonds. Kalshi: Bond Question 2; If Library Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Bond Question 2: library acquisition bonds. Source: Bond Question 2; If Library Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14079,8 +14079,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Amendment 1: pocket veto and veto explanations. Kalshi: Amendment 1; If Pocket Veto Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Amendment 1: pocket veto and veto explanations. Source: Amendment 1; If Pocket Veto Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14115,8 +14115,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Amendment 3: nominating committees for university regents. Kalshi: Amendment 3; If Regents Selection Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Amendment 3: nominating committees for university regents. Source: Amendment 3; If Regents Selection Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14151,8 +14151,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Amendment 2: combining school and partisan elections. Kalshi: Amendment 2; If School Election Dates Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Amendment 2: combining school and partisan elections. Source: Amendment 2; If School Election Dates Amendment passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14187,8 +14187,8 @@
         "KXSTATEBALLOTMEASURE-NM"
       ],
       "matching": [
-        "Reviewed 2026 New Mexico Bond Question 1: senior citizen facility bonds. Kalshi: Bond Question 1; If Senior Citizen Facilities Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 New Mexico Bond Question 1: senior citizen facility bonds. Source: Bond Question 1; If Senior Citizen Facilities Bond passes in New Mexico, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14223,8 +14223,8 @@
         "KXSTATEBALLOTMEASURE-OH"
       ],
       "matching": [
-        "Reviewed 2026 Ohio Issue 3: voter photo ID amendment. Kalshi: Issue 3; If Issue 3 — In-Person Photo ID Amendment passes in Ohio, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Ohio Issue 3: voter photo ID amendment. Source: Issue 3; If Issue 3 — In-Person Photo ID Amendment passes in Ohio, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14259,8 +14259,8 @@
         "KXSTATEBALLOTMEASURE-OK"
       ],
       "matching": [
-        "Reviewed 2026 Oklahoma State Question 845: Judicial Nominating Commission changes. Kalshi: :: Change judicial nominating commission; If State Question 845 passes in Oklahoma, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Oklahoma State Question 845: Judicial Nominating Commission changes. Source: :: Change judicial nominating commission; If State Question 845 passes in Oklahoma, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14295,8 +14295,8 @@
         "KXSTATEBALLOTMEASURE-OK"
       ],
       "matching": [
-        "Reviewed 2026 Oklahoma State Question 847: property value caps and senior freeze. Kalshi: :: Lower caps; change senior tax freeze; If State Question 847 passes in Oklahoma, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Oklahoma State Question 847: property value caps and senior freeze. Source: :: Lower caps; change senior tax freeze; If State Question 847 passes in Oklahoma, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14416,8 +14416,8 @@
         "KXSTATEBALLOTMEASURE-SD"
       ],
       "matching": [
-        "Reviewed 2026 South Dakota Amendment I: Medicaid expansion federal-funding trigger. Kalshi: :: End expansion below 90% fed share; If Amendment I passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 South Dakota Amendment I: Medicaid expansion federal-funding trigger. Source: :: End expansion below 90% fed share; If Amendment I passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14452,8 +14452,8 @@
         "KXSTATEBALLOTMEASURE-SD"
       ],
       "matching": [
-        "Reviewed 2026 South Dakota Amendment J: citizenship requirement to vote. Kalshi: :: U.S.-citizens-only voting; If Amendment J passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 South Dakota Amendment J: citizenship requirement to vote. Source: :: U.S.-citizens-only voting; If Amendment J passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14488,8 +14488,8 @@
         "KXSTATEBALLOTMEASURE-SD"
       ],
       "matching": [
-        "Reviewed 2026 South Dakota Amendment K: unclaimed property trust fund. Kalshi: :: Unclaimed-property trust fund; If Amendment K passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 South Dakota Amendment K: unclaimed property trust fund. Source: :: Unclaimed-property trust fund; If Amendment K passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14524,8 +14524,8 @@
         "KXSTATEBALLOTMEASURE-SD"
       ],
       "matching": [
-        "Reviewed 2026 South Dakota Amendment L: 60% vote for constitutional amendments. Kalshi: :: 60% vote to amend state constitution; If Amendment L passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 South Dakota Amendment L: 60% vote for constitutional amendments. Source: :: 60% vote to amend state constitution; If Amendment L passes in South Dakota, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14560,8 +14560,8 @@
         "KXSTATEBALLOTMEASURE-TN"
       ],
       "matching": [
-        "Reviewed 2026 Tennessee Amendment 1: denying bail for certain offenses. Kalshi: :: Allow bail denial for serious crimes; If Amendment 1 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Tennessee Amendment 1: denying bail for certain offenses. Source: :: Allow bail denial for serious crimes; If Amendment 1 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14596,8 +14596,8 @@
         "KXSTATEBALLOTMEASURE-TN"
       ],
       "matching": [
-        "Reviewed 2026 Tennessee Amendment 2: ban on a state property tax. Kalshi: :: Ban state property tax; If Amendment 2 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Tennessee Amendment 2: ban on a state property tax. Source: :: Ban state property tax; If Amendment 2 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14632,8 +14632,8 @@
         "KXSTATEBALLOTMEASURE-TN"
       ],
       "matching": [
-        "Reviewed 2026 Tennessee Amendment 3: Marsy's Law crime victims' rights. Kalshi: :: Constitutional crime-victim rights; If Amendment 3 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Tennessee Amendment 3: Marsy's Law crime victims' rights. Source: :: Constitutional crime-victim rights; If Amendment 3 passes in Tennessee, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14668,8 +14668,8 @@
         "KXSTATEBALLOTMEASURE-UT"
       ],
       "matching": [
-        "Reviewed 2026 Utah Amendment B: 60% vote for tax-increasing initiatives. Kalshi: S.J.R. 2; If the Tax-Raising Initiative Supermajority Amendment passes in Utah, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Utah Amendment B: 60% vote for tax-increasing initiatives. Source: S.J.R. 2; If the Tax-Raising Initiative Supermajority Amendment passes in Utah, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14704,8 +14704,8 @@
         "KXSTATEBALLOTMEASURE-UT"
       ],
       "matching": [
-        "Reviewed 2026 Utah Amendment A: online publication of proposed amendments. Kalshi: H.J.R. 10; If the Constitutional Amendment Publication Amendment passes in Utah, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Utah Amendment A: online publication of proposed amendments. Source: H.J.R. 10; If the Constitutional Amendment Publication Amendment passes in Utah, then the market resolves to Yes.. The legislative act/resolution is an explicit alias in the audited manifest. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14740,8 +14740,8 @@
         "KXREPRODUCTIVEMEASURES-26"
       ],
       "matching": [
-        "Reviewed 2026 Virginia Question 1: right to reproductive freedom. Kalshi: Virginia HJR 1; If the Virginia Right to Reproductive Freedom Amendment, which would establish a fundamental right to abortion, contraception, and IVF in Virginia passes, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Virginia Question 1: right to reproductive freedom. Source: Virginia HJR 1; If the Virginia Right to Reproductive Freedom Amendment, which would establish a fundamental right to abortion, contraception, and IVF in Virginia passes, then the market resolves to Yes.. YES is approval, not implementation. Event explicitly says In 2026.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14776,8 +14776,8 @@
         "KXSTATEBALLOTMEASURE-VA"
       ],
       "matching": [
-        "Reviewed 2026 Virginia Question 2: removing same-sex marriage ban. Kalshi: Question 2:: Marriage equality protections; If Question 2 passes in Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Virginia Question 2: removing same-sex marriage ban. Source: Question 2:: Marriage equality protections; If Question 2 passes in Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14812,8 +14812,8 @@
         "KXSTATEBALLOTMEASURE-VA"
       ],
       "matching": [
-        "Reviewed 2026 Virginia Question 3: voting rights restoration after prison. Kalshi: :: Restore voting rights upon release; If Question 3 passes in Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Virginia Question 3: voting rights restoration after prison. Source: :: Restore voting rights upon release; If Question 3 passes in Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14848,8 +14848,8 @@
         "KXSTATEBALLOTMEASURE-VT"
       ],
       "matching": [
-        "Reviewed 2026 Vermont Proposal 3: right to collectively bargain. Kalshi: :: Right to collective bargaining; If Proposal 3 passes in Vermont, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Vermont Proposal 3: right to collectively bargain. Source: :: Right to collective bargaining; If Proposal 3 passes in Vermont, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14884,8 +14884,8 @@
         "KXSTATEBALLOTMEASURE-VT"
       ],
       "matching": [
-        "Reviewed 2026 Vermont Proposal 4: equal protection amendment. Kalshi: :: Expanded equal-protection rights; If Proposal 4 passes in Vermont, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Vermont Proposal 4: equal protection amendment. Source: :: Expanded equal-protection rights; If Proposal 4 passes in Vermont, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14920,8 +14920,8 @@
         "KXSTATEBALLOTMEASURE-WA"
       ],
       "matching": [
-        "Reviewed 2026 Washington Initiative IL26-001: restoring 2024 parents' rights law. Kalshi: :: Restore 2024 parental-rights law; If Initiative No. IL26-001 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Washington Initiative IL26-001: restoring 2024 parents' rights law. Source: :: Restore 2024 parental-rights law; If Initiative No. IL26-001 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14956,8 +14956,8 @@
         "KXSTATEBALLOTMEASURE-WA"
       ],
       "matching": [
-        "Reviewed 2026 Washington Initiative IL26-638: girls' sports eligibility by sex. Kalshi: :: Sex-based rules for girls' sports; If Initiative No. IL26-638 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Washington Initiative IL26-638: girls' sports eligibility by sex. Source: :: Sex-based rules for girls' sports; If Initiative No. IL26-638 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -14992,8 +14992,8 @@
         "KXSTATEBALLOTMEASURE-WA"
       ],
       "matching": [
-        "Reviewed 2026 Washington Initiative IP26-645: income tax repeal and prohibition. Kalshi: :: End and ban state/local income taxes; If Initiative No. IP26-645 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 Washington Initiative IP26-645: income tax repeal and prohibition. Source: :: End and ban state/local income taxes; If Initiative No. IP26-645 passes in Washington, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",
@@ -15023,7 +15023,7 @@
     "2026-measure-WI-question-1": {
       "status": "unmatched",
       "tickers": [],
-      "reason": "Kalshi orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone.",
+      "reason": "The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone.",
       "raceKey": "2026-measure-WI-question-1",
       "office": "ballot",
       "old": [
@@ -15040,7 +15040,7 @@
     "2026-measure-WI-question-2": {
       "status": "unmatched",
       "tickers": [],
-      "reason": "Kalshi orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone.",
+      "reason": "The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone.",
       "raceKey": "2026-measure-WI-question-2",
       "office": "ballot",
       "old": [
@@ -15057,7 +15057,7 @@
     "2026-measure-WI-question-3": {
       "status": "unmatched",
       "tickers": [],
-      "reason": "Kalshi orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone.",
+      "reason": "The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone.",
       "raceKey": "2026-measure-WI-question-3",
       "office": "ballot",
       "old": [
@@ -15079,8 +15079,8 @@
         "KXSTATEBALLOTMEASURE-WV"
       ],
       "matching": [
-        "Reviewed 2026 West Virginia Amendment 1: citizenship requirement to vote. Kalshi: Amendment 1; If Amendment 1 — Citizenship Requirement to Vote in West Virginia Elections Amendment passes in West Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
-        "Reviewed direction: Kalshi YES = approval; Manifold YES = voter approval"
+        "Reviewed 2026 West Virginia Amendment 1: citizenship requirement to vote. Source: Amendment 1; If Amendment 1 — Citizenship Requirement to Vote in West Virginia Elections Amendment passes in West Virginia, then the market resolves to Yes.. YES is approval, not implementation. Market opened in 2026; state, designation/act alias and the audited November 2026 subject agree; expiration year is not used to infer the election.",
+        "Reviewed direction: source YES = approval; Manifold YES = voter approval"
       ],
       "status": "usable",
       "reason": "Normalized complementary YES/NO; approval direction; clamped to 1-99%",

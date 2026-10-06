@@ -4,17 +4,17 @@ Run before the remaining launch, from `backend/scripts`:
 
 ```powershell
 # Fetch current public quotes and preview everything; writes no files.
-npx ts-node --transpile-only elections-2026/kalshi-seeds.ts --check
+npx ts-node --transpile-only elections-2026/market-seeds.ts --check
 
 # Fetch again and update the two local manifests and audit artifacts.
-npx ts-node --transpile-only elections-2026/kalshi-seeds.ts
+npx ts-node --transpile-only elections-2026/market-seeds.ts
 ```
 
-The script makes serialized, unauthenticated GET requests to Kalshi's public
+The script makes serialized, unauthenticated GET requests to the public
 market-data API, at most one request per 300 ms. It follows cursors and backs off
 on 429/5xx errors. It has no login, API-key, trading or Manifold API code.
 
-Review `kalshi-reseed-report.md` before setting either manifest's
+Review `market-reseed-report.md` before setting either manifest's
 `review.approved` back to `true`. Every refresh bumps the versions/timestamps and
 sets approval to **false**, including when the prices have not moved. Existing
 `reviewedBy`/`reviewedAt` values are historical; approval must be renewed.
@@ -26,11 +26,11 @@ preview is printed to the terminal; redirect it to a file if desired.
 
 Generated artifacts:
 
-- `kalshi-snapshot.json`: compact identifying text, quotes in cents, fractional
+- `market-price-snapshot.json`: compact identifying text, quotes in cents, fractional
   activity fields, quote fetch times, and discovered series/events.
-- `kalshi-mapping.json`: every race key, selected tickers, match evidence,
+- `market-seed-mapping.json`: every race key, selected tickers, match evidence,
   quote/normalization decisions, old/new seeds and any reason for retaining seeds.
-- `kalshi-reseed-report.md`: separate House/ballot coverage, 25 largest changes,
+- `market-reseed-report.md`: separate House/ballot coverage, 25 largest changes,
   favourite distribution, all unchanged House seeds, threshold crossings and
   their optional budget effect, and thin/unmatched entries.
 - Both manifests: only permitted seed fields and top-level version/review metadata
@@ -49,14 +49,14 @@ manifest is interpreted as district `1`, matching `AL` in the API's district
 labels. Mutually exclusive outcomes are mapped to the audited answer metadata;
 all other parties/candidates go to Other. Party-level contracts cannot distinguish
 the two Democrats in CA-29. Both major-party outcomes must be quoted when both
-are answers. Kalshi's sworn-in-member criterion differs from our certified-winner
+are answers. The reference market's sworn-in-member criterion differs from our certified-winner
 criterion, so these are price references, not settlement-equivalence claims.
 
-Ballot identity is reviewed explicitly in `kalshi-reviewed-matches.json`: state,
+Ballot identity is reviewed explicitly in `market-seed-review.json`: state,
 designation (including audited legislative aliases), subject, cycle, and whether
-Kalshi YES means approval or failure. The current API sometimes uses outdated
+source YES means approval or failure. The current API sometimes uses outdated
 numbers; conflicting number/subject pairs are rejected, not remapped by subject
-alone. Hashes pin the reviewed manifest identity and Kalshi identifying text;
+alone. Hashes pin the reviewed manifest identity and source identifying text;
 changes require another review. A newly discovered ballot market is left
 unmatched until its identity/direction is added to that reviewed file.
 
@@ -75,7 +75,7 @@ only, invert failure-oriented contracts, then clamp to 1–99%.
 Descriptions and `seed.note` stay frozen as requested, even if they describe the
 original PVI/poll/50% starting prices. The new `seed.basis` and `seed.source` record
 the actual chosen seed. Unmatched/thin entries retain their current values with
-`source.kind=existing`; previously fetched Kalshi seeds are not refreshed when
+`source.kind=existing`; previously fetched market-price seeds are not refreshed when
 their market becomes unusable. Held entries stay held.
 
 This is a pre-launch operation. Beyond the expressly preserved Rhode Island
@@ -91,7 +91,7 @@ npx ts-node --transpile-only create-election-markets.ts --manifest elections-202
 npx ts-node --transpile-only create-election-markets.ts --manifest elections-2026/ballot-measures/manifest.json --out elections-2026/ballot-measures/out --quiet
 ```
 
-An offline audit can use `--snapshot elections-2026/kalshi-snapshot.json` with
+An offline audit can use `--snapshot elections-2026/market-price-snapshot.json` with
 either mode. The output labels this as an offline snapshot, not a fresh fetch.
 Do not use an old snapshot as a substitute for the final pre-launch refresh.
 
@@ -100,6 +100,6 @@ From the repository root, run the script's isolated regression tests:
 ```powershell
 $env:TS_NODE_PROJECT = 'backend/scripts/tsconfig.json'
 $env:TS_NODE_TRANSPILE_ONLY = '1'
-node -r ts-node/register --test backend/scripts/elections-2026/kalshi-seeds.test.ts
+node -r ts-node/register --test backend/scripts/elections-2026/market-seeds.test.ts
 yarn --cwd=backend/shared test src/elections --runInBand
 ```

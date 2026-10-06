@@ -1,4 +1,4 @@
-# Kalshi election seed refresh
+# Election starting-price review
 
 Fetched: 2026-10-06T05:05:26.005Z. Public unauthenticated GETs only. Prices below are cents.
 
@@ -94,14 +94,14 @@ Retiering only these crossings would change the race budget by 36000 mana (34200
 | 2026-house-CA-29-regular-general | unmatched | Missing explicit quote for a required major-party/candidate outcome |  |
 | 2026-measure-CA-prop-42 | thin | spread 37.00c exceeds 10c | KXCABALLOTMEASURES-26NOV03-PR42 |
 | 2026-measure-CO-prop-136 | thin | spread 16.00c exceeds 10c | KXSTATEBALLOTMEASURE-CO-P136 |
-| 2026-measure-GA-amendment-3 | unmatched | Kalshi labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree. |  |
-| 2026-measure-GA-amendment-2 | unmatched | Kalshi labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree. |  |
-| 2026-measure-MD-question-3 | unmatched | Kalshi subtitle says State district rules exclude Congress; audited subject is congressional redistricting. Insufficient matching description to establish exact subject/direction. |  |
+| 2026-measure-GA-amendment-3 | unmatched | The source labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree. |  |
+| 2026-measure-GA-amendment-2 | unmatched | The source labels A2 as the 9-1-1 fund and A3 as nonpartisan probate elections; the audited ballot is the reverse. Reject both: number and subject do not agree. |  |
+| 2026-measure-MD-question-3 | unmatched | The source subtitle says State district rules exclude Congress; audited subject is congressional redistricting. Insufficient matching description to establish exact subject/direction. |  |
 | 2026-measure-MI-proposal-2 | unmatched | No matching market found in the public series/event discovery. |  |
 | 2026-measure-MO-amendment-6 | unmatched | No matching market found in the public series/event discovery. |  |
-| 2026-measure-WI-question-1 | unmatched | Kalshi orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone. |  |
-| 2026-measure-WI-question-2 | unmatched | Kalshi orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone. |  |
-| 2026-measure-WI-question-3 | unmatched | Kalshi orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone. |  |
+| 2026-measure-WI-question-1 | unmatched | The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone. |  |
+| 2026-measure-WI-question-2 | unmatched | The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone. |  |
+| 2026-measure-WI-question-3 | unmatched | The source orders worship / discrimination / partial veto as Q1/Q2/Q3; the audited ballot orders partial veto / worship / discrimination. Reject all three; do not remap by subject alone. |  |
 
 ## One-sided quote exceptions
 
@@ -114,10 +114,10 @@ Retiering only these crossings would change the race budget by 36000 mana (34200
 - Live API prices use *_dollars; volumes/open interest use *_fp. Both modern and legacy fields are supported. Price fields in snapshots and sources are normalized to cents.
 - Discovery reads the full series catalogue (House races are in Elections, not just Politics), then paginates events and markets. Tickers are discovered, not assumed from memory. Requests are serialized at least 300ms apart, with 429/5xx backoff.
 - Two-sided spreads must be at most 10c. Missing quotes are thin except the flagged 0–2c long-shot exception and its complementary 98–100c form. Last trades are recorded, never substituted for quotes.
-- House prices are normalized across mutually exclusive outcomes. Other has a 1% floor even when Kalshi does not list an Other outcome. Three-answer seeds cannot exceed 98%; two-answer seeds can reach 99%.
+- House prices are normalized across mutually exclusive outcomes. Other has a 1% floor even when the source does not list an Other outcome. Three-answer seeds cannot exceed 98%; two-answer seeds can reach 99%.
 - There are 219 three-party House entries, four Democratic/Other entries and one same-party candidate entry. A party event cannot price the two candidates separately.
-- Kalshi House contracts refer to the member sworn in for the 2027 term, while these Manifold markets resolve on the certified election winner. Prices are a starting reference, not proof of identical settlement.
-- Ballot identities and approval/failure direction were reviewed by state, designation and subject in kalshi-reviewed-matches.json. Exact identity hashes must still match on every refresh; changed or new ambiguous identities stay unmatched. No fuzzy matching. Dates in 2027 expiration fields are not treated as election dates.
+- The reference House contracts refer to the member sworn in for the 2027 term, while these Manifold markets resolve on the certified election winner. Prices are a starting reference, not proof of identical settlement.
+- Ballot identities and approval/failure direction were reviewed by state, designation and subject in market-seed-review.json. Exact identity hashes must still match on every refresh; changed or new ambiguous identities stay unmatched. No fuzzy matching. Dates in 2027 expiration fields are not treated as election dates.
 - Ballot YES/NO are complementary outcomes of one measure; different measures in the same event are never normalized together.
 - Held entries retain seeds and remain held. The already-created RI governor entry is untouched. Unusable/unmatched seeds remain unchanged and are marked source.kind=existing.
 - Descriptions and seed.note were frozen as requested. Some still describe original partisan-lean/poll/50% seeds; the updated seed.basis and seed.source are authoritative for this refresh. Resolve that wording separately before publication if desired.
@@ -125,4 +125,4 @@ Retiering only these crossings would change the race budget by 36000 mana (34200
 
 ## Refresh
 
-From backend/scripts: `npx ts-node --transpile-only elections-2026/kalshi-seeds.ts --check` previews without writing; omit `--check` to refresh snapshots, mapping, manifests and this report. Read the report before re-approving either manifest.
+From backend/scripts: `npx ts-node --transpile-only elections-2026/market-seeds.ts --check` previews without writing; omit `--check` to refresh snapshots, mapping, manifests and this report. Read the report before re-approving either manifest.

@@ -1,5 +1,5 @@
 // Public GET market data only. Never imports the creation CLI or sends credentials.
-// npx ts-node --transpile-only elections-2026/kalshi-seeds.ts [--check]
+// npx ts-node --transpile-only elections-2026/market-seeds.ts [--check]
 import * as fs from 'fs'
 import * as path from 'path'
 import { createHash } from 'crypto'
@@ -84,7 +84,7 @@ const priceField = (raw: Json, name: string) => {
 }
 export function compactMarket(raw: Json, fetchedAt: string): Market {
   if (typeof raw.ticker !== 'string' || typeof raw.event_ticker !== 'string')
-    throw new Error('Malformed Kalshi market identity')
+    throw new Error('Malformed reference market identity')
   return {
     ticker: raw.ticker,
     eventTicker: raw.event_ticker,
@@ -177,7 +177,7 @@ export function normalizeSeeds(weights: number[]): number[] {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-export class PublicKalshi {
+export class PublicMarketData {
   private lastRequest = 0
   constructor(
     private fetcher: typeof fetch = fetch,
@@ -203,7 +203,8 @@ export class PublicKalshi {
         signal: AbortSignal.timeout(60000),
       })
       if (response.status === 429 || response.status >= 500) {
-        if (attempt === 5) throw new Error(`Kalshi ${response.status}: ${url}`)
+        if (attempt === 5)
+          throw new Error(`Reference market ${response.status}: ${url}`)
         const retry = response.headers.get('retry-after')
         const seconds = num(retry)
         const retryMs =
@@ -217,10 +218,11 @@ export class PublicKalshi {
         )
         continue
       }
-      if (!response.ok) throw new Error(`Kalshi ${response.status}: ${url}`)
+      if (!response.ok)
+        throw new Error(`Reference market ${response.status}: ${url}`)
       return response.json()
     }
-    throw new Error('Kalshi retry limit exceeded')
+    throw new Error('Reference market retry limit exceeded')
   }
   async pages(
     endpoint: '/series' | '/events' | '/markets',
@@ -236,7 +238,7 @@ export class PublicKalshi {
         ...(cursor ? { cursor } : {}),
       })
       if (!Array.isArray(body[key]))
-        throw new Error(`Kalshi response missing ${key}`)
+        throw new Error(`Reference market response missing ${key}`)
       result.push(...body[key])
       cursor = body.cursor ?? ''
       if (cursor && cursors.has(cursor))
@@ -255,7 +257,9 @@ export function relevantSeries(s: Json): boolean {
     )
   )
 }
-export async function discover(client = new PublicKalshi()): Promise<Snapshot> {
+export async function discover(
+  client = new PublicMarketData()
+): Promise<Snapshot> {
   const allSeries = await client.pages('/series', 'series')
   const series = allSeries
     .filter(relevantSeries)
@@ -313,7 +317,7 @@ export async function discover(client = new PublicKalshi()): Promise<Snapshot> {
     }
     if (index % 25 === 0)
       process.stderr.write(
-        `Kalshi discovery ${index + 1}/${series.length} series\n`
+        `Market-price discovery ${index + 1}/${series.length} series\n`
       )
   }
   snapshot.fetchedAt = new Date().toISOString()
@@ -535,7 +539,7 @@ export function matchBallot(
       eventTickers: [event.ticker],
       matching: [
         review.evidence,
-        `Reviewed direction: Kalshi YES = ${review.direction}; Manifold YES = voter approval`,
+        `Reviewed direction: source YES = ${review.direction}; Manifold YES = voter approval`,
       ],
     }
     const quote = usableQuote(market)
@@ -543,7 +547,7 @@ export function matchBallot(
       candidates.push({ ...base, status: 'thin', reason: quote.reason })
       continue
     }
-    // A Kalshi binary's NO is the complement of YES, not another portfolio
+    // A reference binary's NO is the complement of YES, not another portfolio
     // measure. Normalizing that pair preserves the midpoint without mixing measures.
     const approval =
       review.direction === 'approval' ? quote.price : 100 - quote.price
@@ -692,16 +696,17 @@ export function reseed(
       })
       edits.push({
         keys: ['entries', i, 'seed', 'basis'],
-        value: `Kalshi public order-book seed fetched ${snapshot.fetchedAt}; ${
+        value: `Public market order-book seed fetched ${snapshot.fetchedAt}; ${
           match.reason
         }. ${match.tickers.join(
           ', '
-        )}. Seed, not a guaranteed forecast; Kalshi settlement criteria may differ. See kalshi-mapping.json for identity and direction evidence.`,
+        )}. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.`,
       })
       edits.push({
         keys: ['entries', i, 'seed', 'source'],
         value: {
-          kind: 'kalshi',
+          kind: 'market-price',
+          apiBase: API_BASE,
           tickers: match.tickers,
           fetchedAt: snapshot.fetchedAt,
           quotes: match.prices!.map((p) => {
@@ -729,7 +734,7 @@ export function reseed(
   const version = manifest.manifestVersion.startsWith(date + '.')
     ? Number(manifest.manifestVersion.slice(date.length + 1)) + 1
     : 1
-  const note = `Kalshi seed refresh ${now}: usable prices replaced starting seeds where an exact match passed the quote checks. Tod must review kalshi-reseed-report.md and approve this manifest again before creation.`
+  const note = `Market-price seed refresh ${now}: usable prices replaced starting seeds where an exact match passed the quote checks. Tod must review market-reseed-report.md and approve this manifest again before creation.`
   edits.push(
     { keys: ['manifestVersion'], value: `${date}.${Math.max(2, version)}` },
     { keys: ['generatedAt'], value: now },
@@ -738,7 +743,7 @@ export function reseed(
       keys: ['review', 'notes'],
       value:
         (manifest.review.notes ?? '').replace(
-          /\nKalshi seed refresh[^\n]*/g,
+          /\nMarket-price seed refresh[^\n]*/g,
           ''
         ) +
         '\n' +
@@ -784,7 +789,7 @@ const tableCell = (value: string) =>
   value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
 export function makeReport(rows: Row[], snapshot: Snapshot): string {
   const lines = [
-    '# Kalshi election seed refresh',
+    '# Election starting-price review',
     '',
     `Fetched: ${snapshot.fetchedAt}. Public unauthenticated GETs only. Prices below are cents.`,
     '',
@@ -928,10 +933,10 @@ export function makeReport(rows: Row[], snapshot: Snapshot): string {
     '- Live API prices use *_dollars; volumes/open interest use *_fp. Both modern and legacy fields are supported. Price fields in snapshots and sources are normalized to cents.',
     '- Discovery reads the full series catalogue (House races are in Elections, not just Politics), then paginates events and markets. Tickers are discovered, not assumed from memory. Requests are serialized at least 300ms apart, with 429/5xx backoff.',
     '- Two-sided spreads must be at most 10c. Missing quotes are thin except the flagged 0–2c long-shot exception and its complementary 98–100c form. Last trades are recorded, never substituted for quotes.',
-    '- House prices are normalized across mutually exclusive outcomes. Other has a 1% floor even when Kalshi does not list an Other outcome. Three-answer seeds cannot exceed 98%; two-answer seeds can reach 99%.',
+    '- House prices are normalized across mutually exclusive outcomes. Other has a 1% floor even when the source does not list an Other outcome. Three-answer seeds cannot exceed 98%; two-answer seeds can reach 99%.',
     '- There are 219 three-party House entries, four Democratic/Other entries and one same-party candidate entry. A party event cannot price the two candidates separately.',
-    '- Kalshi House contracts refer to the member sworn in for the 2027 term, while these Manifold markets resolve on the certified election winner. Prices are a starting reference, not proof of identical settlement.',
-    '- Ballot identities and approval/failure direction were reviewed by state, designation and subject in kalshi-reviewed-matches.json. Exact identity hashes must still match on every refresh; changed or new ambiguous identities stay unmatched. No fuzzy matching. Dates in 2027 expiration fields are not treated as election dates.',
+    '- The reference House contracts refer to the member sworn in for the 2027 term, while these Manifold markets resolve on the certified election winner. Prices are a starting reference, not proof of identical settlement.',
+    '- Ballot identities and approval/failure direction were reviewed by state, designation and subject in market-seed-review.json. Exact identity hashes must still match on every refresh; changed or new ambiguous identities stay unmatched. No fuzzy matching. Dates in 2027 expiration fields are not treated as election dates.',
     '- Ballot YES/NO are complementary outcomes of one measure; different measures in the same event are never normalized together.',
     '- Held entries retain seeds and remain held. The already-created RI governor entry is untouched. Unusable/unmatched seeds remain unchanged and are marked source.kind=existing.',
     '- Descriptions and seed.note were frozen as requested. Some still describe original partisan-lean/poll/50% seeds; the updated seed.basis and seed.source are authoritative for this refresh. Resolve that wording separately before publication if desired.',
@@ -939,7 +944,7 @@ export function makeReport(rows: Row[], snapshot: Snapshot): string {
     '',
     '## Refresh',
     '',
-    'From backend/scripts: `npx ts-node --transpile-only elections-2026/kalshi-seeds.ts --check` previews without writing; omit `--check` to refresh snapshots, mapping, manifests and this report. Read the report before re-approving either manifest.',
+    'From backend/scripts: `npx ts-node --transpile-only elections-2026/market-seeds.ts --check` previews without writing; omit `--check` to refresh snapshots, mapping, manifests and this report. Read the report before re-approving either manifest.',
     ''
   )
   return lines.join('\n')
@@ -966,12 +971,9 @@ export async function main(args = process.argv.slice(2)) {
     !Array.isArray(snapshot.events) ||
     !snapshot.markets
   )
-    throw new Error('Invalid public Kalshi snapshot')
+    throw new Error('Invalid public market-price snapshot')
   const reviewData = JSON.parse(
-    fs.readFileSync(
-      path.join(__dirname, 'kalshi-reviewed-matches.json'),
-      'utf8'
-    )
+    fs.readFileSync(path.join(__dirname, 'market-seed-review.json'), 'utf8')
   )
   const reviews: Review[] = reviewData.matches
   const now = new Date().toISOString()
@@ -1004,10 +1006,10 @@ export async function main(args = process.argv.slice(2)) {
         path.join(__dirname, name),
         (JSON.stringify(data, null, 2) + '\n').replace(/\n/g, '\r\n')
       )
-    write('kalshi-snapshot.json', snapshot)
-    write('kalshi-mapping.json', mapping)
+    write('market-price-snapshot.json', snapshot)
+    write('market-seed-mapping.json', mapping)
     fs.writeFileSync(
-      path.join(__dirname, 'kalshi-reseed-report.md'),
+      path.join(__dirname, 'market-reseed-report.md'),
       report.replace(/\n/g, '\r\n')
     )
     manifests.forEach((m) => fs.writeFileSync(m.file, m.output))

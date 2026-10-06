@@ -5,7 +5,7 @@ import * as path from 'path'
 import * as os from 'os'
 import {
   API_BASE,
-  PublicKalshi,
+  PublicMarketData,
   compactMarket,
   relevantSeries,
   usableQuote,
@@ -23,7 +23,7 @@ import {
   Event,
   Snapshot,
   Review,
-} from './kalshi-seeds'
+} from './market-seeds'
 
 const time = '2026-10-06T06:00:00.000Z'
 test('discovery includes observed district series even when their display titles omit House', () => {
@@ -337,7 +337,7 @@ test('ballot approval and failure direction use complementary price, not portfol
   assert.deepEqual(matchBallot(e, s, [review(e, s)]).proposed, [22])
   assert.deepEqual(matchBallot(e, s, [review(e, s, 'failure')]).proposed, [78])
 })
-test('changed ballot subject/number/YES meaning or Kalshi rules invalidate reviewed match', () => {
+test('changed ballot subject/number/YES meaning or source rules invalidate reviewed match', () => {
   const e = ballot()
   const s = snapshot()
   const r = review(e, s)
@@ -384,7 +384,7 @@ test('manifest rewrite changes only permitted fields, retains CRLF and untouched
   assert.equal(m.review.approved, false)
   assert.deepEqual(m.entries[0], ri)
   assert.deepEqual(m.entries[1].payload.answerProbs, [21.8, 77.2, 1])
-  assert.equal(m.entries[1].seed.source.kind, 'kalshi')
+  assert.equal(m.entries[1].seed.source.kind, 'market-price')
   assert.equal(
     m.entries[1].payload.descriptionMarkdown,
     'Untouched description'
@@ -429,7 +429,7 @@ test('public GET pagination throttles, backs off on 429, sends no credentials, a
     Response.json({ events: [{ id: 1 }], cursor: 'next' }),
     Response.json({ events: [{ id: 2 }], cursor: '' }),
   ]
-  const client = new PublicKalshi(
+  const client = new PublicMarketData(
     (async (url: URL, init: RequestInit) => {
       calls.push({ url, init, time: clock })
       return responses.shift()!
@@ -459,12 +459,12 @@ test('public GET pagination throttles, backs off on 429, sends no credentials, a
   assert.ok(calls[2].time - calls[1].time >= 300)
 })
 test('failed API responses and repeated cursors throw rather than imply missing markets', async () => {
-  const fail = new PublicKalshi(
+  const fail = new PublicMarketData(
     (async () => new Response('', { status: 400 })) as typeof fetch,
     async () => {}
   )
   await assert.rejects(fail.pages('/series', 'series'), /400/)
-  const repeat = new PublicKalshi(
+  const repeat = new PublicMarketData(
     (async () =>
       Response.json({ markets: [], cursor: 'same' })) as typeof fetch,
     async () => {}
@@ -475,7 +475,7 @@ test('failed API responses and repeated cursors throw rather than imply missing 
 test('--check performs zero filesystem writes or network requests with a saved snapshot', async () => {
   const file = path.join(
     os.tmpdir(),
-    `kalshi-check-${process.pid}-${Date.now()}.json`
+    `market-seeds-check-${process.pid}-${Date.now()}.json`
   )
   fs.writeFileSync(
     file,
