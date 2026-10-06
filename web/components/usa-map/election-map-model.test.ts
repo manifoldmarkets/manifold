@@ -230,7 +230,7 @@ test('resolved House outcomes override pools; cancelled answers stay unpriced', 
   assert.equal(races.find((r) => r.id === 'TX-15')?.odds, undefined)
 })
 
-test('a Montana NO quote is not a Republican quote or a Republican seat', () => {
+test('a Montana NO quote counts as the Republican nominee on the ballot', () => {
   const races = buildRaces(
     'house',
     {},
@@ -238,21 +238,35 @@ test('a Montana NO quote is not a Republican quote or a Republican seat', () => 
   )
   const race = races.find((r) => r.id === 'MT-1')!
   assert.equal(race.odds?.dem, 0.32)
-  assert.equal(race.odds?.rep, 0)
-  assert.equal(race.odds?.notDem, 1 - 0.32)
-  assert.equal(outcomeLabel(leadingParty(race.odds)!), 'Not D')
-  assert.equal(raceTier(race), 'not-d')
-  assert.equal(raceColor(race), COMPLEMENT_COLOR)
+  assert.ok(Math.abs((race.odds?.rep ?? 0) - 0.68) < 1e-9)
+  assert.equal(race.odds?.notDem, undefined)
+  assert.equal(outcomeLabel(leadingParty(race.odds)!), 'R')
+  assert.equal(raceTier(race), 'lean-r')
+  assert.notEqual(raceColor(race), COMPLEMENT_COLOR)
   const summary = seatSummary(races, 'house')
-  // CA-40 is the only Republican seat here: R v R on the certified ballot.
-  assert.equal(summary.leaders.rep, 1)
-  assert.equal(summary.leaders.notDem, 1)
-  assert.equal(summary.expected.rep, 1)
-  assert.equal(summary.expected.notDem, 1 - 0.32)
+  // CA-40 (R v R on the certified ballot) plus MT-1.
+  assert.equal(summary.leaders.rep, 2)
+  assert.equal(summary.leaders.notDem, 0)
+  assert.ok(Math.abs(summary.expected.rep - 1.68) < 1e-9)
   assert.equal(
     Object.values(summary.counts).reduce((a, b) => a + b, 0),
     435
   )
+})
+
+test('a NO quote stays separate where the other major party has no nominee', () => {
+  // CA-6 is Kevin Kiley (I) against Richard Pan (D): no Republican on the ballot.
+  const races = buildRaces(
+    'house',
+    {},
+    multi([{ text: 'California 6', probability: 0.4 }], false)
+  )
+  const race = races.find((r) => r.id === 'CA-6')!
+  assert.equal(race.odds?.dem, 0.4)
+  assert.equal(race.odds?.rep, 0)
+  assert.ok(Math.abs((race.odds?.notDem ?? 0) - 0.6) < 1e-9)
+  assert.equal(raceTier(race), 'not-d')
+  assert.equal(raceColor(race), COMPLEMENT_COLOR)
 })
 
 test('Republican NO includes every other winner, while control odds retain their two sides', () => {
@@ -359,7 +373,9 @@ test('Alaska uses its reviewed candidate market over the Democratic district por
     }).find((r) => r.id === 'AK-0')!
     assert.equal(fallback.contract, portfolio)
     assert.equal(fallback.answerId, '0')
-    assert.equal(fallback.odds?.notDem, 0.98)
+    // The portfolio's NO counts as the Republican nominee (Begich is on the ballot).
+    assert.ok(Math.abs((fallback.odds?.rep ?? 0) - 0.98) < 1e-9)
+    assert.equal(fallback.odds?.notDem, undefined)
   }
 })
 

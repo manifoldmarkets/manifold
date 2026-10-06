@@ -4,12 +4,18 @@ import { Contract } from 'common/contract'
 import { electionOdds } from './election-map-model'
 import {
   auditedOdds,
+  complementParty,
+  foldComplement,
   raceOdds,
   seatBasis,
   sourceAudit,
   binaryElectionLabels,
 } from './audited-sources'
-import { getPartyProbs, probToColor } from './state-election-map'
+import {
+  getPartyProbs,
+  partyProbsToColor,
+  probToColor,
+} from './state-election-map'
 import {
   buildRaces,
   seatSummary,
@@ -50,25 +56,47 @@ test('a YES = Democrat party binary is not read as a Republican win', () => {
   const slug = 'will-the-democratic-party-candidate-NQOPZAnOA8'
   const odds = auditedOdds(binary('RcL0Q9O0EU', 0.64), sourceAudit(slug)!)!
   assert.ok(Math.abs(odds.dem - 0.64) < 1e-9)
-  assert.equal(odds.rep, 0)
-  assert.ok(Math.abs((odds.notDem ?? 0) - 0.36) < 1e-9)
+  // Maine's Senate ballot has a Republican nominee, so NO counts as R.
+  assert.ok(Math.abs(odds.rep - 0.36) < 1e-9)
+  assert.equal(odds.notDem, undefined)
   // The unaudited reading would have booked 64% as Republican.
   assert.ok(
     Math.abs(electionOdds(binary('RcL0Q9O0EU', 0.64))!.rep - 0.64) < 1e-9
   )
 })
 
-test('a YES = Republican party binary keeps NO as "not R", never D', () => {
+test('a YES = Republican party binary counts NO as the Democratic nominee', () => {
   const odds = auditedOdds(
     binary('uODgxBgIoHZWqFqHGPbe', 0.79),
     sourceAudit('will-a-republican-win-the-florida-g')!
   )!
   assert.ok(Math.abs(odds.rep - 0.79) < 1e-9)
-  assert.equal(odds.dem, 0)
+  assert.ok(Math.abs(odds.dem - 0.21) < 1e-9)
+  assert.equal(odds.notRep, undefined)
+})
+
+test('a complement stays separate where the other major party has no nominee', () => {
+  // Nebraska's Senate race has no Democrat: NO on "will the Republican win?" is
+  // the independent, not a Democratic win.
+  assert.equal(complementParty('senate', 'NE', 'R'), undefined)
+  const ne = foldComplement('senate', 'NE', {
+    dem: 0,
+    rep: 0.7,
+    other: 0,
+    notRep: 0.3,
+  })
+  assert.equal(ne?.dem, 0)
+  assert.equal(ne?.notRep, 0.3)
+  // California's 6th is a Democrat against an independent: no Republican.
+  assert.equal(complementParty('house', 'CA-6', 'D'), undefined)
+  assert.equal(complementParty('house', 'MT-1', 'D'), 'R')
+  // A race without a recorded ballot assumes the other major party.
+  assert.equal(complementParty('house', 'XX-1', 'D'), 'R')
 })
 
 test('a candidate binary never feeds party totals and does not fall back to labels', () => {
   const r = raceOdds(
+    'house',
     'CO-4',
     binary('5EIC9A05cU', 0.6),
     'will-lauren-boebert-be-reelected-to',
@@ -119,6 +147,7 @@ test('same-party ballots count once for that party by ballot, untagged names inc
   ])
   assert.equal(electionOdds(kim)!.other, 1) // label reading: "Other leads 100%"
   const r = raceOdds(
+    'house',
     'CA-40',
     kim,
     'who-will-win-the-us-house-race-in-c',
@@ -138,15 +167,18 @@ test('same-party ballots count once for that party by ballot, untagged names inc
   ])
     assert.equal((seatBasis(id) as { party: string }).party, 'D')
   // The seat still counts when its candidate market is missing or cancelled.
-  assert.deepEqual(raceOdds('CA-29', undefined, undefined, electionOdds).odds, {
-    dem: 1,
-    rep: 0,
-    other: 0,
-  })
+  assert.deepEqual(
+    raceOdds('house', 'CA-29', undefined, undefined, electionOdds).odds,
+    {
+      dem: 1,
+      rep: 0,
+      other: 0,
+    }
+  )
 })
 
 test('a seat decided before Election Day counts by that fact', () => {
-  const r = raceOdds('FL-10', undefined, undefined, electionOdds)
+  const r = raceOdds('house', 'FL-10', undefined, undefined, electionOdds)
   assert.equal(r.basis.kind, 'decided')
   assert.deepEqual(r.odds, { dem: 1, rep: 0, other: 0 })
 })
@@ -157,38 +189,58 @@ test('cancelled or mismatched audited sources go unpriced instead of falling bac
     ...binary('uODgxBgIoHZWqFqHGPbe', 0.8),
     resolution: 'CANCEL',
   } as Contract
-  assert.equal(raceOdds('FL', cancelled, slug, electionOdds).odds, undefined)
+  assert.equal(
+    raceOdds('governor', 'FL', cancelled, slug, electionOdds).odds,
+    undefined
+  )
   assert.equal(
     auditedOdds(binary('someOtherId', 0.8), sourceAudit(slug)!),
     undefined
   )
 })
 
-test('unaudited sources keep the existing reading', () => {
+test('unaudited sources keep the existing reading, with the complement folded', () => {
   const c = binary('unaudited', 0.7)
-  const r = raceOdds('XX', c, 'not-in-the-audit', electionOdds)
+  const r = raceOdds('senate', 'XX', c, 'not-in-the-audit', electionOdds)
   assert.equal(r.audited, false)
-  assert.deepEqual(r.odds, electionOdds(c))
+  // electionOdds reads a Republican binary; its NO becomes the Democratic share.
+  assert.ok(Math.abs((r.odds?.rep ?? 0) - 0.7) < 1e-9)
+  assert.ok(Math.abs((r.odds?.dem ?? 0) - 0.3) < 1e-9)
+  assert.equal(r.odds?.notRep, undefined)
 })
 
-test('binary trade labels follow the actual proposition and retain the complement', () => {
-  for (const [slug, id, label] of [
+test('binary trade labels follow the actual proposition and name the complement party', () => {
+  for (const [slug, id, label, noLabel] of [
     [
       'will-the-democratic-party-candidate-NQOPZAnOA8',
       'RcL0Q9O0EU',
       'Democratic',
+      'Republican',
     ],
-    ['democrats-win-2026-minnesota-gubern', 'LNPL28tA80', 'Democratic'],
-    ['will-jamie-joyce-win-the-2026-12th', 'PsPO6z5zZt', 'Jamie Joyce'],
+    [
+      'democrats-win-2026-minnesota-gubern',
+      'LNPL28tA80',
+      'Democratic',
+      'Republican',
+    ],
+    // Candidate binaries: NO is anyone but that candidate.
+    [
+      'will-jamie-joyce-win-the-2026-12th',
+      'PsPO6z5zZt',
+      'Jamie Joyce',
+      'Any other winner',
+    ],
     [
       'will-dan-sullivan-win-reelection-to',
       'ULun8EOAAn',
       'Dan S. Sullivan (incumbent)',
+      'Any other winner',
     ],
     [
       'will-a-republican-win-the-florida-g',
       'uODgxBgIoHZWqFqHGPbe',
       'Republican',
+      'Democratic',
     ],
   ]) {
     const labels = binaryElectionLabels({
@@ -196,7 +248,7 @@ test('binary trade labels follow the actual proposition and retain the complemen
       slug,
     } as Contract)
     assert.equal(labels.YES.pseudonymName, label)
-    assert.equal(labels.NO.pseudonymName, 'Any other winner')
+    assert.equal(labels.NO.pseudonymName, noLabel)
   }
   const mismatched = binaryElectionLabels({
     ...binary('wrong-id', 0.7),
@@ -205,19 +257,19 @@ test('binary trade labels follow the actual proposition and retain the complemen
   assert.equal(mismatched.YES.pseudonymName, 'Yes')
 })
 
-test('homepage colors use audited parties without converting complements or independents into Democrats', () => {
+test('homepage colors count complements as the other major party, never independents as Democrats', () => {
   const rep = {
     ...binary('uODgxBgIoHZWqFqHGPbe', 0.3),
     slug: 'will-a-republican-win-the-florida-g',
   } as Contract
-  assert.equal(getPartyProbs(rep)?.dem, 0)
-  assert.equal(probToColor(rep), '#9e9fbd')
+  assert.ok(Math.abs(getPartyProbs(rep)!.dem - 0.7) < 1e-9)
+  assert.equal(probToColor(rep), partyProbsToColor(0.7, 0.3))
   const dem = {
     ...binary('RcL0Q9O0EU', 0.7),
     slug: 'will-the-democratic-party-candidate-NQOPZAnOA8',
   } as Contract
   assert.ok(Math.abs(getPartyProbs(dem)!.dem - 0.7) < 1e-9)
-  assert.equal(getPartyProbs(dem)?.rep, 0)
+  assert.ok(Math.abs(getPartyProbs(dem)!.rep - 0.3) < 1e-9)
   const idaho = sourceAudit('which-party-will-win-the-2026-idaho-2PNUOhCEyR')!
   const answers = Object.entries(idaho.answerParties!).map(([id, party]) => ({
     id,
@@ -300,6 +352,9 @@ test('reviewed Midwest answers map by ID without broadening the district-label p
   } as Contract
   const races = buildRaces('house', {}, null, { [slug]: c })
   assert.equal(races.find((r) => r.id === 'MN-2')?.answerId, 'SSlgtzn9gz')
-  assert.equal(races.find((r) => r.id === 'OH-10')?.odds?.notDem, 0.8)
+  // OH-10 has a Republican nominee, so the portfolio's NO counts as R.
+  const oh10 = races.find((r) => r.id === 'OH-10')?.odds
+  assert.ok(Math.abs((oh10?.rep ?? 0) - 0.8) < 1e-9)
+  assert.equal(oh10?.notDem, undefined)
   assert.equal(races.find((r) => r.id === 'OH-1')?.contract, undefined)
 })

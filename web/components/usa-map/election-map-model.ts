@@ -11,6 +11,7 @@ import { BallotCandidate, raceCandidates } from './election-candidates'
 import {
   basisOdds,
   fixedBasisIds,
+  foldComplement,
   raceOdds,
   seatBasis,
   SeatBasis,
@@ -241,7 +242,7 @@ export function buildRaces(
         candidates: raceCandidates(mode, state),
         contract: contracts[state] ?? undefined,
         ...(({ odds, basis }) => ({ odds, basis }))(
-          raceOdds(state, contracts[state], contracts[state]?.slug, (c) =>
+          raceOdds(mode, state, contracts[state], contracts[state]?.slug, (c) =>
             electionOdds(c)
           )
         ),
@@ -278,7 +279,11 @@ export function buildRaces(
       const id = districtId(parsed.state, parsed.district)
       if (priced.has(id)) continue
       const dem = getAnswerProbability(contract, answer.id)
-      const odds = normalizeOdds({ dem, rep: 0, other: 0, notDem: 1 - dem })
+      const odds = foldComplement(
+        'house',
+        id,
+        normalizeOdds({ dem, rep: 0, other: 0, notDem: 1 - dem })
+      )
       if (odds)
         priced.set(id, {
           contract,
@@ -291,6 +296,7 @@ export function buildRaces(
   for (const source of HOUSE_RACE_MARKETS) {
     const contract = additionalHouse[source.slug]
     const { odds, basis } = raceOdds(
+      'house',
       source.district,
       contract,
       contract?.slug ?? source.slug,
