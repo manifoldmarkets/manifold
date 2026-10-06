@@ -277,7 +277,11 @@ function OutcomeList(props: {
   return (
     <div className={styles.outcomes}>
       {visible.map((row) => {
-        const name = row.subtitle ? `${row.label}, ${row.subtitle}` : row.label
+        // "Bet Democratic, Maine Senate (Troy Jackson)": the candidate tells
+        // apart two rows of one party in a candidate market.
+        const betName = `Bet ${row.label}, ${raceLabel}${
+          row.subtitle ? ` (${row.subtitle})` : ''
+        }`
         return (
           <div
             key={row.key}
@@ -297,7 +301,7 @@ function OutcomeList(props: {
                 size="2xs"
                 color="indigo-outline"
                 className="bg-primary-50"
-                aria-label={`Bet ${name}, ${raceLabel}`}
+                aria-label={betName}
                 aria-haspopup="dialog"
                 onClick={(e) => {
                   e.stopPropagation()

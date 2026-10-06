@@ -6,6 +6,17 @@ import { formatOdds } from './election-display'
 import { electionOdds } from './election-map-model'
 import styles from './election-explorer.module.css'
 
+// What each control market counts as a Republican win, from the source
+// markets' own criteria (read October 6, 2026). The Democratic side is NO.
+// Senate: will-republicans-win-the-senate-in-738388924521.
+// House: republicans-have-house-majority-aft.
+export const CONTROL_RULES: Record<string, string> = {
+  Senate:
+    'Republicans need 51 seats, or 50 with VP Vance breaking ties, so a 50–50 Senate counts as Republican. The Democratic side is every other outcome, including independents who don’t caucus with Republicans.',
+  House:
+    'Republicans need 218 seats to keep the House. The Democratic side is any result with fewer than 218 Republicans.',
+}
+
 export function ControlCard({
   label,
   contract,
@@ -28,10 +39,10 @@ export function ControlCard({
         <div className={styles.controlTop}>
           <span className={styles.controlLabel}>
             {label} control
-            {label === 'Senate' && (
+            {CONTROL_RULES[label] && (
               <details className={styles.controlInfo}>
-                <summary aria-label="About Senate control">ⓘ</summary>
-                <p>Dem = no Republican majority; includes independents.</p>
+                <summary aria-label={`About ${label} control`}>ⓘ</summary>
+                <p>{CONTROL_RULES[label]}</p>
               </details>
             )}
           </span>
@@ -49,7 +60,13 @@ export function ControlCard({
         </div>
         <button
           className={styles.controlMain}
-          aria-label={`Bet on ${label} control`}
+          aria-label={
+            odds
+              ? `Bet ${
+                  rep ? 'Republican' : noLabel
+                }, ${label} control, ${formatOdds(rep ? odds.rep : odds.dem)}`
+              : `Bet on ${label} control`
+          }
           aria-haspopup="dialog"
           disabled={!tradable}
           onClick={() => setOutcome(rep ? 'YES' : 'NO')}
@@ -86,20 +103,24 @@ export function ControlCard({
             <button
               disabled={!tradable}
               aria-haspopup="dialog"
-              aria-label={`Bet ${noLabel} ${label} control`}
+              aria-label={`Bet ${noLabel}, ${label} control, ${formatOdds(
+                odds.dem
+              )}`}
               onClick={() => setOutcome('NO')}
               data-tone="dem"
             >
-              <span>Dem</span> <strong>{formatOdds(odds.dem)}</strong>
+              <span>Bet Dem</span> <strong>{formatOdds(odds.dem)}</strong>
             </button>
             <button
               disabled={!tradable}
               aria-haspopup="dialog"
-              aria-label={`Bet Republican ${label} control`}
+              aria-label={`Bet Republican, ${label} control, ${formatOdds(
+                odds.rep
+              )}`}
               onClick={() => setOutcome('YES')}
               data-tone="rep"
             >
-              <span>Rep</span> <strong>{formatOdds(odds.rep)}</strong>
+              <span>Bet Rep</span> <strong>{formatOdds(odds.rep)}</strong>
             </button>
           </div>
         )}

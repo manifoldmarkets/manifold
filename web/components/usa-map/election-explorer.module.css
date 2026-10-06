@@ -113,6 +113,7 @@
   justify-content: start;
 }
 .controlCard {
+  position: relative;
   min-width: 0;
   padding: 14px;
   background: var(--soft);
@@ -123,25 +124,36 @@
   align-items: center;
   gap: 3px;
 }
+/* The rules popover spans its card, so it never leaves the screen. */
 .controlInfo {
-  position: relative;
   color: var(--muted);
   font-weight: 400;
 }
 .controlInfo summary {
   cursor: pointer;
   list-style: none;
+  border-radius: 50%;
+  padding: 0 2px;
+}
+.controlInfo summary:hover {
+  color: var(--accent);
+}
+.controlInfo summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .controlInfo summary::-webkit-details-marker {
   display: none;
 }
 .controlInfo p {
   position: absolute;
-  left: -90px;
-  top: 24px;
-  z-index: 1;
-  width: 190px;
-  padding: 8px;
+  left: 8px;
+  right: 8px;
+  top: 38px;
+  z-index: 5;
+  padding: 10px;
+  line-height: 1.5;
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--paper);
