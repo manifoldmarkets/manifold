@@ -336,7 +336,9 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": [],
+      "reviewedRejectedContractIds": [
+        "UsRcgZIlqq"
+      ],
       "searchTerms": [
         "Alabama 3rd district 2026",
         "AL-3",
@@ -9860,7 +9862,10 @@
         "rationale": "Safe by seed (leader ≥ 85%): tier 1,000 (minimum recommended; tier 100 would repeat the shallow-market problem).",
         "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
       },
-      "reviewedRejectedContractIds": ["dhdspq8ISp"],
+      "reviewedRejectedContractIds": [
+        "dhdspq8ISp",
+        "pRNLnLdgyR"
+      ],
       "searchTerms": [
         "Louisiana 3rd district 2026",
         "LA-3",
