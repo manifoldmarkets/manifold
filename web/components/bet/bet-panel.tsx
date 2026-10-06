@@ -60,7 +60,11 @@ import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { versusSide, versusSideProb } from 'common/versus'
+import {
+  showsSideProbability,
+  versusSide,
+  versusSideProb,
+} from 'common/versus'
 import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -304,11 +308,10 @@ export const BuyPanelBody = (
       ? versusSide(contract, { answerId: multiProps.answerToBuy.id, outcome })
       : undefined
   const binaryMCOutcomeLabel = versusBetSide?.answer.text
-  // When the two sides have names (versus markets, or binary markets shown
-  // with pseudonyms such as Republican/Democratic) show probabilities for the
-  // side being bought, so buying the NO side reads as that side's probability
-  // going up rather than the YES side's going down.
-  const showsSideProb = isBinaryMC || !!props.pseudonym
+  // Versus markets and renamed binary sides (e.g. Republican/Democratic) show
+  // probabilities for the side being bought; otherwise buying NO reads as the
+  // answer's probability going down (see showsSideProbability).
+  const showsSideProb = showsSideProbability(contract, props.pseudonym)
   const isCashContract = contract.token === 'CASH'
 
   const quickAddButtonSize =

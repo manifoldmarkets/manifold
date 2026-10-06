@@ -1,7 +1,7 @@
 import { Answer } from 'common/answer'
 import { ComponentProps } from 'react'
 import { getAnswerProbability } from 'common/calculate'
-import { versusSideProb } from 'common/versus'
+import { showsSideProbability, versusSideProb } from 'common/versus'
 import { CPMMMultiContract, CPMMNumericContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -47,24 +47,33 @@ export function AnswerCpmmBetPanel(props: {
         alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}
         pseudonym={pseudonym}
       >
-        {(selectedOutcome) => (
-          <Col className="text-ink-900 mb-4 gap-2">
-            <h1 className="text-lg">{answer.text}</h1>
-            <Row className="items-baseline justify-between gap-2">
-              <span className="text-ink-500 text-sm">
-                {pseudonym[selectedOutcome ?? 'YES'].pseudonymName} probability
-              </span>
-              <span className="text-lg font-semibold">
-                {formatPercent(
-                  versusSideProb(
-                    selectedOutcome ?? 'YES',
-                    getAnswerProbability(contract, answer.id)
-                  )
-                )}
-              </span>
-            </Row>
-          </Col>
-        )}
+        {(selectedOutcome) => {
+          const answerProb = getAnswerProbability(contract, answer.id)
+          // NO on an answer is "any other answer", so it shows the answer's
+          // own chance unless NO is a named opponent.
+          const sideProb = showsSideProbability(contract, pseudonym)
+          return (
+            <Col className="text-ink-900 mb-4 gap-2">
+              <h1 className="text-lg">{answer.text}</h1>
+              <Row className="items-baseline justify-between gap-2">
+                <span className="text-ink-500 text-sm">
+                  {sideProb
+                    ? `${
+                        pseudonym[selectedOutcome ?? 'YES'].pseudonymName
+                      } probability`
+                    : 'Probability'}
+                </span>
+                <span className="text-lg font-semibold">
+                  {formatPercent(
+                    sideProb
+                      ? versusSideProb(selectedOutcome ?? 'YES', answerProb)
+                      : answerProb
+                  )}
+                </span>
+              </Row>
+            </Col>
+          )
+        }}
       </BuyPanel>
     </Col>
   )
