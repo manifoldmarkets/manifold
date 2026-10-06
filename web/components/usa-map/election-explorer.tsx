@@ -1195,7 +1195,9 @@ export function ElectionExplorer(props: Props) {
             pinned={!!selected}
             pointer={mapPointer}
             onClose={closeDetails}
-            dockKey={`${detailTitle}:${dockVersion}`}
+            // Re-dock once the map's shapes exist (a deep link can open the
+            // panel before the atlas loads) and after a district is framed.
+            dockKey={`${detailTitle}:${dockVersion}:${shapes.length > 0}`}
             anchor={() =>
               selected
                 ? svgRef.current
