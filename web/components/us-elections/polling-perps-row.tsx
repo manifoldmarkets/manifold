@@ -26,13 +26,10 @@ const PerpOverview = dynamic(
 // 2026 generic ballot (VoteHub avg, %)"), which wrapped unevenly and pushed the
 // buttons out of line. Keyed by oracle feed id; any other perp falls back to its
 // question.
-const POLLING_FEED_LABELS: Record<string, { title: string; unit: string }> = {
-  'trump-approval-rating': { title: 'Trump approval', unit: 'approve' },
-  'votehub-generic-ballot-2026': {
-    title: 'Generic ballot (D share)',
-    unit: 'Democratic',
-  },
-  'vance-favorability': { title: 'Vance favorability', unit: 'favorable' },
+const POLLING_FEED_TITLES: Record<string, string> = {
+  'trump-approval-rating': 'Trump approval',
+  'votehub-generic-ballot-2026': 'Generic ballot (D share)',
+  'vance-favorability': 'Vance favorability',
 }
 
 /**
@@ -96,8 +93,8 @@ function PollingPerpCard(props: { perp: PerpContract; className?: string }) {
     setDirection(value)
   }
 
-  const label = POLLING_FEED_LABELS[perp.oracleFeedId]
-  const title = label?.title ?? perp.question
+  const shortTitle = POLLING_FEED_TITLES[perp.oracleFeedId]
+  const title = shortTitle ?? perp.question
   const price = Number(perp.oraclePrice)
   // Reuse the canonical per-feed decoration table so these render with the
   // same unit as everywhere else, rather than a second hardcoded list.
@@ -117,14 +114,12 @@ function PollingPerpCard(props: { perp: PerpContract; className?: string }) {
         <Row className="items-start justify-between gap-2">
           <div className="min-w-0">
             <h3
-              className="text-ink-900 truncate text-sm font-semibold"
+              className="text-ink-900 text-sm font-semibold leading-snug"
               title={perp.question}
             >
               {title}
             </h3>
-            <div className="text-ink-600 truncate text-xs">
-              VoteHub average{label ? ` · % ${label.unit}` : ''}
-            </div>
+            <div className="text-ink-600 truncate text-xs">VoteHub average</div>
           </div>
           <div className="text-primary-700 shrink-0 text-lg font-semibold tabular-nums">
             {priceLabel}

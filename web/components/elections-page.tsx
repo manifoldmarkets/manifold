@@ -58,8 +58,10 @@ function SectionHeader(props: {
   subtitle?: ReactNode
   action?: ReactNode
 }) {
+  // The action (e.g. "See all") sits under the subtitle on phones and at the
+  // right from sm up, so it never squeezes the title.
   return (
-    <Row className="items-end justify-between gap-3">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
       <Col className="gap-0.5">
         <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
           {props.children}
@@ -69,7 +71,7 @@ function SectionHeader(props: {
         )}
       </Col>
       {props.action}
-    </Row>
+    </div>
   )
 }
 
