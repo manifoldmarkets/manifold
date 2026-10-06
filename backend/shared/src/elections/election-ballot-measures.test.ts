@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import {
   applyManifest,
   buildDashboardMapping,
@@ -15,6 +17,100 @@ import {
   planOffline,
   validateManifest,
 } from './election-market-creation'
+
+describe('launch ballot page keys', () => {
+  const launch = JSON.parse(
+    readFileSync(
+      resolve(
+        __dirname,
+        '../../../scripts/elections-2026/ballot-measures/manifest.json'
+      ),
+      'utf8'
+    )
+  ) as Manifest
+  const page = JSON.parse(
+    readFileSync(
+      resolve(
+        __dirname,
+        '../../../../web/public/data/ballot-measures-2026.json'
+      ),
+      'utf8'
+    )
+  ) as {
+    measures: {
+      key: string
+      state: string
+      title: string
+      officialSourceUrl: string
+    }[]
+  }
+  const entries = launch.entries as MeasureManifestEntry[]
+
+  test('every planned or held measure maps to one page entry with the identical state and title', () => {
+    expect(entries).toHaveLength(122)
+    expect(entries.filter((e) => e.status === 'ready')).toHaveLength(102)
+    expect(new Set(entries.map((e) => e.dashboard.pageKey)).size).toBe(122)
+    const rows = buildDashboardMapping(launch, emptyState(launch))
+    for (const [i, e] of entries.entries()) {
+      const target = page.measures.find((m) => m.key === e.dashboard.pageKey)
+      expect(target).toMatchObject({
+        state: e.measure.state,
+        title: e.measure.officialTitle,
+      })
+      expect(rows[i].key).toBe(target!.key)
+      expect(rows[i].raceKey).toBe(e.raceKey)
+      expect(rows[i].contractId).toBe(`PENDING:${e.raceKey}`)
+    }
+  })
+
+  test('all eight designation exceptions match the reviewed page key and official source', () => {
+    const reviewed = {
+      '2026-measure-KS-citizen-only-voting-requirement':
+        'KS-citizenship-voting',
+      '2026-measure-MN-permanent-school-fund-distributions':
+        'MN-permanent-school-fund',
+      '2026-measure-NC-3-5-cap-on-state-income-tax-rate': 'NC-income-tax-cap',
+      '2026-measure-NC-limits-on-local-property-tax-increases':
+        'NC-property-tax-limit',
+      '2026-measure-NC-photo-id-for-all-voting-methods': 'NC-voter-id',
+      '2026-measure-NE-legislative-term-limit-of-three-terms': 'NE-term-limits',
+      '2026-measure-NH-eliminating-register-of-probate-office':
+        'NH-register-of-probate',
+      '2026-measure-WA-other-ip26-645': 'WA-il26-645',
+    }
+    for (const [raceKey, pageKey] of Object.entries(reviewed)) {
+      const e = entries.find((e) => e.raceKey === raceKey)!
+      const target = page.measures.find((m) => m.key === pageKey)!
+      expect(e.dashboard.pageKey).toBe(pageKey)
+      expect(e.measure.officialSourceUrl).toBe(target.officialSourceUrl)
+    }
+  })
+
+  test('created mapping rows use page keys without changing saved creation identity', () => {
+    const e = entries.find((e) => e.raceKey === '2026-measure-CO-amendment-82')!
+    const state = emptyState(launch)
+    state.entries[e.raceKey] = {
+      raceKey: e.raceKey,
+      idempotencyKey: idempotencyKeyFor(launch.series, e.raceKey),
+      payloadHash: 'test',
+      status: 'created',
+      contractId: 'created-market',
+      slug: 'created-slug',
+      updatedAt: '2026-10-06',
+    }
+    const before = JSON.stringify(state)
+    const row = buildDashboardMapping(launch, state).find(
+      (r) => r.raceKey === e.raceKey
+    )
+    expect(row).toMatchObject({
+      key: 'CO-amend-82',
+      status: 'created',
+      contractId: 'created-market',
+      slug: 'created-slug',
+    })
+    expect(JSON.stringify(state)).toBe(before)
+  })
+})
 
 const NOW = Date.UTC(2026, 9, 3)
 const CLOSE = Date.UTC(2026, 10, 3, 23, 59)
@@ -105,6 +201,21 @@ const verdict = (e: MeasureManifestEntry, m: Partial<MarketLike>) =>
   } as MarketLike)
 
 describe('ballot-measure validation', () => {
+  test('explicit page keys must match the state and be unique', () => {
+    const e = entry()
+    e.dashboard.pageKey = 'AZ-prop-50'
+    expect(validateManifest(manifest([e]), NOW).join(' ')).toMatch(/same state/)
+    e.dashboard.pageKey = 'CA-prop-50'
+    const other = entry(
+      {},
+      { designation: { kind: 'prop', value: '51', label: 'Proposition 51' } }
+    )
+    other.dashboard.pageKey = e.dashboard.pageKey
+    expect(validateManifest(manifest([e, other]), NOW).join(' ')).toMatch(
+      /duplicate dashboard.pageKey/
+    )
+  })
+
   test('a well-formed measure entry validates and costs its tier', () => {
     const e = entry()
     expect(validateManifest(manifest([e]), NOW)).toEqual([])

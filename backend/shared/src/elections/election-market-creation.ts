@@ -167,7 +167,13 @@ export type MeasureManifestEntry = {
   // Portfolio answers already reviewed and rejected: "contractId#answerId".
   reviewedRejectedAnswers?: string[]
   searchTerms: string[]
-  dashboard: { list: 'BALLOT_MEASURES'; key: string; state: string }
+  dashboard: {
+    list: 'BALLOT_MEASURES'
+    key: string
+    state: string
+    // The page's stable measure key can differ from the creation/state key.
+    pageKey?: string
+  }
   evidence?: Record<string, unknown>
 }
 
@@ -402,6 +408,13 @@ export function validateMeasureEntry(
     e('raceKey state must match the measure state')
   if (entry.dashboard?.list !== 'BALLOT_MEASURES')
     e('dashboard.list must be BALLOT_MEASURES')
+  const pageKey = entry.dashboard?.pageKey
+  if (
+    pageKey !== undefined &&
+    (!/^[A-Z]{2}-[a-z0-9-]+$/.test(pageKey) ||
+      !pageKey.startsWith(`${id?.state}-`))
+  )
+    e('dashboard.pageKey must be a page measure key in the same state')
   if (entry.status !== 'ready') return errors
   if (!id?.designation && !(id?.aliases ?? []).length)
     e('needs an official designation or aliases to identify the measure')
@@ -582,10 +595,16 @@ export function validateManifest(manifest: Manifest, now = Date.now()) {
   if (!measures && /ballot-measures/.test(manifest.series))
     errors.push('a race manifest cannot use a ballot-measures series')
   const seen = new Set<string>()
+  const pageKeys = new Set<string>()
   for (const entry of manifest.entries) {
     if (seen.has(entry.raceKey))
       errors.push(`duplicate raceKey ${entry.raceKey}`)
     seen.add(entry.raceKey)
+    if (isMeasureEntry(entry) && entry.dashboard?.pageKey) {
+      if (pageKeys.has(entry.dashboard.pageKey))
+        errors.push(`duplicate dashboard.pageKey ${entry.dashboard.pageKey}`)
+      pageKeys.add(entry.dashboard.pageKey)
+    }
     errors.push(...validateEntry(entry, now))
   }
   return errors
@@ -1893,7 +1912,7 @@ export function buildDashboardMapping(
       return {
         raceKey: entry.raceKey,
         list: entry.dashboard.list,
-        key: entry.dashboard.key,
+        key: entry.dashboard.pageKey ?? entry.dashboard.key,
         slug: live && s.slug ? s.slug : pending,
         contractId: live ? s.contractId! : pending,
         url: live ? s.url ?? null : null,

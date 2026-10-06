@@ -14,6 +14,25 @@ Read [integration decisions](audit/INTEGRATION.md) first: the UI withholds Massa
 | `audit/INTEGRATION.md`            | Integration decisions and current costs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `out/` (generated)                | Dry-run report, payloads, plan and dashboard mapping.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
+## Page-key translation
+
+The October 6 rehearsal found that creation keys and page keys differ. Every one of the 122 manifest entries now carries `dashboard.pageKey`, matching `web/public/data/ballot-measures-2026.json`. `buildDashboardMapping` emits that value as the mapping row's `key`, while retaining `raceKey` for saved creation state and reserved IDs. Older standalone manifests without `pageKey` retain the previous fallback. Creation payloads, budgets, held statuses and idempotency keys are unchanged.
+
+The reconstructed translation table is in `audit/ballot-measure-key-map.json`: 39 exact keys, 75 additional matches by identical state and official title, and these eight individually reviewed designation exceptions. Their titles and official-source URLs match exactly on both sides; summaries and YES meanings also agree.
+
+| Manifest key after `2026-measure-`          | Page key                   |
+| ------------------------------------------- | -------------------------- |
+| `KS-citizen-only-voting-requirement`        | `KS-citizenship-voting`    |
+| `MN-permanent-school-fund-distributions`    | `MN-permanent-school-fund` |
+| `NC-3-5-cap-on-state-income-tax-rate`       | `NC-income-tax-cap`        |
+| `NC-limits-on-local-property-tax-increases` | `NC-property-tax-limit`    |
+| `NC-photo-id-for-all-voting-methods`        | `NC-voter-id`              |
+| `NE-legislative-term-limit-of-three-terms`  | `NE-term-limits`           |
+| `NH-eliminating-register-of-probate-office` | `NH-register-of-probate`   |
+| `WA-other-ip26-645`                         | `WA-il26-645`              |
+
+The Washington page key is a historical identifier: the designation and official title correctly say **IP26-645**. Use the explicit mapping rather than guessing from its `il26` spelling. No rehearsal/dev market IDs were copied. The existing page still has 20 linked sources; update its linked-source-count test when the actual production launch mappings are wired in.
+
 ## Market shape and rules
 
 Each market is a binary whose YES means the measure is approved at the November 3, 2026 election. The question reads:

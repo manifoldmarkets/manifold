@@ -1,6 +1,6 @@
 {
   "kind": "ballot-measures",
-  "manifestVersion": "2026-10-03.5",
+  "manifestVersion": "2026-10-06.1",
   "series": "us-2026-ballot-measures-v1",
   "generatedAt": "2026-10-03T10:15:04.810Z",
   "review": {
@@ -98,7 +98,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AK-measure-2",
-        "state": "AK"
+        "state": "AK",
+        "pageKey": "AK-measure-2"
       },
       "evidence": {
         "inventoryKey": "AK-measure-2",
@@ -196,7 +197,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AK-measure-3",
-        "state": "AK"
+        "state": "AK",
+        "pageKey": "AK-measure-3"
       },
       "evidence": {
         "inventoryKey": "AK-measure-3",
@@ -294,7 +296,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AL-amendment-1",
-        "state": "AL"
+        "state": "AL",
+        "pageKey": "AL-lt-gov-vacancies"
       },
       "evidence": {
         "inventoryKey": "AL-lt-gov-vacancies",
@@ -394,7 +397,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AL-amendment-2",
-        "state": "AL"
+        "state": "AL",
+        "pageKey": "AL-school-consolidation"
       },
       "evidence": {
         "inventoryKey": "AL-school-consolidation",
@@ -499,7 +503,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AL-amendment-4",
-        "state": "AL"
+        "state": "AL",
+        "pageKey": "AL-star-spangled-banner"
       },
       "evidence": {
         "inventoryKey": "AL-star-spangled-banner",
@@ -604,7 +609,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AR-issue-1",
-        "state": "AR"
+        "state": "AR",
+        "pageKey": "AR-issue-1"
       },
       "evidence": {
         "inventoryKey": "AR-issue-1",
@@ -700,7 +706,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AR-issue-2",
-        "state": "AR"
+        "state": "AR",
+        "pageKey": "AR-issue-2"
       },
       "evidence": {
         "inventoryKey": "AR-issue-2",
@@ -796,7 +803,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AR-issue-3",
-        "state": "AR"
+        "state": "AR",
+        "pageKey": "AR-issue-3"
       },
       "evidence": {
         "inventoryKey": "AR-issue-3",
@@ -894,7 +902,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AR-issue-4",
-        "state": "AR"
+        "state": "AR",
+        "pageKey": "AR-water-bond"
       },
       "evidence": {
         "inventoryKey": "AR-water-bond",
@@ -991,7 +1000,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-141",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-141"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-141",
@@ -1088,7 +1098,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-142",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-142"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-142",
@@ -1186,7 +1197,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-144",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-144"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-144",
@@ -1283,7 +1295,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-316",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-316"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-316",
@@ -1379,7 +1392,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-317",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-317"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-317",
@@ -1477,7 +1491,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-319",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-319"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-319",
@@ -1574,7 +1589,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-AZ-prop-320",
-        "state": "AZ"
+        "state": "AZ",
+        "pageKey": "AZ-prop-320"
       },
       "evidence": {
         "inventoryKey": "AZ-prop-320",
@@ -1684,7 +1700,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-1",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-1"
       },
       "evidence": {
         "inventoryKey": "CA-prop-1",
@@ -1810,7 +1827,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-2",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-2"
       },
       "evidence": {
         "inventoryKey": "CA-prop-2",
@@ -1919,7 +1937,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-3",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-3"
       },
       "evidence": {
         "inventoryKey": "CA-prop-3",
@@ -2035,7 +2054,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-38",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-38"
       },
       "evidence": {
         "inventoryKey": "CA-prop-38",
@@ -2167,7 +2187,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-41",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-41"
       },
       "evidence": {
         "inventoryKey": "CA-prop-41",
@@ -2305,7 +2326,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-42",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-42"
       },
       "evidence": {
         "inventoryKey": "CA-prop-42",
@@ -2450,7 +2472,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-44",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-44"
       },
       "evidence": {
         "inventoryKey": "CA-prop-44",
@@ -2601,7 +2624,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CA-prop-45",
-        "state": "CA"
+        "state": "CA",
+        "pageKey": "CA-prop-45"
       },
       "evidence": {
         "inventoryKey": "CA-prop-45",
@@ -2710,7 +2734,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-81",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-81"
       },
       "evidence": {
         "inventoryKey": "CO-amend-81",
@@ -2813,7 +2838,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-82",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-82"
       },
       "evidence": {
         "inventoryKey": "CO-amend-82",
@@ -2905,7 +2931,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-83",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-83"
       },
       "evidence": {
         "inventoryKey": "CO-amend-83",
@@ -2998,7 +3025,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-84",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-84"
       },
       "evidence": {
         "inventoryKey": "CO-amend-84",
@@ -3092,7 +3120,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-85",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-85"
       },
       "evidence": {
         "inventoryKey": "CO-amend-85",
@@ -3186,7 +3215,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-86",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-86"
       },
       "evidence": {
         "inventoryKey": "CO-amend-86",
@@ -3291,7 +3321,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-amendment-87",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-amend-87"
       },
       "evidence": {
         "inventoryKey": "CO-amend-87",
@@ -3385,7 +3416,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-prop-133",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-prop-133"
       },
       "evidence": {
         "inventoryKey": "CO-prop-133",
@@ -3480,7 +3512,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-prop-134",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-prop-134"
       },
       "evidence": {
         "inventoryKey": "CO-prop-134",
@@ -3574,7 +3607,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-prop-135",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-prop-135"
       },
       "evidence": {
         "inventoryKey": "CO-prop-135",
@@ -3669,7 +3703,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-prop-136",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-prop-136"
       },
       "evidence": {
         "inventoryKey": "CO-prop-136",
@@ -3764,7 +3799,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-prop-137",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-prop-137"
       },
       "evidence": {
         "inventoryKey": "CO-prop-137",
@@ -3860,7 +3896,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-CO-prop-nn",
-        "state": "CO"
+        "state": "CO",
+        "pageKey": "CO-prop-nn"
       },
       "evidence": {
         "inventoryKey": "CO-prop-nn",
@@ -3955,7 +3992,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-FL-amendment-2",
-        "state": "FL"
+        "state": "FL",
+        "pageKey": "FL-ag-property-exemption"
       },
       "evidence": {
         "inventoryKey": "FL-ag-property-exemption",
@@ -4069,7 +4107,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-FL-amendment-3",
-        "state": "FL"
+        "state": "FL",
+        "pageKey": "FL-amend-3"
       },
       "evidence": {
         "inventoryKey": "FL-amend-3",
@@ -4177,7 +4216,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-FL-amendment-1",
-        "state": "FL"
+        "state": "FL",
+        "pageKey": "FL-budget-stabilization"
       },
       "evidence": {
         "inventoryKey": "FL-budget-stabilization",
@@ -4280,7 +4320,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-GA-amendment-1",
-        "state": "GA"
+        "state": "GA",
+        "pageKey": "GA-conservation-acres"
       },
       "evidence": {
         "inventoryKey": "GA-conservation-acres",
@@ -4378,7 +4419,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-GA-amendment-3",
-        "state": "GA"
+        "state": "GA",
+        "pageKey": "GA-ng911-fund"
       },
       "evidence": {
         "inventoryKey": "GA-ng911-fund",
@@ -4473,7 +4515,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-GA-amendment-2",
-        "state": "GA"
+        "state": "GA",
+        "pageKey": "GA-probate-judges"
       },
       "evidence": {
         "inventoryKey": "GA-probate-judges",
@@ -4566,7 +4609,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-HI-question-1",
-        "state": "HI"
+        "state": "HI",
+        "pageKey": "HI-q-1"
       },
       "evidence": {
         "inventoryKey": "HI-q-1",
@@ -4660,7 +4704,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-HI-question-2",
-        "state": "HI"
+        "state": "HI",
+        "pageKey": "HI-q-2"
       },
       "evidence": {
         "inventoryKey": "HI-q-2",
@@ -4755,7 +4800,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-IA-amendment-1",
-        "state": "IA"
+        "state": "IA",
+        "pageKey": "IA-amend-1"
       },
       "evidence": {
         "inventoryKey": "IA-amend-1",
@@ -4849,7 +4895,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-ID-hjr-4",
-        "state": "ID"
+        "state": "ID",
+        "pageKey": "ID-hjr-4"
       },
       "evidence": {
         "inventoryKey": "ID-hjr-4",
@@ -4938,7 +4985,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-ID-hjr-6",
-        "state": "ID"
+        "state": "ID",
+        "pageKey": "ID-hjr-6"
       },
       "evidence": {
         "inventoryKey": "ID-hjr-6",
@@ -5033,7 +5081,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-ID-prop-1",
-        "state": "ID"
+        "state": "ID",
+        "pageKey": "ID-prop-1"
       },
       "evidence": {
         "inventoryKey": "ID-prop-1",
@@ -5127,7 +5176,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-IN-question-1",
-        "state": "IN"
+        "state": "IN",
+        "pageKey": "IN-bail-substantial-risk"
       },
       "evidence": {
         "inventoryKey": "IN-bail-substantial-risk",
@@ -5220,7 +5270,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-IN-question-2",
-        "state": "IN"
+        "state": "IN",
+        "pageKey": "IN-judge-residency"
       },
       "evidence": {
         "inventoryKey": "IN-judge-residency",
@@ -5311,7 +5362,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-KS-citizen-only-voting-requirement",
-        "state": "KS"
+        "state": "KS",
+        "pageKey": "KS-citizenship-voting"
       },
       "evidence": {
         "inventoryKey": "KS-citizenship-voting",
@@ -5419,7 +5471,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-KY-amendment-1",
-        "state": "KY"
+        "state": "KY",
+        "pageKey": "KY-pardon-limits"
       },
       "evidence": {
         "inventoryKey": "KY-pardon-limits",
@@ -5522,7 +5575,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-9",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-assessment-freeze-income"
       },
       "evidence": {
         "inventoryKey": "LA-assessment-freeze-income",
@@ -5623,7 +5677,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-8",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-foreign-adversaries"
       },
       "evidence": {
         "inventoryKey": "LA-foreign-adversaries",
@@ -5725,7 +5780,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-4",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-gov-term-limit"
       },
       "evidence": {
         "inventoryKey": "LA-gov-term-limit",
@@ -5828,7 +5884,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-2",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-millage-limits"
       },
       "evidence": {
         "inventoryKey": "LA-millage-limits",
@@ -5928,7 +5985,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-3",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-post-conviction-bail"
       },
       "evidence": {
         "inventoryKey": "LA-post-conviction-bail",
@@ -6029,7 +6087,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-10",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-rehab-property"
       },
       "evidence": {
         "inventoryKey": "LA-rehab-property",
@@ -6131,7 +6190,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-5",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-retirement-ual"
       },
       "evidence": {
         "inventoryKey": "LA-retirement-ual",
@@ -6232,7 +6292,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-6",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-senior-exemption"
       },
       "evidence": {
         "inventoryKey": "LA-senior-exemption",
@@ -6332,7 +6393,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-1",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-veteran-spouse-exemption"
       },
       "evidence": {
         "inventoryKey": "LA-veteran-spouse-exemption",
@@ -6434,7 +6496,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-LA-amendment-7",
-        "state": "LA"
+        "state": "LA",
+        "pageKey": "LA-water-service-lines"
       },
       "evidence": {
         "inventoryKey": "LA-water-service-lines",
@@ -6529,7 +6592,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MD-question-1",
-        "state": "MD"
+        "state": "MD",
+        "pageKey": "MD-q-1"
       },
       "evidence": {
         "inventoryKey": "MD-q-1",
@@ -6618,7 +6682,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MD-question-2",
-        "state": "MD"
+        "state": "MD",
+        "pageKey": "MD-q-2"
       },
       "evidence": {
         "inventoryKey": "MD-q-2",
@@ -6711,7 +6776,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MD-question-3",
-        "state": "MD"
+        "state": "MD",
+        "pageKey": "MD-q-3"
       },
       "evidence": {
         "inventoryKey": "MD-q-3",
@@ -6814,7 +6880,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MI-proposal-1",
-        "state": "MI"
+        "state": "MI",
+        "pageKey": "MI-prop-1"
       },
       "evidence": {
         "inventoryKey": "MI-prop-1",
@@ -6909,7 +6976,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MI-proposal-2",
-        "state": "MI"
+        "state": "MI",
+        "pageKey": "MI-prop-2"
       },
       "evidence": {
         "inventoryKey": "MI-prop-2",
@@ -7008,7 +7076,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MN-permanent-school-fund-distributions",
-        "state": "MN"
+        "state": "MN",
+        "pageKey": "MN-permanent-school-fund"
       },
       "evidence": {
         "inventoryKey": "MN-permanent-school-fund",
@@ -7111,7 +7180,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MO-amendment-3",
-        "state": "MO"
+        "state": "MO",
+        "pageKey": "MO-amend-3"
       },
       "evidence": {
         "inventoryKey": "MO-amend-3",
@@ -7232,7 +7302,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MO-amendment-6",
-        "state": "MO"
+        "state": "MO",
+        "pageKey": "MO-amend-6"
       },
       "evidence": {
         "inventoryKey": "MO-amend-6",
@@ -7340,7 +7411,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MO-amendment-7",
-        "state": "MO"
+        "state": "MO",
+        "pageKey": "MO-amend-7"
       },
       "evidence": {
         "inventoryKey": "MO-amend-7",
@@ -7436,7 +7508,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MO-amendment-8",
-        "state": "MO"
+        "state": "MO",
+        "pageKey": "MO-amend-8"
       },
       "evidence": {
         "inventoryKey": "MO-amend-8",
@@ -7530,7 +7603,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MT-ci-132",
-        "state": "MT"
+        "state": "MT",
+        "pageKey": "MT-ci-132"
       },
       "evidence": {
         "inventoryKey": "MT-ci-132",
@@ -7623,7 +7697,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MT-ci-133",
-        "state": "MT"
+        "state": "MT",
+        "pageKey": "MT-ci-133"
       },
       "evidence": {
         "inventoryKey": "MT-ci-133",
@@ -7722,7 +7797,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-MT-i-194",
-        "state": "MT"
+        "state": "MT",
+        "pageKey": "MT-i-194"
       },
       "evidence": {
         "inventoryKey": "MT-i-194",
@@ -7811,7 +7887,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NC-3-5-cap-on-state-income-tax-rate",
-        "state": "NC"
+        "state": "NC",
+        "pageKey": "NC-income-tax-cap"
       },
       "evidence": {
         "inventoryKey": "NC-income-tax-cap",
@@ -7900,7 +7977,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NC-limits-on-local-property-tax-increases",
-        "state": "NC"
+        "state": "NC",
+        "pageKey": "NC-property-tax-limit"
       },
       "evidence": {
         "inventoryKey": "NC-property-tax-limit",
@@ -7991,7 +8069,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NC-photo-id-for-all-voting-methods",
-        "state": "NC"
+        "state": "NC",
+        "pageKey": "NC-voter-id"
       },
       "evidence": {
         "inventoryKey": "NC-voter-id",
@@ -8087,7 +8166,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-ND-measure-1",
-        "state": "ND"
+        "state": "ND",
+        "pageKey": "ND-measure-1"
       },
       "evidence": {
         "inventoryKey": "ND-measure-1",
@@ -8183,7 +8263,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-ND-measure-2",
-        "state": "ND"
+        "state": "ND",
+        "pageKey": "ND-measure-2"
       },
       "evidence": {
         "inventoryKey": "ND-measure-2",
@@ -8280,7 +8361,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NE-initiative-442",
-        "state": "NE"
+        "state": "NE",
+        "pageKey": "NE-sports-sex"
       },
       "evidence": {
         "inventoryKey": "NE-sports-sex",
@@ -8378,7 +8460,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NE-initiative-440",
-        "state": "NE"
+        "state": "NE",
+        "pageKey": "NE-sports-wagering-amendment"
       },
       "evidence": {
         "inventoryKey": "NE-sports-wagering-amendment",
@@ -8473,7 +8556,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NE-initiative-441",
-        "state": "NE"
+        "state": "NE",
+        "pageKey": "NE-sports-wagering-statute"
       },
       "evidence": {
         "inventoryKey": "NE-sports-wagering-statute",
@@ -8565,7 +8649,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NE-legislative-term-limit-of-three-terms",
-        "state": "NE"
+        "state": "NE",
+        "pageKey": "NE-term-limits"
       },
       "evidence": {
         "inventoryKey": "NE-term-limits",
@@ -8656,7 +8741,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NH-eliminating-register-of-probate-office",
-        "state": "NH"
+        "state": "NH",
+        "pageKey": "NH-register-of-probate"
       },
       "evidence": {
         "inventoryKey": "NH-register-of-probate",
@@ -8748,7 +8834,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-question-3",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-higher-ed-bond"
       },
       "evidence": {
         "inventoryKey": "NM-higher-ed-bond",
@@ -8842,7 +8929,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-amendment-4",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-legislator-salary"
       },
       "evidence": {
         "inventoryKey": "NM-legislator-salary",
@@ -8935,7 +9023,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-question-2",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-library-bond"
       },
       "evidence": {
         "inventoryKey": "NM-library-bond",
@@ -9028,7 +9117,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-amendment-1",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-pocket-veto"
       },
       "evidence": {
         "inventoryKey": "NM-pocket-veto",
@@ -9122,7 +9212,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-amendment-3",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-regents"
       },
       "evidence": {
         "inventoryKey": "NM-regents",
@@ -9216,7 +9307,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-amendment-2",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-school-election-dates"
       },
       "evidence": {
         "inventoryKey": "NM-school-election-dates",
@@ -9309,7 +9401,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-NM-question-1",
-        "state": "NM"
+        "state": "NM",
+        "pageKey": "NM-senior-facilities-bond"
       },
       "evidence": {
         "inventoryKey": "NM-senior-facilities-bond",
@@ -9402,7 +9495,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-OH-issue-3",
-        "state": "OH"
+        "state": "OH",
+        "pageKey": "OH-issue-3"
       },
       "evidence": {
         "inventoryKey": "OH-issue-3",
@@ -9506,7 +9600,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-OK-sq-845",
-        "state": "OK"
+        "state": "OK",
+        "pageKey": "OK-sq-845"
       },
       "evidence": {
         "inventoryKey": "OK-sq-845",
@@ -9601,7 +9696,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-OK-sq-847",
-        "state": "OK"
+        "state": "OK",
+        "pageKey": "OK-sq-847"
       },
       "evidence": {
         "inventoryKey": "OK-sq-847",
@@ -9694,7 +9790,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-RI-question-3",
-        "state": "RI"
+        "state": "RI",
+        "pageKey": "RI-econ-development-bond"
       },
       "evidence": {
         "inventoryKey": "RI-econ-development-bond",
@@ -9789,7 +9886,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-RI-question-5",
-        "state": "RI"
+        "state": "RI",
+        "pageKey": "RI-environment-bond"
       },
       "evidence": {
         "inventoryKey": "RI-environment-bond",
@@ -9882,7 +9980,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-RI-question-1",
-        "state": "RI"
+        "state": "RI",
+        "pageKey": "RI-higher-ed-bond"
       },
       "evidence": {
         "inventoryKey": "RI-higher-ed-bond",
@@ -9977,7 +10076,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-RI-question-4",
-        "state": "RI"
+        "state": "RI",
+        "pageKey": "RI-history-center-bond"
       },
       "evidence": {
         "inventoryKey": "RI-history-center-bond",
@@ -10071,7 +10171,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-RI-question-2",
-        "state": "RI"
+        "state": "RI",
+        "pageKey": "RI-housing-bond"
       },
       "evidence": {
         "inventoryKey": "RI-housing-bond",
@@ -10164,7 +10265,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-SD-amendment-i",
-        "state": "SD"
+        "state": "SD",
+        "pageKey": "SD-amend-i"
       },
       "evidence": {
         "inventoryKey": "SD-amend-i",
@@ -10256,7 +10358,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-SD-amendment-j",
-        "state": "SD"
+        "state": "SD",
+        "pageKey": "SD-amend-j"
       },
       "evidence": {
         "inventoryKey": "SD-amend-j",
@@ -10346,7 +10449,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-SD-amendment-k",
-        "state": "SD"
+        "state": "SD",
+        "pageKey": "SD-amend-k"
       },
       "evidence": {
         "inventoryKey": "SD-amend-k",
@@ -10437,7 +10541,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-SD-amendment-l",
-        "state": "SD"
+        "state": "SD",
+        "pageKey": "SD-amend-l"
       },
       "evidence": {
         "inventoryKey": "SD-amend-l",
@@ -10531,7 +10636,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-TN-amendment-1",
-        "state": "TN"
+        "state": "TN",
+        "pageKey": "TN-amend-1"
       },
       "evidence": {
         "inventoryKey": "TN-amend-1",
@@ -10628,7 +10734,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-TN-amendment-2",
-        "state": "TN"
+        "state": "TN",
+        "pageKey": "TN-amend-2"
       },
       "evidence": {
         "inventoryKey": "TN-amend-2",
@@ -10724,7 +10831,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-TN-amendment-3",
-        "state": "TN"
+        "state": "TN",
+        "pageKey": "TN-amend-3"
       },
       "evidence": {
         "inventoryKey": "TN-amend-3",
@@ -10820,7 +10928,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-UT-amendment-b",
-        "state": "UT"
+        "state": "UT",
+        "pageKey": "UT-60pct-tax-initiatives"
       },
       "evidence": {
         "inventoryKey": "UT-60pct-tax-initiatives",
@@ -10914,7 +11023,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-UT-amendment-a",
-        "state": "UT"
+        "state": "UT",
+        "pageKey": "UT-amendment-publication"
       },
       "evidence": {
         "inventoryKey": "UT-amendment-publication",
@@ -11012,7 +11122,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-VA-question-1",
-        "state": "VA"
+        "state": "VA",
+        "pageKey": "VA-q-1"
       },
       "evidence": {
         "inventoryKey": "VA-q-1",
@@ -11116,7 +11227,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-VA-question-2",
-        "state": "VA"
+        "state": "VA",
+        "pageKey": "VA-q-2"
       },
       "evidence": {
         "inventoryKey": "VA-q-2",
@@ -11214,7 +11326,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-VA-question-3",
-        "state": "VA"
+        "state": "VA",
+        "pageKey": "VA-q-3"
       },
       "evidence": {
         "inventoryKey": "VA-q-3",
@@ -11318,7 +11431,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-VT-proposal-3",
-        "state": "VT"
+        "state": "VT",
+        "pageKey": "VT-prop-3"
       },
       "evidence": {
         "inventoryKey": "VT-prop-3",
@@ -11412,7 +11526,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-VT-proposal-4",
-        "state": "VT"
+        "state": "VT",
+        "pageKey": "VT-prop-4"
       },
       "evidence": {
         "inventoryKey": "VT-prop-4",
@@ -11508,7 +11623,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WA-il26-001",
-        "state": "WA"
+        "state": "WA",
+        "pageKey": "WA-il26-001"
       },
       "evidence": {
         "inventoryKey": "WA-il26-001",
@@ -11605,7 +11721,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WA-il26-638",
-        "state": "WA"
+        "state": "WA",
+        "pageKey": "WA-il26-638"
       },
       "evidence": {
         "inventoryKey": "WA-il26-638",
@@ -11709,7 +11826,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WA-other-ip26-645",
-        "state": "WA"
+        "state": "WA",
+        "pageKey": "WA-il26-645"
       },
       "evidence": {
         "inventoryKey": "WA-il26-645",
@@ -11812,7 +11930,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WI-question-1",
-        "state": "WI"
+        "state": "WI",
+        "pageKey": "WI-partial-veto"
       },
       "evidence": {
         "inventoryKey": "WI-partial-veto",
@@ -11905,7 +12024,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WI-question-2",
-        "state": "WI"
+        "state": "WI",
+        "pageKey": "WI-places-of-worship"
       },
       "evidence": {
         "inventoryKey": "WI-places-of-worship",
@@ -12000,7 +12120,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WI-question-3",
-        "state": "WI"
+        "state": "WI",
+        "pageKey": "WI-preferential-treatment"
       },
       "evidence": {
         "inventoryKey": "WI-preferential-treatment",
@@ -12096,7 +12217,8 @@
       "dashboard": {
         "list": "BALLOT_MEASURES",
         "key": "2026-measure-WV-amendment-1",
-        "state": "WV"
+        "state": "WV",
+        "pageKey": "WV-citizenship-voting"
       },
       "evidence": {
         "inventoryKey": "WV-citizenship-voting",
