@@ -8,6 +8,7 @@ import {
 } from 'web/public/data/house-market-data'
 import { DATA } from './usa-map-data'
 import { BallotCandidate, raceCandidates } from './election-candidates'
+import { looksTied, shownPercent } from './election-display'
 import {
   basisOdds,
   fixedBasisIds,
@@ -76,8 +77,8 @@ export const outcomeLabel = (outcome: keyof Odds) =>
     unknown: 'Unclassified',
   }[outcome])
 export const TIERS = [
-  { id: 'fixed-d', label: 'D by ballot', color: '#4a5fa8' },
-  { id: 'fixed-r', label: 'R by ballot', color: '#9d3336' },
+  { id: 'fixed-d', label: 'Only Democrats on ballot', color: '#4a5fa8' },
+  { id: 'fixed-r', label: 'Only Republicans on ballot', color: '#9d3336' },
   { id: 'unknown', label: 'Unclassified outcome', color: COMPLEMENT_COLOR },
   { id: 'safe-d', label: 'Safe D', color: '#4a5fa8' },
   { id: 'likely-d', label: 'Likely D', color: '#718ac4' },
@@ -89,7 +90,7 @@ export const TIERS = [
   { id: 'other', label: 'Other leads', color: OTHER_COLOR },
   { id: 'not-d', label: 'Not Democratic', color: COMPLEMENT_COLOR },
   { id: 'not-r', label: 'Not Republican', color: COMPLEMENT_COLOR },
-  { id: 'unpriced', label: 'Unpriced', color: '#a4a4b5' },
+  { id: 'unpriced', label: 'No party odds yet', color: '#a4a4b5' },
 ] as const
 export type Tier = (typeof TIERS)[number]['id']
 
@@ -123,10 +124,13 @@ export function electionOdds(
   return normalizeOdds(odds)
 }
 
+// Outcomes that display the same percentage are tied: a 50.2% / 49.8% race
+// reads "Even" and counts as tied, like an exact 50/50.
 export function leadingParty(odds?: Odds): keyof Odds | undefined {
   if (!odds) return undefined
   const sorted = [...OUTCOMES].sort((a, b) => (odds[b] ?? 0) - (odds[a] ?? 0))
-  return Math.abs((odds[sorted[0]] ?? 0) - (odds[sorted[1]] ?? 0)) < 1e-9
+  const [top, next] = [odds[sorted[0]] ?? 0, odds[sorted[1]] ?? 0]
+  return Math.abs(top - next) < 1e-9 || looksTied(top, next)
     ? undefined
     : sorted[0]
 }
@@ -141,8 +145,10 @@ export function raceTier(race: Pick<Race, 'odds' | 'basis'>): Tier {
   if (party === 'notRep') return 'not-r'
   if (party === 'other') return 'other'
   if (party === 'unknown') return 'unknown'
-  if (!party || o[party] < 0.6) return 'tossup'
-  return `${o[party] >= 0.9 ? 'safe' : o[party] >= 0.75 ? 'likely' : 'lean'}-${
+  // Classify on the percentage readers see, so 75% is always Likely.
+  const shown = party ? shownPercent(o[party] ?? 0) : 0
+  if (!party || shown < 60) return 'tossup'
+  return `${shown >= 90 ? 'safe' : shown >= 75 ? 'likely' : 'lean'}-${
     party === 'dem' ? 'd' : 'r'
   }`
 }
