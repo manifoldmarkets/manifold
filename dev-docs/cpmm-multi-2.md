@@ -185,16 +185,27 @@ invariant, in log1p form.
 
 ## Parity with main
 
-With both switches off, every `cpmm-1` and `cpmm-multi-1` entry point should
-behave exactly as on `main`, apart from the two sale fixes described under
-[Deployment](#deployment). `common/src/cpmm-multi-1-parity-probe.test.ts`
-checks that: it runs each entry point on seeded random markets through this
-branch and through `main`'s code, vendored at the merge base under
+`cpmm-1` and `cpmm-multi-1` entry points behave as `main` did before
+`cpmm-multi-2`, apart from deliberate fixes.
+`common/src/cpmm-multi-1-parity-probe.test.ts` checks that: it runs each
+entry point on seeded random markets through the current code and through
+`main`'s code from before `cpmm-multi-2`, vendored under
 `common/src/parity-baseline/` (its README says how to regenerate it), and
-fails on any difference other than those two, which it recognises from
-`main`'s own behaviour (the dust-fill NaN fee error, or a sale that missed
-the shares asked by more than a millionth). It is gated behind `PROBE`, so
-normal test runs skip it. To run it:
+fails on any difference but three:
+
+- the baseline failing a sale with the dust-fill NaN fee error, where the
+  current code goes through;
+- the baseline selling more than a millionth more or fewer shares than asked,
+  where the current code sells the shares asked (both sale fixes are
+  described under [Deployment](#deployment));
+- differences where arbitrage legs and multi-sell rounds now carry what earlier
+  ones left each order and maker (#4119, #4120). On an arbitrage the two sides
+  must match once the same case is rebuilt with every maker's balance
+  unlimited. A multi-sell's results change by design, so there the current
+  code must instead fill no order past what was left of it and charge no
+  maker past their balance; #4120's own tests pin the rest.
+
+It is gated behind `PROBE`, so normal test runs skip it. To run it:
 
 ```sh
 cd common && PROBE=1 npx jest cpmm-multi-1-parity-probe

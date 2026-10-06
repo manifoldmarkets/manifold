@@ -9,13 +9,19 @@
 // identical after canonicalisation (sorted keys, timestamps stripped, NaN,
 // ±Infinity and -0 written out so Object.is-level differences show).
 //
-// Exactly two divergence classes are allowed, and both are recognised from the
+// Three divergence classes are allowed. The first two are recognised from the
 // baseline's own behaviour, never from the head's:
 //   1. NaN fee: the baseline throws "only works for p = 0.5, got NaN", the
 //      dust-fill NaN fee. The head must then go through.
 //   2. Coarse sale: the baseline's bisection for a sale's cost found an amount
 //      that sells more than a millionth more or fewer shares than asked. The
 //      head must then sell the shares asked.
+//   3. Capacity: arbitrage legs and multi-sell rounds now carry what earlier
+//      legs and rounds left each order and maker (#4119, #4120). On an
+//      arbitrage the two sides must match once the same case is rebuilt with
+//      every maker's balance unlimited. A multi-sell's results change by
+//      design, so there the head must instead fill no order past what was
+//      left of it and charge no maker past their balance.
 // Any other difference fails the test.
 //
 // cpmm-1 inputs stay within what placeBet accepts: a bet or sale that would
@@ -27,7 +33,7 @@
 // Run with:  cd common && PROBE=1 npx jest cpmm-multi-1-parity-probe
 // Skipped (describe.skip) in normal test runs.
 
-import { sum, sumBy } from 'lodash'
+import { mapValues, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { Bet, LimitBet } from './bet'
 import { CPMM_MIN_POOL_QTY, CPMMContract, CPMMMultiContract } from './contract'
@@ -290,6 +296,22 @@ const mkLimitBet = (
   fills: [],
 })
 
+// Whether makers' balances are as drawn, or so large that no maker runs out.
+// Only classify sets it, to rebuild a case without that limit; every draw is
+// the same either way. Orders keep their sizes: an order too big to fill up
+// would hold its price against any trade, a market no case draws.
+let balances: 'as-drawn' | 'unlimited' = 'as-drawn'
+const UNLIMITED = 1e12
+
+const withUnlimitedBalances = <T>(f: () => T): T => {
+  balances = 'unlimited'
+  try {
+    return f()
+  } finally {
+    balances = 'as-drawn'
+  }
+}
+
 // Makers: a whale, one with a middling balance, and one with almost nothing,
 // so fills run into balance limits and dust fills.
 const mkMakers = (rng: Rng): Balances => ({
@@ -330,7 +352,11 @@ const mkRestingOrders = (
       )
     )
   }
-  return { unfilledBets: orders, balanceByUserId: makers }
+  return {
+    unfilledBets: orders,
+    balanceByUserId:
+      balances === 'unlimited' ? mapValues(makers, () => UNLIMITED) : makers,
+  }
 }
 
 type MultiMarket = {
@@ -592,6 +618,8 @@ const attempt = (f: () => unknown): Outcome => {
 type Case = {
   run: (side: Side) => unknown
   sale?: { asked: number; sold: (side: Side, value: unknown) => number }
+  // The resting orders and makers' balances the case trades against.
+  book?: { orders: LimitBet[]; balances: Balances }
 }
 
 type CaseBuilder = (seed: number, caseIndex: number) => Case
@@ -750,6 +778,7 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
           m.balanceByUserId,
           loanPaidByAnswerId
         ),
+      book: { orders: m.unfilledBets, balances: m.balanceByUserId },
     }
   },
 
@@ -968,9 +997,66 @@ const ENTRY_POINTS: { [name: string]: CaseBuilder } = {
 
 // ------------------------------------------------------------------ whitelist
 
-type Verdict = 'match' | 'nan-fee' | 'coarse-sale' | 'unexpected'
+type Verdict = 'match' | 'nan-fee' | 'coarse-sale' | 'capacity' | 'unexpected'
 
-const classify = (c: Case, base: Outcome, hd: Outcome): Verdict => {
+// Entry points built on the sum-to-one arbitrage, whose legs now carry what
+// earlier legs left each maker. None of them shrinks its trade to fit the
+// book, so rebuilding a case with unlimited balances keeps the same trade.
+const LEGS_TRACK_BALANCES = new Set([
+  'calculateCpmmMultiArbitrageBet',
+  'calculateCpmmMultiArbitrageYesBets',
+  'getCpmmMultiSellBetInfo',
+  'getCpmmMultiSellSharesInfo',
+  'getNewMultiCpmmBetInfo',
+  'getBetDownToOneMultiBetInfo',
+])
+
+// Entry points that sell in rounds, which now carry the order book and
+// balances from one round to the next, and leave out of each round the YES
+// orders on answers it isn't selling (#4120).
+const ROUNDS_TRACK_BOOK = new Set(['getCpmmMultiSellSharesInfo'])
+
+// Every maker fill in a result: the records that carry the order they filled.
+const makerFills = (v: unknown): { bet: LimitBet; amount: number }[] => {
+  if (Array.isArray(v)) return v.flatMap(makerFills)
+  if (!v || typeof v !== 'object') return []
+  const o = v as { [key: string]: unknown }
+  if ('matchedBetId' in o && o.bet && typeof o.amount === 'number')
+    return [{ bet: o.bet as LimitBet, amount: o.amount }]
+  return Object.values(o).flatMap(makerFills)
+}
+
+// Whether a result fills some resting order past what was left of it, or
+// charges some maker more than their balance.
+const overcommits = (
+  value: unknown,
+  book: { orders: LimitBet[]; balances: Balances }
+) => {
+  const fills = makerFills(value)
+  const filled = (id: string) =>
+    sumBy(
+      fills.filter((f) => f.bet.id === id),
+      (f) => f.amount
+    )
+  const spent = (userId: string) =>
+    sumBy(
+      fills.filter((f) => f.bet.userId === userId),
+      (f) => f.amount
+    )
+  const over = (x: number, limit: number) => x > limit + 1e-9 * (1 + limit)
+  return (
+    book.orders.some((o) => over(filled(o.id), o.orderAmount - o.amount)) ||
+    Object.entries(book.balances).some(([id, b]) => over(spent(id), b))
+  )
+}
+
+const classify = (
+  name: string,
+  c: Case,
+  base: Outcome,
+  hd: Outcome,
+  rebuildWithUnlimitedBalances: () => Case
+): Verdict => {
   if (base.canon === hd.canon) return 'match'
 
   // 1. The baseline failed the sale with the dust-fill NaN fee; the head goes
@@ -988,6 +1074,29 @@ const classify = (c: Case, base: Outcome, hd: Outcome): Verdict => {
       headMiss <= COARSE_SALE_TOLERANCE * asked
     )
       return 'coarse-sale'
+  }
+
+  // 3. Capacity. The baseline priced every arbitrage leg, and every round of
+  //    a multi-sell, against the order book and balances as they were before
+  //    the trade: a maker short of balance across two legs left the taker
+  //    holding shares nothing backed (#4119), and a multi-sell filled an order
+  //    once per round, past its size, and filled YES orders on answers a round
+  //    wasn't selling without recording it (#4120). The head prices each leg
+  //    and round against what the earlier ones left. Allowed where:
+  //    a. on an arbitrage, the two sides match once every maker's balance is
+  //       unlimited, which is all #4119 changes;
+  //    b. on a multi-sell, whose results #4120 changes by design, the head
+  //       fills no order past what was left of it and charges no maker past
+  //       their balance. #4120's own tests pin the rest.
+  if (LEGS_TRACK_BALANCES.has(name) && !ROUNDS_TRACK_BOOK.has(name)) {
+    const u = withUnlimitedBalances(rebuildWithUnlimitedBalances)
+    if (
+      attempt(() => u.run(baseline)).canon === attempt(() => u.run(head)).canon
+    )
+      return 'capacity'
+  }
+  if (ROUNDS_TRACK_BOOK.has(name) && c.book && hd.ok) {
+    if (!overcommits(hd.value, c.book)) return 'capacity'
   }
 
   return 'unexpected'
@@ -1013,11 +1122,12 @@ d('cpmm-1 and cpmm-multi-1 parity with main', () => {
   afterAll(() => log.mockRestore())
 
   for (const [name, build] of Object.entries(ENTRY_POINTS)) {
-    it(`${name} matches main except for the two documented sale fixes`, () => {
+    it(`${name} matches main except for the documented fixes`, () => {
       const counts: { [verdict in Verdict]: number } = {
         match: 0,
         'nan-fee': 0,
         'coarse-sale': 0,
+        capacity: 0,
         unexpected: 0,
       }
       const unexpected: string[] = []
@@ -1027,7 +1137,7 @@ d('cpmm-1 and cpmm-multi-1 parity with main', () => {
           const c = build(seed, i)
           const base = attempt(() => c.run(baseline))
           const hd = attempt(() => c.run(head))
-          const verdict = classify(c, base, hd)
+          const verdict = classify(name, c, base, hd, () => build(seed, i))
           counts[verdict]++
           if (verdict === 'unexpected' && unexpected.length < 5) {
             unexpected.push(
@@ -1040,9 +1150,12 @@ d('cpmm-1 and cpmm-multi-1 parity with main', () => {
 
       console.info(`${name}: ${JSON.stringify(counts)}`)
       expect(unexpected).toEqual([])
-      expect(counts.match + counts['nan-fee'] + counts['coarse-sale']).toBe(
-        SEEDS.length * CASES_PER_SEED
-      )
+      expect(
+        counts.match +
+          counts['nan-fee'] +
+          counts['coarse-sale'] +
+          counts.capacity
+      ).toBe(SEEDS.length * CASES_PER_SEED)
     })
   }
 })
