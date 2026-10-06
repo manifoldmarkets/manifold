@@ -49,6 +49,7 @@ import { useExplorerUrl } from './use-explorer-url'
 import { ChamberTabs, modeName } from './chamber-tabs'
 import { MapView, MapViewToggle } from './map-view-toggle'
 import { ExplorerHelp } from './explorer-help'
+import { FilterResults } from './filter-results'
 import { ControlCard } from './control-card'
 import {
   firstShape,
@@ -820,82 +821,80 @@ export function ElectionExplorer(props: Props) {
             </p>
           )}
         {narrowed && (
-          <div className={styles.filterNotice} role="status">
-            <span>
-              {isMeasures
-                ? plural(measureMatches.length, 'matching measure')
-                : plural(filtered.length, 'matching race')}
-              {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
-              {noElectionMatches.length > 0 &&
-                ` · ${noElectionMatches.length} with no ${
-                  isMeasures ? 'statewide measures' : 'election'
-                }`}
-            </span>
-            <button
-              onClick={() => {
-                setQuery('')
-                setFilter(undefined)
-              }}
-            >
-              Clear {filter && !searching ? 'filter' : 'search'} ×
-            </button>
-          </div>
-        )}
-        {narrowed && (
-          <div
-            className={styles.results}
-            role="region"
-            aria-label={
+          <FilterResults
+            summary={
+              <>
+                {isMeasures
+                  ? plural(measureMatches.length, 'matching measure')
+                  : plural(filtered.length, 'matching race')}
+                {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
+                {noElectionMatches.length > 0 &&
+                  ` · ${noElectionMatches.length} with no ${
+                    isMeasures ? 'statewide measures' : 'election'
+                  }`}
+              </>
+            }
+            clearLabel={`Clear ${filter && !searching ? 'filter' : 'search'}`}
+            onClear={() => {
+              setQuery('')
+              setFilter(undefined)
+            }}
+            label={
               isMeasures
                 ? 'Ballot measure search results'
                 : filter && !searching
                 ? 'Races in this group'
                 : 'Race search results'
             }
-          >
-            {isMeasures &&
-              measureMatches.map((m) => (
+            resetKey={`${mode}:${filter ?? ''}:${query}`}
+            items={[
+              ...(isMeasures
+                ? measureMatches.map((m) => (
+                    <button
+                      key={m.key}
+                      onClick={(e) => choose(m.state, e.currentTarget)}
+                    >
+                      <span>
+                        {DATA[m.state].name} · {m.designation ?? m.title}
+                      </span>
+                      <span>
+                        {measureQuote(m.key) === undefined
+                          ? 'No odds yet'
+                          : `${formatOdds(measureQuote(m.key)!)} pass`}
+                      </span>
+                    </button>
+                  ))
+                : []),
+              ...filtered.map((r) => (
                 <button
-                  key={m.key}
-                  onClick={(e) => choose(m.state, e.currentTarget)}
+                  key={r.id}
+                  onClick={(e) => choose(r.id, e.currentTarget)}
                 >
+                  <span>{r.label}</span> <RaceQuote race={r} />
+                </button>
+              )),
+              ...noElectionMatches.map(([state, data]) => (
+                <button
+                  key={state}
+                  onClick={(e) => choose(state, e.currentTarget)}
+                >
+                  {data.name}{' '}
                   <span>
-                    {DATA[m.state].name} · {m.designation ?? m.title}
-                  </span>
-                  <span>
-                    {measureQuote(m.key) === undefined
-                      ? 'No odds yet'
-                      : `${formatOdds(measureQuote(m.key)!)} pass`}
+                    {isMeasures
+                      ? 'No statewide measures'
+                      : `No ${modeName(mode)} election`}
                   </span>
                 </button>
-              ))}
-            {filtered.map((r) => (
-              <button key={r.id} onClick={(e) => choose(r.id, e.currentTarget)}>
-                <span>{r.label}</span> <RaceQuote race={r} />
-              </button>
-            ))}
-            {noElectionMatches.map(([state, data]) => (
-              <button
-                key={state}
-                onClick={(e) => choose(state, e.currentTarget)}
-              >
-                {data.name}{' '}
-                <span>
-                  {isMeasures
-                    ? 'No statewide measures'
-                    : `No ${modeName(mode)} election`}
-                </span>
-              </button>
-            ))}
-            {(isMeasures ? measureMatches.length : filtered.length) === 0 &&
-              noElectionMatches.length === 0 && (
-                <span>
-                  {isMeasures
-                    ? 'No matching measures. Try a state, Prop 39 or a topic.'
-                    : 'No matching races. Try a state name or TX-15.'}
-                </span>
-              )}
-          </div>
+              )),
+            ]}
+            empty={
+              <span>
+                {isMeasures
+                  ? 'No matching measures. Try a state, Prop 39 or a topic.'
+                  : 'No matching races. Try a state name or TX-15.'}
+              </span>
+            }
+          />
         )}
 
         <div className={styles.stage}>

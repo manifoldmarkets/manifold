@@ -73,6 +73,18 @@ export function RaceDetailsPanel(props: {
   const [moved, setMoved] = useState(false)
   const drag = useRef<{ x: number; y: number; px: number; py: number }>()
   const helpId = useId()
+  // Whether the race was opened with the keyboard or a pointer.
+  const lastInput = useRef<'keyboard' | 'pointer'>('pointer')
+  useEffect(() => {
+    const key = () => (lastInput.current = 'keyboard')
+    const pointer = () => (lastInput.current = 'pointer')
+    window.addEventListener('keydown', key, true)
+    window.addEventListener('pointerdown', pointer, true)
+    return () => {
+      window.removeEventListener('keydown', key, true)
+      window.removeEventListener('pointerdown', pointer, true)
+    }
+  }, [])
   const hasLayer = !!layer
   const hasPosition = !!position
 
@@ -207,9 +219,14 @@ export function RaceDetailsPanel(props: {
     wasPinned.current = pinned
     if (!pinned) return
     panelRef.current?.querySelector('[data-details-content]')?.scrollTo(0, 0)
+    // Focus moves to Close either way; its ring shows only for keyboard
+    // users (focusVisible is ignored where unsupported).
     panelRef.current
       ?.querySelector<HTMLButtonElement>('[aria-label="Close race details"]')
-      ?.focus({ preventScroll: true })
+      ?.focus({
+        preventScroll: true,
+        focusVisible: lastInput.current === 'keyboard',
+      } as FocusOptions)
   }, [
     title,
     dockKey,
