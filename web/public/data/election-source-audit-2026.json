@@ -13,10 +13,7 @@
           "key": "AL"
         }
       ],
-      "answerParties": {
-        "lQNlcgyyyq": "R",
-        "8lUd0sUq6N": "D"
-      },
+      "answerParties": { "lQNlcgyyyq": "R", "8lUd0sUq6N": "D" },
       "caveats": [
         "No Other answer; only R and D are listed on the ballot, so low risk.",
         "Thin pool (k~50) but safe seat (R 0.97)."
@@ -61,9 +58,7 @@
         "gQlq5ChuQ5": "D",
         "zZz6znAIQq": "other"
       },
-      "caveats": [
-        "Thin (k~35); safe seat (R 0.93)."
-      ]
+      "caveats": ["Thin (k~35); safe seat (R 0.93)."]
     },
     "which-party-will-win-the-2026-color": {
       "contractId": "OEc2QzlS2l",
@@ -76,10 +71,7 @@
           "key": "CO"
         }
       ],
-      "answerParties": {
-        "6g5l6hUzUZ": "R",
-        "hpnOUQqQUL": "D"
-      },
+      "answerParties": { "6g5l6hUzUZ": "R", "hpnOUQqQUL": "D" },
       "caveats": [
         "No Other answer although four minor-party candidates are on the ballot; outcome handling unspecified.",
         "Safe seat (D 0.98)."
@@ -96,13 +88,8 @@
           "key": "DE"
         }
       ],
-      "answerParties": {
-        "9zZZCl8znN": "R",
-        "cNZznCAdq5": "D"
-      },
-      "caveats": [
-        "Safe seat (D 0.98); only R and D on ballot."
-      ]
+      "answerParties": { "9zZZCl8znN": "R", "cNZznCAdq5": "D" },
+      "caveats": ["Safe seat (D 0.98); only R and D on ballot."]
     },
     "which-party-will-win-the-2026-us-se": {
       "contractId": "cOqt565CRZ",
@@ -115,10 +102,7 @@
           "key": "GA"
         }
       ],
-      "answerParties": {
-        "06uy8EyC9y": "D",
-        "cALSRLpUOs": "R"
-      },
+      "answerParties": { "06uy8EyC9y": "D", "cALSRLpUOs": "R" },
       "caveats": [
         "Live limit book on Democratic YES is mostly unfunded (32,581 remaining, 600 balance-funded).",
         "Pool k~139; D 0.96."
@@ -135,10 +119,7 @@
           "key": "ID"
         }
       ],
-      "answerParties": {
-        "Anp6ZzL2A5": "R",
-        "PAq6dQhzEQ": "I"
-      },
+      "answerParties": { "Anp6ZzL2A5": "R", "PAq6dQhzEQ": "I" },
       "caveats": [
         "No Other answer; Fleming (I) and Loesby (L) unpriced (creator: N/A).",
         "Per-answer liquidity field 50 but pool k~254 (1,700 total liquidity)."
@@ -155,10 +136,7 @@
           "key": "IL"
         }
       ],
-      "answerParties": {
-        "SSnCcNIp0A": "D",
-        "C2EsQC9L2P": "R"
-      },
+      "answerParties": { "SSnCcNIp0A": "D", "C2EsQC9L2P": "R" },
       "caveats": [
         "No Other answer; Harrington (I) on ballot, handling unspecified.",
         "Safe seat (D 0.98); k~80."
@@ -175,10 +153,7 @@
           "key": "IA"
         }
       ],
-      "answerParties": {
-        "p2LLUsgOu6": "D",
-        "ldIP8EnhtN": "R"
-      },
+      "answerParties": { "p2LLUsgOu6": "D", "ldIP8EnhtN": "R" },
       "caveats": [
         "Candidate market: a party replacement or a Laehn/write-in win has no answer and no stated rule; expect N/A, which would make the race unpriced on election night.",
         "isCandidateLabelledAnswer() returns false for these labels, so the UI shows no candidate/party note; the explorer tells users to \"check the market description\", which is only a poll screenshot.",
@@ -217,10 +192,7 @@
           "key": "KY"
         }
       ],
-      "answerParties": {
-        "p6ld0ylu8u": "D",
-        "A2ungcLuSp": "R"
-      },
+      "answerParties": { "p6ld0ylu8u": "D", "A2ungcLuSp": "R" },
       "caveats": [
         "No Other answer; Campbell (I) on ballot.",
         "Description is background only (no rules).",
@@ -238,13 +210,8 @@
           "key": "LA"
         }
       ],
-      "answerParties": {
-        "CuOt6szy0c": "R",
-        "yhS5lLgszs": "D"
-      },
-      "caveats": [
-        "Safe seat (R 0.93); only R and D on ballot."
-      ]
+      "answerParties": { "CuOt6szy0c": "R", "yhS5lLgszs": "D" },
+      "caveats": ["Safe seat (R 0.93); only R and D on ballot."]
     },
     "will-the-democratic-party-candidate-NQOPZAnOA8": {
       "contractId": "RcL0Q9O0EU",
@@ -275,10 +242,7 @@
           "key": "MA"
         }
       ],
-      "answerParties": {
-        "lQhZCQRNAs": "R",
-        "0gncPgRUtN": "D"
-      },
+      "answerParties": { "lQhZCQRNAs": "R", "0gncPgRUtN": "D" },
       "caveats": [
         "No Other answer; Ayyadurai (I) and Tache (PSL) on ballot.",
         "Safe seat (D 0.98)."
@@ -316,10 +280,7 @@
           "key": "MN"
         }
       ],
-      "answerParties": {
-        "yA6p25udpE": "R",
-        "UZqStNNdRP": "D"
-      },
+      "answerParties": { "yA6p25udpE": "R", "UZqStNNdRP": "D" },
       "caveats": [
         "No Other answer; Simonetti (I), Whiting (L) on ballot.",
         "Limit orders shown (R NO 11,785; D YES 8,953) are unfunded (maker balance 0).",
@@ -337,14 +298,8 @@
           "key": "MS"
         }
       ],
-      "answerParties": {
-        "uPyNdg6uPA": "R",
-        "ChOy2OQIC6": "D"
-      },
-      "caveats": [
-        "No Other answer; Ty Pinkins (I) on ballot.",
-        "R 0.90; k~89."
-      ]
+      "answerParties": { "uPyNdg6uPA": "R", "ChOy2OQIC6": "D" },
+      "caveats": ["No Other answer; Ty Pinkins (I) on ballot.", "R 0.90; k~89."]
     },
     "who-will-win-the-2026-montana-senat": {
       "contractId": "tydQt5d26u",
@@ -401,10 +356,7 @@
           "key": "NH"
         }
       ],
-      "answerParties": {
-        "2gAgUyIlnl": "R",
-        "cZ95Uuqpz6": "D"
-      },
+      "answerParties": { "2gAgUyIlnl": "R", "cZ95Uuqpz6": "D" },
       "caveats": [
         "k~96; Republicans NO limit 2,562 mostly unfunded (30 funded).",
         "D 0.87."
@@ -421,10 +373,7 @@
           "key": "NJ"
         }
       ],
-      "answerParties": {
-        "hz2ugLNU6S": "R",
-        "OE6gl6QPtQ": "D"
-      },
+      "answerParties": { "hz2ugLNU6S": "R", "OE6gl6QPtQ": "D" },
       "caveats": [
         "No Other; Fernandez (I), Kuniansky (SWP) on ballot.",
         "Safe (D 0.97)."
@@ -441,13 +390,8 @@
           "key": "NM"
         }
       ],
-      "answerParties": {
-        "It2ynphQOh": "R",
-        "5C6EqUZzny": "D"
-      },
-      "caveats": [
-        "Safe (D 0.98); only R and D on ballot."
-      ]
+      "answerParties": { "It2ynphQOh": "R", "5C6EqUZzny": "D" },
+      "caveats": ["Safe (D 0.98); only R and D on ballot."]
     },
     "which-party-will-win-the-2026-north": {
       "contractId": "9EALhuO9dp",
@@ -460,10 +404,7 @@
           "key": "NC"
         }
       ],
-      "answerParties": {
-        "05LQ6gOyOE": "R",
-        "NqP2APdCAn": "D"
-      },
+      "answerParties": { "05LQ6gOyOE": "R", "NqP2APdCAn": "D" },
       "caveats": [
         "No Other; Bray (L), Dublin (G) on ballot.",
         "Republicans NO limit wall 81,000 funded @0.04-0.08 (deep on the D side).",
@@ -481,10 +422,7 @@
           "key": "OK"
         }
       ],
-      "answerParties": {
-        "yNg6Uuyd9U": "R",
-        "C9QdqCQ8p9": "D"
-      },
+      "answerParties": { "yNg6Uuyd9U": "R", "C9QdqCQ8p9": "D" },
       "caveats": [
         "No Other; two independents and a Libertarian on ballot.",
         "Safe (R 0.97)."
@@ -501,10 +439,7 @@
           "key": "OR"
         }
       ],
-      "answerParties": {
-        "ISt0S5Quhp": "D",
-        "0UgchzNLUy": "R"
-      },
+      "answerParties": { "ISt0S5Quhp": "D", "0UgchzNLUy": "R" },
       "caveats": [
         "No Other; Libertarian and Pacific Green on ballot.",
         "Safe (D 0.98)."
@@ -521,14 +456,8 @@
           "key": "RI"
         }
       ],
-      "answerParties": {
-        "cInt8E2yAS": "D",
-        "0q0dA8gyzg": "R"
-      },
-      "caveats": [
-        "No Other; Bahry (I) on ballot.",
-        "Safe (D 0.98)."
-      ]
+      "answerParties": { "cInt8E2yAS": "D", "0q0dA8gyzg": "R" },
+      "caveats": ["No Other; Bahry (I) on ballot.", "Safe (D 0.98)."]
     },
     "which-party-will-win-the-2026-south": {
       "contractId": "LsEpnppAcc",
@@ -546,9 +475,7 @@
         "zhN8I989EN": "D",
         "26Ut2N5SCR": "other"
       },
-      "caveats": [
-        "R 0.857 (D 0.143); creator silent, empty description."
-      ]
+      "caveats": ["R 0.857 (D 0.143); creator silent, empty description."]
     },
     "which-party-will-win-the-2026-senat-OCp8sREOUZ": {
       "contractId": "sshNUOnpCZ",
@@ -561,13 +488,8 @@
           "key": "SD"
         }
       ],
-      "answerParties": {
-        "C8QtcURuZR": "R",
-        "9zNRu0RANh": "I"
-      },
-      "caveats": [
-        "Safe (R 0.92); k~84."
-      ]
+      "answerParties": { "C8QtcURuZR": "R", "9zNRu0RANh": "I" },
+      "caveats": ["Safe (R 0.92); k~84."]
     },
     "which-party-will-win-the-2026-senat-I2ZRR8czlU": {
       "contractId": "IUNRCEs0zs",
@@ -580,14 +502,8 @@
           "key": "TN"
         }
       ],
-      "answerParties": {
-        "u552yuSZZR": "R",
-        "9n6CALyNAZ": "D"
-      },
-      "caveats": [
-        "No Other; eight independents on ballot.",
-        "Safe (R 0.977)."
-      ]
+      "answerParties": { "u552yuSZZR": "R", "9n6CALyNAZ": "D" },
+      "caveats": ["No Other; eight independents on ballot.", "Safe (R 0.977)."]
     },
     "which-party-will-win-the-2026-texas": {
       "contractId": "tdA9NqRnpZ",
@@ -621,10 +537,7 @@
           "key": "VA"
         }
       ],
-      "answerParties": {
-        "Lypc9CE2n5": "R",
-        "OS08uLlAun": "D"
-      },
+      "answerParties": { "Lypc9CE2n5": "R", "OS08uLlAun": "D" },
       "caveats": [
         "Safe (D 0.97); only R and D on ballot.",
         "Republicans NO limit 393 unfunded."
@@ -646,9 +559,7 @@
         "gPu9CqQI6I": "D",
         "uh2Sn9Qtdt": "other"
       },
-      "caveats": [
-        "Safe (R 0.975)."
-      ]
+      "caveats": ["Safe (R 0.975)."]
     },
     "which-party-will-win-the-2026-senat-OdACN5q9PP": {
       "contractId": "9UsuPpP8Ph",
@@ -661,13 +572,8 @@
           "key": "WY"
         }
       ],
-      "answerParties": {
-        "IZs6PNUEEt": "R",
-        "CpdqLPZI9g": "D"
-      },
-      "caveats": [
-        "Safe (R 0.97)."
-      ]
+      "answerParties": { "IZs6PNUEEt": "R", "CpdqLPZI9g": "D" },
+      "caveats": ["Safe (R 0.97)."]
     },
     "will-a-republican-win-the-us-senate": {
       "contractId": "CcysACRQAh",
@@ -719,10 +625,7 @@
           "key": "AL"
         }
       ],
-      "answerParties": {
-        "lzPNlIs89A": "D",
-        "dO6L9ZpgPq": "R"
-      },
+      "answerParties": { "lzPNlIs89A": "D", "dO6L9ZpgPq": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer)."
@@ -781,10 +684,7 @@
           "key": "AR"
         }
       ],
-      "answerParties": {
-        "0tE26QSs82": "D",
-        "A9EElnuPPl": "R"
-      },
+      "answerParties": { "0tE26QSs82": "D", "A9EElnuPPl": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer)."
@@ -845,10 +745,7 @@
           "key": "CT"
         }
       ],
-      "answerParties": {
-        "tLnZQdSUls": "D",
-        "sSRlzlssd0": "R"
-      },
+      "answerParties": { "tLnZQdSUls": "D", "sSRlzlssd0": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -903,10 +800,7 @@
           "key": "HI"
         }
       ],
-      "answerParties": {
-        "sO6QdS22Nh": "D",
-        "uNAcUN82IQ": "R"
-      },
+      "answerParties": { "sO6QdS22Nh": "D", "uNAcUN82IQ": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -944,10 +838,7 @@
           "key": "IL"
         }
       ],
-      "answerParties": {
-        "ydRsR2llsL": "D",
-        "t2qzE8ALht": "R"
-      },
+      "answerParties": { "ydRsR2llsL": "D", "t2qzE8ALht": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1023,10 +914,7 @@
           "key": "MD"
         }
       ],
-      "answerParties": {
-        "dh9RESOQpU": "D",
-        "y82CLPRp66": "R"
-      },
+      "answerParties": { "dh9RESOQpU": "D", "y82CLPRp66": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1084,10 +972,7 @@
           "key": "NE"
         }
       ],
-      "answerParties": {
-        "6Lt5RtA8nN": "D",
-        "NQcCd9qC5S": "R"
-      },
+      "answerParties": { "6Lt5RtA8nN": "D", "NQcCd9qC5S": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1105,10 +990,7 @@
           "key": "NV"
         }
       ],
-      "answerParties": {
-        "n529qt2g2Z": "D",
-        "5gOuSygt29": "R"
-      },
+      "answerParties": { "n529qt2g2Z": "D", "5gOuSygt29": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1126,10 +1008,7 @@
           "key": "NH"
         }
       ],
-      "answerParties": {
-        "I52A9yEUUZ": "D",
-        "029Nyqslhh": "R"
-      },
+      "answerParties": { "I52A9yEUUZ": "D", "029Nyqslhh": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer)."
@@ -1146,10 +1025,7 @@
           "key": "NM"
         }
       ],
-      "answerParties": {
-        "9E8lStUl6g": "D",
-        "ONhcyLE2In": "R"
-      },
+      "answerParties": { "9E8lStUl6g": "D", "ONhcyLE2In": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified."
       ]
@@ -1185,10 +1061,7 @@
           "key": "OH"
         }
       ],
-      "answerParties": {
-        "IuA6698sQ5": "D",
-        "Iyupdhg02n": "R"
-      },
+      "answerParties": { "IuA6698sQ5": "D", "Iyupdhg02n": "R" },
       "caveats": [
         "Creator comment is a dashboard request, not a rule.",
         "Only 9 bettors; price (Acton 0.63) agrees with the 192-bettor Ramaswamy binary (0.37)."
@@ -1205,10 +1078,7 @@
           "key": "OK"
         }
       ],
-      "answerParties": {
-        "hsRqstnlAs": "D",
-        "lIuqESggdQ": "R"
-      },
+      "answerParties": { "hsRqstnlAs": "D", "lIuqESggdQ": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1226,10 +1096,7 @@
           "key": "OR"
         }
       ],
-      "answerParties": {
-        "EuqpzQntR2": "D",
-        "sgszQZN5pn": "R"
-      },
+      "answerParties": { "EuqpzQntR2": "D", "sgszQZN5pn": "R" },
       "caveats": [
         "Only 6 bettors; Kotek 0.73 vs D 0.867 in the stale TheDucksFan party market."
       ]
@@ -1245,10 +1112,7 @@
           "key": "PA"
         }
       ],
-      "answerParties": {
-        "sQl6cEPdt9": "D",
-        "y0A6Adndp0": "R"
-      },
+      "answerParties": { "sQl6cEPdt9": "D", "y0A6Adndp0": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1266,10 +1130,7 @@
           "key": "SC"
         }
       ],
-      "answerParties": {
-        "SUA588UAQp": "D",
-        "C2nESRQ0uc": "R"
-      },
+      "answerParties": { "SUA588UAQp": "D", "C2nESRQ0uc": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer)."
@@ -1286,10 +1147,7 @@
           "key": "SD"
         }
       ],
-      "answerParties": {
-        "d8LIZq9nC6": "D",
-        "hCLy65QhOC": "R"
-      },
+      "answerParties": { "d8LIZq9nC6": "D", "hCLy65QhOC": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer)."
@@ -1306,10 +1164,7 @@
           "key": "TN"
         }
       ],
-      "answerParties": {
-        "QSSOp0CUlu": "D",
-        "zpOCESlcZ5": "R"
-      },
+      "answerParties": { "QSSOp0CUlu": "D", "zpOCESlcZ5": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1345,10 +1200,7 @@
           "key": "VT"
         }
       ],
-      "answerParties": {
-        "QqN96RZQZQ": "D",
-        "pASqQLzcc5": "R"
-      },
+      "answerParties": { "QqN96RZQZQ": "D", "pASqQLzcc5": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1366,10 +1218,7 @@
           "key": "WI"
         }
       ],
-      "answerParties": {
-        "cIQZl6QUlE": "D",
-        "AgQdZn2hq9": "R"
-      },
+      "answerParties": { "cIQZl6QUlE": "D", "AgQdZn2hq9": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -1387,10 +1236,7 @@
           "key": "WY"
         }
       ],
-      "answerParties": {
-        "d0U88LcEEQ": "D",
-        "InQZRpQsuR": "R"
-      },
+      "answerParties": { "d0U88LcEEQ": "D", "InQZRpQsuR": "R" },
       "caveats": [
         "Empty description: proposition rests on the title only; resolution rules unspecified.",
         "Thin AMM (50 mana per answer).",
@@ -2139,10 +1985,7 @@
           "key": "CA-4"
         }
       ],
-      "answerParties": {
-        "SNIyON6Etq": "D",
-        "IEd5ECNILI": "D"
-      },
+      "answerParties": { "SNIyON6Etq": "D", "IEd5ECNILI": "D" },
       "caveats": [
         "\"primaries\" dashboard link is boilerplate shared with Jack1's primary markets; round is inferred, not stated.",
         "Closes 10:59 UTC on election day (before polls close)."
@@ -2159,10 +2002,7 @@
           "key": "CA-7"
         }
       ],
-      "answerParties": {
-        "AEZqP5zhth": "D",
-        "shNId9sNL9": "D"
-      },
+      "answerParties": { "AEZqP5zhth": "D", "shNId9sNL9": "D" },
       "caveats": [
         "Per-answer totalLiquidity field 50 but pool k=1000 per answer (2000 contract liquidity)."
       ]
@@ -2246,10 +2086,7 @@
           "key": "CA-34"
         }
       ],
-      "answerParties": {
-        "OnII50cIZc": "D",
-        "lCUnONs9cQ": "D"
-      },
+      "answerParties": { "OnII50cIZc": "D", "lCUnONs9cQ": "D" },
       "caveats": [
         "Closes 2026-12-31 10:59 UTC (after election).",
         "Per-answer totalLiquidity field 500 vs pool k=1000."
@@ -2266,13 +2103,8 @@
           "key": "CA-37"
         }
       ],
-      "answerParties": {
-        "sS9gU8Sdpz": "D",
-        "Uldssu0AuP": "D"
-      },
-      "caveats": [
-        "2 bettors, liq 200; one-day-old market."
-      ]
+      "answerParties": { "sS9gU8Sdpz": "D", "Uldssu0AuP": "D" },
+      "caveats": ["2 bettors, liq 200; one-day-old market."]
     },
     "who-will-win-the-us-house-race-in-c": {
       "contractId": "U9PL8hI5sU",
@@ -2285,10 +2117,7 @@
           "key": "CA-40"
         }
       ],
-      "answerParties": {
-        "IqlglZsEA2": "R",
-        "8lSPE9LRSc": "R"
-      },
+      "answerParties": { "IqlglZsEA2": "R", "8lSPE9LRSc": "R" },
       "caveats": [
         "Needs preferOverPortfolio: true (original portfolio prices CA-40) AND ballot-composition party basis; with label classification alone it would show \"Other leads 100%\".",
         "Empty description; year inferred from creation/close dates."
@@ -2315,9 +2144,7 @@
         "NS88QuL60q": "I",
         "l0pgzzNqlt": "unknown"
       },
-      "caveats": [
-        "Closes 2026-11-03 06:59 UTC (election eve)."
-      ]
+      "caveats": ["Closes 2026-11-03 06:59 UTC (election eve)."]
     },
     "will-lauren-boebert-be-reelected-to": {
       "contractId": "5EIC9A05cU",
@@ -2347,12 +2174,8 @@
           "key": "NV-2"
         }
       ],
-      "answers": {
-        "yqnZt6CEcO": "NV-2"
-      },
-      "caveats": [
-        "Open seat; 6 bettors contract-wide; liq 25 per answer."
-      ]
+      "answers": { "yqnZt6CEcO": "NV-2" },
+      "caveats": ["Open seat; 6 bettors contract-wide; liq 25 per answer."]
     },
     "who-will-win-washingtons-9th-house": {
       "contractId": "ndRP5ZOA55",
@@ -2609,10 +2432,7 @@
           "key": "KY-6"
         }
       ],
-      "answerParties": {
-        "dtLL2dlAp5": "R",
-        "yUs5l60IpC": "D"
-      },
+      "answerParties": { "dtLL2dlAp5": "R", "yUs5l60IpC": "D" },
       "caveats": [
         "Ralph Alvarado (R) 0.720, Zach Dembo (D) 0.280",
         "Two-answer constraint forces third-party probability to 0 by construction."
@@ -2646,10 +2466,7 @@
           "key": "NC-11"
         }
       ],
-      "answerParties": {
-        "lPNslAhSRU": "D",
-        "putNNAZOU8": "R"
-      },
+      "answerParties": { "lPNslAhSRU": "D", "putNNAZOU8": "R" },
       "caveats": [
         "Jamie Ager (D) 0.640, Jennifer Balkcom (R) 0.360",
         "Only 2 bettors; close is 2027-11-03 (a year after the election)."
@@ -2938,10 +2755,7 @@
           "key": "IA-2"
         }
       ],
-      "answerParties": {
-        "dCcZlp5CdO": "D",
-        "2N6npIn0Qg": "R"
-      },
+      "answerParties": { "dCcZlp5CdO": "D", "2N6npIn0Qg": "R" },
       "caveats": [
         "Found by this audit via read-only prod query; NOT in markets.json/dossier — re-verify before mapping.",
         "Sum-to-one with no Other: an independent/Libertarian winner is unhandled.",
@@ -2959,9 +2773,7 @@
           "key": "IA-4"
         }
       ],
-      "answers": {
-        "LcOudZdt0h": "IA-4"
-      },
+      "answers": { "LcOudZdt0h": "IA-4" },
       "caveats": [
         "Thin: answer liquidity 25, pool YES 85.2 / NO 7.3, answer volume 100.",
         "Proposition is CONDITIONAL: empty description; certification, independents and caucus timing unspecified."
@@ -3006,10 +2818,7 @@
           "key": "OH-10"
         }
       ],
-      "answers": {
-        "SSlgtzn9gz": "MN-2",
-        "8p5pl6cgSE": "OH-10"
-      },
+      "answers": { "SSlgtzn9gz": "MN-2", "8p5pl6cgSE": "OH-10" },
       "caveats": [
         "Thin: answer liquidity 25, pool YES 9.5 / NO 66.0, answer volume 290.",
         "Proposition is CONDITIONAL: empty description; title has no year.",
@@ -3018,10 +2827,7 @@
         "Thin: answer liquidity 25, pool YES 49.0 / NO 12.8, answer volume 161.",
         "Libertarian Thomas McMasters also on ballot -> NO if he won."
       ],
-      "answerDistricts": {
-        "SSlgtzn9gz": "MN-2",
-        "8p5pl6cgSE": "OH-10"
-      }
+      "answerDistricts": { "SSlgtzn9gz": "MN-2", "8p5pl6cgSE": "OH-10" }
     },
     "which-new-york-house-districts-will": {
       "contractId": "9nS9P2scql",
@@ -3199,10 +3005,7 @@
           "key": "OH-7"
         }
       ],
-      "answerParties": {
-        "nqEZI8qdOZ": "D",
-        "9sZRccZSN6": "R"
-      },
+      "answerParties": { "nqEZI8qdOZ": "D", "9sZRccZSN6": "R" },
       "caveats": [
         "No creator comments; rules are one line.",
         "Prices diverge: party market D 0.79, candidate market Poindexter 0.769, Midwest portfolio 0.617."
@@ -3219,10 +3022,7 @@
           "key": "OH-15"
         }
       ],
-      "answerParties": {
-        "At5tC2O9cu": "R",
-        "gNAR0ZC5y5": "D"
-      },
+      "answerParties": { "At5tC2O9cu": "R", "gNAR0ZC5y5": "D" },
       "caveats": [
         "Weakest-specified PR source in these regions: title-only proposition, no comments."
       ]
@@ -3309,83 +3109,3859 @@
           "key": "CA-12"
         }
       ],
+      "answerParties": { "9lICQQPSZL": "D", "Onh5QO9udq": "D" }
+    },
+    "who-will-win-the-2026-rhode-island": {
+      "contractId": "5U0E2zEduP",
+      "kind": "candidate",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-governor-RI-regular-general",
+          "office": "governor",
+          "key": "RI"
+        }
+      ],
       "answerParties": {
-        "9lICQQPSZL": "D",
-        "Onh5QO9udq": "D"
+        "Eh8qpz5lE8": "D",
+        "5glRz5PStg": "R",
+        "008SlNtcny": "I",
+        "LzZzPd2n56": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho": {
+      "contractId": "q5Opz89IsE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-01-regular-general",
+          "office": "house",
+          "key": "AL-1"
+        }
+      ],
+      "answerParties": {
+        "C9q2OLOpPA": "D",
+        "9pQ9zdup9y": "R",
+        "PgAIOIUu0A": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-zEOqy9nn9c": {
+      "contractId": "hURAzpSUsg",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-03-regular-general",
+          "office": "house",
+          "key": "AL-3"
+        }
+      ],
+      "answerParties": {
+        "hP9zCPQz0O": "D",
+        "u0ZzINLNSO": "R",
+        "6nncpqzdyz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Sh5EyRUn6q": {
+      "contractId": "9O8lAcQ2sn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-04-regular-general",
+          "office": "house",
+          "key": "AL-4"
+        }
+      ],
+      "answerParties": {
+        "hZ6CcEZgNs": "D",
+        "QUO0RlzQpy": "R",
+        "N95UqnL6S8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-9dzS6cIENU": {
+      "contractId": "OnALOLS8g9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-05-regular-general",
+          "office": "house",
+          "key": "AL-5"
+        }
+      ],
+      "answerParties": {
+        "R2ddgQ5hp9": "D",
+        "8nREUlEd89": "R",
+        "CylOyhdhPn": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-yscLRRpzsQ": {
+      "contractId": "gZyQOZA9L6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-06-regular-general",
+          "office": "house",
+          "key": "AL-6"
+        }
+      ],
+      "answerParties": {
+        "zQI0EtUIOO": "D",
+        "q66OU5NzI6": "R",
+        "cE6C5In525": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-AqUpzn2zhN": {
+      "contractId": "LyRI9c5tq6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AL-07-regular-general",
+          "office": "house",
+          "key": "AL-7"
+        }
+      ],
+      "answerParties": {
+        "9Pyn0ASu9u": "D",
+        "5dc9RyQpLq": "R",
+        "9lC8uOqLpI": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-5PAhdzyRzP": {
+      "contractId": "d0pCQnSCRN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-03-regular-general",
+          "office": "house",
+          "key": "AZ-3"
+        }
+      ],
+      "answerParties": { "sCUsdqcIN8": "D", "p2uPRScnPs": "other" }
+    },
+    "which-party-will-win-the-2026-us-ho-uEUnA5nhqC": {
+      "contractId": "R0uZnlE9cU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-04-regular-general",
+          "office": "house",
+          "key": "AZ-4"
+        }
+      ],
+      "answerParties": {
+        "ZupPntgZy5": "D",
+        "6Sc6AtSCuA": "R",
+        "u8pcQNUUgz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-UC5PSsgddP": {
+      "contractId": "Suzd0nnIsU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-05-regular-general",
+          "office": "house",
+          "key": "AZ-5"
+        }
+      ],
+      "answerParties": {
+        "ASqtRcOhtt": "D",
+        "EOQOIzPSnz": "R",
+        "298Og2RuyN": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ys2nqIltnU": {
+      "contractId": "ypsI2llcpI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-07-regular-general",
+          "office": "house",
+          "key": "AZ-7"
+        }
+      ],
+      "answerParties": {
+        "hhczsISpUZ": "D",
+        "56Rd9hSIEt": "R",
+        "Qc5Ihul0cs": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-gnRUUNLSlP": {
+      "contractId": "6ngslU8A5Q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-08-regular-general",
+          "office": "house",
+          "key": "AZ-8"
+        }
+      ],
+      "answerParties": {
+        "UhPs2gIQuO": "D",
+        "AuQnP0PnOL": "R",
+        "8ZzAC2ng65": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dt9ZhE0NUu": {
+      "contractId": "PzsRhNcucz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AZ-09-regular-general",
+          "office": "house",
+          "key": "AZ-9"
+        }
+      ],
+      "answerParties": {
+        "NLsQzRQ0hg": "D",
+        "SNS8nc25Az": "R",
+        "A9RglqOsQu": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0usLcNPuzS": {
+      "contractId": "nAOcp9gC5l",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AR-01-regular-general",
+          "office": "house",
+          "key": "AR-1"
+        }
+      ],
+      "answerParties": {
+        "U0SP0pul6Q": "D",
+        "dUPy5p2Eqp": "R",
+        "R2llqpSNsO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-sECPNQSlCQ": {
+      "contractId": "ElpUnlZRsN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AR-02-regular-general",
+          "office": "house",
+          "key": "AR-2"
+        }
+      ],
+      "answerParties": {
+        "yyhnyh2slp": "D",
+        "SPhnL0yAZd": "R",
+        "zsS26uIzR2": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ClgyRu0pQU": {
+      "contractId": "Q6yAsAhO8E",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AR-03-regular-general",
+          "office": "house",
+          "key": "AR-3"
+        }
+      ],
+      "answerParties": {
+        "tQsy8P5UyO": "D",
+        "zQPLcAqZ0P": "R",
+        "602z2Ulq0n": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-CL5sAsUR8s": {
+      "contractId": "6pzsuzRLpP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-AR-04-regular-general",
+          "office": "house",
+          "key": "AR-4"
+        }
+      ],
+      "answerParties": {
+        "OSRqR5O0nU": "D",
+        "hydSg8NZ9P": "R",
+        "Ut2nugUggh": "other"
+      }
+    },
+    "who-will-win-the-2026-us-house-elec": {
+      "contractId": "5Zuc9gPcsR",
+      "kind": "candidate",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CA-29-regular-general",
+          "office": "house",
+          "key": "CA-29"
+        }
+      ],
+      "answerParties": { "E5ANt2hZzZ": "D", "lsR0cCLONL": "D" }
+    },
+    "which-party-will-win-the-2026-us-ho-8nA6QIPnu2": {
+      "contractId": "ENgUn2pd8q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CO-02-regular-general",
+          "office": "house",
+          "key": "CO-2"
+        }
+      ],
+      "answerParties": {
+        "hhRS2QqQyL": "D",
+        "Ot0lAI6hyC": "R",
+        "6Oc6tR0StQ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-cC90qp6nCP": {
+      "contractId": "zgPqS9yAN0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CO-05-regular-general",
+          "office": "house",
+          "key": "CO-5"
+        }
+      ],
+      "answerParties": {
+        "p0clOycC9u": "D",
+        "SPZOZup9Ng": "R",
+        "LILQ5LpQus": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Ud8s6EcUUg": {
+      "contractId": "0py856CPPn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CO-06-regular-general",
+          "office": "house",
+          "key": "CO-6"
+        }
+      ],
+      "answerParties": {
+        "SdL2OdSZIt": "D",
+        "yhIOAltCC6": "R",
+        "S9Z2zpqLEp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-cQ6AO0nz5R": {
+      "contractId": "LAOOtcnSuZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CO-07-regular-general",
+          "office": "house",
+          "key": "CO-7"
+        }
+      ],
+      "answerParties": {
+        "tshq2PhsSc": "D",
+        "RQZ8NPs8PN": "R",
+        "phgly8LRRR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-UdPlUUyNqn": {
+      "contractId": "5dC0zz88ln",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CT-01-regular-general",
+          "office": "house",
+          "key": "CT-1"
+        }
+      ],
+      "answerParties": {
+        "znIhLZOLzS": "D",
+        "slgndUsuqz": "R",
+        "58c6pp5CL9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-qCId6dnZS2": {
+      "contractId": "cUcpyz2Sc2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CT-02-regular-general",
+          "office": "house",
+          "key": "CT-2"
+        }
+      ],
+      "answerParties": {
+        "ssEgLtu2gL": "D",
+        "sZ0EnzldLN": "R",
+        "qZInOlyd5s": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lsPRSyhCPg": {
+      "contractId": "lpl2y2duCP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CT-03-regular-general",
+          "office": "house",
+          "key": "CT-3"
+        }
+      ],
+      "answerParties": {
+        "pltlS9cqQQ": "D",
+        "0SpE8R9ARQ": "R",
+        "QAQhs8IhOh": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-nLAgd8tccL": {
+      "contractId": "pLdg0LC05z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-CT-04-regular-general",
+          "office": "house",
+          "key": "CT-4"
+        }
+      ],
+      "answerParties": {
+        "5nczELP5ZS": "D",
+        "UEsNNhC60q": "R",
+        "S28uzEQp60": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ysgtp9NU6y": {
+      "contractId": "N6hOZSuhLQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-DE-00-regular-general",
+          "office": "house",
+          "key": "DE-0"
+        }
+      ],
+      "answerParties": {
+        "sUqpOzRP0p": "D",
+        "Cn6nyLuSRq": "R",
+        "qsy9RhnEpI": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-zNPuQ2h2sy": {
+      "contractId": "gsOssAZR8h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-02-regular-general",
+          "office": "house",
+          "key": "GA-2"
+        }
+      ],
+      "answerParties": {
+        "60EdsRQ6Nc": "D",
+        "R68S9RUgZE": "R",
+        "sUl5q2pnRg": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0EcNcSnRdy": {
+      "contractId": "OZdSNC8uqu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-03-regular-general",
+          "office": "house",
+          "key": "GA-3"
+        }
+      ],
+      "answerParties": {
+        "uQnqcyEcsu": "D",
+        "qylsgLQu9P": "R",
+        "U9gZu9SStu": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-sNS28P2t0g": {
+      "contractId": "p6U5cOEcQC",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-04-regular-general",
+          "office": "house",
+          "key": "GA-4"
+        }
+      ],
+      "answerParties": {
+        "tOslg8L9P2": "D",
+        "0IqcOt9l5n": "R",
+        "0CRRcU06Sq": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-t59ulI6RLR": {
+      "contractId": "AzCNnsN8y6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-05-regular-general",
+          "office": "house",
+          "key": "GA-5"
+        }
+      ],
+      "answerParties": {
+        "phc0IuLZZZ": "D",
+        "9CI2uy6PAh": "R",
+        "hEIC2pSdhL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2SOzcy8L5O": {
+      "contractId": "Ss8s6lIqOR",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-06-regular-general",
+          "office": "house",
+          "key": "GA-6"
+        }
+      ],
+      "answerParties": {
+        "n6OzgPL8C2": "D",
+        "hISn5S60CL": "R",
+        "nPsd8u8RtZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-LE8IgR6pOP": {
+      "contractId": "5IUzlAAOCq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-07-regular-general",
+          "office": "house",
+          "key": "GA-7"
+        }
+      ],
+      "answerParties": {
+        "RQyszn66dq": "D",
+        "tChhp00IPR": "R",
+        "Otdn68nLld": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lu8UUqsEAt": {
+      "contractId": "cqAc9qZAA0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-08-regular-general",
+          "office": "house",
+          "key": "GA-8"
+        }
+      ],
+      "answerParties": {
+        "Sc55lIl6OC": "D",
+        "QnAgd8cS2d": "R",
+        "Ic0ZuNC902": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-pnSAEOQ9ZU": {
+      "contractId": "6dnc59Zlns",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-09-regular-general",
+          "office": "house",
+          "key": "GA-9"
+        }
+      ],
+      "answerParties": {
+        "LtUy85SqNU": "D",
+        "CSNEE6CANs": "R",
+        "u6NpZQtUEQ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-uPSgtyqc9S": {
+      "contractId": "d2LZCQ80P9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-10-regular-general",
+          "office": "house",
+          "key": "GA-10"
+        }
+      ],
+      "answerParties": {
+        "lEqISghndS": "D",
+        "5n0qqR6Etu": "R",
+        "LO9szIIRUp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-8nIAqRZQAh": {
+      "contractId": "lqQUSgs9Z2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-11-regular-general",
+          "office": "house",
+          "key": "GA-11"
+        }
+      ],
+      "answerParties": {
+        "OLyZO8LhUc": "D",
+        "QOzc2nLLL9": "R",
+        "OLsRu9CIUd": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2d6h5ILcS0": {
+      "contractId": "tILd2I9QlE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-12-regular-general",
+          "office": "house",
+          "key": "GA-12"
+        }
+      ],
+      "answerParties": {
+        "UE9pPyuO2R": "D",
+        "sSSlPU5Nph": "R",
+        "qh6zA9gulp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-AOzSuAccnu": {
+      "contractId": "2592l9pIuu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-13-regular-general",
+          "office": "house",
+          "key": "GA-13"
+        }
+      ],
+      "answerParties": {
+        "E2ppASIRdg": "D",
+        "PI6RNQAQsQ": "R",
+        "ZLgcRnUI8u": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Ig6ORRNNtn": {
+      "contractId": "P0OnSEgALQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-GA-14-regular-general",
+          "office": "house",
+          "key": "GA-14"
+        }
+      ],
+      "answerParties": {
+        "AdAqc50Ulp": "D",
+        "Phqz6ULNn8": "R",
+        "gn9UAPCCEA": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-NA2ggnZNqO": {
+      "contractId": "gd2d2tQuP2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-HI-01-regular-general",
+          "office": "house",
+          "key": "HI-1"
+        }
+      ],
+      "answerParties": {
+        "9shN8cCgSI": "D",
+        "858nEl60hN": "R",
+        "nR82PU56Qn": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-zgZ6g889nQ": {
+      "contractId": "ClCOn0sUnO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-HI-02-regular-general",
+          "office": "house",
+          "key": "HI-2"
+        }
+      ],
+      "answerParties": {
+        "sSsI5yRtQp": "D",
+        "OzCp8gsE22": "R",
+        "6qczc65EsP": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-6EtsRPZsSg": {
+      "contractId": "cPQSlP0q0h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ID-01-regular-general",
+          "office": "house",
+          "key": "ID-1"
+        }
+      ],
+      "answerParties": {
+        "OLQACdP9Cg": "D",
+        "OCZ9Z6uqSL": "R",
+        "yu5zzUn2RL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-9nSRt0qRAU": {
+      "contractId": "OpEQAINLU6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ID-02-regular-general",
+          "office": "house",
+          "key": "ID-2"
+        }
+      ],
+      "answerParties": {
+        "zg9yOup2Zd": "D",
+        "AEcUuNN0St": "R",
+        "uPAy9lntOy": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-L6IlE0nq88": {
+      "contractId": "lp25AngIng",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-01-regular-general",
+          "office": "house",
+          "key": "IL-1"
+        }
+      ],
+      "answerParties": {
+        "Sc8syyU965": "D",
+        "O2UcnzgZNd": "R",
+        "ZyOOS5SdAL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-tLQAA5n52p": {
+      "contractId": "hhlL2p0NQz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-02-regular-general",
+          "office": "house",
+          "key": "IL-2"
+        }
+      ],
+      "answerParties": {
+        "dzAQgh0I2u": "D",
+        "hS8cLqsS2p": "R",
+        "sP09LpULRU": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-L0Q6tp9Ag6": {
+      "contractId": "gZsEIlAsu2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-03-regular-general",
+          "office": "house",
+          "key": "IL-3"
+        }
+      ],
+      "answerParties": {
+        "RSIpEq5c6d": "D",
+        "l86zZthQgS": "R",
+        "0Cug5Q9Zss": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-6uOZOZddAL": {
+      "contractId": "6EEZ8E8usd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-04-regular-general",
+          "office": "house",
+          "key": "IL-4"
+        }
+      ],
+      "answerParties": {
+        "n9uAtlERy2": "D",
+        "A9CCuUuRRA": "R",
+        "pcR0PLPC9O": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ghltZht9s0": {
+      "contractId": "96IzOltlEp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-05-regular-general",
+          "office": "house",
+          "key": "IL-5"
+        }
+      ],
+      "answerParties": {
+        "uyS02QqIlq": "D",
+        "ydgzpAdhUu": "R",
+        "q8quS6yAgz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-yuSzdEpZ6N": {
+      "contractId": "NAO2yZh59A",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-06-regular-general",
+          "office": "house",
+          "key": "IL-6"
+        }
+      ],
+      "answerParties": {
+        "lgIZyuZLlU": "D",
+        "QZtCZ2qL2C": "R",
+        "9nhzN9AgE0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-RyPntOqOq8": {
+      "contractId": "nZstIA50z9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-07-regular-general",
+          "office": "house",
+          "key": "IL-7"
+        }
+      ],
+      "answerParties": {
+        "ICAcO9zI0z": "D",
+        "56Nztcc5dc": "R",
+        "tPZpRszzQz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2PSQLnhtPu": {
+      "contractId": "5A8nh2CNdz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-08-regular-general",
+          "office": "house",
+          "key": "IL-8"
+        }
+      ],
+      "answerParties": {
+        "sOtg2dtL2y": "D",
+        "I562qscpp8": "R",
+        "pRE0IccROc": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Sytl0QlzNE": {
+      "contractId": "NU6OqOEZ2c",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-09-regular-general",
+          "office": "house",
+          "key": "IL-9"
+        }
+      ],
+      "answerParties": {
+        "dc2RUsO8nO": "D",
+        "nNys9OA62l": "R",
+        "Z0ZCAplul8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Cl0hNIZ9Op": {
+      "contractId": "6qyClAsqZP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-10-regular-general",
+          "office": "house",
+          "key": "IL-10"
+        }
+      ],
+      "answerParties": {
+        "RRnR9zyPOA": "D",
+        "PNgQynnOLy": "R",
+        "Zqdp8OL29N": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Ozu9ZtAI9d": {
+      "contractId": "ZZR9tnzpZZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-11-regular-general",
+          "office": "house",
+          "key": "IL-11"
+        }
+      ],
+      "answerParties": {
+        "t8sQURsEyc": "D",
+        "gnLR6c8AZS": "R",
+        "p6d2RhEtsg": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-R9N6gIdctn": {
+      "contractId": "yqUIp9yAUQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-12-regular-general",
+          "office": "house",
+          "key": "IL-12"
+        }
+      ],
+      "answerParties": {
+        "ph9yySy8Zt": "D",
+        "PI9SqPhddd": "R",
+        "czRPp8lC59": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-6SEgt0suQt": {
+      "contractId": "ysQ9LnCh0p",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-13-regular-general",
+          "office": "house",
+          "key": "IL-13"
+        }
+      ],
+      "answerParties": {
+        "SpSNuLtUqP": "D",
+        "C86y9yROCd": "R",
+        "qd5A80E2Sz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-PcEuR9lchQ": {
+      "contractId": "8UR22hhAEA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-14-regular-general",
+          "office": "house",
+          "key": "IL-14"
+        }
+      ],
+      "answerParties": {
+        "uEs0d26ncy": "D",
+        "qQhh9Su2tE": "R",
+        "QCpLAlsI9P": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Ay02c0RLIU": {
+      "contractId": "C9sNdtyCAd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-15-regular-general",
+          "office": "house",
+          "key": "IL-15"
+        }
+      ],
+      "answerParties": {
+        "EUOIg0cnPc": "D",
+        "cL8IOuNOSQ": "R",
+        "2ZLtN02yu9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-g6ytPZsR6q": {
+      "contractId": "sPQ9glscQ8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IL-16-regular-general",
+          "office": "house",
+          "key": "IL-16"
+        }
+      ],
+      "answerParties": {
+        "zRp80pdAt6": "D",
+        "LUdzpNzRZp": "R",
+        "80LzEPyZ0N": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-RlSCs2SzC9": {
+      "contractId": "5ppg2RNL98",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-02-regular-general",
+          "office": "house",
+          "key": "IN-2"
+        }
+      ],
+      "answerParties": {
+        "qEzhQ62QIP": "D",
+        "dAgC0tQyyP": "R",
+        "pClAu5uAly": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-C2IUIQQPRp": {
+      "contractId": "8lI0OSlhdS",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-03-regular-general",
+          "office": "house",
+          "key": "IN-3"
+        }
+      ],
+      "answerParties": {
+        "u2ZLzU9d92": "D",
+        "n2OttqOP0Q": "R",
+        "6NAQdPpAud": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-l0Snn8hspq": {
+      "contractId": "u5SqRuUyCs",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-04-regular-general",
+          "office": "house",
+          "key": "IN-4"
+        }
+      ],
+      "answerParties": {
+        "6IcL6cCuRQ": "D",
+        "Rc9hIZpzul": "R",
+        "hO2d8RLl8L": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Rcdz0s6qIU": {
+      "contractId": "yPIyRptlQt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-05-regular-general",
+          "office": "house",
+          "key": "IN-5"
+        }
+      ],
+      "answerParties": {
+        "CzRR5pN86A": "D",
+        "9phuEqSILL": "R",
+        "sssLyplSCZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-L9u0lyIpUL": {
+      "contractId": "0NUQINhphU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-06-regular-general",
+          "office": "house",
+          "key": "IN-6"
+        }
+      ],
+      "answerParties": {
+        "Lcunlt9sg5": "D",
+        "uu6z0pR8IC": "R",
+        "yIuS6NSLZO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-PsnOc8QAPA": {
+      "contractId": "8q6h0qcP0l",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-07-regular-general",
+          "office": "house",
+          "key": "IN-7"
+        }
+      ],
+      "answerParties": {
+        "Iq5N0PzRNU": "D",
+        "RcnO6uZuQd": "R",
+        "NQdCC2L9Ou": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-LQ9RL6InZQ": {
+      "contractId": "q6Ssyy0qph",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-08-regular-general",
+          "office": "house",
+          "key": "IN-8"
+        }
+      ],
+      "answerParties": {
+        "OZPpuALQz6": "D",
+        "L229nuUSAN": "R",
+        "2gtcyEUQq0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SLOgPpO89l": {
+      "contractId": "9EUpgt62Qs",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-IN-09-regular-general",
+          "office": "house",
+          "key": "IN-9"
+        }
+      ],
+      "answerParties": {
+        "C9L5280Eth": "D",
+        "Pzn8SRdO8R": "R",
+        "A6AC69ES0E": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Edqcc0tl9R": {
+      "contractId": "hA2IdSCnQE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-01-regular-general",
+          "office": "house",
+          "key": "KS-1"
+        }
+      ],
+      "answerParties": {
+        "5sn0uLtl8y": "D",
+        "Il0CA2ILCC": "R",
+        "dpn6snduhO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0ucz2RNNlZ": {
+      "contractId": "nqhdgyz6OU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-02-regular-general",
+          "office": "house",
+          "key": "KS-2"
+        }
+      ],
+      "answerParties": {
+        "9Zp8lN06P9": "D",
+        "gOPn5zdRdd": "R",
+        "pOsyLsZqnp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ZZEZduZ0nt": {
+      "contractId": "U2h9ALqR9Z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-03-regular-general",
+          "office": "house",
+          "key": "KS-3"
+        }
+      ],
+      "answerParties": {
+        "tN608lItc5": "D",
+        "lgd2uPhsl2": "R",
+        "QNhPAhtNcS": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dOL50UzIIl": {
+      "contractId": "C2chRU2N9L",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KS-04-regular-general",
+          "office": "house",
+          "key": "KS-4"
+        }
+      ],
+      "answerParties": {
+        "ECdNduSO50": "D",
+        "y6OcscLZLp": "R",
+        "gAN9t2OCNC": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-EQAOuqPqqN": {
+      "contractId": "IytLR8t2UN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-01-regular-general",
+          "office": "house",
+          "key": "KY-1"
+        }
+      ],
+      "answerParties": {
+        "nCCPzl8cdI": "D",
+        "pLLc9OU9zg": "R",
+        "OlzhQQl99t": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-9RtSU0PCAn": {
+      "contractId": "yApuQ6cQ9q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-02-regular-general",
+          "office": "house",
+          "key": "KY-2"
+        }
+      ],
+      "answerParties": {
+        "phRShLNQ0u": "D",
+        "hd5AlASSIz": "R",
+        "yzS892Q06P": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-RSQRZzqQ09": {
+      "contractId": "U9lEqhgdLI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-03-regular-general",
+          "office": "house",
+          "key": "KY-3"
+        }
+      ],
+      "answerParties": {
+        "qucOEIuU0c": "D",
+        "yNEPy0dUNS": "R",
+        "lPAuthz8d9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-l8n6PsNuNs": {
+      "contractId": "8pScpgsc9O",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-04-regular-general",
+          "office": "house",
+          "key": "KY-4"
+        }
+      ],
+      "answerParties": {
+        "hItELAnsyp": "D",
+        "Z9UOQzAR0n": "R",
+        "NAUlpuPdlL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-zCOE25Op65": {
+      "contractId": "2guUzgU26z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-KY-05-regular-general",
+          "office": "house",
+          "key": "KY-5"
+        }
+      ],
+      "answerParties": {
+        "t2nhqy2gS5": "D",
+        "szpt20RhCc": "R",
+        "E6tlNCnc99": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-65I6QSztOp": {
+      "contractId": "lzql5qqCPL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-01-regular-general",
+          "office": "house",
+          "key": "LA-1"
+        }
+      ],
+      "answerParties": {
+        "QZcU8gEZQ8": "D",
+        "q8EAElCI82": "R",
+        "tzn26ZdI9c": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-zltIc5U9ZP": {
+      "contractId": "0N6SPOy6yQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-02-regular-general",
+          "office": "house",
+          "key": "LA-2"
+        }
+      ],
+      "answerParties": {
+        "uZ5y58C5LE": "D",
+        "ZA5n9ggsQR": "R",
+        "qCU2yqs2h2": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-u2SLdSptRu": {
+      "contractId": "nutlNucQh5",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-03-regular-general",
+          "office": "house",
+          "key": "LA-3"
+        }
+      ],
+      "answerParties": {
+        "6NuP0Rd292": "D",
+        "8ZPyc2C5uU": "R",
+        "2IlhysAPpS": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-AEQ2OAEhAL": {
+      "contractId": "CndzIdpS6R",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-04-regular-general",
+          "office": "house",
+          "key": "LA-4"
+        }
+      ],
+      "answerParties": {
+        "yEZS6OsS6A": "D",
+        "A8R2Cu8Z6s": "R",
+        "lAlNZlESgq": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-L8ZOAt82Rq": {
+      "contractId": "n0hOh0snQ2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-05-regular-general",
+          "office": "house",
+          "key": "LA-5"
+        }
+      ],
+      "answerParties": {
+        "Ny5QZ5UEtU": "D",
+        "0CREyyP9gp": "R",
+        "uqZU5ytSuC": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dsl5hd8yAR": {
+      "contractId": "tQSnz2Epnq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-LA-06-regular-general",
+          "office": "house",
+          "key": "LA-6"
+        }
+      ],
+      "answerParties": {
+        "5EApLguslQ": "D",
+        "6AO6OtlOgS": "R",
+        "UNN9RPNZUA": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-L8phUPQ206": {
+      "contractId": "2dL9EdguUd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ME-01-regular-general",
+          "office": "house",
+          "key": "ME-1"
+        }
+      ],
+      "answerParties": {
+        "And5NOdUts": "D",
+        "2O2UpuLpEt": "R",
+        "nnpyALz9np": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-S5tROycyQC": {
+      "contractId": "ROASQpAyg2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-01-regular-general",
+          "office": "house",
+          "key": "MD-1"
+        }
+      ],
+      "answerParties": {
+        "h8pzZsUchh": "D",
+        "ylC69ARE2c": "R",
+        "ZRl2O25zc2": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-t9hy80uEEu": {
+      "contractId": "LLcz0OIAIQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-02-regular-general",
+          "office": "house",
+          "key": "MD-2"
+        }
+      ],
+      "answerParties": {
+        "ONdOzU2NcU": "D",
+        "ISEqqsQ8QO": "R",
+        "lnPELRRR68": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lusRPgy8SE": {
+      "contractId": "25p0U0Pg2z",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-03-regular-general",
+          "office": "house",
+          "key": "MD-3"
+        }
+      ],
+      "answerParties": {
+        "dp9IR69OpP": "D",
+        "RLOQPNOEuc": "R",
+        "62z5RI8ZP8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ZEL9y6g580": {
+      "contractId": "C5Esl98PS9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-04-regular-general",
+          "office": "house",
+          "key": "MD-4"
+        }
+      ],
+      "answerParties": {
+        "n9Ls2dQEU2": "D",
+        "p8zAs8cLCg": "R",
+        "qEhyI2OPcZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-OgyOsE2OEZ": {
+      "contractId": "Nplpy5qOtL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-05-regular-general",
+          "office": "house",
+          "key": "MD-5"
+        }
+      ],
+      "answerParties": {
+        "PZRuO68QI8": "D",
+        "EtEZySn6RO": "R",
+        "Z58t5Al8uu": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-tRSsSC2Q0C": {
+      "contractId": "0t8Cz2n6AA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-06-regular-general",
+          "office": "house",
+          "key": "MD-6"
+        }
+      ],
+      "answerParties": {
+        "Scstt6LION": "D",
+        "cguOOPN8nd": "R",
+        "9ORRLQnRR6": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-6PCI9pqzPS": {
+      "contractId": "5AQs0Q0qhA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-07-regular-general",
+          "office": "house",
+          "key": "MD-7"
+        }
+      ],
+      "answerParties": {
+        "52QguPyOSp": "D",
+        "EtCgzSZuzn": "R",
+        "PctPZQpzsR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-O0NcUuNgqA": {
+      "contractId": "nRscqc6ntE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MD-08-regular-general",
+          "office": "house",
+          "key": "MD-8"
+        }
+      ],
+      "answerParties": {
+        "0QQsSP6tnZ": "D",
+        "IZO2NSunNc": "R",
+        "ytuLC5sENs": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lh0P0EAsPO": {
+      "contractId": "zcgsQ5cNyN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-01-regular-general",
+          "office": "house",
+          "key": "MA-1"
+        }
+      ],
+      "answerParties": { "h50PyqzzOC": "D", "pCdQPg5Rlt": "other" }
+    },
+    "which-party-will-win-the-2026-us-ho-uLps8ynu8c": {
+      "contractId": "ul0UlstnU2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-03-regular-general",
+          "office": "house",
+          "key": "MA-3"
+        }
+      ],
+      "answerParties": {
+        "Pqd8AONqht": "D",
+        "qu5t9Sulz9": "R",
+        "EpZ5cqlInP": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-QdOUOqUgQz": {
+      "contractId": "z0c9Us0UR5",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-04-regular-general",
+          "office": "house",
+          "key": "MA-4"
+        }
+      ],
+      "answerParties": {
+        "0zgI0pOZpu": "D",
+        "C686S0EhA9": "R",
+        "tdUtu9Ly6h": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SydccnCgEL": {
+      "contractId": "qOLAzuzA2u",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-06-regular-general",
+          "office": "house",
+          "key": "MA-6"
+        }
+      ],
+      "answerParties": {
+        "AzSAu9O9P6": "D",
+        "gLtuly6nAn": "R",
+        "cn6nAONZyI": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-y6cduUqq8h": {
+      "contractId": "ZgQ26U99PZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-08-regular-general",
+          "office": "house",
+          "key": "MA-8"
+        }
+      ],
+      "answerParties": {
+        "NUn2hcccsc": "D",
+        "gysytA20P8": "R",
+        "5PqdIL2Znl": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-glQn6nhZC8": {
+      "contractId": "sISEZdzSdu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MA-09-regular-general",
+          "office": "house",
+          "key": "MA-9"
+        }
+      ],
+      "answerParties": {
+        "sgPNu6Ig5C": "D",
+        "ZsAcOOd80Z": "R",
+        "6LAdAqq86P": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SusE9IIhOS": {
+      "contractId": "RSc8OEqNLu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-01-regular-general",
+          "office": "house",
+          "key": "MI-1"
+        }
+      ],
+      "answerParties": {
+        "5q9InOPOc8": "D",
+        "06OzZ2CLnN": "R",
+        "EZUNqg0Zup": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-yQLNq6EAqy": {
+      "contractId": "2u88Rp9y5S",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-02-regular-general",
+          "office": "house",
+          "key": "MI-2"
+        }
+      ],
+      "answerParties": {
+        "UqzsIt0qLl": "D",
+        "SCOcAsRtnu": "R",
+        "tl2AsRuyhq": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-clZ6SOyqZ6": {
+      "contractId": "yl6PZ8OlSE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-05-regular-general",
+          "office": "house",
+          "key": "MI-5"
+        }
+      ],
+      "answerParties": {
+        "58zPqzsyN8": "D",
+        "Sq65IOyqup": "R",
+        "pq66ONEzn2": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Z0LLOQngPc": {
+      "contractId": "yU8EZhO9cZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-06-regular-general",
+          "office": "house",
+          "key": "MI-6"
+        }
+      ],
+      "answerParties": {
+        "ZsEALUNdq0": "D",
+        "cUlzScguO0": "R",
+        "N0t5P6llCy": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-p8scEOQ0y9": {
+      "contractId": "sPP8QgcqN8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-09-regular-general",
+          "office": "house",
+          "key": "MI-9"
+        }
+      ],
+      "answerParties": {
+        "s9IlQSczpn": "D",
+        "qp8Utpz50z": "R",
+        "UOuCuyUncu": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-cspq8ORELN": {
+      "contractId": "h2gR9cCuAh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-11-regular-general",
+          "office": "house",
+          "key": "MI-11"
+        }
+      ],
+      "answerParties": {
+        "NS6qInUNN5": "D",
+        "RpRAAlAyCz": "R",
+        "EOpSduZZ9h": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-O2zZhC62p9": {
+      "contractId": "Cz9ZlzIIdh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-12-regular-general",
+          "office": "house",
+          "key": "MI-12"
+        }
+      ],
+      "answerParties": {
+        "O6cStP0sS8": "D",
+        "pZsZOCEAPl": "R",
+        "PdsN52qg6R": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0gSNPAI0RR": {
+      "contractId": "9qRpNNAPNq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MI-13-regular-general",
+          "office": "house",
+          "key": "MI-13"
+        }
+      ],
+      "answerParties": {
+        "ls65Rh8ZZ6": "D",
+        "9nssS2dAzc": "R",
+        "nZRy2CS256": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-gUqq6ZOEIz": {
+      "contractId": "gsu5A9qP2L",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-03-regular-general",
+          "office": "house",
+          "key": "MN-3"
+        }
+      ],
+      "answerParties": {
+        "9zCCRcP9CE": "D",
+        "upAd2lzNNS": "R",
+        "P68IUsqIun": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-QUdtpuphIO": {
+      "contractId": "AqtUy25u95",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-04-regular-general",
+          "office": "house",
+          "key": "MN-4"
+        }
+      ],
+      "answerParties": {
+        "N2u0LUgg9U": "D",
+        "NChsRES9II": "R",
+        "nAN5Cpqlnh": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-PUz52dZnZA": {
+      "contractId": "CPU6QOplsN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-05-regular-general",
+          "office": "house",
+          "key": "MN-5"
+        }
+      ],
+      "answerParties": {
+        "22UnyRAEc5": "D",
+        "qQA8zgPCqQ": "R",
+        "gIn6g6UnA0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-shs8N5Z9gC": {
+      "contractId": "zEzIUsQ6pZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-06-regular-general",
+          "office": "house",
+          "key": "MN-6"
+        }
+      ],
+      "answerParties": {
+        "COEyCQyclI": "D",
+        "OQCq6chdpl": "R",
+        "NuyEyO9SN5": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-6lSudqUuNE": {
+      "contractId": "ggPg5zR8Zl",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-07-regular-general",
+          "office": "house",
+          "key": "MN-7"
+        }
+      ],
+      "answerParties": {
+        "0dACcsNsR0": "D",
+        "ny8ctZ5lsg": "R",
+        "NqNAySdyqP": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-RI9lOCpu0Q": {
+      "contractId": "PCZ0QtcNLQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MN-08-regular-general",
+          "office": "house",
+          "key": "MN-8"
+        }
+      ],
+      "answerParties": {
+        "ClZQZ5Q6Nl": "D",
+        "NnPtEO2ltn": "R",
+        "E8glS6zOdN": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-6y5clIz6qC": {
+      "contractId": "ppl6Qsguls",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-01-regular-general",
+          "office": "house",
+          "key": "MS-1"
+        }
+      ],
+      "answerParties": {
+        "Q8lP5IULqA": "D",
+        "nZuPPIuqPu": "R",
+        "dA8OR66ASp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SgISZz5z0R": {
+      "contractId": "OC2st8950h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-02-regular-general",
+          "office": "house",
+          "key": "MS-2"
+        }
+      ],
+      "answerParties": {
+        "P2OpNqtclq": "D",
+        "huRlltspdl": "R",
+        "uIyp9QqcUQ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ZclqPlcdzh": {
+      "contractId": "nNUnIANsCt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-03-regular-general",
+          "office": "house",
+          "key": "MS-3"
+        }
+      ],
+      "answerParties": {
+        "hSUlyQOCA8": "D",
+        "Lu9sdhntd2": "R",
+        "nP29R59SZR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2cUtQI2CgU": {
+      "contractId": "g9uIdELQ0P",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MS-04-regular-general",
+          "office": "house",
+          "key": "MS-4"
+        }
+      ],
+      "answerParties": {
+        "5Cg6uzIE0P": "D",
+        "z0UyQ2hcEA": "R",
+        "dy0UlpUQNA": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-5Z6zsgnczp": {
+      "contractId": "P6CP0RAEU2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-01-regular-general",
+          "office": "house",
+          "key": "MO-1"
+        }
+      ],
+      "answerParties": {
+        "0uOdISlcq5": "D",
+        "Z0u0Szy2In": "R",
+        "y0PltAdhlZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-zA8EZ0N5N0": {
+      "contractId": "sQQgCq6Eu6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-02-regular-general",
+          "office": "house",
+          "key": "MO-2"
+        }
+      ],
+      "answerParties": {
+        "chEsUCR0tN": "D",
+        "q8tQ6yUSnh": "R",
+        "PcqqOZdIzE": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-PQRIRgtONq": {
+      "contractId": "8h0SLdLC9C",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-03-regular-general",
+          "office": "house",
+          "key": "MO-3"
+        }
+      ],
+      "answerParties": {
+        "OhRhpZAI5U": "D",
+        "PLO8gqZy8E": "R",
+        "6y6hS0qUCZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-NnEZ9NOu0d": {
+      "contractId": "CggpL8yZ9N",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-04-regular-general",
+          "office": "house",
+          "key": "MO-4"
+        }
+      ],
+      "answerParties": {
+        "cQpAIE9dLQ": "D",
+        "Z8styAREny": "R",
+        "5Ig9Ou0OR2": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-692sQgZz2s": {
+      "contractId": "uZZyLC0ASP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-05-regular-general",
+          "office": "house",
+          "key": "MO-5"
+        }
+      ],
+      "answerParties": {
+        "OCAgQ2pC95": "D",
+        "5yOILCACtq": "R",
+        "Cchu0LuzEg": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-280lIztzyS": {
+      "contractId": "pQE8PqQQdn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-06-regular-general",
+          "office": "house",
+          "key": "MO-6"
+        }
+      ],
+      "answerParties": {
+        "2NsldIRUN0": "D",
+        "0snu6dZ86q": "R",
+        "clZhLNOnOS": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-tn9g9yIhUN": {
+      "contractId": "OdhQ6gZpCc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-07-regular-general",
+          "office": "house",
+          "key": "MO-7"
+        }
+      ],
+      "answerParties": {
+        "nn8CgqzUlI": "D",
+        "Nn58LUllqg": "R",
+        "NOslt28SLc": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-NU6zZRLncU": {
+      "contractId": "IZAyQO6zAP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MO-08-regular-general",
+          "office": "house",
+          "key": "MO-8"
+        }
+      ],
+      "answerParties": {
+        "pQt65dP66U": "D",
+        "sL8NupRNqA": "R",
+        "LldCNzczSp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-sph9lRn690": {
+      "contractId": "ynA8tEZ8O2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-MT-02-regular-general",
+          "office": "house",
+          "key": "MT-2"
+        }
+      ],
+      "answerParties": {
+        "6uyqIlZ8zL": "D",
+        "nnny5sOpdS": "R",
+        "sPuNsNgSEO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-P2sZNgUzzA": {
+      "contractId": "An5nNqZzZN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NE-01-regular-general",
+          "office": "house",
+          "key": "NE-1"
+        }
+      ],
+      "answerParties": {
+        "qRRIUN8EtZ": "D",
+        "0UhgO8qqgy": "R",
+        "0CdS2Ept92": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dIuIh2z6Ig": {
+      "contractId": "RId8nyt5zy",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NE-03-regular-general",
+          "office": "house",
+          "key": "NE-3"
+        }
+      ],
+      "answerParties": {
+        "82upSlzlS5": "D",
+        "LnpNlQPORE": "R",
+        "y9dU22EpUI": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-8clPZ66stZ": {
+      "contractId": "pgh2sLlSIt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-01-regular-general",
+          "office": "house",
+          "key": "NJ-1"
+        }
+      ],
+      "answerParties": {
+        "dc9Z2g5089": "D",
+        "scy5RCs5P8": "R",
+        "UnUZECCncz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-IOAdtyECnR": {
+      "contractId": "AUOhtq2N89",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-02-regular-general",
+          "office": "house",
+          "key": "NJ-2"
+        }
+      ],
+      "answerParties": {
+        "ppIEAS8hcE": "D",
+        "ccQ2RZIzsg": "R",
+        "I2n8yPhCcU": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-uuuQCcPlNq": {
+      "contractId": "cNOPnPUptd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-03-regular-general",
+          "office": "house",
+          "key": "NJ-3"
+        }
+      ],
+      "answerParties": {
+        "ySRCOsnqul": "D",
+        "lRutpAtA9Q": "R",
+        "nNRRhQUshN": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-LLh82ON86d": {
+      "contractId": "g8EOOqINSP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-04-regular-general",
+          "office": "house",
+          "key": "NJ-4"
+        }
+      ],
+      "answerParties": {
+        "q8QdL9cQyu": "D",
+        "U8sIA2dyIn": "R",
+        "UURnRUpPUd": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-qdsOQ9tz8L": {
+      "contractId": "hlScUZSups",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-06-regular-general",
+          "office": "house",
+          "key": "NJ-6"
+        }
+      ],
+      "answerParties": {
+        "82dLEE6IC8": "D",
+        "6Rcz2q5CcI": "R",
+        "QAL55PPAdz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-s5ZcchzqP5": {
+      "contractId": "sCudzENQC0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-08-regular-general",
+          "office": "house",
+          "key": "NJ-8"
+        }
+      ],
+      "answerParties": { "ARsuuQsIN9": "D", "dOIZOIncp6": "other" }
+    },
+    "which-party-will-win-the-2026-us-ho-OU0Rculzsu": {
+      "contractId": "I8p6Cz8c0P",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-10-regular-general",
+          "office": "house",
+          "key": "NJ-10"
+        }
+      ],
+      "answerParties": {
+        "hsU0llLPPn": "D",
+        "RIN8yA6QyZ": "R",
+        "882OzP6hCP": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-CzngNgtQnQ": {
+      "contractId": "gCsluhOEgI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-11-regular-general",
+          "office": "house",
+          "key": "NJ-11"
+        }
+      ],
+      "answerParties": {
+        "U6AAqROu2E": "D",
+        "U8lRtIc00n": "R",
+        "qIlZ2UPqct": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-C6y9PR9LAg": {
+      "contractId": "EZsdE8n096",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NJ-12-regular-general",
+          "office": "house",
+          "key": "NJ-12"
+        }
+      ],
+      "answerParties": {
+        "d9ElnNdutq": "D",
+        "dL00nzqE0R": "R",
+        "IqulANR6Z6": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-pSzUCyLgNE": {
+      "contractId": "5sQ2ZIS8Lt",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NM-01-regular-general",
+          "office": "house",
+          "key": "NM-1"
+        }
+      ],
+      "answerParties": {
+        "qRhE0Og2QO": "D",
+        "cZpy2ltnI9": "R",
+        "pUqEUqNEOt": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-s0dZOCQuu8": {
+      "contractId": "yOyt8OChIu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NM-03-regular-general",
+          "office": "house",
+          "key": "NM-3"
+        }
+      ],
+      "answerParties": {
+        "SSU5ch0Zzq": "D",
+        "EAI2RZEzUl": "R",
+        "0A8g6QnR0C": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dSLuOUQPLU": {
+      "contractId": "At6UL96nuh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-02-regular-general",
+          "office": "house",
+          "key": "NC-2"
+        }
+      ],
+      "answerParties": {
+        "ARdtSOPup2": "D",
+        "OSz9Lh88tq": "R",
+        "Q0yE0dllNI": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-q8SdUUCu2n": {
+      "contractId": "2IzCEuclAd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-03-regular-general",
+          "office": "house",
+          "key": "NC-3"
+        }
+      ],
+      "answerParties": {
+        "PZAZnhCPpR": "D",
+        "QQ8c8SLqtS": "R",
+        "OAZs5h62cC": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-8l5OqQZg5h": {
+      "contractId": "t8zqll0QIC",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-04-regular-general",
+          "office": "house",
+          "key": "NC-4"
+        }
+      ],
+      "answerParties": {
+        "qRyZAN50SI": "D",
+        "RZqUQAqN8g": "R",
+        "cLU5IUIdqZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2nOnEUZ9NZ": {
+      "contractId": "C8SN5zQScp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-05-regular-general",
+          "office": "house",
+          "key": "NC-5"
+        }
+      ],
+      "answerParties": {
+        "RP2sZP6RSh": "D",
+        "8pCZs5R0Qd": "R",
+        "dSuUd9SLcc": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-8yUtOuU9yc": {
+      "contractId": "dS8pZsO9N2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-06-regular-general",
+          "office": "house",
+          "key": "NC-6"
+        }
+      ],
+      "answerParties": {
+        "y5L2L2upty": "D",
+        "9ZCuAd09yQ": "R",
+        "CAQscREOpN": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-gnSt89NQ8A": {
+      "contractId": "CSuyzpgOIc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-07-regular-general",
+          "office": "house",
+          "key": "NC-7"
+        }
+      ],
+      "answerParties": {
+        "8sSdC6g9cP": "D",
+        "nA296QZ8Pp": "R",
+        "ucg9R0s2d8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-RZLNIhupny": {
+      "contractId": "uq8ppQcLN8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-08-regular-general",
+          "office": "house",
+          "key": "NC-8"
+        }
+      ],
+      "answerParties": {
+        "Pthg2O5Auz": "D",
+        "Pd2lSOP8Rt": "R",
+        "yyd0QOSL5Z": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lNOQLpUy50": {
+      "contractId": "pc5ERZzgtd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-10-regular-general",
+          "office": "house",
+          "key": "NC-10"
+        }
+      ],
+      "answerParties": {
+        "q89PqQhpSC": "D",
+        "RyRzqZhNLt": "R",
+        "u9ccQNOSR0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-QnEn8zSOAl": {
+      "contractId": "sPCQsphEpO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-12-regular-general",
+          "office": "house",
+          "key": "NC-12"
+        }
+      ],
+      "answerParties": {
+        "0clOsQI05n": "D",
+        "lQpgIR6zPE": "R",
+        "lAcqRUQL8S": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-czycsQSAO0": {
+      "contractId": "EO2EPndZ9t",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-13-regular-general",
+          "office": "house",
+          "key": "NC-13"
+        }
+      ],
+      "answerParties": {
+        "5sZO2h6NgO": "D",
+        "LLtdzltpIl": "R",
+        "zUPEy5UCnt": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-znP9Uc9uRg": {
+      "contractId": "NAnshulz20",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-NC-14-regular-general",
+          "office": "house",
+          "key": "NC-14"
+        }
+      ],
+      "answerParties": {
+        "dzhuqtRERz": "D",
+        "dng5P5cUc2": "R",
+        "CUL5ShdSE0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lQA62UuUAs": {
+      "contractId": "E8ulEgcIRz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-ND-00-regular-general",
+          "office": "house",
+          "key": "ND-0"
+        }
+      ],
+      "answerParties": {
+        "6PQt8hqOhL": "D",
+        "E52gI8npON": "R",
+        "qglggA05A8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-NROlcOqS5S": {
+      "contractId": "LE6SO0gs9y",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-02-regular-general",
+          "office": "house",
+          "key": "OH-2"
+        }
+      ],
+      "answerParties": {
+        "6E52ELEgn6": "D",
+        "cZddsI2IyE": "R",
+        "uPnh5sCRR8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2lnyP0qCEL": {
+      "contractId": "RnNSEU02qz",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-03-regular-general",
+          "office": "house",
+          "key": "OH-3"
+        }
+      ],
+      "answerParties": {
+        "0nEnIP2u09": "D",
+        "NpIqd8Lut0": "R",
+        "Adtd80RRt5": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-hN66uUqcuq": {
+      "contractId": "hAInCR9l60",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-04-regular-general",
+          "office": "house",
+          "key": "OH-4"
+        }
+      ],
+      "answerParties": {
+        "Ryl9AUQgnc": "D",
+        "EOS52QP0nh": "R",
+        "QqlqOSC8uR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Q2yd8Zzygn": {
+      "contractId": "8cuESdLZqZ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-05-regular-general",
+          "office": "house",
+          "key": "OH-5"
+        }
+      ],
+      "answerParties": {
+        "OU9huUuR6Q": "D",
+        "lntSd0cCZL": "R",
+        "LpCQ2AgPuC": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Z80dUn0QQS": {
+      "contractId": "6LdLqEtQ6I",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-06-regular-general",
+          "office": "house",
+          "key": "OH-6"
+        }
+      ],
+      "answerParties": {
+        "UsdREQpynl": "D",
+        "nOu8pCccPt": "R",
+        "E00lQuqzCd": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0Pqn5POzuL": {
+      "contractId": "CZug5PpNO0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-08-regular-general",
+          "office": "house",
+          "key": "OH-8"
+        }
+      ],
+      "answerParties": {
+        "slz9IzS0Ct": "D",
+        "LZESZzAgCs": "R",
+        "qPqzzduRh6": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-U2RhtEtSy8": {
+      "contractId": "6cyERp9l0Q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-11-regular-general",
+          "office": "house",
+          "key": "OH-11"
+        }
+      ],
+      "answerParties": {
+        "UUU9qq82yu": "D",
+        "pplzN8RLQ8": "R",
+        "h2czQQ6zu2": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-5ZPg9A6gdZ": {
+      "contractId": "Euu5IC6pg0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-12-regular-general",
+          "office": "house",
+          "key": "OH-12"
+        }
+      ],
+      "answerParties": {
+        "CL88IE9ASt": "D",
+        "gRCALQLnsy": "R",
+        "AcZQAqgzZc": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-pPucqdZPhn": {
+      "contractId": "sC0LchuuSp",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OH-14-regular-general",
+          "office": "house",
+          "key": "OH-14"
+        }
+      ],
+      "answerParties": {
+        "n9CttLpz2Z": "D",
+        "Uq58Q9PzqQ": "R",
+        "tNscNsOS50": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-OIUqR9SynS": {
+      "contractId": "5n85Qu8qys",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-01-regular-general",
+          "office": "house",
+          "key": "OK-1"
+        }
+      ],
+      "answerParties": {
+        "2qdAURczyq": "D",
+        "dPE9pSySNN": "R",
+        "2t6Sl6Al0u": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0AUqPU9nS5": {
+      "contractId": "p0dlzSOI8A",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-02-regular-general",
+          "office": "house",
+          "key": "OK-2"
+        }
+      ],
+      "answerParties": {
+        "CEyzO5ntcn": "D",
+        "lgS88c2O8L": "R",
+        "IppUgus69h": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-hONL6gNLq8": {
+      "contractId": "2P8qQOyZl9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-03-regular-general",
+          "office": "house",
+          "key": "OK-3"
+        }
+      ],
+      "answerParties": {
+        "EgARIlpzcZ": "D",
+        "zd2u0QE5UN": "R",
+        "IRE09Z6SOO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-AC9OtCyhph": {
+      "contractId": "Z2IQPUq5cs",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-04-regular-general",
+          "office": "house",
+          "key": "OK-4"
+        }
+      ],
+      "answerParties": {
+        "ARUt2sCcEI": "D",
+        "09nE5dN6NI": "R",
+        "hQN598SPy0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ONPc5R0UdQ": {
+      "contractId": "9NCtcSRpNh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OK-05-regular-general",
+          "office": "house",
+          "key": "OK-5"
+        }
+      ],
+      "answerParties": {
+        "As65ESI5nU": "D",
+        "SqCSLpPNyl": "R",
+        "SA8UsC6qpl": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-z8PgCPztuC": {
+      "contractId": "0nqh2nIIn8",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-01-regular-general",
+          "office": "house",
+          "key": "OR-1"
+        }
+      ],
+      "answerParties": {
+        "hSCsRO85hN": "D",
+        "ENAc9hlNLU": "R",
+        "sAdSs88dcR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-NSyuA5td6g": {
+      "contractId": "8Uh5AP0IUA",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-02-regular-general",
+          "office": "house",
+          "key": "OR-2"
+        }
+      ],
+      "answerParties": {
+        "l5zLPQ6AZR": "D",
+        "Npsucs9A9z": "R",
+        "OPcL56qSSl": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ZUSqls2SNz": {
+      "contractId": "Slly2LINhh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-03-regular-general",
+          "office": "house",
+          "key": "OR-3"
+        }
+      ],
+      "answerParties": {
+        "Eqc8t9Eh5I": "D",
+        "QSpACRPPnC": "R",
+        "OqENAZpcQp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-stECsPRtN8": {
+      "contractId": "zASRyZ2dnd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-04-regular-general",
+          "office": "house",
+          "key": "OR-4"
+        }
+      ],
+      "answerParties": {
+        "CIIl5PdpQN": "D",
+        "cC5IE0zZLc": "R",
+        "ZRqC56u8td": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-PpsZQuzUc9": {
+      "contractId": "qzlg6nCuLL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-OR-06-regular-general",
+          "office": "house",
+          "key": "OR-6"
+        }
+      ],
+      "answerParties": {
+        "g0gL6utO0l": "D",
+        "Ct2yl8EZsZ": "R",
+        "IOQU0g9O8Z": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ChdshRUAsn": {
+      "contractId": "tl9sRIRddE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-02-regular-general",
+          "office": "house",
+          "key": "PA-2"
+        }
+      ],
+      "answerParties": {
+        "gN66REShCQ": "D",
+        "R66syhRAcE": "R",
+        "0R6A0gUSZS": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-2UhSOzpnRu": {
+      "contractId": "6qcqOI6nlI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-03-regular-general",
+          "office": "house",
+          "key": "PA-3"
+        }
+      ],
+      "answerParties": { "CSOC220lAz": "D", "P8EhZZZZ6s": "other" }
+    },
+    "which-party-will-win-the-2026-us-ho-LgtNyOQyRl": {
+      "contractId": "9tzczCQ208",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-04-regular-general",
+          "office": "house",
+          "key": "PA-4"
+        }
+      ],
+      "answerParties": {
+        "qnyOyQOLn9": "D",
+        "Q9zgAyunqu": "R",
+        "s60nustNn9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-CNL6p06EsS": {
+      "contractId": "2zRzccSqZC",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-05-regular-general",
+          "office": "house",
+          "key": "PA-5"
+        }
+      ],
+      "answerParties": {
+        "gtSutg00sP": "D",
+        "ssQ25lgCun": "R",
+        "lQO8EEUEIO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-qylOq9t6Sd": {
+      "contractId": "6uChshszzU",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-06-regular-general",
+          "office": "house",
+          "key": "PA-6"
+        }
+      ],
+      "answerParties": {
+        "s0hlPgyuN0": "D",
+        "UlqRuhlL25": "R",
+        "ggtnlURIUL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-tISyZlp8tZ": {
+      "contractId": "Ed6q8UPp6q",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-09-regular-general",
+          "office": "house",
+          "key": "PA-9"
+        }
+      ],
+      "answerParties": {
+        "UIP0tyhctp": "D",
+        "qzNUNZZIs6": "R",
+        "gqQqUU6E6Z": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-CtCqgq6uI6": {
+      "contractId": "5IAqlIpQ0S",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-11-regular-general",
+          "office": "house",
+          "key": "PA-11"
+        }
+      ],
+      "answerParties": {
+        "2L9g8qu9CN": "D",
+        "P28EgLPANp": "R",
+        "UcIlIz9gAL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lt0yERUCO9": {
+      "contractId": "LShRdqSzLL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-12-regular-general",
+          "office": "house",
+          "key": "PA-12"
+        }
+      ],
+      "answerParties": {
+        "ypNQChPERZ": "D",
+        "IhuyAQqQ0N": "R",
+        "NR6860ELsP": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-y5l8qtyIzl": {
+      "contractId": "gClNUqtpSE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-13-regular-general",
+          "office": "house",
+          "key": "PA-13"
+        }
+      ],
+      "answerParties": {
+        "y6tE9AEOPh": "D",
+        "Z9sNhIdZdq": "R",
+        "9cEuuUEUlu": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-CqlL5Q8Eds": {
+      "contractId": "ES2q6Rnlhc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-14-regular-general",
+          "office": "house",
+          "key": "PA-14"
+        }
+      ],
+      "answerParties": {
+        "nSdyt9QsL6": "D",
+        "UnNlgslOpz": "R",
+        "ECOPnpR6Ly": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-qy6LU6n5y6": {
+      "contractId": "NdQ6hQz9hL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-15-regular-general",
+          "office": "house",
+          "key": "PA-15"
+        }
+      ],
+      "answerParties": {
+        "ht5RzPtCOS": "D",
+        "Z5c9SNLPUn": "R",
+        "N0NEgEZ05N": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-QqzQRnsOz5": {
+      "contractId": "qQ0EZtOPL2",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-PA-16-regular-general",
+          "office": "house",
+          "key": "PA-16"
+        }
+      ],
+      "answerParties": {
+        "g5hccLgtcQ": "D",
+        "5cldsQnL5E": "R",
+        "q5Szy8NltL": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-qRdQsqp5t5": {
+      "contractId": "USSEdh8h5p",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-RI-01-regular-general",
+          "office": "house",
+          "key": "RI-1"
+        }
+      ],
+      "answerParties": {
+        "huyCn2NQ0l": "D",
+        "COlNtcg80s": "R",
+        "sAgNQIRldq": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-hZEZuzqp8s": {
+      "contractId": "qOC5schc9h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-RI-02-regular-general",
+          "office": "house",
+          "key": "RI-2"
+        }
+      ],
+      "answerParties": {
+        "ctyIPAg0dn": "D",
+        "S05cdqgRtS": "R",
+        "8ZPI9sZgq8": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-00lz0pyZEs": {
+      "contractId": "zg60cQUscP",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-01-regular-general",
+          "office": "house",
+          "key": "SC-1"
+        }
+      ],
+      "answerParties": {
+        "hl95OluPRL": "D",
+        "PClu5lUsON": "R",
+        "Nhg5QzlpsN": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-URSg2sEqU8": {
+      "contractId": "u298Z9dSRS",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-02-regular-general",
+          "office": "house",
+          "key": "SC-2"
+        }
+      ],
+      "answerParties": {
+        "NERycP95dC": "D",
+        "lc9LOzl2cE": "R",
+        "9988EIUUI9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-g05hntCAOC": {
+      "contractId": "0dun2Z8zQc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-03-regular-general",
+          "office": "house",
+          "key": "SC-3"
+        }
+      ],
+      "answerParties": {
+        "RutZ6RzpZc": "D",
+        "5zuQsCus6y": "R",
+        "pstsRUyzCA": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-y0zCtIPRuR": {
+      "contractId": "dqOhpdIlgc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-04-regular-general",
+          "office": "house",
+          "key": "SC-4"
+        }
+      ],
+      "answerParties": {
+        "LRRRIhNqzh": "D",
+        "tqq9t5S2LQ": "R",
+        "0h9SROpOcu": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-5ZE22lOCNt": {
+      "contractId": "ENctc28hSc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-05-regular-general",
+          "office": "house",
+          "key": "SC-5"
+        }
+      ],
+      "answerParties": {
+        "l0lALyhEPI": "D",
+        "PZ9uy8AZ8n": "R",
+        "0UIyCI5psR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dqlCt5RUcZ": {
+      "contractId": "9UqIqq9g6I",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-06-regular-general",
+          "office": "house",
+          "key": "SC-6"
+        }
+      ],
+      "answerParties": {
+        "sLNO56hLNn": "D",
+        "8Iuu8uEN6y": "R",
+        "6C0gNOPIA0": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Z82dnlqgUh": {
+      "contractId": "OEAlQnSy2S",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SC-07-regular-general",
+          "office": "house",
+          "key": "SC-7"
+        }
+      ],
+      "answerParties": {
+        "SSdQ8dZEZ6": "D",
+        "Ncy5A0N2zy": "R",
+        "9dI6EsPZI5": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-NIp6gPASZz": {
+      "contractId": "RnuOgZcccL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-SD-00-regular-general",
+          "office": "house",
+          "key": "SD-0"
+        }
+      ],
+      "answerParties": {
+        "ss9LCEU9AU": "D",
+        "R90NZCIq9P": "R",
+        "uRCORyI05Z": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Eg0UUPdRqZ": {
+      "contractId": "0SlCdn6dLd",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-01-regular-general",
+          "office": "house",
+          "key": "TN-1"
+        }
+      ],
+      "answerParties": {
+        "gyuACdE8Ph": "D",
+        "UZPqyp9S6l": "R",
+        "ShplQQ2uZ9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-qA08I9nhgS": {
+      "contractId": "Ozt0SppqqL",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-02-regular-general",
+          "office": "house",
+          "key": "TN-2"
+        }
+      ],
+      "answerParties": {
+        "E6986A0Ny5": "D",
+        "uQ5ZydUdP9": "R",
+        "lNRUdg5RRS": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lcnPhUP6RN": {
+      "contractId": "Qtd6lCO6OI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-03-regular-general",
+          "office": "house",
+          "key": "TN-3"
+        }
+      ],
+      "answerParties": {
+        "PELqQn8y2P": "D",
+        "EgCpzNPs90": "R",
+        "52zcCU9yRZ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-uPOpcEt2h0": {
+      "contractId": "l2zRgIlyP0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-04-regular-general",
+          "office": "house",
+          "key": "TN-4"
+        }
+      ],
+      "answerParties": {
+        "ELEERg6tu6": "D",
+        "RuIsnRZIUN": "R",
+        "yg6AzPqycl": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-gUAt0952lt": {
+      "contractId": "6nQypEE5OO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-05-regular-general",
+          "office": "house",
+          "key": "TN-5"
+        }
+      ],
+      "answerParties": {
+        "pNctSLREpU": "D",
+        "EStSEnZNCg": "R",
+        "9UAugZzEcI": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-nA0gpOgONP": {
+      "contractId": "QgAOA9RIc0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-06-regular-general",
+          "office": "house",
+          "key": "TN-6"
+        }
+      ],
+      "answerParties": {
+        "2scPt6N6dt": "D",
+        "sII6tQOsPd": "R",
+        "CUucNCLPpP": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-AZ955qPgEC": {
+      "contractId": "8ssEIdEcpu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-07-regular-general",
+          "office": "house",
+          "key": "TN-7"
+        }
+      ],
+      "answerParties": {
+        "dgScIluQZQ": "D",
+        "Uu5t8ELSpO": "R",
+        "LPCdU2Ztpz": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-yqCAIhPU9d": {
+      "contractId": "5yO52CclhI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-08-regular-general",
+          "office": "house",
+          "key": "TN-8"
+        }
+      ],
+      "answerParties": {
+        "ONI6ZlpE6h": "D",
+        "tul2ACP0Ng": "R",
+        "p58O25CE6l": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-QScuqUNRcl": {
+      "contractId": "SlRuIpcug6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-01-regular-general",
+          "office": "house",
+          "key": "UT-1"
+        }
+      ],
+      "answerParties": {
+        "Ehh65hzOP0": "D",
+        "9SOgnlsSOL": "R",
+        "g9CPhC8659": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SS8gC9R5U8": {
+      "contractId": "nCgzqQIRCN",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-02-regular-general",
+          "office": "house",
+          "key": "UT-2"
+        }
+      ],
+      "answerParties": {
+        "NSdySsqhyN": "D",
+        "8SRZI98zIn": "R",
+        "u8Z25UAzU5": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-0sIqqSzPCy": {
+      "contractId": "Ctgl0yRt6h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-03-regular-general",
+          "office": "house",
+          "key": "UT-3"
+        }
+      ],
+      "answerParties": {
+        "9AysdAhnzE": "D",
+        "QEQ85Zq6cy": "R",
+        "LU20RR0Uqp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-gudNthgSg0": {
+      "contractId": "CzgsysIR6h",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-UT-04-regular-general",
+          "office": "house",
+          "key": "UT-4"
+        }
+      ],
+      "answerParties": {
+        "AlE6RApug9": "D",
+        "Es802zU9AL": "R",
+        "U0Q8pnA8h9": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-OyR8yILlyp": {
+      "contractId": "p0uUEuzhCh",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VT-00-regular-general",
+          "office": "house",
+          "key": "VT-0"
+        }
+      ],
+      "answerParties": {
+        "lgqtAtzCCL": "D",
+        "AA8S6E5dQ6": "R",
+        "L80tznEqpO": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-lCC690LZnO": {
+      "contractId": "q60L0OPUuQ",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-03-regular-general",
+          "office": "house",
+          "key": "VA-3"
+        }
+      ],
+      "answerParties": {
+        "AnOddOqcsL": "D",
+        "AuPUg0N28h": "R",
+        "gRdIE5PqRQ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-PpnNhI685c": {
+      "contractId": "lzAlSpqO60",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-04-regular-general",
+          "office": "house",
+          "key": "VA-4"
+        }
+      ],
+      "answerParties": {
+        "sgC0l8s8q5": "D",
+        "sRS5qlp6u5": "R",
+        "Ns9qd5LPPl": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SORPzscQLc": {
+      "contractId": "n0OpUzhZNS",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-05-regular-general",
+          "office": "house",
+          "key": "VA-5"
+        }
+      ],
+      "answerParties": {
+        "EInt20600d": "D",
+        "NsQ09Asny0": "R",
+        "QUzggNQQ09": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-sUtPdyuShN": {
+      "contractId": "6pCh6IApE5",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-06-regular-general",
+          "office": "house",
+          "key": "VA-6"
+        }
+      ],
+      "answerParties": {
+        "uO8yqgsI58": "D",
+        "Pg2lAsdsgP": "R",
+        "u9IZhyuuhA": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-cZN96gL0Ay": {
+      "contractId": "PP8uuS92Al",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-08-regular-general",
+          "office": "house",
+          "key": "VA-8"
+        }
+      ],
+      "answerParties": {
+        "ptON5zRPA8": "D",
+        "NNPRRqdpII": "R",
+        "uUqnnz656n": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-nSCp528ltP": {
+      "contractId": "Ecc5EtlhQu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-09-regular-general",
+          "office": "house",
+          "key": "VA-9"
+        }
+      ],
+      "answerParties": {
+        "nN6qhSCC6R": "D",
+        "UtNcO2L0t0": "R",
+        "SElSLOORCR": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SQIRQ69p2q": {
+      "contractId": "ZyIEhc6Oz6",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-VA-11-regular-general",
+          "office": "house",
+          "key": "VA-11"
+        }
+      ],
+      "answerParties": {
+        "8Pny2NPgdR": "D",
+        "cI5uO2z9Qz": "R",
+        "6uIspICgNp": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-RR0lASOggE": {
+      "contractId": "qs90ptSLnR",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-01-regular-general",
+          "office": "house",
+          "key": "WA-1"
+        }
+      ],
+      "answerParties": {
+        "SQ8PAcUdnO": "D",
+        "pA0quAyRSR": "R",
+        "526hq50unn": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-UzIIIdgLgU": {
+      "contractId": "qU2cgq6qcn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-02-regular-general",
+          "office": "house",
+          "key": "WA-2"
+        }
+      ],
+      "answerParties": {
+        "nPhgqsnO5Z": "D",
+        "q8An5NZhuq": "R",
+        "AsZhZdR502": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-nuySP6upsy": {
+      "contractId": "ygttREpZyE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-04-regular-general",
+          "office": "house",
+          "key": "WA-4"
+        }
+      ],
+      "answerParties": {
+        "sElgLzg5A8": "D",
+        "c8UQlSulyL": "R",
+        "qA8ZOtZ05u": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-QhdEztUgCC": {
+      "contractId": "ulpEdOOczu",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-05-regular-general",
+          "office": "house",
+          "key": "WA-5"
+        }
+      ],
+      "answerParties": {
+        "L5zU6A82U5": "D",
+        "PyppIEqQg6": "R",
+        "EpA2zNRhId": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-gI9R0sC9An": {
+      "contractId": "0EOOdRAzZE",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-06-regular-general",
+          "office": "house",
+          "key": "WA-6"
+        }
+      ],
+      "answerParties": {
+        "ZSnLs6Lc2z": "D",
+        "gAn2ZOtPIs": "R",
+        "hhc98hlQnC": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-982q9ZPS2l": {
+      "contractId": "2hOLCtQnC9",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-07-regular-general",
+          "office": "house",
+          "key": "WA-7"
+        }
+      ],
+      "answerParties": {
+        "zU6EZLAERz": "D",
+        "qdNpP2h2ug": "R",
+        "u5t92NggLE": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-ZyqQzcp8sq": {
+      "contractId": "nthtOls2Zq",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WA-10-regular-general",
+          "office": "house",
+          "key": "WA-10"
+        }
+      ],
+      "answerParties": {
+        "hCsU6d0qRh": "D",
+        "ccuzRnNZup": "R",
+        "s0q9NQUltQ": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-Ig5qZS2tuR": {
+      "contractId": "Stt5ElnRun",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WV-01-regular-general",
+          "office": "house",
+          "key": "WV-1"
+        }
+      ],
+      "answerParties": {
+        "SgL59ZUCzE": "D",
+        "zRE6CC0l9d": "R",
+        "qLd8I5t2gA": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-S6yAS0l5Q5": {
+      "contractId": "s0tyEdLt9y",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WV-02-regular-general",
+          "office": "house",
+          "key": "WV-2"
+        }
+      ],
+      "answerParties": {
+        "IOc2c5AtC8": "D",
+        "EO2NyU6Atp": "R",
+        "ApZQqgR6d6": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SRQnCSQ5S0": {
+      "contractId": "cpzdn65OSl",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-04-regular-general",
+          "office": "house",
+          "key": "WI-4"
+        }
+      ],
+      "answerParties": {
+        "tny9LhLsUP": "D",
+        "zszzRd8n8z": "R",
+        "uAl55Ru0Sg": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-dgNugz80St": {
+      "contractId": "qSEt9Z2LdO",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-05-regular-general",
+          "office": "house",
+          "key": "WI-5"
+        }
+      ],
+      "answerParties": {
+        "0Rcq0AduuO": "D",
+        "tcP8yUdA2I": "R",
+        "IP9LU6p5s6": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-UsnIntCntO": {
+      "contractId": "Ph2LE9l6qI",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-06-regular-general",
+          "office": "house",
+          "key": "WI-6"
+        }
+      ],
+      "answerParties": {
+        "2ZIyhE0nOZ": "D",
+        "IE62pRg50u": "R",
+        "6plESSSzut": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-SzNS958APl": {
+      "contractId": "PzpAPERLgn",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WI-08-regular-general",
+          "office": "house",
+          "key": "WI-8"
+        }
+      ],
+      "answerParties": {
+        "hcdl6ZtyzU": "D",
+        "t5CpOPgRhu": "R",
+        "ghUPNn2A0c": "other"
+      }
+    },
+    "which-party-will-win-the-2026-us-ho-5SsOZ2Q2Su": {
+      "contractId": "zu82nEU6nc",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-WY-00-regular-general",
+          "office": "house",
+          "key": "WY-0"
+        }
+      ],
+      "answerParties": {
+        "dlqtnhsZn0": "D",
+        "u8gRNQqU9l": "R",
+        "PtquqCIOAE": "other"
       }
     }
   },
   "sameParty": {
     "CA-4": {
       "party": "D",
-      "finalists": [
-        "Mike Thompson",
-        "Eric Jones"
-      ],
+      "finalists": ["Mike Thompson", "Eric Jones"],
       "basis": "CA SOS certified list for the Nov 3 2026 general (8/27/2026): both finalists Party Preference Democratic"
     },
     "CA-7": {
       "party": "D",
-      "finalists": [
-        "Doris Matsui",
-        "Mai Vang"
-      ],
+      "finalists": ["Doris Matsui", "Mai Vang"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-11": {
       "party": "D",
-      "finalists": [
-        "Scott Wiener",
-        "Connie Chan"
-      ],
+      "finalists": ["Scott Wiener", "Connie Chan"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-12": {
       "party": "D",
-      "finalists": [
-        "Lateefah Simon",
-        "Jamie Joyce"
-      ],
+      "finalists": ["Lateefah Simon", "Jamie Joyce"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-14": {
       "party": "D",
-      "finalists": [
-        "Aisha Wahab",
-        "Melissa Hernandez"
-      ],
+      "finalists": ["Aisha Wahab", "Melissa Hernandez"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-29": {
       "party": "D",
-      "finalists": [
-        "Luz Maria Rivas",
-        "Angélica María Dueñas"
-      ],
+      "finalists": ["Luz Maria Rivas", "Angélica María Dueñas"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-34": {
       "party": "D",
-      "finalists": [
-        "Jimmy Gomez",
-        "Angela Gonzales-Torres"
-      ],
+      "finalists": ["Jimmy Gomez", "Angela Gonzales-Torres"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-37": {
       "party": "D",
-      "finalists": [
-        "Sydney Kamlager-Dove",
-        "Samantha Mota"
-      ],
+      "finalists": ["Sydney Kamlager-Dove", "Samantha Mota"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Democratic"
     },
     "CA-40": {
       "party": "R",
-      "finalists": [
-        "Ken Calvert",
-        "Young Kim"
-      ],
+      "finalists": ["Ken Calvert", "Young Kim"],
       "basis": "CA SOS certified list (8/27/2026): both finalists Republican"
     }
   },

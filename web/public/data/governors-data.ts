@@ -100,8 +100,9 @@ export const governors2026: StateElectionMarket[] = [
   // MN: YES = Democratic (DFL) nominee wins; usable only through
   // audited-sources' binaryYes 'D'; DFL interpretation is noted in the audit.
   { state: 'MN', slug: 'democrats-win-2026-minnesota-gubern' },
-  // RI has no usable market (independent Ken Block polls second); see the
-  // creation manifest.
+  // RI: candidate market from the 2026 election launch, so independent Ken
+  // Block is priced too; see the creation manifest.
+  { state: 'RI', slug: 'who-will-win-the-2026-rhode-island' },
 ]
 
 // Candidate ("who will be elected") markets for marquee governor races, surfaced
