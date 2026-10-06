@@ -1251,6 +1251,44 @@ describe('calculateCpmmMultiArbitrageSellYesEqually — resting orders across ro
       expect(filled).toBeLessThanOrEqual(resting.orderAmount + 1e-9)
     })
   }
+  it('leaves YES orders on answers it is not selling out of the sale', () => {
+    // A NO order on answer1 takes the sale's YES buy there, so the sale's NO
+    // legs then push answer1 below where it started, through a YES order
+    // resting at 20%. Those legs fold into the redemption and keep no fills,
+    // so that order mustn't fill: the sale comes out as if it weren't there,
+    // rather than paying the seller mana the order's maker is never charged.
+    const answers = [
+      getAnswer(0, 0.5),
+      getAnswer(1, 0.3),
+      getAnswer(2, 0.2),
+    ].map((a) => scalePools(a, 10))
+    const answer1 = answers[1]
+    const noOrder = getLimitBet('no-order', answer1, 'NO', 'maker', 500, 0.31)
+    const yesOrder = getLimitBet('yes-order', answer1, 'YES', 'maker', 500, 0.2)
+    const sell = (orders: LimitBet[]) => {
+      const { newBetResults, otherBetResults } =
+        calculateCpmmMultiArbitrageSellYesEqually(
+          answers,
+          { answer0: [{ shares: 400 } as Bet] },
+          orders,
+          { maker: 1e6 },
+          noFees
+        )
+      return [...newBetResults, ...otherBetResults].map((r) => ({
+        answerId: r.answer.id,
+        pool: r.cpmmState.pool,
+        amount: sumBy(r.takers, 'amount'),
+        shares: sumBy(r.takers, 'shares'),
+        fills: r.makers.map((m) => [m.bet.id, m.amount]),
+      }))
+    }
+    const withYesOrder = sell([noOrder, yesOrder])
+    // The NO order does fill, so the sale does run its legs through answer1.
+    expect(withYesOrder.flatMap((r) => r.fills).map(([id]) => id)).toEqual([
+      'no-order',
+    ])
+    expect(withYesOrder).toEqual(sell([noOrder]))
+  })
 })
 
 describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting limit order', () => {

@@ -2318,6 +2318,15 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
           )
         }
       )
+      // The round's NO legs on answers it isn't selling fold into the
+      // redemption below and their fills aren't kept (the TODO there), so a
+      // YES order resting on one of those answers would be filled with no
+      // record of it, paying the seller mana its maker is never charged.
+      // Leave those orders out of the round: its NO legs pass them by, as
+      // they did when the endpoint loaded only the sold answers' orders.
+      const book = Object.values(workingUnfilledBetsByAnswer).flat()
+      const fillsKept = (bet: LimitBet) =>
+        bet.outcome === 'NO' || answerIdsToSellNow.includes(bet.answerId ?? '')
       const {
         newUpdatedAnswers,
         yesBets,
@@ -2329,15 +2338,21 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
         yesAmounts,
         updatedAnswers,
         undefined,
-        // Flatten the working book; it rebuilds its own map from this
-        Object.values(workingUnfilledBetsByAnswer).flat(),
+        // It rebuilds its own map of the working book from this
+        book.filter(fillsKept),
         workingBalanceByUserId,
         collectedFees,
         // Charge fees on sale bets
         answerIdsToSellNow
       )
       updatedAnswers = newUpdatedAnswers
-      workingUnfilledBetsByAnswer = updatedUnfilledBetsByAnswer
+      workingUnfilledBetsByAnswer = groupBy(
+        [
+          ...Object.values(updatedUnfilledBetsByAnswer).flat(),
+          ...book.filter((bet) => !fillsKept(bet)),
+        ],
+        (bet) => bet.answerId
+      )
       workingBalanceByUserId = updatedBalanceByUserId
       for (const yesBet of yesBets) {
         const redemptionFill = {
