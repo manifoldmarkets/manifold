@@ -25,8 +25,8 @@ import { HOUR_MS, MINUTE_MS } from '../util/time'
 export const PERP_FAST_QUOTE_POLL_MS = 4_000
 // Edge-cached `market/:id` poll for resolution, volume and live config.
 export const PERP_FAST_META_POLL_MS = 15_000
-// Both polls on a slow feed. A new value is at most a minute late on screen,
-// which is the same as or better than how often these feeds are ingested.
+// Polls on a slow feed. A new value is at most about a minute late on screen,
+// which is as fast as or faster than these feeds are ingested.
 export const PERP_SLOW_FEED_POLL_MS = MINUTE_MS
 
 // A feed is slow if its contract tolerates prices this old, or if its funding
@@ -34,14 +34,9 @@ export const PERP_SLOW_FEED_POLL_MS = MINUTE_MS
 const SLOW_FEED_MIN_AGE_BUDGET_MS = HOUR_MS
 
 export type PerpPollCadence = {
-  quoteFallbackMs: number
+  // Period of the get-perp-quote fallback poll, or null for none.
+  quoteFallbackMs: number | null
   metaMs: number
-  // Fetch the quote with `cache: 'no-store'`. The endpoint already answers
-  // `Cache-Control: no-cache`, so the browser revalidates every time either
-  // way; no-store additionally makes Chrome skip its CORS preflight cache, so
-  // every poll also costs an OPTIONS round trip. Kept on trading surfaces,
-  // where it predates this module; display-only cards on slow feeds drop it.
-  quoteNoStore: boolean
 }
 
 export const isSlowPerpFeed = (contract: {
@@ -65,12 +60,19 @@ export const isSlowPerpFeed = (contract: {
 /**
  * Poll cadence for one open perp view.
  *
- * Fast feeds keep the trading cadence (4s quote fallback, 15s meta) wherever
- * they are shown. Slow feeds back the quote fallback off to a minute
- * everywhere. Their meta poll stays at 15s on trading surfaces, which read live
- * config (leverage, fees) and pools from it. With `displayOnly` it also backs
- * off and the quote is fetched without no-store (see quoteNoStore), for
- * read-only cards such as the elections page that show only the price.
+ * - Fast feeds keep the trading cadence (4s quote fallback, 15s meta) wherever
+ *   they are shown.
+ * - Slow feeds on a trading surface back the quote fallback off to a minute.
+ *   Meta stays at 15s: the trade panel reads live config (leverage, fees) and
+ *   pools from it.
+ * - Slow feeds on a `displayOnly` card (e.g. the elections page, which shows
+ *   only the price) skip the quote poll entirely and poll meta once a minute.
+ *   get-perp-quote is no-cache, so every request reaches the API origin, while
+ *   `market/:id` is served from Cloudflare's cache (public, max-age=5) and the
+ *   meta poll already feeds its price into the quote pipeline. The card is then
+ *   at most about a minute behind a new daily value even with the socket down,
+ *   and the API sees roughly one request per market per cache window however
+ *   many readers there are.
  */
 export const getPerpPollCadence = (
   contract: { fundingPeriodMs?: number; maxOraclePriceAgeMs?: number },
@@ -80,14 +82,13 @@ export const getPerpPollCadence = (
     return {
       quoteFallbackMs: PERP_FAST_QUOTE_POLL_MS,
       metaMs: PERP_FAST_META_POLL_MS,
-      quoteNoStore: true,
     }
+  }
+  if (options.displayOnly) {
+    return { quoteFallbackMs: null, metaMs: PERP_SLOW_FEED_POLL_MS }
   }
   return {
     quoteFallbackMs: PERP_SLOW_FEED_POLL_MS,
-    metaMs: options.displayOnly
-      ? PERP_SLOW_FEED_POLL_MS
-      : PERP_FAST_META_POLL_MS,
-    quoteNoStore: !options.displayOnly,
+    metaMs: PERP_FAST_META_POLL_MS,
   }
 }

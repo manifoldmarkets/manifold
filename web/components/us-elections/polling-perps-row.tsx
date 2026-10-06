@@ -77,9 +77,10 @@ export function PollingPerpsRow(props: { contracts: Contract[] }) {
 function PollingPerpCard(props: { perp: PerpContract; className?: string }) {
   const { className } = props
   // displayOnly: the card shows the price and nothing else, so on these slow
-  // (daily) feeds the config/volume poll backs off along with the price poll.
-  // The trade modal mounts its own PerpOverview, which keeps the trading
-  // cadence while it is open.
+  // (daily) feeds it takes the price from the websocket push and the
+  // edge-cached market poll (once a minute) instead of polling the uncached
+  // quote endpoint. The trade modal mounts its own PerpOverview, which keeps
+  // the trading cadence while it is open.
   const { contract: perp } = useLivePerpContract(props.perp, {
     displayOnly: true,
   })

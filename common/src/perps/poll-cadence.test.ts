@@ -46,32 +46,25 @@ describe('getPerpPollCadence', () => {
     const fast = {
       quoteFallbackMs: PERP_FAST_QUOTE_POLL_MS,
       metaMs: PERP_FAST_META_POLL_MS,
-      quoteNoStore: true,
     }
     expect(getPerpPollCadence(btc)).toEqual(fast)
     expect(getPerpPollCadence(btc, { displayOnly: true })).toEqual(fast)
   })
 
-  it('backs the quote fallback off to a minute on slow feeds', () => {
-    expect(getPerpPollCadence(voteHub).quoteFallbackMs).toBe(
-      PERP_SLOW_FEED_POLL_MS
-    )
+  it('backs the quote fallback off to a minute on slow-feed trading surfaces', () => {
+    expect(getPerpPollCadence(voteHub)).toEqual({
+      quoteFallbackMs: PERP_SLOW_FEED_POLL_MS,
+      // The trade panel reads live leverage/fee config and pools from meta.
+      metaMs: PERP_FAST_META_POLL_MS,
+    })
     expect(PERP_SLOW_FEED_POLL_MS).toBeGreaterThanOrEqual(MINUTE_MS)
   })
 
-  it('keeps the meta poll and no-store quotes on trading surfaces for slow feeds', () => {
-    // The trade panel reads live leverage/fee config and pools from meta.
-    expect(getPerpPollCadence(voteHub).metaMs).toBe(PERP_FAST_META_POLL_MS)
-    expect(getPerpPollCadence(voteHub).quoteNoStore).toBe(true)
-  })
-
-  it('backs everything off on display-only cards for slow feeds', () => {
+  it('drops the uncached quote poll on display-only slow-feed cards', () => {
+    // The price comes from the push and the edge-cached meta poll instead.
     expect(getPerpPollCadence(voteHub, { displayOnly: true })).toEqual({
-      quoteFallbackMs: PERP_SLOW_FEED_POLL_MS,
+      quoteFallbackMs: null,
       metaMs: PERP_SLOW_FEED_POLL_MS,
-      // The endpoint's own no-cache still forces revalidation; dropping
-      // no-store only lets the browser reuse its CORS preflight.
-      quoteNoStore: false,
     })
   })
 })

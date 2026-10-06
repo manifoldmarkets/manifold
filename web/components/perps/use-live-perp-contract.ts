@@ -21,8 +21,9 @@ import { scheduleFreshBurst } from './use-perp-positions'
 //     `market/:id`, whose max-age=5 + stale-while-revalidate=10 can hand back
 //     a 15s-old price. 4s.
 // Feeds that publish slower than hourly (the VoteHub averages, other `daily`
-// feeds) back the quote fallback off to a minute, and display-only callers
-// back meta off too. Neither poll runs while the tab is hidden.
+// feeds) back the quote fallback off to a minute. Display-only callers on such
+// feeds skip the quote poll and poll meta once a minute. Neither poll runs
+// while the tab is hidden.
 
 // How long a push keeps the fallback poll quiet. Comfortably longer than the
 // fastest feed's tick so a healthy socket costs zero extra requests, short
@@ -48,15 +49,15 @@ const PUSH_CONSIDERED_FRESH_MS = 12_000
 export const useLivePerpContract = (
   ssrContract: PerpContract,
   options: {
-    // The caller only shows the price (no trade panel), so a slow feed's
-    // config/volume poll can back off as well. See getPerpPollCadence.
+    // The caller only shows the price (no trade panel), so on a slow feed it
+    // can live on the push and the edge-cached meta poll. See
+    // getPerpPollCadence.
     displayOnly?: boolean
   } = {}
 ) => {
-  const { quoteFallbackMs, metaMs, quoteNoStore } = getPerpPollCadence(
-    ssrContract,
-    { displayOnly: options.displayOnly }
-  )
+  const { quoteFallbackMs, metaMs } = getPerpPollCadence(ssrContract, {
+    displayOnly: options.displayOnly,
+  })
   const [quote, setQuote] = useState<PerpQuote | null>(null)
   const [meta, setMeta] = useState<Partial<PerpContract> | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -120,18 +121,18 @@ export const useLivePerpContract = (
   // slower than the freshness window ride this poll between ticks by design
   // (at the slow-feed cadence, so an idle tab costs one request a minute).
   // Resolved markets have a frozen settlement price and never tick again, so
-  // they get no poll at all. A hidden tab polls nothing, and catches up with
-  // one fetch when it is shown again.
+  // they get no poll at all, and neither do display-only cards on slow feeds
+  // (quoteFallbackMs null; the meta poll carries their price). A hidden tab
+  // polls nothing, and catches up with one fetch when it is shown again.
   const resolved = ssrContract.isResolved || meta?.isResolved === true
   useEffect(() => {
-    if (resolved) return
+    if (resolved || quoteFallbackMs == null) return
     let cancelled = false
     const loadQuote = () =>
       api(
         'get-perp-quote',
         { contractId: ssrContract.id },
-        // The endpoint is no-cache either way; see quoteNoStore.
-        quoteNoStore ? { cache: 'no-store' } : undefined
+        { cache: 'no-store' }
       )
         .then((incoming) => {
           if (!cancelled) applyQuote(incoming)
@@ -150,7 +151,7 @@ export const useLivePerpContract = (
       cancelled = true
       stop()
     }
-  }, [ssrContract.id, applyQuote, resolved, quoteFallbackMs, quoteNoStore])
+  }, [ssrContract.id, applyQuote, resolved, quoteFallbackMs])
 
   // Slow slice: resolution, volume, and the admin-tunable config that every
   // open page must converge on (update-perp-config edits leverage and fee
