@@ -1,13 +1,13 @@
 // Differential test of the cpmm-1 and cpmm-multi-1 entry points against main.
 //
-// The cpmm-multi-2 branch claims that, with both of its switches off, every
-// cpmm-1 and cpmm-multi-1 entry point behaves exactly as on main apart from
-// two deliberate fixes to sales. This probe checks that claim directly: it
-// runs each entry point on seeded random markets through the code on this
-// branch ("head") and through main's version of the same code, vendored at the
-// merge base under ./parity-baseline ("baseline"), and asserts the results are
-// identical after canonicalisation (sorted keys, timestamps stripped, NaN,
-// ±Infinity and -0 written out so Object.is-level differences show).
+// cpmm-multi-2 (#4102) left every cpmm-1 and cpmm-multi-1 entry point behaving
+// exactly as before apart from deliberate fixes. This probe checks that
+// directly: it runs each entry point on seeded random markets through the
+// current code ("head") and through main's version of the same code from just
+// before #4102, vendored under ./parity-baseline ("baseline"), and asserts the
+// results are identical after canonicalisation (sorted keys, timestamps
+// stripped, NaN, ±Infinity and -0 written out so Object.is-level differences
+// show).
 //
 // Three divergence classes are allowed. The first two are recognised from the
 // baseline's own behaviour, never from the head's:
@@ -26,9 +26,9 @@
 //
 // cpmm-1 inputs stay within what placeBet accepts: a bet or sale that would
 // leave a pool side under CPMM_MIN_POOL_QTY is shrunk until it doesn't. Past
-// that floor the branch previews the pool from the invariant where main's
-// subtraction cancels (documented in the PR), and no such trade can be
-// committed, so it is outside the claim under test.
+// that floor the head previews the pool from the invariant where the
+// baseline's subtraction cancels (documented in #4102), and no such trade can
+// be committed, so it is outside the claim under test.
 //
 // Run with:  cd common && PROBE=1 npx jest cpmm-multi-1-parity-probe
 // Skipped (describe.skip) in normal test runs.
