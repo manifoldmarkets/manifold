@@ -4,10 +4,10 @@
   "series": "us-2026-ballot-measures-v1",
   "generatedAt": "2026-10-06T05:05:26.008Z",
   "review": {
-    "approved": false,
-    "reviewedBy": "Tod (owner launch approval after independent audit)",
-    "reviewedAt": "2026-10-03T11:02:35.312Z",
-    "notes": "Owner authorized proceeding on October 3, 2026 after the independent audit fixes were integrated and tested. The 90 flagged ready ballot seeds use an explicitly accepted neutral 50%; individual seed review is waived. Other audited ballot seeds and the existing race seeds are retained. Creator: @ManifoldPolitics. Combined spending ceiling: 410,000 mana; this manifest allocation: 103000; current combined planned spend: 408,000. Held entries, optional liquidity upgrades and subsidies remain excluded. Start with a small race batch to verify production multi-answer seed support. Duplicate/idempotency checks and all runtime stops remain enabled.\nMarket-price seed refresh 2026-10-06T05:05:26.008Z: usable prices replaced starting seeds where an exact match passed the quote checks. Tod must review market-reseed-report.md and approve this manifest again before creation."
+    "approved": true,
+    "reviewedBy": "Tod",
+    "reviewedAt": "2026-10-06T05:23:42.881Z",
+    "notes": "Owner authorized proceeding on October 3, 2026 after the independent audit fixes were integrated and tested. The 90 flagged ready ballot seeds use an explicitly accepted neutral 50%; individual seed review is waived. Other audited ballot seeds and the existing race seeds are retained. Creator: @ManifoldPolitics. Combined spending ceiling: 410,000 mana; this manifest allocation: 103000; current combined planned spend: 408,000. Held entries, optional liquidity upgrades and subsidies remain excluded. Start with a small race batch to verify production multi-answer seed support. Duplicate/idempotency checks and all runtime stops remain enabled.\nMarket-price seed refresh 2026-10-06T05:05:26.008Z: usable prices replaced starting seeds where an exact match passed the quote checks. Tod must review market-reseed-report.md and approve this manifest again before creation.\n2026-10-06T05:23:42.881Z: Approved for launch after reviewing market-reseed-report.md."
   },
   "budget": {
     "approvedMaxTotalMana": 103000
