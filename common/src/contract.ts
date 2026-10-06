@@ -10,7 +10,7 @@ import { getLiquidity } from './calculate-cpmm'
 import { MultiBase64Points } from './chart'
 import { ContractComment } from './comment'
 import { ContractMetric } from './contract-metric'
-import { ENV, ENV_CONFIG } from './envs/constants'
+import { ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
@@ -568,8 +568,9 @@ export const NUMBER_CREATION_ENABLED = false
 // cpmm-multi-2 kill-switch: with it on, every new multiple choice market opens
 // as cpmm-multi-2 (opensAsCpmmMulti2), with or without starting probabilities;
 // numeric and date markets stay cpmm-multi-1. Reads are always safe (p ?? 0.5),
-// so only the creation path is flagged. Flip last, for staged rollout.
-export const CPMM_MULTI_2_CREATION_ENABLED = ENV === 'DEV'
+// so only the creation path is flagged. Turning it off makes new markets
+// cpmm-multi-1 again; markets already open keep the mechanism they have.
+export const CPMM_MULTI_2_CREATION_ENABLED = true
 // Separately gates converting an existing cpmm-multi-1 market to cpmm-multi-2
 // the first time a user adds liquidity to it. Unlike creation, that changes how
 // a live market trades (limit-order fills, liquidity adds) under positions and

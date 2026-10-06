@@ -192,7 +192,7 @@ Both live in `common/src/contract.ts`.
   included; numeric and date markets stay `cpmm-multi-1`. Turning it off makes
   new markets `cpmm-multi-1` again, seeded as #4082 did; existing
   `cpmm-multi-2` markets keep trading as `cpmm-multi-2` either way. It is on
-  for dev only (`ENV === 'DEV'`) and off in production.
+  in every environment.
 - `CPMM_MULTI_2_CONVERSION_ENABLED` converts an existing `cpmm-multi-1`
   multiple choice market to `cpmm-multi-2` the first time a user adds liquidity
   to it (`convertsToCpmmMulti2`). Numeric and date markets never convert: they
@@ -216,7 +216,13 @@ Answers in a market row's cached copy (`data.answers`) have no `p` until the
 market next changes, and the scheduler and the site price from that copy, so
 every read of an answer's `p` falls back to 0.5 (`answerP`).
 
-With both switches off, `cpmm-multi-1` bets, basket buys, answer adds,
+Deploy the site before the API and the scheduler. Creation is on, so once
+either carries this code every new multiple choice market it opens is
+`cpmm-multi-2`, and a site without this code can't chart or properly trade
+one. Once a `cpmm-multi-2` market exists, the way back is turning creation
+off, not reverting: code from before `cpmm-multi-2` can't price those markets.
+
+While conversion is off, `cpmm-multi-1` bets, basket buys, answer adds,
 liquidity and payouts come out exactly as before, errors included, and so do
 sells, with one deliberate exception: a fill too small for the pool to
 register now pays no fee instead of a NaN one, which failed the whole sale
@@ -236,10 +242,10 @@ websocket responses: 0.5 on every `cpmm-multi-1` answer, an added field.
 Answers served from a market row's cached copy (the site's search and its
 server-rendered pages, through undocumented routes) carry it only once the
 market has changed since the migration, so clients treat a missing `p` as
-0.5. Turning creation on doesn't
+0.5. Creation being on doesn't
 change which requests the public API accepts, but every new multiple choice
-market then reports `mechanism: 'cpmm-multi-2'`, its answers' `p` varies, and
-it refuses basket bets (`multi-bet`); `docs/docs/api.md` says so.
+market reports `mechanism: 'cpmm-multi-2'`, its answers' `p` varies, and it
+refuses basket bets (`multi-bet`); `docs/docs/api.md` says so.
 
 ## Known limits
 
