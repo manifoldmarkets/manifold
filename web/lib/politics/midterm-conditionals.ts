@@ -33,10 +33,11 @@ export const MIDTERM_CONDITIONALS: MidtermConditionalEntry[] = [
   // working Democratic majority from being seated?" Resolves on the seating of
   // the 120th Congress; N/A unless Democrats win a chamber.
   { market: { slug: 'if-democrats-win-the-house-or-senat' } },
-  // "If the Dems win enough seats in the midterms, will Trump be impeached?"
-  // N/A unless Democrats win "enough seats", which the creator defines as
-  // two-thirds of the House.
-  { market: { slug: 'if-the-dems-win-enough-seats-in-the' } },
+  // Deliberately not listed: if-the-dems-win-enough-seats-in-the ("If the Dems
+  // win enough seats in the midterms, will Trump be impeached?"). Its creator
+  // defines "enough seats" as two-thirds of the House, so it will almost
+  // certainly resolve N/A. The impeachment pair below asks the question
+  // properly.
   // "If Trump puts boots on the ground in Iran, will Dems win the Senate?"
   // Conditional the other way round: the condition is Iran, the outcome is the
   // Senate. N/A unless the linked boots-on-the-ground market resolves YES
