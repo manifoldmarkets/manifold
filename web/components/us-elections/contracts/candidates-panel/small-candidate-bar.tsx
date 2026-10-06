@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { isMultiCpmm, CPMMMultiContract, MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract, isMultiCpmm } from 'common/contract'
 import Image from 'next/image'
 import { IoIosPerson } from 'react-icons/io'
 import { MultiBettor, OpenProb } from 'web/components/answers/answer-components'

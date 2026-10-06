@@ -1,13 +1,14 @@
 import { XIcon } from '@heroicons/react/outline'
 import { CheckIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   isMultiCpmm,
   CPMMMultiContract,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
+  isMultiCpmm,
 } from 'common/contract'
 import { versusSideProb } from 'common/versus'
 import {
@@ -308,7 +309,11 @@ export const BuyPanelBody = (props: {
       YES: multiProps!.answerToBuy.poolYes,
       NO: multiProps!.answerToBuy.poolNo,
     },
-    p: 0.5,
+    // answerP (per-answer p, storage-default 0.5): hardcoding 0.5 showed a wrong
+    // probBefore/probAfter/probChange for a cpmm-multi-2 answer with p != 0.5, and a bare
+    // .p is undefined->NaN on blob-sourced answers. Mirrors the shared bet-preview path
+    // (client-common/src/lib/bet.ts).
+    p: answerP(multiProps!.answerToBuy),
     collectedFees: contract.collectedFees,
   }
 

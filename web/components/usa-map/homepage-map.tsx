@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { isMultiCpmm, Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { CongressSenate } from 'web/public/custom-components/congress_senate'
 import { CongressCenter } from 'web/public/custom-components/congress_center'
 import { CongressHouse } from 'web/public/custom-components/congress_house'

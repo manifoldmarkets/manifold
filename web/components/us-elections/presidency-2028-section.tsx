@@ -9,6 +9,7 @@ import {
   CPMMMultiContract,
   MultiContract,
   contractPath,
+  isMultiCpmm,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'

@@ -15,7 +15,11 @@ import {
   withAnswerProbSet,
 } from 'common/answer-probs'
 import { getAnswerProbsError } from 'common/new-contract'
-import { Contract, CreateableOutcomeType } from 'common/contract'
+import {
+  Contract,
+  CPMM_MULTI_2_CREATION_ENABLED,
+  CreateableOutcomeType,
+} from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -1257,7 +1261,13 @@ export function MarketPreview(props: {
                         <span className="text-ink-700 text-sm">
                           Set starting probabilities
                         </span>
-                        <InfoTooltip text="Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them." />
+                        <InfoTooltip
+                          text={
+                            CPMM_MULTI_2_CREATION_ENABLED
+                              ? 'Open the market at the odds you think are right instead of an even split. None of the liquidity you put up is lost to the odds you pick.'
+                              : 'Open the market at the odds you think are right instead of an even split. The liquidity you put up is spread around them.'
+                          }
+                        />
                         {data.answerProbs && shouldAnswersSumToOne && (
                           <span
                             className={clsx(

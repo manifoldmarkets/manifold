@@ -3,6 +3,7 @@ import {
   Contract,
   CPMMMultiContract,
   isBinaryMulti,
+  isMultiCpmmMechanism,
   isSportsContract,
   MarketContract,
 } from 'common/contract'
@@ -213,7 +214,7 @@ const useBetData = (props: {
   >([])
   useEffect(() => {
     getBetPoints(contractId, {
-      filterRedemptions: mechanism !== 'cpmm-multi-1',
+      filterRedemptions: !isMultiCpmmMechanism(mechanism),
     }).then(setPoints)
   }, [contractId, mechanism])
 

@@ -13,7 +13,7 @@ import { getPerpTicker } from './perps/ticker'
 
 // Bump when the card layout or the encoding of its params changes. The image
 // URL is cached for a year, and the edge route decodes `points` by version.
-export const OG_CARD_VERSION = '3'
+export const OG_CARD_VERSION = '4'
 // How many answers a multiple choice card shows, and how long each can be
 export const OG_CARD_MAX_ANSWERS = 3
 export const OG_CARD_MAX_ANSWER_LENGTH = 60

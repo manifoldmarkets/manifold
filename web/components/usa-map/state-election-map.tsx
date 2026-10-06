@@ -1,7 +1,7 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { auditedOdds, sourceAudit } from './audited-sources'
 import { Odds } from './election-odds'
-import { isMultiCpmm, Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import {
   MapContractsDictionary,
   StateElectionMarket,

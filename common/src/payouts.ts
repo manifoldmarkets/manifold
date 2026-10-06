@@ -6,6 +6,7 @@ import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
+  isMultiCpmm,
   tradingAllowed,
 } from './contract'
 import { ContractMetric } from './contract-metric'
@@ -77,11 +78,7 @@ export const getPayouts = (
       resolutionProbability ?? prob
     )
   }
-  if (
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne &&
-    answerId
-  ) {
+  if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne && answerId) {
     const answer = contract.answers.find((a) => a.id === answerId)
     if (!answer) {
       throw new Error('getPayouts: answer not found for cpmm-multi-1')
@@ -95,7 +92,7 @@ export const getPayouts = (
       resolutionProbability ?? answer.prob
     )
   }
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     if (outcome === 'CANCEL') {
       return getFixedCancelPayouts(contractMetrics, liquidities)
     }

@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
-  isMultiCpmm,
   Contract,
   contractPath,
   CPMMMultiContract,
+  isMultiCpmm,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'

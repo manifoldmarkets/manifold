@@ -1,10 +1,10 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import {
-  isMultiCpmm,
   CPMMMultiContract,
   MultiContract,
   contractPath,
+  isMultiCpmm,
 } from 'common/contract'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
