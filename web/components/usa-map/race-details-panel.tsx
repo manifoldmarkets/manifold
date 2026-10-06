@@ -16,7 +16,11 @@ import { RefreshIcon, XIcon } from '@heroicons/react/outline'
 import styles from './election-explorer.module.css'
 import interactions from '../us-elections/election-interactions.module.css'
 import { Point } from './map-camera'
-import { clampRaceCard, placeRaceCard } from './race-card-position'
+import {
+  clampRaceCard,
+  placeBesideRace,
+  placeRaceCard,
+} from './race-card-position'
 
 export function RaceDetailsPanel(props: {
   title: string
@@ -27,6 +31,12 @@ export function RaceDetailsPanel(props: {
   pointer: RefObject<Point | undefined>
   onClose: () => void
   chartLink?: ReactNode
+  // The selected shape's screen rectangle, to dock a pinned card beside it.
+  anchor?: () => DOMRect | undefined
+  // The bottom of the sticky toolbar; cards never open over it.
+  topInset?: () => number
+  // Changing it re-docks a pinned card (e.g. after the map reframes).
+  dockKey?: string
   children: ReactNode
 }) {
   const {
@@ -38,8 +48,16 @@ export function RaceDetailsPanel(props: {
     pointer,
     onClose,
     chartLink,
+    anchor,
+    topInset,
+    dockKey = title,
     children,
   } = props
+  const shapeRect = useRef(anchor)
+  shapeRect.current = anchor
+  const topInsetRef = useRef(topInset)
+  topInsetRef.current = topInset
+  const placedFor = useRef<string>()
   const panelRef = useRef<HTMLElement>(null)
   const anchorRef = useRef<HTMLSpanElement>(null)
   const [layer, setLayer] = useState<CSSProperties>()
@@ -87,7 +105,7 @@ export function RaceDetailsPanel(props: {
         document.documentElement.clientWidth - 8,
         (container?.right ?? window.innerWidth) - 8
       ),
-      top: 8,
+      top: Math.max(8, (topInsetRef.current?.() ?? 0) + 8),
       bottom: window.innerHeight - 8,
     }
   }, [])
@@ -148,6 +166,26 @@ export function RaceDetailsPanel(props: {
 
   useLayoutEffect(() => {
     if (!hasLayer) return
+    if (
+      !mobile &&
+      pinned &&
+      placedFor.current !== dockKey &&
+      panelRef.current
+    ) {
+      // Dock a newly pinned card beside its race.
+      const rect = shapeRect.current?.()
+      if (rect && rect.width + rect.height > 0) {
+        positionCard(
+          placeBesideRace(
+            rect,
+            panelRef.current.getBoundingClientRect(),
+            cardBounds()
+          )
+        )
+        pinOrigin.current = positionRef.current
+      }
+    }
+    placedFor.current = pinned ? dockKey : undefined
     if (!mobile) {
       if (!pinned || !positionRef.current) {
         const bounds = cardBounds()
@@ -174,6 +212,7 @@ export function RaceDetailsPanel(props: {
       ?.focus({ preventScroll: true })
   }, [
     title,
+    dockKey,
     pinned,
     mobile,
     hasLayer,
@@ -218,9 +257,11 @@ export function RaceDetailsPanel(props: {
     <>
       <span className={styles.eyebrow}>{eyebrow}</span>
       <span className={styles.detailTitle}>{title}</span>
-      <span className={styles.dragHint} aria-hidden>
-        {pinned ? '⠿ Drag to move' : 'Click to pin and explore'}
-      </span>
+      {!pinned && (
+        <span className={styles.dragHint} aria-hidden>
+          Click to pin and explore
+        </span>
+      )}
     </>
   )
 
