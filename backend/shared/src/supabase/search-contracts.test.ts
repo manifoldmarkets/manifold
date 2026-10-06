@@ -92,7 +92,9 @@ describe('staleSeenMarketsSql', () => {
   const sql = renderSql(staleSeenMarketsSql('user-id'))
 
   it('only suppresses CPMM mechanisms with a supported movement signal', () => {
-    expect(sql).toContain("contracts.mechanism in ('cpmm-1', 'cpmm-multi-1')")
+    expect(sql).toContain(
+      "contracts.mechanism in ('cpmm-1', 'cpmm-multi-1', 'cpmm-multi-2')"
+    )
   })
 
   it('lets resolutions and new or moving answers resurface', () => {

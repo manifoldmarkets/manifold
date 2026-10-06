@@ -5,6 +5,7 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
+import { isMultiCpmm } from 'common/contract'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
@@ -302,7 +303,7 @@ const planFreeLoan = async (
     const contractMetrics = metricsGroupedByContract[contractId]
     const contract = contractsById[contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     if (isIndependent) {
       // For independent markets, calculate limits per answer
@@ -345,7 +346,7 @@ const planFreeLoan = async (
 
     const contract = contractsById[m.contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     if (isIndependent) {
       // For independent markets, use per-answer limit

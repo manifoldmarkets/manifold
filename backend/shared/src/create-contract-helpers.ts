@@ -1,6 +1,11 @@
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { getCpmmInitialLiquidity } from 'common/antes'
-import { BinaryContract, Contract, CPMMMultiContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  CPMMMultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { updateContract } from './supabase/contracts'
 import { SupabaseDirectClient } from './supabase/init'
 import { insertLiquidity } from './supabase/liquidity'
@@ -14,10 +19,11 @@ export async function generateAntes(
   ante: number,
   totalMarketCost: number
 ) {
-  if (
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
-  ) {
+  // NOTE: these branches must cover cpmm-multi-2 as well as cpmm-multi-1 — the
+  // ante LiquidityProvision row is what records the creator as the pool's LP, so
+  // that resolution returns the pools' resolved value to them (without it the
+  // ante is stranded). `isMultiCpmm` covers both mechanisms.
+  if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
     const { answers } = contract
     // Each answer's pool was seeded with an even share of the ante. Record
     // that, not the pool's geometric mean: the two agree for an answer that
@@ -35,10 +41,7 @@ export async function generateAntes(
 
       await insertLiquidity(pg, lp)
     }
-  } else if (
-    contract.mechanism === 'cpmm-multi-1' ||
-    contract.mechanism === 'cpmm-1'
-  ) {
+  } else if (isMultiCpmm(contract) || contract.mechanism === 'cpmm-1') {
     const lp = getCpmmInitialLiquidity(
       providerId,
       contract as BinaryContract | CPMMMultiContract,
@@ -51,7 +54,7 @@ export async function generateAntes(
   const drizzledAmount = totalMarketCost - ante
   if (
     drizzledAmount > 0 &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
+    (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract))
   ) {
     return await pg.txIf(async (tx) => {
       await runTxnOutsideBetQueue(tx, {

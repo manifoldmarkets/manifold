@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Router from 'next/router'
 
-import { Contract, tradingAllowed } from 'common/contract'
+import { Contract, isMultiCpmm, tradingAllowed } from 'common/contract'
 import {
   formatPrice as formatPerpPrice,
   inferPriceDecimals as inferPerpPriceDecimals,
@@ -53,8 +53,7 @@ export function TVDisplay(props: {
       ? formatPerpPrice(perpPrice, inferPerpPriceDecimals([perpPrice]))
       : undefined
   const isMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
+    contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)
 
   const betPanel = (
     <>

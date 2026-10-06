@@ -1,6 +1,13 @@
 import { sum } from 'lodash'
 import { Answer } from './answer'
-import { getInitialAnswerPools, getMultiCpmmLiquidity } from './calculate-cpmm'
+import {
+  cpmmMulti2BalancedPools,
+  cpmmMulti2SumToOneCreationPools,
+  getCpmmLiquidity,
+  getCpmmProbability,
+  getInitialAnswerPools,
+  getMultiCpmmLiquidity,
+} from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import {
   Binary,
@@ -10,6 +17,7 @@ import {
   CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  isMultiCpmmMechanism,
   MultiDate,
   MultiNumeric,
   NonBet,
@@ -19,6 +27,7 @@ import {
   PseudoNumeric,
   Stonk,
   add_answers_mode,
+  CPMM_MULTI_2_CREATION_ENABLED,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
 } from './contract'
@@ -26,6 +35,8 @@ import { PollOption } from './poll-option'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { randomString } from './util/random'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
@@ -62,6 +73,9 @@ export function getNewContract(
     answerImageUrls?: string[]
     // Starting probability of each answer, as a percent. Defaults to an even split.
     answerProbs?: number[]
+    // Whether a multiple choice market opens as cpmm-multi-2. Defaults to
+    // CPMM_MULTI_2_CREATION_ENABLED; tests set it to cover both mechanisms.
+    cpmmMulti2Enabled?: boolean
 
     // Bountied
     isAutoBounty?: boolean | undefined
@@ -109,6 +123,7 @@ export function getNewContract(
     answerShortTexts,
     answerImageUrls,
     answerProbs,
+    cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
@@ -134,7 +149,8 @@ export function getNewContract(
         ante,
         answerShortTexts,
         answerImageUrls,
-        answerProbs
+        answerProbs,
+        cpmmMulti2Enabled
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -203,7 +219,7 @@ export function getNewContract(
     elasticity:
       propsByOutcomeType.mechanism === 'cpmm-1'
         ? computeBinaryCpmmElasticityFromAnte(ante)
-        : propsByOutcomeType.mechanism === 'cpmm-multi-1'
+        : isMultiCpmmMechanism(propsByOutcomeType.mechanism)
         ? 4.99 // TODO: calculate
         : 1_000_000,
 
@@ -307,6 +323,14 @@ export const MAX_ANSWER_PROB = MAX_CPMM_PROB * 100
 // them rather than scaling them to fit. Lets creators type 33/33/33.
 export const ANSWER_PROB_SUM_TOLERANCE = 1
 
+// Whether a new multiple choice market opens as cpmm-multi-2. A cpmm-multi-1
+// pool has p fixed at 0.5, so it can only hold an answer away from an even
+// split by throwing away shares, whether the ante bought them or liquidity
+// added later did; giving each answer its own p loses none. Without starting
+// probabilities the pools are cpmm-multi-1's even split, every p at 0.5.
+export const opensAsCpmmMulti2 = (props: { cpmmMulti2Enabled?: boolean }) =>
+  props.cpmmMulti2Enabled ?? CPMM_MULTI_2_CREATION_ENABLED
+
 // Checks manually set starting probabilities (percent, one per listed answer)
 // against the answers they'll be applied to. Returns a message explaining the
 // problem, or undefined if they're usable.
@@ -390,12 +414,15 @@ const getMultipleChoiceProps = (
   ante: number,
   shortTexts?: string[],
   imageUrls?: string[],
-  answerProbs?: number[]
+  answerProbs?: number[],
+  cpmmMulti2Enabled?: boolean
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
     answers.length === 2 &&
     shouldAnswersSumToOne
+
+  const isV2 = opensAsCpmmMulti2({ cpmmMulti2Enabled })
 
   const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
   const answersWithOther = answers.concat(hasOther ? ['Other'] : [])
@@ -413,10 +440,11 @@ const getMultipleChoiceProps = (
       probs: answerProbs
         ? getInitialProbs(answerProbs, shouldAnswersSumToOne, hasOther)
         : undefined,
+      cpmmMulti2: isV2,
     })
   )
   const system: CPMMMulti = removeUndefinedProps({
-    mechanism: 'cpmm-multi-1',
+    mechanism: isV2 ? 'cpmm-multi-2' : 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
@@ -526,6 +554,13 @@ const getDateProps = (
   return system
 }
 
+// The √variance creation rule for cpmm-multi-2 sum-to-one markets. Given the
+// normalized target probs q_i (Σ = 1) and the ante, allocate pool depth
+// W_i = (1−p_i)Y_i + p_iN_i ∝ √(q_i(1−q_i)) — the variance-weighted depth that
+// maximizes effective liquidity under the no-house-risk basket budget (closed
+// form; derivation + benchmarks in tasks/cpmm_multi_2, GP13–GP15). Properties:
+// reduces to v1's pools exactly at uniform, to a balanced pool at n=2; funds
+// exactly (every winning scenario pays the ante) and reads back prob_i = q_i.
 function createAnswers(
   contractId: string,
   userId: string,
@@ -540,12 +575,80 @@ function createAnswers(
     midpoints?: number[]
     // Starting probability of each answer, as a fraction. Defaults to an even split.
     probs?: number[]
+    // Open the answers at `probs` with cpmm-multi-2 pools.
+    cpmmMulti2?: boolean
   } = {}
 ) {
-  const { colors, shortTexts, imageUrls, midpoints, probs } = options
+  const { colors, shortTexts, imageUrls, midpoints, probs, cpmmMulti2 } =
+    options
   const ids = answers.map(() => randomString())
+  const now = Date.now()
 
-  // Custom starting probabilities: spread the ante around them instead.
+  // Mechanism-independent Answer fields; each branch below supplies only the
+  // pool shape (poolYes/poolNo/p/prob/totalLiquidity) and isOther.
+  const baseAnswer = (i: number, text: string) => ({
+    id: ids[i],
+    index: i,
+    contractId,
+    userId,
+    text,
+    createdTime: now,
+    color: colors?.[i],
+    shortText: shortTexts?.[i],
+    imageUrl: imageUrls?.[i],
+    subsidyPool: 0,
+    probChanges: { day: 0, week: 0, month: 0 },
+    midpoint: midpoints?.[i],
+    volume: 0,
+  })
+
+  // cpmm-multi-2: per-answer initial probs, dialed to target via each answer's
+  // own `p`. Two regimes (see tasks/cpmm_multi_2/creation-liquidity-findings.md,
+  // GP13–GP15):
+  //
+  // Sum-to-one ("Multiple Choice"): exactly one answer resolves YES, so the raw
+  // percentages are normalized to Σ q_i = 1. Pools use the √variance creation
+  // rule — depth W_i = (1−p_i)Y_i + p_iN_i ∝ √(q_i(1−q_i)) — which maximizes
+  // effective liquidity under the no-house-risk basket budget (every winning
+  // scenario pays exactly the ante). It reduces to v1's pools exactly at uniform
+  // and to a balanced pool at n=2; for n≥3 skew it is asymmetric with p_i≠q_i.
+  //
+  // Independent ("Set"): each answer is its own CPMM with no Σ=1 constraint and
+  // its own max-loss budget max(Y,N); at fixed risk the liquidity optimum is the
+  // balanced pool Y_i=N_i with p_i=q_i — exactly the binary-CPMM construction.
+  //
+  // `probs` arrive already normalized to Σ = 1 for sum-to-one answers and as
+  // absolute probabilities for independent ones (getInitialProbs). Where the
+  // √variance closed form doesn't exist (GP19a) or would starve the long shots,
+  // sum-to-one answers get the same shape solved exactly instead, just as
+  // lossless (cpmmMulti2SumToOneCreationPools), so no starting odds are refused.
+  if (cpmmMulti2 && probs) {
+    const pools = shouldAnswersSumToOne
+      ? cpmmMulti2SumToOneCreationPools(probs, ante)
+      : cpmmMulti2BalancedPools(probs, ante)
+    return answers.map((text, i) => {
+      const { poolYes, poolNo, p, prob } = pools[i]
+      const answer: Answer = removeUndefinedProps({
+        ...baseAnswer(i, text),
+        poolYes,
+        poolNo,
+        p,
+        prob,
+        // True general-p CPMM liquidity invariant k = Y^p · N^(1-p). getMultiCpmmLiquidity is the
+        // p=0.5 special case √(Y·N), which understates depth on the √variance asymmetric v2 pools
+        // (Y_i≠N_i, p_i≠0.5). Balanced Set pools (Y=N) give the same value either way.
+        totalLiquidity: getCpmmLiquidity({ YES: poolYes, NO: poolNo }, p),
+        isOther:
+          shouldAnswersSumToOne &&
+          addAnswersMode !== 'DISABLED' &&
+          i === answers.length - 1,
+      })
+      return answer
+    })
+  }
+
+  // Custom starting probabilities on cpmm-multi-1: spread the ante around them
+  // instead, throwing away whatever shares p = 0.5 can't hold at those odds.
   const customPools = probs
     ? getInitialAnswerPools(probs, ante, shouldAnswersSumToOne)
     : undefined
@@ -572,40 +675,36 @@ function createAnswers(
     // poolNo = ante * (prob ** 2 / (1 - prob))
   }
 
-  const now = Date.now()
+  // cpmm-multi-2: Other alone, in a market opened with no listed answers, is
+  // sure to win until an answer is added, so it opens at the top of the band on
+  // the same pool rather than at cpmm-multi-1's 50%. Nothing can be bet until a
+  // second answer exists (place-bet), and the first one added opens at 50%
+  // beside a new Other at 50% (newAnswerOpeningProb of the whole market).
+  let p = 0.5
+  if (cpmmMulti2 && shouldAnswersSumToOne && answers.length === 1) {
+    p = MAX_CPMM_PROB
+    prob = getCpmmProbability({ YES: poolYes, NO: poolNo }, p)
+  }
 
   return answers.map((text, i) => {
-    const id = ids[i]
     const { YES: answerPoolYes, NO: answerPoolNo } = customPools?.[i] ?? {
       YES: poolYes,
       NO: poolNo,
     }
     const answer: Answer = removeUndefinedProps({
-      id,
-      index: i,
-      contractId,
-      userId,
-      text,
-      createdTime: now,
-      color: colors?.[i],
-      shortText: shortTexts?.[i],
-      imageUrl: imageUrls?.[i],
-
+      ...baseAnswer(i, text),
       poolYes: answerPoolYes,
       poolNo: answerPoolNo,
+      p, // 0.5, as on cpmm-multi-1, except a cpmm-multi-2 Other alone (above)
       prob: probs?.[i] ?? prob,
       totalLiquidity: getMultiCpmmLiquidity({
         YES: answerPoolYes,
         NO: answerPoolNo,
       }),
-      subsidyPool: 0,
       isOther:
         shouldAnswersSumToOne &&
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
-      probChanges: { day: 0, week: 0, month: 0 },
-      midpoint: midpoints?.[i],
-      volume: 0,
     })
     return answer
   })

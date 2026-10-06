@@ -1,6 +1,6 @@
 import { LimitBet } from 'common/bet'
 import { computeElasticity } from 'common/calculate-metrics'
-import { Contract, CPMM } from 'common/contract'
+import { Contract, CPMM, isMultiCpmm } from 'common/contract'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { hasChanges } from 'common/util/object'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -34,7 +34,7 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   )
   const allContracts = results[0].map(convertContract)
   const sumToOneContractIds = allContracts
-    .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
+    .filter((c) => isMultiCpmm(c) && c.shouldAnswersSumToOne)
     .map((c) => c.id)
   const answers = results[1].map(convertAnswer)
   log(`Loaded ${allContracts.length} contracts.`)
@@ -109,7 +109,7 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
             month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
           },
         }
-      } else if (contract.mechanism === 'cpmm-multi-1') {
+      } else if (isMultiCpmm(contract)) {
         const contractAnswers = answers.filter(
           (a) => a.contractId === contract.id
         )

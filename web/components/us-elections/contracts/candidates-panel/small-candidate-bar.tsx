@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract, isMultiCpmm } from 'common/contract'
 import Image from 'next/image'
 import { IoIosPerson } from 'react-icons/io'
 import { MultiBettor, OpenProb } from 'web/components/answers/answer-components'
@@ -48,7 +48,7 @@ export const SmallCandidateBar = (props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const { resolution } = contract
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
 
   return (
     <>
