@@ -93,6 +93,10 @@ export const TIERS = [
   { id: 'unpriced', label: 'No party odds yet', color: '#a4a4b5' },
 ] as const
 export type Tier = (typeof TIERS)[number]['id']
+// A seat-bar segment that can be selected: a market tier, or one party's
+// Senate seats that are not on this year's ballot.
+export type HeldGroup = 'held-dem' | 'held-rep'
+export type BarGroup = Tier | HeldGroup
 
 // These curated binary markets all ask whether the Republican wins.
 // Keep independent outcomes separate, including races with no Democratic nominee.
@@ -402,7 +406,7 @@ export function seatSummary(races: Race[], mode: ElectionMode) {
 }
 
 // Keep party forecasts at either end and uncertainty in the middle. Held seats
-// are distinct from safe forecasts and cannot filter races on this year's ballot.
+// are distinct from safe forecasts: selecting them lists the seats themselves.
 export function balanceSegments(summary: ReturnType<typeof seatSummary>) {
   const tierOrder: Tier[] = [
     'fixed-d',
@@ -422,6 +426,7 @@ export function balanceSegments(summary: ReturnType<typeof seatSummary>) {
   ]
   const held = (party: 'dem' | 'rep') => ({
     id: `held-${party}`,
+    group: `held-${party}` as BarGroup,
     label: `${
       party === 'dem' ? 'Democratic caucus' : 'Republican'
     } seats not on the ballot`,
@@ -433,6 +438,7 @@ export function balanceSegments(summary: ReturnType<typeof seatSummary>) {
     held('dem'),
     ...tierOrder.map((id) => ({
       ...TIERS.find((t) => t.id === id)!,
+      group: id as BarGroup,
       count: summary.counts[id],
       tier: id as Tier | undefined,
     })),

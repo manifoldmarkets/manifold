@@ -1,5 +1,6 @@
 import {
   CSSProperties,
+  Fragment,
   ReactNode,
   useEffect,
   useId,
@@ -8,6 +9,7 @@ import {
   useState,
 } from 'react'
 import clsx from 'clsx'
+import { uniq } from 'lodash'
 import { SearchIcon, AnnotationIcon } from '@heroicons/react/outline'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
@@ -23,10 +25,17 @@ import {
   matchesMeasureQuery,
   measureColor,
 } from './ballot-measures-model'
-import { getHeldOffice, HELD_COLORS } from './election-incumbents'
+import {
+  getHeldOffice,
+  HELD_COLORS,
+  HeldSeat,
+  heldSeats,
+} from './election-incumbents'
 import { DATA } from './usa-map-data'
 import {
   Atlas,
+  balanceSegments,
+  BarGroup,
   buildRaces,
   districtId,
   ElectionMode,
@@ -40,9 +49,15 @@ import {
   raceColor,
   raceTier,
   seatSummary,
-  Tier,
   TIERS,
 } from './election-map-model'
+import {
+  countLeaders,
+  describeGroups,
+  heldInSelection,
+  inSelection,
+  leaderSplit,
+} from './seat-bar-selection'
 import { formatOdds, labelInk, LIGHT_LABEL, plural } from './election-display'
 import { ExplorerMode, isKnownRace } from './explorer-url'
 import { useExplorerUrl } from './use-explorer-url'
@@ -189,7 +204,10 @@ export function ElectionExplorer(props: Props) {
   const [view, setView] = useState<MapView>('map')
   const [labels, setLabels] = useState(true)
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<Tier>()
+  // Seat-bar groups whose seats are listed and outlined (their union), and
+  // the group under the mouse, previewed on the map without selecting it.
+  const [barSelection, setBarSelection] = useState<BarGroup[]>([])
+  const [preview, setPreview] = useState<BarGroup>()
   const [selected, setSelected] = useState<string>()
   const [hovered, setHovered] = useState<string>()
   const [roving, setRoving] = useState<string>()
@@ -290,11 +308,38 @@ export function ElectionExplorer(props: Props) {
   const detailRace = detailId ? raceById.get(detailId) : undefined
   const detailTitle =
     detailRace?.label ?? (detailId ? DATA[detailId]?.name : undefined)
+  const filter = barSelection.length > 0
   const matches = (race: Race) =>
-    (!filter || raceTier(race) === filter) && matchesRaceQuery(race, query)
+    inSelection(barSelection, raceTier(race)) && matchesRaceQuery(race, query)
   const filtered = races.filter(matches)
+  // Senate seats not on the ballot (one per senator), listed and outlined
+  // when their held group is selected, within any search.
+  const held = useMemo(
+    () => (isMeasures ? [] : heldSeats(mode)),
+    [isMeasures, mode]
+  )
+  const matchesHeld = (seat: HeldSeat) =>
+    matchesStateQuery(seat.state, query) ||
+    seat.member.name.toLowerCase().includes(query.trim().toLowerCase())
+  const heldListed = filter
+    ? held.filter((s) => heldInSelection(barSelection, s) && matchesHeld(s))
+    : []
+  const heldLit = new Set(heldListed.map((s) => s.state))
+  // Shapes in the group under the mouse (within any search).
+  const isPreviewed = (race: Race) =>
+    !!preview && raceTier(race) === preview && matchesRaceQuery(race, query)
+  const previewIds = new Set(
+    isMeasures || !preview
+      ? []
+      : [
+          ...races.filter(isPreviewed).map((r) => r.id),
+          ...held
+            .filter((s) => heldInSelection([preview], s) && matchesHeld(s))
+            .map((s) => s.state),
+        ]
+  )
   const searching = !!query.trim()
-  const narrowed = searching || !!filter
+  const narrowed = searching || filter
   const noElectionMatches =
     mode === 'house' || filter || !searching
       ? []
@@ -312,13 +357,43 @@ export function ElectionExplorer(props: Props) {
           measureMatches.some((m) => m.state === state) ||
           matchesStateQuery(state, query)
       )
-    : [...filtered.map((r) => r.id), ...noElectionMatches.map(([s]) => s)]
+    : uniq([
+        ...filtered.map((r) => r.id),
+        ...noElectionMatches.map(([s]) => s),
+        ...heldLit,
+      ])
+  // The list's summary: how many seats the selected groups hold, who leads
+  // them, and which groups they are. A state with a race and a held seat
+  // counts both seats.
+  const barOrder = balanceSegments(summary).map((s) => s.group)
+  const groupNames = describeGroups(barSelection, barOrder)
+  const split = filter ? leaderSplit(countLeaders(filtered, heldListed)) : []
+  const listed = filtered.length + heldListed.length
+  const countText = isMeasures
+    ? plural(measureMatches.length, 'matching measure')
+    : searching || !filter
+    ? plural(listed, heldListed.length ? 'matching seat' : 'matching race')
+    : plural(listed, mode === 'governor' ? 'governorship' : 'seat')
+  const noElectionText =
+    noElectionMatches.length > 0
+      ? `${noElectionMatches.length} with no ${
+          isMeasures ? 'statewide measures' : 'election'
+        }`
+      : ''
+  const announcement = [
+    countText,
+    split.map((p) => p.text).join(', '),
+    groupNames,
+    noElectionText,
+  ]
+    .filter(Boolean)
+    .join('. ')
 
   const isSelectable = (id: string) =>
     !!raceById.get(id) || (mode !== 'house' && !!DATA[id] && id !== 'DC')
   const isNavigable = (id: string) => {
     const race = raceById.get(id)
-    return race ? matches(race) : isSelectable(id)
+    return race ? matches(race) || heldLit.has(id) : isSelectable(id)
   }
   const navigable = shapes.filter((s) => isNavigable(s.id))
   const tabStop =
@@ -422,11 +497,16 @@ export function ElectionExplorer(props: Props) {
     setSearchOpen(false)
     focusMap()
   }
+  const selectGroups = (next: BarGroup[]) => {
+    setBarSelection(next)
+    setSelected(undefined)
+  }
   const changeMode = (next: ExplorerMode) => {
     setMode(next)
     setSelected(undefined)
     setHovered(undefined)
-    setFilter(undefined)
+    setBarSelection([])
+    setPreview(undefined)
     setQuery('')
     setRoving(undefined)
     resetView()
@@ -503,7 +583,13 @@ export function ElectionExplorer(props: Props) {
       ? searching &&
         !measureMatches.some((m) => m.state === id) &&
         !matchesStateQuery(id, query)
-      : !!race && !matches(race)
+      : !(race
+          ? matches(race) || heldLit.has(id)
+          : !filter || heldLit.has(id)) && !previewIds.has(id)
+    // A previewed group stands out from an unfiltered map too, more softly
+    // than a selection does.
+    const previewDimmed =
+      !narrowed && !!preview && selectable && !previewIds.has(id)
     return {
       fill: isMeasures
         ? measureColor(measureCount(id))
@@ -516,7 +602,7 @@ export function ElectionExplorer(props: Props) {
         styles.shape,
         !race && !held && (!isMeasures || !measureCount(id)) && styles.noRace
       ),
-      opacity: dimmed ? 0.15 : 1,
+      opacity: dimmed ? 0.15 : previewDimmed ? 0.35 : 1,
       role: selectable ? 'button' : undefined,
       tabIndex: selectable && id === tabStop ? 0 : -1,
       'aria-label': ariaLabel(id, race),
@@ -708,11 +794,10 @@ export function ElectionExplorer(props: Props) {
             <ElectionBalance
               summary={summary}
               mode={raceMode}
-              filter={filter}
-              onFilter={(tier) => {
-                setFilter(filter === tier ? undefined : tier)
-                setSelected(undefined)
-              }}
+              selection={barSelection}
+              preview={preview}
+              onSelect={selectGroups}
+              onPreview={setPreview}
             />
           )}
           <div className={styles.toolbar}>
@@ -820,33 +905,60 @@ export function ElectionExplorer(props: Props) {
               . These outcomes are counted separately from party wins.
             </p>
           )}
+        {/* Always mounted, so screen readers announce every change. */}
+        <span className="sr-only" role="status">
+          {narrowed ? announcement : ''}
+        </span>
         {narrowed && (
           <FilterResults
             summary={
               <>
-                {isMeasures
-                  ? plural(measureMatches.length, 'matching measure')
-                  : plural(filtered.length, 'matching race')}
-                {filter && ` · ${TIERS.find((t) => t.id === filter)?.label}`}
-                {noElectionMatches.length > 0 &&
-                  ` · ${noElectionMatches.length} with no ${
-                    isMeasures ? 'statewide measures' : 'election'
-                  }`}
+                <strong className={styles.filterCount}>{countText}</strong>
+                {split.length > 0 && (
+                  <span>
+                    {' ('}
+                    {split.map((p, i) => (
+                      <Fragment key={p.leader}>
+                        {i > 0 && ' · '}
+                        <span
+                          data-tone={
+                            p.leader === 'dem' || p.leader === 'rep'
+                              ? p.leader
+                              : undefined
+                          }
+                        >
+                          {p.text}
+                        </span>
+                      </Fragment>
+                    ))}
+                    {')'}
+                  </span>
+                )}
+                {groupNames && ` · ${groupNames}`}
+                {noElectionText && ` · ${noElectionText}`}
               </>
             }
-            clearLabel={`Clear ${filter && !searching ? 'filter' : 'search'}`}
+            clearLabel={
+              filter && searching
+                ? 'Clear all'
+                : filter
+                ? 'Clear'
+                : 'Clear search'
+            }
             onClear={() => {
               setQuery('')
-              setFilter(undefined)
+              setBarSelection([])
             }}
             label={
               isMeasures
                 ? 'Ballot measure search results'
                 : filter && !searching
-                ? 'Races in this group'
+                ? barSelection.length > 1
+                  ? 'Races in these groups'
+                  : 'Races in this group'
                 : 'Race search results'
             }
-            resetKey={`${mode}:${filter ?? ''}:${query}`}
+            resetKey={`${mode}:${barSelection.join('+')}:${query}`}
             items={[
               ...(isMeasures
                 ? measureMatches.map((m) => (
@@ -871,6 +983,21 @@ export function ElectionExplorer(props: Props) {
                   onClick={(e) => choose(r.id, e.currentTarget)}
                 >
                   <span>{r.label}</span> <RaceQuote race={r} />
+                </button>
+              )),
+              ...heldListed.map((seat) => (
+                <button
+                  key={seat.id}
+                  onClick={(e) => choose(seat.state, e.currentTarget)}
+                >
+                  <span>{DATA[seat.state].name} · not on the ballot</span>{' '}
+                  <span className={styles.quote} data-tone={seat.side}>
+                    Held by {seat.member.party[0]}
+                    <span className={styles.quoteName}>
+                      {' '}
+                      · {seat.member.name}
+                    </span>
+                  </span>
                 </button>
               )),
               ...noElectionMatches.map(([state, data]) => (
@@ -1009,6 +1136,7 @@ export function ElectionExplorer(props: Props) {
                   ))}
                 <g className={styles.overlays} aria-hidden>
                   {overlay(highlighted, styles.matchOutline)}
+                  {overlay([...previewIds], styles.previewOutline)}
                   {overlay([selected], styles.selectedHalo)}
                   {overlay([selected], styles.selectedOutline)}
                   {overlay([focused], styles.focusHalo)}

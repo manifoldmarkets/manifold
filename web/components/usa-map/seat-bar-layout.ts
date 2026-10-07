@@ -93,3 +93,27 @@ export function hitTargets(
     return { left: lo, width: Math.max(0, hi - lo) }
   })
 }
+
+// The segment a drag is over at `x`: the eligible target containing it (the
+// narrowest, as thin targets sit on top), else the nearest eligible one, so
+// held seats and the space past either end clamp to the closest group.
+export function segmentAt(
+  targets: { left: number; width: number }[],
+  x: number,
+  eligible: (i: number) => boolean = () => true
+): number | undefined {
+  if (!Number.isFinite(x)) return undefined
+  let best: { i: number; distance: number; width: number } | undefined
+  targets.forEach((t, i) => {
+    if (!eligible(i)) return
+    const right = t.left + t.width
+    const distance = x < t.left ? t.left - x : x > right ? x - right : 0
+    if (
+      !best ||
+      distance < best.distance ||
+      (distance === best.distance && distance === 0 && t.width < best.width)
+    )
+      best = { i, distance, width: t.width }
+  })
+  return best?.i
+}
