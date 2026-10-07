@@ -6916,6 +6916,23 @@
         "u8gRNQqU9l": "R",
         "PtquqCIOAE": "other"
       }
+    },
+    "which-party-will-win-the-2026-us-ho-IhLS288ygC": {
+      "contractId": "9sRcZsA2O0",
+      "kind": "ballot-party",
+      "confidence": "confirmed",
+      "races": [
+        {
+          "raceKey": "2026-house-TN-09-regular-general",
+          "office": "house",
+          "key": "TN-9"
+        }
+      ],
+      "answerParties": {
+        "cSLu5IONZO": "D",
+        "ttsy9pOO0O": "R",
+        "zN6gILEdZQ": "other"
+      }
     }
   },
   "sameParty": {
