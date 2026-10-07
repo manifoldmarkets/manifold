@@ -193,7 +193,8 @@ const ENTRIES: CalendarInput[] = [
     phase: '2026 Remaining',
     startDate: '2026-08-28',
     endDate: '2026-12-07',
-    autoCreate: true,
+    // No Odds API key: F1 markets are made by hand.
+    autoCreate: false,
     autoResolve: true,
     notes:
       'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. DECISION NEEDED: one market per race weekend or separate markets per session (qualifying, sprint, race)?',
@@ -245,7 +246,9 @@ const ENTRIES: CalendarInput[] = [
     phase: 'League Phase',
     startDate: '2026-09-16',
     endDate: '2026-12-11',
-    autoCreate: true,
+    // No Odds API key yet. Check the provider lists UCL, add the key, then
+    // switch this on.
+    autoCreate: false,
     autoResolve: true,
   },
   {
@@ -311,7 +314,8 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Regular Season',
     startDate: '2026-08-01',
     endDate: '2026-10-11',
-    autoCreate: true,
+    // The Odds API doesn't cover the NWSL.
+    autoCreate: false,
     autoResolve: true,
   },
   {
@@ -321,7 +325,7 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Playoffs',
     startDate: '2026-10-16',
     endDate: '2026-11-15',
-    autoCreate: true,
+    autoCreate: false,
     autoResolve: true,
   },
   {

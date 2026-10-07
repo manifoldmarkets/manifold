@@ -37,6 +37,10 @@ function warnOnLowQuota(res: Response) {
   }
 }
 
+// A hung connection would otherwise stall the scheduler job that made the
+// call, with nothing in the logs.
+const FETCH_TIMEOUT_MS = 15_000
+
 /** Upcoming events with h2h odds for a sport, within `daysAhead`. */
 export async function getUpcomingOdds(
   sportKey: string,
@@ -57,7 +61,9 @@ export async function getUpcomingOdds(
     iso(now + daysAhead * 24 * 60 * 60 * 1000)
   )
 
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
   if (!res.ok) {
     throw new Error(
       `Odds API /odds error for ${sportKey}: ${res.status} ${res.statusText}`
@@ -79,7 +85,9 @@ export async function getScores(
   url.searchParams.set('apiKey', apiKey())
   url.searchParams.set('daysFrom', String(Math.min(3, Math.max(1, daysBack))))
 
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
   if (!res.ok) {
     throw new Error(
       `Odds API /scores error for ${sportKey}: ${res.status} ${res.statusText}`

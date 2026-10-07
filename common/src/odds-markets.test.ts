@@ -120,6 +120,13 @@ describe('2026–27 calendar eligibility', () => {
     expect(regular?.autoCreate).toBe(false)
   })
 
+  it('only switches on competitions the Odds API can price', () => {
+    // The job skips a phase without a key silently, so switching one on
+    // would look like it worked and create nothing.
+    const unpriced = SPORTS_CALENDAR.filter((p) => p.autoCreate && !p.oddsKey)
+    expect(unpriced.map((p) => `${p.competitionId} ${p.phase}`)).toEqual([])
+  })
+
   it('keeps soccer knockout rounds off until the extra time and penalties rule is decided', () => {
     const playoffs = calendarEntriesFor('mls-2026').find(
       (p) => p.phase === 'MLS Cup Playoffs'
