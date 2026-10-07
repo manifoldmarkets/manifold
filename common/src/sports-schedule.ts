@@ -1048,10 +1048,19 @@ export interface UpcomingMarketRef {
 export interface SportsScheduleResponse {
   /** Server time before snapshot reads; survives HTTP and client caching. */
   snapshotTime?: number
+  /**
+   * One page of the feed: on the first page every live game, then upcoming
+   * games by kickoff. Finished games are never included.
+   */
   games: ScheduleGame[]
-  /** This week's unattached markets for the requested sport, soonest first. */
+  /** Pass as `cursor` for the next page of upcoming games; null at the end. */
+  nextCursor: string | null
+  /**
+   * This week's unattached markets for the requested sport, soonest first.
+   * First page only.
+   */
   upcoming: UpcomingMarketRef[]
-  /** Live and upcoming games plus this week's markets per sport, for the rail badges. */
+  /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
   liveCount: number
   /** Every sport on the page, curated first; see buildSportsIndex. */

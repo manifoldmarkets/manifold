@@ -30,10 +30,11 @@ import {
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
 // Game rows come from the automated pipelines only: markets created by the
-// @ManifoldSports account that carry a sportsEventId. Recently finished games
-// stick around for a while so the page can show final scores. Everything
-// else people make in the sports topics either hangs under a game as a
-// related market or shows up in the "this week" feed by close time.
+// @ManifoldSports account that carry a sportsEventId. Everything else people
+// make in the sports topics either hangs under a game as a related market or
+// shows up in the "this week" list by close time. Finished games are loaded
+// for a while after kickoff (their markets can still be matched) but never
+// returned: the page is a feed of what's on and what's next.
 const FINISHED_GRACE_HOURS = 18
 const MAX_OFFICIAL_GAMES = 400
 const MAX_CANDIDATES = 1000
@@ -52,6 +53,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const sport: AnySportKey | 'all' = props.sport ?? 'all'
   const daysAhead = props.daysAhead ?? 14
   const limit = props.limit ?? 120
+  const cursor = parseScheduleCursor(props.cursor)
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const horizon = now + daysAhead * DAY_MS
@@ -64,7 +66,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const games = official.filter((g) => g.startTime < horizon)
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
-  // just-finished (most recent first).
+  // just-finished (most recent first). The id breaks ties so pages of
+  // upcoming games follow one fixed order.
   const ordered = sortBy(
     games,
     (g) => (g.status === 'live' ? 0 : g.status === 'upcoming' ? 1 : 2),
@@ -73,7 +76,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         ? -g.volume
         : g.status === 'finished'
         ? -g.startTime
-        : g.startTime
+        : g.startTime,
+    (g) => g.id
   )
 
   // Match across all games before applying the selected sport or row limit,
@@ -135,7 +139,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     (m) => !gameIds.has(m.id) && !attached.has(m.id)
   )
 
-  // Rail badges: live and upcoming games plus this week's markets, per sport.
+  // Rail badges: live and upcoming games per sport, the rows its feed shows.
   const counts: Partial<Record<AnySportKey, number>> = {}
   let liveCount = 0
   for (const g of ordered) {
@@ -143,23 +147,63 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
     if (g.status === 'live') liveCount++
   }
-  for (const m of upcoming) counts[m.sport] = (counts[m.sport] ?? 0) + 1
+
+  // The feed: every live game on the first page, then upcoming games by
+  // kickoff, `limit` at a time. A cursor continues after the last game the
+  // client has.
+  const feed = ordered.filter(
+    (g) => g.status !== 'finished' && (sport === 'all' || g.sport === sport)
+  )
+  const live = cursor ? [] : feed.filter((g) => g.status === 'live')
+  const later = feed.filter(
+    (g) => g.status === 'upcoming' && (!cursor || isAfterCursor(g, cursor))
+  )
+  const page = later.slice(0, limit)
+  const last = page[page.length - 1]
 
   const response: SportsScheduleResponse = {
     snapshotTime: now,
-    games: (sport === 'all'
-      ? ordered
-      : ordered.filter((g) => g.sport === sport)
-    ).slice(0, limit),
-    upcoming: (sport === 'all'
-      ? upcoming
-      : upcoming.filter((m) => m.sport === sport)
-    ).slice(0, MAX_UPCOMING_RETURNED),
+    games: [...live, ...page],
+    nextCursor:
+      later.length > page.length && last ? scheduleCursor(last) : null,
+    // Only the first page carries the week's other markets.
+    upcoming: cursor
+      ? []
+      : (sport === 'all'
+          ? upcoming
+          : upcoming.filter((m) => m.sport === sport)
+        ).slice(0, MAX_UPCOMING_RETURNED),
     counts,
     liveCount,
     sports: index.sports,
   }
   return response
+}
+
+// ─── Paging ───────────────────────────────────────────────────────────────────
+
+// `<kickoff ms>_<contract id>` of the last upcoming game on the previous page.
+export const scheduleCursor = (g: Pick<ScheduleGame, 'startTime' | 'id'>) =>
+  `${g.startTime}_${g.id}`
+
+function parseScheduleCursor(cursor: string | undefined) {
+  if (!cursor) return undefined
+  const sep = cursor.indexOf('_')
+  const startTime = Number(cursor.slice(0, sep))
+  const id = cursor.slice(sep + 1)
+  if (sep <= 0 || !Number.isFinite(startTime) || !id) return undefined
+  return { startTime, id }
+}
+
+// Same order as the sort above: kickoff, then id.
+function isAfterCursor(
+  g: Pick<ScheduleGame, 'startTime' | 'id'>,
+  cursor: { startTime: number; id: string }
+) {
+  return (
+    g.startTime > cursor.startTime ||
+    (g.startTime === cursor.startTime && g.id > cursor.id)
+  )
 }
 
 // ─── Sports from the topic tree ───────────────────────────────────────────────

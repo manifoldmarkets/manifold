@@ -1,4 +1,4 @@
-import { ExternalLinkIcon, PlusIcon } from '@heroicons/react/outline'
+import { PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
@@ -9,8 +9,11 @@ import {
   isBinaryMulti,
   isMultiCpmm,
 } from 'common/contract'
-import { RelatedGroup, ScheduleGame } from 'common/sports-schedule'
-import { shortFormatNumber } from 'common/util/format'
+import {
+  RelatedGroup,
+  ScheduleGame,
+  SPORT_BY_KEY,
+} from 'common/sports-schedule'
 import { removeEmojis } from 'common/util/string'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { MultiBetDialog } from 'web/components/bet/bet-dialog'
@@ -18,163 +21,123 @@ import { Button } from 'web/components/buttons/button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { gamePath } from './game-row'
+
+const INITIAL_ROWS = 3
+// Lines first, then props, then whatever else names the teams.
+const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
 
 /**
- * Everything attached to a game: the game market itself, official props from
- * the Manifold Sports pipeline, and community markets that mention the teams.
- * Loaded lazily the first time a row is expanded.
+ * The markets on a game, under its card on the sport page. Today the list is
+ * the schedule's matching: official lines and props by event id, and
+ * community markets that name both teams near kickoff. Markets linked to a
+ * game will go here too. Loads once the card scrolls into view.
  */
-export function GameRelatedMarkets(props: { game: ScheduleGame }) {
+export function GameLinkedMarkets(props: { game: ScheduleGame }) {
   const { game } = props
-  const ids = game.related.map((r) => r.id)
-  // Fetched on first expand and cached per game; refetches if the id list
-  // changes (a new prop appeared), keeping the previous list on screen.
+  const [seen, setSeen] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  const ordered = useMemo(
+    () =>
+      GROUP_ORDER.flatMap((group) =>
+        game.related.filter((r) => r.group === group)
+      ),
+    [game.related]
+  )
+  const ids = ordered.map((r) => r.id)
+  // Cached per game; refetches if the id list changes (a new prop
+  // appeared), keeping the previous list on screen.
   const { data, error } = useAPIGetter(
     'markets-by-ids',
     { ids },
     undefined,
     `sports-related-${game.id}`,
-    ids.length > 0
+    ids.length > 0 && seen
   )
   const contracts = useMemo(() => {
-    if (ids.length === 0) return []
     if (!data) return undefined
-    // Keep the server's order (best matches first).
     const byId = new Map(data.map((c) => [c.id, c]))
     return ids.map((id) => byId.get(id)).filter((c): c is Contract => !!c)
   }, [data, ids.join(',')])
-
-  const groupById = new Map(game.related.map((r) => [r.id, r.group]))
-  const inGroup = (group: RelatedGroup) =>
-    (contracts ?? []).filter((c) => groupById.get(c.id) === group)
-  const gameLines = inGroup('game-lines')
-  const propMarkets = inGroup('props')
-  const community = inGroup('community')
-  const createHref = `/create?q=${encodeURIComponent(
-    `${game.home.name} vs ${game.away.name}: `
-  )}`
+  const visible = showAll ? contracts : contracts?.slice(0, INITIAL_ROWS)
+  const hidden = (contracts?.length ?? 0) - (visible?.length ?? 0)
 
   return (
-    <div className="border-ink-200 bg-canvas-50 rounded-b-lg border-t px-3 py-3">
-      <Col className="gap-3">
-        {/* The game market itself */}
-        <Row className="items-center justify-between gap-2">
-          <Col className="min-w-0 gap-0.5">
-            <span className="text-ink-400 text-[10px] font-semibold uppercase tracking-wide">
-              Game market
-            </span>
-            <Link
-              href={gamePath(game)}
-              className="text-ink-900 hover:text-primary-700 truncate text-sm font-medium"
+    <div className="border-ink-100 bg-canvas-50 rounded-b-lg border-t px-3 py-2.5">
+      {!seen && ids.length > 0 && (
+        <VisibilityObserver onVisibilityUpdated={(v) => v && setSeen(true)} />
+      )}
+      <Row className="items-center justify-between gap-2">
+        <span className="text-ink-600 text-xs font-medium">
+          Markets on this game
+          {ids.length > 0 && (
+            <span className="text-ink-400 font-normal"> · {ids.length}</span>
+          )}
+        </span>
+        <Link
+          href={createMarketHref(game)}
+          onClick={() =>
+            track('sports create related market', { contractId: game.id })
+          }
+          className="text-ink-500 hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          Add a market
+        </Link>
+      </Row>
+      {ids.length === 0 ? (
+        <p className="text-ink-400 mt-0.5 text-xs">
+          Spreads, totals, props and side-bets on this game will show here.
+        </p>
+      ) : error ? (
+        <p className="text-ink-500 mt-1 text-xs">
+          Couldn't load these markets.
+        </p>
+      ) : visible === undefined ? (
+        <Col className="mt-2 gap-1.5">
+          {ids.slice(0, INITIAL_ROWS).map((id) => (
+            <div
+              key={id}
+              className="bg-ink-100 h-9 w-full animate-pulse rounded-md"
+            />
+          ))}
+        </Col>
+      ) : (
+        <Col className="divide-ink-100 border-ink-200 bg-canvas-0 mt-2 divide-y rounded-md border">
+          {visible.map((c) => (
+            <RelatedMarketRow key={c.id} contract={c} />
+          ))}
+          {hidden > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
             >
-              {removeEmojis(game.question)}
-            </Link>
-            <span className="text-ink-500 text-xs">
-              Ṁ{shortFormatNumber(game.volume)} volume ·{' '}
-              {game.uniqueBettorCount} traders · by @{game.creatorUsername}
-            </span>
-          </Col>
-          <Link
-            href={gamePath(game)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary-700 hover:bg-primary-50 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
-          >
-            Open market
-            <ExternalLinkIcon className="h-3.5 w-3.5" />
-          </Link>
-        </Row>
-
-        {ids.length > 0 && contracts === undefined && !error && (
-          <Col className="gap-2">
-            {[0, 1, 2].slice(0, Math.min(3, ids.length)).map((i) => (
-              <div
-                key={i}
-                className="bg-ink-100 h-9 w-full animate-pulse rounded-md"
-              />
-            ))}
-          </Col>
-        )}
-        {error && (
-          <span className="text-ink-500 text-xs">
-            Couldn't load related markets.
-          </span>
-        )}
-
-        {gameLines.length > 0 && (
-          <RelatedSection title="Game lines" contracts={gameLines} />
-        )}
-        {propMarkets.length > 0 && (
-          <RelatedSection title="Props" contracts={propMarkets} />
-        )}
-        {community.length > 0 && (
-          <RelatedSection
-            title={
-              gameLines.length + propMarkets.length > 0
-                ? 'More on this game'
-                : 'Related markets'
-            }
-            contracts={community}
-          />
-        )}
-
-        {contracts !== undefined && contracts.length === 0 && (
-          <span className="text-ink-500 text-xs">
-            No props or side-bets on this game yet.
-          </span>
-        )}
-
-        <Row>
-          <Link
-            href={createHref}
-            onClick={() =>
-              track('sports create related market', { contractId: game.id })
-            }
-            className="text-ink-600 hover:text-primary-700 border-ink-200 hover:border-primary-300 flex items-center gap-1 rounded-md border border-dashed px-2 py-1 text-xs font-medium"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            Create a market on this game
-          </Link>
-        </Row>
-      </Col>
+              Show {hidden} more
+            </button>
+          )}
+        </Col>
+      )}
     </div>
   )
 }
 
-const INITIAL_ROWS = 5
-
-function RelatedSection(props: { title: string; contracts: Contract[] }) {
-  const { title, contracts } = props
-  const [showAll, setShowAll] = useState(false)
-  const visible = showAll ? contracts : contracts.slice(0, INITIAL_ROWS)
-  const hidden = contracts.length - visible.length
-  return (
-    <Col className="gap-1">
-      <span className="text-ink-400 text-[10px] font-semibold uppercase tracking-wide">
-        {title}
-      </span>
-      <Col className="divide-ink-100 border-ink-200 bg-canvas-0 divide-y rounded-md border">
-        {visible.map((c) => (
-          <RelatedMarketRow key={c.id} contract={c} />
-        ))}
-        {hidden > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
-          >
-            Show {hidden} more
-          </button>
-        )}
-      </Col>
-    </Col>
-  )
+// /create reads its prefill from a JSON `params` query value.
+function createMarketHref(game: ScheduleGame) {
+  const sport = SPORT_BY_KEY[game.sport]
+  const params = {
+    q: `${game.question.replace(/\s*\[official\]\s*$/i, '')}: `,
+    description: '',
+    closeTime: game.closeTime,
+    visibility: 'public',
+    groupIds: sport?.groupIds.slice(0, 1),
+  }
+  return `/create?params=${encodeURIComponent(JSON.stringify(params))}`
 }
 
 /** A compact one-line market: question, current price, and a way to bet. */

@@ -122,7 +122,8 @@ it('gives every Sports subtopic a sport and files markets from deeper topics', a
     ...SPORT_CATEGORIES.map((s) => s.key),
     'road-bicycle-racing',
   ])
-  expect(result.counts).toEqual({ nfl: 1, soccer: 1, 'road-bicycle-racing': 1 })
+  // Counts are games only; the stage market is in this week's other markets.
+  expect(result.counts).toEqual({ nfl: 1, soccer: 1 })
   expect(result.games).toEqual([])
   expect(result.upcoming.map((m) => m.id)).toEqual(['stage-9'])
 })
@@ -162,5 +163,74 @@ it('shows a cpmm-multi-2 game at its answer prices', async () => {
     binary: false,
     home: { answerId: 'home', prob: 0.7 },
     away: { answerId: 'away', prob: 0.3 },
+  })
+})
+
+const nflGame = (
+  id: string,
+  startTime: number,
+  extra: Record<string, unknown> = {}
+) => ({
+  data: {
+    ...official[0].data,
+    id,
+    slug: id,
+    sportsEventId: `event-${id}`,
+    sportsStartTimestamp: new Date(startTime).toISOString(),
+    closeTime: startTime + 3 * 60 * 60 * 1000,
+    ...extra,
+  },
+})
+
+describe('paging', () => {
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const page = async (props: Parameters<typeof sportsSchedule>[0]) => {
+    const response = await getSchedule(props)
+    return 'result' in response ? response.result : response
+  }
+  const hour = 60 * 60 * 1000
+
+  beforeEach(() => {
+    officialRows = [
+      // Two games share a kickoff, so the id has to break the tie.
+      nflGame('b', kickoff),
+      nflGame('a', kickoff),
+      nflGame('c', kickoff + hour),
+      nflGame('d', kickoff + 2 * hour),
+      nflGame('e', kickoff + 3 * hour),
+      nflGame('live', Date.now() - hour),
+      nflGame('done', Date.now() - 2 * hour, { resolution: 'YES' }),
+    ]
+  })
+
+  it('walks the upcoming games in kickoff order, live games first', async () => {
+    const first = await page({ sport: 'nfl', limit: 2 })
+    expect(first.games.map((g) => g.id)).toEqual(['live', 'a', 'b'])
+    expect(first.nextCursor).toBeTruthy()
+
+    const second = await page({
+      sport: 'nfl',
+      limit: 2,
+      cursor: first.nextCursor!,
+    })
+    expect(second.games.map((g) => g.id)).toEqual(['c', 'd'])
+    expect(second.upcoming).toEqual([])
+
+    const third = await page({
+      sport: 'nfl',
+      limit: 2,
+      cursor: second.nextCursor!,
+    })
+    expect(third.games.map((g) => g.id)).toEqual(['e'])
+    expect(third.nextCursor).toBeNull()
+  })
+
+  it('never returns finished games, and counts what the feed shows', async () => {
+    const all = await page({ sport: 'all' })
+    expect(all.games.map((g) => g.id)).not.toContain('done')
+    expect(all.counts.nfl).toBe(6)
+    expect(all.liveCount).toBe(1)
   })
 })

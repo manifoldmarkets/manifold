@@ -5158,6 +5158,12 @@ export const API = (_apiTypeCheck = {
         sport: z.string().regex(SPORT_KEY_RE).optional(),
         daysAhead: z.coerce.number().int().min(1).max(60).optional(),
         limit: z.coerce.number().int().min(1).max(400).optional(),
+        // nextCursor from the previous page.
+        cursor: z
+          .string()
+          .regex(/^\d+_[A-Za-z0-9]+$/)
+          .max(64)
+          .optional(),
         includeRelated: coerceBoolean.optional(),
       })
       .strict(),

@@ -1,11 +1,11 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { useState } from 'react'
-import { ChevronDownIcon } from '@heroicons/react/solid'
+import { ReactNode } from 'react'
 import { ScheduleGame } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 
 type DaySection<T> = { key: string; label: string; items: T[] }
 
@@ -36,54 +36,45 @@ export function groupByDay<T>(
 }
 
 /**
- * The "up next" flow: live games first, then upcoming games grouped by day,
- * then a collapsed list of games that just finished. Renders nothing when
- * there are no games, so the page can put the week's markets in its place.
+ * The game feed: what's live now, then every upcoming game by kickoff,
+ * grouped by day. More games load as the reader nears the bottom.
+ *
+ * `list` packs each day into one table of compact rows (the all-sports
+ * feed); `cards` gives every game its own card with room for the markets on
+ * it (a sport's page).
  */
-export function ScheduleList(props: {
+export function GameFeed(props: {
   games: ScheduleGame[]
   loading: boolean
+  hasMore: boolean
+  loadMore: () => Promise<boolean>
+  variant: 'list' | 'cards'
   showLeague: boolean
-  liveOnly?: boolean
+  /** Shown when there is nothing live or upcoming. */
+  empty: ReactNode
 }) {
-  const { games, loading, showLeague, liveOnly } = props
+  const { games, loading, hasMore, loadMore, variant, showLeague, empty } =
+    props
   const live = games.filter((g) => g.status === 'live')
-  const upcoming = liveOnly ? [] : games.filter((g) => g.status === 'upcoming')
-  const finished = liveOnly ? [] : games.filter((g) => g.status === 'finished')
+  const upcoming = games.filter((g) => g.status === 'upcoming')
   const days = groupByDay(upcoming, (g) => g.startTime)
-  const [showFinished, setShowFinished] = useState(false)
 
   if (loading && games.length === 0) {
     return (
       <Col className="gap-2">
-        <SectionHeader label="This week" />
-        <GameRowSkeleton />
-        <GameRowSkeleton />
-        <GameRowSkeleton />
+        <SectionHeader label="Up next" />
+        <FeedSkeleton variant={variant} rows={4} />
       </Col>
     )
   }
-
-  if (live.length === 0 && upcoming.length === 0) {
-    if (liveOnly) {
-      return (
-        <p className="text-ink-500 px-1 text-sm">
-          Nothing is live right now. Games move here at kickoff.
-        </p>
-      )
-    }
-    if (finished.length === 0) return null
-    return <FinishedSection games={finished} showLeague={showLeague} open />
-  }
+  if (live.length === 0 && upcoming.length === 0) return <>{empty}</>
 
   return (
-    <Col className="gap-5">
+    <Col className="gap-6">
       {live.length > 0 && (
         <Col className="gap-2">
           <SectionHeader label="Live now" count={live.length} accent />
-          {live.map((g) => (
-            <GameRow key={g.id} game={g} showLeague={showLeague} />
-          ))}
+          <GameGroup games={live} variant={variant} showLeague={showLeague} />
         </Col>
       )}
       {days.map((day) => (
@@ -97,59 +88,61 @@ export function ScheduleList(props: {
             }
             count={day.items.length}
           />
-          {day.items.map((g) => (
-            <GameRow key={g.id} game={g} showLeague={showLeague} />
-          ))}
+          <GameGroup
+            games={day.items}
+            variant={variant}
+            showLeague={showLeague}
+          />
         </Col>
       ))}
-      {finished.length > 0 && (
-        <FinishedSection
-          games={finished}
-          showLeague={showLeague}
-          open={showFinished}
-          onToggle={() => setShowFinished((s) => !s)}
-        />
+      {hasMore ? (
+        <>
+          <LoadMoreUntilNotVisible loadMore={loadMore} />
+          <FeedSkeleton variant={variant} rows={2} />
+        </>
+      ) : (
+        <p className="text-ink-400 px-1 text-center text-xs">
+          That's every game in the next two weeks.
+        </p>
       )}
     </Col>
   )
 }
 
-function FinishedSection(props: {
+function GameGroup(props: {
   games: ScheduleGame[]
+  variant: 'list' | 'cards'
   showLeague: boolean
-  open: boolean
-  onToggle?: () => void
 }) {
-  const { games, showLeague, open, onToggle } = props
-  return (
-    <Col className="gap-2">
-      {onToggle ? (
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={open}
-          className="flex items-center gap-2 text-left"
-        >
-          <SectionHeader label="Just finished" count={games.length} />
-          <ChevronDownIcon
-            className={clsx(
-              'text-ink-400 h-4 w-4 transition-transform',
-              open && 'rotate-180'
-            )}
-          />
-        </button>
-      ) : (
-        <SectionHeader label="Just finished" count={games.length} />
-      )}
-      {open &&
-        games.map((g) => (
-          <GameRow
-            key={g.id}
-            game={g}
-            showLeague={showLeague}
-            className="opacity-80"
-          />
+  const { games, variant, showLeague } = props
+  if (variant === 'cards') {
+    return (
+      <Col className="gap-3">
+        {games.map((g) => (
+          <GameRow key={g.id} game={g} variant="card" showLeague={showLeague} />
         ))}
+      </Col>
+    )
+  }
+  return (
+    <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y overflow-hidden rounded-lg border">
+      {games.map((g) => (
+        <GameRow key={g.id} game={g} variant="list" showLeague={showLeague} />
+      ))}
+    </Col>
+  )
+}
+
+function FeedSkeleton(props: { variant: 'list' | 'cards'; rows: number }) {
+  const { variant, rows } = props
+  const items = Array.from({ length: rows }, (_, i) => (
+    <GameRowSkeleton key={i} variant={variant === 'cards' ? 'card' : 'list'} />
+  ))
+  return variant === 'cards' ? (
+    <Col className="gap-3">{items}</Col>
+  ) : (
+    <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y overflow-hidden rounded-lg border">
+      {items}
     </Col>
   )
 }
@@ -178,7 +171,7 @@ export function SectionHeader(props: {
       </h2>
       {sublabel && <span className="text-ink-500 text-xs">{sublabel}</span>}
       {count !== undefined && (
-        <span className="text-ink-400 text-xs">
+        <span className="text-ink-400 ml-auto text-xs">
           {count} {count === 1 ? unit : `${unit}s`}
         </span>
       )}

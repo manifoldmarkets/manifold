@@ -1,7 +1,9 @@
-import { ChevronDownIcon } from '@heroicons/react/solid'
+import { ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
   ScheduleGame,
@@ -13,7 +15,8 @@ import { readableTextColor } from 'common/sports-team-colors'
 import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { GameRelatedMarkets } from 'web/components/sports/game-related-markets'
+import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
+import { sportPath } from 'web/components/sports/sport-rail'
 import {
   Flag,
   MatchOutcome,
@@ -81,31 +84,29 @@ export function toSportsMatch(g: ScheduleGame): SportsMatch {
   }
 }
 
+/** Anchor for a game's card on its sport page. */
+export const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
+
 /**
- * One game on the schedule: kickoff, the two teams with their prices, and an
- * expander that reveals every related market (props, totals, side-bets).
- * Modelled on the game rows of DraftKings / Polymarket: the prices are the
- * bet buttons, the row itself opens the "+N more" panel.
+ * One game: when it starts (or the live score), the two teams with their
+ * prices as the bet buttons, and the draw for soccer.
+ *  - `list`: a compact row for the all-sports feed; the row opens the game.
+ *  - `card`: a card for a sport's page, with the markets on the game below.
  */
 export function GameRow(props: {
   game: ScheduleGame
+  variant?: 'list' | 'card'
   showLeague?: boolean
-  defaultExpanded?: boolean
   className?: string
 }) {
-  const { game, showLeague, defaultExpanded, className } = props
-  const [expanded, setExpanded] = useState(!!defaultExpanded)
+  const { game, variant = 'list', showLeague, className } = props
+  const router = useRouter()
   const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const user = useUser()
 
   const live = game.status === 'live'
-  // A live feed (score / clock) is only available for some leagues; without it
-  // the row says "In progress" rather than pretending to have a clock.
-  const hasFeed = live && !!game.liveScore
   const finished = game.status === 'finished'
   const canBet = !finished
-  const sport = SPORT_BY_KEY[game.sport]
-  const panelId = `game-related-${game.id}`
 
   const score =
     game.finalScore ??
@@ -124,198 +125,244 @@ export function GameRow(props: {
       firebaseLogin()
       return
     }
-    track('bet intent', { location: 'sports schedule', outcome })
+    track('bet intent', { location: `sports ${variant}`, outcome })
     setBetOutcome(outcome)
   }
 
-  const toggle = () => {
-    track('sports game expand', { contractId: game.id, expanded: !expanded })
-    setExpanded((e) => !e)
+  const teams = (
+    <Col className="min-w-0 gap-1.5 sm:gap-1">
+      <TeamLine
+        team={game.home}
+        score={score?.home ?? null}
+        won={homeWon}
+        lost={finished && game.isResolved && !homeWon}
+        live={live}
+        finished={finished}
+        canBet={canBet}
+        onBet={() => onBet('teamA')}
+      />
+      <TeamLine
+        team={game.away}
+        score={score?.away ?? null}
+        won={awayWon}
+        lost={finished && game.isResolved && !awayWon}
+        live={live}
+        finished={finished}
+        canBet={canBet}
+        onBet={() => onBet('teamB')}
+      />
+      {game.draw && (
+        <Row className="items-center gap-2 pl-8">
+          <span
+            className={clsx(
+              'text-xs',
+              drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
+            )}
+          >
+            Draw{drawWon && ' ✓'}
+          </span>
+          <PriceChip
+            prob={game.draw.prob}
+            muted
+            disabled={!canBet}
+            onClick={(e) => {
+              e.stopPropagation()
+              onBet('draw')
+            }}
+            label="Bet on a draw"
+            className="ml-auto"
+          />
+        </Row>
+      )}
+    </Col>
+  )
+
+  // Kept outside the clickable row: clicks in a portal still bubble up the
+  // React tree, and would open the game.
+  const dialog =
+    betOutcome &&
+    (game.binary ? (
+      <SportsBinaryBetDialog
+        contractId={game.id}
+        match={toSportsMatch(game)}
+        initialOutcome={betOutcome}
+        onClose={() => setBetOutcome(null)}
+      />
+    ) : game.draw ? (
+      <SportsBetPanel
+        match={toSportsMatch(game)}
+        initialOutcome={betOutcome}
+        onClose={() => setBetOutcome(null)}
+      />
+    ) : (
+      <SportsVersusBetDialog
+        contractId={game.id}
+        initialAnswerId={
+          betOutcome === 'teamB' ? game.away.answerId : game.home.answerId
+        }
+        onClose={() => setBetOutcome(null)}
+      />
+    ))
+
+  if (variant === 'card') {
+    return (
+      <div
+        id={gameAnchor(game)}
+        className={clsx(
+          'bg-canvas-0 border-ink-200 scroll-mt-32 rounded-lg border',
+          className
+        )}
+      >
+        <Row className="border-ink-100 min-h-[2.5rem] items-center gap-2 border-b px-3 py-1.5">
+          <GameWhen game={game} layout="inline" />
+          {showLeague && (
+            <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
+              {game.league}
+            </span>
+          )}
+          <Link
+            href={gamePath(game)}
+            className="text-ink-500 hover:text-primary-700 ml-auto flex shrink-0 items-center gap-1 text-xs"
+          >
+            <span className="hidden tabular-nums sm:inline">
+              Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount}{' '}
+              {game.uniqueBettorCount === 1 ? 'trader' : 'traders'} ·
+            </span>
+            Game page
+            <ChevronRightIcon className="h-3.5 w-3.5" />
+          </Link>
+        </Row>
+        <div className="px-3 py-3">{teams}</div>
+        <GameLinkedMarkets game={game} />
+        {dialog}
+      </div>
+    )
   }
 
   return (
-    <div
-      className={clsx(
-        'bg-canvas-0 border-ink-200 rounded-lg border transition-colors',
-        expanded ? 'border-ink-300 shadow-sm' : 'hover:border-ink-300',
-        className
-      )}
-    >
-      {/* Clicking anywhere on the row expands it (mouse convenience); the
-          keyboard / screen-reader control is the real button on the right,
-          so no button is nested inside another. */}
+    <div className={className}>
+      {/* The row opens the game (a mouse convenience); the link on the right
+          is the keyboard and screen-reader way in. */}
       <div
         role="presentation"
-        onClick={toggle}
-        className="grid cursor-pointer grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:gap-x-3 sm:px-3"
+        onClick={() => router.push(gamePath(game))}
+        className="hover:bg-canvas-50 grid cursor-pointer grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2.5 transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] sm:gap-x-3 sm:px-3"
       >
-        {/* Kickoff / live clock / final */}
-        <Col className="items-start gap-0.5 self-start pt-1">
-          {hasFeed ? (
-            <>
-              <Row className="items-center gap-1 text-[11px] font-semibold text-red-600">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
-                LIVE
-              </Row>
-              {game.liveScore?.minute && (
-                <span className="text-ink-600 text-xs tabular-nums">
-                  {formatMinute(game.liveScore.minute)}
-                </span>
-              )}
-            </>
-          ) : live ? (
-            <>
-              <span className="text-[11px] font-semibold text-red-600">
-                In progress
-              </span>
-              <span className="text-ink-500 text-[11px]">
-                Started {formatJustTime(game.startTime).replace(':00', '')}
-              </span>
-            </>
-          ) : finished ? (
-            <>
-              <span className="text-ink-600 text-xs font-semibold">
-                {game.isResolved ? 'Final' : 'Awaiting result'}
-              </span>
-              <span className="text-ink-500 text-[11px]">
-                {dayjs(game.startTime).format('ddd')}
-              </span>
-            </>
-          ) : (
-            <>
-              {!game.kickoffKnown && (
-                <span className="text-ink-400 text-[10px] uppercase tracking-wide">
-                  Closes
-                </span>
-              )}
-              <span className="text-ink-900 text-sm font-medium tabular-nums">
-                {formatJustTime(game.startTime).replace(':00', '')}
-              </span>
-              <span className="text-ink-500 text-[11px]">
-                {startsSoonLabel(game.startTime) ??
-                  dayjs(game.startTime).format('ddd D')}
-              </span>
-            </>
-          )}
-          {showLeague && sport && (
-            <span className="text-ink-400 mt-0.5 text-[10px] font-semibold uppercase tracking-wide">
-              {sport.label}
-            </span>
-          )}
-        </Col>
-
-        {/* Teams + prices */}
-        <Col className="min-w-0 gap-1.5 sm:gap-1">
-          <TeamLine
-            team={game.home}
-            score={score?.home ?? null}
-            won={homeWon}
-            lost={finished && game.isResolved && !homeWon}
-            live={live}
-            finished={finished}
-            canBet={canBet}
-            onBet={() => onBet('teamA')}
-          />
-          <TeamLine
-            team={game.away}
-            score={score?.away ?? null}
-            won={awayWon}
-            lost={finished && game.isResolved && !awayWon}
-            live={live}
-            finished={finished}
-            canBet={canBet}
-            onBet={() => onBet('teamB')}
-          />
-          {game.draw && (
-            <Row className="items-center gap-2 pl-8">
-              <span
-                className={clsx(
-                  'text-xs',
-                  drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
-                )}
-              >
-                Draw{drawWon && ' ✓'}
-              </span>
-              <PriceChip
-                prob={game.draw.prob}
-                muted
-                disabled={!canBet}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onBet('draw')
-                }}
-                label="Bet on a draw"
-                className="ml-auto"
-              />
-            </Row>
-          )}
-        </Col>
-
-        {/* Expander */}
+        <GameWhen game={game} layout="column" showLeague={showLeague} />
+        {teams}
         <Col className="items-end gap-1 self-center">
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls={panelId}
-            aria-label={`${game.home.name} vs ${game.away.name}: ${
-              expanded ? 'hide' : 'show'
-            } related markets`}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggle()
-            }}
-            className={clsx(
-              'flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors',
-              expanded
-                ? 'text-primary-700 bg-primary-50'
-                : 'text-ink-500 hover:text-ink-700'
-            )}
+          <Link
+            href={gamePath(game)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Open ${game.home.name} vs ${game.away.name}`}
+            className="text-ink-400 hover:text-primary-700 flex items-center gap-0.5 text-[11px] tabular-nums"
           >
             <span className="hidden sm:inline">
-              {game.relatedCount > 0 ? `${game.relatedCount} more` : 'Details'}
+              Ṁ{shortFormatNumber(game.volume)}
             </span>
-            <span className="sm:hidden">
-              {game.relatedCount > 0 ? `+${game.relatedCount}` : ''}
-            </span>
-            <ChevronDownIcon
-              className={clsx(
-                'h-4 w-4 transition-transform',
-                expanded && 'rotate-180'
-              )}
-            />
-          </button>
-          <span className="text-ink-400 hidden text-[11px] sm:block">
-            Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount} traders
-          </span>
+            <ChevronRightIcon className="h-4 w-4" />
+          </Link>
+          {game.relatedCount > 0 && (
+            <Link
+              href={`${sportPath(game.sport)}#${gameAnchor(game)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-primary-700 hover:bg-primary-50 rounded px-1 text-[11px] font-medium"
+            >
+              +{game.relatedCount}
+              <span className="hidden sm:inline"> markets</span>
+            </Link>
+          )}
         </Col>
       </div>
-
-      <div id={panelId}>{expanded && <GameRelatedMarkets game={game} />}</div>
-
-      {betOutcome &&
-        (game.binary ? (
-          <SportsBinaryBetDialog
-            contractId={game.id}
-            match={toSportsMatch(game)}
-            initialOutcome={betOutcome}
-            onClose={() => setBetOutcome(null)}
-          />
-        ) : game.draw ? (
-          <SportsBetPanel
-            match={toSportsMatch(game)}
-            initialOutcome={betOutcome}
-            onClose={() => setBetOutcome(null)}
-          />
-        ) : (
-          <SportsVersusBetDialog
-            contractId={game.id}
-            initialAnswerId={
-              betOutcome === 'teamB' ? game.away.answerId : game.home.answerId
-            }
-            onClose={() => setBetOutcome(null)}
-          />
-        ))}
+      {dialog}
     </div>
+  )
+}
+
+/**
+ * When a game is: the kickoff time (and how soon), "LIVE" with the clock, or
+ * the final. A column in a feed row, one line in a card header.
+ */
+function GameWhen(props: {
+  game: ScheduleGame
+  layout: 'column' | 'inline'
+  showLeague?: boolean
+}) {
+  const { game, layout, showLeague } = props
+  const live = game.status === 'live'
+  // A live feed (score / clock) is only available for some leagues; without
+  // it the game says "In progress" rather than pretending to have a clock.
+  const hasFeed = live && !!game.liveScore
+  const finished = game.status === 'finished'
+  const sport = SPORT_BY_KEY[game.sport]
+  const time = formatJustTime(game.startTime).replace(':00', '')
+
+  let primary: ReactNode
+  let secondary: ReactNode
+  if (hasFeed) {
+    primary = (
+      <Row className="items-center gap-1 text-[11px] font-semibold text-red-600">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+        LIVE
+      </Row>
+    )
+    secondary = game.liveScore?.minute
+      ? formatMinute(game.liveScore.minute)
+      : null
+  } else if (live) {
+    primary = (
+      <span className="text-[11px] font-semibold text-red-600">
+        In progress
+      </span>
+    )
+    secondary = `Started ${time}`
+  } else if (finished) {
+    primary = (
+      <span className="text-ink-600 text-xs font-semibold">
+        {game.isResolved ? 'Final' : 'Awaiting result'}
+      </span>
+    )
+    secondary = dayjs(game.startTime).format('ddd')
+  } else {
+    primary = (
+      <span className="text-ink-900 text-sm font-medium tabular-nums">
+        {!game.kickoffKnown && (
+          <span className="text-ink-400 mr-1 text-[10px] font-normal uppercase tracking-wide">
+            Closes
+          </span>
+        )}
+        {time}
+      </span>
+    )
+    secondary =
+      startsSoonLabel(game.startTime) ??
+      (layout === 'column' ? dayjs(game.startTime).format('ddd D') : null)
+  }
+
+  if (layout === 'inline') {
+    return (
+      <Row className="min-w-0 items-baseline gap-2">
+        {primary}
+        {secondary && (
+          <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>
+        )}
+      </Row>
+    )
+  }
+  return (
+    <Col className="items-start gap-0.5 self-start pt-1">
+      {primary}
+      {secondary && (
+        <span className="text-ink-500 text-[11px] tabular-nums">
+          {secondary}
+        </span>
+      )}
+      {showLeague && sport && (
+        <span className="text-ink-400 mt-0.5 text-[10px] font-semibold uppercase tracking-wide">
+          {sport.label}
+        </span>
+      )}
+    </Col>
   )
 }
 
@@ -480,16 +527,33 @@ function useProbFlash(pct: number): 'up' | 'down' | null {
   return flash
 }
 
-export function GameRowSkeleton() {
+export function GameRowSkeleton(props: { variant?: 'list' | 'card' }) {
+  const { variant = 'list' } = props
+  const teams = (
+    <Col className="gap-2">
+      <div className="bg-ink-100 h-5 w-2/3 rounded" />
+      <div className="bg-ink-100 h-5 w-1/2 rounded" />
+    </Col>
+  )
+  if (variant === 'card') {
+    return (
+      <div className="border-ink-200 bg-canvas-0 animate-pulse rounded-lg border">
+        <div className="border-ink-100 border-b px-3 py-3">
+          <div className="bg-ink-100 h-4 w-24 rounded" />
+        </div>
+        <div className="px-3 py-3">{teams}</div>
+        <div className="border-ink-100 border-t px-3 py-3">
+          <div className="bg-ink-100 h-3 w-40 rounded" />
+        </div>
+      </div>
+    )
+  }
   return (
-    <div className="border-ink-200 bg-canvas-0 animate-pulse rounded-lg border px-3 py-2.5">
-      <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] gap-3">
+    <div className="animate-pulse px-3 py-2.5">
+      <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] gap-3">
         <div className="bg-ink-100 h-4 w-12 rounded" />
-        <Col className="gap-2">
-          <div className="bg-ink-100 h-5 w-2/3 rounded" />
-          <div className="bg-ink-100 h-5 w-1/2 rounded" />
-        </Col>
-        <div className="bg-ink-100 h-4 w-16 rounded" />
+        {teams}
+        <div className="bg-ink-100 ml-auto h-4 w-8 rounded" />
       </div>
     </div>
   )

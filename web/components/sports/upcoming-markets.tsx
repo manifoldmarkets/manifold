@@ -46,7 +46,11 @@ export function UpcomingMarkets(props: {
 
   return (
     <Col className="gap-2">
-      <SectionHeader label="This week" count={refs.length} unit="market" />
+      <SectionHeader
+        label="Closing this week"
+        count={refs.length}
+        unit="market"
+      />
       {loading ? (
         <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y rounded-lg border">
           {[0, 1, 2, 3, 4].slice(0, Math.min(5, refs.length)).map((i) => (

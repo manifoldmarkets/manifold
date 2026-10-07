@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import {
   AnySportKey,
   LIVE_STATUSES,
+  ScheduleGame,
   SportsScheduleResponse,
 } from 'common/sports-schedule'
 import {
@@ -14,7 +16,10 @@ import {
 import { HOUR_MS } from 'common/util/time'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
 
+/** Upcoming games per request; more load as the feed scrolls. */
+export const SCHEDULE_PAGE_SIZE = 20
 /** Refetch cadence while something is live or about to start… */
 const ACTIVE_REFRESH_MS = 2 * 60_000
 /** …and while nothing is: still needed to pick up kickoffs, closes and new markets. */
@@ -39,7 +44,7 @@ export type SportsRailData = Pick<
 export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
   const { data, refresh, loading } = useAPIGetter(
     'sports-schedule',
-    { sport },
+    { sport, limit: SCHEDULE_PAGE_SIZE },
     undefined,
     // One cache slot per sport, so switching back is instant and a sport's
     // list never flashes another sport's games.
@@ -50,11 +55,57 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
   // during live games and the overlay is cheap to rebuild from a refetch.
   const [live, setLive] = useState<Record<string, LiveGameState>>({})
 
+  // Pages after the first, loaded as the feed scrolls. Tagged with their
+  // sport: the sport page stays mounted when the URL moves to another sport.
+  // Each page keeps its own snapshot time for the live overlay below.
+  const [more, setMore] = useState<{
+    sport: string
+    games: ScheduleGame[]
+    snapshotTimes: Record<string, number>
+    cursor: string | null
+  }>()
+  const extra = more?.sport === sport ? more : undefined
+  const nextCursor = extra ? extra.cursor : data?.nextCursor ?? null
+  const loadingMore = useRef(false)
+  const loadMore = useEvent(async () => {
+    const cursor = nextCursor
+    if (!cursor || loadingMore.current) return false
+    loadingMore.current = true
+    try {
+      const page = await api('sports-schedule', {
+        sport,
+        limit: SCHEDULE_PAGE_SIZE,
+        cursor,
+      })
+      setLive((prev) => pruneForPage(prev, page))
+      setMore((prev) => {
+        const kept = prev?.sport === sport ? prev : undefined
+        return {
+          sport,
+          games: [...(kept?.games ?? []), ...page.games],
+          snapshotTimes: {
+            ...kept?.snapshotTimes,
+            ...Object.fromEntries(
+              page.games.map((g) => [g.id, page.snapshotTime ?? 0])
+            ),
+          },
+          cursor: page.nextCursor,
+        }
+      })
+      return !!page.nextCursor
+    } catch (e) {
+      console.error('Failed to load more sports games', e)
+      return false
+    } finally {
+      loadingMore.current = false
+    }
+  })
+
   // HTTP/client caches preserve the server's snapshot time. Request-start
   // time in the browser says nothing about how fresh that response is.
   useEffect(() => {
     if (!data) return
-    setLive((prev) => pruneSportsLive(prev, data))
+    setLive((prev) => pruneForPage(prev, data))
   }, [data])
 
   // The rail's sports, counts and live count cover every sport, whichever one
@@ -76,7 +127,13 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     ? { sports: data.sports, counts: data.counts, liveCount: data.liveCount }
     : lastRail
 
-  const games = data?.games ?? []
+  // The first page wins when a game is on both: it is the fresher read.
+  const games = useMemo(() => {
+    const first = data?.games ?? []
+    if (!extra) return first
+    const seen = new Set(first.map((g) => g.id))
+    return [...first, ...extra.games.filter((g) => !seen.has(g.id))]
+  }, [data, extra])
   const isPageVisible = useIsPageVisible()
   const now = Date.now()
 
@@ -193,13 +250,45 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
 
   const merged: SportsScheduleResponse | undefined = useMemo(() => {
     if (!data) return undefined
+    const firstIds = new Set(data.games.map((g) => g.id))
     return {
       ...data,
-      games: data.games.map((g) =>
-        applySportsLive(g, live[g.id], data.snapshotTime)
+      games: games.map((g) =>
+        applySportsLive(
+          g,
+          live[g.id],
+          firstIds.has(g.id)
+            ? data.snapshotTime
+            : extra?.snapshotTimes[g.id] ?? data.snapshotTime
+        )
       ),
+      nextCursor,
     }
-  }, [data, live])
+  }, [data, games, live, nextCursor])
 
-  return { schedule: merged, rail, loading, refresh }
+  return {
+    schedule: merged,
+    rail,
+    loading,
+    refresh,
+    loadMore,
+    hasMore: !!nextCursor,
+  }
+}
+
+// Prunes the live overlay against one page's snapshot, leaving the games of
+// other pages alone: their prices were read at a different time.
+function pruneForPage(
+  prev: Record<string, LiveGameState>,
+  page: SportsScheduleResponse
+) {
+  const ids = new Set(page.games.map((g) => g.id))
+  const onPage: Record<string, LiveGameState> = {}
+  const rest: Record<string, LiveGameState> = {}
+  for (const [id, state] of Object.entries(prev)) {
+    if (ids.has(id)) onPage[id] = state
+    else rest[id] = state
+  }
+  const pruned = pruneSportsLive(onPage, page)
+  return pruned === onPage ? prev : { ...rest, ...pruned }
 }

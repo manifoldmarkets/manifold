@@ -51,13 +51,6 @@ export function SportsMarketSections(props: {
     `sports-futures-${key}`,
     enabled
   )
-  const resolved = useAPIGetter(
-    'search-markets-full',
-    { term: '', filter: 'resolved', sort: 'resolve-date', gids, limit: 20 },
-    undefined,
-    `sports-resolved-${key}`,
-    enabled
-  )
 
   const now = Date.now()
   const trendingMarkets = (trending.data ?? [])
@@ -72,12 +65,6 @@ export function SportsMarketSections(props: {
         (c.closeTime ?? 0) - now > 21 * DAY_MS
     )
     .slice(0, 8)
-
-  const resolvedMarkets = (resolved.data ?? [])
-    .filter(
-      (c) => !isSportsContract(c) && (c.resolutionTime ?? 0) > now - 2 * DAY_MS
-    )
-    .slice(0, 6)
 
   return (
     <Col className={clsx('gap-5', className)}>
@@ -94,12 +81,6 @@ export function SportsMarketSections(props: {
         contracts={futuresMarkets}
         loading={futures.loading && !futures.data}
         seeAllHref={seeAllHref}
-      />
-      <MarketSection
-        title="Recently resolved"
-        contracts={resolvedMarkets}
-        loading={resolved.loading && !resolved.data}
-        seeAllHref={`${seeAllHref}&f=resolved`}
       />
     </Col>
   )

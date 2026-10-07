@@ -51,6 +51,7 @@ const game: ScheduleGame = {
 const snapshot = (snapshotTime: number, g = game): SportsScheduleResponse => ({
   snapshotTime,
   games: [g],
+  nextCursor: null,
   upcoming: [],
   counts: {},
   liveCount: 1,
