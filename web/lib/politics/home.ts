@@ -1,4 +1,4 @@
-import { uniqBy } from 'lodash'
+import { uniq, uniqBy } from 'lodash'
 
 import { Contract } from 'common/contract'
 import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
@@ -38,6 +38,16 @@ import {
   MidtermConditionalRow,
   midtermConditionalRefs,
 } from 'web/lib/politics/midterm-conditionals'
+import {
+  buildConditionalMatrixRows,
+  conditionalMatrixIds,
+  ConditionalMatrixRow,
+  HOUSE_2026_MATRIX,
+  matrixRowContracts,
+  PRESIDENT_2028_MATRIX,
+  SENATE_2026_MATRIX,
+  slimMatrixRows,
+} from 'web/lib/politics/conditional-matrix'
 
 // Sections this branch adds to the page. The base ElectionsPageProps type lives
 // in web/public/data/elections-data.ts (owned by the data workstream), so the
@@ -48,6 +58,12 @@ export type MidtermSpotlightProps = {
   contestContracts: Contract[]
   // Markets conditional on the midterm result (curated list).
   conditionalRows: MidtermConditionalRow[]
+  // The conditional matrices: rows asked under each outcome of the 2026 Senate
+  // and House races and the 2028 presidency. Empty means the matrix is hidden
+  // (fewer than two complete rows, e.g. before its markets are created).
+  senateMatrixRows: ConditionalMatrixRow[]
+  houseMatrixRows: ConditionalMatrixRow[]
+  presidencyMatrixRows: ConditionalMatrixRow[]
 }
 export type MidtermsPageProps = ElectionsPageProps & MidtermSpotlightProps
 
@@ -71,9 +87,11 @@ async function getContestContracts(now: number): Promise<Contract[]> {
   }
 }
 
-// The curated conditional markets, by slug or by id. Ids may be reserved before
-// their markets exist: getContracts returns only the rows it finds, so those
-// are skipped until the markets are created.
+// The curated conditional markets (the card row and both matrices), by slug or
+// by id. The ids share one getContracts call, which is a single query for up
+// to 300 ids. Ids may be reserved before their markets exist: getContracts
+// returns only the rows it finds, so those are skipped until the markets are
+// created.
 async function getConditionalContracts(
   adminDb: Awaited<ReturnType<typeof initSupabaseAdmin>>,
   getBySlug: (slug: string) => Promise<Contract | null>
@@ -82,7 +100,12 @@ async function getConditionalContracts(
   try {
     const [bySlug, byId] = await Promise.all([
       Promise.all(slugs.map(getBySlug)),
-      getContracts(adminDb, ids, 'id', true),
+      getContracts(
+        adminDb,
+        uniq([...ids, ...conditionalMatrixIds()]),
+        'id',
+        true
+      ),
     ])
     return [...bySlug.filter((c): c is Contract => !!c), ...byId]
   } catch (e) {
@@ -193,6 +216,15 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
   ])
 
   const conditionalRows = buildMidtermConditionalRows(conditionalContracts, now)
+  const senateMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(SENATE_2026_MATRIX, conditionalContracts, now)
+  )
+  const houseMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(HOUSE_2026_MATRIX, conditionalContracts, now)
+  )
+  const presidencyMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(PRESIDENT_2028_MATRIX, conditionalContracts, now)
+  )
 
   // Nothing twice: the hero markets (balance of power, chamber control,
   // districts) and the contest, conditional and polling sections are all on
@@ -203,6 +235,9 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     excludeIds: [
       ...contestContracts,
       ...conditionalRowContracts(conditionalRows),
+      ...matrixRowContracts(senateMatrixRows),
+      ...matrixRowContracts(houseMatrixRows),
+      ...matrixRowContracts(presidencyMatrixRows),
       ...pollingPerpContracts,
     ].map((c) => c.id),
   })
@@ -231,6 +266,9 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     trendingContracts,
     contestContracts,
     conditionalRows,
+    senateMatrixRows,
+    houseMatrixRows,
+    presidencyMatrixRows,
   }
 }
 

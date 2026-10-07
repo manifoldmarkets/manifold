@@ -9,11 +9,19 @@ export type BallotCandidate = {
 
 const DATA = candidates as Record<
   ElectionMode,
-  Record<string, BallotCandidate[]>
+  Record<string, Partial<BallotCandidate>[]>
 >
 
-export const raceCandidates = (mode: ElectionMode, id: string) =>
-  DATA[mode][id] ?? []
+// The data can hold an entry without a name (CO-1 had one with only a party).
+// It can't be shown or matched to an answer, and name matching assumes a
+// string, so drop it here, where every reader gets the ballot.
+const hasName = (c: Partial<BallotCandidate>): c is BallotCandidate =>
+  typeof c.name === 'string' && c.name.trim() !== '' && !!c.party
+
+export const raceCandidates = (
+  mode: ElectionMode,
+  id: string
+): BallotCandidate[] => (DATA[mode][id] ?? []).filter(hasName)
 
 // A party price may cover a replacement nominee. Names are ballot context,
 // never a reinterpretation of NO, a catch-all answer or a same-party contest.

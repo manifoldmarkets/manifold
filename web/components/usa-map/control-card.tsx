@@ -4,6 +4,7 @@ import { Contract, contractPath } from 'common/contract'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { formatOdds } from './election-display'
 import { electionOdds } from './election-map-model'
+import { useMarketLink } from './market-link'
 import styles from './election-explorer.module.css'
 
 // What each control market counts as a Republican win, from the source
@@ -25,6 +26,7 @@ export function ControlCard({
   contract: Contract | null
 }) {
   const [outcome, setOutcome] = useState<'YES' | 'NO'>()
+  const { newTab, linkProps } = useMarketLink()
   const odds = electionOdds(contract, true)
   const rep = odds && odds.rep > odds.dem
   const noLabel = 'Democratic'
@@ -50,9 +52,10 @@ export function ControlCard({
             <a
               className={styles.chartLink}
               href={contractPath(contract)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${label} control chart, description and comments (opens in a new tab)`}
+              {...linkProps}
+              aria-label={`${label} control chart, description and comments${
+                newTab ? ' (opens in a new tab)' : ''
+              }`}
             >
               chart →
             </a>
