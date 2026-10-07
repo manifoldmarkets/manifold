@@ -49,11 +49,11 @@ const CONDITIONS = {
     text: '**Condition:** Republicans control the U.S. Senate when the 120th Congress convenes on January 3, 2027: Republican senators hold at least 50 seats (with the Republican Vice President breaking ties). Otherwise this market resolves **N/A**.',
   },
   'pres-D': {
-    short: 'the Democratic nominee wins the 2028 presidential election',
+    short: 'a Democrat wins the presidency in 2028',
     text: "**Condition:** the Democratic Party's 2028 presidential nominee wins the 2028 presidential election, as determined by Congress's count of electoral votes in January 2029 (or, if no one has a majority, the House's choice). If anyone else wins, this market resolves **N/A**.",
   },
   'pres-R': {
-    short: 'the Republican nominee wins the 2028 presidential election',
+    short: 'a Republican wins the presidency in 2028',
     text: "**Condition:** the Republican Party's 2028 presidential nominee wins the 2028 presidential election, as determined by Congress's count of electoral votes in January 2029 (or, if no one has a majority, the House's choice). If anyone else wins, this market resolves **N/A**.",
   },
 }
@@ -120,7 +120,7 @@ const QUESTIONS = [
   {
     key: 'tariff-law',
     chamber: 'house',
-    ask: "will a law cutting or ending any of Trump's tariffs be enacted before January 3, 2029?",
+    ask: 'will a law cutting or ending any Trump tariffs be enacted before Jan 3, 2029?',
     seeds: { D: 12, R: 6 },
     close: '2029-01-03T17:00:00Z',
     extraGroups: [TOPIC.economics, TOPIC.usEconomy],
@@ -129,7 +129,7 @@ const QUESTIONS = [
   {
     key: 'stock-ban',
     chamber: 'house',
-    ask: 'will Congress ban its members from trading individual stocks before January 3, 2029?',
+    ask: 'will Congress ban its members from trading individual stocks before Jan 3, 2029?',
     seeds: { D: 25, R: 15 },
     close: '2029-01-03T17:00:00Z',
     extraGroups: [TOPIC.stocks],
@@ -178,7 +178,7 @@ const QUESTIONS = [
     key: 'scotus-size',
     cycle: 2028,
     chamber: 'pres',
-    ask: 'will the Supreme Court have more than nine justices before January 20, 2033?',
+    ask: 'will the Supreme Court have more than nine justices before Jan 20, 2033?',
     seeds: { D: 12, R: 2 },
     close: '2033-01-20T17:00:00Z',
     rule: 'Resolves **YES** if, at any time before January 20, 2033, more than nine justices are serving on the U.S. Supreme Court at once. Resolves **NO** otherwise.',
@@ -187,7 +187,7 @@ const QUESTIONS = [
     key: 'marijuana',
     cycle: 2028,
     chamber: 'pres',
-    ask: 'will marijuana be removed from federal drug schedules before January 20, 2033?',
+    ask: 'will marijuana be federally descheduled before Jan 20, 2033?',
     seeds: { D: 35, R: 15 },
     close: '2033-01-20T17:00:00Z',
     rule: 'Resolves **YES** if marijuana (cannabis) is fully descheduled, removed from every schedule of the federal Controlled Substances Act by law or final rule, with effect before January 20, 2033. Moving it to Schedule III or any other schedule does not count. Resolves **NO** otherwise.',
@@ -205,7 +205,7 @@ const QUESTIONS = [
     key: 'abortion-law',
     cycle: 2028,
     chamber: 'pres',
-    ask: 'will a federal law protecting abortion rights nationwide be enacted before January 20, 2033?',
+    ask: 'will Congress enact a federal abortion-rights law before Jan 20, 2033?',
     seeds: { D: 15, R: 1 },
     close: '2033-01-20T17:00:00Z',
     rule: 'Resolves **YES** if a federal statute establishing a nationwide legal right to obtain an abortion (for example, codifying the protections of Roe v. Wade) is enacted before January 20, 2033. Resolves **NO** otherwise.',
@@ -273,6 +273,7 @@ function payloads() {
       const cond = CONDITIONS[`${q.chamber}-${side}`]
       const raceKey = `${q.cycle ?? 2026}-conditional-${q.key}-${q.chamber}-${side}`
       const question = q.chamber === 'pres' ? `If ${cond.short}, ${q.ask}` : `If ${cond.short} in 2026, ${q.ask}`
+      if (question.length > 120) throw new Error(`${raceKey}: question is ${question.length} chars (max 120): ${question}`)
       const pair = CONDITIONS[`${q.chamber}-${side === 'D' ? 'R' : 'D'}`].short
       out.push({
         raceKey,
