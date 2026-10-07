@@ -5172,6 +5172,8 @@ export const API = (_apiTypeCheck = {
       .object({
         competitionId: z.string(),
         dryRun: z.boolean().optional(),
+        // Provider event ids from a dry run. Only these games are created.
+        eventIds: z.array(z.string()).max(200).optional(),
       })
       .strict(),
     returns: {} as {

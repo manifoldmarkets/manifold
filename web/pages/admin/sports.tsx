@@ -178,6 +178,33 @@ function Section(props: {
   )
 }
 
+// Ticks or unticks every game an Odds API dry run would create.
+function OddsApiSelectAll(props: {
+  results: { eventId: string; status: string }[]
+  selected: Set<string>
+  setSelected: (selected: Set<string>) => void
+}) {
+  const { results, selected, setSelected } = props
+  const creatable = results.filter((r) => r.status === 'dry-run')
+  return (
+    <Row className="items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        aria-label="Tick every game"
+        checked={creatable.length > 0 && selected.size === creatable.length}
+        onChange={(e) =>
+          setSelected(
+            new Set(e.target.checked ? creatable.map((r) => r.eventId) : [])
+          )
+        }
+      />
+      <span className="text-ink-600">
+        {selected.size} of {creatable.length} games ticked
+      </span>
+    </Row>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function SportsAdminPage() {
@@ -417,6 +444,22 @@ export default function SportsAdminPage() {
       reason: string | null
     }>
   >([])
+  const [oddsApiLogIsPreview, setOddsApiLogIsPreview] = useState(false)
+  // The games ticked in the last dry run. Null until a dry run has listed
+  // some; after that, creating makes only these.
+  const [oddsApiSelected, setOddsApiSelected] = useState<Set<string> | null>(
+    null
+  )
+  const oddsCompetitionId =
+    selectedCompetition.type === 'odds-api'
+      ? selectedCompetition.competitionId
+      : undefined
+  useEffect(() => {
+    setOddsApiResults([])
+    setOddsApiRan(false)
+    setOddsApiSelected(null)
+    setOddsApiDryRun(true)
+  }, [oddsCompetitionId])
 
   // Alerts: markets needing attention
   const alertMarkets = markets.filter((m) => m.needsAttention)
@@ -530,9 +573,26 @@ export default function SportsAdminPage() {
       const data = await api('admin-sports-create-odds-markets', {
         competitionId: selectedCompetition.competitionId,
         dryRun: oddsApiDryRun,
+        eventIds:
+          oddsApiDryRun || !oddsApiSelected ? undefined : [...oddsApiSelected],
       })
       setOddsApiResults(data.results)
       setOddsApiRan(true)
+      setOddsApiLogIsPreview(oddsApiDryRun)
+      if (oddsApiDryRun) {
+        setOddsApiSelected(
+          new Set(
+            data.results
+              .filter((r) => r.status === 'dry-run')
+              .map((r) => r.eventId)
+          )
+        )
+      } else {
+        // Back to previewing, so a second click can't create the games that
+        // were left unticked.
+        setOddsApiSelected(null)
+        setOddsApiDryRun(true)
+      }
     } catch (e: unknown) {
       alert(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`)
     } finally {
@@ -1069,7 +1129,10 @@ export default function SportsAdminPage() {
                 <Button
                   color={oddsApiDryRun ? 'blue' : 'green'}
                   onClick={runOddsApiCreate}
-                  disabled={oddsApiCreating}
+                  disabled={
+                    oddsApiCreating ||
+                    (!oddsApiDryRun && oddsApiSelected?.size === 0)
+                  }
                 >
                   {oddsApiCreating ? (
                     <Row className="gap-2">
@@ -1077,6 +1140,10 @@ export default function SportsAdminPage() {
                     </Row>
                   ) : oddsApiDryRun ? (
                     'Preview upcoming games (dry run)'
+                  ) : oddsApiSelected ? (
+                    `Create ${oddsApiSelected.size} ticked ${
+                      oddsApiSelected.size === 1 ? 'market' : 'markets'
+                    }`
                   ) : (
                     'Create markets'
                   )}
@@ -1097,7 +1164,7 @@ export default function SportsAdminPage() {
               {oddsApiResults.length > 0 && (
                 <Col className="gap-1">
                   <p className="text-ink-600 text-sm font-medium">
-                    {oddsApiDryRun ? 'Dry run preview' : 'Creation log'} (
+                    {oddsApiLogIsPreview ? 'Dry run preview' : 'Creation log'} (
                     {
                       oddsApiResults.filter(
                         (r) => r.status === 'created' || r.status === 'dry-run'
@@ -1112,9 +1179,36 @@ export default function SportsAdminPage() {
                     {oddsApiResults.filter((r) => r.status === 'error').length}{' '}
                     errors)
                   </p>
+                  {oddsApiLogIsPreview && oddsApiSelected && (
+                    <OddsApiSelectAll
+                      results={oddsApiResults}
+                      selected={oddsApiSelected}
+                      setSelected={setOddsApiSelected}
+                    />
+                  )}
                   <div className="bg-ink-50 border-ink-200 max-h-64 overflow-y-auto rounded border p-3">
                     {oddsApiResults.map((r, i) => (
-                      <Row key={i} className="gap-2 py-0.5 text-xs">
+                      <Row
+                        key={i}
+                        className="items-center gap-2 py-0.5 text-xs"
+                      >
+                        {oddsApiLogIsPreview && oddsApiSelected && (
+                          <input
+                            type="checkbox"
+                            aria-label={`Create ${r.question}`}
+                            className={clsx(
+                              r.status !== 'dry-run' && 'invisible'
+                            )}
+                            disabled={r.status !== 'dry-run'}
+                            checked={oddsApiSelected.has(r.eventId)}
+                            onChange={(e) => {
+                              const next = new Set(oddsApiSelected)
+                              if (e.target.checked) next.add(r.eventId)
+                              else next.delete(r.eventId)
+                              setOddsApiSelected(next)
+                            }}
+                          />
+                        )}
                         <span
                           className={clsx(
                             'w-16 shrink-0 font-medium',
@@ -1145,8 +1239,8 @@ export default function SportsAdminPage() {
                           Looks good — switch to live mode
                         </Button>
                         <span className="text-ink-400 text-xs">
-                          Toggle dry run off and click Create markets to
-                          proceed.
+                          Untick any games you don&apos;t want, then create the
+                          rest in live mode.
                         </span>
                       </Row>
                     )}

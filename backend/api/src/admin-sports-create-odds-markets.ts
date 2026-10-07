@@ -12,7 +12,7 @@ export const adminSportsCreateOddsMarkets: APIHandler<
   'admin-sports-create-odds-markets'
 > = async (props, auth) => {
   throwErrorIfNotAdmin(auth.uid)
-  const { competitionId, dryRun = false } = props
+  const { competitionId, dryRun = false, eventIds } = props
   if (!hasOddsApiKey()) {
     throw new APIError(500, 'THE_ODDS_API_KEY is not set on the server')
   }
@@ -23,7 +23,10 @@ export const adminSportsCreateOddsMarkets: APIHandler<
   }
 
   const pg = createSupabaseDirectClient()
-  const r = await createOddsMarketsForCompetition(pg, competitionId, { dryRun })
+  const r = await createOddsMarketsForCompetition(pg, competitionId, {
+    dryRun,
+    eventIds,
+  })
   return {
     created: r.created,
     skipped: r.skipped,

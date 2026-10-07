@@ -89,12 +89,13 @@ async function sportsCreator(): Promise<User> {
  * taken from the Odds API for the next two weeks and kept only if they fall
  * inside one of the competition's auto-create phases, so a shared sport key
  * (the NFL regular season and playoffs share one) never creates the wrong
- * phase's games.
+ * phase's games. `eventIds` narrows that to the games an admin picked from a
+ * dry run; the other checks still apply.
  */
 export async function createOddsMarketsForCompetition(
   pg: SupabaseDirectClient,
   competitionId: string,
-  opts: { dryRun?: boolean; creator?: User } = {}
+  opts: { dryRun?: boolean; creator?: User; eventIds?: string[] } = {}
 ): Promise<OddsCreateResult> {
   const phases = calendarEntriesFor(competitionId)
   const entry = phases[0]
@@ -116,11 +117,13 @@ export async function createOddsMarketsForCompetition(
   // Only games that have not started: the odds endpoint also returns games
   // in play, and a market opened from a live line is not a market.
   const now = Date.now()
+  const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
   const events = (await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS))
     .filter((e) => {
       const t = new Date(e.commence_time).getTime()
       return t > now && windows.some((w) => t >= w.from && t <= w.to)
     })
+    .filter((e) => !picked || picked.has(e.id))
     .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time))
   if (events.length === 0) return result
   let planned = 0

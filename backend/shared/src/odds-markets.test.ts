@@ -202,6 +202,24 @@ it('concurrent create runs insert one versus market and charge one ante', async 
   expect(generateAntes).toHaveBeenCalledTimes(1)
 })
 
+it('creates only the games an admin picked from the dry run', async () => {
+  jest
+    .mocked(getUpcomingOdds)
+    .mockResolvedValue([
+      event,
+      { ...event, id: 'picked', commence_time: '2026-09-14T00:20:00Z' },
+    ])
+  const db = database()
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    'nfl-regular-2026',
+    { creator, eventIds: ['picked'] }
+  )
+  expect(result.log.map((r) => r.eventId)).toEqual(['picked'])
+  expect(result.created).toBe(1)
+  expect(db.contracts).toHaveLength(1)
+})
+
 it('waits for a moneyline before creating a game', async () => {
   jest.mocked(getUpcomingOdds).mockResolvedValue([{ ...event, bookmakers: [] }])
   const db = database()
