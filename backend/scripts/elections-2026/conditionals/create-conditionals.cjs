@@ -265,26 +265,46 @@ function payloads() {
   }
   const key = process.env.MANIFOLD_API_KEY
   if (!key) throw new Error('MANIFOLD_API_KEY is required with --apply')
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  // The market by id, or undefined. A new market can take a few seconds to be
+  // readable, so `tries` > 1 polls for it.
+  const getMarket = async (id, tries = 1) => {
+    for (let i = 0; i < tries; i++) {
+      if (i) await sleep(2000)
+      const res = await fetch(`${API}/v0/market/${id}`).catch(() => undefined)
+      if (res?.ok) return res.json()
+    }
+    return undefined
+  }
   for (const m of markets) {
-    const existing = await fetch(`${API}/v0/market/${m.idempotencyKey}`)
-    if (existing.ok) {
-      const c = await existing.json()
-      console.log(`exists  ${c.url}`)
+    const existing = await getMarket(m.idempotencyKey)
+    if (existing) {
+      console.log(`exists  ${existing.url}`)
       continue
     }
-    const res = await fetch(`${API}/v0/market`, {
-      method: 'POST',
-      headers: { Authorization: `Key ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...m.body, idempotencyKey: m.idempotencyKey }),
-    })
-    const text = await res.text()
-    if (!res.ok) throw new Error(`${m.raceKey}: HTTP ${res.status} ${text.slice(0, 300)}`)
-    const c = JSON.parse(text)
-    await new Promise((r) => setTimeout(r, 1500))
-    const check = await (await fetch(`${API}/v0/market/${c.id}`)).json()
-    const ok = Math.abs(check.probability * 100 - m.body.initialProb) < 1
-    console.log(`${ok ? 'created' : 'CHECK SEED'}  ${(check.probability * 100).toFixed(1)}%  ${c.url}`)
-    await new Promise((r) => setTimeout(r, 1000))
+    let created
+    for (let attempt = 1; !created; attempt++) {
+      const res = await fetch(`${API}/v0/market`, {
+        method: 'POST',
+        headers: { Authorization: `Key ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...m.body, idempotencyKey: m.idempotencyKey }),
+      })
+      const text = await res.text()
+      if (res.ok) created = JSON.parse(text)
+      else if (res.status >= 500 && attempt < 3) {
+        // A gateway error can come before or after the market is written: look
+        // for it under its reserved id before trying again.
+        console.log(`  ${m.raceKey}: HTTP ${res.status}, checking before retrying`)
+        await sleep(5000)
+        created = await getMarket(m.idempotencyKey, 3)
+      } else throw new Error(`${m.raceKey}: HTTP ${res.status} ${text.slice(0, 300)}`)
+    }
+    const check = await getMarket(created.id, 5)
+    const prob = check?.probability
+    const ok = Number.isFinite(prob) && Math.abs(prob * 100 - m.body.initialProb) < 1
+    const shown = Number.isFinite(prob) ? `${(prob * 100).toFixed(1)}%` : 'unreadable'
+    console.log(`${ok ? 'created' : 'CHECK SEED'}  ${shown}  ${created.url}`)
+    await sleep(1000)
   }
 })().catch((e) => {
   console.error(e.message)
