@@ -123,7 +123,7 @@ const QUESTIONS = [
     ask: 'will a law cutting or ending any Trump tariffs be enacted before Jan 3, 2029?',
     seeds: { D: 12, R: 6 },
     close: '2029-01-03T17:00:00Z',
-    extraGroups: [TOPIC.economics, TOPIC.usEconomy],
+    extraGroups: [TOPIC.economics],
     rule: 'Resolves **YES** if a bill or joint resolution becomes law (signed, or passed over a veto) before January 3, 2029 that terminates or reduces any tariff imposed by the Trump administration since January 20, 2025, or ends the emergency it rests on. Resolves **NO** otherwise.',
   },
   {
@@ -141,7 +141,7 @@ const QUESTIONS = [
     ask: 'will U.S. real GDP shrink in any quarter of 2027?',
     seeds: { D: 28, R: 28 },
     close: '2028-02-15T17:00:00Z',
-    extraGroups: [TOPIC.economics, TOPIC.usEconomy],
+    extraGroups: [TOPIC.economics],
     rule: "Resolves **YES** if the Bureau of Economic Analysis's advance estimate of real GDP growth (seasonally adjusted annual rate) is negative for any quarter of 2027. Uses each quarter's advance estimate as first published; later revisions don't count. Resolves once the Q4 2027 advance estimate is out.",
   },
   {
@@ -273,6 +273,9 @@ function payloads() {
       const cond = CONDITIONS[`${q.chamber}-${side}`]
       const raceKey = `${q.cycle ?? 2026}-conditional-${q.key}-${q.chamber}-${side}`
       const question = q.chamber === 'pres' ? `If ${cond.short}, ${q.ask}` : `If ${cond.short} in 2026, ${q.ask}`
+      const groupIds = [...(q.chamber === 'pres' ? PRES_GROUP_IDS : GROUP_IDS), ...(q.extraGroups ?? [])]
+      // Manifold's create-market limits (MAX_GROUPS_PER_MARKET, MAX_QUESTION_LENGTH).
+      if (groupIds.length > 5) throw new Error(`${raceKey}: ${groupIds.length} topics (max 5)`)
       if (question.length > 120) throw new Error(`${raceKey}: question is ${question.length} chars (max 120): ${question}`)
       const pair = CONDITIONS[`${q.chamber}-${side === 'D' ? 'R' : 'D'}`].short
       out.push({
@@ -293,7 +296,7 @@ function payloads() {
           initialProb: q.seeds[side],
           closeTime: utc(q.close),
           liquidityTier: 1000,
-          groupIds: [...(q.chamber === 'pres' ? PRES_GROUP_IDS : GROUP_IDS), ...(q.extraGroups ?? [])],
+          groupIds,
           visibility: 'public',
         },
       })
