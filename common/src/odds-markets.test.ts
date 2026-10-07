@@ -12,6 +12,7 @@ import {
   winningSide,
 } from './odds-markets'
 import { getAnswerProbsError } from './new-contract'
+import { DRAW_COLOR, gameAnswerColors } from './sports-team-colors'
 import {
   activeCalendarEntries,
   calendarEntriesFor,
@@ -362,6 +363,28 @@ describe('the market a game becomes', () => {
     const p = buildOddsMarketParams({ ...nflEvent, bookmakers: [] }, nfl)
     expect(p.answerProbs).toBeUndefined()
     expect(p.answers).toHaveLength(2)
+  })
+  it('colours the answers by team, home first, with a neutral Draw', () => {
+    const versus = buildOddsMarketParams(nflEvent, nfl)
+    expect(versus.answerColors).toEqual(
+      gameAnswerColors('nfl', 'Kansas City Chiefs', 'Buffalo Bills', false)
+    )
+    expect(versus.answerColors).toHaveLength(2)
+    const threeWay = buildOddsMarketParams(soccerEvent, epl)
+    expect(threeWay.answerColors).toHaveLength(3)
+    expect(threeWay.answerColors![2]).toBe(DRAW_COLOR)
+  })
+  it('keeps the default colours for teams it has none for', () => {
+    const p = buildOddsMarketParams(
+      {
+        ...nflEvent,
+        sport_key: 'americanfootball_ncaaf',
+        home_team: 'Alabama Crimson Tide',
+        away_team: 'Georgia Bulldogs',
+      },
+      cfb
+    )
+    expect(p.answerColors).toBeUndefined()
   })
 })
 

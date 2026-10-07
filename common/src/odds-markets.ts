@@ -2,6 +2,7 @@ import { sortBy, sum } from 'lodash'
 import { Answer } from './answer'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
 import { NFL_TEAM_TLA } from './sports'
+import { gameAnswerColors } from './sports-team-colors'
 import {
   CLOSE_BUFFER_HOURS,
   SPORT_ID_TO_SPORT_KEY,
@@ -239,6 +240,11 @@ export interface OddsMarketParams {
    */
   answerProbs?: number[]
   answerShortTexts?: string[]
+  /**
+   * Team colours in answer order, with a neutral Draw. Undefined when either
+   * team has no colours on file: the market's default colours apply.
+   */
+  answerColors?: string[]
   closeTime: number
   sportsEventId: string
   sportsStartTimestamp: string
@@ -278,6 +284,7 @@ export function buildOddsMarketParams(
         ? [homeShort, awayShort, DRAW_ANSWER]
         : [homeShort, awayShort]
       : undefined
+  const answerColors = gameAnswerColors(entry.sport, home, away, threeWay)
 
   // The date tells repeat fixtures apart (series, rematches).
   const question = threeWay
@@ -321,6 +328,7 @@ export function buildOddsMarketParams(
     answers,
     answerProbs,
     answerShortTexts,
+    answerColors,
     closeTime,
     sportsEventId: oddsEventId(event.sport_key, event.id),
     sportsStartTimestamp: event.commence_time,
