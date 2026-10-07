@@ -1180,6 +1180,8 @@ Phase 3: DB Update
 
 ### Key Design Decisions
 
+- Merch checkout dialogs keep their action buttons in a footer outside the scrollable content. The dialog height follows the dynamic viewport, and the footer includes bottom safe-area padding so shipping quotes and long address forms do not push the next step off-screen on mobile. This layout is scoped to `web/components/shop/merch-checkout-modal.tsx` and used for purchase, shipping, and final confirmation.
+
 | Decision | Outcome |
 |----------|---------|
 | Shipping cost | Charged in mana, server-side verified against Printful rates |

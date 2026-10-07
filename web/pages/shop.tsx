@@ -72,6 +72,7 @@ import {
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
+import { MerchCheckoutModal } from 'web/components/shop/merch-checkout-modal'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
@@ -1647,7 +1648,20 @@ function MerchItemCard(props: {
       </div>
 
       {/* Purchase confirmation modal */}
-      <Modal open={showPurchaseModal} setOpen={setShowPurchaseModal} size="md">
+      <MerchCheckoutModal
+        open={showPurchaseModal}
+        setOpen={setShowPurchaseModal}
+        actions={
+          <>
+            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
+              Cancel
+            </Button>
+            <Button color="indigo" onClick={handleProceedToShipping}>
+              Continue to Shipping
+            </Button>
+          </>
+        }
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
@@ -1727,20 +1741,41 @@ function MerchItemCard(props: {
               <strong>not stored</strong> by Manifold.
             </p>
           </div>
-
-          <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
-              Cancel
-            </Button>
-            <Button color="indigo" onClick={handleProceedToShipping}>
-              Continue to Shipping
-            </Button>
-          </Row>
         </Col>
-      </Modal>
+      </MerchCheckoutModal>
 
       {/* Shipping address modal */}
-      <Modal open={showShippingModal} setOpen={setShowShippingModal} size="md">
+      <MerchCheckoutModal
+        open={showShippingModal}
+        setOpen={setShowShippingModal}
+        actions={
+          <>
+            <Button color="gray" onClick={() => setShowShippingModal(false)}>
+              Back
+            </Button>
+            <Button
+              color="indigo"
+              disabled={
+                !shippingInfo.name ||
+                !selectedShipping ||
+                !taxIdValid ||
+                !emailFieldOk
+              }
+              onClick={() => {
+                setAcceptedTerms(false)
+                setShowConfirmOrderModal(true)
+              }}
+            >
+              Place Order ({formatMoney(discountedPrice)}
+              {selectedShipping &&
+                ` + ${formatMoney(
+                  Math.round(parseFloat(selectedShipping.rate) * 100)
+                )} shipping`}
+              )
+            </Button>
+          </>
+        }
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Shipping Address</div>
           <p className="text-ink-500 text-sm">
@@ -1960,40 +1995,35 @@ function MerchItemCard(props: {
               </span>
             </Row>
           </div>
+        </Col>
+      </MerchCheckoutModal>
 
-          <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowShippingModal(false)}>
-              Back
+      {/* Final confirmation modal */}
+      <MerchCheckoutModal
+        open={showConfirmOrderModal}
+        setOpen={setShowConfirmOrderModal}
+        actions={
+          <>
+            <Button
+              color="gray"
+              onClick={() => setShowConfirmOrderModal(false)}
+            >
+              Go Back
             </Button>
             <Button
               color="indigo"
-              disabled={
-                !shippingInfo.name ||
-                !selectedShipping ||
-                !taxIdValid ||
-                !emailFieldOk
-              }
-              onClick={() => {
-                setAcceptedTerms(false)
-                setShowConfirmOrderModal(true)
-              }}
+              loading={purchasing}
+              disabled={countdown > 0 || purchasing || !acceptedTerms}
+              onClick={handleSubmitOrder}
             >
-              Place Order ({formatMoney(discountedPrice)}
-              {selectedShipping &&
-                ` + ${formatMoney(
-                  Math.round(parseFloat(selectedShipping.rate) * 100)
-                )} shipping`}
-              )
+              {purchasing
+                ? 'Processing...'
+                : countdown > 0
+                ? `Confirm Order (${countdown})`
+                : 'Confirm Order'}
             </Button>
-          </Row>
-        </Col>
-      </Modal>
-
-      {/* Final confirmation modal */}
-      <Modal
-        open={showConfirmOrderModal}
-        setOpen={setShowConfirmOrderModal}
-        size="md"
+          </>
+        }
       >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Your Order</div>
@@ -2091,29 +2121,8 @@ function MerchItemCard(props: {
               shipment.
             </span>
           </label>
-
-          <Row className="justify-end gap-2">
-            <Button
-              color="gray"
-              onClick={() => setShowConfirmOrderModal(false)}
-            >
-              Go Back
-            </Button>
-            <Button
-              color="indigo"
-              loading={purchasing}
-              disabled={countdown > 0 || purchasing || !acceptedTerms}
-              onClick={handleSubmitOrder}
-            >
-              {purchasing
-                ? 'Processing...'
-                : countdown > 0
-                ? `Confirm Order (${countdown})`
-                : 'Confirm Order'}
-            </Button>
-          </Row>
         </Col>
-      </Modal>
+      </MerchCheckoutModal>
     </>
   )
 }
