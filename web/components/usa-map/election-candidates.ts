@@ -18,6 +18,24 @@ const DATA = candidates as Record<
 const hasName = (c: Partial<BallotCandidate>): c is BallotCandidate =>
   typeof c.name === 'string' && c.name.trim() !== '' && !!c.party
 
+const normalizeName = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z\s-]/g, ' ')
+    .split(/\s+/)
+    .filter((part) => part && !/^(?:jr|sr|ii|iii|iv)$/.test(part))
+
+// Same person, allowing for middle names/initials and suffixes.
+export function sameCandidate(a: string, b: string) {
+  const x = normalizeName(a)
+  const y = normalizeName(b)
+  if (!x.length || !y.length) return false
+  if (x.join(' ') === y.join(' ')) return true
+  return x[0] === y[0] && x[x.length - 1] === y[y.length - 1]
+}
+
 export const raceCandidates = (
   mode: ElectionMode,
   id: string
