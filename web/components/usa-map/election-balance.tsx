@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   balanceSegments,
@@ -7,7 +7,13 @@ import {
   Tier,
 } from './election-map-model'
 import { plural } from './election-display'
-import { hitTargets, layoutSegments, seatPosition } from './seat-bar-layout'
+import {
+  hitTargets,
+  layoutSegments,
+  seatPosition,
+  segmentAt,
+} from './seat-bar-layout'
+import { dragSelection, TierSelection, toggleTier } from './seat-bar-selection'
 import styles from './election-explorer.module.css'
 
 // Every segment is at least this wide, with a surface-colored gap between.
@@ -15,20 +21,63 @@ const MIN_SEGMENT_PX = 6
 const GAP_PX = 2
 // Click/tap targets are at least this wide, centered on thin segments.
 const MIN_TARGET_PX = 24
+// A press turns into a range drag once it moves this far sideways; a finger
+// gets more slack than a mouse.
+const DRAG_SLOP_PX = { mouse: 5, other: 10 }
+// The click that ends a drag is part of the drag, not a toggle.
+const DRAG_CLICK_MS = 250
+// The map preview waits this long when the mouse arrives on the bar, so
+// crossing it on the way to the toolbar does not flash the map. Moving from
+// segment to segment after that previews at once.
+const PREVIEW_DELAY_MS = 120
+
+type Drag = {
+  pointerId: number
+  x: number
+  y: number
+  slop: number
+  anchor: Tier
+  // The selection when the press began; every move applies its range to this.
+  base: TierSelection
+  active: boolean
+  over?: Tier
+}
+
+const tierOf = (target: EventTarget) =>
+  (target instanceof Element
+    ? target.closest('[data-tier]')?.getAttribute('data-tier') ?? undefined
+    : undefined) as Tier | undefined
 
 export function ElectionBalance({
   summary,
   mode,
-  filter,
-  onFilter,
+  selection,
+  preview,
+  onSelect,
+  onPreview,
 }: {
   summary: ReturnType<typeof seatSummary>
   mode: ElectionMode
-  filter?: Tier
-  onFilter: (tier: Tier) => void
+  // Selected groups, in bar order; empty when nothing is selected.
+  selection: TierSelection
+  // The group under the mouse, previewed on the map.
+  preview?: Tier
+  onSelect: (next: Tier[]) => void
+  onPreview: (tier: Tier | undefined) => void
 }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState<number>()
+  const drag = useRef<Drag>()
+  const dragEndedAt = useRef(-Infinity)
+  const [dragging, setDragging] = useState(false)
+  const previewTimer = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => () => clearTimeout(previewTimer.current), [])
+  const previewTier = (tier: Tier | undefined) => {
+    clearTimeout(previewTimer.current)
+    if (!tier || preview) onPreview(tier)
+    else
+      previewTimer.current = setTimeout(() => onPreview(tier), PREVIEW_DELAY_MS)
+  }
   useLayoutEffect(() => {
     const track = trackRef.current
     if (!track) return
@@ -40,6 +89,7 @@ export function ElectionBalance({
   }, [])
 
   const segments = balanceSegments(summary)
+  const order = segments.flatMap((s) => (s.tier ? [s.tier] : []))
   const counts = segments.map((s) => s.count)
   const boxes = width
     ? layoutSegments(counts, width, { min: MIN_SEGMENT_PX, gap: GAP_PX })
@@ -62,6 +112,41 @@ export function ElectionBalance({
       ? seatPosition(counts, boxes, threshold)
       : undefined
   const unit = mode === 'governor' ? 'governorship' : 'seat'
+  const isSelected = (tier?: Tier) => !!tier && selection.includes(tier)
+  const showPreview = !dragging && !!preview
+
+  // The race group under a dragging pointer; held seats and the space past
+  // either end count as the nearest group.
+  const tierAtX = (clientX: number) => {
+    const track = trackRef.current
+    if (!track || !targets.length) return undefined
+    const i = segmentAt(
+      targets,
+      clientX - track.getBoundingClientRect().left,
+      (j) => !!segments[j]?.tier
+    )
+    return i === undefined ? undefined : segments[i].tier
+  }
+  const endDrag = (pointerId: number, revert: boolean) => {
+    const d = drag.current
+    if (!d || d.pointerId !== pointerId) return
+    drag.current = undefined
+    if (!d.active) return
+    dragEndedAt.current = performance.now()
+    setDragging(false)
+    if (revert) onSelect([...d.base])
+  }
+  // Escape on a segment cancels a drag in progress, else clears the
+  // selection (and only that: an open race panel stays open).
+  const onEscape = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Escape') return
+    const d = drag.current
+    if (d?.active) endDrag(d.pointerId, true)
+    else if (selection.length) onSelect([])
+    else return
+    e.preventDefault()
+    e.stopPropagation()
+  }
 
   return (
     <div className={styles.balance}>
@@ -88,8 +173,70 @@ export function ElectionBalance({
         ref={trackRef}
         className={styles.balanceTrack}
         role="group"
-        aria-label="Seats by market likelihood. Select a group to list its races."
-        data-filtered={!!filter}
+        aria-label="Seats by market likelihood. Select one or more groups to list their races; Escape clears."
+        data-filtered={selection.length > 0}
+        data-dragging={dragging}
+        // Hover previews a group on the map (mouse only; never selects).
+        onPointerOver={(e) => {
+          if (e.pointerType !== 'mouse' || drag.current?.active) return
+          const tier = tierOf(e.target)
+          // Gaps between segments keep the current preview; held seats
+          // clear it.
+          if (tier) previewTier(tier)
+          else if ((e.target as Element).closest('[data-held]'))
+            previewTier(undefined)
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === 'mouse') previewTier(undefined)
+        }}
+        // Press on a group and move sideways to select the groups between.
+        onPointerDown={(e) => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return
+          const anchor = tierOf(e.target)
+          drag.current = anchor
+            ? {
+                pointerId: e.pointerId,
+                x: e.clientX,
+                y: e.clientY,
+                slop:
+                  e.pointerType === 'mouse'
+                    ? DRAG_SLOP_PX.mouse
+                    : DRAG_SLOP_PX.other,
+                anchor,
+                base: selection,
+                active: false,
+              }
+            : undefined
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current
+          if (!d || d.pointerId !== e.pointerId) return
+          if (!d.active) {
+            const dx = Math.abs(e.clientX - d.x)
+            const dy = Math.abs(e.clientY - d.y)
+            if (dx < d.slop) {
+              // A finger moving up or down first is scrolling the page.
+              if (e.pointerType !== 'mouse' && dy >= d.slop)
+                drag.current = undefined
+              return
+            }
+            d.active = true
+            setDragging(true)
+            previewTier(undefined)
+            try {
+              e.currentTarget.setPointerCapture(e.pointerId)
+            } catch {
+              // The pointer is already gone; pointerup/cancel will end it.
+            }
+          }
+          const over = tierAtX(e.clientX)
+          if (!over || over === d.over) return
+          d.over = over
+          onSelect(dragSelection(d.base, order, d.anchor, over))
+        }}
+        onPointerUp={(e) => endDrag(e.pointerId, false)}
+        // The browser took over (a scroll): undo the partial drag.
+        onPointerCancel={(e) => endDrag(e.pointerId, true)}
       >
         {/* The visible bar; its rounded ends come from this clipping band. */}
         <div className={styles.balanceBand} aria-hidden>
@@ -103,7 +250,8 @@ export function ElectionBalance({
                   segment.tier === 'fixed-r') &&
                   styles.heldSeats
               )}
-              data-selected={!!filter && filter === segment.tier}
+              data-selected={isSelected(segment.tier)}
+              data-preview={showPreview && segment.tier === preview}
               style={{ ...place(i), backgroundColor: segment.color }}
             >
               {!segment.tier
@@ -112,12 +260,23 @@ export function ElectionBalance({
             </span>
           ))}
         </div>
-        {/* An underline marks the selected group. */}
+        {/* Underlines mark the selected groups, and the one under the mouse
+            in the map's hover color. */}
         {segments.map((segment, i) =>
-          filter && segment.tier === filter ? (
+          isSelected(segment.tier) ? (
             <span
               key={segment.id}
               className={styles.balanceCaret}
+              style={place(i)}
+              aria-hidden
+            />
+          ) : null
+        )}
+        {segments.map((segment, i) =>
+          showPreview && segment.tier === preview ? (
+            <span
+              key={`preview-${segment.id}`}
+              className={clsx(styles.balanceCaret, styles.previewCaret)}
               style={place(i)}
               aria-hidden
             />
@@ -148,35 +307,55 @@ export function ElectionBalance({
               : center > width * 0.75
               ? 'end'
               : 'middle'
-          return segment.tier ? (
+          const tier = segment.tier
+          if (!tier)
+            return (
+              <span
+                key={segment.id}
+                className={styles.balanceTarget}
+                data-align={align}
+                data-held
+                style={target}
+                role="img"
+                aria-label={tip}
+              >
+                <span className={styles.balanceTip} aria-hidden>
+                  {tip}
+                </span>
+              </span>
+            )
+          const selected = isSelected(tier)
+          return (
             <button
               key={segment.id}
               className={styles.balanceTarget}
-              aria-label={`${tip}. ${
-                filter === segment.tier ? 'Listed below' : 'List these races'
-              }`}
-              aria-pressed={filter === segment.tier}
+              aria-label={tip}
+              aria-pressed={selected}
               data-align={align}
+              data-tier={tier}
               style={target}
-              onClick={() => onFilter(segment.tier!)}
+              onKeyDown={onEscape}
+              onClick={(e) => {
+                // detail is 0 for Enter/Space, which always toggle.
+                if (
+                  e.detail > 0 &&
+                  performance.now() - dragEndedAt.current < DRAG_CLICK_MS
+                )
+                  return
+                onSelect(toggleTier(selection, tier, order))
+              }}
             >
               <span className={styles.balanceTip} aria-hidden>
                 {tip}
+                <span className={styles.balanceTipAction}>
+                  {selected
+                    ? 'Click to remove'
+                    : selection.length
+                    ? 'Click to add'
+                    : 'Click to list · drag across for a range'}
+                </span>
               </span>
             </button>
-          ) : (
-            <span
-              key={segment.id}
-              className={styles.balanceTarget}
-              data-align={align}
-              style={target}
-              role="img"
-              aria-label={tip}
-            >
-              <span className={styles.balanceTip} aria-hidden>
-                {tip}
-              </span>
-            </span>
           )
         })}
       </div>

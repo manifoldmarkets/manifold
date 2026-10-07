@@ -117,6 +117,18 @@ then run:
 node -r ts-node/register/transpile-only -r tsconfig-paths/register --test web/components/usa-map/election-map-model.test.ts web/components/usa-map/election-incumbents.test.ts web/components/usa-map/audited-sources.test.ts
 ```
 
+(`--test web/components/usa-map/*.test.ts web/lib/politics/*.test.ts` runs
+every suite.)
+
+Seat-bar groups combine: a click or tap toggles a group, pressing on one and
+moving sideways selects the range between (touch keeps vertical scrolling),
+and the Competitive / Likely+ D / Likely+ R picks replace the selection.
+Hovering a group with a mouse previews its races on the map without
+selecting it; Escape on the bar clears. The map and list show the union of
+the selected groups within any search; the summary counts its seats and who
+leads them. The selection rules are in `seat-bar-selection.ts`. It is not
+part of the URL.
+
 Visual checks: desktop and narrow widths; House geographic/hex maps; Senate
 and Governor state tiles; labels; search (including at-large seats); filters;
 zoom/pan/reset; race selection by mouse, touch and keyboard; closing details;

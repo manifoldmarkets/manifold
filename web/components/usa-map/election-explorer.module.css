@@ -16,6 +16,8 @@
   --accent: rgb(var(--color-primary-700));
   /* Manifold's focus ring color (as in globals.css and Input). */
   --ring: rgb(var(--color-primary-500));
+  /* The map's hover color, also used to preview a seat-bar group. */
+  --preview: #00b8c2;
   color: var(--ink);
   --map-border: #fff;
   /* Party colors: fills match the map; text tones are darkened or lightened
@@ -336,6 +338,15 @@
 .balanceTrack {
   position: relative;
   height: 26px;
+  /* Sideways drags select a range of groups; vertical swipes still scroll. */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.balanceTrack[data-dragging='true'],
+.balanceTrack[data-dragging='true'] .balanceTarget {
+  cursor: ew-resize;
 }
 .balanceBand {
   position: absolute;
@@ -361,10 +372,15 @@
   line-height: 1;
   transition: opacity 150ms;
 }
-/* A selected group stays at full strength; the rest step back. */
+/* Selected groups stay at full strength; the rest step back, and the one
+   under the mouse comes partway forward. */
 .balanceTrack[data-filtered='true']
   .balanceSegment:not([data-selected='true']) {
   opacity: 0.35;
+}
+.balanceTrack[data-filtered='true']
+  .balanceSegment[data-preview='true']:not([data-selected='true']) {
+  opacity: 0.7;
 }
 .balanceCaret {
   position: absolute;
@@ -373,6 +389,9 @@
   border-radius: 2px;
   background: var(--ink);
   pointer-events: none;
+}
+.previewCaret {
+  background: var(--preview);
 }
 .balanceTarget {
   position: absolute;
@@ -415,6 +434,15 @@ span.balanceTarget {
 .balanceTarget:hover .balanceTip,
 .balanceTarget:focus-visible .balanceTip {
   opacity: 1;
+}
+.balanceTipAction {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.75;
+}
+.balanceTrack[data-dragging='true'] .balanceTarget .balanceTip {
+  opacity: 0;
 }
 /* On touch screens a tap leaves "hover" behind; the filter line already
    names the group, so the tip would only cover the toolbar. */
@@ -490,6 +518,43 @@ span.balanceTarget {
 .filterNotice button {
   color: var(--accent);
   flex-shrink: 0;
+}
+.filterSummary {
+  line-height: 1.5;
+}
+.filterCount {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* Quick selections of seat-bar groups. */
+.picks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.picks button {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.picks button:hover {
+  background: var(--soft);
+  color: var(--accent);
+}
+.picks button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--soft);
+  border-color: rgb(var(--color-primary-300));
+}
+.picksHint {
+  color: var(--muted);
 }
 .filterActions {
   display: flex;
@@ -623,6 +688,10 @@ span.balanceTarget {
 .matchOutline {
   stroke: var(--ink);
   stroke-width: 1.5;
+}
+.previewOutline {
+  stroke: var(--preview);
+  stroke-width: 2;
 }
 .selectedHalo,
 .focusHalo {
