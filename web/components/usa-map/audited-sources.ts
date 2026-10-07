@@ -5,7 +5,10 @@
 // party a source settles on. This module lets the map read a source by its
 // audited meaning instead:
 // - party binaries carry their YES orientation (several deep ones are YES = D);
-// - candidate binaries are never party sources (NO is any other winner);
+// - a candidate binary ("Will Lauren Boebert win?") counts as its candidate's
+//   party only when they are that party's sole nominee on the race's ballot,
+//   read like a one-sided party price; otherwise it is not a party source
+//   (NO is any other winner);
 // - multi-choice answers are classified by an audited answerId → party map;
 // - same-party ballots (both finalists of one party, per the certified list)
 //   count once for that party by ballot composition, not by a market price;
@@ -18,7 +21,7 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import audit from 'web/public/data/election-source-audit-2026.json'
-import { raceCandidates } from './election-candidates'
+import { raceCandidates, sameCandidate } from './election-candidates'
 import type { ElectionMode } from './election-map-model'
 import { normalizeOdds, Odds } from './election-odds'
 
@@ -116,12 +119,43 @@ export function foldComplement(
   })
 }
 
+// The party a candidate binary's YES stands for: the candidate's, when they
+// are that party's only nominee on the race's general-election ballot. Then a
+// bet on them is a bet on the party in all but name, and the price reads like a
+// one-sided party binary. A primary candidate, a same-party top-two finalist or
+// a name not on the ballot gets undefined: that bet is not a party price.
+export function candidateBinaryParty(
+  source: SourceAudit
+): 'D' | 'R' | undefined {
+  if (source.kind !== 'candidate-binary' || !source.candidate) return undefined
+  const race = sourceRace(source)
+  if (!race) return undefined
+  const ballot = raceCandidates(race.mode, race.id)
+  const named = ballot.filter((c) => sameCandidate(c.name, source.candidate!))
+  const party = named.length === 1 ? named[0].party : undefined
+  if (party !== 'D' && party !== 'R') return undefined
+  return ballot.filter((c) => c.party === party).length === 1
+    ? party
+    : undefined
+}
+
+// The party a binary source's YES is counted as, if any.
+const binaryYesParty = (source: SourceAudit) =>
+  source.kind === 'party-binary'
+    ? source.binaryYes
+    : source.kind === 'candidate-binary'
+    ? candidateBinaryParty(source)
+    : undefined
+
 export function binaryElectionLabels(contract: Contract) {
   const source = sourceAudit(contract.slug)
   const matched = source?.contractId === contract.id ? source : undefined
   const party = matched?.kind === 'party-binary' ? matched.binaryYes : undefined
   const candidate =
     matched?.kind === 'candidate-binary' ? matched.candidate : undefined
+  // A sole nominee's bet takes their party's color; NO stays "any other
+  // winner", since that is what the market pays out on.
+  const yesColor = party ?? (matched && candidateBinaryParty(matched))
   const race = matched && party ? sourceRace(matched) : undefined
   const noParty = race ? complementParty(race.mode, race.id, party!) : undefined
   return {
@@ -130,9 +164,9 @@ export function binaryElectionLabels(contract: Contract) {
         candidate ??
         (party === 'D' ? 'Democratic' : party === 'R' ? 'Republican' : 'Yes'),
       pseudonymColor:
-        party === 'D'
+        yesColor === 'D'
           ? ('azure' as const)
-          : party === 'R'
+          : yesColor === 'R'
           ? ('sienna' as const)
           : ('gray' as const),
     },
@@ -181,25 +215,26 @@ export const basisOdds = (basis: SeatBasis): Odds | undefined =>
     : undefined
 
 // Party odds for a source with an audit entry. Returns undefined when the
-// source must not feed party totals (candidate binaries, cancelled markets,
-// mechanism mismatches) — callers must NOT fall back to label parsing then.
+// source must not feed party totals (candidate binaries that aren't a sole
+// nominee's, cancelled markets, mechanism mismatches) — callers must NOT fall
+// back to label parsing then.
 export function auditedOdds(
   contract: Contract | null | undefined,
   source: SourceAudit
 ): Odds | undefined {
   if (!contract || contract.resolution === 'CANCEL') return undefined
   if (contract.id !== source.contractId) return undefined
-  if (source.kind === 'candidate-binary') return undefined
-  if (source.kind === 'party-binary') {
+  if (source.kind === 'party-binary' || source.kind === 'candidate-binary') {
+    const yes = binaryYesParty(source)
     if (
       contract.mechanism !== 'cpmm-1' ||
       contract.outcomeType !== 'BINARY' ||
-      !source.binaryYes
+      !yes
     )
       return undefined
     const p = getDisplayProbability(contract)
     const odds = normalizeOdds(
-      source.binaryYes === 'D'
+      yes === 'D'
         ? { dem: p, rep: 0, other: 0, notDem: 1 - p }
         : { dem: 0, rep: p, other: 0, notRep: 1 - p }
     )
@@ -247,7 +282,7 @@ export function raceOdds(
       basis,
       audited: false,
     }
-  if (source.kind === 'candidate-binary')
+  if (source.kind === 'candidate-binary' && !candidateBinaryParty(source))
     return {
       odds: undefined,
       basis: { kind: 'candidate-only', candidate: source.candidate ?? null },
