@@ -100,9 +100,10 @@ export default function SportsPage() {
 
   const scheduleSport: AnySportKey | 'all' =
     requested === 'live' ? 'all' : requested
-  const { schedule, loading } = useSportsSchedule(scheduleSport, ready)
+  const { schedule, rail, loading } = useSportsSchedule(scheduleSport, ready)
   // Every sport under the Sports topic, once the schedule brings the list.
-  const sports = schedule?.sports ?? CURATED_SPORTS
+  // The rail keeps the last one while another sport's schedule loads.
+  const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   // A link or remembered choice for a sport that no longer exists.
   const unknownSport =
@@ -158,8 +159,8 @@ export default function SportsPage() {
             sports={sports}
             selected={selected}
             onSelect={setSelected}
-            counts={schedule?.counts ?? {}}
-            liveCount={schedule?.liveCount ?? 0}
+            counts={rail?.counts ?? {}}
+            liveCount={rail?.liveCount ?? 0}
           />
         </div>
 

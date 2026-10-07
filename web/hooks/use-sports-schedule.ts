@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import {
   AnySportKey,
   LIVE_STATUSES,
@@ -18,6 +19,12 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 const ACTIVE_REFRESH_MS = 2 * 60_000
 /** …and while nothing is: still needed to pick up kickoffs, closes and new markets. */
 const IDLE_REFRESH_MS = 5 * 60_000
+
+/** What the sport rail shows: the same in every response, whatever the sport. */
+export type SportsRailData = Pick<
+  SportsScheduleResponse,
+  'sports' | 'counts' | 'liveCount'
+>
 
 /**
  * The sports schedule for a sport (or every sport), kept live:
@@ -49,6 +56,25 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     if (!data) return
     setLive((prev) => pruneSportsLive(prev, data))
   }, [data])
+
+  // The rail's sports, counts and live count cover every sport, whichever one
+  // was asked for. Keep the latest across sport switches: a sport that hasn't
+  // loaded yet would otherwise empty the rail, drop every count and reshuffle
+  // the chips until its response arrives.
+  const [lastRail, setLastRail] = usePersistentInMemoryState<
+    SportsRailData | undefined
+  >(undefined, 'sports-schedule-rail')
+  useEffect(() => {
+    if (!data) return
+    setLastRail({
+      sports: data.sports,
+      counts: data.counts,
+      liveCount: data.liveCount,
+    })
+  }, [data])
+  const rail: SportsRailData | undefined = data
+    ? { sports: data.sports, counts: data.counts, liveCount: data.liveCount }
+    : lastRail
 
   const games = data?.games ?? []
   const isPageVisible = useIsPageVisible()
@@ -175,5 +201,5 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     }
   }, [data, live])
 
-  return { schedule: merged, loading, refresh }
+  return { schedule: merged, rail, loading, refresh }
 }
