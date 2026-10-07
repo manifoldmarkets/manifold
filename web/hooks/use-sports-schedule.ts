@@ -21,7 +21,7 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 
 /** Upcoming games per request; more load as the feed scrolls. */
-export const SCHEDULE_PAGE_SIZE = 20
+const SCHEDULE_PAGE_SIZE = 20
 /** The endpoint's largest `limit`: a refresh re-reads at most this many. */
 const MAX_SCHEDULE_LIMIT = 400
 /** Refetch cadence while something is live or about to start… */
@@ -163,19 +163,14 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     const out: string[] = []
     for (const g of games) {
       if (g.status === 'finished') continue
-      // Binary games carry their price on the contract itself.
-      out.push(
-        g.binary ? `contract/${g.id}` : `contract/${g.id}/updated-answers`
-      )
+      out.push(`contract/${g.id}/updated-answers`)
       // The poller only broadcasts around kickoff, so the topic is idle until
       // then; subscribing early means the first in-play tick flips the row to
       // live without waiting for a refetch. Community games have no feed.
       if (g.kickoffKnown) out.push(`contract/${g.id}/sports-live`)
     }
     return out
-  }, [
-    games.map((g) => `${g.id}:${g.status}:${g.binary ? 'b' : 'm'}`).join(','),
-  ])
+  }, [games.map((g) => `${g.id}:${g.status}`).join(',')])
 
   useApiSubscription({
     topics,
@@ -184,32 +179,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
       const id = topic.split('/')[1]
       if (!id) return
       const at = data.broadcastTime as number | undefined
-      if (topic === `contract/${id}`) {
-        // A binary game: YES is the home team, NO the away team.
-        const prob = (data.contract as { prob?: number } | undefined)?.prob
-        if (
-          prob == null ||
-          !Number.isFinite(prob) ||
-          at == null ||
-          !Number.isFinite(at)
-        )
-          return
-        setLive((prev) =>
-          (prev[id]?.probs?.YES?.at ?? 0) > at
-            ? prev
-            : {
-                ...prev,
-                [id]: {
-                  ...prev[id],
-                  probs: {
-                    ...(prev[id]?.probs ?? {}),
-                    YES: { value: prob, at },
-                    NO: { value: 1 - prob, at },
-                  },
-                },
-              }
-        )
-      } else if (topic.endsWith('/updated-answers')) {
+      if (topic.endsWith('/updated-answers')) {
         const updates = (data.answers ?? []) as { id: string; prob?: number }[]
         if (at == null || !Number.isFinite(at)) return
         setLive((prev) => {

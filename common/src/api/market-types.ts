@@ -89,9 +89,6 @@ export type LiteMarket = {
   sportsStartTimestamp?: string
   sportsEventId?: string
   sportsLeague?: string
-  sportsHomeTeam?: string
-  sportsAwayTeam?: string
-  sportsMarketType?: string
 
   // Perp markets only (mechanism 'perp'). Exposed so clients (and the perp
   // market page's live poll) can track price/pools without bespoke endpoints.
@@ -592,11 +589,6 @@ export const createMarketProps = z
     sportsStartTimestamp: z.string().optional(),
     sportsEventId: z.string().optional(),
     sportsLeague: z.string().optional(),
-    sportsHomeTeam: z.string().optional(),
-    sportsAwayTeam: z.string().optional(),
-    sportsMarketType: z
-      .enum(['moneyline', 'spread', 'total', 'prop'])
-      .optional(),
     takerAPIOrdersDisabled: coerceBoolean.optional(),
     // The market this one is about (see common/market-links). Without a close
     // time, the new market closes when that one does.

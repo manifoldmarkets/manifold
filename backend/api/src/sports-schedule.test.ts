@@ -26,9 +26,9 @@ const official = ['nfl', 'soccer'].map((sport) => ({
     sportsHomeTeam: `${sport} Home`,
     sportsAwayTeam: `${sport} Away`,
     sportsLeague: sport === 'nfl' ? 'NFL' : 'Soccer',
-    mechanism: 'cpmm-1',
-    outcomeType: 'BINARY',
-    prob: 0.5,
+    mechanism: 'cpmm-multi-2',
+    outcomeType: 'MULTIPLE_CHOICE',
+    shouldAnswersSumToOne: true,
     closeTime: kickoff + 10000,
     sportsStartTimestamp: new Date(kickoff).toISOString(),
   },
@@ -62,6 +62,19 @@ let linkRows: { id: string; parent_id: string; relation: string }[] = []
 let linkedElsewhere: { id: string }[] = []
 let linksMissing = false
 
+// Each game's two answers, home first, unless a test sets answerRows.
+const gameAnswers = (data: Record<string, unknown>) =>
+  (['sportsHomeTeam', 'sportsAwayTeam'] as const).map((team, index) => ({
+    id: `${data.id}-${index === 0 ? 'home' : 'away'}`,
+    index,
+    contract_id: data.id,
+    text: data[team],
+    prob: 0.5,
+    pool_yes: 1000,
+    pool_no: 1000,
+    p: 0.5,
+  }))
+
 beforeEach(() => {
   marketRows = props
   officialRows = official
@@ -77,7 +90,10 @@ beforeEach(() => {
       if (sql.includes('select child_contract_id as id from market_links'))
         return linkedElsewhere
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
-      if (sql.includes('from answers')) return answerRows
+      if (sql.includes('from answers'))
+        return answerRows.length > 0
+          ? answerRows
+          : officialRows.flatMap(({ data }) => gameAnswers(data))
       if (sql.includes('select c.id, c.question')) return marketRows
       if (sql.includes('from group_groups')) return tree
       if (sql.includes('from group_contracts'))
@@ -171,7 +187,6 @@ it('shows a cpmm-multi-2 game at its answer prices', async () => {
   const result = 'result' in response ? response.result : response
   expect(result.games).toHaveLength(1)
   expect(result.games[0]).toMatchObject({
-    binary: false,
     home: { answerId: 'home', prob: 0.7 },
     away: { answerId: 'away', prob: 0.3 },
   })

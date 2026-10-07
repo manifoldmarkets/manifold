@@ -419,7 +419,10 @@ export type Sports = {
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string
-  /** Binary game markets: YES is the home team, NO the away team. */
+  /**
+   * A pipeline game market's teams, as the provider named them. The resolver
+   * reads scores by these names, whichever way round a score feed lists them.
+   */
   sportsHomeTeam?: string
   sportsAwayTeam?: string
   /** What the market is about the game; the sports page files it by this. */

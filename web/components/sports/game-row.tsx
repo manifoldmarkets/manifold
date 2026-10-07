@@ -24,19 +24,18 @@ import {
 } from 'web/components/sports/sports-match-card'
 import {
   SportsBetPanel,
-  SportsBinaryBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 
-export function gamePath(game: ScheduleGame) {
+function gamePath(game: ScheduleGame) {
   return `/${game.creatorUsername}/${game.slug}`
 }
 
 /** "in 45m" / "in 3h" for games starting within the next 12 hours. */
-export function startsSoonLabel(startTime: number, now = Date.now()) {
+function startsSoonLabel(startTime: number, now = Date.now()) {
   const diff = startTime - now
   if (diff <= 0 || diff > 12 * 60 * 60 * 1000) return null
   const mins = Math.round(diff / 60_000)
@@ -70,7 +69,6 @@ export function toSportsMatch(g: ScheduleGame): SportsMatch {
     status: g.isResolved ? 'resolved' : 'upcoming',
     marketUrl: gamePath(g),
     contractId: g.id,
-    isBinary: g.binary,
     teamAAnswerId: g.home.answerId,
     teamBAnswerId: g.away.answerId,
     drawAnswerId: g.draw?.answerId,
@@ -85,7 +83,7 @@ export function toSportsMatch(g: ScheduleGame): SportsMatch {
 }
 
 /** Anchor for a game's card on its sport page. */
-export const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
+const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
 
 /**
  * One game: when it starts (or the live score), the two teams with their
@@ -181,14 +179,7 @@ export function GameRow(props: {
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
-    (game.binary ? (
-      <SportsBinaryBetDialog
-        contractId={game.id}
-        match={toSportsMatch(game)}
-        initialOutcome={betOutcome}
-        onClose={() => setBetOutcome(null)}
-      />
-    ) : game.draw ? (
+    (game.draw ? (
       <SportsBetPanel
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
@@ -462,7 +453,7 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
 }
 
 /** The price is the bet button, as on every sportsbook. */
-export function PriceChip(props: {
+function PriceChip(props: {
   prob: number
   onClick: (e: React.MouseEvent) => void
   label: string

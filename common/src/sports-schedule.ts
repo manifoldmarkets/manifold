@@ -67,7 +67,7 @@ const FOOTBALL_UMBRELLA_TOPIC_ID = 'Vcf6CYTTSXAiStbKSqQq'
  * Subtopics of Sports that group sports or markets rather than being a sport.
  * Their markets still show under All, and the sports inside them get chips.
  */
-export const NOT_A_SPORT_TOPIC_IDS = [
+const NOT_A_SPORT_TOPIC_IDS = [
   FOOTBALL_UMBRELLA_TOPIC_ID,
   'b3ll9Ch9rdbcrTRAbjUf', // sports-betting
   'd489c4e4-ec93-4473-845d-12537350cfee', // sports (a second, generic Sports topic)
@@ -243,7 +243,7 @@ const readGroupIds = (s: SportCategory) => [
   ...(s.archivedGroupIds ?? []),
 ]
 
-export const ALL_SPORTS_GROUP_IDS = [
+const ALL_SPORTS_GROUP_IDS = [
   SPORTS_DEFAULT_GROUP_ID,
   ...SPORT_CATEGORIES.flatMap(readGroupIds),
 ]
@@ -766,7 +766,7 @@ export interface TeamMatcher {
   regexes: RegExp[]
 }
 
-export function compileTeamMatcher(
+function compileTeamMatcher(
   aliases: { alias: string; caseSensitive: boolean }[]
 ): TeamMatcher {
   return {
@@ -782,7 +782,7 @@ export function compileTeamMatcher(
   }
 }
 
-export function matcherMentions(
+function matcherMentions(
   question: string,
   matcher: TeamMatcher,
   questionLower = question.toLowerCase()
@@ -901,7 +901,7 @@ export interface GameMatchers {
   away: TeamMatcher
 }
 
-export function compileGameMatchers(game: GameForMatching): GameMatchers {
+function compileGameMatchers(game: GameForMatching): GameMatchers {
   return {
     home: compileTeamMatcher(teamAliases(game.home.name, game.home.shortText)),
     away: compileTeamMatcher(teamAliases(game.away.name, game.away.shortText)),
@@ -1012,12 +1012,6 @@ export interface ScheduleGame {
   question: string
   sport: AnySportKey
   league: string
-  /**
-   * A binary market (YES is the home team, NO the away team) rather than a
-   * multiple-choice one with an answer per side. The team `answerId`s are
-   * then 'YES' and 'NO', and bets go through the binary dialog.
-   */
-  binary: boolean
   sportsEventId: string
   /** Kickoff when known; otherwise the market's close time. */
   startTime: number

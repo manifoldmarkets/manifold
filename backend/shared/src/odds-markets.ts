@@ -43,7 +43,11 @@ import {
   winningSide,
 } from 'common/odds-markets'
 import { sportTagIds } from 'common/sports-schedule'
-import { CPMMMultiContract, MarketContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  MarketContract,
+  MULTI_CPMM_MECHANISMS_SQL,
+} from 'common/contract'
 import { User } from 'common/user'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
@@ -67,7 +71,7 @@ const RESOLVE_TICK_MS = 5 * MINUTE_MS
  * close to kickoff isn't worth opening, and the margin covers the time a run
  * takes and clock drift between us and the provider.
  */
-export const MIN_CREATE_LEAD_MS = 5 * MINUTE_MS
+const MIN_CREATE_LEAD_MS = 5 * MINUTE_MS
 
 // ─── Creating markets ─────────────────────────────────────────────────────────
 
@@ -408,6 +412,9 @@ export async function pollOddsScoresAndResolve(
        and token = 'MANA'
        and resolution is null
        and data->>'sportsEventId' like 'odds:%'
+       -- Game markets are multiple choice. Binary ones from an early build
+       -- (dev only) are left for a person to resolve.
+       and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
        and close_time > now() - ($2 || ' days')::interval
        and close_time < now() + interval '8 hours'`,
     [MANIFOLD_SPORTS_USER_IDS, String(LOOKBACK_DAYS)]
@@ -559,19 +566,6 @@ async function finishGame(
     contract.id,
   ])
   await publishSportsLiveScore(contract.id, patch)
-
-  if (contract.mechanism === 'cpmm-1') {
-    // Binary game markets (before the switch to versus markets): YES is the
-    // home team, NO the away team, and a tie pays out at 50%.
-    const args =
-      side === 'home'
-        ? { outcome: 'YES' }
-        : side === 'away'
-        ? { outcome: 'NO' }
-        : { outcome: 'MKT', probabilityInt: 50 }
-    await resolveMarketHelper(contract, creator, creator, args)
-    return
-  }
 
   const answers = (
     await pg.manyOrNone(`select * from answers where contract_id = $1`, [

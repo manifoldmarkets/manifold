@@ -7,11 +7,7 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  SportsBetPanel,
-  SportsBinaryBetDialog,
-  SportsVersusBetDialog,
-} from './sports-bet-panel'
+import { SportsBetPanel, SportsVersusBetDialog } from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
@@ -94,7 +90,6 @@ export type SportsMatch = {
     minute: string | null
   }
   contractId?: string
-  isBinary?: boolean
   teamAAnswerId?: string
   teamBAnswerId?: string
   drawAnswerId?: string
@@ -440,25 +435,10 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
 
   useApiSubscription({
     topics: match.contractId
-      ? [
-          // Binary markets carry their price on the contract itself.
-          match.isBinary
-            ? `contract/${match.contractId}`
-            : `contract/${match.contractId}/updated-answers`,
-        ]
+      ? [`contract/${match.contractId}/updated-answers`]
       : [],
     enabled: !resolved && !!match.contractId,
-    onBroadcast: ({ topic, data }) => {
-      if (topic === `contract/${match.contractId}`) {
-        const prob = (data.contract as { prob?: number } | undefined)?.prob
-        if (prob == null) return
-        setProbs((prev) => ({
-          ...prev,
-          teamA: Math.round(prob * 100),
-          teamB: Math.round((1 - prob) * 100),
-        }))
-        return
-      }
+    onBroadcast: ({ data }) => {
       const updates = (data.answers ?? []) as Array<{
         id: string
         prob?: number
@@ -625,15 +605,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       </div>
 
       {betOutcome &&
-        (match.isBinary ? (
-          // Binary sports markets (NFL, CFB, NBA, etc.) — team names replace YES/NO.
-          <SportsBinaryBetDialog
-            contractId={match.contractId}
-            match={match}
-            initialOutcome={betOutcome}
-            onClose={() => setBetOutcome(null)}
-          />
-        ) : match.hasDraw === false ? (
+        (match.hasDraw === false ? (
           // Versus markets (a game with no Draw answer): opens on the team clicked.
           <SportsVersusBetDialog
             contractId={match.contractId}
