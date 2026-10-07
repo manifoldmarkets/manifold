@@ -2,23 +2,28 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { PerpContract } from 'common/contract'
+import { getPerpPollCadence } from 'common/perps/poll-cadence'
 import {
   isNewerPerpQuote,
   mergePerpQuotes,
   PerpQuote,
 } from 'common/perps/quote'
 import { api } from 'web/lib/api/api'
+import { setVisibleInterval } from 'web/lib/util/visible-interval'
 import { scheduleFreshBurst } from './use-perp-positions'
 
-// Slow-moving contract fields — resolution, volume, admin-tunable config.
-// Edge-cached `market/:id` is fine for these; seconds of staleness on a
-// leverage cap is harmless.
-const META_POLL_MS = 15_000
-
-// Fallback price poll, used only while the websocket is NOT delivering ticks.
-// Hits `get-perp-quote`, which is `no-cache` — unlike `market/:id`, whose
-// max-age=5 + stale-while-revalidate=10 can hand back a 15s-old price.
-const QUOTE_FALLBACK_POLL_MS = 4_000
+// Poll cadences live in common/perps/poll-cadence (getPerpPollCadence):
+//   - Meta: slow-moving contract fields (resolution, volume, admin-tunable
+//     config). Edge-cached `market/:id` is fine for these; seconds of
+//     staleness on a leverage cap is harmless. 15s.
+//   - Quote fallback: the price poll, used only while the websocket is NOT
+//     delivering ticks. Hits `get-perp-quote`, which is `no-cache`, unlike
+//     `market/:id`, whose max-age=5 + stale-while-revalidate=10 can hand back
+//     a 15s-old price. 4s.
+// Feeds that publish slower than hourly (the VoteHub averages, other `daily`
+// feeds) back the quote fallback off to a minute. Display-only callers on such
+// feeds skip the quote poll and poll meta once a minute. Neither poll runs
+// while the tab is hidden.
 
 // How long a push keeps the fallback poll quiet. Comfortably longer than the
 // fastest feed's tick so a healthy socket costs zero extra requests, short
@@ -41,7 +46,18 @@ const PUSH_CONSIDERED_FRESH_MS = 12_000
  * cadences from different endpoints, and folding them into one object let a
  * stale metadata response overwrite a fresh pushed price.
  */
-export const useLivePerpContract = (ssrContract: PerpContract) => {
+export const useLivePerpContract = (
+  ssrContract: PerpContract,
+  options: {
+    // The caller only shows the price (no trade panel), so on a slow feed it
+    // can live on the push and the edge-cached meta poll. See
+    // getPerpPollCadence.
+    displayOnly?: boolean
+  } = {}
+) => {
+  const { quoteFallbackMs, metaMs } = getPerpPollCadence(ssrContract, {
+    displayOnly: options.displayOnly,
+  })
   const [quote, setQuote] = useState<PerpQuote | null>(null)
   const [meta, setMeta] = useState<Partial<PerpContract> | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -102,12 +118,15 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
 
   // Fallback price poll. Skips entirely while pushes are arriving, so on a
   // fast-tick feed a healthy socket adds no request load; feeds that tick
-  // slower than the freshness window ride this poll between ticks by design.
+  // slower than the freshness window ride this poll between ticks by design
+  // (at the slow-feed cadence, so an idle tab costs one request a minute).
   // Resolved markets have a frozen settlement price and never tick again, so
-  // they get no poll at all.
+  // they get no poll at all, and neither do display-only cards on slow feeds
+  // (quoteFallbackMs null; the meta poll carries their price). A hidden tab
+  // polls nothing, and catches up with one fetch when it is shown again.
   const resolved = ssrContract.isResolved || meta?.isResolved === true
   useEffect(() => {
-    if (resolved) return
+    if (resolved || quoteFallbackMs == null) return
     let cancelled = false
     const loadQuote = () =>
       api(
@@ -120,18 +139,19 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
         })
         .catch(() => {})
 
-    // Always fetch once on mount: the socket may take a moment to connect, and
-    // SSR HTML can itself be cached.
-    loadQuote()
-    const id = setInterval(() => {
+    // Fetch once on mount: the socket may take a moment to connect, and SSR
+    // HTML can itself be cached. A tab opened in the background defers this
+    // to its first visibilitychange (setVisibleInterval's catch-up call).
+    if (!document.hidden) loadQuote()
+    const stop = setVisibleInterval(() => {
       if (Date.now() - lastPushAt.current < PUSH_CONSIDERED_FRESH_MS) return
       loadQuote()
-    }, QUOTE_FALLBACK_POLL_MS)
+    }, quoteFallbackMs)
     return () => {
       cancelled = true
-      clearInterval(id)
+      stop()
     }
-  }, [ssrContract.id, applyQuote, resolved])
+  }, [ssrContract.id, applyQuote, resolved, quoteFallbackMs])
 
   // Slow slice: resolution, volume, and the admin-tunable config that every
   // open page must converge on (update-perp-config edits leverage and fee
@@ -220,18 +240,21 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
         .catch(() => {})
 
     // A trade-triggered refresh bursts past the market endpoint's stale cache
-    // window; ordinary updates stay on the light poll.
+    // window; ordinary updates stay on the light poll (which, like the quote
+    // poll, waits for a background tab to be shown).
     const cancelBurst =
       refreshKey > 0
         ? scheduleFreshBurst(() => poll(true))
+        : document.hidden
+        ? undefined
         : (poll(false), undefined)
-    const interval = setInterval(() => poll(false), META_POLL_MS)
+    const stopInterval = setVisibleInterval(() => poll(false), metaMs)
     return () => {
       cancelled = true
       cancelBurst?.()
-      clearInterval(interval)
+      stopInterval()
     }
-  }, [ssrContract.id, ssrContract.isResolved, refreshKey, applyQuote])
+  }, [ssrContract.id, ssrContract.isResolved, refreshKey, applyQuote, metaMs])
 
   const refresh = () => setRefreshKey((key) => key + 1)
 

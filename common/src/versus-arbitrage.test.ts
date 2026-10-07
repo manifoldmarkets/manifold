@@ -23,6 +23,7 @@ const getAnswer = (id: string, prob: number, index: number): Answer => {
     createdTime: 0,
     poolYes,
     poolNo,
+    p: 0.5,
     prob: getCpmmProbability({ YES: poolYes, NO: poolNo }, 0.5),
     totalLiquidity: k,
     subsidyPool: 0,

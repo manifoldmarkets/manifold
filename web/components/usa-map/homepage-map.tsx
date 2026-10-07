@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { CongressSenate } from 'web/public/custom-components/congress_senate'
 import { CongressCenter } from 'web/public/custom-components/congress_center'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
@@ -39,7 +39,7 @@ type MapMode = 'senate' | 'house' | 'governor'
  */
 const partyMarketNamesCandidates = (contract: Contract | null | undefined) =>
   !!contract &&
-  contract.mechanism === 'cpmm-multi-1' &&
+  isMultiCpmm(contract) &&
   contract.answers.some((a) => isCandidateLabelledAnswer(a.text))
 
 export function HomepageMap(props: {

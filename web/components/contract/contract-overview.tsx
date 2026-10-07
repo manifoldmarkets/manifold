@@ -22,6 +22,7 @@ import {
   dayProbChange,
   getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -487,7 +488,7 @@ const ChoiceOverview = (props: {
           </>
         )}
       </Row>
-      {contract.mechanism == 'cpmm-multi-1' && !hideGraph && (
+      {isMultiCpmm(contract) && !hideGraph && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
@@ -544,15 +545,13 @@ const ChoiceOverview = (props: {
           answers={contract.answers}
         />
       ) : null}
-      {!shouldAnswersSumToOne &&
-      contract.mechanism === 'cpmm-multi-1' &&
-      showUnresolver ? (
+      {!shouldAnswersSumToOne && isMultiCpmm(contract) && showUnresolver ? (
         <IndependentAnswersUnresolvePanel
           contract={contract}
           onClose={() => setShowUnresolver(false)}
           show={showUnresolver}
         />
-      ) : !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      ) : !shouldAnswersSumToOne && isMultiCpmm(contract) ? (
         <IndependentAnswersResolvePanel
           contract={contract}
           onClose={() => setShowResolver(false)}
@@ -670,7 +669,7 @@ const NumberOverview = (props: {
           />
         </Row>
       </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+      {!!Object.keys(points).length && isMultiCpmm(contract) && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
@@ -993,7 +992,7 @@ const BinaryChoiceOverview = (props: {
           />
         </Row>
       </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+      {!!Object.keys(points).length && isMultiCpmm(contract) && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',

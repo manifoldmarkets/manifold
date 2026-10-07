@@ -15,6 +15,7 @@ import { Bet, LimitBet } from 'common/bet'
 import { calculateCpmmAmountToBuyShares } from 'common/calculate-cpmm'
 import {
   isBinaryMulti,
+  isMultiCpmm,
   MarketContract,
   MAX_CPMM_PROB,
   MAX_STONK_PROB,
@@ -59,7 +60,7 @@ import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { versusSide, versusSideProb } from 'common/versus'
+import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
 import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -102,7 +103,7 @@ type BuyPanelProps = {
       pseudonymColor: SliderColor
     }
   }
-  children?: React.ReactNode
+  children?: React.ReactNode | ((outcome: BinaryOutcomes) => React.ReactNode)
   alwaysShowOutcomeSwitcher?: boolean
   className?: string
 }
@@ -303,16 +304,15 @@ export const BuyPanelBody = (
       ? versusSide(contract, { answerId: multiProps.answerToBuy.id, outcome })
       : undefined
   const binaryMCOutcomeLabel = versusBetSide?.answer.text
-  // When the two sides have names (versus markets, or binary markets shown
-  // with pseudonyms such as Republican/Democratic) show probabilities for the
-  // side being bought, so buying the NO side reads as that side's probability
-  // going up rather than the YES side's going down.
-  const showsSideProb = isBinaryMC || !!props.pseudonym
+  // Versus markets and renamed binary sides (e.g. Republican/Democratic) show
+  // probabilities for the side being bought; otherwise buying NO reads as the
+  // answer's probability going down (see showsSideProbability).
+  const showsSideProb = showsSideProbability(contract, props.pseudonym)
   const isCashContract = contract.token === 'CASH'
 
   const quickAddButtonSize =
     liquidityTier === 0 ||
-    (contract.mechanism === 'cpmm-multi-1' &&
+    (isMultiCpmm(contract) &&
       liquidityTier === 1 &&
       !contract.shouldAnswersSumToOne)
       ? 'small'
@@ -361,7 +361,7 @@ export const BuyPanelBody = (
   const [dismissTimeoutRef, setDismissTimeoutRef] =
     useState<NodeJS.Timeout | null>(null)
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
@@ -436,6 +436,8 @@ export const BuyPanelBody = (
     amount: number
     timestamp: number // unique identifier for each click
   } | null>(null)
+  const matchingPrefillOrder =
+    prefillLimitOrder?.outcome === outcome ? prefillLimitOrder : null
 
   // Handle order book click to prefill limit order
   const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
@@ -684,9 +686,13 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  // Toggle always shows Yes/No - only the main bet button shows custom text
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
+    : props.pseudonym
+    ? {
+        [props.pseudonym.YES.pseudonymName]: 'YES',
+        [props.pseudonym.NO.pseudonymName]: 'NO',
+      }
     : { Yes: 'YES', No: 'NO' }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
@@ -766,20 +772,26 @@ export const BuyPanelBody = (
   return (
     <>
       <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
-        {children}
+        {typeof children === 'function' ? children(outcome) : children}
         <Row className="mb-2 mt-2 flex-wrap items-center justify-between gap-x-2 gap-y-1">
           {outcomeControl ?? (
             <Row
               className={clsx(
                 'gap-1',
-                // Hide toggle for binary MC questions or prop-provided pseudonyms (but NOT for PAMPU skin)
-                (isBinaryMC || propPseudonymName) && 'invisible'
+                (isBinaryMC || propPseudonymName) &&
+                  !props.alwaysShowOutcomeSwitcher &&
+                  'invisible'
               )}
             >
               <ChoicesToggleGroup
                 currentChoice={outcome}
                 color={outcome === 'YES' ? 'light-green' : 'light-red'}
                 choicesMap={choicesMap}
+                toggleClassName={
+                  props.pseudonym
+                    ? 'px-2 text-xs sm:px-4 sm:text-sm'
+                    : undefined
+                }
                 setChoice={(outcome) => {
                   setOutcome(outcome as 'YES' | 'NO')
                   // Cancel dismiss timer if user is switching outcomes
@@ -969,7 +981,7 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
-              betAmount={prefillLimitOrder?.amount ?? betAmount}
+              betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
               user={user}
@@ -977,9 +989,9 @@ export const BuyPanelBody = (
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
-              initialProb={prefillLimitOrder?.limitProb}
-              expiration={prefillLimitOrder ? 1 : undefined}
-              prefillTimestamp={prefillLimitOrder?.timestamp}
+              initialProb={matchingPrefillOrder?.limitProb}
+              expiration={matchingPrefillOrder ? 1 : undefined}
+              prefillTimestamp={matchingPrefillOrder?.timestamp}
             />
           </>
         )}
@@ -1153,7 +1165,7 @@ export const BuyPanelBody = (
         )}
       </Col>
 
-      {contract.mechanism === 'cpmm-multi-1' && (
+      {isMultiCpmm(contract) && (
         <YourOrders
           className="mt-2 py-4"
           contract={contract}

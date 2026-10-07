@@ -1,0 +1,1649 @@
+.layout {
+  position: relative;
+  z-index: 30;
+}
+.layout,
+.detailsLayer,
+.sources {
+  --measure-accent: #24665d;
+  --no-measures: #d4d4d4;
+  --paper: rgb(var(--color-canvas-0));
+  --soft: rgb(var(--color-canvas-50));
+  --line: rgb(var(--color-ink-200));
+  /* ink-600 keeps secondary text at 7:1 in both themes. */
+  --muted: rgb(var(--color-ink-600));
+  --ink: rgb(var(--color-ink-800));
+  --accent: rgb(var(--color-primary-700));
+  /* Manifold's focus ring color (as in globals.css and Input). */
+  --ring: rgb(var(--color-primary-500));
+  color: var(--ink);
+  --map-border: #fff;
+  /* Party colors: fills match the map; text tones are darkened or lightened
+     per theme so they stay readable. */
+  --dem-fill: #5671ba;
+  --rep-fill: #c25555;
+  --other-fill: #318b83;
+  --any-fill: #9e9fbd;
+  --dem: #4f69b3;
+  --rep: #b84a4a;
+  --other: #26766f;
+  --any: rgb(var(--color-ink-600));
+  /* Offices not on the ballot recede behind the races that are. */
+  --held-dem-bg: #e3e8f5;
+  --held-dem-line: #9eacd8;
+  --held-rep-bg: #f5e3e2;
+  --held-rep-line: #d8a3a0;
+  --held-split-bg: #ece3ec;
+  --held-split-line: #b79ab3;
+  --held-label: #3b4257;
+}
+.detailsLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.detailsLayer .details {
+  pointer-events: auto;
+}
+.layout [data-tone='dem'],
+.detailsLayer [data-tone='dem'] {
+  color: var(--dem);
+}
+.layout [data-tone='rep'],
+.detailsLayer [data-tone='rep'] {
+  color: var(--rep);
+}
+.layout [data-tone='other'],
+.detailsLayer [data-tone='other'] {
+  color: var(--other);
+}
+.explorer {
+  position: relative;
+  background: var(--paper);
+  border-radius: 12px;
+  padding: 0 20px 1px;
+  isolation: isolate;
+  container: explorer / inline-size;
+}
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -20px 12px;
+  background: var(--paper);
+  border-radius: 12px 12px 0 0;
+  container: mapheader / inline-size;
+  padding: 8px 20px;
+}
+.tabs {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 9px;
+  background: var(--soft);
+  flex-shrink: 0;
+}
+.tabs button {
+  min-width: 0;
+  font-weight: 500;
+  color: var(--muted);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 2px 8px 2px 6px;
+}
+.tabs button:hover {
+  color: var(--accent);
+}
+.tabs button[aria-selected='true'] {
+  color: var(--accent);
+  background: var(--paper);
+  box-shadow: 0 1px 3px #00000012;
+  font-weight: 600;
+}
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 270px));
+  gap: 16px;
+  margin-bottom: 18px;
+  justify-content: start;
+}
+.controlCard {
+  position: relative;
+  min-width: 0;
+  padding: 14px;
+  background: var(--soft);
+  border-radius: 10px;
+}
+.controlLabel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+/* The rules popover spans its card, so it never leaves the screen. */
+.controlInfo {
+  color: var(--muted);
+  font-weight: 400;
+}
+.controlInfo summary {
+  cursor: pointer;
+  list-style: none;
+  border-radius: 50%;
+  padding: 0 2px;
+}
+.controlInfo summary:hover {
+  color: var(--accent);
+}
+.controlInfo summary::-webkit-details-marker {
+  display: none;
+}
+.controlInfo p {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 38px;
+  z-index: 5;
+  padding: 10px;
+  line-height: 1.5;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  font-size: 12px;
+  box-shadow: 0 4px 12px #0002;
+}
+.controlTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.chartLink {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chartLink:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.controlMain {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  transition: background 150ms;
+}
+.controlMain:hover:not(:disabled) {
+  background: var(--paper);
+  border-radius: 6px;
+}
+/* One focus style for every explorer control: Manifold's primary ring, on
+   keyboard focus only (never after a mouse click or tap). */
+.layout :is(button, a, summary, select, [role='button']):focus-visible,
+.detailsLayer :is(button, a, summary, [role='button']):focus-visible,
+.sources :is(button, a, summary):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.layout
+  :is(button, a, summary, select, [role='button']):focus:not(:focus-visible),
+.detailsLayer
+  :is(button, a, summary, [role='button']):focus:not(:focus-visible) {
+  outline: none;
+}
+/* Map shapes show their focus as an outline drawn above the map instead. */
+.layout .shape:focus,
+.layout .shape:focus-visible {
+  outline: none;
+}
+/* "ⓘ About this market": closed by default, one line when open. */
+.marketInfo {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.marketInfo summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 4px;
+}
+.marketInfo summary::-webkit-details-marker {
+  display: none;
+}
+.marketInfo summary::after {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 150ms;
+}
+.marketInfo[open] summary::after {
+  transform: rotate(90deg);
+}
+.marketInfo summary:hover {
+  color: var(--accent);
+}
+.marketInfo p {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--soft);
+}
+.marketInfo a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.controlParty {
+  font-size: 13px;
+  color: var(--muted);
+}
+.controlLeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.controlIcon img {
+  object-fit: contain;
+  width: 32px;
+  height: 32px;
+}
+.controlBets {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.controlBets button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.controlBets button:hover:not(:disabled) {
+  background: var(--soft);
+  border-color: currentColor;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.controlCard button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.controlCard strong {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+.controlBets strong {
+  font-size: 14px;
+}
+.controlBar {
+  display: flex;
+  height: 7px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--soft);
+}
+.controlBar i[data-tone='dem'] {
+  background: var(--dem-fill);
+}
+.controlBar i[data-tone='rep'] {
+  background: var(--rep-fill);
+}
+.hint button:hover {
+  text-decoration: underline;
+}
+.balanceLabels {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.balanceLabels b {
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+}
+.partyShort {
+  display: none;
+}
+.threshold {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.balanceTrack {
+  position: relative;
+  height: 26px;
+}
+.balanceBand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 5px;
+  height: 14px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.balanceSegment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  transition: opacity 150ms;
+}
+/* A selected group stays at full strength; the rest step back. */
+.balanceTrack[data-filtered='true']
+  .balanceSegment:not([data-selected='true']) {
+  opacity: 0.35;
+}
+.balanceCaret {
+  position: absolute;
+  top: 21px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ink);
+  pointer-events: none;
+}
+.balanceTarget {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+span.balanceTarget {
+  cursor: default;
+}
+.balanceTip {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgb(var(--color-ink-900));
+  color: rgb(var(--color-ink-0));
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.balanceTarget[data-align='start'] .balanceTip {
+  left: 0;
+  transform: none;
+}
+.balanceTarget[data-align='end'] .balanceTip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.balanceTarget:hover .balanceTip,
+.balanceTarget:focus-visible .balanceTip {
+  opacity: 1;
+}
+/* On touch screens a tap leaves "hover" behind; the filter line already
+   names the group, so the tip would only cover the toolbar. */
+@media (hover: none) {
+  .balanceTarget:hover:not(:focus-visible) .balanceTip {
+    opacity: 0;
+  }
+}
+.majorityLine {
+  position: absolute;
+  width: 2px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--paper);
+  pointer-events: none;
+  top: 2px;
+  bottom: 5px;
+}
+.coverage {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.activeTool {
+  color: var(--accent);
+  background: var(--soft);
+}
+.search {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  gap: 5px;
+  padding: 6px 8px;
+  height: 34px;
+  width: 100%;
+}
+.search input {
+  font-size: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  min-width: 0;
+  width: 100%;
+  box-shadow: none;
+  color: var(--ink);
+}
+.search input:focus,
+.search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.filterNotice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.filterNotice button {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.filterActions {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.resultsMore {
+  margin: -4px 0 6px;
+  font-size: 12px;
+  color: var(--accent);
+}
+.resultsMore:hover,
+.filterNotice button:hover {
+  text-decoration: underline;
+}
+.results[data-expanded='true'] {
+  max-height: min(50vh, 420px);
+}
+.results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 10px 0;
+  font-size: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.results button {
+  text-align: left;
+  background: var(--soft);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.results button:hover {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.results .quote {
+  text-align: right;
+}
+.stage {
+  position: relative;
+  margin: 14px -8px 0;
+}
+.map {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  /* Label sizes in map units at the overview; divided by the zoom so text
+     keeps one screen size. */
+  --label-size: 13px;
+  --hex-label-size: 10px;
+  --tile-label-size: 19px;
+}
+.shape {
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill 180ms, opacity 150ms;
+  stroke: var(--map-border);
+}
+.map,
+.map .shape {
+  cursor: grab;
+  user-select: none;
+}
+.map:active,
+.map:active .shape {
+  cursor: grabbing;
+}
+.shape:hover {
+  stroke: #00b8c2;
+  stroke-width: 2;
+}
+.shape:focus {
+  outline: none;
+}
+.noRace {
+  fill: rgb(var(--color-ink-100));
+}
+.map[data-mode='measures'] .noRace {
+  fill: var(--no-measures);
+}
+.stateOutline {
+  fill: none;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  stroke: var(--map-border);
+}
+.hatchBase {
+  fill: rgb(var(--color-ink-100));
+}
+.hatchLine {
+  stroke: rgb(var(--color-ink-400) / 0.65);
+}
+.heldBase[data-party='dem'] {
+  fill: var(--held-dem-bg);
+}
+.heldBase[data-party='rep'] {
+  fill: var(--held-rep-bg);
+}
+.heldBase[data-party='split'] {
+  fill: var(--held-split-bg);
+}
+.heldHatch[data-party='dem'] {
+  stroke: var(--held-dem-line);
+}
+.heldHatch[data-party='rep'] {
+  stroke: var(--held-rep-line);
+}
+.heldHatch[data-party='split'] {
+  stroke: var(--held-split-line);
+}
+/* Outlines drawn above every shape, so neighbors never paint over them. */
+.overlays {
+  pointer-events: none;
+}
+.overlays path,
+.overlays rect {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.matchOutline {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.selectedHalo,
+.focusHalo {
+  stroke: var(--paper);
+  stroke-width: 5.5;
+}
+.selectedOutline {
+  stroke: #00b8c2;
+  stroke-width: 2.5;
+}
+.focusOutline {
+  stroke: var(--ring);
+  stroke-width: 3;
+}
+.stateLabel,
+.hexLabel,
+.tileLabel,
+.calloutLabel {
+  pointer-events: none;
+  text-anchor: middle;
+  fill: var(--label-ink, rgb(var(--color-ink-800)));
+  font-weight: 600;
+  font-size: calc(var(--label-size) / var(--zoom, 1));
+  paint-order: stroke;
+  stroke: var(--label-halo, rgb(var(--color-canvas-0) / 0.6));
+  stroke-width: calc(2px / var(--zoom, 1));
+  stroke-linejoin: round;
+}
+.heldLabel {
+  --label-ink: var(--held-label);
+  --label-halo: #ffffff99;
+}
+.hexLabel {
+  font-size: calc(var(--hex-label-size) / var(--zoom, 1));
+  stroke: rgb(var(--color-canvas-0) / 0.85);
+  stroke-width: calc(3px / var(--zoom, 1));
+}
+.map[data-mode='house'] .stateLabel {
+  fill: #1e293b;
+  stroke: #ffffffc0;
+}
+.tileLabel {
+  font-size: calc(var(--tile-label-size) / var(--zoom, 1));
+}
+.labelLine {
+  stroke: var(--muted);
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.callout {
+  cursor: pointer;
+}
+.calloutLabel {
+  text-anchor: start;
+  fill: var(--ink);
+  stroke: none;
+}
+.calloutTarget {
+  fill: transparent;
+}
+.callout:hover .calloutLabel {
+  fill: var(--accent);
+}
+/* Invisible 44px touch targets around the smallest states, for touch only. */
+.hitAreas circle {
+  fill: transparent;
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .hitAreas circle {
+    pointer-events: all;
+  }
+}
+.zoomControls {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 2px 7px #00000008;
+  overflow: hidden;
+}
+.zoomControls button {
+  width: 32px;
+  height: 32px;
+  font-size: 21px;
+}
+.zoomControls button + button {
+  border-left: 1px solid var(--line);
+}
+.zoomControls button:disabled {
+  opacity: 0.3;
+}
+.zoomControls button:hover:not(:disabled) {
+  background: var(--soft);
+}
+.stageZoom {
+  display: none;
+}
+.quote {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.quoteName {
+  font-weight: 500;
+}
+.legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+  margin: 15px 0 0;
+}
+.ramp {
+  width: 240px;
+}
+.ramp > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.gradient {
+  height: 6px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    #9d3336,
+    #f4dad7 47%,
+    #cedcef 53%,
+    #4a5fa8
+  );
+}
+.legendKeys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legendKeys > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legendKeys i {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+.hatchSwatch {
+  background: repeating-linear-gradient(
+    125deg,
+    rgb(var(--color-ink-100)) 0px 3px,
+    rgb(var(--color-ink-400)) 3px 4px
+  );
+}
+.noRaceSwatch {
+  background: repeating-linear-gradient(
+      45deg,
+      transparent 0 3px,
+      var(--held-split-line) 3px 4px
+    ),
+    linear-gradient(
+      90deg,
+      var(--held-dem-bg) 0 33%,
+      var(--held-split-bg) 33% 67%,
+      var(--held-rep-bg) 67%
+    );
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  margin: 16px 0 21px;
+}
+.hint button {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.incumbents {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+}
+.incumbents > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.incumbents i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.incumbents small {
+  color: var(--muted);
+}
+.details {
+  position: fixed;
+  z-index: 12;
+  width: min(345px, calc(100% - 40px));
+  max-height: 470px;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: 0 12px 48px #00000026;
+  display: flex;
+  flex-direction: column;
+}
+.details[data-pinned='false'] {
+  pointer-events: none;
+  font-size: 13px;
+}
+.detailHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 12px 8px;
+  flex-shrink: 0;
+}
+.detailMoveHeading {
+  min-width: 0;
+  flex: 1;
+}
+.detailDragHandle {
+  width: 100%;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border-radius: 4px;
+}
+.detailDragHandle[data-dragging='true'] {
+  cursor: grabbing;
+}
+.detailTitle {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.dragHint {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.detailActions {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.detailActions button {
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  color: var(--muted);
+}
+.detailActions button:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
+}
+.detailActions button:disabled {
+  opacity: 0.35;
+}
+.detailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 0 12px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 10px;
+  color: var(--muted);
+}
+.detailSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+}
+/* One row design for every race source. */
+.outcomes {
+  display: grid;
+  gap: 6px;
+}
+.outcome {
+  --party-fill: var(--any-fill);
+  --party-text: var(--ink);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 5px;
+  padding: 7px 8px 8px 10px;
+  border-radius: 8px;
+  background: var(--soft);
+  box-shadow: inset 3px 0 var(--party-fill);
+}
+.outcome[data-party='dem'] {
+  --party-fill: var(--dem-fill);
+  --party-text: var(--dem);
+}
+.outcome[data-party='rep'] {
+  --party-fill: var(--rep-fill);
+  --party-text: var(--rep);
+}
+.outcome[data-party='other'] {
+  --party-fill: var(--other-fill);
+  --party-text: var(--other);
+}
+.outcomeName {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--party-text);
+}
+.outcomeName small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.outcomeProb {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--party-text);
+}
+.outcomeTrack {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgb(var(--color-ink-200) / 0.6);
+}
+.outcomeTrack i {
+  display: block;
+  height: 100%;
+  background: var(--party-fill);
+}
+.outcomePosition {
+  width: fit-content;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.outcomePosition:hover {
+  text-decoration: underline;
+}
+.moreOutcomes {
+  width: fit-content;
+  color: var(--accent);
+  font-size: 12px;
+}
+.moreOutcomes:hover {
+  text-decoration: underline;
+}
+.note,
+.empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.exploreState {
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px;
+  font-size: 12px;
+  text-align: left;
+}
+.exploreState:hover {
+  background: var(--soft);
+}
+.candidates {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.mapLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 300px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.mapLoading button {
+  text-decoration: underline;
+}
+.sources {
+  background: rgb(var(--color-canvas-0));
+  color: rgb(var(--color-ink-800));
+  border-radius: 12px;
+  padding: 26px;
+  max-height: 75vh;
+  overflow: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.sources h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.sources p {
+  margin-bottom: 12px;
+}
+.sources a {
+  color: rgb(var(--color-primary-700));
+  text-decoration: underline;
+}
+.helpPoints {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.helpPoints li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.helpPoints li > i {
+  margin-top: 3px;
+}
+.helpRamp {
+  width: 34px;
+  height: 14px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    #9d3336,
+    #f4dad7 47%,
+    #cedcef 53%,
+    #4a5fa8
+  );
+}
+.helpMeasures {
+  width: 34px;
+  height: 14px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #d4d4d4, #24665d);
+}
+.helpSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  vertical-align: -2px;
+}
+.helpPoints li > .helpSwatch {
+  width: 34px;
+}
+.helpStep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 22px;
+  margin-top: 0 !important;
+  border-radius: 6px;
+  background: rgb(var(--color-primary-100));
+  color: rgb(var(--color-primary-700));
+  font-style: normal;
+  font-weight: 700;
+}
+.methodology {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: rgb(var(--color-ink-700));
+}
+.methodology summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 10px;
+  width: fit-content;
+}
+.sources .sourceCredit {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sourceCredit a {
+  color: inherit;
+}
+.dismiss {
+  padding: 9px 16px;
+  border-radius: 7px;
+  background: rgb(var(--color-primary-700));
+  color: white;
+  margin-top: 4px;
+}
+@media (min-width: 851px) {
+  .explorer {
+    --map-height: clamp(320px, calc(100svh - 260px), 720px);
+  }
+  .map {
+    aspect-ratio: 8 / 5;
+    max-height: var(--map-height);
+  }
+  .details {
+    max-height: min(
+      calc(var(--map-height) - 16px),
+      calc(100dvh - var(--popup-top, 8px) - 8px)
+    );
+  }
+}
+@media (max-width: 850px) {
+  .details[data-pinned='false'] {
+    display: none;
+  }
+  .map {
+    height: clamp(220px, 60vw, 360px);
+  }
+  .stage {
+    margin-top: 8px;
+  }
+  /* SVG text scales with the map; keep labels legible on narrow screens. */
+  .map {
+    --label-size: 17px;
+    --hex-label-size: 13px;
+  }
+  .details {
+    position: fixed;
+    top: auto;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: min(42svh, 340px);
+    z-index: 30;
+    border-radius: 15px;
+  }
+  .detailHeading {
+    align-items: center;
+    padding: 8px 10px 6px;
+  }
+  .detailTitle {
+    font-size: 15px;
+    margin: 0;
+  }
+  .detailDragHandle .eyebrow,
+  .dragHint,
+  .detailSummary {
+    display: none;
+  }
+  .detailContent {
+    gap: 6px;
+    padding: 0 10px 10px;
+  }
+  .incumbents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    align-items: baseline;
+    font-size: 12px;
+  }
+  .incumbents .eyebrow {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 12px;
+  }
+  .note,
+  .empty {
+    line-height: 1.4;
+  }
+  .exploreState {
+    border: 0;
+    padding: 4px 0;
+  }
+  .detailActions button {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+}
+@media (max-width: 540px) {
+  .explorer {
+    padding: 0 12px 1px;
+  }
+  .header {
+    margin: 0 -12px 12px;
+    padding: 8px 12px;
+  }
+  .controls {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .controlCard {
+    padding: 8px;
+  }
+  .controlTop {
+    font-size: 12px;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .controlMain {
+    gap: 6px;
+  }
+  .controlParty {
+    display: none;
+  }
+  .controlIcon img {
+    width: 24px;
+    height: 24px;
+  }
+  .controlLeader strong {
+    font-size: 24px;
+  }
+  .controlBar {
+    height: 4px;
+    margin-top: 4px;
+  }
+  .controlBets {
+    margin-top: 6px;
+    gap: 4px;
+  }
+  .controlBets button {
+    padding: 5px 2px;
+    font-size: 12px;
+    gap: 3px;
+  }
+  .controlBets strong {
+    font-size: 12px;
+  }
+  .balanceLabels b {
+    font-size: 15px;
+  }
+  .search input {
+    font-size: 16px;
+  }
+  .stage {
+    margin: 8px -9px 0;
+  }
+  .map {
+    --label-size: 22px;
+    --hex-label-size: 15px;
+    --tile-label-size: 22px;
+  }
+  .legend {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .ramp {
+    width: 220px;
+  }
+  .results {
+    grid-template-columns: 1fr;
+  }
+  /* Phones show three results until expanded. */
+  .results[data-expanded='false'] > :nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 541px) {
+  .resultsMore[data-desktop-fits='true'] {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shape,
+  .controlCard,
+  .marketInfo summary::after {
+    transition: none;
+  }
+}
+:global(.dark) .layout,
+:global(.dark) .detailsLayer,
+:global(.dark) .sources {
+  --map-border: #161616;
+  --no-measures: #666;
+  --dem: #93a7e2;
+  --rep: #ec9393;
+  --other: #63c2b8;
+  --held-dem-bg: #252c45;
+  --held-dem-line: #3f4c7f;
+  --held-rep-bg: #3b2326;
+  --held-rep-line: #6e3437;
+  --held-split-bg: #30263a;
+  --held-split-line: #5a4160;
+  --held-label: #d5d9ea;
+}
+:global(.dark) .map[data-mode='house'] .stateLabel {
+  fill: #e2e8f0;
+  stroke: #0f1729c0;
+}
+:global(.dark) .heldLabel {
+  --label-halo: #0f172980;
+}
+:global(.dark) .helpStep {
+  background: rgb(var(--color-primary-100) / 0.15);
+  color: rgb(var(--color-primary-600));
+}
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 26px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+.tabIcon svg {
+  width: 22px;
+  height: 24px;
+}
+.tabIcon.outlineIcon {
+  fill: none;
+}
+.tabIcon.outlineIcon svg {
+  width: 19px;
+  height: 19px;
+}
+.mobileMode {
+  display: none;
+}
+.heldSeats {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 3px,
+    #0004 3px 5px
+  );
+}
+.viewToggle {
+  display: flex;
+  flex-shrink: 0;
+  padding: 2px;
+  gap: 2px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.viewToggle button,
+.toolButton,
+.searchToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.toolButton,
+.searchToggle {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  height: 34px;
+  padding: 6px;
+}
+.viewToggle button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--soft);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary-300) / 0.7);
+  font-weight: 600;
+}
+.viewToggle svg,
+.toolButton svg,
+.search svg,
+.searchToggle svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.viewToggle button:hover,
+.toolButton:hover,
+.searchToggle:hover {
+  background: var(--soft);
+  color: var(--accent);
+}
+.searchSlot {
+  flex: 1;
+  min-width: 85px;
+  margin-left: auto;
+}
+.searchToggle {
+  display: none;
+}
+.toolbar .activeTool {
+  color: var(--accent);
+  background: var(--soft);
+}
+.search:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 1px var(--ring);
+}
+.detailActions .chartLink {
+  margin-right: 6px;
+}
+.detailActions svg {
+  width: 100%;
+  height: 100%;
+}
+.candidateHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+@container mapheader (max-width: 760px) {
+  .toolButton span,
+  .viewToggle svg {
+    display: none;
+  }
+  .tabs button {
+    padding: 4px;
+    font-size: 12px;
+  }
+}
+@container mapheader (max-width: 640px) {
+  .partyFull {
+    display: none;
+  }
+  .partyShort {
+    display: inline;
+  }
+  .balanceLabels > span {
+    white-space: nowrap;
+  }
+  .threshold {
+    font-size: 12px;
+    max-width: none;
+  }
+  .toolbar {
+    gap: 4px;
+  }
+  .tabs {
+    display: none;
+  }
+  .toolbarZoom {
+    display: none;
+  }
+  .mobileMode {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 112px;
+    height: 36px;
+    border-radius: 7px;
+    background: var(--soft);
+    color: var(--accent);
+  }
+  .mobileMode .tabIcon {
+    position: absolute;
+    left: 4px;
+    pointer-events: none;
+    width: 22px;
+  }
+  .mobileMode select {
+    width: 100%;
+    padding: 7px 12px 7px 29px;
+    background-color: transparent;
+    background-position: right 0 center;
+    background-size: 12px;
+    border: 0;
+    border-radius: inherit;
+    font-size: 13px;
+    color: inherit;
+    cursor: pointer;
+  }
+  .mobileMode select:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  .viewToggle {
+    height: 36px;
+  }
+  .viewToggle button {
+    padding: 4px 6px;
+  }
+  .toolButton,
+  .searchToggle {
+    width: 36px;
+    height: 36px;
+    padding: 4px;
+  }
+  .searchSlot {
+    flex: 1;
+    min-width: 36px;
+  }
+  .searchToggle {
+    display: flex;
+    margin-left: auto;
+  }
+  .search {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    background: var(--paper);
+    box-shadow: 0 4px 12px #0002;
+  }
+  .search[data-open='true'] {
+    display: flex;
+  }
+}
+/* On narrow screens zoom moves under the map, at a 44px touch size. */
+@container explorer (max-width: 640px) {
+  .stageZoom {
+    display: flex;
+    width: fit-content;
+    margin: 6px 8px 0 auto;
+  }
+  .stageZoom button {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+}
+
+.measureOverview {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.measureOverview strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.measureCard {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  display: grid;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.measureHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.measureHeading h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.measureTopic {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.measureCaveat {
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 12px;
+}
+.measureBets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.measureBets button {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.measureBets button:first-child {
+  color: var(--measure-accent);
+}
+.measureBets button:hover:not(:disabled) {
+  background: var(--soft);
+  border-color: currentColor;
+}
+.measureBets button:disabled {
+  opacity: 0.5;
+}
+.measureRules {
+  color: var(--muted);
+  font-size: 12px;
+}
+.measureRules summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.measureRules p,
+.measureRules a {
+  display: block;
+  margin-top: 8px;
+}
+:global(.dark) .layout,
+:global(.dark) .detailsLayer {
+  --measure-accent: #82cfc2;
+}

@@ -80,6 +80,7 @@ const getLeverageMarks = (maxLeverage: number) => {
 
 export const PerpBetPanel = (props: {
   contract: PerpContract
+  initialDirection?: 'long' | 'short'
   // Called after a successful trade so the page re-polls positions/pools
   // immediately instead of waiting for the next 15s tick.
   onTrade?: () => void
@@ -103,8 +104,10 @@ export const PerpBetPanel = (props: {
   } = props
   const user = useUser()
 
-  const [direction, setDirection] = useState<'long' | 'short'>('long')
-  const [expanded, setExpanded] = useState(false)
+  const [direction, setDirection] = useState<'long' | 'short'>(
+    props.initialDirection ?? 'long'
+  )
+  const [expanded, setExpanded] = useState(!!props.initialDirection)
   const [margin, setMargin] = useState<number | undefined>(10)
   const [leverage, setLeverage] = usePersistentLocalState<number>(
     2,
@@ -136,8 +139,8 @@ export const PerpBetPanel = (props: {
   // Preselect the held side, so "add to position" is the default action when
   // one exists (one-way mode: opening the opposite side is a flip).
   useEffect(() => {
-    if (openDirection) setDirection(openDirection)
-  }, [openDirection])
+    if (openDirection && !props.initialDirection) setDirection(openDirection)
+  }, [openDirection, props.initialDirection])
 
   const price = Number(contract.oraclePrice)
   const priceDecimals = inferPriceDecimals([

@@ -1028,7 +1028,14 @@ export default function PerpsPage(props: { perps: Contract[] }) {
         {selected ? (
           <Col className="gap-3">
             {railParam && <RailLayoutSwitcher current={railLayout} />}
-            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div
+              className={clsx(
+                'grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]',
+                // Let the second row absorb a tall rail so activity stays
+                // directly below the terminal instead of splitting the excess.
+                railLayout === 'stack' && 'xl:grid-rows-[auto_1fr]'
+              )}
+            >
               {/* Fixed-width rail: a third of the grid was only ~330px at the
                   xl breakpoint, not enough for a ticker, sparkline, price,
                   change and lean side by side. */}
@@ -1212,14 +1219,19 @@ const YourPositions = (props: {
           </Row>
         </Row>
       )}
-      <Col className="divide-ink-200 dark:divide-ink-300 divide-y">
+      <Col
+        role="region"
+        aria-label="Open positions"
+        tabIndex={0}
+        className="divide-ink-200 dark:divide-ink-300 max-h-[min(22rem,45dvh)] divide-y overflow-y-auto overscroll-contain"
+      >
         {rows.map(({ p, contract, pnl, pnlPct, liqDistance }) => {
           const long = p.direction === 'long'
           return (
             <button
               key={`${p.contractId}-${p.direction}`}
               onClick={() => onSelect(contract.id)}
-              className="hover:bg-canvas-50 grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2 text-left"
+              className="hover:bg-canvas-50 grid shrink-0 grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2 text-left"
             >
               <span className="text-ink-900 truncate font-mono text-sm font-bold">
                 {getPerpTicker(contract)}

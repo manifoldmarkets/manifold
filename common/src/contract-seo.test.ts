@@ -59,7 +59,7 @@ describe('perpetual market external metadata', () => {
     const contract = getBinaryContract()
 
     expect(getContractOGProps(contract)).toEqual({
-      v: '3',
+      v: '4',
       question: 'Will this happen?',
       numTraders: '7',
       volume: '1234',

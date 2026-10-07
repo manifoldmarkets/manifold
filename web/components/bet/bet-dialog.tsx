@@ -22,6 +22,7 @@ import { NumberResolutionOrExpectation } from 'web/components/contract/contract-
 import { SliderColor } from '../widgets/slider'
 import { getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
+import { showsSideProbability, versusSideProb } from 'common/versus'
 
 export function BetDialog(props: {
   contract: BinaryContract
@@ -50,8 +51,15 @@ export function BetDialog(props: {
     questionPseudonym,
   } = props
   const { question } = contract
+  const pseudonym = props.binaryPseudonym ?? {
+    YES: { pseudonymName: 'YES', pseudonymColor: 'green' as const },
+    NO: { pseudonymName: 'NO', pseudonymColor: 'red' as const },
+  }
 
   const initialProb = getProbability(contract)
+  // Named sides (e.g. Republican/Democratic) show the chosen side's chance;
+  // plain YES/NO shows the YES chance, which buying NO moves down.
+  const sideProb = showsSideProbability(contract, pseudonym)
   return (
     <Modal
       open={open}
@@ -60,23 +68,6 @@ export function BetDialog(props: {
       className={clsx(MODAL_CLASS, '!px-0 !py-0')}
     >
       <Col className="max-h-[42rem] overflow-auto px-4 py-4">
-        <Row className="items-baseline justify-between gap-2">
-          <Link
-            className="!text-xl hover:underline"
-            href={contractPath(contract)}
-          >
-            {questionPseudonym ?? question}
-          </Link>
-          <div className="text-2xl">
-            {formatPercent(initialProb)}{' '}
-            <span className="text-sm">
-              {/* The probability is for the YES side; name it when the sides
-                  have names (e.g. Republican/Democratic) so it can't be read
-                  as the other side's chance. */}
-              {props.binaryPseudonym?.YES.pseudonymName ?? 'chance'}
-            </span>
-          </div>
-        </Row>
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
@@ -84,9 +75,36 @@ export function BetDialog(props: {
           inModal={true}
           initialOutcome={initialOutcome ?? 'YES'}
           alwaysShowOutcomeSwitcher
-          pseudonym={props.binaryPseudonym}
+          pseudonym={pseudonym}
           className="!px-0"
-        />
+        >
+          {(selectedOutcome) => (
+            <Col className="mb-4 gap-2">
+              <Link
+                className="!text-xl hover:underline"
+                href={contractPath(contract)}
+              >
+                {questionPseudonym ?? question}
+              </Link>
+              <Row className="items-baseline justify-between gap-2">
+                <span className="text-ink-500 text-sm">
+                  {sideProb
+                    ? `${
+                        pseudonym[selectedOutcome ?? 'YES'].pseudonymName
+                      } probability`
+                    : 'Probability'}
+                </span>
+                <span className="text-2xl">
+                  {formatPercent(
+                    sideProb
+                      ? versusSideProb(selectedOutcome ?? 'YES', initialProb)
+                      : initialProb
+                  )}
+                </span>
+              </Row>
+            </Col>
+          )}
+        </BuyPanel>
       </Col>
     </Modal>
   )

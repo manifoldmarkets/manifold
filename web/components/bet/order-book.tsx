@@ -9,11 +9,13 @@ import {
   BinaryContract,
   CPMMMultiContract,
   isBinaryMulti,
+  isMultiCpmm,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
 import {
+  showsSideProbability,
   toMainAnswerOrder,
   versusSideOutcome,
   versusSideProb,
@@ -139,7 +141,7 @@ export function OrderTable(props: {
 }) {
   const { limitBets, contract, isYou, showAnswers } = props
   const answers =
-    showAnswers && contract.mechanism === 'cpmm-multi-1'
+    showAnswers && isMultiCpmm(contract)
       ? contract.answers.filter((a) =>
           limitBets.map((b) => b.answerId).includes(a.id)
         )
@@ -489,8 +491,8 @@ export function OrderBookPanel(props: {
       const mirrored = isBinaryMC ? toMainAnswerOrder(contract, b) : undefined
       return mirrored ? { ...b, ...mirrored } : b
     })
-  // Show the price of the side being bought when the sides have names.
-  const showsSideProb = isBinaryMC || !!pseudonym
+  // Show the price of the side being bought when NO is a named opponent.
+  const showsSideProb = showsSideProbability(contract, pseudonym)
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -503,7 +505,7 @@ export function OrderBookPanel(props: {
     (bet) => bet.createdTime
   )
 
-  const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCPMMMulti = isMultiCpmm(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   if (limitBets.length === 0) return <></>

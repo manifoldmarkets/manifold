@@ -15,6 +15,23 @@ export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   return row ? convertAnswer(row) : null
 }
 
+// Like getAnswer, but takes a row lock (SELECT ... FOR UPDATE). Required whenever a
+// transaction read-modify-writes answer fields with concrete values, as the scheduler's
+// drizzleAnswer does with subsidyPool: the betsQueue serializes only within one process,
+// so another process's write (the per-answer addLiquidity path, which increments
+// subsidyPool atomically) would otherwise land between the read and the write, and
+// subsidy mana would be created or destroyed.
+export const getAnswerForUpdate = async (
+  pg: SupabaseDirectClient,
+  id: string
+) => {
+  const row = await pg.oneOrNone(
+    `select * from answers where id = $1 for update`,
+    [id]
+  )
+  return row ? convertAnswer(row) : null
+}
+
 export const getAnswersForContractsDirect = async (
   pg: SupabaseDirectClient,
   contractIds: string[]
@@ -121,6 +138,7 @@ export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => {
     color: answer.color,
     pool_yes: answer.poolYes,
     pool_no: answer.poolNo,
+    p: answer.p,
     prob: answer.prob,
     total_liquidity: answer.totalLiquidity,
     subsidy_pool: answer.subsidyPool,

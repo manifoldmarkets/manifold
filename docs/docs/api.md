@@ -339,7 +339,7 @@ type LiteMarket = {
   url: string
 
   outcomeType: string // BINARY, FREE_RESPONSE, MULTIPLE_CHOICE, NUMERIC, PSEUDO_NUMERIC, BOUNTIED_QUESTION, POLL, or ...
-  mechanism: string // dpm-2, cpmm-1, or cpmm-multi-1
+  mechanism: string // dpm-2, cpmm-1, cpmm-multi-1, or cpmm-multi-2. A cpmm-multi-2 market is a multiple choice market whose answers each carry their own p (see Answer); cpmm-multi-1 answers are all at p = 0.5.
 
   probability: number
   pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
@@ -462,7 +462,10 @@ Response type: A `FullMarket`
 ```tsx
 // A complete market, along with answers (for free response markets)
 type FullMarket = LiteMarket & {
-  answers?: Answer[] // multi markets only
+  answers?: Answer[] // multi markets only. Each answer carries its pool (pool.YES, pool.NO) and
+  // its CPMM parameter p (probability = p * pool.NO / ((1 - p) * pool.YES + p * pool.NO)); p is
+  // 0.5 on cpmm-multi-1 answers and varies on cpmm-multi-2. Lite answers in search results carry
+  // only id, text and probability.
   shouldAnswersSumToOne?: boolean // multi markets only, whether answers are dependant (that is add up to 100%, typically used when only one answer should win). Always true for dpm-2 multiple choice and free response
   addAnswersMode?: 'ANYONE' | 'ONLY_CREATOR' | 'DISABLED' // multi markets only, who can add answers
 
@@ -998,7 +1001,7 @@ Response type: A `Bet`.
 
 Place multiple YES bets on a sums-to-one multiple choice market, targeting the same number of shares on each selected answer.
 
-This is only available on `cpmm-multi-1` markets with `shouldAnswersSumToOne=true` and requires at least two answers in the market. The provided `amount` is spent across the selected answers to purchase equal shares per answer at execution time. If a `limitProb` is provided, each leg will only execute up to that price; any unfilled remainder stays as open limit orders until `expiresAt` or cancellation.
+This is only available on `cpmm-multi-1` markets with `shouldAnswersSumToOne=true` and requires at least two answers in the market. `cpmm-multi-2` markets refuse baskets of more than one answer (400) for now: place single-answer bets instead. The provided `amount` is spent across the selected answers to purchase equal shares per answer at execution time. If a `limitProb` is provided, each leg will only execute up to that price; any unfilled remainder stays as open limit orders until `expiresAt` or cancellation.
 
 Parameters:
 
@@ -1286,9 +1289,10 @@ Parameter:
 
 Add mana to liquidity pool. Does not boost.
 
-Parameter:
+Parameters:
 
 - `amount`: Amount of M$ to add
+- `answerId`: Optional. On a `cpmm-multi-2` market, subsidize this one answer's pool instead of the whole market. Refused (403) on other markets and on a resolved answer.
 
 [Requires Auth](#authentication).
 
@@ -1398,7 +1402,7 @@ This approach treats each answer as an independent binary resolution, ensuring t
 
 Rebalances your position in a sum-to-one multi-choice market. This collapses mixed YES/NO positions into an all-YES position and redeems the minimum amount across outcomes. This is purely an accounting operation and does not affect the AMM or incur fees.
 
-Only applicable to `cpmm-multi-1` markets when `shouldAnswersSumToOne` is true. The equivalent operation is done automatically on binary markets.
+Only applicable to `cpmm-multi-1` and `cpmm-multi-2` markets when `shouldAnswersSumToOne` is true. The equivalent operation is done automatically on binary markets.
 
 [Requires Auth](#authentication).
 

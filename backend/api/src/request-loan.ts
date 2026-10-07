@@ -1,5 +1,8 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import {
   calculateMaxGeneralLoanAmount,
@@ -9,12 +12,10 @@ import {
   isUserEligibleForGeneralLoan,
   isMarketEligibleForLoan,
   getMidnightPacific,
-  MS_PER_DAY,
 } from 'common/loans'
 import { Contract } from 'common/contract'
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
-import { filterDefined } from 'common/util/array'
 import { sumBy } from 'lodash'
 import {
   getUnresolvedContractMetricsContractsAnswers,
@@ -22,6 +23,7 @@ import {
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getInsertQuery } from 'shared/supabase/utils'
 import {
   broadcastUserUpdates,
@@ -30,11 +32,9 @@ import {
 } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
-  getLoanTrackingRows,
-  upsertLoanTrackingQuery,
-  LoanTrackingRow,
+  accrueLoanTrackingQuery,
+  incrementLoanFieldsQuery,
 } from 'shared/helpers/user-contract-loans'
-import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
 import {
   canAccessMarginLoans,
   getMaxLoanNetWorthPercent,
@@ -79,7 +79,9 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   // Get tier-specific max loan percent
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
-  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
+  const portfolioMetricRow = await pg.oneOrNone<
+    Row<'user_portfolio_history_latest'>
+  >(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
@@ -92,8 +94,6 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     throw new APIError(404, `No portfolio found for user ${auth.uid}`)
   }
 
-  const now = Date.now()
-
   // Market-specific loan - DISABLED
   if (contractId) {
     throw new APIError(
@@ -102,9 +102,76 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
+  const midnightPT = getMidnightPacific()
+  const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
+
+  const { userUpdates, distributions } = await betsQueue.enqueueFn(async () => {
+    return pg.tx(async (tx) => {
+      // Lock the user row to serialize loan requests (and bets, which update
+      // the balance before writing metrics) for this user across replicas.
+      // Every loan input is read after this lock: computing from a snapshot
+      // taken before it let concurrent requests each pay out while recording
+      // the debt only once.
+      await tx.oneOrNone('select 1 from users where id = $1 for update', [
+        user.id,
+      ])
+      const now = Date.now()
+
+      const distributions = await planGeneralLoan(
+        tx,
+        user.id,
+        amount,
+        maxLoanPercent,
+        portfolioMetric,
+        midnightPT
+      )
+
+      // Loan tracking must accrue against the old marginLoan, so it runs
+      // before the increment.
+      const loanTrackingQ = accrueLoanTrackingQuery(user.id, distributions, now)
+      const incrementLoansQ = incrementLoanFieldsQuery(
+        user.id,
+        distributions.map((d) => ({
+          contractId: d.contractId,
+          answerId: d.answerId,
+          marginLoanDelta: d.loanAmount,
+        }))
+      )
+
+      const res = await tx.multi(
+        `${balanceUpdateQuery};
+           ${txnQuery};
+           ${loanTrackingQ};
+           ${incrementLoansQ}`
+      )
+      const userUpdates = res[0] as UserUpdate[]
+      return { userUpdates, distributions }
+    })
+  }, [auth.uid])
+
+  broadcastUserUpdates(userUpdates)
+  log(`User ${user.id} took general loan of ${amount}`)
+
+  return {
+    success: true,
+    amount,
+    distributed: distributions,
+  }
+}
+
+// Must be called with the user row locked: the limits and the distribution
+// are only valid against loan state no other request can change.
+const planGeneralLoan = async (
+  tx: SupabaseTransaction,
+  userId: string,
+  amount: number,
+  maxLoanPercent: number,
+  portfolioMetric: PortfolioMetrics,
+  midnightPT: Date
+) => {
   // General loan - distribute proportionally across all markets
   const { contracts, metrics } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
+    await getUnresolvedContractMetricsContractsAnswers(tx, [userId])
   const contractsById = keyBy(contracts, 'id')
   // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
@@ -148,14 +215,13 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
 
   // Check daily loan limit based on equity (10% of equity per day, resets at midnight PT)
   const dailyLimit = calculateDailyLoanLimit(equity)
-  const midnightPT = getMidnightPacific()
-  const todayLoansResult = await pg.oneOrNone<{ total: number }>(
-    `select coalesce(sum(amount), 0) as total
+  const todayLoansResult = await tx.oneOrNone<{ total: number }>(
+    `select coalesce(sum(amount), 0)::float as total
      from txns
      where to_id = $1
      and category IN ('MARGIN_LOAN', 'LOAN')
      and created_time >= $2`,
-    [user.id, midnightPT.toISOString()]
+    [userId, midnightPT.toISOString()]
   )
   const todayLoans = todayLoansResult?.total ?? 0
 
@@ -208,113 +274,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  // Build updated metrics (add to marginLoan for interest-bearing loans)
-  const metricsById = keyBy(
-    metrics,
-    (m) => `${m.contractId}-${m.answerId ?? ''}`
-  )
-  const updatedMetrics = filterDefined(
-    distributions.map((dist) => {
-      const key = `${dist.contractId}-${dist.answerId ?? ''}`
-      const metric = metricsById[key]
-      if (!metric) return undefined
-
-      return {
-        ...metric,
-        marginLoan: (metric.marginLoan ?? 0) + dist.loanAmount,
-      }
-    })
-  )
-
-  // Get existing loan tracking data
-  const contractIds = [...new Set(distributions.map((d) => d.contractId))]
-  const existingLoanTracking = await getLoanTrackingRows(
-    pg,
-    user.id,
-    contractIds
-  )
-  const trackingByKey = keyBy(
-    existingLoanTracking,
-    (t) => `${t.contract_id}-${t.answer_id ?? ''}`
-  )
-
-  // Build loan tracking updates (only tracks marginLoan for interest)
-  const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
-  for (const dist of distributions) {
-    const key = `${dist.contractId}-${dist.answerId ?? ''}`
-    const tracking = trackingByKey[key]
-    const metric = metricsById[key]
-    // Interest tracking is based on marginLoan
-    const oldLoan = metric?.marginLoan ?? 0
-    const lastUpdate = tracking?.last_loan_update_time ?? now
-    const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
-    const newIntegral =
-      (tracking?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
-
-    loanTrackingUpdates.push({
-      user_id: user.id,
-      contract_id: dist.contractId,
-      answer_id: dist.answerId,
-      loan_day_integral: newIntegral,
-      last_loan_update_time: now,
-    })
-  }
-
-  const bulkUpdateContractMetricsQ =
-    bulkUpdateContractMetricsQuery(updatedMetrics)
-  const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdates)
-  const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
-
-  const { userUpdates } = await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
-      // Lock the user row to serialize concurrent loan requests for this user.
-      // The in-process betsQueue keyed on auth.uid is not sufficient because it
-      // is per-instance only — multiple API replicas can race. The pre-tx
-      // daily-limit check at lines ~149-157 reads without a lock, so we must
-      // re-check inside the locked transaction.
-      await tx.oneOrNone('select 1 from users where id = $1 for update', [user.id])
-
-      // Re-check daily loan limit inside the transaction (race-safe).
-      const lockedTotalRow = await tx.oneOrNone<{ total: number }>(
-        `select coalesce(sum(amount), 0)::float as total
-         from txns
-         where to_id = $1
-           and category in ('MARGIN_LOAN', 'LOAN')
-           and created_time >= $2`,
-        [user.id, midnightPT.toISOString()]
-      )
-      const todayLoansLocked = lockedTotalRow?.total ?? 0
-      if (todayLoansLocked + amount > dailyLimit) {
-        const availableTodayLocked = Math.max(0, dailyLimit - todayLoansLocked)
-        throw new APIError(
-          400,
-          `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
-            2
-          )} per day (resets at midnight PT). You've already borrowed ${todayLoansLocked.toFixed(
-            2
-          )} today. Available today: ${availableTodayLocked.toFixed(2)}`
-        )
-      }
-
-      const res = await tx.multi(
-        `${balanceUpdateQuery};
-         ${txnQuery};
-         ${bulkUpdateContractMetricsQ};
-         ${loanTrackingQ}`
-      )
-      const userUpdates = res[0] as UserUpdate[]
-      return { userUpdates }
-    })
-  }, [auth.uid])
-
-  broadcastUserUpdates(userUpdates)
-  log(`User ${user.id} took general loan of ${amount}`)
-
-  return {
-    success: true,
-    amount,
-    distributed: distributions,
-  }
+  return distributions
 }
 
 const payUserLoan = (userId: string, payout: number) => {
