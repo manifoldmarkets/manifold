@@ -1,0 +1,150 @@
+{
+  "manifestVersion": "2026-10-06.batch2",
+  "series": "us-2026-general-v1",
+  "generatedAt": "2026-10-07T04:24:55.435Z",
+  "review": {
+    "approved": false,
+    "notes": "TN-9 only (2026-10-07), from batch 2's reviewed entry and its 2026-10-06 seeds: the one House district with no market at all. Needs Tod's approval before creation."
+  },
+  "budget": {
+    "approvedMaxTotalMana": 1000
+  },
+  "defaults": {
+    "closeTimeUtc": "2026-11-04T12:00:00.000Z",
+    "timezoneNote": "Close after US election-night polling has ended. Georgia entries stay open through December 1 runoff; Louisiana House entries through December 12 final round. Creator must still handle postponements."
+  },
+  "entries": [
+    {
+      "raceKey": "2026-house-TN-09-regular-general",
+      "status": "ready",
+      "identity": {
+        "cycle": 2026,
+        "office": "house",
+        "state": "TN",
+        "stateName": "Tennessee",
+        "district": 9,
+        "election": "regular",
+        "round": "the November 3, 2026 general election (plurality winner)",
+        "candidateNames": [
+          "Justin Pearson",
+          "Brent Taylor",
+          "Dennis Clark",
+          "Michelle Head"
+        ]
+      },
+      "proposition": "ballot-party",
+      "shapeRationale": "Ballot-party multi: Democratic Party / Republican Party / Another party or independent. Party outcomes survive nominee replacement and map directly to seat totals; only parties actually on the ballot get an answer.",
+      "payload": {
+        "question": "Which party will win the 2026 U.S. House election in Tennessee's 9th District?",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2026 election for **U.S. Representative for Tennessee's 9th congressional district** — the term beginning January 3, 2027.\n\n**Which round counts:** the November 3, 2026 general election (plurality winner). Primaries do not count.\n\n**Party rule:** the winner's party is the party **on whose line or with whose party designation they appear on the official general-election ballot**. A candidate nominated by Democratic Party or Republican Party who also appears on other parties' lines (fusion) counts as that party's candidate. Candidates who are independent, have no party preference, or belong to any other party resolve to \"Another party or independent\", even if they say they would caucus with a major party. Later party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Replacements:** if a nominee withdraws, dies or is replaced before the election, the market still resolves to the party of the certified winner; the names in the answer labels and below are informational only.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or runoff that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**Postponement or cancellation:** if the general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this office and term is held, it resolves N/A.\n\nCandidates on the certified general-election list at the time of creation (October 2026, informational):\n- Justin Pearson — Democratic\n- Brent Taylor — Republican\n- Dennis Clark — Independent\n- Michelle Head — Independent\n\nStarting probabilities were seeded from public prediction-market prices in October 2026; they are not forecasts.",
+        "outcomeType": "MULTIPLE_CHOICE",
+        "answers": [
+          "Democratic Party — Justin Pearson",
+          "Republican Party — Brent Taylor",
+          "Another party or independent"
+        ],
+        "answerProbs": [
+          12.9,
+          86.1,
+          1
+        ],
+        "shouldAnswersSumToOne": true,
+        "addAnswersMode": "DISABLED",
+        "closeTime": 1793793600000,
+        "liquidityTier": 1000,
+        "groupIds": [
+          "2e9fc841-389f-4e11-99bb-c26ca54ecac2",
+          "AjxQR8JMpNyDqtiqoA96",
+          "i5JOzjrK5ZMHPSkhgzoi",
+          "1f785ecd-2cbc-4a04-8c20-0459dc31e4ad"
+        ],
+        "visibility": "public"
+      },
+      "answerMeta": [
+        {
+          "label": "Democratic Party — Justin Pearson",
+          "kind": "party",
+          "party": "D",
+          "candidate": "Justin Pearson"
+        },
+        {
+          "label": "Republican Party — Brent Taylor",
+          "kind": "party",
+          "party": "R",
+          "candidate": "Brent Taylor"
+        },
+        {
+          "label": "Another party or independent",
+          "kind": "other",
+          "party": "other"
+        }
+      ],
+      "seed": {
+        "basis": "Public market order-book seed fetched 2026-10-06T10:20:29.213Z; usable outcome midpoints normalized; 1% floor; largest answer receives rounding remainder. KXHOUSERACE-TN09-26-D, KXHOUSERACE-TN09-26-R. Seed, not a guaranteed forecast; source settlement criteria may differ.",
+        "note": "Initial pool probabilities only. Not an observed market forecast.",
+        "source": {
+          "kind": "market-price",
+          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
+          "tickers": [
+            "KXHOUSERACE-TN09-26-D",
+            "KXHOUSERACE-TN09-26-R"
+          ],
+          "fetchedAt": "2026-10-06T10:20:29.213Z",
+          "quotes": [
+            {
+              "ticker": "KXHOUSERACE-TN09-26-D",
+              "answer": 0,
+              "price": 13,
+              "yesBid": 11,
+              "yesAsk": 15,
+              "lastPrice": 13,
+              "volume": 12618.33,
+              "volume24h": 910,
+              "openInterest": 7634.5,
+              "fetchedAt": "2026-10-06T10:20:29.213Z"
+            },
+            {
+              "ticker": "KXHOUSERACE-TN09-26-R",
+              "answer": 1,
+              "price": 87,
+              "yesBid": 86,
+              "yesAsk": 88,
+              "lastPrice": 87,
+              "volume": 10969.16,
+              "volume24h": 1645.31,
+              "openInterest": 6618.79,
+              "fetchedAt": "2026-10-06T10:20:29.213Z"
+            }
+          ]
+        }
+      },
+      "liquidityPlan": {
+        "tier": 1000,
+        "rationale": "Safe by market price (favourite 86.1% ≥ 85%): tier 1,000 (minimum recommended).",
+        "alternatives": "Lower: tier 1,000 everywhere. Higher: +extraLiquidity for marquee races. See dry-run report for price impact by tier."
+      },
+      "reviewedRejectedContractIds": [
+        "9pNhdgpgzz"
+      ],
+      "searchTerms": [
+        "Tennessee 9th district 2026",
+        "TN-9",
+        "TN09",
+        "Tennessee House 2026",
+        "Tennessee congressional"
+      ],
+      "dashboard": {
+        "list": "HOUSE_RACE_MARKETS",
+        "key": "TN-9"
+      },
+      "evidence": {
+        "whyCreate": "no market priced this race, so the election map left it unpriced",
+        "snapshot": "prod /election map audit 2026-10-06 (read-only)",
+        "inventorySource": "web/public/data/election-candidates-2026.json (audited ballot candidates)",
+        "rejectedAlternatives": [
+          "9pNhdgpgzz"
+        ]
+      }
+    }
+  ]
+}
