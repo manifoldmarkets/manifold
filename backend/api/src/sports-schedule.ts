@@ -2,6 +2,10 @@ import { groupBy, sortBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
+import {
+  getIdsWithParents,
+  getLinkedChildren,
+} from 'shared/supabase/market-links'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { Answer } from 'common/answer'
@@ -16,6 +20,7 @@ import {
   parseSportsStart,
   RelatedCandidate,
   RelatedRef,
+  relatedGroupForLink,
   ScheduleGame,
   ScheduleTeam,
   sportForMarket,
@@ -84,7 +89,30 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
   if (ordered.length > 0) {
-    const candidates = await getRelatedCandidates(pg, index)
+    // Markets linked to a game go under it first, where their creator put
+    // them. A market linked to anything is left out of the team-name
+    // matching, so it can't be guessed onto another game.
+    const [allCandidates, linked] = await Promise.all([
+      getRelatedCandidates(pg, index),
+      orWithoutLinks(
+        () =>
+          getLinkedChildren(
+            pg,
+            ordered.map((g) => g.id)
+          ),
+        []
+      ),
+    ])
+    const withParents = await orWithoutLinks(
+      () =>
+        getIdsWithParents(
+          pg,
+          allCandidates.map((c) => c.id)
+        ),
+      new Set<string>()
+    )
+    const candidates = allCandidates.filter((c) => !withParents.has(c.id))
+    const linkedByGame = groupBy(linked, (l) => l.parentId)
     const candidateClose = new Map(candidates.map((c) => [c.id, c.closeTime]))
     const matchesByGame = ordered.map((g) =>
       findRelatedMarkets(
@@ -117,11 +145,20 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
       }
     })
     ordered.forEach((g, i) => {
-      const matches = matchesByGame[i]
-        .filter(
-          (m) => m.kind === 'official' || bestGameFor.get(m.id)?.gameId === g.id
-        )
-        .slice(0, MAX_RELATED_PER_GAME)
+      const links = (linkedByGame[g.id] ?? []).map((l) => ({
+        id: l.id,
+        kind: 'linked' as const,
+        group: relatedGroupForLink(l.relation),
+      }))
+      const linkedIds = new Set(links.map((l) => l.id))
+      const matches = [
+        ...links,
+        ...matchesByGame[i].filter(
+          (m) =>
+            !linkedIds.has(m.id) &&
+            (m.kind === 'official' || bestGameFor.get(m.id)?.gameId === g.id)
+        ),
+      ].slice(0, MAX_RELATED_PER_GAME)
       if (props.includeRelated !== false) {
         g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
       }
@@ -178,6 +215,17 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     sports: index.sports,
   }
   return response
+}
+
+// A failed link read (say the market_links migration hasn't run yet) leaves
+// the page on the team-name matching alone rather than taking it down.
+async function orWithoutLinks<T>(read: () => Promise<T>, fallback: T) {
+  try {
+    return await read()
+  } catch (e) {
+    log.warn('[sports-schedule] market links unavailable', { e })
+    return fallback
+  }
 }
 
 // ─── Paging ───────────────────────────────────────────────────────────────────

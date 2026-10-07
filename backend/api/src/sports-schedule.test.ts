@@ -58,13 +58,24 @@ const tree = [
 let marketRows: typeof props = props
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
+let linkRows: { id: string; parent_id: string; relation: string }[] = []
+let linkedElsewhere: { id: string }[] = []
+let linksMissing = false
 
 beforeEach(() => {
   marketRows = props
   officialRows = official
   answerRows = []
+  linkRows = []
+  linkedElsewhere = []
+  linksMissing = false
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     manyOrNone: async (sql: string) => {
+      if (linksMissing && sql.includes('market_links'))
+        throw new Error('relation "market_links" does not exist')
+      if (sql.includes('from market_links l')) return linkRows
+      if (sql.includes('select child_contract_id as id from market_links'))
+        return linkedElsewhere
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
       if (sql.includes('from answers')) return answerRows
       if (sql.includes('select c.id, c.question')) return marketRows
@@ -232,5 +243,38 @@ describe('paging', () => {
     expect(all.games.map((g) => g.id)).not.toContain('done')
     expect(all.counts.nfl).toBe(6)
     expect(all.liveCount).toBe(1)
+  })
+})
+
+describe('linked markets', () => {
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+
+  it('lists markets linked to a game first, grouped by their relation', async () => {
+    linkRows = [{ id: 'nfl-line', parent_id: 'nfl', relation: 'line' }]
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related).toEqual([
+      { id: 'nfl-line', kind: 'linked', group: 'game-lines' },
+      { id: 'nfl-prop', kind: 'official', group: 'game-lines' },
+    ])
+    expect(result.games[0].relatedCount).toBe(2)
+  })
+
+  it('keeps a market linked elsewhere off a game it would otherwise match', async () => {
+    // nfl-prop carries the game's event id, but its creator linked it to
+    // another market.
+    linkedElsewhere = [{ id: 'nfl-prop' }]
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related).toEqual([])
+  })
+
+  it('still serves the page, matching by team, before the links table exists', async () => {
+    linksMissing = true
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related.map((r) => r.id)).toEqual(['nfl-prop'])
   })
 })

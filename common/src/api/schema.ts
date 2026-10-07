@@ -43,6 +43,7 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
+import { MARKET_LINK_RELATIONS } from 'common/market-links'
 import {
   JOB_INTERESTS,
   JOB_REGIONS,
@@ -5168,6 +5169,34 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
+  },
+
+  // Link a market to the market it's about (common/market-links), replacing
+  // any parent it had. The market's creator or a mod.
+  'link-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+        parentContractId: z.string().min(1).max(MAX_ID_LENGTH),
+        relation: z.enum(MARKET_LINK_RELATIONS).optional(),
+      })
+      .strict(),
+    returns: {} as { success: true },
+  },
+  // Remove a market's link: its creator, the parent's creator, or a mod.
+  'unlink-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as { success: true },
   },
 
   'admin-sports-create-odds-markets': {
