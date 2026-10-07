@@ -1,11 +1,15 @@
+import { uniq } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
 // ─── Sport categories ─────────────────────────────────────────────────────────
 //
-// The /sports page is organised by sport (not by topic). Each sport maps to the
-// topics whose markets belong under it and to the `sportsLeague` values that
-// the automated Manifold Sports pipelines stamp on game markets.
+// The /sports page is organised by sport. The curated sports below map to the
+// topics whose markets belong under them and to the `sportsLeague` values that
+// the automated Manifold Sports pipelines stamp on game markets. Every other
+// subtopic of the Sports topic becomes a sport of its own (see
+// buildSportsIndex), so a sport a mod files under Sports shows up on the page
+// without a code change.
 
 export type SportKey =
   | 'nfl'
@@ -22,6 +26,12 @@ export type SportKey =
   | 'cricket'
   | 'other'
 
+/**
+ * A sport on the /sports page: a curated `SportKey`, or the slug of a Sports
+ * subtopic that has no curated entry ('road-bicycle-racing', 'esports'…).
+ */
+export type AnySportKey = SportKey | (string & {})
+
 export interface SportCategory {
   key: SportKey
   label: string
@@ -32,17 +42,14 @@ export interface SportCategory {
   groupIds: string[]
   /** Old season topics: still read, so their markets show up, but never tagged onto new ones. */
   archivedGroupIds?: string[]
-  /** Slug of the main topic, for "see all" links into /browse. */
+  /** Topics new markets are also tagged with that don't put a market under this sport. */
+  extraTagGroupIds?: string[]
+  /** Slug of the main topic, for "see all" links into /browse. Also claims that topic where ids differ (dev). */
   slug?: string
   /** `sportsLeague` values (from the automated pipelines) that map here. */
   leagues: string[]
   /** Whether a game can end in a draw (adds a third "Draw" price chip). */
   hasDraw?: boolean
-  /**
-   * No chip on the rail (no automated coverage yet), but still used to file
-   * and count markets, so a college basketball market isn't read as NBA.
-   */
-  hidden?: boolean
 }
 
 // Prod topic ids. Dev has a single catch-all sports topic (see SPORTS_DEFAULT_GROUP_ID).
@@ -52,16 +59,28 @@ export const NBA_TOPIC_ID = 'i0v3cXwuxmO9fpcInVYb'
 export const SPORTS_DEFAULT_GROUP_ID =
   ENV === 'PROD' ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
 
+/** "⚽ 🏈 Football": the parent of both Soccer and the NFL. */
+const FOOTBALL_UMBRELLA_TOPIC_ID = 'Vcf6CYTTSXAiStbKSqQq'
+
+/**
+ * Subtopics of Sports that group sports or markets rather than being a sport.
+ * Their markets still show under All, and the sports inside them get chips.
+ */
+export const NOT_A_SPORT_TOPIC_IDS = [
+  FOOTBALL_UMBRELLA_TOPIC_ID,
+  'b3ll9Ch9rdbcrTRAbjUf', // sports-betting
+  'd489c4e4-ec93-4473-845d-12537350cfee', // sports (a second, generic Sports topic)
+]
+
 export const SPORT_CATEGORIES: SportCategory[] = [
   {
     key: 'nfl',
     label: 'NFL',
     longLabel: 'NFL',
     emoji: '🏈',
-    groupIds: [
-      'TNQwmbE5p6dnKx2e6Qlp', // nfl
-      'Vcf6CYTTSXAiStbKSqQq', // football (american)
-    ],
+    groupIds: ['TNQwmbE5p6dnKx2e6Qlp'], // nfl
+    // "⚽ 🏈 Football" holds soccer as well, so it can't file a market as NFL.
+    extraTagGroupIds: [FOOTBALL_UMBRELLA_TOPIC_ID],
     slug: 'nfl',
     leagues: ['NFL'],
   },
@@ -87,6 +106,7 @@ export const SPORT_CATEGORIES: SportCategory[] = [
       'RFwfANk54JSXOwj4qwsW', // mlb
       '786nRQzgVyUnuUtaLTGW', // baseball
     ],
+    slug: 'mlb',
     leagues: ['MLB'],
   },
   {
@@ -100,7 +120,6 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     ],
     slug: 'nhl',
     leagues: ['NHL'],
-    hidden: true,
   },
   {
     key: 'soccer',
@@ -133,6 +152,7 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'College football',
     emoji: '🎓',
     groupIds: ['ky1VPTuxrLXMnHyajZFp'], // college football
+    slug: 'college-football',
     leagues: ['NCAAF', 'NCAA Football', 'College Football'],
   },
   {
@@ -141,8 +161,8 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'College basketball',
     emoji: '🏫',
     groupIds: ['beeb69e0-b36f-451a-80e1-e059df456bb1'], // college basketball
+    slug: 'college-basketball',
     leagues: ['NCAAB', 'NCAA Basketball'],
-    hidden: true,
   },
   {
     key: 'tennis',
@@ -150,8 +170,8 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'Tennis',
     emoji: '🎾',
     groupIds: ['1mvN9vIVIopcWiAsXhzp'],
+    slug: 'tennis',
     leagues: ['ATP', 'WTA', 'Tennis'],
-    hidden: true,
   },
   {
     key: 'f1',
@@ -159,26 +179,30 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'Formula 1',
     emoji: '🏎️',
     groupIds: ['OyHBKJOz9YaGkDctpwuY'],
+    slug: 'formula-1',
     leagues: ['Formula 1', 'F1'],
-    hidden: true,
   },
   {
+    // Boxing, sumo and the rest of Combat Sports get a chip from that topic.
     key: 'mma',
     label: 'MMA',
-    longLabel: 'MMA & boxing',
+    longLabel: 'MMA',
     emoji: '🥊',
-    groupIds: [],
-    leagues: ['UFC', 'MMA', 'Boxing'],
-    hidden: true,
+    groupIds: [
+      'VAI9srd7zaNEvJ1iYLO1', // mma
+      'oQEmR7LpGHSDsM2Ua87u', // ufc
+    ],
+    slug: 'mma',
+    leagues: ['UFC', 'MMA'],
   },
   {
     key: 'golf',
     label: 'Golf',
     longLabel: 'Golf',
     emoji: '⛳',
-    groupIds: [],
+    groupIds: ['NxkKZhLxyZglOcGxX6zn'],
+    slug: 'golf',
     leagues: ['PGA', 'Golf'],
-    hidden: true,
   },
   {
     key: 'cricket',
@@ -186,13 +210,10 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     longLabel: 'Cricket',
     emoji: '🏏',
     groupIds: ['LcPYoqxSRdeQMms4lR3g'],
+    slug: 'cricket',
     leagues: ['Cricket', 'IPL'],
-    hidden: true,
   },
 ]
-
-/** The sports that get a chip on the /sports rail. */
-export const RAIL_SPORT_CATEGORIES = SPORT_CATEGORIES.filter((s) => !s.hidden)
 
 export const SPORT_BY_KEY: Record<string, SportCategory> = Object.fromEntries(
   SPORT_CATEGORIES.map((s) => [s.key, s])
@@ -243,11 +264,18 @@ const ODDS_API_KEY_PREFIXES: [string, SportKey][] = [
   ['cricket_', 'cricket'],
 ]
 
-/** Map a market's `sportsLeague` / topic ids to a sport. */
-export function sportForMarket(props: {
-  sportsLeague?: string | null
-  groupIds?: readonly string[] | null
-}): SportKey {
+/**
+ * Map a market's `sportsLeague` / topic ids to a sport. With an index (from
+ * buildSportsIndex) any topic under Sports counts; without one, only the
+ * curated sports' own topics do.
+ */
+export function sportForMarket(
+  props: {
+    sportsLeague?: string | null
+    groupIds?: readonly string[] | null
+  },
+  index?: SportsIndex
+): AnySportKey {
   const { sportsLeague, groupIds } = props
   if (sportsLeague) {
     const league = sportsLeague.toLowerCase()
@@ -255,6 +283,22 @@ export function sportForMarket(props: {
     if (direct) return direct
     const prefixed = ODDS_API_KEY_PREFIXES.find(([p]) => league.startsWith(p))
     if (prefixed) return prefixed[1]
+  }
+  if (index) {
+    // A market can sit in several sports' topics; the curated ones win (in
+    // lookup order, so college beats pro), then the bigger topic.
+    let best: AnySportKey = 'other'
+    let bestRank = Infinity
+    for (const id of groupIds ?? []) {
+      const sport = index.sportByTopicId[id]
+      const rank =
+        sport === undefined ? Infinity : index.rank[sport] ?? Infinity
+      if (rank < bestRank) {
+        best = sport
+        bestRank = rank
+      }
+    }
+    return best
   }
   const ids = new Set(groupIds ?? [])
   if (ids.size > 0) {
@@ -278,11 +322,243 @@ export function sportGroupIds(sport: SportKey | 'all'): string[] {
 /** Topic ids to put on a market a pipeline creates for a sport: the current topics only, plus Sports. */
 export function sportTagIds(sport: SportKey, league?: string): string[] {
   if (ENV !== 'PROD') return [SPORTS_DEFAULT_GROUP_ID]
+  const cat = SPORT_BY_KEY[sport]
   // WNBA games sit under the NBA chip but stay out of the NBA topic.
-  const ids = (SPORT_BY_KEY[sport]?.groupIds ?? []).filter(
-    (id) => !(league === 'WNBA' && id === NBA_TOPIC_ID)
-  )
+  const ids = [
+    ...(cat?.groupIds ?? []),
+    ...(cat?.extraTagGroupIds ?? []),
+  ].filter((id) => !(league === 'WNBA' && id === NBA_TOPIC_ID))
   return [SPORTS_DEFAULT_GROUP_ID, ...ids]
+}
+
+// ─── Sports from the topic tree ───────────────────────────────────────────────
+
+/** A public topic somewhere under Sports. */
+export interface SportsTopic {
+  id: string
+  slug: string
+  name: string
+  totalMembers: number
+}
+
+export interface SportsTopicLink {
+  parentId: string
+  childId: string
+}
+
+/** What the page needs to show a sport and search for its markets. */
+export interface SportInfo {
+  key: AnySportKey
+  label: string
+  longLabel: string
+  emoji: string
+  /** Topics to search for the sport's markets (the search adds their direct subtopics). */
+  groupIds: string[]
+  /** Main topic, for "see all" links into /browse. */
+  slug?: string
+}
+
+export interface SportsIndex {
+  /** Every sport: the curated ones, then one per other Sports subtopic, biggest first. */
+  sports: SportInfo[]
+  /** Topic id → the sport whose markets it holds. */
+  sportByTopicId: Record<string, AnySportKey>
+  /** When a market sits in several sports' topics, the lowest rank wins. */
+  rank: Record<string, number>
+  /** Every topic that puts a market on the sports page. */
+  allGroupIds: string[]
+}
+
+// Most topic names start with an emoji; these don't.
+const TOPIC_SPORT_EMOJI: Record<string, string> = {
+  esports: '🎮',
+  motorsports: '🏁',
+  'combat-sports': '🥊',
+  volleyball: '🏐',
+  athletics: '🏃',
+  rugby: '🏉',
+  afl: '🏉',
+  'horse-racing': '🏇',
+  swimming: '🏊',
+  fencing: '🤺',
+  pickleball: '🏓',
+  'rock-climbing': '🧗',
+  'ice-hockey': '🏒',
+}
+const DEFAULT_SPORT_EMOJI = '🏅'
+const LEADING_EMOJI_RE =
+  /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|\u200d|\ufe0f|\s)+/u
+
+/** "🚲  Cycling" → 🚲 and "Cycling"; "pickleball" → "Pickleball". */
+export function splitTopicName(
+  name: string,
+  slug: string
+): { emoji: string; label: string } {
+  const lead = name.match(LEADING_EMOJI_RE)?.[0] ?? ''
+  const label = name.slice(lead.length).trim() || name.trim()
+  return {
+    emoji:
+      lead.replace(/\s+/g, '') ||
+      TOPIC_SPORT_EMOJI[slug] ||
+      DEFAULT_SPORT_EMOJI,
+    label: label.charAt(0).toUpperCase() + label.slice(1),
+  }
+}
+
+const curatedInfo = (cat: SportCategory, groupIds: string[]): SportInfo => ({
+  key: cat.key,
+  label: cat.label,
+  longLabel: cat.longLabel,
+  emoji: cat.emoji,
+  groupIds,
+  slug: cat.slug,
+})
+
+/** The curated sports alone, for before the full list has loaded. */
+export const CURATED_SPORTS: SportInfo[] = SPORT_CATEGORIES.map((cat) =>
+  curatedInfo(cat, sportGroupIds(cat.key))
+)
+
+/** What a sport key (or 'all' / 'live') looks like in a URL or request. */
+export const SPORT_KEY_RE = /^[a-z0-9_-]{1,100}$/
+
+// A topic sport's key is its slug, unless that is already taken.
+const RESERVED_SPORT_KEYS = new Set<string>([
+  'all',
+  'live',
+  'other',
+  ...SPORT_CATEGORIES.map((s) => s.key),
+])
+
+/**
+ * Every sport on the page and the topics that file markets under each: the
+ * curated sports claim their own topics, every other subtopic of Sports is a
+ * sport of its own, and each topic further down belongs to the nearest sport
+ * above it.
+ */
+export function buildSportsIndex(
+  topics: readonly SportsTopic[],
+  links: readonly SportsTopicLink[],
+  rootId = SPORTS_DEFAULT_GROUP_ID
+): SportsIndex {
+  const topicById = new Map(topics.map((t) => [t.id, t]))
+  const children = new Map<string, string[]>()
+  for (const { parentId, childId } of links) {
+    const list = children.get(parentId)
+    if (list) list.push(childId)
+    else children.set(parentId, [childId])
+  }
+  const notASport = new Set(NOT_A_SPORT_TOPIC_IDS)
+  const sportByTopicId: Record<string, AnySportKey> = {}
+  const rootIds = new Map<AnySportKey, string[]>()
+  const addRoot = (sport: AnySportKey, id: string) => {
+    sportByTopicId[id] = sport
+    rootIds.set(sport, [...(rootIds.get(sport) ?? []), id])
+  }
+
+  // Curated sports claim their topics by id or, where ids differ (dev), by
+  // the main topic's slug.
+  for (const key of SPORT_LOOKUP_ORDER) {
+    for (const id of readGroupIds(SPORT_BY_KEY[key])) {
+      if (!(id in sportByTopicId)) addRoot(key, id)
+    }
+  }
+  for (const t of topics) {
+    const cat = SPORT_CATEGORIES.find((c) => c.slug === t.slug)
+    if (cat && !(t.id in sportByTopicId)) addRoot(cat.key, t.id)
+  }
+
+  // The other sports are the subtopics of Sports, looking through the topics
+  // that group sports rather than being one.
+  const candidates: SportsTopic[] = []
+  const seen = new Set([rootId])
+  const collect = (id: string) => {
+    for (const child of children.get(id) ?? []) {
+      if (seen.has(child)) continue
+      seen.add(child)
+      const topic = topicById.get(child)
+      if (notASport.has(child)) collect(child)
+      else if (topic) candidates.push(topic)
+    }
+  }
+  collect(rootId)
+
+  // A subtopic that also sits inside another sport (Women's Cycling in
+  // Cycling, Sumo in Combat Sports) belongs to that sport instead.
+  const inASport = new Set<string>()
+  const markSubtree = (id: string) => {
+    const stack = [...(children.get(id) ?? [])]
+    while (stack.length > 0) {
+      const next = stack.pop() as string
+      if (inASport.has(next) || next === rootId) continue
+      inASport.add(next)
+      stack.push(...(children.get(next) ?? []))
+    }
+  }
+  for (const id of Object.keys(sportByTopicId)) markSubtree(id)
+  const topicSports: { key: string; topic: SportsTopic }[] = []
+  for (const topic of [...candidates].sort(
+    (a, b) => b.totalMembers - a.totalMembers
+  )) {
+    if (topic.id in sportByTopicId || inASport.has(topic.id)) continue
+    const slug = topic.slug.toLowerCase()
+    const key =
+      SPORT_KEY_RE.test(slug) && !RESERVED_SPORT_KEYS.has(slug)
+        ? slug
+        : `topic-${topic.id.toLowerCase()}`
+    addRoot(key, topic.id)
+    topicSports.push({ key, topic })
+    markSubtree(topic.id)
+  }
+
+  // Each topic further down files its markets under the nearest sport above.
+  const queue = [...rootIds.values()].flat()
+  for (let i = 0; i < queue.length; i++) {
+    const sport = sportByTopicId[queue[i]]
+    for (const child of children.get(queue[i]) ?? []) {
+      if (child in sportByTopicId || notASport.has(child)) continue
+      sportByTopicId[child] = sport
+      queue.push(child)
+    }
+  }
+
+  const rank: Record<string, number> = {}
+  SPORT_LOOKUP_ORDER.forEach((key, i) => (rank[key] = i))
+  topicSports.forEach(
+    ({ key }, i) => (rank[key] = SPORT_LOOKUP_ORDER.length + i)
+  )
+
+  const sports: SportInfo[] = [
+    ...SPORT_CATEGORIES.map((cat) => {
+      // Prod ids are real topics even before they're linked under Sports.
+      const ids = (rootIds.get(cat.key) ?? []).filter(
+        (id) => ENV === 'PROD' || topicById.has(id)
+      )
+      return curatedInfo(cat, ids.length > 0 ? ids : [SPORTS_DEFAULT_GROUP_ID])
+    }),
+    ...topicSports.map(({ key, topic }) => {
+      const { emoji, label } = splitTopicName(topic.name, topic.slug)
+      return {
+        key,
+        label,
+        longLabel: label,
+        emoji,
+        groupIds: [topic.id],
+        slug: topic.slug,
+      }
+    }),
+  ]
+
+  return {
+    sports,
+    sportByTopicId,
+    rank,
+    allGroupIds: uniq([
+      rootId,
+      ...ALL_SPORTS_GROUP_IDS,
+      ...topics.map((t) => t.id),
+    ]),
+  }
 }
 
 // ─── Kickoff time ─────────────────────────────────────────────────────────────
@@ -532,7 +808,7 @@ export function mentionsTeam(
 
 export interface GameForMatching {
   id: string
-  sport: SportKey
+  sport: AnySportKey
   sportsEventId: string
   startTime: number
   home: { name: string; shortText?: string | null }
@@ -549,7 +825,7 @@ export interface RelatedCandidate {
   /** `sportsMarketType` stamped by a pipeline: moneyline, spread, total, prop. */
   marketType?: string | null
   /** Sport inferred from the candidate's topics; 'other' when unknown. */
-  sport: SportKey
+  sport: AnySportKey
   importanceScore: number
 }
 
@@ -722,7 +998,7 @@ export interface ScheduleGame {
   slug: string
   creatorUsername: string
   question: string
-  sport: SportKey
+  sport: AnySportKey
   league: string
   /**
    * A binary market (YES is the home team, NO the away team) rather than a
@@ -766,7 +1042,7 @@ export interface ScheduleGame {
 export interface UpcomingMarketRef {
   id: string
   closeTime: number
-  sport: SportKey
+  sport: AnySportKey
 }
 
 export interface SportsScheduleResponse {
@@ -776,8 +1052,10 @@ export interface SportsScheduleResponse {
   /** This week's unattached markets for the requested sport, soonest first. */
   upcoming: UpcomingMarketRef[]
   /** Live and upcoming games plus this week's markets per sport, for the rail badges. */
-  counts: Partial<Record<SportKey, number>>
+  counts: Partial<Record<AnySportKey, number>>
   liveCount: number
+  /** Every sport on the page, curated first; see buildSportsIndex. */
+  sports: SportInfo[]
 }
 
 // football-data live statuses that mean a match is in play (there is no

@@ -2,7 +2,7 @@ import { ArrowRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Contract, isSportsContract } from 'common/contract'
-import { SPORT_BY_KEY, SportKey, sportGroupIds } from 'common/sports-schedule'
+import { SportInfo, sportGroupIds } from 'common/sports-schedule'
 import { DAY_MS } from 'common/util/time'
 import { ContractRow } from 'web/components/contract/contracts-table'
 import {
@@ -18,15 +18,18 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
  * now, and the season-long futures (MVP, champion, playoff spots…).
  */
 export function SportsMarketSections(props: {
-  sport: SportKey | 'all'
+  sport: SportInfo | 'all'
   className?: string
   /** Hold the fetches until the page knows which sport it is showing. */
   enabled?: boolean
 }) {
   const { sport, className, enabled = true } = props
-  const gids = sportGroupIds(sport).join(',')
-  const label = sport === 'all' ? 'sports' : SPORT_BY_KEY[sport]?.label ?? ''
-  const slug = sport === 'all' ? 'sports-default' : SPORT_BY_KEY[sport]?.slug
+  const key = sport === 'all' ? 'all' : sport.key
+  const gids = (sport === 'all' ? sportGroupIds('all') : sport.groupIds).join(
+    ','
+  )
+  const label = sport === 'all' ? 'sports' : sport.label
+  const slug = sport === 'all' ? 'sports-default' : sport.slug
   // /browse reads the topic filter from `tf` and the open/resolved filter from `f`.
   const seeAllHref = slug
     ? `/browse?tf=${slug}`
@@ -38,21 +41,21 @@ export function SportsMarketSections(props: {
     'search-markets-full',
     { term: '', filter: 'open', sort: 'score', gids, limit: 30 },
     undefined,
-    `sports-trending-${sport}`,
+    `sports-trending-${key}`,
     enabled
   )
   const futures = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'open', sort: 'liquidity', gids, limit: 40 },
     undefined,
-    `sports-futures-${sport}`,
+    `sports-futures-${key}`,
     enabled
   )
   const resolved = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'resolved', sort: 'resolve-date', gids, limit: 20 },
     undefined,
-    `sports-resolved-${sport}`,
+    `sports-resolved-${key}`,
     enabled
   )
 

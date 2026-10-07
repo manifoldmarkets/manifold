@@ -44,6 +44,16 @@ A user-made prop with no event id still attaches to its game by team name and ti
 
 The page keeps its rows fresh without refetching: the schedule response carries `snapshotTime`, contract and answer broadcasts carry `broadcastTime`, and each game carries `liveUpdatedTime`. `common/src/sports-schedule-live.ts` applies a push only when its stamp is newer than what the row already shows, and discards buffered pushes once a refetch overtakes them, so a slow broadcast cannot roll a probability or a score backwards.
 
+### Which sports the page lists
+
+The rail has a chip for every sport under the 🏟️ Sports topic, built per request (cached five minutes) by `buildSportsIndex` in `common/src/sports-schedule.ts`:
+
+- The curated sports in `SPORT_CATEGORIES` (NFL, NBA, soccer…) come first. They claim their own topics and carry the pipeline's league names.
+- Every other subtopic of Sports is a sport of its own, keyed by its slug and labelled from the topic name. `NOT_A_SPORT_TOPIC_IDS` (⚽ 🏈 Football, Sports Betting, the second Sports topic) are looked through: their markets show under All, and the sports inside them get chips.
+- A subtopic that also sits inside another sport (Sumo in Combat Sports) folds into it, and every topic further down files its markets under the nearest sport above it.
+
+So a mod adds a sport to the page by filing its topic under Sports. `backend/scripts/link-sports-subtopics.ts` files the ones that were missing (dry run by default, `--commit` to apply).
+
 ### Still by hand
 
 - **College football.** The provider returns every FBS game, sixty to eighty a week, and the pipeline has no way to keep only ranked matchups yet, so the regular season has auto-create off. Conference championships, bowls and the CFP are on, which creates every FBS post-season game in those windows.

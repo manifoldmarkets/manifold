@@ -54,6 +54,7 @@ const snapshot = (snapshotTime: number, g = game): SportsScheduleResponse => ({
   upcoming: [],
   counts: {},
   liveCount: 1,
+  sports: [],
 })
 const live: LiveGameState = {
   probs: { YES: { value: 0.65, at: 200 }, NO: { value: 0.35, at: 200 } },

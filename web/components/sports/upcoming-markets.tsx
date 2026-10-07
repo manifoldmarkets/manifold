@@ -3,8 +3,8 @@ import { useMemo } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import { Contract } from 'common/contract'
 import {
-  SPORT_BY_KEY,
-  SportKey,
+  AnySportKey,
+  SportInfo,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
@@ -20,11 +20,12 @@ import { groupByDay, SectionHeader } from './schedule-list'
  */
 export function UpcomingMarkets(props: {
   refs: UpcomingMarketRef[]
-  sport: SportKey | 'all'
+  sport: AnySportKey | 'all'
   /** Tag each row with its sport (the All view). */
   showSport: boolean
+  sportsByKey: Record<string, SportInfo>
 }) {
-  const { refs, sport, showSport } = props
+  const { refs, sport, showSport, sportsByKey } = props
   const ids = refs.map((r) => r.id)
   const { data, error } = useAPIGetter(
     'markets-by-ids',
@@ -81,12 +82,10 @@ export function UpcomingMarkets(props: {
                         </span>
                         {showSport && (
                           <span
-                            className="text-ink-400 text-[10px] font-semibold uppercase tracking-wide"
-                            title={SPORT_BY_KEY[ref.sport]?.longLabel}
+                            className="text-ink-400 max-w-full truncate text-[10px] font-semibold uppercase tracking-wide"
+                            title={sportsByKey[ref.sport]?.longLabel}
                           >
-                            {ref.sport === 'other'
-                              ? ''
-                              : SPORT_BY_KEY[ref.sport]?.label}
+                            {sportsByKey[ref.sport]?.label}
                           </span>
                         )}
                       </Col>
