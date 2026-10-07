@@ -124,19 +124,17 @@ export async function createOddsMarketsForCompetition(
 
   // Only games that haven't started: the odds endpoint also returns games in
   // play, and a market opened from a live line is not a market. The clock is
-  // read after the fetch returns, then again before each game is created and
-  // inside its transaction, so a slow fetch or a long run can't fund a game
-  // after kickoff.
+  // read after the fetch returns. Games kicking off within MIN_CREATE_LEAD_MS
+  // stay in, because an existing market still has to re-sync to a kickoff
+  // the provider moved earlier; the lead only stops new markets, checked
+  // before each game is created and again inside its transaction.
   const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
   const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS)
   const now = Date.now()
   const events = fetched
     .filter((e) => {
       const t = new Date(e.commence_time).getTime()
-      return (
-        t > now + MIN_CREATE_LEAD_MS &&
-        windows.some((w) => t >= w.from && t <= w.to)
-      )
+      return t > now && windows.some((w) => t >= w.from && t <= w.to)
     })
     .filter((e) => !picked || picked.has(e.id))
     .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time))

@@ -8,16 +8,14 @@ import {
   SportsScheduleResponse,
 } from 'common/sports-schedule'
 import {
+  adoptedGames,
   appendPage,
   feedFromResponse,
+  pruneLiveForPage,
   refreshLimit,
   ScheduleFeed,
 } from 'common/sports-schedule-feed'
-import {
-  applySportsLive,
-  LiveGameState,
-  pruneSportsLive,
-} from 'common/sports-schedule-live'
+import { applySportsLive, LiveGameState } from 'common/sports-schedule-live'
 import { HOUR_MS } from 'common/util/time'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
@@ -86,7 +84,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
       if (gen !== generation.current) return
       // HTTP/client caches preserve the server's snapshot time. Request-start
       // time in the browser says nothing about how fresh that response is.
-      setLive((prev) => pruneForPage(prev, response))
+      setLive((prev) => pruneLiveForPage(prev, response))
       setStored({ ...feedFromResponse(response), sport })
     } catch (e) {
       console.error('Failed to load the sports schedule', e)
@@ -119,8 +117,10 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
           : undefined
       // A refresh replaced the pages meanwhile: say there's more, so the
       // feed asks again from the refreshed cursor.
-      if (!next) return !!feedRef.current?.cursor
-      setLive((prev) => pruneForPage(prev, page))
+      if (!next || !latest) return !!feedRef.current?.cursor
+      // Only the games the feed took from the page: see pruneLiveForPage.
+      const adopted = adoptedGames(latest, page)
+      setLive((prev) => pruneLiveForPage(prev, adopted))
       setStored({ ...next, sport })
       return !!next.cursor
     } catch (e) {
@@ -286,21 +286,4 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     loadMore,
     hasMore: !!feed?.cursor,
   }
-}
-
-// Prunes the live overlay against one page's snapshot, leaving the games of
-// other pages alone: their prices were read at a different time.
-function pruneForPage(
-  prev: Record<string, LiveGameState>,
-  page: SportsScheduleResponse
-) {
-  const ids = new Set(page.games.map((g) => g.id))
-  const onPage: Record<string, LiveGameState> = {}
-  const rest: Record<string, LiveGameState> = {}
-  for (const [id, state] of Object.entries(prev)) {
-    if (ids.has(id)) onPage[id] = state
-    else rest[id] = state
-  }
-  const pruned = pruneSportsLive(onPage, page)
-  return pruned === onPage ? prev : { ...rest, ...pruned }
 }

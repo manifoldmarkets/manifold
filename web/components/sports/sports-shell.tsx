@@ -43,9 +43,10 @@ export function SportsShell(props: {
     children,
   } = props
   return (
-    <Page trackPageView={trackPageView} className="!col-span-10">
+    // The standard main column, next to the nav like the rest of the site.
+    <Page trackPageView={trackPageView}>
       <SEO title={seo.title} description={seo.description} url={seo.url} />
-      <Col className="mx-auto w-full max-w-3xl gap-2 px-2 pt-3 sm:px-4">
+      <Col className="w-full gap-2 px-2 pt-3 sm:px-4">
         <Row className="items-end justify-between gap-2 px-1">
           <Col className="min-w-0 gap-0.5">
             {breadcrumb && (
