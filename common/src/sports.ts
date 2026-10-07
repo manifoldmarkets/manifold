@@ -121,20 +121,6 @@ export const NFL_TEAM_TLA: Record<string, string> = {
 }
 
 /**
- * Return a sport-appropriate badge label for a team name.
- * For NFL we use the 3-letter code; for others fall back to the name itself.
- */
-export function teamBadge(
-  teamName: string,
-  sportsLeague?: string | null
-): string {
-  if (sportsLeague === 'NFL' || sportsLeague === 'College Football') {
-    return NFL_TEAM_TLA[teamName] ?? teamName.slice(0, 3).toUpperCase()
-  }
-  return ''
-}
-
-/**
  * Shape returned by the `sports-markets` API endpoint and consumed by the
  * sports dashboard page. Kept in sync between backend (`sports-markets.ts`
  * handler) and frontend (`sports-dashboard-page.tsx`).
@@ -146,11 +132,6 @@ export interface SportsMarket {
   sportsStartTimestamp: string | null
   resolution: string | null
   resolvedAnswer: string | null
-  // For binary sports markets (NFL, CFB, MLB, NBA, WNBA): team names stored at
-  // creation time so the dashboard card can display them without parsing the question.
-  sportsHomeTeam: string | null
-  sportsAwayTeam: string | null
-  sportsLeague: string | null
   resolutionTime: number | null
   sportsHomeScore: number | null
   sportsAwayScore: number | null
@@ -182,8 +163,8 @@ export interface SportsMarket {
 // The market creator is always @ManifoldSports, hardcoded per env — never the
 // admin who triggers creation. Any admin can run the create flow on their side;
 // the markets are always owned by @ManifoldSports.
-export const MANIFOLD_SPORTS_USER_ID_PROD = 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports (prod)
-export const MANIFOLD_SPORTS_USER_ID_DEV = 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports / sports@manifold.markets (dev)
+const MANIFOLD_SPORTS_USER_ID_PROD = 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports (prod)
+const MANIFOLD_SPORTS_USER_ID_DEV = 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports / sports@manifold.markets (dev)
 
 /** The @ManifoldSports account for the current environment. */
 export const manifoldSportsUserId = (isProd: boolean) =>

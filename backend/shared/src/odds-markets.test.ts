@@ -55,11 +55,7 @@ jest.mock('shared/publish-sports-live-score', () => ({
 }))
 
 import { Contract } from 'common/contract'
-import {
-  buildOddsMarketParams,
-  OddsApiEvent,
-  OddsApiScore,
-} from 'common/odds-markets'
+import { buildOddsMarketParams, OddsApiEvent } from 'common/odds-markets'
 import { calendarEntriesFor } from 'common/sports-calendar'
 import { VERSUS_COLORS } from 'common/new-contract'
 import { gameAnswerColors } from 'common/sports-team-colors'
@@ -502,51 +498,15 @@ it('does not request scores when there are no in-play markets', async () => {
   expect(getUser).not.toHaveBeenCalled()
 })
 
-it.each([
-  [21, 7, { outcome: 'YES' }],
-  [7, 21, { outcome: 'NO' }],
-  [7, 7, { outcome: 'MKT', probabilityInt: 50 }],
-])(
-  'resolves a binary final %s–%s with the correct payload',
-  async (home, away, resolution) => {
-    const db = database()
-    db.pg.manyOrNone.mockResolvedValue([
-      {
-        data: {
-          id: 'game',
-          mechanism: 'cpmm-1',
-          outcomeType: 'BINARY',
-          sportsHomeTeam: 'Home',
-          sportsAwayTeam: 'Away',
-          sportsEventId: 'odds:americanfootball_nfl:event',
-          sportsStartTimestamp: new Date(Date.now() - 1000).toISOString(),
-        },
-      },
-    ])
-    const score: OddsApiScore = {
-      ...event,
-      completed: true,
-      scores: [
-        { name: 'Away', score: String(away) },
-        { name: 'Home', score: String(home) },
-      ],
-      last_update: new Date().toISOString(),
-    }
-    jest.mocked(getScores).mockResolvedValue([score])
-    const result = await pollOddsScoresAndResolve(db.client)
-    expect(result.resolved).toBe(1)
-    expect(resolveMarketHelper).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'game' }),
-      creator,
-      creator,
-      resolution
-    )
-    expect(publishSportsLiveScore).toHaveBeenCalledWith(
-      'game',
-      expect.objectContaining({ sportsLiveStatus: 'FINISHED' })
-    )
-  }
-)
+it('only looks for multiple choice game markets to resolve', async () => {
+  // Binary game markets from an early build (dev only) are left for a person.
+  const db = database()
+  await pollOddsScoresAndResolve(db.client)
+  expect(db.pg.manyOrNone).toHaveBeenCalledWith(
+    expect.stringContaining("mechanism in ('cpmm-multi-1', 'cpmm-multi-2')"),
+    expect.anything()
+  )
+})
 
 it.each([
   [24, 17, { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }],

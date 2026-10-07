@@ -12,7 +12,6 @@ const game: ScheduleGame = {
   question: 'Home?',
   sport: 'nfl',
   league: 'NFL',
-  binary: true,
   sportsEventId: 'odds:nfl:game',
   startTime: 0,
   kickoffKnown: true,

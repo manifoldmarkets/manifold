@@ -174,7 +174,7 @@ const sameTeam = (a: string, b: string) =>
  * payload has home and away the other way round), or null when they aren't
  * the market's two teams.
  */
-export function scoreOrientation(
+function scoreOrientation(
   score: Pick<OddsApiScore, 'home_team' | 'away_team'>,
   teams: { home: string; away: string }
 ): 'same' | 'swapped' | null {
@@ -236,7 +236,7 @@ export function winningSide(
 
 // ─── The market a game becomes ────────────────────────────────────────────────
 
-export const DRAW_ANSWER = 'Draw'
+const DRAW_ANSWER = 'Draw'
 
 /**
  * How a finished game market resolves: the winning team's answer, Draw when a

@@ -9,7 +9,7 @@ import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-obser
 
 type DaySection<T> = { key: string; label: string; items: T[] }
 
-export function dayLabel(ms: number, now = Date.now()): string {
+function dayLabel(ms: number, now = Date.now()): string {
   const d = dayjs(ms)
   const today = dayjs(now)
   if (d.isSame(today, 'day')) return 'Today'

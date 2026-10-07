@@ -6,7 +6,7 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
-import { MANIFOLD_SPORTS_USER_IDS, teamBadge } from 'common/sports'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   AnySportKey,
   buildSportsIndex,
@@ -183,7 +183,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 // ─── Paging ───────────────────────────────────────────────────────────────────
 
 // `<kickoff ms>_<contract id>` of the last upcoming game on the previous page.
-export const scheduleCursor = (g: Pick<ScheduleGame, 'startTime' | 'id'>) =>
+const scheduleCursor = (g: Pick<ScheduleGame, 'startTime' | 'id'>) =>
   `${g.startTime}_${g.id}`
 
 function parseScheduleCursor(cursor: string | undefined) {
@@ -318,9 +318,8 @@ async function getOfficialGames(
     .filter((g): g is ScheduleGame => g !== null)
 }
 
-// A game market is either multiple choice with an answer per side (soccer,
-// with Draw) or binary with the teams named in sportsHomeTeam/sportsAwayTeam
-// (YES is the home team). Both become the same row.
+// A game market is multiple choice: home, away, and Draw for soccer. Binary
+// game markets from an early build (dev only) don't get a row.
 function toOfficialGame(
   c: Contract,
   answers: Answer[],
@@ -332,40 +331,22 @@ function toOfficialGame(
   const sportsEventId: string | undefined = d.sportsEventId
   if (!sportsEventId) return null
   const isResolved = !!c.resolution
-  const binary = c.mechanism === 'cpmm-1'
+  if (!isMultiCpmm(c)) return null
 
-  let home: ScheduleTeam
-  let away: ScheduleTeam
-  let draw: { answerId: string; prob: number } | null = null
-  let winnerAnswerId: string | null = null
-  if (binary) {
-    const homeName: string | undefined = d.sportsHomeTeam
-    const awayName: string | undefined = d.sportsAwayTeam
-    if (!homeName || !awayName) return null
-    const prob: number = d.prob ?? 0.5
-    home = binaryTeam('YES', homeName, prob, d.sportsLeague)
-    away = binaryTeam('NO', awayName, 1 - prob, d.sportsLeague)
-    // A tie resolves at 50% (MKT), which leaves no winner to mark.
-    winnerAnswerId =
-      c.resolution === 'YES' ? 'YES' : c.resolution === 'NO' ? 'NO' : null
-  } else if (isMultiCpmm(c)) {
-    const ordered = sortBy(answers, 'index')
-    const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
-    const teams = ordered.filter((a) => a !== drawAnswer)
-    if (teams.length !== 2) return null
-    home = toTeam(teams[0])
-    away = toTeam(teams[1])
-    draw = drawAnswer
-      ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
-      : null
-    winnerAnswerId = isResolved
-      ? ordered.find((a) => a.id === c.resolution)?.id ??
-        ordered.find((a) => a.resolution === 'YES')?.id ??
-        null
-      : null
-  } else {
-    return null
-  }
+  const ordered = sortBy(answers, 'index')
+  const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
+  const teams = ordered.filter((a) => a !== drawAnswer)
+  if (teams.length !== 2) return null
+  const home = toTeam(teams[0])
+  const away = toTeam(teams[1])
+  const draw = drawAnswer
+    ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
+    : null
+  const winnerAnswerId = isResolved
+    ? ordered.find((a) => a.id === c.resolution)?.id ??
+      ordered.find((a) => a.resolution === 'YES')?.id ??
+      null
+    : null
 
   const kickoff = parseSportsStart(d.sportsStartTimestamp)
   // Without a parseable kickoff the close time is the only deadline we have
@@ -406,7 +387,6 @@ function toOfficialGame(
     question: c.question,
     sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }, index),
     league: d.sportsLeague ?? '',
-    binary,
     sportsEventId,
     startTime,
     kickoffKnown: kickoff != null,
@@ -425,25 +405,6 @@ function toOfficialGame(
     finalScore,
     related: [] as RelatedRef[],
     relatedCount: 0,
-  }
-}
-
-function binaryTeam(
-  side: 'YES' | 'NO',
-  name: string,
-  prob: number,
-  league: string | undefined
-): ScheduleTeam {
-  const { flag, name: plain } = splitFlag(name)
-  const short = teamBadge(plain, league)
-  return {
-    answerId: side,
-    name: plain,
-    shortName: short || plain,
-    flag,
-    imageUrl: null,
-    color: null,
-    prob,
   }
 }
 
