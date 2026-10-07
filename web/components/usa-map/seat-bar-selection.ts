@@ -1,44 +1,46 @@
-// Which seat-bar groups (tiers) are selected, kept in bar order. Clicking a
-// segment toggles it, dragging paints a contiguous range, and presets replace
-// the selection. The explorer lists and outlines the union of the selected
-// groups' races. `order` is always the tiers shown on the current bar, left
-// to right (zero-seat groups are not drawn, so they are not in it).
+// Which seat-bar groups are selected, kept in bar order. Clicking a segment
+// toggles it and dragging paints a contiguous range. The explorer lists and
+// outlines the union of the selected groups: races by market tier, and the
+// Senate seats not on the ballot. `order` is always the groups shown on the
+// current bar, left to right (zero-seat groups are not drawn, so they are
+// not in it).
 
-import { leadingParty, Race, Tier, TIERS } from './election-map-model'
+import { BarGroup, leadingParty, Race, TIERS } from './election-map-model'
+import type { HeldSeat } from './election-incumbents'
 
-export type TierSelection = readonly Tier[]
+export type GroupSelection = readonly BarGroup[]
 
-const position = (order: readonly Tier[], tier: Tier) => {
-  const i = order.indexOf(tier)
+const position = (order: readonly BarGroup[], group: BarGroup) => {
+  const i = order.indexOf(group)
   return i === -1 ? Infinity : i
 }
 
-// Deduplicated, in bar order; tiers missing from the bar go last.
-export function sortTiers(tiers: Iterable<Tier>, order: readonly Tier[]) {
-  return Array.from(new Set(tiers)).sort(
+// Deduplicated, in bar order; groups missing from the bar go last.
+export function sortGroups(
+  groups: Iterable<BarGroup>,
+  order: readonly BarGroup[]
+) {
+  return Array.from(new Set(groups)).sort(
     (a, b) => position(order, a) - position(order, b)
   )
 }
 
-export const sameTiers = (a: TierSelection, b: TierSelection) =>
-  a.length === b.length && a.every((t) => b.includes(t))
-
-export function toggleTier(
-  selection: TierSelection,
-  tier: Tier,
-  order: readonly Tier[]
-): Tier[] {
-  return selection.includes(tier)
-    ? selection.filter((t) => t !== tier)
-    : sortTiers([...selection, tier], order)
+export function toggleGroup(
+  selection: GroupSelection,
+  group: BarGroup,
+  order: readonly BarGroup[]
+): BarGroup[] {
+  return selection.includes(group)
+    ? selection.filter((g) => g !== group)
+    : sortGroups([...selection, group], order)
 }
 
-// Every tier between two segments on the bar, inclusive, in either direction.
-export function tierRange(
-  order: readonly Tier[],
-  from: Tier,
-  to: Tier
-): Tier[] {
+// Every group between two segments on the bar, inclusive, in either direction.
+export function groupRange(
+  order: readonly BarGroup[],
+  from: BarGroup,
+  to: BarGroup
+): BarGroup[] {
   const a = order.indexOf(from)
   const b = order.indexOf(to)
   if (a === -1 || b === -1) return []
@@ -50,59 +52,31 @@ export function tierRange(
 // applied to the selection as it was when the drag began, so sweeping back
 // restores whatever the pointer has left.
 export function dragSelection(
-  base: TierSelection,
-  order: readonly Tier[],
-  anchor: Tier,
-  current: Tier
-): Tier[] {
-  const range = tierRange(order, anchor, current)
+  base: GroupSelection,
+  order: readonly BarGroup[],
+  anchor: BarGroup,
+  current: BarGroup
+): BarGroup[] {
+  const range = groupRange(order, anchor, current)
   if (!range.length) return [...base]
   return base.includes(anchor)
-    ? base.filter((t) => !range.includes(t))
-    : sortTiers([...base, ...range], order)
+    ? base.filter((g) => !range.includes(g))
+    : sortGroups([...base, ...range], order)
 }
 
-export const PRESETS = [
-  {
-    id: 'competitive',
-    label: 'Competitive',
-    description: 'Lean D, Toss-up and Lean R',
-    tiers: ['lean-d', 'tossup', 'lean-r'],
-  },
-  {
-    id: 'likely-d',
-    label: 'Likely+ D',
-    description: 'Democrats 75% or more, including seats only they contest',
-    tiers: ['fixed-d', 'safe-d', 'likely-d'],
-  },
-  {
-    id: 'likely-r',
-    label: 'Likely+ R',
-    description: 'Republicans 75% or more, including seats only they contest',
-    tiers: ['likely-r', 'safe-r', 'fixed-r'],
-  },
-] as const satisfies readonly {
-  id: string
-  label: string
-  description: string
-  tiers: readonly Tier[]
-}[]
-export type Preset = (typeof PRESETS)[number]
+// Races in the selected groups (all races when nothing is selected).
+export const inSelection = (selection: GroupSelection, group: BarGroup) =>
+  !selection.length || selection.includes(group)
 
-// The preset's groups that are on this bar, in bar order; empty when none is.
-export const presetTiers = (preset: Preset, order: readonly Tier[]) =>
-  order.filter((t) => (preset.tiers as readonly Tier[]).includes(t))
-
-export function activePreset(
-  selection: TierSelection,
-  order: readonly Tier[]
-): Preset | undefined {
-  if (!selection.length) return undefined
-  return PRESETS.find((p) => sameTiers(presetTiers(p, order), selection))
-}
+// Held seats only show when their group is selected; they are not races,
+// so an empty selection (or a search alone) never lists them.
+export const heldInSelection = (selection: GroupSelection, seat: HeldSeat) =>
+  selection.includes(seat.side === 'dem' ? 'held-dem' : 'held-rep')
 
 // Short names for the summary line; the bar's tooltips keep the full labels.
-const SHORT: Partial<Record<Tier, string>> = {
+const SHORT: Partial<Record<BarGroup, string>> = {
+  'held-dem': 'Held D',
+  'held-rep': 'Held R',
   'fixed-d': 'Only D on ballot',
   'fixed-r': 'Only R on ballot',
   unknown: 'Unclassified',
@@ -110,34 +84,34 @@ const SHORT: Partial<Record<Tier, string>> = {
   'not-r': 'Not R',
   unpriced: 'No odds yet',
 }
-export const tierName = (tier: Tier) =>
-  SHORT[tier] ?? TIERS.find((t) => t.id === tier)?.label ?? tier
+export const groupName = (group: BarGroup) =>
+  SHORT[group] ?? TIERS.find((t) => t.id === group)?.label ?? group
 
-// "Safe D + Likely D", "Lean D + Toss-up + Lean R"; a run of four or more
-// adjacent segments reads "Likely D to Likely R".
-export function describeTiers(
-  selection: TierSelection,
-  order: readonly Tier[]
+// "Safe D + Likely D", "Held D + Toss-up"; a run of four or more adjacent
+// segments reads "Likely D to Likely R".
+export function describeGroups(
+  selection: GroupSelection,
+  order: readonly BarGroup[]
 ): string {
-  const tiers = sortTiers(selection, order)
-  const runs: Tier[][] = []
-  for (const tier of tiers) {
+  const groups = sortGroups(selection, order)
+  const runs: BarGroup[][] = []
+  for (const group of groups) {
     const run = runs[runs.length - 1]
     const previous = run?.[run.length - 1]
     if (
       run &&
       previous &&
-      order.includes(tier) &&
-      order.indexOf(tier) === order.indexOf(previous) + 1
+      order.includes(group) &&
+      order.indexOf(group) === order.indexOf(previous) + 1
     )
-      run.push(tier)
-    else runs.push([tier])
+      run.push(group)
+    else runs.push([group])
   }
   return runs
     .map((run) =>
       run.length >= 4
-        ? `${tierName(run[0])} to ${tierName(run[run.length - 1])}`
-        : run.map(tierName).join(' + ')
+        ? `${groupName(run[0])} to ${groupName(run[run.length - 1])}`
+        : run.map(groupName).join(' + ')
     )
     .join(' + ')
 }
@@ -150,7 +124,11 @@ export function raceLeader(race: Pick<Race, 'odds'>): Leader {
   return !party ? 'even' : party === 'dem' || party === 'rep' ? party : 'other'
 }
 
-export function countLeaders(races: Pick<Race, 'odds'>[]) {
+// Listed races by leader, plus held seats by the caucus that holds them.
+export function countLeaders(
+  races: Pick<Race, 'odds'>[],
+  held: Pick<HeldSeat, 'side'>[] = []
+) {
   const counts: Record<Leader, number> = {
     dem: 0,
     rep: 0,
@@ -159,10 +137,11 @@ export function countLeaders(races: Pick<Race, 'odds'>[]) {
     unpriced: 0,
   }
   for (const race of races) counts[raceLeader(race)]++
+  for (const seat of held) counts[seat.side]++
   return counts
 }
 
-// "D 20 · R 22 · 1 even", only when the races do not all share one leader.
+// "D 20 · R 22 · 1 even", only when the seats do not all share one leader.
 export function leaderSplit(
   counts: Record<Leader, number>
 ): { leader: Leader; text: string }[] {
@@ -175,7 +154,3 @@ export function leaderSplit(
   ].filter((p) => counts[p.leader] > 0)
   return parts.length > 1 ? parts : []
 }
-
-// Races in the selected groups (all races when nothing is selected).
-export const inSelection = (selection: TierSelection, tier: Tier) =>
-  !selection.length || selection.includes(tier)

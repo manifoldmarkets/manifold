@@ -402,9 +402,6 @@
   background: transparent;
   cursor: pointer;
 }
-span.balanceTarget {
-  cursor: default;
-}
 .balanceTip {
   position: absolute;
   top: calc(100% + 2px);
@@ -527,34 +524,6 @@ span.balanceTarget {
   font-size: 15px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-/* Quick selections of seat-bar groups. */
-.picks {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 12px;
-}
-.picks button {
-  padding: 3px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.picks button:hover {
-  background: var(--soft);
-  color: var(--accent);
-}
-.picks button[aria-pressed='true'] {
-  color: var(--accent);
-  background: var(--soft);
-  border-color: rgb(var(--color-primary-300));
-}
-.picksHint {
-  color: var(--muted);
 }
 .filterActions {
   display: flex;

@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import clsx from 'clsx'
+import { uniq } from 'lodash'
 import { SearchIcon, AnnotationIcon } from '@heroicons/react/outline'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
@@ -24,11 +25,17 @@ import {
   matchesMeasureQuery,
   measureColor,
 } from './ballot-measures-model'
-import { getHeldOffice, HELD_COLORS } from './election-incumbents'
+import {
+  getHeldOffice,
+  HELD_COLORS,
+  HeldSeat,
+  heldSeats,
+} from './election-incumbents'
 import { DATA } from './usa-map-data'
 import {
   Atlas,
   balanceSegments,
+  BarGroup,
   buildRaces,
   districtId,
   ElectionMode,
@@ -42,16 +49,15 @@ import {
   raceColor,
   raceTier,
   seatSummary,
-  Tier,
   TIERS,
 } from './election-map-model'
 import {
   countLeaders,
-  describeTiers,
+  describeGroups,
+  heldInSelection,
   inSelection,
   leaderSplit,
 } from './seat-bar-selection'
-import { SeatBarPicks } from './seat-bar-picks'
 import { formatOdds, labelInk, LIGHT_LABEL, plural } from './election-display'
 import { ExplorerMode, isKnownRace } from './explorer-url'
 import { useExplorerUrl } from './use-explorer-url'
@@ -198,11 +204,10 @@ export function ElectionExplorer(props: Props) {
   const [view, setView] = useState<MapView>('map')
   const [labels, setLabels] = useState(true)
   const [query, setQuery] = useState('')
-  // Seat-bar groups whose races are listed and outlined (their union), and
+  // Seat-bar groups whose seats are listed and outlined (their union), and
   // the group under the mouse, previewed on the map without selecting it.
-  const [barSelection, setBarSelection] = useState<Tier[]>([])
-  const [preview, setPreview] = useState<Tier>()
-  const [hasSelected, setHasSelected] = useState(false)
+  const [barSelection, setBarSelection] = useState<BarGroup[]>([])
+  const [preview, setPreview] = useState<BarGroup>()
   const [selected, setSelected] = useState<string>()
   const [hovered, setHovered] = useState<string>()
   const [roving, setRoving] = useState<string>()
@@ -307,10 +312,32 @@ export function ElectionExplorer(props: Props) {
   const matches = (race: Race) =>
     inSelection(barSelection, raceTier(race)) && matchesRaceQuery(race, query)
   const filtered = races.filter(matches)
-  // Races in the group under the mouse (within any search).
+  // Senate seats not on the ballot (one per senator), listed and outlined
+  // when their held group is selected, within any search.
+  const held = useMemo(
+    () => (isMeasures ? [] : heldSeats(mode)),
+    [isMeasures, mode]
+  )
+  const matchesHeld = (seat: HeldSeat) =>
+    matchesStateQuery(seat.state, query) ||
+    seat.member.name.toLowerCase().includes(query.trim().toLowerCase())
+  const heldListed = filter
+    ? held.filter((s) => heldInSelection(barSelection, s) && matchesHeld(s))
+    : []
+  const heldLit = new Set(heldListed.map((s) => s.state))
+  // Shapes in the group under the mouse (within any search).
   const isPreviewed = (race: Race) =>
     !!preview && raceTier(race) === preview && matchesRaceQuery(race, query)
-  const previewed = isMeasures ? [] : races.filter(isPreviewed)
+  const previewIds = new Set(
+    isMeasures || !preview
+      ? []
+      : [
+          ...races.filter(isPreviewed).map((r) => r.id),
+          ...held
+            .filter((s) => heldInSelection([preview], s) && matchesHeld(s))
+            .map((s) => s.state),
+        ]
+  )
   const searching = !!query.trim()
   const narrowed = searching || filter
   const noElectionMatches =
@@ -330,19 +357,23 @@ export function ElectionExplorer(props: Props) {
           measureMatches.some((m) => m.state === state) ||
           matchesStateQuery(state, query)
       )
-    : [...filtered.map((r) => r.id), ...noElectionMatches.map(([s]) => s)]
+    : uniq([
+        ...filtered.map((r) => r.id),
+        ...noElectionMatches.map(([s]) => s),
+        ...heldLit,
+      ])
   // The list's summary: how many seats the selected groups hold, who leads
-  // them, and which groups they are.
-  const barOrder = balanceSegments(summary).flatMap((s) =>
-    s.tier ? [s.tier] : []
-  )
-  const groupNames = describeTiers(barSelection, barOrder)
-  const split = filter ? leaderSplit(countLeaders(filtered)) : []
+  // them, and which groups they are. A state with a race and a held seat
+  // counts both seats.
+  const barOrder = balanceSegments(summary).map((s) => s.group)
+  const groupNames = describeGroups(barSelection, barOrder)
+  const split = filter ? leaderSplit(countLeaders(filtered, heldListed)) : []
+  const listed = filtered.length + heldListed.length
   const countText = isMeasures
     ? plural(measureMatches.length, 'matching measure')
     : searching || !filter
-    ? plural(filtered.length, 'matching race')
-    : plural(filtered.length, mode === 'governor' ? 'governorship' : 'seat')
+    ? plural(listed, heldListed.length ? 'matching seat' : 'matching race')
+    : plural(listed, mode === 'governor' ? 'governorship' : 'seat')
   const noElectionText =
     noElectionMatches.length > 0
       ? `${noElectionMatches.length} with no ${
@@ -362,7 +393,7 @@ export function ElectionExplorer(props: Props) {
     !!raceById.get(id) || (mode !== 'house' && !!DATA[id] && id !== 'DC')
   const isNavigable = (id: string) => {
     const race = raceById.get(id)
-    return race ? matches(race) : isSelectable(id)
+    return race ? matches(race) || heldLit.has(id) : isSelectable(id)
   }
   const navigable = shapes.filter((s) => isNavigable(s.id))
   const tabStop =
@@ -466,10 +497,9 @@ export function ElectionExplorer(props: Props) {
     setSearchOpen(false)
     focusMap()
   }
-  const selectTiers = (next: Tier[]) => {
+  const selectGroups = (next: BarGroup[]) => {
     setBarSelection(next)
     setSelected(undefined)
-    if (next.length) setHasSelected(true)
   }
   const changeMode = (next: ExplorerMode) => {
     setMode(next)
@@ -553,11 +583,13 @@ export function ElectionExplorer(props: Props) {
       ? searching &&
         !measureMatches.some((m) => m.state === id) &&
         !matchesStateQuery(id, query)
-      : !!race && !matches(race) && !isPreviewed(race)
+      : !(race
+          ? matches(race) || heldLit.has(id)
+          : !filter || heldLit.has(id)) && !previewIds.has(id)
     // A previewed group stands out from an unfiltered map too, more softly
     // than a selection does.
     const previewDimmed =
-      !narrowed && !!preview && !!race && !isMeasures && !isPreviewed(race)
+      !narrowed && !!preview && selectable && !previewIds.has(id)
     return {
       fill: isMeasures
         ? measureColor(measureCount(id))
@@ -764,7 +796,7 @@ export function ElectionExplorer(props: Props) {
               mode={raceMode}
               selection={barSelection}
               preview={preview}
-              onSelect={selectTiers}
+              onSelect={selectGroups}
               onPreview={setPreview}
             />
           )}
@@ -873,14 +905,6 @@ export function ElectionExplorer(props: Props) {
               . These outcomes are counted separately from party wins.
             </p>
           )}
-        {!isMeasures && (
-          <SeatBarPicks
-            order={barOrder}
-            selection={barSelection}
-            onSelect={selectTiers}
-            hint={!hasSelected}
-          />
-        )}
         {/* Always mounted, so screen readers announce every change. */}
         <span className="sr-only" role="status">
           {narrowed ? announcement : ''}
@@ -959,6 +983,21 @@ export function ElectionExplorer(props: Props) {
                   onClick={(e) => choose(r.id, e.currentTarget)}
                 >
                   <span>{r.label}</span> <RaceQuote race={r} />
+                </button>
+              )),
+              ...heldListed.map((seat) => (
+                <button
+                  key={seat.id}
+                  onClick={(e) => choose(seat.state, e.currentTarget)}
+                >
+                  <span>{DATA[seat.state].name} · not on the ballot</span>{' '}
+                  <span className={styles.quote} data-tone={seat.side}>
+                    Held by {seat.member.party[0]}
+                    <span className={styles.quoteName}>
+                      {' '}
+                      · {seat.member.name}
+                    </span>
+                  </span>
                 </button>
               )),
               ...noElectionMatches.map(([state, data]) => (
@@ -1097,10 +1136,7 @@ export function ElectionExplorer(props: Props) {
                   ))}
                 <g className={styles.overlays} aria-hidden>
                   {overlay(highlighted, styles.matchOutline)}
-                  {overlay(
-                    previewed.map((r) => r.id),
-                    styles.previewOutline
-                  )}
+                  {overlay([...previewIds], styles.previewOutline)}
                   {overlay([selected], styles.selectedHalo)}
                   {overlay([selected], styles.selectedOutline)}
                   {overlay([focused], styles.focusHalo)}

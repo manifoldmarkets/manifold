@@ -2,9 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   balanceSegments,
+  BarGroup,
   ElectionMode,
   seatSummary,
-  Tier,
 } from './election-map-model'
 import { plural } from './election-display'
 import {
@@ -13,7 +13,11 @@ import {
   seatPosition,
   segmentAt,
 } from './seat-bar-layout'
-import { dragSelection, TierSelection, toggleTier } from './seat-bar-selection'
+import {
+  dragSelection,
+  GroupSelection,
+  toggleGroup,
+} from './seat-bar-selection'
 import styles from './election-explorer.module.css'
 
 // Every segment is at least this wide, with a surface-colored gap between.
@@ -36,17 +40,17 @@ type Drag = {
   x: number
   y: number
   slop: number
-  anchor: Tier
+  anchor: BarGroup
   // The selection when the press began; every move applies its range to this.
-  base: TierSelection
+  base: GroupSelection
   active: boolean
-  over?: Tier
+  over?: BarGroup
 }
 
-const tierOf = (target: EventTarget) =>
+const groupOf = (target: EventTarget) =>
   (target instanceof Element
-    ? target.closest('[data-tier]')?.getAttribute('data-tier') ?? undefined
-    : undefined) as Tier | undefined
+    ? target.closest('[data-group]')?.getAttribute('data-group') ?? undefined
+    : undefined) as BarGroup | undefined
 
 export function ElectionBalance({
   summary,
@@ -59,11 +63,11 @@ export function ElectionBalance({
   summary: ReturnType<typeof seatSummary>
   mode: ElectionMode
   // Selected groups, in bar order; empty when nothing is selected.
-  selection: TierSelection
+  selection: GroupSelection
   // The group under the mouse, previewed on the map.
-  preview?: Tier
-  onSelect: (next: Tier[]) => void
-  onPreview: (tier: Tier | undefined) => void
+  preview?: BarGroup
+  onSelect: (next: BarGroup[]) => void
+  onPreview: (group: BarGroup | undefined) => void
 }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState<number>()
@@ -72,11 +76,14 @@ export function ElectionBalance({
   const [dragging, setDragging] = useState(false)
   const previewTimer = useRef<ReturnType<typeof setTimeout>>()
   useEffect(() => () => clearTimeout(previewTimer.current), [])
-  const previewTier = (tier: Tier | undefined) => {
+  const previewGroup = (group: BarGroup | undefined) => {
     clearTimeout(previewTimer.current)
-    if (!tier || preview) onPreview(tier)
+    if (!group || preview) onPreview(group)
     else
-      previewTimer.current = setTimeout(() => onPreview(tier), PREVIEW_DELAY_MS)
+      previewTimer.current = setTimeout(
+        () => onPreview(group),
+        PREVIEW_DELAY_MS
+      )
   }
   useLayoutEffect(() => {
     const track = trackRef.current
@@ -89,7 +96,7 @@ export function ElectionBalance({
   }, [])
 
   const segments = balanceSegments(summary)
-  const order = segments.flatMap((s) => (s.tier ? [s.tier] : []))
+  const order = segments.map((s) => s.group)
   const counts = segments.map((s) => s.count)
   const boxes = width
     ? layoutSegments(counts, width, { min: MIN_SEGMENT_PX, gap: GAP_PX })
@@ -112,20 +119,15 @@ export function ElectionBalance({
       ? seatPosition(counts, boxes, threshold)
       : undefined
   const unit = mode === 'governor' ? 'governorship' : 'seat'
-  const isSelected = (tier?: Tier) => !!tier && selection.includes(tier)
+  const isSelected = (group: BarGroup) => selection.includes(group)
   const showPreview = !dragging && !!preview
 
-  // The race group under a dragging pointer; held seats and the space past
-  // either end count as the nearest group.
-  const tierAtX = (clientX: number) => {
+  // The group under a dragging pointer; past either end, the end group.
+  const groupAtX = (clientX: number) => {
     const track = trackRef.current
     if (!track || !targets.length) return undefined
-    const i = segmentAt(
-      targets,
-      clientX - track.getBoundingClientRect().left,
-      (j) => !!segments[j]?.tier
-    )
-    return i === undefined ? undefined : segments[i].tier
+    const i = segmentAt(targets, clientX - track.getBoundingClientRect().left)
+    return i === undefined ? undefined : segments[i].group
   }
   const endDrag = (pointerId: number, revert: boolean) => {
     const d = drag.current
@@ -179,20 +181,17 @@ export function ElectionBalance({
         // Hover previews a group on the map (mouse only; never selects).
         onPointerOver={(e) => {
           if (e.pointerType !== 'mouse' || drag.current?.active) return
-          const tier = tierOf(e.target)
-          // Gaps between segments keep the current preview; held seats
-          // clear it.
-          if (tier) previewTier(tier)
-          else if ((e.target as Element).closest('[data-held]'))
-            previewTier(undefined)
+          // Gaps between segments keep the current preview.
+          const group = groupOf(e.target)
+          if (group) previewGroup(group)
         }}
         onPointerLeave={(e) => {
-          if (e.pointerType === 'mouse') previewTier(undefined)
+          if (e.pointerType === 'mouse') previewGroup(undefined)
         }}
         // Press on a group and move sideways to select the groups between.
         onPointerDown={(e) => {
           if (e.pointerType === 'mouse' && e.button !== 0) return
-          const anchor = tierOf(e.target)
+          const anchor = groupOf(e.target)
           drag.current = anchor
             ? {
                 pointerId: e.pointerId,
@@ -222,14 +221,14 @@ export function ElectionBalance({
             }
             d.active = true
             setDragging(true)
-            previewTier(undefined)
+            previewGroup(undefined)
             try {
               e.currentTarget.setPointerCapture(e.pointerId)
             } catch {
               // The pointer is already gone; pointerup/cancel will end it.
             }
           }
-          const over = tierAtX(e.clientX)
+          const over = groupAtX(e.clientX)
           if (!over || over === d.over) return
           d.over = over
           onSelect(dragSelection(d.base, order, d.anchor, over))
@@ -250,8 +249,8 @@ export function ElectionBalance({
                   segment.tier === 'fixed-r') &&
                   styles.heldSeats
               )}
-              data-selected={isSelected(segment.tier)}
-              data-preview={showPreview && segment.tier === preview}
+              data-selected={isSelected(segment.group)}
+              data-preview={showPreview && segment.group === preview}
               style={{ ...place(i), backgroundColor: segment.color }}
             >
               {!segment.tier
@@ -263,7 +262,7 @@ export function ElectionBalance({
         {/* Underlines mark the selected groups, and the one under the mouse
             in the map's hover color. */}
         {segments.map((segment, i) =>
-          isSelected(segment.tier) ? (
+          isSelected(segment.group) ? (
             <span
               key={segment.id}
               className={styles.balanceCaret}
@@ -273,7 +272,7 @@ export function ElectionBalance({
           ) : null
         )}
         {segments.map((segment, i) =>
-          showPreview && segment.tier === preview ? (
+          showPreview && segment.group === preview ? (
             <span
               key={`preview-${segment.id}`}
               className={clsx(styles.balanceCaret, styles.previewCaret)}
@@ -307,24 +306,8 @@ export function ElectionBalance({
               : center > width * 0.75
               ? 'end'
               : 'middle'
-          const tier = segment.tier
-          if (!tier)
-            return (
-              <span
-                key={segment.id}
-                className={styles.balanceTarget}
-                data-align={align}
-                data-held
-                style={target}
-                role="img"
-                aria-label={tip}
-              >
-                <span className={styles.balanceTip} aria-hidden>
-                  {tip}
-                </span>
-              </span>
-            )
-          const selected = isSelected(tier)
+          const group = segment.group
+          const selected = isSelected(group)
           return (
             <button
               key={segment.id}
@@ -332,7 +315,7 @@ export function ElectionBalance({
               aria-label={tip}
               aria-pressed={selected}
               data-align={align}
-              data-tier={tier}
+              data-group={group}
               style={target}
               onKeyDown={onEscape}
               onClick={(e) => {
@@ -342,7 +325,7 @@ export function ElectionBalance({
                   performance.now() - dragEndedAt.current < DRAG_CLICK_MS
                 )
                   return
-                onSelect(toggleTier(selection, tier, order))
+                onSelect(toggleGroup(selection, group, order))
               }}
             >
               <span className={styles.balanceTip} aria-hidden>
