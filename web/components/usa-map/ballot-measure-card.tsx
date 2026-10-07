@@ -16,6 +16,7 @@ import {
   sideProbability,
   tradeFor,
 } from './ballot-measures-model'
+import { useMarketLink } from './market-link'
 import styles from './election-explorer.module.css'
 
 export function BallotMeasureCard({
@@ -26,6 +27,7 @@ export function BallotMeasureCard({
   contract?: Contract | null
 }) {
   const [side, setSide] = useState<MeasureSide>()
+  const { linkProps } = useMarketLink()
   const chance = approvalChance(measure, contract)
   const trade = side && tradeFor(measure, side)
   const source = measure.source
@@ -55,8 +57,7 @@ export function BallotMeasureCard({
           <a
             className={styles.chartLink}
             href={contractPath(contract)}
-            target="_blank"
-            rel="noreferrer"
+            {...linkProps}
             aria-label={`Chart and market details for ${label}`}
           >
             chart →

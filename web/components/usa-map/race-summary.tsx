@@ -20,6 +20,7 @@ import { explorerSearch, ExplorerMode } from './explorer-url'
 import { orderBallot, sourceNotes, UNSPECIFIED_RULES } from './race-outcomes'
 import { DEM_COLOR, REP_COLOR } from './state-election-map'
 import { OTHER_COLOR } from './election-map-model'
+import { useMarketLink } from './market-link'
 import styles from './election-explorer.module.css'
 
 // Text tone for a tier or outcome: the map's party colors, adapted for dark
@@ -140,13 +141,15 @@ export function IncumbentDetails({
 }
 
 export function MarketDetailsLink({ contract }: { contract: Contract }) {
+  const { newTab, linkProps } = useMarketLink()
   return (
     <a
       className={styles.chartLink}
       href={contractPath(contract)}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`Read description and comments: ${contract.question} (opens in a new tab)`}
+      {...linkProps}
+      aria-label={`Read description and comments: ${contract.question}${
+        newTab ? ' (opens in a new tab)' : ''
+      }`}
     >
       chart →
     </a>
@@ -186,6 +189,7 @@ export function CopyRaceLink(props: {
 // sources show nothing. Audit caveats are internal notes and never render.
 export function SourceNotes({ contract }: { contract: Contract }) {
   const { bet, unspecifiedRules } = sourceNotes(contract)
+  const { newTab, linkProps } = useMarketLink()
   return (
     <>
       {bet && <p className={styles.note}>{bet}</p>}
@@ -196,13 +200,9 @@ export function SourceNotes({ contract }: { contract: Contract }) {
           </summary>
           <p>
             {UNSPECIFIED_RULES}{' '}
-            <a
-              href={contractPath(contract)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={contractPath(contract)} {...linkProps}>
               See the market page for its exact criteria →
-              <span className="sr-only"> (opens in a new tab)</span>
+              {newTab && <span className="sr-only"> (opens in a new tab)</span>}
             </a>
           </p>
         </details>
