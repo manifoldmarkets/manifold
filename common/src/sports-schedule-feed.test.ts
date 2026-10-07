@@ -1,10 +1,13 @@
 import { ScheduleGame, SportsScheduleResponse } from './sports-schedule'
 import {
+  adoptedGames,
   appendPage,
   feedFromResponse,
+  pruneLiveForPage,
   refreshLimit,
   ScheduleFeed,
 } from './sports-schedule-feed'
+import { LiveGameState } from './sports-schedule-live'
 
 const PAGE = 20
 const MAX = 400
@@ -107,4 +110,28 @@ it('asks a refresh for as many games as are loaded, within the limits', () => {
   )
   expect(refreshLimit(feed, PAGE, MAX)).toBe(40)
   expect(refreshLimit(feed, PAGE, 30)).toBe(30)
+})
+
+it('keeps a newer live price when a later page repeats the game', () => {
+  // G was read at 50% (snapshot 1), then a live update moved it to 60% (at
+  // 2). Rescheduled past the cursor, it turns up again on a later page read
+  // at 3, which appendPage drops as a duplicate.
+  const g = game('G', 50 * 3600)
+  const feed: ScheduleFeed = {
+    ...feedFromResponse(serve([g], { limit: PAGE })),
+    cursor: 'next',
+  }
+  const live: Record<string, LiveGameState> = {
+    G: { probs: { home: { value: 0.6, at: 2 } } },
+  }
+  const page = { ...serve([g], { limit: PAGE }), snapshotTime: 3 }
+
+  // The duplicate is dropped: the row keeps its first read.
+  const appended = appendPage(feed, 'next', page)!
+  expect(appended.games.map((x) => x.id)).toEqual(['G'])
+  expect(appended.snapshotTimes.G).toBe(1)
+  // Pruned against the whole page, the 60% would go and the row show 50%.
+  expect(pruneLiveForPage(live, page).G).toBeUndefined()
+  // Against what the feed actually took, it stays.
+  expect(pruneLiveForPage(live, adoptedGames(feed, page)).G).toEqual(live.G)
 })

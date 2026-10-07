@@ -696,12 +696,46 @@ describe('kickoff', () => {
 
   it("won't open a game kicking off within five minutes", async () => {
     jest.spyOn(Date, 'now').mockReturnValue(kickoff - 4 * minute)
+    const db = database()
     const result = await createOddsMarketsForCompetition(
-      database().client,
+      db.client,
       'nfl-regular-2026',
-      { creator, dryRun: true }
+      { creator }
     )
-    expect(result.log).toEqual([])
+    expect(result.created).toBe(0)
+    expect(result.log[0]).toMatchObject({
+      status: 'skipped',
+      reason: expect.stringContaining('too soon'),
+    })
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  })
+
+  it('still re-syncs an existing market whose kickoff moved to within five minutes', async () => {
+    // Stored for 21:00; the provider corrects it to 17:00 at 16:56. Left at
+    // 21:00, betting would stay open after the result is known.
+    jest.spyOn(Date, 'now').mockReturnValue(kickoff - 4 * minute)
+    const db = database()
+    db.contracts.push({ id: 'existing' } as Contract)
+    db.pg.oneOrNone.mockImplementation(async (sql: string) => {
+      if (sql.includes("data->>'sportsStartTimestamp' as start"))
+        return {
+          start: new Date(kickoff + 4 * 60 * minute).toISOString(),
+          resolution: null,
+          question: null,
+        }
+      if (sql.includes("data->>'sportsEventId'")) return { id: 'existing' }
+      return null
+    })
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      'nfl-regular-2026',
+      { creator }
+    )
+    expect(result.log[0].reason).toContain('moved its kickoff')
+    expect(db.pg.none).toHaveBeenCalledWith(
+      expect.stringContaining('update contracts'),
+      [expect.stringContaining(event.commence_time), 'existing']
+    )
   })
 })
 

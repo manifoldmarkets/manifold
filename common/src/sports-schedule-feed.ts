@@ -1,4 +1,5 @@
 import { ScheduleGame, SportsScheduleResponse } from './sports-schedule'
+import { LiveGameState, pruneSportsLive } from './sports-schedule-live'
 
 /**
  * What an infinitely scrolling sports feed has loaded: the latest response's
@@ -68,4 +69,38 @@ export function appendPage(
     },
     cursor: page.nextCursor,
   }
+}
+
+/**
+ * The part of `page` that appendPage takes: the games the feed didn't have.
+ * A game it already has (a rescheduled game can turn up on a later page) is
+ * dropped, so its row keeps the earlier read.
+ */
+export function adoptedGames(
+  feed: ScheduleFeed,
+  page: SportsScheduleResponse
+): SportsScheduleResponse {
+  const have = new Set(feed.games.map((g) => g.id))
+  return { ...page, games: page.games.filter((g) => !have.has(g.id)) }
+}
+
+/**
+ * Prunes the live overlay against one response, for that response's games
+ * only: other rows were read at other times. For a page, pass adoptedGames:
+ * pruning a row against a duplicate that was dropped would throw away a
+ * newer live price and put the row back to its older read.
+ */
+export function pruneLiveForPage(
+  live: Record<string, LiveGameState>,
+  page: SportsScheduleResponse
+): Record<string, LiveGameState> {
+  const ids = new Set(page.games.map((g) => g.id))
+  const onPage: Record<string, LiveGameState> = {}
+  const rest: Record<string, LiveGameState> = {}
+  for (const [id, state] of Object.entries(live)) {
+    if (ids.has(id)) onPage[id] = state
+    else rest[id] = state
+  }
+  const pruned = pruneSportsLive(onPage, page)
+  return pruned === onPage ? live : { ...rest, ...pruned }
 }
