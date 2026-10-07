@@ -5,21 +5,27 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import {
   AnySportKey,
   LIVE_STATUSES,
-  ScheduleGame,
   SportsScheduleResponse,
 } from 'common/sports-schedule'
+import {
+  appendPage,
+  feedFromResponse,
+  refreshLimit,
+  ScheduleFeed,
+} from 'common/sports-schedule-feed'
 import {
   applySportsLive,
   LiveGameState,
   pruneSportsLive,
 } from 'common/sports-schedule-live'
 import { HOUR_MS } from 'common/util/time'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 
 /** Upcoming games per request; more load as the feed scrolls. */
 export const SCHEDULE_PAGE_SIZE = 20
+/** The endpoint's largest `limit`: a refresh re-reads at most this many. */
+const MAX_SCHEDULE_LIMIT = 400
 /** Refetch cadence while something is live or about to start… */
 const ACTIVE_REFRESH_MS = 2 * 60_000
 /** …and while nothing is: still needed to pick up kickoffs, closes and new markets. */
@@ -42,57 +48,81 @@ export type SportsRailData = Pick<
  * whole list, so a 100-game page costs ~100 topics, not 300+.
  */
 export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
-  const { data, refresh, loading } = useAPIGetter(
-    'sports-schedule',
-    { sport, limit: SCHEDULE_PAGE_SIZE },
-    undefined,
-    // One cache slot per sport, so switching back is instant and a sport's
-    // list never flashes another sport's games.
-    `sports-schedule-${sport}`,
-    enabled
-  )
+  // Everything loaded for this sport (see ScheduleFeed), kept in memory per
+  // sport so switching back is instant. Tagged with its sport: the sport page
+  // stays mounted when the URL moves to another sport, and the stored value
+  // for the new one only arrives after a render.
+  const [stored, setStored] = usePersistentInMemoryState<
+    (ScheduleFeed & { sport: string }) | undefined
+  >(undefined, `sports-feed-${sport}`)
+  const feed = stored?.sport === sport ? stored : undefined
+  const feedRef = useRef(feed)
+  feedRef.current = feed
+  const [loading, setLoading] = useState(false)
   // Plain state (not the persistent store): ticks arrive every few seconds
   // during live games and the overlay is cheap to rebuild from a refetch.
   const [live, setLive] = useState<Record<string, LiveGameState>>({})
 
-  // Pages after the first, loaded as the feed scrolls. Tagged with their
-  // sport: the sport page stays mounted when the URL moves to another sport.
-  // Each page keeps its own snapshot time for the live overlay below.
-  const [more, setMore] = useState<{
-    sport: string
-    games: ScheduleGame[]
-    snapshotTimes: Record<string, number>
-    cursor: string | null
-  }>()
-  const extra = more?.sport === sport ? more : undefined
-  const nextCursor = extra ? extra.cursor : data?.nextCursor ?? null
+  // Every refresh starts a new generation. A response from an older one (an
+  // earlier refresh, another sport, a page loaded before the refresh) is
+  // dropped rather than mixed in.
+  const generation = useRef(0)
+
+  // Re-reads every page loaded so far in one request, so the games and the
+  // cursor come from the same read (see feedFromResponse).
+  const refresh = useEvent(async () => {
+    if (!enabled) return
+    const gen = ++generation.current
+    setLoading(true)
+    try {
+      const response = await api('sports-schedule', {
+        sport,
+        limit: refreshLimit(
+          feedRef.current,
+          SCHEDULE_PAGE_SIZE,
+          MAX_SCHEDULE_LIMIT
+        ),
+      })
+      if (gen !== generation.current) return
+      // HTTP/client caches preserve the server's snapshot time. Request-start
+      // time in the browser says nothing about how fresh that response is.
+      setLive((prev) => pruneForPage(prev, response))
+      setStored({ ...feedFromResponse(response), sport })
+    } catch (e) {
+      console.error('Failed to load the sports schedule', e)
+    } finally {
+      if (gen === generation.current) setLoading(false)
+    }
+  })
+
+  useEffect(() => {
+    if (enabled) refresh()
+  }, [sport, enabled])
+
   const loadingMore = useRef(false)
   const loadMore = useEvent(async () => {
-    const cursor = nextCursor
-    if (!cursor || loadingMore.current) return false
+    const current = feedRef.current
+    const cursor = current?.cursor
+    if (!current || !cursor || loadingMore.current) return false
     loadingMore.current = true
+    const gen = generation.current
     try {
       const page = await api('sports-schedule', {
         sport,
         limit: SCHEDULE_PAGE_SIZE,
         cursor,
       })
+      const latest = feedRef.current
+      const next =
+        gen === generation.current && latest
+          ? appendPage(latest, cursor, page)
+          : undefined
+      // A refresh replaced the pages meanwhile: say there's more, so the
+      // feed asks again from the refreshed cursor.
+      if (!next) return !!feedRef.current?.cursor
       setLive((prev) => pruneForPage(prev, page))
-      setMore((prev) => {
-        const kept = prev?.sport === sport ? prev : undefined
-        return {
-          sport,
-          games: [...(kept?.games ?? []), ...page.games],
-          snapshotTimes: {
-            ...kept?.snapshotTimes,
-            ...Object.fromEntries(
-              page.games.map((g) => [g.id, page.snapshotTime ?? 0])
-            ),
-          },
-          cursor: page.nextCursor,
-        }
-      })
-      return !!page.nextCursor
+      setStored({ ...next, sport })
+      return !!next.cursor
     } catch (e) {
       console.error('Failed to load more sports games', e)
       return false
@@ -101,13 +131,6 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     }
   })
 
-  // HTTP/client caches preserve the server's snapshot time. Request-start
-  // time in the browser says nothing about how fresh that response is.
-  useEffect(() => {
-    if (!data) return
-    setLive((prev) => pruneForPage(prev, data))
-  }, [data])
-
   // The rail's sports, counts and live count cover every sport, whichever one
   // was asked for. Keep the latest across sport switches: a sport that hasn't
   // loaded yet would otherwise empty the rail, drop every count and reshuffle
@@ -115,25 +138,24 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
   const [lastRail, setLastRail] = usePersistentInMemoryState<
     SportsRailData | undefined
   >(undefined, 'sports-schedule-rail')
+  const response = feed?.response
   useEffect(() => {
-    if (!data) return
+    if (!response) return
     setLastRail({
-      sports: data.sports,
-      counts: data.counts,
-      liveCount: data.liveCount,
+      sports: response.sports,
+      counts: response.counts,
+      liveCount: response.liveCount,
     })
-  }, [data])
-  const rail: SportsRailData | undefined = data
-    ? { sports: data.sports, counts: data.counts, liveCount: data.liveCount }
+  }, [response])
+  const rail: SportsRailData | undefined = response
+    ? {
+        sports: response.sports,
+        counts: response.counts,
+        liveCount: response.liveCount,
+      }
     : lastRail
 
-  // The first page wins when a game is on both: it is the fresher read.
-  const games = useMemo(() => {
-    const first = data?.games ?? []
-    if (!extra) return first
-    const seen = new Set(first.map((g) => g.id))
-    return [...first, ...extra.games.filter((g) => !seen.has(g.id))]
-  }, [data, extra])
+  const games = feed?.games ?? []
   const isPageVisible = useIsPageVisible()
   const now = Date.now()
 
@@ -230,12 +252,9 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     },
   })
 
-  // Periodic refetch while the page is visible. `refresh` is re-created per
-  // render and bound to the current sport, so the interval reads it through
-  // a ref. Nothing else re-renders an idle page, so the timer is what moves
-  // games from upcoming to live to finished and discovers new ones.
-  const refreshRef = useRef(refresh)
-  refreshRef.current = refresh
+  // Periodic refetch while the page is visible. Nothing else re-renders an
+  // idle page, so the timer is what moves games from upcoming to live to
+  // finished and discovers new ones.
   const hasActive = games.some(
     (g) =>
       g.status === 'live' ||
@@ -244,35 +263,28 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
   useEffect(() => {
     if (!isPageVisible) return
     const ms = hasActive ? ACTIVE_REFRESH_MS : IDLE_REFRESH_MS
-    const id = setInterval(() => refreshRef.current(), ms)
+    const id = setInterval(() => refresh(), ms)
     return () => clearInterval(id)
   }, [hasActive, isPageVisible, sport])
 
   const merged: SportsScheduleResponse | undefined = useMemo(() => {
-    if (!data) return undefined
-    const firstIds = new Set(data.games.map((g) => g.id))
+    if (!feed) return undefined
     return {
-      ...data,
-      games: games.map((g) =>
-        applySportsLive(
-          g,
-          live[g.id],
-          firstIds.has(g.id)
-            ? data.snapshotTime
-            : extra?.snapshotTimes[g.id] ?? data.snapshotTime
-        )
+      ...feed.response,
+      games: feed.games.map((g) =>
+        applySportsLive(g, live[g.id], feed.snapshotTimes[g.id])
       ),
-      nextCursor,
+      nextCursor: feed.cursor,
     }
-  }, [data, games, live, nextCursor])
+  }, [feed, live])
 
   return {
     schedule: merged,
     rail,
-    loading,
+    loading: loading && !feed,
     refresh,
     loadMore,
-    hasMore: !!nextCursor,
+    hasMore: !!feed?.cursor,
   }
 }
 

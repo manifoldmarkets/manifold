@@ -5,6 +5,7 @@ import {
   fitProbs,
   gameResolution,
   isThreeWay,
+  isValidAmericanOdds,
   OddsApiEvent,
   oddsEventId,
   parseOddsEventId,
@@ -156,6 +157,46 @@ describe('odds maths', () => {
     expect(home).toBeLessThan(0.6)
     expect(home + away).toBeCloseTo(1, 10)
   })
+  it('only takes real American prices', () => {
+    expect([100, -100, 130, -150, 2500].every(isValidAmericanOdds)).toBe(true)
+    expect(
+      [0, 50, -99, NaN, Infinity, null, undefined, '-110'].some(
+        isValidAmericanOdds
+      )
+    ).toBe(false)
+  })
+
+  it('leaves out a book with a broken quote rather than opening at 1%/99%', () => {
+    const broken = (price: unknown) => ({
+      ...nflEvent.bookmakers[0],
+      key: 'broken',
+      markets: [
+        {
+          key: 'h2h' as const,
+          last_update: '',
+          outcomes: [
+            { name: 'Kansas City Chiefs', price: price as number },
+            { name: 'Buffalo Bills', price: -110 },
+          ],
+        },
+      ],
+    })
+    const outcomes = ['Kansas City Chiefs', 'Buffalo Bills']
+    for (const price of [0, null]) {
+      // Alone, a broken book means no line: the game waits for the next run.
+      expect(
+        fairProbs({ ...nflEvent, bookmakers: [broken(price)] }, outcomes)
+      ).toBeNull()
+      // Beside good books, it changes nothing.
+      expect(
+        fairProbs(
+          { ...nflEvent, bookmakers: [...nflEvent.bookmakers, broken(price)] },
+          outcomes
+        )
+      ).toEqual(fairProbs(nflEvent, outcomes))
+    }
+  })
+
   it('returns null without h2h data', () => {
     expect(fairProbs({ ...nflEvent, bookmakers: [] }, ['x', 'y'])).toBeNull()
   })
@@ -265,6 +306,41 @@ describe('scores', () => {
     ).toBe('tie')
     expect(winningSide({ ...score, completed: false })).toBeNull()
     expect(winningSide({ ...score, scores: null })).toBeNull()
+  })
+
+  // The market stores its own home and away at creation. A payload that
+  // lists them the other way round must not pay the wrong team.
+  const market = { home: 'Kansas City Chiefs', away: 'Buffalo Bills' }
+  const reversed = {
+    ...score,
+    home_team: 'Buffalo Bills',
+    away_team: 'Kansas City Chiefs',
+    scores: [
+      { name: 'Buffalo Bills', score: '14' },
+      { name: 'Kansas City Chiefs', score: '21' },
+    ],
+  }
+
+  it("pays the market's winner when the payload has home and away reversed", () => {
+    expect(teamScores(reversed, market)).toEqual({ home: 21, away: 14 })
+    expect(winningSide(reversed, market)).toBe('home')
+    // Read the payload's way round, the Bills would have won.
+    expect(winningSide(reversed)).toBe('away')
+  })
+
+  it('matches team names ignoring case and spacing', () => {
+    expect(
+      winningSide(reversed, {
+        home: ' kansas city chiefs',
+        away: 'BUFFALO BILLS ',
+      })
+    ).toBe('home')
+  })
+
+  it('stops on a payload about other teams instead of guessing', () => {
+    const other = { home: 'Kansas City Chiefs', away: 'Denver Broncos' }
+    expect(teamScores(reversed, other)).toBeNull()
+    expect(winningSide(reversed, other)).toBeNull()
   })
 })
 

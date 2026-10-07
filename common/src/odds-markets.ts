@@ -89,6 +89,19 @@ export function americanOddsToProb(price: number): number {
 }
 
 /**
+ * A usable American price: a finite number at +100 or more, or -100 or less.
+ * Anything else (0, +50, null, a string) is a broken quote, and converting it
+ * would give a confident-looking probability.
+ */
+export function isValidAmericanOdds(price: unknown): price is number {
+  return (
+    typeof price === 'number' &&
+    Number.isFinite(price) &&
+    (price >= 100 || price <= -100)
+  )
+}
+
+/**
  * Fair probabilities for `outcomes`, in that order, from every bookmaker whose
  * h2h market quotes all of them: each book's implied probabilities divided by
  * its overround, averaged across those books, then rescaled to sum to one and
@@ -103,6 +116,10 @@ export function fairProbs(
     b.markets
       .filter((m) => m.key === 'h2h')
       .flatMap((market) => {
+        // A book with any broken quote in the market is left out: its
+        // overround, and so every price it gives, would be wrong.
+        if (market.outcomes.some((o) => !isValidAmericanOdds(o.price)))
+          return []
         const prices = outcomes.map(
           (name) => market.outcomes.find((o) => o.name === name)?.price
         )
@@ -146,30 +163,74 @@ export function fitProbs(probs: number[], min: number, max: number): number[] {
   return p
 }
 
-/** Home and away scores from a score payload, matched by team name. */
-export function teamScores(score: OddsApiScore): {
-  home: number | null
-  away: number | null
-} {
-  const find = (name: string) => {
-    const raw = score.scores?.find((s) => s.name === name)?.score
-    const n = raw == null ? NaN : parseInt(raw, 10)
-    return isNaN(n) ? null : n
-  }
-  return { home: find(score.home_team), away: find(score.away_team) }
+/** A market's own two teams, as stored on it when it was created. */
+export type GameTeams = { home?: string | null; away?: string | null }
+
+const sameTeam = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase()
+
+/**
+ * How a score payload's teams line up with a market's: 'same', 'swapped' (the
+ * payload has home and away the other way round), or null when they aren't
+ * the market's two teams.
+ */
+export function scoreOrientation(
+  score: Pick<OddsApiScore, 'home_team' | 'away_team'>,
+  teams: { home: string; away: string }
+): 'same' | 'swapped' | null {
+  if (
+    sameTeam(score.home_team, teams.home) &&
+    sameTeam(score.away_team, teams.away)
+  )
+    return 'same'
+  if (
+    sameTeam(score.home_team, teams.away) &&
+    sameTeam(score.away_team, teams.home)
+  )
+    return 'swapped'
+  return null
 }
 
 /**
- * Which side won a completed game, 'tie' if it ended level, null if it isn't
- * over or the scores aren't usable. Sides come from the scores payload's own
- * home/away fields, so no team name has to match across endpoints.
+ * Home and away scores from a score payload, read by team name. Given the
+ * market's teams, home and away are the market's, whichever way round the
+ * payload lists them, and the result is null if the payload is about other
+ * teams: the caller stops rather than guess. Without them (markets made
+ * before the teams were stored), the payload's own home and away.
+ */
+export function teamScores(
+  score: OddsApiScore,
+  teams?: GameTeams
+): { home: number | null; away: number | null } | null {
+  let homeName = score.home_team
+  let awayName = score.away_team
+  if (teams?.home && teams?.away) {
+    if (!scoreOrientation(score, { home: teams.home, away: teams.away }))
+      return null
+    homeName = teams.home
+    awayName = teams.away
+  }
+  const find = (name: string) => {
+    const raw = score.scores?.find((s) => sameTeam(s.name, name))?.score
+    const n = raw == null ? NaN : parseInt(raw, 10)
+    return isNaN(n) ? null : n
+  }
+  return { home: find(homeName), away: find(awayName) }
+}
+
+/**
+ * Which of the market's sides won a completed game, 'tie' if it ended level,
+ * null if it isn't over, the scores aren't usable, or the payload is about
+ * other teams (see teamScores).
  */
 export function winningSide(
-  score: OddsApiScore
+  score: OddsApiScore,
+  teams?: GameTeams
 ): 'home' | 'away' | 'tie' | null {
   if (!score.completed) return null
-  const { home, away } = teamScores(score)
-  if (home == null || away == null) return null
+  const scores = teamScores(score, teams)
+  if (!scores || scores.home == null || scores.away == null) return null
+  const { home, away } = scores
   return home > away ? 'home' : away > home ? 'away' : 'tie'
 }
 

@@ -1129,6 +1129,14 @@ export const findSportsMoneyline = (
     [eventId, MANIFOLD_SPORTS_USER_IDS]
   )
 
+/** The game kicked off (or is about to) before its market could be made. */
+export class SportsGameStartedError extends Error {
+  constructor(startTimestamp: string) {
+    super(`kicked off at ${startTimestamp} before its market could be created`)
+    this.name = 'SportsGameStartedError'
+  }
+}
+
 export class SportsMarketAlreadyExistsError extends Error {
   constructor(readonly contractId: string) {
     super(`market ${contractId} already exists`)
@@ -1145,7 +1153,15 @@ export async function createSportsContract(
   pg: SupabaseDirectClient,
   creatorUser: User,
   params: SportsContractParams,
-  opts: { notifyFollowers?: boolean; deduplicateMoneyline?: boolean } = {}
+  opts: {
+    notifyFollowers?: boolean
+    deduplicateMoneyline?: boolean
+    /**
+     * Refuse, inside the transaction, a game kicking off sooner than this:
+     * the last check before the ante moves.
+     */
+    minLeadMs?: number
+  } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
   if (params.answerProbs) {
@@ -1239,6 +1255,11 @@ export async function createSportsContract(
       ])
       const existing = await findSportsMoneyline(tx, params.sportsEventId)
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
+    }
+    if (opts.minLeadMs != null) {
+      const start = Date.parse(params.sportsStartTimestamp ?? '')
+      if (!(start > Date.now() + opts.minLeadMs))
+        throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
     }
     if (insertAnswersQuery) {
       const rows = await tx.multi(`${contractQuery}; ${insertAnswersQuery};`)

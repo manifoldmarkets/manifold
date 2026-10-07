@@ -20,6 +20,7 @@ import {
   createSportsContract,
   ensureOfficialGroup,
   findSportsMoneyline,
+  SportsGameStartedError,
   SportsMarketAlreadyExistsError,
 } from 'shared/sports-markets'
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
@@ -34,6 +35,7 @@ import {
 import {
   buildOddsMarketParams,
   gameResolution,
+  GameTeams,
   OddsApiScore,
   OddsMarketParams,
   parseOddsEventId,
@@ -60,6 +62,12 @@ export const MAX_NEW_MARKETS_PER_RUN = 25
 const ATTENTION_AFTER_MS = 3 * HOUR_MS
 /** The resolve job's cadence in backend/scheduler/src/jobs/index.ts. */
 const RESOLVE_TICK_MS = 5 * MINUTE_MS
+/**
+ * A game kicking off sooner than this isn't created: a pregame line that
+ * close to kickoff isn't worth opening, and the margin covers the time a run
+ * takes and clock drift between us and the provider.
+ */
+export const MIN_CREATE_LEAD_MS = 5 * MINUTE_MS
 
 // ─── Creating markets ─────────────────────────────────────────────────────────
 
@@ -114,14 +122,21 @@ export async function createOddsMarketsForCompetition(
   }
   if (windows.length === 0) return result
 
-  // Only games that have not started: the odds endpoint also returns games
-  // in play, and a market opened from a live line is not a market.
-  const now = Date.now()
+  // Only games that haven't started: the odds endpoint also returns games in
+  // play, and a market opened from a live line is not a market. The clock is
+  // read after the fetch returns, then again before each game is created and
+  // inside its transaction, so a slow fetch or a long run can't fund a game
+  // after kickoff.
   const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
-  const events = (await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS))
+  const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS)
+  const now = Date.now()
+  const events = fetched
     .filter((e) => {
       const t = new Date(e.commence_time).getTime()
-      return t > now && windows.some((w) => t >= w.from && t <= w.to)
+      return (
+        t > now + MIN_CREATE_LEAD_MS &&
+        windows.some((w) => t >= w.from && t <= w.to)
+      )
     })
     .filter((e) => !picked || picked.has(e.id))
     .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time))
@@ -142,6 +157,9 @@ export async function createOddsMarketsForCompetition(
       if (existing) {
         const moved = await resyncKickoff(pg, existing.id, params, {
           dryRun: opts.dryRun,
+          titleFor: (start) =>
+            buildOddsMarketParams({ ...event, commence_time: start }, entry)
+              .question,
         })
         result.skipped++
         result.log.push({
@@ -166,6 +184,19 @@ export async function createOddsMarketsForCompetition(
           question: params.question,
           status: 'skipped',
           reason: 'no moneyline yet; the next daily run will try again',
+        })
+        continue
+      }
+      if (
+        Date.parse(params.sportsStartTimestamp) <=
+        Date.now() + MIN_CREATE_LEAD_MS
+      ) {
+        result.skipped++
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'skipped',
+          reason: 'kicks off too soon to open a market',
         })
         continue
       }
@@ -233,7 +264,7 @@ export async function createOddsMarketsForCompetition(
           sportsMarketType: params.sportsMarketType,
           groupIds,
         },
-        { deduplicateMoneyline: true }
+        { deduplicateMoneyline: true, minLeadMs: MIN_CREATE_LEAD_MS }
       )
       result.created++
       result.log.push({
@@ -243,13 +274,17 @@ export async function createOddsMarketsForCompetition(
         reason: contract.id,
       })
     } catch (e) {
-      const duplicate = e instanceof SportsMarketAlreadyExistsError
-      if (duplicate) result.skipped++
+      // Both are expected races, not failures: another run made the market,
+      // or the game kicked off while this one was getting to it.
+      const skipped =
+        e instanceof SportsMarketAlreadyExistsError ||
+        e instanceof SportsGameStartedError
+      if (skipped) result.skipped++
       else result.errors++
       result.log.push({
         eventId: event.id,
         question,
-        status: duplicate ? 'skipped' : 'error',
+        status: skipped ? 'skipped' : 'error',
         reason: e instanceof Error ? e.message : String(e),
       })
     }
@@ -266,19 +301,31 @@ async function resyncKickoff(
   pg: SupabaseDirectClient,
   contractId: string,
   params: OddsMarketParams,
-  opts: { dryRun?: boolean }
+  opts: {
+    dryRun?: boolean
+    /** The title the pipeline gives this game at a given kickoff. */
+    titleFor: (start: string) => string
+  }
 ): Promise<boolean> {
   const row = await pg.oneOrNone<{
     start: string | null
     resolution: string | null
+    question: string | null
   }>(
-    `select data->>'sportsStartTimestamp' as start, resolution
+    `select data->>'sportsStartTimestamp' as start, resolution, question
      from contracts where id = $1`,
     [contractId]
   )
   if (!row || row.resolution) return false
   if (Date.parse(row.start ?? '') === Date.parse(params.sportsStartTimestamp))
     return false
+  // The date is in the title, so repeat fixtures differ. Move it with the
+  // kickoff, but only while the title is still the one the pipeline wrote:
+  // an edited title stays. The slug never changes.
+  const retitle =
+    !!row.start &&
+    row.question === opts.titleFor(row.start) &&
+    params.question !== row.question
   if (!opts.dryRun) {
     await pg.none(
       `update contracts set data = data || $1::jsonb
@@ -287,6 +334,7 @@ async function resyncKickoff(
         JSON.stringify({
           sportsStartTimestamp: params.sportsStartTimestamp,
           closeTime: params.closeTime,
+          ...(retitle ? { question: params.question } : {}),
         }),
         contractId,
       ]
@@ -438,13 +486,33 @@ function alertIfOverdue(game: PendingGame, now: number) {
   )
 }
 
+// The two teams stored on the market when it was created.
+function gameTeams(game: PendingGame): GameTeams {
+  const d = game.contract as any
+  return { home: d.sportsHomeTeam, away: d.sportsAwayTeam }
+}
+
+function teamMismatch(
+  game: PendingGame,
+  score: OddsApiScore,
+  teams: GameTeams
+) {
+  return `[sports-odds-resolve] ${game.contract.id}: the score feed has ${score.home_team} v ${score.away_team} for event ${game.eventId}, but the market is ${teams.home} v ${teams.away}. Not scoring or resolving it; check the game and resolve it by hand.`
+}
+
 async function writeLiveScore(
   pg: SupabaseDirectClient,
   game: PendingGame,
   score: OddsApiScore,
   now: number
 ) {
-  const { home, away } = teamScores(score)
+  const teams = gameTeams(game)
+  const scores = teamScores(score, teams)
+  if (!scores) {
+    log.error(teamMismatch(game, score, teams))
+    return
+  }
+  const { home, away } = scores
   const patch = {
     sportsHomeScore: home,
     sportsAwayScore: away,
@@ -468,8 +536,13 @@ async function finishGame(
 ) {
   const { contract } = game
   const d = contract as any
-  const side = winningSide(score)
-  const { home, away } = teamScores(score)
+  // Scores and the winner are read against the market's own home and away,
+  // never the payload's, and a payload about other teams stops here.
+  const teams = gameTeams(game)
+  const scores = teamScores(score, teams)
+  if (!scores) throw new Error(teamMismatch(game, score, teams))
+  const side = winningSide(score, teams)
+  const { home, away } = scores
   if (side === null || home == null || away == null) {
     throw new Error(`completed game ${game.eventId} has no scores`)
   }
