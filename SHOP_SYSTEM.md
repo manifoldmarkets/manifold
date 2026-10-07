@@ -1180,7 +1180,9 @@ Phase 3: DB Update
 
 ### Key Design Decisions
 
-- Merch checkout dialogs keep their action buttons in a footer outside the scrollable content. The dialog height follows the dynamic viewport, and the footer includes bottom safe-area padding so shipping quotes and long address forms do not push the next step off-screen on mobile. This layout is scoped to `web/components/shop/merch-checkout-modal.tsx` and used for purchase, shipping, and final confirmation.
+- Merch checkout dialogs keep their action buttons in a footer outside the scrollable content. They opt into the shared modal's `adaptToKeyboard` behavior, using `visualViewport` height and offset for the keyboard and Safari's focus panning, with a dynamic-viewport fallback. Pinch zoom does not trigger dialog resizing. The footer includes bottom safe-area padding. This layout is scoped to `web/components/shop/merch-checkout-modal.tsx` and used for purchase, shipping, and final confirmation.
+- Shipping inputs and the country selector use 16px text at all screen widths to avoid iOS focus zoom, including landscape. The browser viewport continues to allow user zoom; the native app's existing WebView configuration separately suppresses it.
+- Headless UI is pinned to 2.2.9, which fixes stale iOS scroll-lock state when opening sibling dialogs and persistent `touch-action: none` after interacting outside a dialog. Both fixes matter to the shipping/final-confirmation flow.
 
 | Decision | Outcome |
 |----------|---------|

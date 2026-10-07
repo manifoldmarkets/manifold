@@ -1,7 +1,8 @@
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { ReactNode, useEffect, useRef } from 'react'
+import { CSSProperties, ReactNode, useEffect, useRef } from 'react'
+import { useVisualViewport } from 'web/hooks/use-visual-viewport'
 
 export const MODAL_CLASS = // card color and spacing
   'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
@@ -19,6 +20,7 @@ export function Modal(props: {
   onClose?: () => void
   ariaLabel?: string
   hideCloseButton?: boolean
+  adaptToKeyboard?: boolean
 }) {
   const {
     children,
@@ -30,7 +32,20 @@ export function Modal(props: {
     onClose,
     ariaLabel,
     hideCloseButton = false,
+    adaptToKeyboard = false,
   } = props
+
+  const viewport = useVisualViewport(open && adaptToKeyboard)
+  const viewportStyle:
+    | (CSSProperties & { '--modal-viewport-height': string })
+    | undefined = viewport
+    ? {
+        top: viewport.offsetTop,
+        bottom: 'auto',
+        height: viewport.height,
+        '--modal-viewport-height': `${viewport.height}px`,
+      }
+    : undefined
 
   const sizeClass = {
     sm: 'w-full sm:max-w-sm',
@@ -69,7 +84,10 @@ export function Modal(props: {
         className="bg-canvas-100/75 fixed inset-0 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
       />
 
-      <div className="fixed inset-0 z-10 w-screen overflow-y-auto pt-20 sm:p-0">
+      <div
+        className="fixed inset-0 z-10 w-screen overflow-y-auto pt-20 sm:p-0"
+        style={viewportStyle}
+      >
         <div className="flex min-h-full justify-center overflow-hidden">
           <DialogPanel
             transition

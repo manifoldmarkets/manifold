@@ -1791,7 +1791,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, name: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1800,7 +1800,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address1: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1809,7 +1809,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address2: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1818,7 +1818,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, city: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
             />
             <Row className="w-full gap-3">
               <input
@@ -1828,7 +1828,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, city: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
               />
               <input
                 type="text"
@@ -1838,7 +1838,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, state: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
               <input
                 type="text"
@@ -1847,7 +1847,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, zip: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
             </Row>
             <p className="text-ink-500 -mt-1 text-xs">
@@ -1867,7 +1867,7 @@ function MerchItemCard(props: {
                 setShippingRates(null)
                 setSelectedShipping(null)
               }}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -1887,7 +1887,7 @@ function MerchItemCard(props: {
                       taxNumber: e.target.value,
                     }))
                   }
-                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <p className="text-ink-500 text-xs">
                   <span className="font-medium">{taxIdConfig.label}:</span>{' '}
@@ -1909,7 +1909,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, email: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
               {emailRequired ? (
                 <p className="text-ink-500 text-xs">
