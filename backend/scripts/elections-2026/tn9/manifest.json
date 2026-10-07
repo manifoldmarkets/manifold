@@ -3,8 +3,10 @@
   "series": "us-2026-general-v1",
   "generatedAt": "2026-10-07T04:24:55.435Z",
   "review": {
-    "approved": false,
-    "notes": "TN-9 only (2026-10-07), from batch 2's reviewed entry and its 2026-10-06 seeds: the one House district with no market at all. Needs Tod's approval before creation."
+    "approved": true,
+    "notes": "TN-9 only (2026-10-07), from batch 2's reviewed entry and its 2026-10-06 seeds: the one House district with no market at all. Needs Tod's approval before creation.\n2026-10-07T04:40:12.110Z: Approved for creation.",
+    "reviewedBy": "Tod",
+    "reviewedAt": "2026-10-07T04:40:12.110Z"
   },
   "budget": {
     "approvedMaxTotalMana": 1000
