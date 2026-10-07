@@ -47,7 +47,11 @@ export type ConditionalMatrixColumn = {
 export type MatrixColumns = [ConditionalMatrixColumn, ConditionalMatrixColumn]
 
 export const HOUSE_2026_COLUMNS: MatrixColumns = [
-  { party: 'dem', label: 'If Democrats win the House', shortLabel: 'Dem House' },
+  {
+    party: 'dem',
+    label: 'If Democrats win the House',
+    shortLabel: 'Dem House',
+  },
   {
     party: 'rep',
     label: 'If Republicans keep the House',
