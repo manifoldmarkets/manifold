@@ -334,9 +334,8 @@ function GameWhen(props: {
         {time}
       </span>
     )
-    secondary =
-      startsSoonLabel(game.startTime) ??
-      (layout === 'column' ? dayjs(game.startTime).format('ddd D') : null)
+    // The day is in the feed's day heading.
+    secondary = startsSoonLabel(game.startTime)
   }
 
   if (layout === 'inline') {

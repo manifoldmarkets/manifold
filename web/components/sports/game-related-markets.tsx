@@ -75,9 +75,10 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
       <Row className="items-center justify-between gap-2">
         <span className="text-ink-600 text-xs font-medium">
           Markets on this game
-          {ids.length > 0 && (
-            <span className="text-ink-400 font-normal"> · {ids.length}</span>
-          )}
+          <span className="text-ink-400 font-normal">
+            {' · '}
+            {ids.length > 0 ? ids.length : 'none yet'}
+          </span>
         </span>
         <Link
           href={createMarketHref(game)}
@@ -90,11 +91,7 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
           Add a market
         </Link>
       </Row>
-      {ids.length === 0 ? (
-        <p className="text-ink-400 mt-0.5 text-xs">
-          Spreads, totals, props and side-bets on this game will show here.
-        </p>
-      ) : error ? (
+      {ids.length === 0 ? null : error ? (
         <p className="text-ink-500 mt-1 text-xs">
           Couldn't load these markets.
         </p>
