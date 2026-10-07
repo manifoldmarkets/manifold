@@ -134,7 +134,7 @@ function MakeAMarket(props: { sport: SportInfo | 'all' }) {
     <Row className="border-ink-200 bg-canvas-0 items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3">
       <Col className="min-w-0 gap-0.5">
         <span className="text-ink-900 text-sm font-semibold">
-          Make a {label} market
+          Make your own {label} market
         </span>
         <span className="text-ink-500 text-xs">
           Futures, awards, props, side-bets: anything people can trade on.

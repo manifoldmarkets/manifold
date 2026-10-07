@@ -370,6 +370,23 @@ describe('the market a game becomes', () => {
     expect(p.sportsMarketType).toBe('moneyline')
     expect(p.closeTime).toBe(Date.parse('2026-09-13T21:00:00Z'))
   })
+  it('gives every launch league its team codes', () => {
+    const mlb = calendarEntriesFor('mlb-2026')[0]
+    const p = buildOddsMarketParams(
+      {
+        ...nflEvent,
+        home_team: 'New York Yankees',
+        away_team: 'Tampa Bay Rays',
+      },
+      mlb
+    )
+    expect(p.answerShortTexts).toEqual(['NYY', 'TB'])
+    // A team without a code leaves both sides to their names.
+    const cfb = calendarEntriesFor('cfb-regular-2026')[0]
+    expect(
+      buildOddsMarketParams(nflEvent, cfb).answerShortTexts
+    ).toBeUndefined()
+  })
   it('seeds opening prices the create validation accepts', () => {
     for (const [event, entry] of [
       [nflEvent, nfl],
@@ -393,7 +410,7 @@ describe('the market a game becomes', () => {
     expect(p.answers).toEqual(['Arsenal', 'Chelsea', 'Draw'])
     expect(p.answerProbs).toHaveLength(3)
     expect(p.answerProbs!.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 1)
-    expect(p.answerShortTexts).toBeUndefined()
+    expect(p.answerShortTexts).toEqual(['ARS', 'CHE', 'Draw'])
     expect(p.question).toBe('Arsenal vs Chelsea, Sep 13 [official]')
     expect(p.description).toContain('90 minutes plus stoppage time')
     expect(p.sportsLeague).toBe('Soccer')
