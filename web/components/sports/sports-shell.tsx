@@ -110,7 +110,42 @@ export function SportMarkets(props: {
         sportsByKey={sportsByKey}
       />
       <SportsMarketSections sport={sport} enabled={enabled} />
+      <MakeAMarket sport={sport} />
     </Col>
+  )
+}
+
+// Closes the Markets tab, and is all of it when a sport has nothing yet.
+function MakeAMarket(props: { sport: SportInfo | 'all' }) {
+  const { sport } = props
+  const label = sport === 'all' ? 'sports' : sport.label
+  // /create reads its prefill from a JSON `params` query value; `rand`
+  // replaces a saved draft and applies the topic, as duplicating does.
+  const slug = sport === 'all' ? 'sports-default' : sport.slug
+  const params = {
+    q: '',
+    description: '',
+    visibility: 'public',
+    groupSlugs: slug ? [slug] : undefined,
+    rand: sport === 'all' ? 'sports' : sport.key.slice(0, 12),
+  }
+  return (
+    <Row className="border-ink-200 bg-canvas-0 items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3">
+      <Col className="min-w-0 gap-0.5">
+        <span className="text-ink-900 text-sm font-semibold">
+          Make a {label} market
+        </span>
+        <span className="text-ink-500 text-xs">
+          Futures, awards, props, side-bets: anything people can trade on.
+        </span>
+      </Col>
+      <Link
+        href={`/create?params=${encodeURIComponent(JSON.stringify(params))}`}
+        className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
+      >
+        <PlusIcon className="h-4 w-4" /> Create
+      </Link>
+    </Row>
   )
 }
 
