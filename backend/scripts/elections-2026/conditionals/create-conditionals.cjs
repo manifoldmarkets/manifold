@@ -220,6 +220,50 @@ const QUESTIONS = [
     extraGroups: [TOPIC.bitcoin],
     rule: "Resolves **YES** if Coinbase's BTC-USD price at 00:00 UTC on January 1, 2031 (the daily close for December 31, 2030) is above $250,000. Resolves **NO** otherwise.",
   },
+  // ---- 2026 matrix rows (Senate control), with the scotus pair above ----
+  // Priors as of 2026-10-07: 53 Article III judges confirmed through
+  // 2026-09-01 (~32 a year); Thune says the votes to end the filibuster
+  // aren't there.
+  {
+    key: 'scotus-leave',
+    chamber: 'senate',
+    ask: 'will a Supreme Court justice leave the Court before January 3, 2029?',
+    seeds: { D: 12, R: 50 },
+    close: '2029-01-03T17:00:00Z',
+    rule: 'Resolves **YES** if any justice of the U.S. Supreme Court retires, resigns, dies or otherwise leaves the Court between January 3, 2027 and January 3, 2029 (inclusive). A retirement counts when it takes effect; an announced retirement that has not taken effect by January 3, 2029 does not count. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'judges-40',
+    chamber: 'senate',
+    ask: 'will the Senate confirm at least 40 federal judges in the 120th Congress?',
+    seeds: { D: 8, R: 65 },
+    close: '2029-01-03T17:00:00Z',
+    rule: "Resolves **YES** if the U.S. Senate confirms 40 or more Article III judges (Supreme Court, courts of appeals, district courts and the Court of International Trade) between January 3, 2027 and January 3, 2029, as counted by the Federal Judicial Center's biographical directory or the Senate's record of confirmations. Resolves **NO** otherwise.",
+  },
+  {
+    key: 'cabinet-nominee',
+    chamber: 'senate',
+    ask: 'will a Cabinet nomination be rejected or withdrawn before January 3, 2029?',
+    seeds: { D: 40, R: 8 },
+    close: '2029-01-03T17:00:00Z',
+    rule: "Resolves **YES** if, between January 3, 2027 and January 3, 2029, the Senate votes down, or the President withdraws, a nomination formally sent to the Senate to head one of the 15 executive departments (e.g. Attorney General, Secretary of Defense). Names floated or announced but never formally sent to the Senate don't count. Resolves **NO** otherwise.",
+  },
+  {
+    key: 'shutdown',
+    chamber: 'senate',
+    ask: 'will there be a federal government shutdown in 2027?',
+    seeds: { D: 50, R: 35 },
+    close: '2027-12-31T23:59:00Z',
+    rule: 'Resolves **YES** if a lapse in federal appropriations causes a shutdown (agencies begin orderly shutdown procedures and furlough non-excepted employees) that starts at any time during calendar year 2027 (U.S. Eastern time), whether full or partial. A lapse that starts in 2026 and continues into 2027 does not count; one starting in 2027 counts even if brief. Resolves **NO** otherwise.',
+  },
+  {
+    key: 'filibuster',
+    chamber: 'senate',
+    ask: 'will the Senate end the legislative filibuster before January 3, 2029?',
+    seeds: { D: 2, R: 8 },
+    close: '2029-01-03T17:00:00Z',
+    rule: 'Resolves **YES** if, before January 3, 2029, the Senate changes its rules or sets a precedent so that ordinary legislation (or a whole category of it) can pass with a simple majority instead of needing 60 votes for cloture. Existing exceptions (nominations, budget reconciliation) and one-off waivers for a single bill do not count. Resolves **NO** otherwise.',
+  },
 ]
 
 function payloads() {
