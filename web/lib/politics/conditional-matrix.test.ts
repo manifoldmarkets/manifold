@@ -5,6 +5,7 @@ import {
   buildConditionalMatrixRows,
   conditionalMatrixIds,
   ConditionalMatrixPair,
+  congressChambers,
   gapPoints,
   HOUSE_2026_COLUMNS,
   HOUSE_2026_MATRIX,
@@ -12,6 +13,7 @@ import {
   MATRIX_COLLAPSED_ROWS,
   matrixProb,
   PRESIDENT_2028_MATRIX,
+  SENATE_2026_MATRIX,
   slimMatrixRows,
   visibleMatrixRows,
   wholePercent,
@@ -105,6 +107,7 @@ test('a matrix with fewer than two complete rows is hidden', () => {
 })
 
 test('the real config resolves to nothing before its markets exist', () => {
+  assert.deepEqual(buildConditionalMatrixRows(SENATE_2026_MATRIX, [], NOW), [])
   assert.deepEqual(buildConditionalMatrixRows(HOUSE_2026_MATRIX, [], NOW), [])
   assert.deepEqual(
     buildConditionalMatrixRows(PRESIDENT_2028_MATRIX, [], NOW),
@@ -112,15 +115,21 @@ test('the real config resolves to nothing before its markets exist', () => {
   )
 })
 
-test('config ids are unique across both matrices', () => {
+test('config ids are unique across all matrices', () => {
   const ids = conditionalMatrixIds()
-  assert.equal(ids.length, 2 * (10 + 7))
+  assert.equal(ids.length, 2 * (6 + 10 + 7))
   assert.equal(new Set(ids).size, ids.length)
   for (const id of ids) assert.match(id, /^[A-Za-z0-9]{10}$/)
-  const labels = [...HOUSE_2026_MATRIX, ...PRESIDENT_2028_MATRIX].map(
-    (p) => p.label
-  )
-  assert.equal(new Set(labels).size, labels.length)
+  // Labels repeat across matrices (a 2027 shutdown is asked under both
+  // chambers) but not within one.
+  for (const matrix of [
+    SENATE_2026_MATRIX,
+    HOUSE_2026_MATRIX,
+    PRESIDENT_2028_MATRIX,
+  ]) {
+    const labels = matrix.map((p) => p.label)
+    assert.equal(new Set(labels).size, labels.length)
+  }
 })
 
 test('no market is in both a matrix and the conditional card row', () => {
@@ -140,6 +149,25 @@ test('the House pairs that moved into the matrix are where they should be', () =
     ['C9pqA8yg00', 'usOOuPqSst'],
   ])
     assert.ok(house.some((p) => p[0] === pair[0] && p[1] === pair[1]))
+})
+
+test('the Supreme Court pair moved from the card row to the Senate matrix', () => {
+  assert.ok(
+    SENATE_2026_MATRIX.some(
+      (p) => p.dem === 'pcdS8RNNRA' && p.rep === 'RU8Rztcs28'
+    )
+  )
+})
+
+test('the Congress section offers the chambers that have rows, Senate first', () => {
+  const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
+  assert.deepEqual(congressChambers({ senate: rows, house: rows }), [
+    'senate',
+    'house',
+  ])
+  assert.deepEqual(congressChambers({ senate: [], house: rows }), ['house'])
+  assert.deepEqual(congressChambers({ senate: rows, house: [] }), ['senate'])
+  assert.deepEqual(congressChambers({ senate: [], house: [] }), [])
 })
 
 test('slimMatrixRows drops the description but keeps what the matrix reads', () => {

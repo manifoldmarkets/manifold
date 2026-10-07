@@ -25,18 +25,17 @@ const market = (slug: string, overrides: Record<string, unknown> = {}) =>
 
 test('the curated list has no duplicate references', () => {
   const { slugs, ids } = midtermConditionalRefs()
-  assert.ok(slugs.length + ids.length >= 3)
+  assert.ok(slugs.length + ids.length >= 2)
   assert.equal(new Set(slugs).size, slugs.length)
   assert.equal(new Set(ids).size, ids.length)
 })
 
-test('the card row keeps the two singles and the Senate pair', () => {
-  // The House pairs moved to the 2026 House matrix (conditional-matrix.ts).
-  assert.equal(MIDTERM_CONDITIONALS.length, 3)
-  const pairs = MIDTERM_CONDITIONALS.flatMap((e) => ('pair' in e ? [e] : []))
-  assert.equal(pairs.length, 1)
-  assert.equal(pairs[0].pair.chamber, 'Senate')
-  assert.deepEqual(midtermConditionalRefs().ids, ['pcdS8RNNRA', 'RU8Rztcs28'])
+test('the card row keeps the two singles', () => {
+  // The House and Senate pairs moved to the 2026 Congress matrices
+  // (conditional-matrix.ts).
+  assert.equal(MIDTERM_CONDITIONALS.length, 2)
+  assert.ok(MIDTERM_CONDITIONALS.every((e) => !('pair' in e)))
+  assert.deepEqual(midtermConditionalRefs().ids, [])
   assert.deepEqual(midtermConditionalRefs().slugs, [
     'if-democrats-win-the-house-or-senat',
     'if-trump-puts-boots-on-the-ground-i',

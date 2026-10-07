@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { referralQuery } from 'common/util/share'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Row } from './layout/row'
 import { LiveElectionMap } from './usa-map/live-election-map'
 import { TrendingMidtermsCarousel } from './us-elections/trending-midterms-carousel'
@@ -38,9 +40,12 @@ import {
 } from 'web/lib/politics/election-curation'
 import type { MidtermSpotlightProps } from 'web/lib/politics/home'
 import {
+  CongressChamber,
+  congressChambers,
   ConditionalMatrixRow,
   HOUSE_2026_COLUMNS,
   PRESIDENT_2028_COLUMNS,
+  SENATE_2026_COLUMNS,
   withConditionProbs,
 } from 'web/lib/politics/conditional-matrix'
 import interactions from './us-elections/election-interactions.module.css'
@@ -109,6 +114,7 @@ export function USElectionsPage(
     trendingContracts,
     contestContracts = [],
     conditionalRows = [],
+    senateMatrixRows = [],
     houseMatrixRows = [],
     presidencyMatrixRows = [],
     hideTitle,
@@ -243,18 +249,18 @@ export function USElectionsPage(
         </SectionInView>
       )}
 
-      {/* What the House result changes: the same questions asked under each
-          outcome (web/lib/politics/conditional-matrix.ts). It takes the
-          Balance of Power slot; until it has two complete rows (e.g. before
-          its markets are created) the joint-distribution market shows here
-          instead. */}
-      {houseMatrixRows.length > 0 ? (
+      {/* What control of Congress changes: the same questions asked under
+          each outcome of the Senate and House races
+          (web/lib/politics/conditional-matrix.ts), Senate first. It takes the
+          Balance of Power slot; until either chamber has two complete rows
+          (e.g. before the markets are created) the joint-distribution market
+          shows here instead. */}
+      {senateMatrixRows.length > 0 || houseMatrixRows.length > 0 ? (
         <SectionInView section="conditional matrix 2026" className="gap-3">
-          <SectionHeader subtitle="The same questions, asked under each outcome of the House race. Click a chance to bet on it.">
-            What a Democratic House would change
-          </SectionHeader>
-          <HouseConditionalMatrix
-            rows={houseMatrixRows}
+          <CongressConditionalSection
+            senateRows={senateMatrixRows}
+            houseRows={houseMatrixRows}
+            senateControlContract={senateControlContract}
             houseControlContract={houseControlContract}
           />
         </SectionInView>
@@ -374,27 +380,78 @@ export function USElectionsPage(
 const MATRIX_FOOTNOTE =
   "Each market resolves N/A if its condition doesn't happen, so bets only count in that world."
 
-// The 2026 House matrix. Column headers carry the live House control odds
-// (the same market as the map's House card: YES is a Republican majority).
-function HouseConditionalMatrix(props: {
-  rows: ConditionalMatrixRow[]
+const CHAMBER_CHOICES: Record<string, CongressChamber> = {
+  Senate: 'senate',
+  House: 'house',
+}
+
+// The 2026 Congress matrices under one header, with a Senate | House switch
+// when both chambers have rows. Column headers carry the live control odds of
+// the chosen chamber (the map's control cards' markets: YES is a Republican
+// majority in both).
+function CongressConditionalSection(props: {
+  senateRows: ConditionalMatrixRow[]
+  houseRows: ConditionalMatrixRow[]
+  senateControlContract: Contract | null
   houseControlContract: Contract | null
 }) {
+  const chambers = congressChambers({
+    senate: props.senateRows,
+    house: props.houseRows,
+  })
+  const [choice, setChoice] = usePersistentInMemoryState<CongressChamber>(
+    'senate',
+    'election-conditional-matrix-chamber'
+  )
+  const chamber = chambers.includes(choice) ? choice : chambers[0]
+  const senate = chamber === 'senate'
   return (
-    <LiveConditionOdds
-      contract={props.houseControlContract}
-      read={(c) => electionOdds(c, true)}
-    >
-      {(odds) => (
-        <ConditionalMatrix
-          caption="Chances by House result"
-          columns={withConditionProbs(HOUSE_2026_COLUMNS, odds)}
-          rows={props.rows}
-          trackingName="election conditional matrix 2026"
-          footnote={MATRIX_FOOTNOTE}
-        />
-      )}
-    </LiveConditionOdds>
+    <>
+      <SectionHeader
+        subtitle={`The same questions, asked under each outcome of the ${
+          senate ? 'Senate' : 'House'
+        } race. Click a chance to bet on it.`}
+        action={
+          chambers.length > 1 && (
+            <ChoicesToggleGroup
+              currentChoice={chamber}
+              choicesMap={CHAMBER_CHOICES}
+              setChoice={(value) => {
+                setChoice(value as CongressChamber)
+                track('toggle election conditional matrix chamber', {
+                  chamber: value,
+                })
+              }}
+              color="gray"
+              className="self-start sm:self-auto"
+              toggleClassName="focus-visible:!outline-none"
+            />
+          )
+        }
+      >
+        What control of Congress would change
+      </SectionHeader>
+      <LiveConditionOdds
+        key={chamber}
+        contract={
+          senate ? props.senateControlContract : props.houseControlContract
+        }
+        read={(c) => electionOdds(c, true)}
+      >
+        {(odds) => (
+          <ConditionalMatrix
+            caption={`Chances by ${senate ? 'Senate' : 'House'} result`}
+            columns={withConditionProbs(
+              senate ? SENATE_2026_COLUMNS : HOUSE_2026_COLUMNS,
+              odds
+            )}
+            rows={senate ? props.senateRows : props.houseRows}
+            trackingName={`election conditional matrix 2026 ${chamber}`}
+            footnote={MATRIX_FOOTNOTE}
+          />
+        )}
+      </LiveConditionOdds>
+    </>
   )
 }
 

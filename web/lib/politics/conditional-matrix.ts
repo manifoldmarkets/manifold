@@ -55,6 +55,19 @@ export const HOUSE_2026_COLUMNS: MatrixColumns = [
   },
 ]
 
+export const SENATE_2026_COLUMNS: MatrixColumns = [
+  {
+    party: 'dem',
+    label: 'If Democrats win the Senate',
+    shortLabel: 'Dem Senate',
+  },
+  {
+    party: 'rep',
+    label: 'If Republicans keep the Senate',
+    shortLabel: 'Rep Senate',
+  },
+]
+
 export const PRESIDENT_2028_COLUMNS: MatrixColumns = [
   { party: 'dem', label: 'If the Democrat wins', shortLabel: 'Dem wins' },
   { party: 'rep', label: 'If the Republican wins', shortLabel: 'Rep wins' },
@@ -136,6 +149,42 @@ export const HOUSE_2026_MATRIX: ConditionalMatrixPair[] = [
   },
 ]
 
+// 2026 Senate: "If Democrats win the Senate in 2026, …" (dem: 51+ seats with
+// caucusing independents) and "If Republicans keep the Senate in 2026, …"
+// (rep: 50+, as the Vice President breaks ties).
+export const SENATE_2026_MATRIX: ConditionalMatrixPair[] = [
+  {
+    label: 'A justice leaves the Supreme Court (by Jan 2029)',
+    dem: 'lE0ypZZzgU',
+    rep: 'csSL8qpuLR',
+  },
+  {
+    label: 'Senate confirms a new Supreme Court justice',
+    dem: 'pcdS8RNNRA',
+    rep: 'RU8Rztcs28',
+  },
+  {
+    label: '40+ federal judges confirmed in 2027–28',
+    dem: 'EpsCdguPRg',
+    rep: 'A09yzLq6Ig',
+  },
+  {
+    label: 'A Cabinet nomination is rejected or withdrawn',
+    dem: 'ptntLEl2sz',
+    rep: 'uZzcdhuhQE',
+  },
+  {
+    label: 'Government shutdown in 2027',
+    dem: 'dsZz9nNCsR',
+    rep: 'qdu8QIEgyp',
+  },
+  {
+    label: 'Legislative filibuster ended (by Jan 2029)',
+    dem: 'hyyQAQLtId',
+    rep: 'PRzQ859g60',
+  },
+]
+
 // 2028 presidency: "If the Democratic nominee wins the 2028 presidential
 // election, …" (dem) and "If the Republican nominee wins …" (rep).
 export const PRESIDENT_2028_MATRIX: ConditionalMatrixPair[] = [
@@ -176,9 +225,22 @@ export const PRESIDENT_2028_MATRIX: ConditionalMatrixPair[] = [
   },
 ]
 
+export type CongressChamber = 'senate' | 'house'
+
+/**
+ * The 2026 Congress matrices that have rows to show, Senate first: it is the
+ * chamber most likely to flip. The page offers a switch when both do.
+ */
+export function congressChambers(
+  rows: Record<CongressChamber, ConditionalMatrixRow[]>
+): CongressChamber[] {
+  return (['senate', 'house'] as const).filter((c) => rows[c].length > 0)
+}
+
 /** Every contract id the matrices reference, for one batched fetch. */
 export function conditionalMatrixIds(
   matrices: ConditionalMatrixPair[][] = [
+    SENATE_2026_MATRIX,
     HOUSE_2026_MATRIX,
     PRESIDENT_2028_MATRIX,
   ]

@@ -45,6 +45,7 @@ import {
   HOUSE_2026_MATRIX,
   matrixRowContracts,
   PRESIDENT_2028_MATRIX,
+  SENATE_2026_MATRIX,
   slimMatrixRows,
 } from 'web/lib/politics/conditional-matrix'
 
@@ -57,9 +58,10 @@ export type MidtermSpotlightProps = {
   contestContracts: Contract[]
   // Markets conditional on the midterm result (curated list).
   conditionalRows: MidtermConditionalRow[]
-  // The conditional matrices: rows asked under each outcome of the 2026 House
-  // and the 2028 presidency. Empty means the matrix is hidden (fewer than two
-  // complete rows, e.g. before its markets are created).
+  // The conditional matrices: rows asked under each outcome of the 2026 Senate
+  // and House races and the 2028 presidency. Empty means the matrix is hidden
+  // (fewer than two complete rows, e.g. before its markets are created).
+  senateMatrixRows: ConditionalMatrixRow[]
   houseMatrixRows: ConditionalMatrixRow[]
   presidencyMatrixRows: ConditionalMatrixRow[]
 }
@@ -214,6 +216,9 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
   ])
 
   const conditionalRows = buildMidtermConditionalRows(conditionalContracts, now)
+  const senateMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(SENATE_2026_MATRIX, conditionalContracts, now)
+  )
   const houseMatrixRows = slimMatrixRows(
     buildConditionalMatrixRows(HOUSE_2026_MATRIX, conditionalContracts, now)
   )
@@ -230,6 +235,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     excludeIds: [
       ...contestContracts,
       ...conditionalRowContracts(conditionalRows),
+      ...matrixRowContracts(senateMatrixRows),
       ...matrixRowContracts(houseMatrixRows),
       ...matrixRowContracts(presidencyMatrixRows),
       ...pollingPerpContracts,
@@ -260,6 +266,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     trendingContracts,
     contestContracts,
     conditionalRows,
+    senateMatrixRows,
     houseMatrixRows,
     presidencyMatrixRows,
   }

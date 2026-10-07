@@ -43,17 +43,10 @@ export const MIDTERM_CONDITIONALS: MidtermConditionalEntry[] = [
   // Senate. N/A unless the linked boots-on-the-ground market resolves YES
   // before the midterms.
   { market: { slug: 'if-trump-puts-boots-on-the-ground-i' } },
-  // House-conditional pairs (impeachment, shutdown, S&P 500, …) live in the
-  // 2026 House matrix (HOUSE_2026_MATRIX in conditional-matrix.ts), not here:
-  // a market belongs to one section or the other.
-  // A Supreme Court seat (ids reserved before creation).
-  {
-    pair: {
-      chamber: 'Senate',
-      ifDemocrats: { id: 'pcdS8RNNRA' },
-      ifRepublicans: { id: 'RU8Rztcs28' },
-    },
-  },
+  // Pairs conditional on House or Senate control (impeachment, shutdown, the
+  // Supreme Court seat, …) live in the 2026 Congress matrices
+  // (HOUSE_2026_MATRIX and SENATE_2026_MATRIX in conditional-matrix.ts), not
+  // here: a market belongs to one section or the other.
 ]
 
 const refs = (entries: MidtermConditionalEntry[]): MarketRef[] =>
