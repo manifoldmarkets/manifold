@@ -1,8 +1,8 @@
 import { sortBy, sum } from 'lodash'
 import { Answer } from './answer'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
-import { NFL_TEAM_TLA } from './sports'
 import { gameAnswerColors } from './sports-team-colors'
+import { teamCode } from './sports-team-codes'
 import {
   CLOSE_BUFFER_HOURS,
   SPORT_ID_TO_SPORT_KEY,
@@ -337,8 +337,8 @@ export function buildOddsMarketParams(
   // floor once the pools rescale the total to exactly 100.
   const answerProbs = fairProbs(event, answers)?.map((p) => p * 100)
 
-  const homeShort = NFL_TEAM_TLA[home]
-  const awayShort = NFL_TEAM_TLA[away]
+  const homeShort = teamCode(entry.sport, home)
+  const awayShort = teamCode(entry.sport, away)
   const answerShortTexts =
     homeShort && awayShort
       ? threeWay

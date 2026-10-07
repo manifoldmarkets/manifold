@@ -179,6 +179,7 @@ const SOCCER: Record<string, Palette> = {
   'Crystal Palace': ['#1B458F', '#C4122E'],
   Everton: ['#003399', '#FFFFFF'],
   Fulham: ['#000000', '#CC0000'],
+  'Hull City': ['#F5A12D', '#000000'],
   'Ipswich Town': ['#3A64A3', '#DE2C37'],
   'Leeds United': ['#1D428A', '#FFCD00'],
   'Leicester City': ['#003090', '#FDBE11'],
@@ -206,7 +207,7 @@ export const TEAM_PALETTES: Partial<Record<SportId, Record<string, Palette>>> =
   }
 
 /** Lowercase, `&` as "and", no punctuation or FC/AFC-style club suffixes. */
-function normalizeTeam(name: string): string {
+export function normalizeTeam(name: string): string {
   return name
     .toLowerCase()
     .replace(/&/g, ' and ')

@@ -11,6 +11,7 @@ import { Contract, isMultiCpmm } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { teamCodeForLeague } from 'common/sports-team-codes'
 import {
   AnySportKey,
   buildSportsIndex,
@@ -385,8 +386,8 @@ function toOfficialGame(
   const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
   const teams = ordered.filter((a) => a !== drawAnswer)
   if (teams.length !== 2) return null
-  const home = toTeam(teams[0])
-  const away = toTeam(teams[1])
+  const home = toTeam(teams[0], d.sportsLeague)
+  const away = toTeam(teams[1], d.sportsLeague)
   const draw = drawAnswer
     ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
     : null
@@ -456,9 +457,13 @@ function toOfficialGame(
   }
 }
 
-function toTeam(answer: Answer): ScheduleTeam {
+// Markets made before every league had team codes fall back to the code for
+// the market's league.
+function toTeam(answer: Answer, league: string | undefined): ScheduleTeam {
   const { flag, name } = splitFlag(answer.text)
-  const short = answer.shortText ? splitFlag(answer.shortText).name : ''
+  const short = answer.shortText
+    ? splitFlag(answer.shortText).name
+    : teamCodeForLeague(league, name)
   return {
     answerId: answer.id,
     name,

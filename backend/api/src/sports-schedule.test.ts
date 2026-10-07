@@ -192,6 +192,45 @@ it('shows a cpmm-multi-2 game at its answer prices', async () => {
   })
 })
 
+it('badges a team made without a code with its league code', async () => {
+  // Only NFL games carried codes before every league had them.
+  officialRows = [
+    {
+      data: {
+        ...official[0].data,
+        sportsLeague: 'MLB',
+        sportsHomeTeam: 'New York Yankees',
+        sportsAwayTeam: 'Tampa Bay Rays',
+      },
+    },
+  ]
+  answerRows = [
+    ['home', 0, 'New York Yankees', null],
+    ['away', 1, 'Tampa Bay Rays', 'RAYS'],
+  ].map(([id, index, text, short_text]) => ({
+    id,
+    index,
+    contract_id: 'nfl',
+    text,
+    short_text,
+    prob: 0.5,
+    pool_yes: 1000,
+    pool_no: 1000,
+    p: 0.5,
+  }))
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await getSchedule({ sport: 'all' })
+  const result = 'result' in response ? response.result : response
+  expect(result.games).toHaveLength(1)
+  // A stored code still wins.
+  expect(result.games[0]).toMatchObject({
+    home: { name: 'New York Yankees', shortName: 'NYY' },
+    away: { name: 'Tampa Bay Rays', shortName: 'RAYS' },
+  })
+})
+
 const nflGame = (
   id: string,
   startTime: number,
