@@ -7,6 +7,7 @@ import {
   contractPath,
   CPMMMultiContract,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import { RelatedGroup, ScheduleGame } from 'common/sports-schedule'
 import { shortFormatNumber } from 'common/util/format'
@@ -188,7 +189,7 @@ export function RelatedMarketRow(props: {
   const [betOpen, setBetOpen] = useState(false)
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isMulti = isMultiCpmm(contract)
   const closed =
     !!contract.resolution ||
     (!!contract.closeTime && contract.closeTime < Date.now())

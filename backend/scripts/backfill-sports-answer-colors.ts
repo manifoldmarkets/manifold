@@ -1,5 +1,6 @@
 import { runScript } from 'run-script'
 import { Answer } from 'common/answer'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { gameAnswerColorBackfill } from 'common/sports-team-colors'
 import { convertAnswer } from 'common/supabase/contracts'
@@ -23,7 +24,7 @@ if (require.main === module) {
     }>(
       `select id, question, data from contracts
        where resolution is null
-         and mechanism = 'cpmm-multi-1'
+         and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
          and creator_id = any($1)
          and data->>'sportsEventId' like 'odds:%'
          and data->>'sportsMarketType' = 'moneyline'`,

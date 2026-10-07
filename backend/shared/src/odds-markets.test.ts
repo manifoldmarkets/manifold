@@ -191,7 +191,8 @@ it('concurrent create runs insert one versus market and charge one ante', async 
   expect(db.contracts).toHaveLength(1)
   expect(db.contracts[0]).toMatchObject({
     outcomeType: 'MULTIPLE_CHOICE',
-    mechanism: 'cpmm-multi-1',
+    // Opens at the line without discarding shares (#4102).
+    mechanism: 'cpmm-multi-2',
     shouldAnswersSumToOne: true,
     addAnswersMode: 'DISABLED',
     sportsHomeTeam: 'Home',

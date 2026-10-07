@@ -3,7 +3,7 @@ import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS, teamBadge } from 'common/sports'
@@ -304,7 +304,7 @@ function toOfficialGame(
     // A tie resolves at 50% (MKT), which leaves no winner to mark.
     winnerAnswerId =
       c.resolution === 'YES' ? 'YES' : c.resolution === 'NO' ? 'NO' : null
-  } else if (c.mechanism === 'cpmm-multi-1') {
+  } else if (isMultiCpmm(c)) {
     const ordered = sortBy(answers, 'index')
     const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
     const teams = ordered.filter((a) => a !== drawAnswer)

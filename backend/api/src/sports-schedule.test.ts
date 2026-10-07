@@ -56,12 +56,17 @@ const tree = [
   total_members: 10,
 }))
 let marketRows: typeof props = props
+let officialRows: { data: Record<string, unknown> }[] = official
+let answerRows: Record<string, unknown>[] = []
 
 beforeEach(() => {
   marketRows = props
+  officialRows = official
+  answerRows = []
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     manyOrNone: async (sql: string) => {
-      if (sql.includes("where data->>'sportsEventId'")) return official
+      if (sql.includes("where data->>'sportsEventId'")) return officialRows
+      if (sql.includes('from answers')) return answerRows
       if (sql.includes('select c.id, c.question')) return marketRows
       if (sql.includes('from group_groups')) return tree
       if (sql.includes('from group_contracts'))
@@ -120,4 +125,42 @@ it('gives every Sports subtopic a sport and files markets from deeper topics', a
   expect(result.counts).toEqual({ nfl: 1, soccer: 1, 'road-bicycle-racing': 1 })
   expect(result.games).toEqual([])
   expect(result.upcoming.map((m) => m.id)).toEqual(['stage-9'])
+})
+
+it('shows a cpmm-multi-2 game at its answer prices', async () => {
+  // Every multiple choice market opens as cpmm-multi-2 since #4102.
+  officialRows = [
+    {
+      data: {
+        ...official[0].data,
+        mechanism: 'cpmm-multi-2',
+        outcomeType: 'MULTIPLE_CHOICE',
+        shouldAnswersSumToOne: true,
+      },
+    },
+  ]
+  answerRows = [
+    ['home', 0, 'nfl Home', 0.7],
+    ['away', 1, 'nfl Away', 0.3],
+  ].map(([id, index, text, prob]) => ({
+    id,
+    index,
+    contract_id: 'nfl',
+    text,
+    prob,
+    pool_yes: 1000,
+    pool_no: 1000,
+    p: prob,
+  }))
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await getSchedule({ sport: 'nfl' })
+  const result = 'result' in response ? response.result : response
+  expect(result.games).toHaveLength(1)
+  expect(result.games[0]).toMatchObject({
+    binary: false,
+    home: { answerId: 'home', prob: 0.7 },
+    away: { answerId: 'away', prob: 0.3 },
+  })
 })
