@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { fitCopiedAnswerProbs } from 'common/answer-probs'
+import { getCopiedAnswerProbs } from 'common/answer-probs'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -8,13 +8,17 @@ import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/contract-types'
 import { getLinkTarget } from 'web/components/widgets/linkify'
 import { getPrecision } from 'common/src/number'
-import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
 import { randomString } from 'common/util/random'
 import { useNativeInfo } from 'web/components/native-message-provider'
 
-export function DuplicateContractButton(props: { contract: Contract }) {
-  const { contract } = props
-  const href = duplicateContractHref(contract)
+export function DuplicateContractButton(props: {
+  contract: Contract
+  // Whether contract.answers holds every answer the market has (see
+  // duplicateContractHref)
+  hasAllAnswers: boolean
+}) {
+  const { contract, hasAllAnswers } = props
+  const href = duplicateContractHref(contract, hasAllAnswers)
   const { isNative } = useNativeInfo()
   return (
     <Link
@@ -28,8 +32,14 @@ export function DuplicateContractButton(props: { contract: Contract }) {
   )
 }
 
-// Pass along the Uri to create a new contract
-export function duplicateContractHref(contract: Contract) {
+// Pass along the Uri to create a new contract. The page of a big multiple
+// choice market holds only its top answers until the live contract loads, so
+// the copy carries the answers, and their odds, only once hasAllAnswers: a
+// subset would open as the whole market, at odds inflated to fill 100%.
+export function duplicateContractHref(
+  contract: Contract,
+  hasAllAnswers: boolean
+) {
   const descriptionString = JSON.stringify(contract.description ?? '')
   // Don't set a closeTime that's in the past
   const closeTime =
@@ -76,9 +86,10 @@ export function duplicateContractHref(contract: Contract) {
   }
 
   if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' ||
-    contract.outcomeType === 'MULTI_NUMERIC' ||
-    contract.outcomeType === 'DATE'
+    hasAllAnswers &&
+    (contract.outcomeType === 'MULTIPLE_CHOICE' ||
+      contract.outcomeType === 'MULTI_NUMERIC' ||
+      contract.outcomeType === 'DATE')
   ) {
     params.answers = contract.answers
       .filter((a) => !a.isOther)
@@ -88,8 +99,9 @@ export function duplicateContractHref(contract: Contract) {
     params.answers = contract.options.map((o) => o.text)
   }
   if (
-    contract.outcomeType === 'MULTI_NUMERIC' ||
-    contract.outcomeType === 'DATE'
+    hasAllAnswers &&
+    (contract.outcomeType === 'MULTI_NUMERIC' ||
+      contract.outcomeType === 'DATE')
   ) {
     params.midpoints = contract.answers.map((a) => a.midpoint!)
   }
@@ -102,32 +114,8 @@ export function duplicateContractHref(contract: Contract) {
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
     // cpmm-multi-2: carry the answers' CURRENT probabilities as the duplicate's
     // starting probabilities (a duplicate should start where the original stands,
-    // not reset to uniform). Not once the market or any answer is resolved, when
-    // prob holds the resolution instead. Fitted into the range bets trade in,
-    // since a long shot can sit under it. The copy recreates Other with what
-    // the answers listed above leave, so Other's odds are carried that way, and
-    // only when the copy will have an Other exactly where this market does.
-    const other = contract.answers.find((a) => a.isOther)
-    const copyHasOther =
-      contract.shouldAnswersSumToOne && contract.addAnswersMode !== 'DISABLED'
-    if (
-      contract.mechanism === 'cpmm-multi-2' &&
-      contract.outcomeType === 'MULTIPLE_CHOICE' &&
-      !contract.isResolved &&
-      contract.answers.every((a) => !a.resolution) &&
-      copyHasOther === !!other
-    ) {
-      params.answerProbs = fitCopiedAnswerProbs(
-        [
-          ...contract.answers.filter((a) => !a.isOther),
-          ...(other ? [other] : []),
-        ].map((a) => a.prob * 100),
-        contract.shouldAnswersSumToOne,
-        !!other,
-        MIN_ANSWER_PROB,
-        MAX_ANSWER_PROB
-      )
-    }
+    // not reset to uniform), where getCopiedAnswerProbs finds that safe
+    params.answerProbs = getCopiedAnswerProbs(contract, hasAllAnswers)
   }
 
   if (contract.groupSlugs && contract.groupSlugs.length > 0) {
