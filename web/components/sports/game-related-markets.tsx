@@ -126,7 +126,8 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
 
 // /create reads its prefill from a JSON `params` query value. `rand` makes
 // it replace a draft the form saved earlier, and is what applies the topic
-// slugs (the same as duplicating a market).
+// slugs (the same as duplicating a market). The new market is linked to the
+// game, so it lists here and closes when the game market does.
 function createMarketHref(game: ScheduleGame) {
   const slug = SPORT_BY_KEY[game.sport]?.slug
   const params = {
@@ -136,6 +137,8 @@ function createMarketHref(game: ScheduleGame) {
     visibility: 'public',
     groupSlugs: slug ? [slug] : undefined,
     rand: game.id.slice(0, 6),
+    linkedToContractId: game.id,
+    linkRelation: 'prop',
   }
   return `/create?params=${encodeURIComponent(JSON.stringify(params))}`
 }

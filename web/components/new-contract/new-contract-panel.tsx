@@ -43,6 +43,7 @@ import ShortToggle from '../widgets/short-toggle'
 import { ActionBar } from './action-bar'
 import { CloseTimeSection } from './close-time-section'
 import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
+import { LinkedMarketField } from './linked-market-field'
 import { MarketPreview, PreviewContractData } from './market-preview'
 import { ProminentTypeSelector } from './prominent-type-selector'
 import { TypeSwitcherModal } from './type-switcher-modal'
@@ -119,6 +120,8 @@ export function NewContractPanel(props: {
     midpoints: params?.midpoints || [],
     includeSeeResults: true,
     boostMarket: false,
+    linkedToContractId: params?.linkedToContractId,
+    linkRelation: params?.linkRelation,
   })
 
   const [formState, setFormState] = usePersistentLocalState<FormState>(
@@ -481,7 +484,9 @@ export function NewContractPanel(props: {
       !question ||
       question.length < 20 ||
       !shouldHaveCloseDate ||
-      hasManuallyEditedCloseDate
+      hasManuallyEditedCloseDate ||
+      // A linked market closes with the market it's about.
+      formState.linkedToContractId
     ) {
       return
     }
@@ -930,6 +935,10 @@ export function NewContractPanel(props: {
         liquidityTier: formState.liquidityTier,
         utcOffset: new Date().getTimezoneOffset(),
       }
+      if (formState.linkedToContractId) {
+        payload.linkedToContractId = formState.linkedToContractId
+        payload.linkRelation = formState.linkRelation ?? 'related'
+      }
 
       // Add type-specific fields
       if (formState.outcomeType === 'BINARY') {
@@ -1155,6 +1164,30 @@ export function NewContractPanel(props: {
             </Row>
           </Col>
         )}
+
+        {/* The market this one is about */}
+        <LinkedMarketField
+          contractId={formState.linkedToContractId}
+          relation={formState.linkRelation}
+          onChange={(link) => {
+            updateField('linkedToContractId', link?.contractId)
+            updateField('linkRelation', link?.relation)
+          }}
+          onParentLoaded={(parent) => {
+            // Close with the linked market unless the creator chose a time.
+            if (hasManuallyEditedCloseDate || !parent.closeTime) return
+            updateField(
+              'closeDate',
+              dayjs(parent.closeTime).format('YYYY-MM-DD')
+            )
+            updateField(
+              'closeHoursMinutes',
+              dayjs(parent.closeTime).format('HH:mm')
+            )
+            updateField('neverCloses', false)
+            setHasLowConfidenceCloseDate(false)
+          }}
+        />
 
         {/* Preview */}
         <div className="relative">

@@ -243,6 +243,7 @@ import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
 import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import { linkMarket, unlinkMarket } from './link-market'
 import {
   adminSportsCompetitionSwitches,
   adminSportsSetCompetitionSwitch,
@@ -644,6 +645,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
   'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'link-market': linkMarket,
+  'unlink-market': unlinkMarket,
   'admin-sports-competition-switches': adminSportsCompetitionSwitches,
   'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
   'admin-sports-score-polling': adminSportsScorePolling,

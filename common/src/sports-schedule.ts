@@ -1,5 +1,6 @@
 import { uniq } from 'lodash'
 import { ENV } from 'common/envs/constants'
+import { MarketLinkRelation } from 'common/market-links'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
 // ─── Sport categories ─────────────────────────────────────────────────────────
@@ -829,7 +830,8 @@ export interface RelatedCandidate {
   importanceScore: number
 }
 
-export type RelatedMatchKind = 'official' | 'both-teams' | 'one-team'
+// 'linked': the market's creator linked it to the game (common/market-links).
+export type RelatedMatchKind = 'linked' | 'official' | 'both-teams' | 'one-team'
 
 /**
  * How a related market is shown under its game:
@@ -871,6 +873,16 @@ export function relatedGroupFor(props: {
   // An official market we can't classify is still a prop from the pipeline.
   return kind === 'official' ? 'props' : 'community'
 }
+
+const GROUP_BY_LINK_RELATION: Record<MarketLinkRelation, RelatedGroup> = {
+  line: 'game-lines',
+  prop: 'props',
+  related: 'community',
+}
+
+/** Where a market linked to a game goes: its creator said what it is. */
+export const relatedGroupForLink = (relation: MarketLinkRelation) =>
+  GROUP_BY_LINK_RELATION[relation]
 
 /** Compact reference shipped with the schedule; the contract is fetched on expand. */
 export interface RelatedRef {
