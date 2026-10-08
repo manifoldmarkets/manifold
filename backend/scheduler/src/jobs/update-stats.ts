@@ -220,6 +220,10 @@ async function getDailyBets(
         b.created_time >= date_to_midnight_pt($1)
         and b.created_time < date_to_midnight_pt($2)
         and is_redemption = false
+        -- API limit orders that never filled aren't trades (isUnfilledApiOrder).
+        -- From 2026-08 bot re-quoting put 10-20x more of them in a day than
+        -- real bets, and counting them made one bot most of bet_count.
+        and not (coalesce(b.is_api, false) and b.amount = 0)
         and ($3 is null or c.token = $3)
       group by 1, 2
     )
@@ -423,6 +427,8 @@ const REBUILD_ACTIVITY_DAY = `
     where b.created_time >= date_to_midnight_pt($1)
       and b.created_time < date_to_midnight_pt($2)
       and b.is_redemption = false
+      -- Same trade definition as getDailyBets: no unfilled API limit orders.
+      and not (coalesce(b.is_api, false) and b.amount = 0)
     group by b.user_id
   ),
   created as materialized (
