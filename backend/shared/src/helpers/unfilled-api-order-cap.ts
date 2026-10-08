@@ -21,7 +21,10 @@ export const SHORT_LIVED_ORDER_SECONDS = 60
 // next to the cap.
 export const UNFILLED_API_ORDER_RECOUNT_MS = MINUTE_MS
 
-type CachedCount = { count: number; countedAt: number }
+// Holds the promise, not the number, so concurrent requests from one user share
+// a single count instead of each starting one: the check runs before the bet
+// queues, which don't serialize it.
+type CachedCount = { count: Promise<number>; countedAt: number }
 const countsByUserId = new Map<string, CachedCount>()
 
 export const assertUnderUnfilledApiOrderCap = async (
@@ -31,14 +34,17 @@ export const assertUnderUnfilledApiOrderCap = async (
 ) => {
   let cached = countsByUserId.get(userId)
   if (!cached || now - cached.countedAt >= UNFILLED_API_ORDER_RECOUNT_MS) {
-    cached = {
-      count: await countShortLivedUnfilledApiOrders(pg, userId),
-      countedAt: now,
-    }
+    const count = countShortLivedUnfilledApiOrders(pg, userId)
+    cached = { count, countedAt: now }
     countsByUserId.set(userId, cached)
     pruneStaleCounts(now)
+    // A failed count isn't cached; the next request tries again.
+    count.catch(() => {
+      if (countsByUserId.get(userId)?.count === count)
+        countsByUserId.delete(userId)
+    })
   }
-  if (cached.count >= MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY) {
+  if ((await cached.count) >= MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY) {
     throw new APIError(
       429,
       `In the last 24 hours, ${MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY.toLocaleString()} of your API limit orders ` +

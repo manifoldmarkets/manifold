@@ -48,3 +48,25 @@ test('counts each user separately', async () => {
   await expect(assertUnderUnfilledApiOrderCap(pg, 'bot', 0)).rejects.toThrow()
   await assertUnderUnfilledApiOrderCap(pg, 'human', 0)
 })
+
+test('concurrent requests from one user share one count', async () => {
+  const { pg, one } = pgCounting(CAP)
+  const results = await Promise.allSettled(
+    Array.from({ length: 20 }, () => assertUnderUnfilledApiOrderCap(pg, 'u', 0))
+  )
+  expect(one).toHaveBeenCalledTimes(1)
+  expect(results.every((r) => r.status === 'rejected')).toBe(true)
+})
+
+test('a failed count is not cached', async () => {
+  const one = jest
+    .fn()
+    .mockRejectedValueOnce(new Error('timeout'))
+    .mockImplementationOnce((_q, _v, map) => Promise.resolve(map({ n: 0 })))
+  const pg = { one } as unknown as SupabaseDirectClient
+  await expect(assertUnderUnfilledApiOrderCap(pg, 'u', 0)).rejects.toThrow(
+    'timeout'
+  )
+  await assertUnderUnfilledApiOrderCap(pg, 'u', 1)
+  expect(one).toHaveBeenCalledTimes(2)
+})

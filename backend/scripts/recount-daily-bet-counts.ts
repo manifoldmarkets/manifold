@@ -5,9 +5,9 @@
 // put a lot of those in: ~20-30% of a day's count through 2025-26, and 10-20x
 // the real trades once one market maker started placing ~270k a day with
 // 2-second expirations (the stats page showed 215k-359k "bets" a day against
-// ~15-25k real ones). update-stats now leaves them out (see
-// isUnfilledApiOrder); this script rewrites past days to match. The stats page
-// says so under the trades chart.
+// ~15-25k real ones). update-stats now leaves them out (getDailyBets); this
+// script rewrites past days to match. The stats page says so under the bets
+// chart.
 //
 // A day is only rewritten if its stored count equals a fresh count under the
 // old definition, so the only change is removing those orders. (On every day
