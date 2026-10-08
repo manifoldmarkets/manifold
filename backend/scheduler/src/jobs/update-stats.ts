@@ -155,6 +155,10 @@ async function getDailyBets(
         b.created_time >= date_to_midnight_pt($1)
         and b.created_time < date_to_midnight_pt($2)
         and is_redemption = false
+        -- API limit orders that never filled (amount is 0 until a fill) aren't trades.
+        -- From 2026-08 bot re-quoting put 10-20x more of them in a day than
+        -- real bets, and counting them made one bot most of bet_count.
+        and not (coalesce(b.is_api, false) and b.amount = 0)
         and ($3 is null or c.token = $3)
       group by 1, 2
     )
