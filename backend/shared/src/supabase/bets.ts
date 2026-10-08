@@ -51,6 +51,7 @@ export const getBetsWithFilter = async (
     points,
     minAmount,
     excludeApi,
+    excludeUnfilledApiOrders,
   } = options
 
   const conditions = buildArray(
@@ -93,6 +94,12 @@ export const getBetsWithFilter = async (
 
     excludeApi &&
       where(`coalesce((contract_bets.data->>'isApi')::boolean, false) = false`),
+
+    // amount is 0 until an order's first fill. Matches isUnfilledApiOrder.
+    excludeUnfilledApiOrders &&
+      where(
+        `not (coalesce(contract_bets.is_api, false) and contract_bets.amount = 0 and not coalesce(contract_bets.is_redemption, false))`
+      ),
 
     minAmount !== undefined &&
       where(`abs((contract_bets.data->>'amount')::numeric) >= ${minAmount}`, {

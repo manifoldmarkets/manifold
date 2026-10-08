@@ -105,3 +105,11 @@ export type maker = {
 }
 
 export const getNewBetId = () => nanoid(12)
+
+// An API limit order with no fills yet (amount stays 0 until the first fill).
+// Bots re-quote so often that these can outnumber real trades 10 to 1, so they
+// aren't counted or listed as trades. A person's unfilled orders still are.
+// The SQL twin is excludeUnfilledApiOrders in getBetsWithFilter.
+export const isUnfilledApiOrder = (
+  bet: Pick<Bet, 'isApi' | 'amount' | 'isRedemption'>
+) => !!bet.isApi && bet.amount === 0 && !bet.isRedemption

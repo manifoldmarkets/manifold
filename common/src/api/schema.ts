@@ -676,6 +676,9 @@ export const API = (_apiTypeCheck = {
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
         excludeApi: coerceBoolean.optional(),
+        // API limit orders that have never filled. Unlike excludeApi, keeps
+        // API trades that actually happened.
+        excludeUnfilledApiOrders: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
