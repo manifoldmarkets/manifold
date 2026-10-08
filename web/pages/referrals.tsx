@@ -27,7 +27,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { getEffectiveTier } from 'common/user'
-import { FlaggedBonusNotice } from 'web/components/upsell/flagged-bonus-notice'
+import { BonusStandingNotice } from 'web/components/upsell/bonus-standing-notice'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -116,7 +116,7 @@ export default function ReferralsPage() {
           </div>
         </div>
 
-        <FlaggedBonusNotice tier={tier} kind="referral" />
+        <BonusStandingNotice tier={tier} kind="referral" />
 
         {/* Share Section */}
         <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
@@ -291,7 +291,7 @@ function ReferralsList(props: {
                 </Tooltip>
               )}
               {amount === 0 && (
-                <Tooltip text="No referral bonus has been paid for them yet.">
+                <Tooltip text="No referral bonus has been paid for this referral. Referrals made while your account was flagged for verification don't pay out; referrals from before Oct 2026 pay when your friend first trades or verifies.">
                   <span className="bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400 cursor-default rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
                     ?
                   </span>
@@ -307,7 +307,7 @@ function ReferralsList(props: {
                     />
                   </div>
                 ) : (
-                  <span className="text-ink-400 italic">Pending</span>
+                  <span className="text-ink-400 italic">None</span>
                 )}
               </div>
             </Row>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { ShieldCheckIcon } from '@heroicons/react/solid'
 
 import { NEW_USER_COMMENT_GATE_MS, User } from 'common/user'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -78,10 +79,19 @@ function useCountdown(targetMs: number): string {
   const isClient = useIsClient()
   const [now, setNow] = useState(targetMs)
   useEffect(() => {
-    setNow(Date.now())
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
+    // Minutes are the finest unit shown until the last hour, so only tick
+    // every second once seconds are on screen.
+    let id: ReturnType<typeof setTimeout>
+    const tick = () => {
+      const t = Date.now()
+      setNow(t)
+      const remaining = targetMs - t
+      if (remaining > 0)
+        id = setTimeout(tick, remaining > HOUR_MS ? MINUTE_MS : 1000)
+    }
+    tick()
+    return () => clearTimeout(id)
+  }, [targetMs])
   // Date.now() differs between the server render and the first client render,
   // so reading it during hydration trips a mismatch. Render a stable
   // placeholder until mounted, then swap in the live countdown.

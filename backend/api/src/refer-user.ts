@@ -9,17 +9,10 @@ import { log, getContractSupabase, getUser } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
-import { updateUser } from 'shared/supabase/users'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { ReferralTxn } from 'common/txn'
-import {
-  getEffectiveBonusMultiplier,
-  resolveEffectiveTier,
-  roundTierBonus,
-} from 'common/supporter-config'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-import { runTxnFromBank } from 'shared/txn/run-txn'
 import { createReferralNotification } from 'shared/create-notification'
+import { payReferralBonus } from 'shared/referral-bonus'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 
 export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
   const { referredByUsername, contractId } = props
@@ -88,80 +81,65 @@ async function handleReferral(
 ) {
   log(`referredByUserId: ${referredByUserId}`)
 
-  // SERIALIZABLE: the referredByUserId check below is the dedupe for the
-  // payout, so concurrent refer-user calls must not both pass it. Retried,
-  // because crediting the referrer means two signups referred by the same
-  // user at once can conflict, and a lost attempt would drop the referral.
-  return await runTransactionWithRetries(async (tx) => {
-    const newUser = await getUser(newUserId, tx)
-    if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
+  const referralFields = removeUndefinedProps({
+    referredByUserId,
+    referredByContractId: referredByContract?.id,
+    // Marks this referral as settled here, even when the payout below rounds
+    // to zero, so the legacy halves can never pay it later.
+    referralPayoutAtSignup: true,
+  })
 
-    const referrer = await getUser(referredByUserId, tx)
-    if (!referrer) throw new APIError(500, `Referrer ${referredByUserId} not found`)
+  // READ COMMITTED, not SERIALIZABLE: the payout waits on the referrer's bet
+  // queue and then credits their balance, so under SERIALIZABLE any bet the
+  // referrer committed meanwhile would abort it. The conditional update below
+  // is the dedupe instead — a concurrent call blocks on the row lock, re-checks
+  // the WHERE, and claims nothing. Routine 400s (already referred, too old)
+  // are expected, not errors.
+  const amount = await runTransactionWithRetries(
+    async (tx) => {
+      const newUser = await getUser(newUserId, tx)
+      if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
 
-    if (newUser.referredByUserId || newUser.referredByContractId) {
-      throw new APIError(400, `User ${newUser.id} already has referral details`)
-    }
-    if (
-      newUser.createdTime <
-      Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS
-    ) {
-      throw new APIError(400, `User ${newUser.id} is too old to be referred`)
-    }
+      const referrer = await getUser(referredByUserId, tx)
+      if (!referrer)
+        throw new APIError(500, `Referrer ${referredByUserId} not found`)
 
-    await updateUser(
-      tx,
-      newUserId,
-      removeUndefinedProps({
-        referredByUserId,
-        referredByContractId: referredByContract?.id,
-        // Marks this referral as settled here, even when the amount below
-        // rounds to zero, so the legacy halves can never pay it later.
-        referralPayoutAtSignup: true,
-      })
-    )
-    log(
-      `Recorded referral relationship: ${newUserId} referred by ${referredByUserId}`
-    )
+      if (
+        newUser.createdTime <
+        Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS
+      ) {
+        throw new APIError(400, `User ${newUser.id} is too old to be referred`)
+      }
 
-    // Scaled by the referrer's effective tier: flagged referrers get nothing,
-    // bonus-blocked ones a reduced 0.2x, free 1x, subscribers higher.
-    const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
-    const referrerTier = resolveEffectiveTier({
-      entitlements,
-      bonusEligibility: referrer.bonusEligibility,
-    })
-    const referralMultiplier = getEffectiveBonusMultiplier(
-      referrerTier,
-      'referral'
-    )
-    const amount = roundTierBonus(REFERRAL_AMOUNT * referralMultiplier)
-    if (amount <= 0) {
-      log(
-        `Skipped referral bonus for referrer ${referrer.id} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
+      const claimed = await tx.oneOrNone(
+        `update users set data = data || $2::jsonb
+         where id = $1
+           and data->>'referredByUserId' is null
+           and data->>'referredByContractId' is null
+         returning id`,
+        [newUserId, JSON.stringify(referralFields)]
       )
-      return null
-    }
+      if (!claimed) {
+        throw new APIError(
+          400,
+          `User ${newUserId} already has referral details`
+        )
+      }
+      log(
+        `Recorded referral relationship: ${newUserId} referred by ${referredByUserId}`
+      )
 
-    const bonusTxn: Omit<ReferralTxn, 'id' | 'createdTime' | 'fromId'> = {
-      fromType: 'BANK',
-      toId: referrer.id,
-      toType: 'USER',
-      amount,
-      token: 'M$',
-      category: 'REFERRAL',
-      description: `Referral bonus for new user ${newUserId}: ${amount}`,
-      data: removeUndefinedProps({
+      return await payReferralBonus(tx, {
+        referrer,
         referredUserId: newUserId,
         referredContractId: referredByContract?.id,
         bonusType: 'signup',
-        effectiveTier: referrerTier,
-        referralMultiplier,
-        supporterBonus: referralMultiplier > 1,
-      }),
-    }
-    await runTxnFromBank(tx, bonusTxn)
-    log(`Paid referral bonus of ${amount} to ${referrer.id} for ${newUserId}`)
-    return amount
-  })
+        baseAmount: REFERRAL_AMOUNT,
+      })
+    },
+    3,
+    { mode: 'default', isExpectedError: (e) => e instanceof APIError }
+  )
+  broadcastUpdatedUser({ id: newUserId, ...referralFields })
+  return amount
 }

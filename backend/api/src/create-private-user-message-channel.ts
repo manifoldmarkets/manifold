@@ -5,7 +5,10 @@ import { uniq } from 'lodash'
 import { createPrivateUserMessageChannelMain } from 'shared/supabase/private-message-channels'
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
-import { canPostSocially } from 'common/user'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { getUser } from 'shared/utils'
 import { getActiveUserBans } from './helpers/rate-limit'
 
@@ -46,10 +49,14 @@ export const createprivateusermessagechannel = authEndpoint(
     }
 
     // Private messaging shares the new-account social gate with comments.
-    if (!canPostSocially(creator) && !allRecipientsAreAdmins) {
+    if (
+      !allRecipientsAreAdmins &&
+      !(await passesNewAccountGate(createSupabaseDirectClient(), creator))
+    ) {
       throw new APIError(
         403,
-        'Messaging unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now. You can still message Manifold staff for support.'
+        newAccountGateMessage('Messaging') +
+          ' You can still message Manifold staff for support.'
       )
     }
 

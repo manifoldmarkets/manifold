@@ -15,8 +15,8 @@ import { Title } from '../widgets/title'
 import { isIdentityVerified, PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api, APIError } from 'web/lib/api/api'
-import { track } from 'web/lib/service/analytics'
+import { api } from 'web/lib/api/api'
+import { useStartIdentityVerification } from 'web/hooks/use-start-identity-verification'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
 import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
@@ -145,27 +145,13 @@ export const AccountSettings = (props: {
 }
 
 function IdentityVerificationSetting() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleVerify = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      track('identity verification: started from settings')
-      const response = await api('create-idenfy-session', {})
-      window.location.href = response.redirectUrl
-    } catch (e) {
-      console.error('Failed to start verification:', e)
-      setError(
-        e instanceof APIError && e.code === 503
-          ? e.message
-          : 'Failed to start verification. Please try again.'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    start: handleVerify,
+    loading,
+    error,
+  } = useStartIdentityVerification(
+    'identity verification: started from settings'
+  )
 
   return (
     <div>

@@ -1,7 +1,10 @@
 import { isAdminId } from 'common/envs/constants'
 import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
 import { TopLevelPost } from 'common/top-level-post'
-import { canPostSocially } from 'common/user'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { removeUndefinedProps } from 'common/util/object'
 import { nanoid, randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
@@ -30,11 +33,8 @@ export const createPost: APIHandler<'create-post'> =
     if (!creator) throw new APIError(401, 'Your account was not found')
 
     // Forum posts share the new-account social gate with comments.
-    if (!canPostSocially(creator)) {
-      throw new APIError(
-        403,
-        'Creating forum posts unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now.'
-      )
+    if (!(await passesNewAccountGate(pg, creator))) {
+      throw new APIError(403, newAccountGateMessage('Creating forum posts'))
     }
 
     const isCursedUser = creator.name === 'Rima Akter'

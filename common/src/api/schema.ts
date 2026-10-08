@@ -252,8 +252,8 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string(),
         // true = flag (bonusEligibility = 'requires_verification' + reason).
-        // false = clear (restore prior bonus state if one was snapshotted,
-        // else revert to undefined; clears the reason either way).
+        // false = clear (restore the pre-flag bonus state, else revert to
+        // undefined; clears the reason either way).
         flag: z.boolean(),
         // Optional free-text note shown to other admins in the user-info
         // page. Examples: "suspected alt of @other-user", "fraud signal from
@@ -270,6 +270,7 @@ export const API = (_apiTypeCheck = {
         | 'verified'
         | 'grandfathered'
         | 'eligible'
+        | 'ineligible'
         | 'requires_verification'
     },
   },

@@ -170,12 +170,17 @@ export type User = {
   // to the user themselves.
   verificationFlagReason?: string
 
-  // Snapshot of the restorable bonusEligibility a user had immediately before
-  // an admin flagged them 'requires_verification'. Lets clearing the flag
-  // restore prior KYC ('verified'/'grandfathered') or purchase/admin-granted
-  // ('eligible') status instead of silently dropping them to undefined. Only
-  // set while a flag is active; cleared when the flag is cleared.
-  previousBonusEligibility?: 'verified' | 'grandfathered' | 'eligible'
+  // Snapshot of the bonusEligibility a user had immediately before an admin
+  // flagged them 'requires_verification', so clearing the flag restores it —
+  // including 'ineligible', since unset now means full default bonuses rather
+  // than a reduced tier. Absent when the user was unset before the flag. Only
+  // set while a flag is active; cleared when the flag is cleared or an admin
+  // sets eligibility directly.
+  previousBonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
 
   // Prize-drawing (cash raffle) eligibility — independent of bonusEligibility so
   // a user can be eligible for one but not the other (e.g. eligible for bonuses

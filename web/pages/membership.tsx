@@ -459,13 +459,21 @@ function MonthlyValueBreakdown({
   // Comparator tier defaults to the user's actual tier so the page opens to
   // "this is what you're getting today." Independent from the purchase
   // selector (which only deals with buyable subscriber tiers).
-  const [comparatorTier, setComparatorTier] = useState<EffectiveTier>(
+  const comparableUserTier =
     userEffectiveTier &&
-      (SUBSCRIBER_TIERS.has(userEffectiveTier) ||
-        FREE_COMPARATOR_TIERS.includes(userEffectiveTier))
+    (SUBSCRIBER_TIERS.has(userEffectiveTier) ||
+      FREE_COMPARATOR_TIERS.includes(userEffectiveTier))
       ? userEffectiveTier
-      : selectedTier
+      : undefined
+  const [comparatorTier, setComparatorTier] = useState<EffectiveTier>(
+    comparableUserTier ?? selectedTier
   )
+  // On a cold load the user (and so their tier) arrives after first render;
+  // adopt it then, unless the reader has already picked a tier.
+  const [pickedTier, setPickedTier] = useState(false)
+  useEffect(() => {
+    if (comparableUserTier && !pickedTier) setComparatorTier(comparableUserTier)
+  }, [comparableUserTier])
 
   const isSubscriberTier = SUBSCRIBER_TIERS.has(comparatorTier)
   const multipliers = TIER_BENEFITS[comparatorTier]
@@ -511,6 +519,7 @@ function MonthlyValueBreakdown({
   // Clicking a subscriber tier in the comparator also syncs the purchase
   // selector above, so the BenefitsTable highlights match.
   const handleTierClick = (tier: EffectiveTier) => {
+    setPickedTier(true)
     setComparatorTier(tier)
     if (SUBSCRIBER_TIERS.has(tier)) onSelectTier(tier as SupporterTier)
   }

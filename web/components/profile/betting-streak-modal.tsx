@@ -11,7 +11,7 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import clsx from 'clsx'
-import { FlaggedBonusNotice } from 'web/components/upsell/flagged-bonus-notice'
+import { BonusStandingNotice } from 'web/components/upsell/bonus-standing-notice'
 
 // Initialize dayjs plugins
 dayjs.extend(utc)
@@ -77,7 +77,7 @@ export function BettingStreakModal(props: {
           </Col>
         )}
         <span className="text-xl">Daily prediction streaks</span>
-        <FlaggedBonusNotice tier={effectiveTier} kind="streak" />
+        <BonusStandingNotice tier={effectiveTier} kind="streak" />
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>

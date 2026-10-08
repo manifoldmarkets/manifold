@@ -1058,7 +1058,8 @@ function BonusEligibilitySection({
     {
       value: 'ineligible' as const,
       label: 'Ineligible',
-      description: 'Bonus-blocked: reduced (0.2x) bonuses',
+      description:
+        'Bonus-blocked: 0.2x quests, streaks and referrals; no loans, league prizes, push or perp bonuses. Not cleared by verifying.',
       color: 'text-red-600',
     },
     {
@@ -1204,8 +1205,9 @@ function BonusEligibilitySection({
             new-account comment gate, no prize drawings without KYC
           </li>
           <li>
-            <strong>Ineligible:</strong> Bonus-blocked (reduced 0.2x), e.g.
-            superbanned
+            <strong>Ineligible:</strong> Bonus-blocked, e.g. superbanned: 0.2x
+            quests, streaks and referrals; no loans, league prizes, push or perp
+            bonuses. Passing verification doesn't clear it.
           </li>
           <li>
             <strong>Default / Not Set:</strong> Full bonuses; prize drawings

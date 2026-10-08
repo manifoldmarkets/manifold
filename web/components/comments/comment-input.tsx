@@ -47,6 +47,9 @@ export function CommentInput(props: {
   autoFocus: boolean
   onClearInput?: () => void
   priorityUserIds?: string[] // user IDs to prioritize in mention suggestions (e.g., contract creator first, then commenters)
+  // Market creators can always comment on their own markets (create-comment
+  // exempts them from the new-account gate too).
+  skipNewAccountGate?: boolean
 }) {
   const {
     parentCommentId,
@@ -60,6 +63,7 @@ export function CommentInput(props: {
     commentTypes,
     onClearInput,
     priorityUserIds,
+    skipNewAccountGate,
   } = props
   const user = useUser()
 
@@ -116,7 +120,7 @@ export function CommentInput(props: {
   if (user?.isBannedFromPosting) return <></>
 
   // Market and post comments share the new-account social gate.
-  if (user && !canPostSocially(user))
+  if (user && !skipNewAccountGate && !canPostSocially(user))
     return (
       <NewAccountGateNotice
         user={user}
@@ -408,6 +412,7 @@ export function ContractCommentInput(props: {
         commentTypes={commentTypes}
         onClearInput={onClearInput}
         priorityUserIds={[playContract.creatorId, ...(commenterUserIds ?? [])]}
+        skipNewAccountGate={user?.id === playContract.creatorId}
       />
     </>
   )

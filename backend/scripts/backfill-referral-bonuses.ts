@@ -12,7 +12,8 @@
 //  - LEGACY_REFERRAL_VERIFY_BONUS to the referrer for every such user who is also
 //    identity-verified (verified or grandfathered), if no verify/legacy REFERRAL
 //    txn already exists.
-// Referrer must have full bonus access in both cases. Supporter multiplier is
+// Referrer must be KYC'd, grandfathered, or purchase/admin-granted in both
+// cases. Supporter multiplier is
 // applied using the referrer's current entitlements.
 //
 // Referrals recorded since signup-time referral payouts are skipped: they were
@@ -23,12 +24,7 @@ import { runScript } from 'run-script'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { getBenefit } from 'common/supporter-config'
-import {
-  hasFullBonusAccess,
-  isIdentityVerified,
-  paysLegacyReferralHalves,
-  User,
-} from 'common/user'
+import { isIdentityVerified, paysLegacyReferralHalves, User } from 'common/user'
 import { convertUser } from 'common/supabase/users'
 import {
   LEGACY_REFERRAL_BET_BONUS,
@@ -92,7 +88,14 @@ if (require.main === module) {
         skipped++
         continue
       }
-      if (!hasFullBonusAccess(referrer)) {
+      // The gate this script originally ran with: full bonus access meant
+      // KYC'd, grandfathered, or purchase/admin-granted. hasFullBonusAccess
+      // now admits every never-verified account too, so using it would make
+      // a re-run an unapproved retroactive grant.
+      if (
+        !isIdentityVerified(referrer) &&
+        referrer.bonusEligibility !== 'eligible'
+      ) {
         skipped++
         continue
       }

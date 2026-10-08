@@ -27,9 +27,14 @@ export const adminSetBonusEligibility: APIHandler<
     throw new APIError(404, 'User not found')
   }
 
-  const flagReasonUpdate = user.verificationFlagReason
-    ? { verificationFlagReason: markOutdated(user.verificationFlagReason) }
-    : {}
+  // Setting eligibility directly ends any flag, so drop its snapshot too —
+  // a stale one would otherwise be restored by a later flag/unflag cycle.
+  const flagReasonUpdate = {
+    previousBonusEligibility: FieldVal.delete() as any,
+    ...(user.verificationFlagReason
+      ? { verificationFlagReason: markOutdated(user.verificationFlagReason) }
+      : {}),
+  }
 
   if (bonusEligibility === null) {
     // Clear the field entirely - back to a default account (full bonuses;

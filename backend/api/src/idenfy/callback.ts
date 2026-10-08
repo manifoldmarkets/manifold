@@ -15,14 +15,7 @@ import { SignupBonusTxn } from 'common/txn'
 import { isUnderageDenial } from 'common/idenfy-helpers'
 import { paysLegacyReferralHalves } from 'common/user'
 import { createReferralNotification } from 'shared/create-notification'
-import { removeUndefinedProps } from 'common/util/object'
-import {
-  getEffectiveBonusMultiplier,
-  resolveEffectiveTier,
-  roundTierBonus,
-  SUPPORTER_ENTITLEMENT_IDS,
-} from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { payReferralBonus } from 'shared/referral-bonus'
 
 // iDenfy webhook callback payload structure (comprehensive type based on their schema)
 type IdenfyCallbackPayload = {
@@ -290,32 +283,45 @@ export const idenfyCallback = async (req: Request, res: Response) => {
   if (internalStatus === 'approved') {
     const user = await getUser(userId)
     if (user) {
-      // New accounts are created with signupBonusPaid = STARTING_BALANCE, so
-      // only legacy accounts (0/undefined) still get the top-up.
-      const alreadyPaidBonus =
-        (user.signupBonusPaid ?? 0) >= LEGACY_VERIFIED_SIGNUP_TOP_UP
+      // Legacy accounts were created with signupBonusPaid 0 (or, much older,
+      // undefined) and promised the top-up on verification. Topped-up accounts
+      // hold LEGACY_VERIFIED_SIGNUP_TOP_UP; accounts created since hold the
+      // full STARTING_BALANCE paid at signup.
+      const owesLegacyTopUp = !user.signupBonusPaid
 
-      // Check for referral bonus eligibility
+      // Only referrals recorded before signup-time payouts have a legacy
+      // verify half left to pay; skip the lookups for everyone else.
       const referrerId = user.referredByUserId
-      const referrer = referrerId ? await getUser(referrerId) : null
-      const referredByContract = user.referredByContractId
-        ? await getContractSupabase(user.referredByContractId)
-        : undefined
+      const owesLegacyReferralHalf =
+        !!referrerId && referrerId !== userId && paysLegacyReferralHalves(user)
+      const referrer =
+        owesLegacyReferralHalf && referrerId ? await getUser(referrerId) : null
+      const referredByContract =
+        referrer && user.referredByContractId
+          ? await getContractSupabase(user.referredByContractId)
+          : undefined
 
       // SERIALIZABLE isolation + retry: protects the signup-bonus and
       // referral-verify dedupe SELECTs against concurrent iDenfy webhook
       // retries (timeouts trigger retries, and the same scanRef can arrive
       // multiple times). Without this, two concurrent callbacks could both
       // miss the dedup and double-pay.
-      const { referralBonusAmount } = await runTransactionWithRetries(
+      const referralBonusAmount = await runTransactionWithRetries(
         async (tx) => {
           // Update bonus eligibility and pin prize eligibility. Pinning
           // 'eligible' (rather than leaving it unset to fall back through
           // isIdentityVerified) means an admin who later flags the user
           // bonus-ineligible doesn't accidentally also cut prize access —
-          // the two axes stay decoupled once iDenfy has approved.
+          // the two axes stay decoupled once iDenfy has approved. An admin
+          // bonus block ('ineligible') is kept: since verification became
+          // optional, iDenfy no longer writes it, so passing KYC must not
+          // clear it. (An admin flag, 'requires_verification', is what
+          // verification is meant to clear.)
           await updateUser(tx, userId, {
-            bonusEligibility: 'verified',
+            bonusEligibility:
+              user.bonusEligibility === 'ineligible'
+                ? 'ineligible'
+                : 'verified',
             prizeEligibility: 'eligible',
             ...(user.verificationFlagReason
               ? {
@@ -331,110 +337,46 @@ export const idenfyCallback = async (req: Request, res: Response) => {
           // SIGNUP_BONUS category, and a category-only check skipped this
           // payment for any user whose next-day bonus landed before iDenfy
           // approval.
-          const existingSignupTxn = await tx.oneOrNone(
-            `SELECT 1 FROM txns WHERE to_id = $1
-           AND category = 'SIGNUP_BONUS'
-           AND data->>'description' = $2`,
-            [userId, VERIFIED_SIGNUP_BONUS_DESCRIPTION]
-          )
-          if (!alreadyPaidBonus && !existingSignupTxn) {
-            const signupBonusTxn: Omit<
-              SignupBonusTxn,
-              'id' | 'createdTime' | 'fromId'
-            > = {
-              fromType: 'BANK',
-              toId: userId,
-              toType: 'USER',
-              amount: LEGACY_VERIFIED_SIGNUP_TOP_UP,
-              token: 'M$',
-              category: 'SIGNUP_BONUS',
-              description: VERIFIED_SIGNUP_BONUS_DESCRIPTION,
-            }
-            await runTxnFromBank(tx, signupBonusTxn)
-            await updateUser(tx, userId, {
-              signupBonusPaid: LEGACY_VERIFIED_SIGNUP_TOP_UP,
-            })
-            log(
-              `Paid legacy signup top-up of ${LEGACY_VERIFIED_SIGNUP_TOP_UP} to user ${userId} after identity verification`
-            )
-          }
-
-          // Pay the legacy verify half of a pre-signup-payout referral, scaled
-          // by the referrer's effective tier — matching the legacy first-bet
-          // half in on-create-bet.ts. Skipped for self-referrals, for any
-          // referral settled at signup (paysLegacyReferralHalves — including
-          // ones a flagged referrer was paid nothing for), or if this referral
-          // was already paid: at signup ('signup'), by an earlier verify, or by
-          // a legacy single-payment txn (bonusType IS NULL).
-          if (referrerId === userId) {
-            log(`Skipped referral verify bonus - self-referral for ${userId}`)
-          } else if (referrerId && referrer && paysLegacyReferralHalves(user)) {
-            const existingReferralTxn = await tx.oneOrNone(
+          if (owesLegacyTopUp) {
+            const existingSignupTxn = await tx.oneOrNone(
               `SELECT 1 FROM txns WHERE to_id = $1
-             AND category = 'REFERRAL'
-             AND data->'data'->>'referredUserId' = $2
-             AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' IN ('verify', 'signup'))`,
-              [referrer.id, userId]
+             AND category = 'SIGNUP_BONUS'
+             AND data->>'description' = $2`,
+              [userId, VERIFIED_SIGNUP_BONUS_DESCRIPTION]
             )
-
-            if (!existingReferralTxn) {
-              // Resolve the referrer's effective tier (subscription + verification)
-              // to scale the bonus, consistent with the first-bet portion.
-              const supporterEntitlementRows = await tx.manyOrNone(
-                `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
-               WHERE user_id = $1
-               AND entitlement_id = ANY($2)
-               AND enabled = true
-               AND (expires_time IS NULL OR expires_time > NOW())`,
-                [referrer.id, SUPPORTER_ENTITLEMENT_IDS]
-              )
-              const entitlements =
-                supporterEntitlementRows.map(convertEntitlement)
-              const referrerTier = resolveEffectiveTier({
-                entitlements,
-                bonusEligibility: referrer.bonusEligibility,
-              })
-              const referralMultiplier = getEffectiveBonusMultiplier(
-                referrerTier,
-                'referral'
-              )
-              const referralAmount = roundTierBonus(
-                LEGACY_REFERRAL_VERIFY_BONUS * referralMultiplier
-              )
-
-              if (referralAmount <= 0) {
-                log(
-                  `Skipped referral verify bonus for referrer ${referrer.id} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
-                )
-              } else {
-                const txnData = {
-                  fromType: 'BANK',
-                  toId: referrer.id,
-                  toType: 'USER',
-                  amount: referralAmount,
-                  token: 'M$',
-                  category: 'REFERRAL',
-                  description: `Referral verify bonus for new user ${userId}: ${referralAmount}`,
-                  data: removeUndefinedProps({
-                    referredUserId: userId,
-                    referredContractId: referredByContract?.id,
-                    bonusType: 'verify',
-                    effectiveTier: referrerTier,
-                    supporterBonus: referralMultiplier > 1,
-                    referralMultiplier,
-                  }),
-                } as const
-
-                await runTxnFromBank(tx, txnData)
-                log(
-                  `Paid referral verify bonus of ${referralAmount} to referrer ${referrer.id} for verified user ${userId}`
-                )
-                return { referralBonusAmount: referralAmount }
+            if (!existingSignupTxn) {
+              const signupBonusTxn: Omit<
+                SignupBonusTxn,
+                'id' | 'createdTime' | 'fromId'
+              > = {
+                fromType: 'BANK',
+                toId: userId,
+                toType: 'USER',
+                amount: LEGACY_VERIFIED_SIGNUP_TOP_UP,
+                token: 'M$',
+                category: 'SIGNUP_BONUS',
+                description: VERIFIED_SIGNUP_BONUS_DESCRIPTION,
               }
+              await runTxnFromBank(tx, signupBonusTxn)
+              await updateUser(tx, userId, {
+                signupBonusPaid: LEGACY_VERIFIED_SIGNUP_TOP_UP,
+              })
+              log(
+                `Paid legacy signup top-up of ${LEGACY_VERIFIED_SIGNUP_TOP_UP} to user ${userId} after identity verification`
+              )
             }
           }
 
-          return { referralBonusAmount: null }
+          // Pay the legacy verify half of a pre-signup-payout referral,
+          // matching the legacy first-bet half in on-create-bet.ts.
+          if (!referrer) return null
+          return await payReferralBonus(tx, {
+            referrer,
+            referredUserId: userId,
+            referredContractId: referredByContract?.id,
+            bonusType: 'verify',
+            baseAmount: LEGACY_REFERRAL_VERIFY_BONUS,
+          })
         }
       )
 
@@ -451,22 +393,50 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     }
   }
 
-  // Handle denial / suspicion (incl. EXPIRED/DELETED sessions, which
-  // mapIdenfyStatus folds into 'denied'): block prize drawings only. Leave
-  // bonusEligibility untouched — verification is optional, so abandoning or
-  // failing an attempt mustn't cost a user the bonuses every unverified
-  // account gets. An admin-flagged 'requires_verification' user stays flagged,
-  // so letting a session lapse can't launder the hold; suspected fraud is for
-  // admins to flag by hand. The user can retry (e.g. an under-18 at 18), and a
-  // later approval re-pins prizeEligibility = 'eligible'.
+  // Handle denial / suspicion: block prize drawings only. Leave
+  // bonusEligibility untouched — verification is optional, so failing an
+  // attempt mustn't cost a user the bonuses every unverified account gets. An
+  // admin-flagged 'requires_verification' user stays flagged; suspected fraud
+  // is for admins to flag by hand. The user can retry (e.g. an under-18 at 18),
+  // and a later approval re-pins prizeEligibility = 'eligible'.
   //
   // Pinning prizeEligibility = 'ineligible' is LOAD-BEARING: when it's unset,
   // canEnterPrizeDrawings falls back to isIdentityVerified, which is true for
   // a 'grandfathered' user — so without the pin, a grandfathered user who
   // failed KYC would still pass the prize fallback.
+  //
+  // The pin is skipped when it would be wrong rather than a real result:
+  //   - EXPIRED/DELETED (which mapIdenfyStatus folds into 'denied'): an
+  //     abandoned session, not a failed check.
+  //   - a callback for a session that isn't the user's latest: callbacks can
+  //     arrive out of order, so an old session expiring after a newer one
+  //     passed must not revoke the prize access that one granted.
+  //   - a user who has already passed iDenfy ('verified').
   if (internalStatus === 'denied' || internalStatus === 'suspected') {
     const user = await getUser(userId)
-    if (user) {
+    const latestSession = await pg.oneOrNone<{ scan_ref: string }>(
+      `SELECT scan_ref FROM idenfy_verifications
+       WHERE user_id = $1
+       ORDER BY created_time DESC
+       LIMIT 1`,
+      [userId]
+    )
+    const isAbandoned =
+      status?.overall === 'EXPIRED' || status?.overall === 'DELETED'
+    const skipReason = !user
+      ? undefined
+      : isAbandoned
+      ? `session ${status?.overall}`
+      : latestSession?.scan_ref !== scanRef
+      ? 'not the latest session'
+      : user.bonusEligibility === 'verified'
+      ? 'already verified'
+      : undefined
+    if (user && skipReason) {
+      log(
+        `User ${userId} iDenfy ${internalStatus} ignored for prize eligibility (${skipReason})`
+      )
+    } else if (user) {
       await updateUser(pg, userId, {
         prizeEligibility: 'ineligible',
       })

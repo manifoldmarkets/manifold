@@ -62,7 +62,7 @@ import { useStartIdentityVerification } from 'web/hooks/use-start-identity-verif
 // they verify, so the messaging must say so rather than nudge them toward a
 // bonus they won't receive.
 function FlaggedBonusSubtitle() {
-  const { start, loading } = useStartIdentityVerification(
+  const { start, loading, error } = useStartIdentityVerification(
     'flagged bonus notification: verify clicked'
   )
   // Forward-looking wording on purpose: this renders on the current user's whole
@@ -84,6 +84,7 @@ function FlaggedBonusSubtitle() {
         Verify your identity
       </button>{' '}
       to restore them.
+      {error && <span className="text-scarlet-600 block">{error}</span>}
     </span>
   )
 }
@@ -120,12 +121,11 @@ export function UniqueBettorBonusIncomeNotification(props: {
   // Use the creator's tier at award time (embedded in the txn/notification) so
   // the flagged label is historically accurate; fall back to current tier for
   // notifications created before effectiveTier was recorded.
-  const txnTier = (data as { effectiveTier?: string } | undefined)
-    ?.effectiveTier
+  const txnTier = normalizeRecordedTier(
+    (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  )
   const userTier = user ? getEffectiveTier(user) : undefined
-  const isFlagged =
-    txnTier === 'restricted' ||
-    (txnTier === undefined && userTier === 'restricted')
+  const isFlagged = (txnTier ?? userTier) === 'restricted'
   return (
     <NotificationFrame
       notification={notification}
@@ -308,12 +308,11 @@ export function QuestIncomeNotification(props: {
   // The bonus award embeds effectiveTier in the txn data — use it if present,
   // otherwise fall back to the current user's tier (notifications can outlive
   // tier transitions).
-  const txnTier = (data as { effectiveTier?: string } | undefined)
-    ?.effectiveTier
+  const txnTier = normalizeRecordedTier(
+    (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  )
   const userTier = user ? getEffectiveTier(user) : undefined
-  const isFlagged =
-    txnTier === 'restricted' ||
-    (txnTier === undefined && userTier === 'restricted')
+  const isFlagged = (txnTier ?? userTier) === 'restricted'
   return (
     <NotificationFrame
       notification={notification}

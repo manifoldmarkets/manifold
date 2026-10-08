@@ -1,6 +1,9 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { PostComment } from 'common/comment'
-import { canPostSocially } from 'common/user'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -29,11 +32,8 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
 
     // Forum comments share the new-account social gate with market comments.
-    if (!canPostSocially(creator)) {
-      throw new APIError(
-        403,
-        'Commenting on posts unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now.'
-      )
+    if (!(await passesNewAccountGate(createSupabaseDirectClient(), creator))) {
+      throw new APIError(403, newAccountGateMessage('Commenting on posts'))
     }
 
     const pg = createSupabaseDirectClient()

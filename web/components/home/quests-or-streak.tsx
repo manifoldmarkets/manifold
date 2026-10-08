@@ -27,7 +27,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
-import { FlaggedBonusNotice } from 'web/components/upsell/flagged-bonus-notice'
+import { BonusStandingNotice } from 'web/components/upsell/bonus-standing-notice'
 import { AddWidgetPrompt } from 'web/components/home/add-widget-prompt'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
@@ -144,7 +144,7 @@ export function QuestsModal(props: {
             max={1}
             className={'mb-1 w-1/2'}
           />
-          <FlaggedBonusNotice
+          <BonusStandingNotice
             tier={effectiveTier}
             kind="quest"
             className="mx-auto max-w-md"

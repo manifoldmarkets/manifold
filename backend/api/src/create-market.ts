@@ -3,7 +3,10 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { canPostSocially } from 'common/user'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import {
   createBinarySchema,
   createBountySchema,
@@ -244,10 +247,13 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
       // Creating unlisted markets is a new-account anti-spam gate, not a
       // bonus gate.
-      if (visibility === 'unlisted' && !canPostSocially(user)) {
+      if (
+        visibility === 'unlisted' &&
+        !(await passesNewAccountGate(tx, user))
+      ) {
         throw new APIError(
           403,
-          'Creating unlisted markets unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now.'
+          newAccountGateMessage('Creating unlisted markets')
         )
       }
 

@@ -5,7 +5,10 @@ import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
-import { canPostSocially } from 'common/user'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
@@ -241,12 +244,13 @@ export const validateComment = async (
   if (!contract) throw new APIError(404, 'Contract not found')
 
   // Market creators can always comment on their own markets. Everyone else
-  // must pass canPostSocially, which unlocks after 7 days, KYC verification,
-  // any mana purchase, or any active subscription.
-  if (!canPostSocially(you) && contract.creatorId !== you.id) {
+  // must pass the new-account gate, which unlocks after
+  // NEW_USER_COMMENT_GATE_MS, KYC verification, any mana purchase, or any
+  // active subscription.
+  if (contract.creatorId !== you.id && !(await passesNewAccountGate(pg, you))) {
     throw new APIError(
       403,
-      'Commenting on other users\' markets unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock immediately.'
+      newAccountGateMessage("Commenting on other users' markets")
     )
   }
   if (contract.token !== 'MANA') {
