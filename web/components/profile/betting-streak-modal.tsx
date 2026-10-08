@@ -11,8 +11,7 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import clsx from 'clsx'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
-import { ReducedBonusNotice } from 'web/components/upsell/reduced-bonus-notice'
+import { FlaggedBonusNotice } from 'web/components/upsell/flagged-bonus-notice'
 
 // Initialize dayjs plugins
 dayjs.extend(utc)
@@ -30,9 +29,9 @@ export function BettingStreakModal(props: {
     previewFrozen || (currentUser && wasStreakFrozenRecently(currentUser))
   const showFrozen = previewFrozen || (missingStreak && wasFrozen)
 
-  // Streak multiplier driven by effective tier (verification + subscription).
-  // Unverified: 0.2x, verified: 1x, subscribers higher.
-  const effectiveTier = currentUser ? getEffectiveTier(currentUser) : 'verified'
+  // Streak multiplier driven by effective tier (account standing +
+  // subscription). Free: 1x, subscribers higher, flagged/blocked accounts less.
+  const effectiveTier = currentUser ? getEffectiveTier(currentUser) : 'free'
   const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
   const bonusAmount = Math.floor(BETTING_STREAK_BONUS_AMOUNT * streakMultiplier)
   const bonusMax = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
@@ -78,16 +77,7 @@ export function BettingStreakModal(props: {
           </Col>
         )}
         <span className="text-xl">Daily prediction streaks</span>
-        <VerifyPhoneNumberBanner user={currentUser} />
-        {currentUser &&
-          (effectiveTier === 'unverified' ||
-            effectiveTier === 'restricted') && (
-            <ReducedBonusNotice
-              tier={effectiveTier}
-              kind="streak"
-              earned={bonusAmount}
-            />
-          )}
+        <FlaggedBonusNotice tier={effectiveTier} kind="streak" />
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>

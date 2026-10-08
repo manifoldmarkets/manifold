@@ -52,10 +52,9 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   }
 
   // Daily free loans are open to everyone, verified or not — they're borrowed
-  // against the user's own positions, and the membership page has always
-  // advertised the 1% daily free loan to unverified users. Accounts under an
-  // admin hold ('requires_verification') or explicitly blocked ('ineligible',
-  // which includes superbans and expired/denied verification) are held back.
+  // against the user's own positions. Accounts under an admin hold
+  // ('requires_verification') or explicitly blocked ('ineligible', which
+  // includes superbans and legacy expired/denied verification) are held back.
   if (!canTakeLoans(user)) {
     throw new APIError(
       403,

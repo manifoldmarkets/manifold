@@ -13,18 +13,17 @@ type VerificationRequiredModalProps = {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
-  // What the user is trying to do (for messaging). Defaults to
-  // 'earn full bonuses' — under the unverified-tier model, unverified
-  // users already receive reduced bonuses, so the verify CTA is about
-  // unlocking the full amount, not enabling bonuses at all.
-  action?: 'claim free loan' | 'earn full bonuses' | 'enter prize drawings'
+  // What the user is trying to do (for messaging). Verification is optional
+  // everywhere except prize drawings; the loan prompt only reaches accounts an
+  // admin has flagged for verification.
+  action: 'claim free loan' | 'enter prize drawings'
 }
 
 export function VerificationRequiredModal({
   open,
   setOpen,
   user,
-  action = 'earn full bonuses',
+  action,
 }: VerificationRequiredModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,9 +31,8 @@ export function VerificationRequiredModal({
   // Check if user has been explicitly denied (ineligible)
   const isDenied = user.bonusEligibility === 'ineligible'
   // User has been actively flagged for required verification (suspected alt,
-  // suspicious signup, manual review). Distinct from the default unverified
-  // state — show different copy so they understand this is a system action,
-  // not just a missing-step prompt.
+  // suspicious signup, manual review) — show different copy so they understand
+  // this is a system action, not just a missing-step prompt.
   const isFlagged = user.bonusEligibility === 'requires_verification'
 
   const handleVerify = async () => {

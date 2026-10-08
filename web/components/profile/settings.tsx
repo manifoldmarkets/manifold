@@ -51,8 +51,8 @@ export const AccountSettings = (props: {
 
   return (
     <Col className="gap-5">
-      {/* Show the KYC entry point to anyone not yet identity-verified — including
-          bonus-'eligible' purchasers, who still need to verify for prize drawings. */}
+      {/* Optional KYC entry point for anyone not yet identity-verified — it only
+          unlocks prize drawings and early commenting, so it's never pushed. */}
       {!isIdentityVerified(user) && <IdentityVerificationSetting />}
       <div>
         <label className="mb-1 block">
@@ -171,7 +171,8 @@ function IdentityVerificationSetting() {
     <div>
       <label className="mb-1 block">Identity Verification</label>
       <div className="text-ink-600 mb-2 text-sm">
-        Verify your identity to be eligible for bonuses and cash prize raffles.
+        Optional. Verifying lets you enter prize drawings and comment before
+        your account is a week old.
       </div>
       {error && <div className="text-scarlet-500 mb-2 text-sm">{error}</div>}
       <Button onClick={handleVerify} loading={loading} disabled={loading}>

@@ -5,7 +5,7 @@ import { uniq } from 'lodash'
 import { createPrivateUserMessageChannelMain } from 'shared/supabase/private-message-channels'
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
-import { hasAccountTrustSignal } from 'common/user'
+import { canPostSocially } from 'common/user'
 import { getUser } from 'shared/utils'
 import { getActiveUserBans } from './helpers/rate-limit'
 
@@ -45,11 +45,11 @@ export const createprivateusermessagechannel = authEndpoint(
       }
     }
 
-    // Private messaging is gated on account trust, not bonus eligibility.
-    if (!hasAccountTrustSignal(creator) && !allRecipientsAreAdmins) {
+    // Private messaging shares the new-account social gate with comments.
+    if (!canPostSocially(creator) && !allRecipientsAreAdmins) {
       throw new APIError(
         403,
-        'Please verify your identity to send messages. You can still message Manifold staff for support.'
+        'Messaging unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now. You can still message Manifold staff for support.'
       )
     }
 

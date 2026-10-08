@@ -103,7 +103,7 @@ const completeQuestInternal = async (
   })
   // If they have created the required amounts, send them a quest txn reward.
   // All users receive a quest bonus, but the amount scales with their effective
-  // tier (unverified = 0.2x, verified = 1x, subscribers higher).
+  // tier (flagged = 0, bonus-blocked = 0.2x, free = 1x, subscribers higher).
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
     const resp = await awardQuestBonus(user, questType, count)
     if (resp.bonusAmount <= 0) {
@@ -171,9 +171,8 @@ const awardQuestBonus = async (
     // Fetch user's supporter entitlements for bonus multiplier
     const entitlements = await getActiveSupporterEntitlements(tx, user.id)
 
-    // Resolve effective tier (verification + subscription) and apply its multiplier.
-    // Unverified users still receive bonuses — at 0.2x — so they have something
-    // to lose by not verifying.
+    // Resolve effective tier (account standing + subscription) and apply its
+    // multiplier.
     const effectiveTier = resolveEffectiveTier({
       entitlements,
       bonusEligibility: user.bonusEligibility,

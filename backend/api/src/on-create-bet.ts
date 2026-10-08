@@ -29,8 +29,8 @@ import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
+  LEGACY_REFERRAL_BET_BONUS,
   MAX_TRADERS_FOR_BIG_BONUS,
-  REFERRAL_BET_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
@@ -224,9 +224,10 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
   ])
 }
 
-// Pays the referrer the first-bet portion (REFERRAL_BET_BONUS) when the
-// referred user places their very first bet. The remaining verify portion
-// is paid in idenfy/callback.ts when the user completes ID verification.
+// Pays the referrer the legacy first-bet half (LEGACY_REFERRAL_BET_BONUS) when
+// a user referred before signup-time referral payouts places their very first
+// bet. Referrals recorded since then were paid in full at signup (refer-user.ts)
+// and are skipped by the dedupe below.
 export const payReferralBetBonus = async (referredUser: User) => {
   const referrerId = referredUser.referredByUserId
   if (!referrerId) return
@@ -245,18 +246,19 @@ export const payReferralBetBonus = async (referredUser: User) => {
   const result = await runTransactionWithRetries(async (tx) => {
     // Dedupe against any prior REFERRAL payout for this referred user:
     // - legacy single-payment txns (no bonusType) covered the full bonus
+    // - 'signup' txns: the full bonus, paid when the referral was recorded
     // - explicit 'first_bet' txns from this code path
     const existing = await tx.oneOrNone(
       `SELECT 1 FROM txns WHERE to_id = $1
        AND category = 'REFERRAL'
        AND data->'data'->>'referredUserId' = $2
-       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = 'first_bet')`,
+       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' IN ('first_bet', 'signup'))`,
       [referrer.id, referredUser.id]
     )
     if (existing) return null
 
-    // Referral multiplier comes from effective tier: unverified referrers
-    // get a reduced 0.2x, verified gets 1x, subscribers higher.
+    // Referral multiplier comes from effective tier: flagged referrers get
+    // nothing, blocked ones a reduced 0.2x, free 1x, subscribers higher.
     const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
     const referrerTier = resolveEffectiveTier({
       entitlements,
@@ -266,7 +268,9 @@ export const payReferralBetBonus = async (referredUser: User) => {
       referrerTier,
       'referral'
     )
-    const amount = roundTierBonus(REFERRAL_BET_BONUS * referralMultiplier)
+    const amount = roundTierBonus(
+      LEGACY_REFERRAL_BET_BONUS * referralMultiplier
+    )
     if (amount <= 0) {
       log(
         `Skipped referral first-bet bonus for referrer ${referrerId} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`

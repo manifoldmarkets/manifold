@@ -9,6 +9,16 @@ import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { updateUser } from 'shared/supabase/users'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { ReferralTxn } from 'common/txn'
+import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+  roundTierBonus,
+} from 'common/supporter-config'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { runTxnFromBank } from 'shared/txn/run-txn'
+import { createReferralNotification } from 'shared/create-notification'
 
 export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
   const { referredByUsername, contractId } = props
@@ -45,7 +55,20 @@ export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
     }
     log(`referredByContract: ${referredByContract.slug}`)
   }
-  await handleReferral(newUser.id, referredByUser.id, referredByContract)
+  const bonusAmount = await handleReferral(
+    newUser.id,
+    referredByUser.id,
+    referredByContract
+  )
+  if (bonusAmount) {
+    await createReferralNotification(
+      referredByUser.id,
+      newUser,
+      bonusAmount.toString(),
+      referredByContract,
+      'signup'
+    )
+  }
   await trackPublicEvent(newUser.id, 'Referral', {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
@@ -54,9 +77,9 @@ export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
   return { success: true }
 }
 
-// Records the referral relationship only. The actual bonus payment happens
-// when the new user completes identity verification (in idenfy/callback.ts).
-// This ensures both the referrer AND the new user must be bonus-eligible.
+// Records the referral relationship and pays the referrer the full referral
+// bonus right away — the referred user doesn't need to bet or verify. Returns
+// the amount paid (null when the referrer's tier earns nothing).
 async function handleReferral(
   newUserId: string,
   referredByUserId: string,
@@ -64,8 +87,10 @@ async function handleReferral(
 ) {
   const pg = createSupabaseDirectClient()
   log(`referredByUserId: ${referredByUserId}`)
-  
-  await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+
+  // SERIALIZABLE: the referredByUserId check below is the dedupe for the
+  // payout, so concurrent refer-user calls must not both pass it.
+  return await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     const newUser = await getUser(newUserId, tx)
     if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
 
@@ -82,7 +107,6 @@ async function handleReferral(
       throw new APIError(400, `User ${newUser.id} is too old to be referred`)
     }
 
-    // Record the referral relationship (bonus paid later upon verification)
     await updateUser(
       tx,
       newUserId,
@@ -91,7 +115,48 @@ async function handleReferral(
         referredByContractId: referredByContract?.id,
       })
     )
+    log(
+      `Recorded referral relationship: ${newUserId} referred by ${referredByUserId}`
+    )
 
-    log(`Recorded referral relationship: ${newUserId} referred by ${referredByUserId}. Bonus will be paid upon identity verification.`)
+    // Scaled by the referrer's effective tier: flagged referrers get nothing,
+    // bonus-blocked ones a reduced 0.2x, free 1x, subscribers higher.
+    const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
+    const referrerTier = resolveEffectiveTier({
+      entitlements,
+      bonusEligibility: referrer.bonusEligibility,
+    })
+    const referralMultiplier = getEffectiveBonusMultiplier(
+      referrerTier,
+      'referral'
+    )
+    const amount = roundTierBonus(REFERRAL_AMOUNT * referralMultiplier)
+    if (amount <= 0) {
+      log(
+        `Skipped referral bonus for referrer ${referrer.id} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
+      )
+      return null
+    }
+
+    const bonusTxn: Omit<ReferralTxn, 'id' | 'createdTime' | 'fromId'> = {
+      fromType: 'BANK',
+      toId: referrer.id,
+      toType: 'USER',
+      amount,
+      token: 'M$',
+      category: 'REFERRAL',
+      description: `Referral bonus for new user ${newUserId}: ${amount}`,
+      data: removeUndefinedProps({
+        referredUserId: newUserId,
+        referredContractId: referredByContract?.id,
+        bonusType: 'signup',
+        effectiveTier: referrerTier,
+        referralMultiplier,
+        supporterBonus: referralMultiplier > 1,
+      }),
+    }
+    await runTxnFromBank(tx, bonusTxn)
+    log(`Paid referral bonus of ${amount} to ${referrer.id} for ${newUserId}`)
+    return amount
   })
 }

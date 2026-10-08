@@ -137,21 +137,21 @@ export type User = {
   purchasedMana?: boolean
   verifiedPhone?: boolean
 
-  // Bonus eligibility for receiving site bonuses (signup, referral, quests,
-  // leagues, streaks, loans, etc.)
+  // Bonus eligibility / account standing for site bonuses (referral, quests,
+  // leagues, streaks, loans, etc.). Identity verification is optional: every
+  // state except the two explicit deny states earns full bonuses.
+  // undefined = default — full bonuses, never identity-verified
   // 'verified' = passed identity verification (iDenfy); also unlocks prizes
   // 'grandfathered' = existing user before cash raffles launched; also prizes
-  // 'eligible' = bonus-eligible WITHOUT identity verification — set when a user
-  //   makes a mana purchase (any rail) or is hand-granted by an admin ("people
-  //   we know"). Earns bonuses at the verified tier, but does NOT unlock prize
+  // 'eligible' = made a mana purchase (any rail) or hand-granted by an admin
+  //   ("people we know"). Same bonuses as default, and counts as an account
+  //   trust signal (skips the new-account social gate). Does NOT unlock prize
   //   drawings: those still require KYC (see isIdentityVerified /
-  //   canEnterPrizeDrawings). The one-time signup/referral bonus stays on the
-  //   verification path so verifying keeps its incentive.
-  // 'ineligible' = not eligible for bonuses
-  // 'requires_verification' = admin/system has flagged this user; they must
-  //   complete identity verification before bonuses unlock (e.g. suspected
-  //   alt, suspicious signup, manual review). Distinct from undefined so the
-  //   UI can show different messaging and the system can audit forced flags.
+  //   canEnterPrizeDrawings).
+  // 'ineligible' = bonus-blocked (super-ban, admin) — reduced bonuses
+  // 'requires_verification' = admin/system has flagged this user; they earn
+  //   no farmable bonuses until they complete identity verification (e.g.
+  //   suspected alt, suspicious signup, manual review).
   bonusEligibility?:
     | 'verified'
     | 'grandfathered'
@@ -270,39 +270,35 @@ export const isUserLikelySpammer = (
 export const humanish = (user: User) => user.verifiedPhone !== false
 
 // Identity-verified (KYC via iDenfy) or grandfathered. This is the
-// prize-worthy set: only these users may enter cash raffles. Kept separate from
-// full bonus access so the bonus axis can be broadened (purchasers,
-// hand-granted users) WITHOUT leaking prize access through the
-// canEnterPrizeDrawings fallback.
+// prize-worthy set: only these users may enter cash raffles.
 export const isIdentityVerified = (user: User) =>
   user.bonusEligibility === 'verified' ||
   user.bonusEligibility === 'grandfathered'
 
-// Full bonus/perk access: identity-verified users plus users explicitly granted
-// bonus access through a mana purchase or admin action. This is for binary
-// bonus/perk gates (push bonus, daily loans, league prizes), not prize drawings
-// and not social anti-spam gates.
-export const hasFullBonusAccess = (user: User) =>
-  isIdentityVerified(user) || user.bonusEligibility === 'eligible'
-
-// Admin/system flag requiring identity verification before full bonus access is
-// restored. Distinct from default-unverified users, who may still earn reduced
-// tier-scaled bonuses.
+// Admin/system flag requiring identity verification before bonuses are
+// restored.
 export const isBonusVerificationRequired = (user: User) =>
   user.bonusEligibility === 'requires_verification'
 
 // Explicitly blocked from full bonus access. Use getEffectiveTier() for scaled
-// bonus payouts, because some blocked/unverified states can still receive a
-// reduced or zero tier-specific amount depending on bonus type.
+// bonus payouts, because the blocked states still receive a reduced or zero
+// tier-specific amount depending on bonus type.
 export const isBonusBlocked = (user: User) =>
   user.bonusEligibility === 'ineligible' || isBonusVerificationRequired(user)
 
-// Account trust signal for anti-spam/social unlocks. This deliberately includes
-// non-KYC trust signals (purchase/subscription) and should be used where the
-// product intent is "trusted enough to post/message/comment", not "eligible for
-// a prize" or "eligible for a full bonus payout".
+// Full bonus/perk access: every account that hasn't been explicitly flagged or
+// bonus-blocked — verification is not required. This is for binary bonus/perk
+// gates (push bonus, league prizes, perp bonuses), not prize drawings and not
+// social anti-spam gates.
+export const hasFullBonusAccess = (user: User) => !isBonusBlocked(user)
+
+// Explicit account trust signal: identity-verified/grandfathered, purchase- or
+// admin-granted ('eligible'), purchased mana, or an active subscription. Lets a
+// new account skip the new-account social gate (canPostSocially). Not a bonus
+// gate and not a prize gate.
 export const hasAccountTrustSignal = (user: User) =>
-  hasFullBonusAccess(user) ||
+  isIdentityVerified(user) ||
+  user.bonusEligibility === 'eligible' ||
   user.purchasedMana === true ||
   isSupporter(user.entitlements)
 
@@ -313,11 +309,10 @@ export const hasAccountTrustSignal = (user: User) =>
  */
 export const canReceiveBonuses = hasFullBonusAccess
 
-// Check if user can enter prize drawings (cash raffles). Independent of bonus
-// eligibility: an explicit prizeEligibility overrides, otherwise it derives from
-// IDENTITY VERIFICATION (not full bonus access) so existing verified users keep
-// their access while purchasers/hand-granted ('eligible') users stay gated until
-// they complete KYC.
+// Check if user can enter prize drawings (cash raffles) — the one surface that
+// still requires identity verification. Independent of bonus eligibility: an
+// explicit prizeEligibility overrides, otherwise it derives from IDENTITY
+// VERIFICATION (not full bonus access, which every account has by default).
 export const canEnterPrizeDrawings = (user: User) =>
   user.prizeEligibility === 'eligible'
     ? true
@@ -325,7 +320,7 @@ export const canEnterPrizeDrawings = (user: User) =>
     ? false
     : isIdentityVerified(user)
 
-// Resolve a user's effective tier (unverified | verified | basic | plus | premium).
+// Resolve a user's effective tier (restricted | reduced | free | basic | plus | premium).
 // Subscribers always get their subscription tier regardless of KYC status.
 export const getEffectiveTier = (user: User): EffectiveTier =>
   resolveEffectiveTier({
@@ -333,16 +328,19 @@ export const getEffectiveTier = (user: User): EffectiveTier =>
     bonusEligibility: user.bonusEligibility,
   })
 
-// New-user commenting gate: how long after signup before unverified, non-purchaser,
-// non-subscriber users can comment on other people's markets.
+// New-account social gate: how long after signup before an account without a
+// trust signal can comment on other people's markets and posts, create posts,
+// send DMs, or create unlisted markets. Verifying, buying mana, or subscribing
+// unlocks these early — besides prize drawings, the only thing verification
+// still unlocks.
 export const NEW_USER_COMMENT_GATE_MS = 7 * DAY_MS
 
-// Users who can comment on others' markets. Pass-through for:
+// Users past the new-account social gate. Pass-through for:
 //   - users with a trust signal (identity/grandfathered, bonus-granted,
 //     purchased mana, or active subscription)
 //   - accounts ≥ NEW_USER_COMMENT_GATE_MS old
 // Market creators commenting on their own markets bypass this check (handled at call site).
-export const canCommentOnMarket = (user: User) =>
+export const canPostSocially = (user: User) =>
   hasAccountTrustSignal(user) ||
   Date.now() - user.createdTime >= NEW_USER_COMMENT_GATE_MS
 

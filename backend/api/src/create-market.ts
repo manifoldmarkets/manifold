@@ -3,7 +3,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { hasAccountTrustSignal } from 'common/user'
+import { canPostSocially } from 'common/user'
 import {
   createBinarySchema,
   createBountySchema,
@@ -242,11 +242,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
 
-      // Creating unlisted markets is a trust/anti-spam gate, not a bonus gate.
-      if (visibility === 'unlisted' && !hasAccountTrustSignal(user)) {
+      // Creating unlisted markets is a new-account anti-spam gate, not a
+      // bonus gate.
+      if (visibility === 'unlisted' && !canPostSocially(user)) {
         throw new APIError(
           403,
-          'Please verify your identity to create unlisted markets.'
+          'Creating unlisted markets unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now.'
         )
       }
 

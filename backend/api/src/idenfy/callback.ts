@@ -7,8 +7,8 @@ import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import {
-  STARTING_BALANCE,
-  REFERRAL_VERIFY_BONUS,
+  LEGACY_REFERRAL_VERIFY_BONUS,
+  LEGACY_VERIFIED_SIGNUP_TOP_UP,
   VERIFIED_SIGNUP_BONUS_DESCRIPTION,
 } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
@@ -280,13 +280,19 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     ]
   )
 
-  // Update user's bonusEligibility if approved and pay signup bonus + referral bonus
-  // Only set to 'verified' on approval - don't overwrite grandfathered status on failure
+  // On approval: mark the user verified (unlocks prize drawings and commenting
+  // early, and clears an admin flag). Verification pays nothing for accounts
+  // created since signup started paying the full bonus up front; accounts
+  // created before that still get the top-up and referral half they were
+  // promised. Only set to 'verified' on approval - don't overwrite
+  // grandfathered status on failure.
   if (internalStatus === 'approved') {
     const user = await getUser(userId)
     if (user) {
-      // Only pay signup bonus if they haven't already received it
-      const alreadyPaidBonus = (user.signupBonusPaid ?? 0) >= STARTING_BALANCE
+      // New accounts are created with signupBonusPaid = STARTING_BALANCE, so
+      // only legacy accounts (0/undefined) still get the top-up.
+      const alreadyPaidBonus =
+        (user.signupBonusPaid ?? 0) >= LEGACY_VERIFIED_SIGNUP_TOP_UP
 
       // Check for referral bonus eligibility
       const referrerId = user.referredByUserId
@@ -319,10 +325,11 @@ export const idenfyCallback = async (req: Request, res: Response) => {
               : {}),
           })
 
-          // Pay signup bonus if not already paid. Match on description, not
-          // category alone: the next-day signup bonus shares the SIGNUP_BONUS
-          // category, and a category-only check skipped this payment for any
-          // user whose next-day bonus landed before iDenfy approval.
+          // Pay the legacy top-up if not already paid. Match on description,
+          // not category alone: the next-day signup bonus shares the
+          // SIGNUP_BONUS category, and a category-only check skipped this
+          // payment for any user whose next-day bonus landed before iDenfy
+          // approval.
           const existingSignupTxn = await tx.oneOrNone(
             `SELECT 1 FROM txns WHERE to_id = $1
            AND category = 'SIGNUP_BONUS'
@@ -337,32 +344,34 @@ export const idenfyCallback = async (req: Request, res: Response) => {
               fromType: 'BANK',
               toId: userId,
               toType: 'USER',
-              amount: STARTING_BALANCE,
+              amount: LEGACY_VERIFIED_SIGNUP_TOP_UP,
               token: 'M$',
               category: 'SIGNUP_BONUS',
               description: VERIFIED_SIGNUP_BONUS_DESCRIPTION,
             }
             await runTxnFromBank(tx, signupBonusTxn)
-            await updateUser(tx, userId, { signupBonusPaid: STARTING_BALANCE })
+            await updateUser(tx, userId, {
+              signupBonusPaid: LEGACY_VERIFIED_SIGNUP_TOP_UP,
+            })
             log(
-              `Paid signup bonus of ${STARTING_BALANCE} to user ${userId} after identity verification`
+              `Paid legacy signup top-up of ${LEGACY_VERIFIED_SIGNUP_TOP_UP} to user ${userId} after identity verification`
             )
           }
 
-          // Pay the verify portion of the referral bonus, scaled by the
-          // referrer's effective tier (unverified 0.2x, verified 1x, subscribers
-          // higher) — matching the first-bet portion in on-create-bet.ts. Skipped
-          // only for self-referrals or if already paid for this referred user.
+          // Pay the legacy verify half of a pre-signup-payout referral, scaled
+          // by the referrer's effective tier — matching the legacy first-bet
+          // half in on-create-bet.ts. Skipped for self-referrals, or if this
+          // referral was already paid: at signup ('signup', every referral
+          // recorded since signup-time payouts), by an earlier verify, or by a
+          // legacy single-payment txn (bonusType IS NULL).
           if (referrerId === userId) {
             log(`Skipped referral verify bonus - self-referral for ${userId}`)
           } else if (referrerId && referrer) {
-            // Legacy single-payment REFERRAL txns (data.bonusType IS NULL) already
-            // covered the full bonus, so they block the new verify payout too.
             const existingReferralTxn = await tx.oneOrNone(
               `SELECT 1 FROM txns WHERE to_id = $1
              AND category = 'REFERRAL'
              AND data->'data'->>'referredUserId' = $2
-             AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = 'verify')`,
+             AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' IN ('verify', 'signup'))`,
               [referrer.id, userId]
             )
 
@@ -388,7 +397,7 @@ export const idenfyCallback = async (req: Request, res: Response) => {
                 'referral'
               )
               const referralAmount = roundTierBonus(
-                REFERRAL_VERIFY_BONUS * referralMultiplier
+                LEGACY_REFERRAL_VERIFY_BONUS * referralMultiplier
               )
 
               if (referralAmount <= 0) {
@@ -440,62 +449,32 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     }
   }
 
-  // Handle denial / suspicion. Two sub-cases:
-  //   (a) Underage denial — user has a valid ID but is under 18. The
-  //       motivating case for the prize/bonus split: block prize drawings for
-  //       now, while leaving the bonus axis unchanged. They can retry identity
-  //       verification for prize access once they turn 18.
-  //   (b) Generic denial / suspicion — block bonuses AND explicitly pin
-  //       prizeEligibility = 'ineligible'. The pin is required, not just
-  //       belt-and-suspenders: a 'grandfathered' user (whom we keep
-  //       grandfathered) is identity-verified for the prize fallback, so
-  //       without the pin they'd still pass canEnterPrizeDrawings.
+  // Handle denial / suspicion (incl. EXPIRED/DELETED sessions, which
+  // mapIdenfyStatus folds into 'denied'): block prize drawings only. Leave
+  // bonusEligibility untouched — verification is optional, so abandoning or
+  // failing an attempt mustn't cost a user the bonuses every unverified
+  // account gets. An admin-flagged 'requires_verification' user stays flagged,
+  // so letting a session lapse can't launder the hold; suspected fraud is for
+  // admins to flag by hand. The user can retry (e.g. an under-18 at 18), and a
+  // later approval re-pins prizeEligibility = 'eligible'.
+  //
+  // Pinning prizeEligibility = 'ineligible' is LOAD-BEARING: when it's unset,
+  // canEnterPrizeDrawings falls back to isIdentityVerified, which is true for
+  // a 'grandfathered' user — so without the pin, a grandfathered user who
+  // failed KYC would still pass the prize fallback.
   if (internalStatus === 'denied' || internalStatus === 'suspected') {
     const user = await getUser(userId)
     if (user) {
-      const isUnderage = isUnderageDenial(payload)
-
-      if (isUnderage) {
-        // Under-18: only block prize access. Leave bonusEligibility entirely
-        // untouched — this preserves the original problem we set out to
-        // solve (a grandfathered/verified user later discovered to be a
-        // minor keeps their mana bonuses) without the side effect of
-        // upgrading a brand-new user from 'undefined' to 'verified' just
-        // because they failed the age gate. A new under-18 user gets no prize
-        // drawing access and can retry verification at 18; an existing
-        // bonus-eligible user keeps their bonus access; a flagged
-        // 'requires_verification' user stays flagged for admin review.
-        await updateUser(pg, userId, {
-          prizeEligibility: 'ineligible',
-        })
-        log(
-          `User ${userId} flagged underage via iDenfy — prizes blocked, bonusEligibility unchanged (${
-            user.bonusEligibility ?? 'undefined'
-          })`
-        )
-      } else {
-        // Generic denial: block bonuses (preserves grandfathered, the
-        // pre-existing exception). Pinning prizeEligibility='ineligible' is
-        // LOAD-BEARING, not just defensive: when prizeEligibility is unset,
-        // canEnterPrizeDrawings falls back to isIdentityVerified, which is true
-        // for a 'grandfathered' user — and we deliberately keep them
-        // grandfathered below. Without the explicit pin, a grandfathered user
-        // who failed KYC would still pass the prize fallback.
-        const update: Record<string, unknown> = {
-          prizeEligibility: 'ineligible',
-        }
-        if (user.bonusEligibility !== 'grandfathered') {
-          update.bonusEligibility = 'ineligible'
-        }
-        await updateUser(pg, userId, update as any)
-        log(
-          `User ${userId} iDenfy ${internalStatus} — prizes blocked${
-            user.bonusEligibility !== 'grandfathered'
-              ? ', bonuses blocked'
-              : ', grandfathered bonus status preserved'
-          }`
-        )
-      }
+      await updateUser(pg, userId, {
+        prizeEligibility: 'ineligible',
+      })
+      log(
+        `User ${userId} iDenfy ${internalStatus}${
+          isUnderageDenial(payload) ? ' (underage)' : ''
+        } — prizes blocked, bonusEligibility unchanged (${
+          user.bonusEligibility ?? 'undefined'
+        })`
+      )
     }
   }
 

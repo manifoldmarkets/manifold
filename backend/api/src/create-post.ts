@@ -1,7 +1,7 @@
 import { isAdminId } from 'common/envs/constants'
 import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
 import { TopLevelPost } from 'common/top-level-post'
-import { hasAccountTrustSignal } from 'common/user'
+import { canPostSocially } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { nanoid, randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
@@ -29,11 +29,11 @@ export const createPost: APIHandler<'create-post'> =
     const creator = await getUser(auth.uid)
     if (!creator) throw new APIError(401, 'Your account was not found')
 
-    // Forum posts are gated on account trust, not bonus eligibility.
-    if (!hasAccountTrustSignal(creator)) {
+    // Forum posts share the new-account social gate with comments.
+    if (!canPostSocially(creator)) {
       throw new APIError(
         403,
-        'Please verify your identity to create forum posts.'
+        'Creating forum posts unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock it now.'
       )
     }
 

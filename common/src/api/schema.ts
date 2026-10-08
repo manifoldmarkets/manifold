@@ -3606,9 +3606,10 @@ export const API = (_apiTypeCheck = {
           amount: number
           maxMultiplier: number
           // Which bonus types this referrer has been paid for this referred
-          // user. 'first_bet'/'verify' are the new split; 'legacy' means a
-          // pre-split single-payment txn exists (treated as fully paid).
-          bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+          // user. 'signup' is the full bonus paid when the referral was
+          // recorded; 'first_bet'/'verify' are the legacy split; 'legacy' means
+          // a pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
         }
       >
     },

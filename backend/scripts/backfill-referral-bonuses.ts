@@ -6,10 +6,10 @@
 // paid.
 //
 // This script pays:
-//  - REFERRAL_BET_BONUS to the referrer for every user with referredByUserId
+//  - LEGACY_REFERRAL_BET_BONUS to the referrer for every user with referredByUserId
 //    set who has placed at least one bet, if no first-bet/legacy REFERRAL txn
 //    already exists for that referrer/referredUser pair.
-//  - REFERRAL_VERIFY_BONUS to the referrer for every such user who is also
+//  - LEGACY_REFERRAL_VERIFY_BONUS to the referrer for every such user who is also
 //    identity-verified (verified or grandfathered), if no verify/legacy REFERRAL
 //    txn already exists.
 // Referrer must have full bonus access in both cases. Supporter multiplier is
@@ -21,7 +21,10 @@ import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { getBenefit } from 'common/supporter-config'
 import { hasFullBonusAccess, isIdentityVerified, User } from 'common/user'
 import { convertUser } from 'common/supabase/users'
-import { REFERRAL_BET_BONUS, REFERRAL_VERIFY_BONUS } from 'common/economy'
+import {
+  LEGACY_REFERRAL_BET_BONUS,
+  LEGACY_REFERRAL_VERIFY_BONUS,
+} from 'common/economy'
 import { ReferralTxn } from 'common/txn'
 import { createReferralNotification } from 'shared/create-notification'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -135,7 +138,9 @@ async function payBonus(
   bonusType: BonusType
 ): Promise<number> {
   const baseAmount =
-    bonusType === 'first_bet' ? REFERRAL_BET_BONUS : REFERRAL_VERIFY_BONUS
+    bonusType === 'first_bet'
+      ? LEGACY_REFERRAL_BET_BONUS
+      : LEGACY_REFERRAL_VERIFY_BONUS
 
   if (DRY_RUN) {
     console.log(
