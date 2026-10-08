@@ -1,7 +1,8 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { MINUTES_ALLOWED_TO_REFER } from 'common/user'
 import { Contract } from 'common/contract'
-import { createSupabaseDirectClient, SERIAL_MODE } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import { log, getContractSupabase, getUser } from 'shared/utils'
@@ -85,12 +86,13 @@ async function handleReferral(
   referredByUserId: string,
   referredByContract?: Contract
 ) {
-  const pg = createSupabaseDirectClient()
   log(`referredByUserId: ${referredByUserId}`)
 
   // SERIALIZABLE: the referredByUserId check below is the dedupe for the
-  // payout, so concurrent refer-user calls must not both pass it.
-  return await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+  // payout, so concurrent refer-user calls must not both pass it. Retried,
+  // because crediting the referrer means two signups referred by the same
+  // user at once can conflict, and a lost attempt would drop the referral.
+  return await runTransactionWithRetries(async (tx) => {
     const newUser = await getUser(newUserId, tx)
     if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
 
@@ -113,6 +115,9 @@ async function handleReferral(
       removeUndefinedProps({
         referredByUserId,
         referredByContractId: referredByContract?.id,
+        // Marks this referral as settled here, even when the amount below
+        // rounds to zero, so the legacy halves can never pay it later.
+        referralPayoutAtSignup: true,
       })
     )
     log(

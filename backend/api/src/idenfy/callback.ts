@@ -13,6 +13,7 @@ import {
 } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
 import { isUnderageDenial } from 'common/idenfy-helpers'
+import { paysLegacyReferralHalves } from 'common/user'
 import { createReferralNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 import {
@@ -360,13 +361,14 @@ export const idenfyCallback = async (req: Request, res: Response) => {
 
           // Pay the legacy verify half of a pre-signup-payout referral, scaled
           // by the referrer's effective tier — matching the legacy first-bet
-          // half in on-create-bet.ts. Skipped for self-referrals, or if this
-          // referral was already paid: at signup ('signup', every referral
-          // recorded since signup-time payouts), by an earlier verify, or by a
-          // legacy single-payment txn (bonusType IS NULL).
+          // half in on-create-bet.ts. Skipped for self-referrals, for any
+          // referral settled at signup (paysLegacyReferralHalves — including
+          // ones a flagged referrer was paid nothing for), or if this referral
+          // was already paid: at signup ('signup'), by an earlier verify, or by
+          // a legacy single-payment txn (bonusType IS NULL).
           if (referrerId === userId) {
             log(`Skipped referral verify bonus - self-referral for ${userId}`)
-          } else if (referrerId && referrer) {
+          } else if (referrerId && referrer && paysLegacyReferralHalves(user)) {
             const existingReferralTxn = await tx.oneOrNone(
               `SELECT 1 FROM txns WHERE to_id = $1
              AND category = 'REFERRAL'

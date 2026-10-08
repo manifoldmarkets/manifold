@@ -101,6 +101,11 @@ export type User = {
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
+  // Set together with referredByUserId when the referral is recorded under
+  // signup-time referral payouts — whether or not the referrer's tier paid
+  // anything — so the legacy first-bet/verify halves never apply to it. See
+  // paysLegacyReferralHalves.
+  referralPayoutAtSignup?: boolean
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
@@ -249,6 +254,14 @@ export function getCurrentUtcTime(): Date {
 }
 
 export const MINUTES_ALLOWED_TO_REFER = 60
+
+// Referrals recorded before signup-time referral payouts still pay the legacy
+// first-bet and verify halves (LEGACY_REFERRAL_*). One recorded since never
+// does, even if the referrer's tier paid nothing at signup (a flagged
+// referrer) and is unflagged by the time the referred user bets or verifies.
+export const paysLegacyReferralHalves = (
+  user: Pick<User, 'referredByUserId' | 'referralPayoutAtSignup'>
+) => !!user.referredByUserId && !user.referralPayoutAtSignup
 
 // note this is not exactly same as the function for stats page
 export const isUserLikelySpammer = (

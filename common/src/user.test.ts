@@ -6,6 +6,7 @@ import {
   isIdentityVerified,
   getEffectiveTier,
   NEW_USER_COMMENT_GATE_MS,
+  paysLegacyReferralHalves,
   type User,
 } from './user'
 import {
@@ -234,5 +235,27 @@ describe('canPostSocially — the new-account social gate', () => {
         u({ ...brandNew(), bonusEligibility: 'requires_verification' })
       )
     ).toBe(false)
+  })
+})
+
+describe('paysLegacyReferralHalves — legacy first-bet/verify referral payouts', () => {
+  it('true for a referral recorded before signup-time payouts', () => {
+    expect(paysLegacyReferralHalves({ referredByUserId: 'referrer' })).toBe(
+      true
+    )
+  })
+  it('false once the referral was settled at signup, even if it paid nothing', () => {
+    // A flagged referrer's tier pays zero at signup, so no 'signup' txn exists;
+    // the marker alone must keep the legacy halves from paying after the
+    // flag clears.
+    expect(
+      paysLegacyReferralHalves({
+        referredByUserId: 'referrer',
+        referralPayoutAtSignup: true,
+      })
+    ).toBe(false)
+  })
+  it('false when the user was never referred', () => {
+    expect(paysLegacyReferralHalves({})).toBe(false)
   })
 })

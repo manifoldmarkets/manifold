@@ -7,7 +7,7 @@ import {
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract, isMultiCpmm } from 'common/contract'
-import { User } from 'common/user'
+import { paysLegacyReferralHalves, User } from 'common/user'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
@@ -226,11 +226,11 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
 
 // Pays the referrer the legacy first-bet half (LEGACY_REFERRAL_BET_BONUS) when
 // a user referred before signup-time referral payouts places their very first
-// bet. Referrals recorded since then were paid in full at signup (refer-user.ts)
-// and are skipped by the dedupe below.
+// bet. Referrals recorded since then were settled at signup (refer-user.ts),
+// even when the referrer's tier paid nothing, and never reach the payout.
 export const payReferralBetBonus = async (referredUser: User) => {
   const referrerId = referredUser.referredByUserId
-  if (!referrerId) return
+  if (!referrerId || !paysLegacyReferralHalves(referredUser)) return
   if (referrerId === referredUser.id) {
     log(`Skipped referral first-bet bonus - self-referral for ${referredUser.id}`)
     return
