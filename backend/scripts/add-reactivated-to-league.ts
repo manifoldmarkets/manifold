@@ -5,20 +5,22 @@ import {
   getUsersNotInLeague,
 } from 'shared/generate-leagues'
 import { SupabaseDirectClient } from 'shared/supabase/init'
+import { getEffectiveCurrentSeason } from 'shared/supabase/leagues'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    const userIds = await getUsersNotInLeague(pg, 1)
-    console.log('userIds', userIds)
+    const season = await getEffectiveCurrentSeason()
+    const userIds = await getUsersNotInLeague(pg, season)
+    console.log(`season ${season}, ${userIds.length} userIds`, userIds)
     const divisions = []
     for (const userId of userIds) {
-      divisions.push((await addToLeagueIfNotInOne(pg, userId)).division)
-      console.log(
-        'Added user',
-        userId,
-        'to league',
-        divisions[divisions.length - 1]
-      )
+      const league = await addToLeagueIfNotInOne(pg, userId)
+      if (!league) {
+        console.log('Skipped user', userId)
+        continue
+      }
+      divisions.push(league.division)
+      console.log('Added user', userId, 'to league', league.division)
     }
     console.log(
       mapValues(
