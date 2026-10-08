@@ -6,6 +6,7 @@ import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasOddsApiKey } from 'shared/the-odds-api-client'
 import { createOddsMarketsForCompetition } from 'shared/odds-markets'
+import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import { calendarEntriesFor } from 'common/sports-calendar'
 
 export const adminSportsCreateOddsMarkets: APIHandler<
@@ -23,9 +24,12 @@ export const adminSportsCreateOddsMarkets: APIHandler<
   }
 
   const pg = createSupabaseDirectClient()
+  // The same switched-on phases as the scheduler.
+  const switches = await getCompetitionSwitches(pg)
   const r = await createOddsMarketsForCompetition(pg, competitionId, {
     dryRun,
     eventIds,
+    switches,
   })
   return {
     created: r.created,

@@ -11,6 +11,7 @@
  */
 
 import { log } from 'shared/utils'
+import { recordOddsApiUsage } from 'shared/supabase/odds-api-usage'
 import { OddsApiEvent, OddsApiScore } from 'common/odds-markets'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
@@ -28,8 +29,8 @@ function warnOnLowQuota(res: Response) {
   if (header === null) return
   const remaining = parseInt(header)
   // In season 2,000 credits is a few days of headroom (a sport in play costs
-  // about 24 an hour, and a stuck game keeps its sport polling); at 200,
-  // creation and resolution are about to stop.
+  // 12 to 240 an hour, set on /admin/sports); at 200, creation and
+  // resolution are about to stop.
   if (remaining < 200) {
     log.error(`[the-odds-api] only ${remaining} credits left this month`)
   } else if (remaining < 2000) {
@@ -70,20 +71,27 @@ export async function getUpcomingOdds(
     )
   }
   warnOnLowQuota(res)
+  void recordOddsApiUsage(sportKey, res.headers)
   return res.json()
 }
 
 /**
- * Live and upcoming games for a sport plus, with `daysBack`, games completed
- * in the last 1-3 days. Live games carry a partial `scores` array.
+ * Live and upcoming games for a sport (1 credit). With `finishedDays`, also
+ * the games completed in the last 1-3 days (2 credits), which resolving
+ * needs. Live games carry a partial `scores` array.
  */
 export async function getScores(
   sportKey: string,
-  daysBack = 1
+  opts: { finishedDays?: number } = {}
 ): Promise<OddsApiScore[]> {
   const url = new URL(`${BASE_URL}/sports/${sportKey}/scores`)
   url.searchParams.set('apiKey', apiKey())
-  url.searchParams.set('daysFrom', String(Math.min(3, Math.max(1, daysBack))))
+  if (opts.finishedDays) {
+    url.searchParams.set(
+      'daysFrom',
+      String(Math.min(3, Math.max(1, opts.finishedDays)))
+    )
+  }
 
   const res = await fetch(url.toString(), {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -94,5 +102,6 @@ export async function getScores(
     )
   }
   warnOnLowQuota(res)
+  void recordOddsApiUsage(sportKey, res.headers)
   return res.json()
 }

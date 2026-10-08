@@ -26,6 +26,8 @@ import {
   PREMIER_LEAGUE_2526,
 } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
+import { AdminCompetitionSwitches } from 'web/components/sports/admin-competition-switches'
+import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
 import clsx from 'clsx'
 import {
   SPORT_LEAGUE_LABEL,
@@ -79,6 +81,8 @@ const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
   { id: 'mlb', label: 'MLB' },
   { id: 'nba', label: 'NBA' },
   { id: 'wnba', label: 'WNBA' },
+  { id: 'nhl', label: 'NHL' },
+  { id: 'cbb', label: 'College Basketball' },
 ]
 
 function calendarCompetitions(sport: SportId): CompetitionOption[] {
@@ -724,16 +728,17 @@ export default function SportsAdminPage() {
           <p className="text-ink-800 mb-1 font-medium">How this works</p>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              Markets are created <strong>automatically</strong> by the
-              7&nbsp;AM&nbsp;UTC <code>sports-create-markets</code> cron (7-day
-              lookahead), owned by <strong>@ManifoldSports</strong>. Use this
-              panel to <strong>preview</strong> (dry-run), create on demand, or
-              customize tags / tiers / the description.
+              Game markets are created <strong>automatically</strong> by the
+              daily 6&nbsp;AM&nbsp;LA <code>sports-odds-create</code> job, two
+              weeks ahead, for the phases switched on below, owned by{' '}
+              <strong>@ManifoldSports</strong>. Use the Odds API section to{' '}
+              <strong>preview</strong> (dry run) or create on demand.
             </li>
             <li>
-              Odds and live scores update in real time on the dashboard; matches{' '}
-              <strong>auto-resolve ~10s after full time</strong> (15-min
-              backstop).
+              <code>sports-odds-resolve</code> writes live scores as often as
+              set below and <strong>auto-resolves</strong> games from the final,
+              whether or not their competition is switched on. The football-data
+              pipeline (the World Cup) runs separately.
             </li>
             <li>
               Each market is tagged into the official group + any extra topics
@@ -742,6 +747,14 @@ export default function SportsAdminPage() {
             </li>
           </ul>
         </div>
+
+        <Section title="Scheduler switches" defaultOpen>
+          <AdminCompetitionSwitches />
+        </Section>
+
+        <Section title="Live scores and credits" defaultOpen>
+          <AdminScorePolling />
+        </Section>
 
         {/* ── 1. Sport + Competition Selector ── */}
         <Section title="1. Sport &amp; Competition" defaultOpen>
@@ -1116,7 +1129,9 @@ export default function SportsAdminPage() {
                 at the bookmakers&apos; devigged moneyline. Games that already
                 have a market are skipped and their kickoff is updated if the
                 provider has moved it; games with no line yet wait for the next
-                run, and one run creates at most 25 markets.
+                run, and one run creates at most 25 markets. Only phases
+                switched on above are included: switch one on to preview or
+                create its games.
               </p>
               <Row className="items-center gap-3">
                 <span className="text-ink-600 text-xs">Dry run</span>
@@ -1156,9 +1171,9 @@ export default function SportsAdminPage() {
               </Row>
               {oddsApiRan && oddsApiResults.length === 0 && (
                 <p className="text-ink-500 text-sm">
-                  No games to create: nothing in an auto-create phase of this
-                  competition starts in the next 14 days. Phases are set in
-                  common/sports-calendar.ts.
+                  No games to create: nothing in this competition&apos;s
+                  switched-on phases starts in the next 14 days. Switch a phase
+                  on above; dates are set in common/sports-calendar.ts.
                 </p>
               )}
               {oddsApiResults.length > 0 && (

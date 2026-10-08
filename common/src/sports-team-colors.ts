@@ -197,6 +197,43 @@ const SOCCER: Record<string, Palette> = {
   'Wolverhampton Wanderers': ['#FDB913', '#231F20'],
 }
 
+// The Utah team was the Utah Hockey Club for 2024-25.
+const NHL: Record<string, Palette> = {
+  'Anaheim Ducks': ['#F47A38', '#B9975B'],
+  'Boston Bruins': ['#FFB81C', '#000000'],
+  'Buffalo Sabres': ['#003087', '#FFB81C'],
+  'Calgary Flames': ['#C8102E', '#F1BE48'],
+  'Carolina Hurricanes': ['#CE1126', '#000000'],
+  'Chicago Blackhawks': ['#CF0A2C', '#000000'],
+  'Colorado Avalanche': ['#6F263D', '#236192'],
+  'Columbus Blue Jackets': ['#002654', '#CE1126'],
+  'Dallas Stars': ['#006847', '#8F8F8C'],
+  'Detroit Red Wings': ['#CE1126', '#FFFFFF'],
+  'Edmonton Oilers': ['#041E42', '#FF4C00'],
+  'Florida Panthers': ['#041E42', '#C8102E'],
+  'Los Angeles Kings': ['#111111', '#A2AAAD'],
+  'Minnesota Wild': ['#154734', '#A6192E'],
+  'Montreal Canadiens': ['#AF1E2D', '#192168'],
+  'Nashville Predators': ['#FFB81C', '#041E42'],
+  'New Jersey Devils': ['#CE1126', '#000000'],
+  'New York Islanders': ['#00539B', '#F47D30'],
+  'New York Rangers': ['#0038A8', '#CE1126'],
+  'Ottawa Senators': ['#C52032', '#C2912C'],
+  'Philadelphia Flyers': ['#F74902', '#000000'],
+  'Pittsburgh Penguins': ['#FCB514', '#000000'],
+  'San Jose Sharks': ['#006D75', '#EA7200'],
+  'Seattle Kraken': ['#001628', '#99D9D9'],
+  'St. Louis Blues': ['#002F87', '#FCB514'],
+  'Tampa Bay Lightning': ['#002868', '#FFFFFF'],
+  'Toronto Maple Leafs': ['#00205B', '#FFFFFF'],
+  'Utah Mammoth': ['#6CACE4', '#000000'],
+  'Utah Hockey Club': ['#6CACE4', '#000000'],
+  'Vancouver Canucks': ['#00205B', '#00843D'],
+  'Vegas Golden Knights': ['#B4975A', '#333F42'],
+  'Washington Capitals': ['#C8102E', '#041E42'],
+  'Winnipeg Jets': ['#041E42', '#AC162C'],
+}
+
 export const TEAM_PALETTES: Partial<Record<SportId, Record<string, Palette>>> =
   {
     nfl: NFL,
@@ -204,11 +241,17 @@ export const TEAM_PALETTES: Partial<Record<SportId, Record<string, Palette>>> =
     nba: NBA,
     wnba: WNBA,
     soccer: SOCCER,
+    nhl: NHL,
   }
 
-/** Lowercase, `&` as "and", no punctuation or FC/AFC-style club suffixes. */
+/**
+ * Lowercase, no accents ("Montréal"), `&` as "and", no punctuation or
+ * FC/AFC-style club suffixes.
+ */
 export function normalizeTeam(name: string): string {
   return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9 ]/g, ' ')

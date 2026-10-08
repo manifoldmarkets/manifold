@@ -1,6 +1,7 @@
 import {
   americanOddsToProb,
   buildOddsMarketParams,
+  canEndLevel,
   fairProbs,
   fitProbs,
   gameResolution,
@@ -16,8 +17,11 @@ import { getAnswerProbsError } from './new-contract'
 import { DRAW_COLOR, gameAnswerColors } from './sports-team-colors'
 import {
   activeCalendarEntries,
+  autoCreates,
   calendarEntriesFor,
+  calendarPhaseKey,
   calendarStatus,
+  competitionSwitchError,
   phaseWindow,
   SPORTS_CALENDAR,
 } from './sports-calendar'
@@ -128,11 +132,89 @@ describe('2026–27 calendar eligibility', () => {
     expect(unpriced.map((p) => `${p.competitionId} ${p.phase}`)).toEqual([])
   })
 
-  it('keeps soccer knockout rounds off until the extra time and penalties rule is decided', () => {
-    const playoffs = calendarEntriesFor('mls-2026').find(
-      (p) => p.phase === 'MLS Cup Playoffs'
+  it('locks soccer knockout rounds until the extra time and penalties rule is decided', () => {
+    const locked = SPORTS_CALENDAR.filter((p) => p.locked)
+    expect(locked.map(calendarPhaseKey)).toEqual(
+      expect.arrayContaining([
+        'mls-2026:MLS Cup Playoffs',
+        'ucl-2026-27:Knockout Phase',
+      ])
     )
-    expect(playoffs?.autoCreate).toBe(false)
+    // A switch can't turn a locked phase on.
+    for (const p of locked)
+      expect(autoCreates(p, { [calendarPhaseKey(p)]: true })).toBe(false)
+    expect(
+      competitionSwitchError('ucl-2026-27', 'Knockout Phase', true)
+    ).toContain('extra time')
+    expect(
+      competitionSwitchError('ucl-2026-27', 'Knockout Phase', false)
+    ).toBeUndefined()
+  })
+
+  it.each([
+    'nhl-2026-27',
+    'ncaab-tournament-2027',
+    'ucl-2026-27',
+    'laliga-2026-27',
+    'seriea-2026-27',
+    'bundesliga-2026-27',
+    'ligue1-2026-27',
+  ])('adds %s with an Odds API key, switched off by default', (id) => {
+    const phases = calendarEntriesFor(id)
+    expect(phases.length).toBeGreaterThan(0)
+    for (const p of phases) {
+      expect(p.oddsKey).toBeTruthy()
+      expect(autoCreates(p, {})).toBe(false)
+    }
+  })
+
+  it('keeps the March Madness window off the conference tournaments', () => {
+    // Selection Sunday is 14 Mar 2027; conference finals are before it.
+    const [madness] = calendarEntriesFor('ncaab-tournament-2027')
+    const { from } = phaseWindow(madness)
+    expect(from).toBeGreaterThan(Date.parse('2027-03-14T23:59:59Z'))
+  })
+})
+
+describe('scheduler switches', () => {
+  const epl = calendarEntriesFor('epl-2026-27')[0]
+  const [nhl] = calendarEntriesFor('nhl-2026-27')
+  it("falls back to each phase's default without a switch", () => {
+    expect(autoCreates(epl, {})).toBe(true)
+    expect(autoCreates(nhl, {})).toBe(false)
+  })
+  it('turns a phase on or off', () => {
+    expect(autoCreates(epl, { [calendarPhaseKey(epl)]: false })).toBe(false)
+    expect(autoCreates(nhl, { [calendarPhaseKey(nhl)]: true })).toBe(true)
+    // A switch for another phase changes nothing.
+    expect(autoCreates(nhl, { [calendarPhaseKey(epl)]: true })).toBe(false)
+  })
+  it('refuses phases it has no calendar entry or Odds API key for', () => {
+    expect(competitionSwitchError('nhl-2026-27', 'Regular Season', true)).toBe(
+      undefined
+    )
+    expect(competitionSwitchError('nhl-2026-27', 'Preseason', true)).toContain(
+      'No calendar phase'
+    )
+    expect(competitionSwitchError('f1-2026', '2026 Remaining', true)).toContain(
+      'no Odds API sport key'
+    )
+  })
+})
+
+describe('level finals', () => {
+  it('only expects them where a game can end level', () => {
+    expect(canEndLevel('soccer_epl')).toBe(true)
+    expect(canEndLevel('americanfootball_nfl')).toBe(true)
+    expect(canEndLevel('americanfootball_nfl_preseason')).toBe(true)
+    for (const key of [
+      'icehockey_nhl',
+      'basketball_nba',
+      'basketball_ncaab',
+      'baseball_mlb',
+      'americanfootball_ncaaf',
+    ])
+      expect(canEndLevel(key)).toBe(false)
   })
 })
 
