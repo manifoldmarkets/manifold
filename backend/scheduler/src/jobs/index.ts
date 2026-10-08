@@ -61,6 +61,7 @@ import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { updatePerps } from './update-perps'
+import { sendPerpPositionAlerts } from 'shared/notifications/perp-position-alerts'
 import {
   ORACLE_TICK_PERIOD_MS,
   updateOracleFeeds,
@@ -86,6 +87,7 @@ export type SchedulerJobSet = 'all' | 'main' | 'perps'
 
 const PERP_JOB_NAMES = new Set([
   'update-perps',
+  'send-perp-position-alerts',
   'update-oracle-feeds',
   'update-openrouter-share',
   'update-trump-approval',
@@ -236,6 +238,13 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'update-perps',
       '0 0 * * * *', // every hour on the hour
       updatePerps
+    ),
+    // Separate from the 2s oracle tick, with bounded async DB concurrency.
+    // Keep risk warnings off the main scheduler's blocking batch jobs.
+    createJob(
+      'send-perp-position-alerts',
+      '15 * * * * *',
+      sendPerpPositionAlerts
     ),
     createJob(
       'update-oracle-feeds',

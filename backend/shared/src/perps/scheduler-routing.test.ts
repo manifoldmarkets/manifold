@@ -43,6 +43,7 @@ const tick = loadSchedulerModule('update-oracle-feeds.ts', {
 
 const perpJobs = [
   'update-perps',
+  'send-perp-position-alerts',
   'update-oracle-feeds',
   'update-openrouter-share',
   'update-trump-approval',
@@ -93,6 +94,9 @@ it('runs all sixteen MNX feeds on the shared 2s tick and funding hourly', () => 
   expect(jobs.find((job) => job.name === 'update-perps')?.schedule).toBe(
     '0 0 * * * *'
   )
+  expect(
+    jobs.find((job) => job.name === 'send-perp-position-alerts')?.schedule
+  ).toBe('15 * * * * *')
   expect(MNX_INSTRUMENTS).toHaveLength(16)
   for (const instrument of MNX_INSTRUMENTS) {
     expect(
