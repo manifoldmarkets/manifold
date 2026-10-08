@@ -2,14 +2,19 @@ import { APIError } from 'common/api/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
-// An API limit order that rests and never fills is not a trade, but it still
-// costs a contract_bets row, an entry in every index on that table, and a
-// rewrite when it expires or is cancelled. In 2026 a market-making bot
-// re-quoting with 2-second expirations placed ~270k of them a day with a fill
-// rate of 0.003%, outnumbering every real trade on the site 10 to 1. Orders that
-// fill don't count toward this cap, so quoting that actually provides liquidity
-// is never limited, only churn.
-export const MAX_UNFILLED_API_ORDERS_PER_DAY = 50_000
+// Targets order churn, not order volume. An API limit order counts here only
+// if it never filled AND was gone (expired or cancelled) within a minute of
+// being placed. Such an order is barely in the book long enough for anyone to
+// trade against, but it still costs a contract_bets row, an entry in every
+// index on that table, and a rewrite when it's cancelled.
+//
+// In 2026 one bot re-quoted with 2-second expirations: ~265k orders a day,
+// all of them counting here, 2 fills a day. A market maker whose quotes rest
+// for minutes, or a bot whose short-lived orders fill (immediate-or-cancel
+// style), adds little or nothing. Peaks over two weeks, by UTC day: 14.7k
+// (a market maker mostly quoting 10-minute orders), 3.4k, then < 1k.
+export const MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY = 50_000
+export const SHORT_LIVED_ORDER_SECONDS = 60
 
 // Each API process re-counts a user at most this often, so a user can overshoot
 // the cap by their order rate times this window per process, which is small
@@ -26,23 +31,33 @@ export const assertUnderUnfilledApiOrderCap = async (
 ) => {
   let cached = countsByUserId.get(userId)
   if (!cached || now - cached.countedAt >= UNFILLED_API_ORDER_RECOUNT_MS) {
-    cached = { count: await countUnfilledApiOrders(pg, userId), countedAt: now }
+    cached = {
+      count: await countShortLivedUnfilledApiOrders(pg, userId),
+      countedAt: now,
+    }
     countsByUserId.set(userId, cached)
     pruneStaleCounts(now)
   }
-  if (cached.count >= MAX_UNFILLED_API_ORDERS_PER_DAY) {
+  if (cached.count >= MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY) {
     throw new APIError(
       429,
-      `You have placed ${MAX_UNFILLED_API_ORDERS_PER_DAY.toLocaleString()} API limit orders in the last 24 hours that never filled. ` +
-        `New API limit orders are paused until that count drops. Market orders still work. ` +
-        `Re-placing short-lived orders counts against this limit, so leave orders up longer instead.`
+      `In the last 24 hours, ${MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY.toLocaleString()} of your API limit orders ` +
+        `expired or were cancelled within ${SHORT_LIVED_ORDER_SECONDS} seconds without filling. ` +
+        `New API limit orders are paused until that count drops. Orders that fill, or that stay up ` +
+        `for at least ${SHORT_LIVED_ORDER_SECONDS} seconds, don't count, and market orders still work.`
     )
   }
 }
 
-// Stops at the cap, so for a bot over the limit this reads one bounded range
-// of its own rows rather than its whole day.
-const countUnfilledApiOrders = (pg: SupabaseDirectClient, userId: string) =>
+// A short expiry counts as soon as the order is placed (it can only stop
+// counting by filling). Otherwise the order counts once it's cancelled soon
+// after placement: an unfilled order's only update is its cancellation, so
+// updated_time is when it was cancelled. Stops at the cap, so a bot over the
+// limit costs one bounded range of its own rows, not its whole day.
+const countShortLivedUnfilledApiOrders = (
+  pg: SupabaseDirectClient,
+  userId: string
+) =>
   pg.one(
     `select count(*)::int as n from (
        select 1 from contract_bets
@@ -51,9 +66,17 @@ const countUnfilledApiOrders = (pg: SupabaseDirectClient, userId: string) =>
          and is_api
          and amount = 0
          and not is_redemption
+         and (
+           expires_at - created_time < make_interval(secs => $3)
+           or (is_cancelled and updated_time - created_time < make_interval(secs => $3))
+         )
        limit $2
      ) recent`,
-    [userId, MAX_UNFILLED_API_ORDERS_PER_DAY],
+    [
+      userId,
+      MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY,
+      SHORT_LIVED_ORDER_SECONDS,
+    ],
     (r: { n: number }) => r.n
   )
 

@@ -1,7 +1,8 @@
 import { APIError } from 'common/api/utils'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import {
-  MAX_UNFILLED_API_ORDERS_PER_DAY,
+  MAX_SHORT_LIVED_UNFILLED_API_ORDERS_PER_DAY as CAP,
+  SHORT_LIVED_ORDER_SECONDS,
   UNFILLED_API_ORDER_RECOUNT_MS,
   assertUnderUnfilledApiOrderCap,
   resetUnfilledApiOrderCountsForTests,
@@ -17,22 +18,22 @@ const pgCounting = (...counts: number[]) => {
 beforeEach(() => resetUnfilledApiOrderCountsForTests())
 
 test('allows a user under the cap and caches the count', async () => {
-  const { pg, one } = pgCounting(MAX_UNFILLED_API_ORDERS_PER_DAY - 1)
+  const { pg, one } = pgCounting(CAP - 1)
   await assertUnderUnfilledApiOrderCap(pg, 'u', 0)
   await assertUnderUnfilledApiOrderCap(pg, 'u', 1000)
   expect(one).toHaveBeenCalledTimes(1)
-  expect(one.mock.calls[0][1]).toEqual(['u', MAX_UNFILLED_API_ORDERS_PER_DAY])
+  expect(one.mock.calls[0][1]).toEqual(['u', CAP, SHORT_LIVED_ORDER_SECONDS])
 })
 
 test('rejects a user at the cap with a 429', async () => {
-  const { pg } = pgCounting(MAX_UNFILLED_API_ORDERS_PER_DAY)
+  const { pg } = pgCounting(CAP)
   const error = await assertUnderUnfilledApiOrderCap(pg, 'u', 0).catch((e) => e)
   expect(error).toBeInstanceOf(APIError)
   expect(error.code).toBe(429)
 })
 
 test('keeps rejecting from cache, then recounts and lets the user back in', async () => {
-  const { pg, one } = pgCounting(MAX_UNFILLED_API_ORDERS_PER_DAY, 10)
+  const { pg, one } = pgCounting(CAP, 10)
   await expect(assertUnderUnfilledApiOrderCap(pg, 'u', 0)).rejects.toThrow()
   await expect(
     assertUnderUnfilledApiOrderCap(pg, 'u', UNFILLED_API_ORDER_RECOUNT_MS - 1)
@@ -43,7 +44,7 @@ test('keeps rejecting from cache, then recounts and lets the user back in', asyn
 })
 
 test('counts each user separately', async () => {
-  const { pg } = pgCounting(MAX_UNFILLED_API_ORDERS_PER_DAY, 0)
+  const { pg } = pgCounting(CAP, 0)
   await expect(assertUnderUnfilledApiOrderCap(pg, 'bot', 0)).rejects.toThrow()
   await assertUnderUnfilledApiOrderCap(pg, 'human', 0)
 })
