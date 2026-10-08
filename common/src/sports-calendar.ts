@@ -1,4 +1,5 @@
 import type { SportKey } from './sports-schedule'
+import { ENV } from './envs/constants'
 
 // ─── The sports calendar ─────────────────────────────────────────────────────
 //
@@ -614,13 +615,23 @@ export const calendarPhaseKey = (
 /** Admin switches by `calendarPhaseKey`. */
 export type CompetitionSwitches = Record<string, boolean>
 
+/**
+ * Whether phases without a switch run on their `autoCreate` default. Not on
+ * dev: its scheduler creates nothing, and spends no credits, unless a phase
+ * is switched on there.
+ */
+export const CALENDAR_DEFAULTS_ON = ENV === 'PROD'
+
 /** Whether the scheduler creates games in this phase. */
 export function autoCreates(
   entry: SportsCalendarEntry,
   switches: CompetitionSwitches
 ): boolean {
   if (entry.locked || !entry.oddsKey) return false
-  return switches[calendarPhaseKey(entry)] ?? entry.autoCreate
+  return (
+    switches[calendarPhaseKey(entry)] ??
+    (CALENDAR_DEFAULTS_ON && entry.autoCreate)
+  )
 }
 
 /** Why a phase's switch can't be set, or undefined when it can. */

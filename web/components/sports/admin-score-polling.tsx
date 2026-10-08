@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
+import { ENV } from 'common/envs/constants'
 import { SPORT_LEAGUE_LABEL, SPORTS_CALENDAR } from 'common/sports-calendar'
 import {
   FINALS_INTERVALS,
@@ -148,6 +149,7 @@ function LiveBySport(props: {
         One call covers every game of a league that&apos;s on, so the cost is
         per league per hour of play, not per game. The provider updates scores
         about every 30 seconds.
+        {ENV !== 'PROD' && ' On dev, live scores default to off.'}
       </span>
       {data.sports.map((s) => {
         const target = pollingTarget.sport(s.sport)

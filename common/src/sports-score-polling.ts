@@ -1,4 +1,5 @@
 import { groupBy } from 'lodash'
+import { ENV } from './envs/constants'
 import { SPORT_LEAGUE_LABEL, SportId } from './sports-calendar'
 
 // ─── How often the resolver asks for scores ───────────────────────────────────
@@ -17,7 +18,8 @@ export const LIVE_INTERVALS = [0, 300, 120, 60, 30] as const
 /** Speeds for checking whether a game that's due to end has finished. */
 export const FINALS_INTERVALS = [60, 300, 600] as const
 
-export const DEFAULT_LIVE_INTERVAL = 300
+/** Off on dev; dev games still resolve from the finals checks. */
+export const DEFAULT_LIVE_INTERVAL = ENV === 'PROD' ? 300 : 0
 export const DEFAULT_FINALS_INTERVAL = 300
 /** A game still unresolved 3 hours after close is checked at most this often. */
 export const OVERDUE_FINALS_INTERVAL = 30 * 60

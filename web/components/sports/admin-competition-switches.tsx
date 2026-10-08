@@ -2,6 +2,7 @@ import { groupBy } from 'lodash'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
+import { ENV } from 'common/envs/constants'
 import {
   calendarPhaseKey,
   CompetitionSwitchState,
@@ -57,6 +58,8 @@ export function AdminCompetitionSwitches() {
         every phase switched on here, up to 25 per competition per run, at
         Ṁ1,000 each. Switching a phase off stops new games; markets already
         created still resolve.
+        {ENV !== 'PROD' &&
+          ' On dev every phase defaults to off: switch on only what you want to test.'}
       </p>
       {Object.entries(groupBy(shown, (s) => s.sport)).map(([sport, phases]) => (
         <Col key={sport} className="gap-1">

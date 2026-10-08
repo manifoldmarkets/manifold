@@ -161,3 +161,29 @@ describe('settings', () => {
     expect(sportForLeague(undefined)).toBeUndefined()
   })
 })
+
+describe('on dev', () => {
+  it('creates nothing and keeps live scores off unless switched on', () => {
+    const prev = process.env.NEXT_PUBLIC_FIREBASE_ENV
+    process.env.NEXT_PUBLIC_FIREBASE_ENV = 'DEV'
+    try {
+      jest.isolateModules(() => {
+        /* eslint-disable @typescript-eslint/no-require-imports */
+        const calendar =
+          require('./sports-calendar') as typeof import('./sports-calendar')
+        const polling =
+          require('./sports-score-polling') as typeof import('./sports-score-polling')
+        /* eslint-enable @typescript-eslint/no-require-imports */
+        const [epl] = calendar.calendarEntriesFor('epl-2026-27')
+        expect(calendar.autoCreates(epl, {})).toBe(false)
+        expect(
+          calendar.autoCreates(epl, { [calendar.calendarPhaseKey(epl)]: true })
+        ).toBe(true)
+        expect(polling.DEFAULT_LIVE_INTERVAL).toBe(0)
+      })
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_FIREBASE_ENV
+      else process.env.NEXT_PUBLIC_FIREBASE_ENV = prev
+    }
+  })
+})
