@@ -38,7 +38,7 @@ Traders in a play-money environment are competing for social prestige and a sens
 
 ### Why Manifold?
 
-Manifold is a social prediction game, which makes it the easiest prediction site to use. New users can instantly sign in with existing Google or Apple accounts and start predicting for free in less than a minute. No purchase is required to join and use Manifold.
+Manifold is a social prediction game, which makes it the easiest prediction site to use. New users can instantly sign in with existing Google  accounts and start predicting for free in less than a minute. No purchase is required to join and use Manifold.
 
 Manifold is the best prediction site because it offers the largest variety of questions and topics, contributed by an expansive community. Community made markets means that you can easily find more markets that you actually care about and have more opportunities to leverage your knowledge to win mana!
 
@@ -74,8 +74,8 @@ Mana can be earned by making correct predictions, successful trades, creating po
 - **Referrals** -
   Refer new users to Manifold and earn M1000 when they sign up using your referral link.
 
-- **Phone verification** -
-  Verify your phone number to receive a one-time bonus of M1000.
+- **Enable push notifications** -
+  Enable push notifications to receive a one-time bonus of M1000.
 
 You can find all available quests by navigating to your profile page and clicking on the streak/quest button.
 
@@ -90,7 +90,7 @@ Here are some of the top use cases for our markets, with corresponding examples.
 #### Personal
 
 - Fun wagers with friends about your interests or personal life.
-- Recommendations - Similar to asking for suggestions from another site but with Manifold users are incentivized to give higher quality answers as they can profit from being helpful.
+- Recommendations - Similar to asking for suggestions from another site, but with Manifold users are incentivized to give higher quality answers as they can profit from being helpful.
 - Accountability/goals - Betting YES on your own market and allowing people to bet NO to motivate you.
 
 #### News & current events
@@ -192,13 +192,14 @@ If a market closes and there won't be a resolution in the foreseeable future, co
 
 ### What does resolving to N/A do?
 
-Resolving a market to N/A effectively cancels the market. This feature is limited to moderators or staff, and you should not create markets with the expectation that an N/A resolution will be possible.
+Resolving a market to N/A effectively cancels the market.
 
 This means that:
 
 - All users who have traded on the market have their mana returned to them.
 - Any user who made a profit by selling shares before resolution will have that mana subtracted from their balance. This could lead to a negative balance in some cases.
 - All liquidity providers will have their mana returned to them, including the initial amount it cost to make the market.
+- Bonuses received from users trading on your question will be deducted from your balance.
 
 Don't abuse resolving to N/A as it inflicts an opportunity cost on bettors.
 
@@ -265,7 +266,7 @@ Limit orders allow you to place a bet at a specific probability, rather than jus
 
 #### **EXAMPLE**
 
-Imagine you think there is a 30% chance or less that humans go to Mars before 2030. The market probability is currently below or at 30%. In this situation, you could set a limit order to bet NO at 30%. Whenever another user comes along to bet an amount on YES that would push it above 30% they will fulfil your order. In effect, you automatically immediately buy the market back down to 30% after they try to move the probability above it. If you place a very large bet, multiple users could bet YES against you until eventually the max amount of mana you set for the order is fulfilled.
+Imagine you think there is a 30% chance or less that humans go to Mars before 2030. The market probability is currently below or at 30%. In this situation, you could set a limit order to bet NO at 30%. Whenever another user comes along to bet an amount on YES that would push it above 30% they will fill your order. In effect, you automatically immediately buy the market back down to 30% after they try to move the probability above it. If you place a very large bet, multiple users could bet YES against you until eventually the max amount of mana you set for the order is filled.
 
 Maybe you are confident the chance lies in the range of 25%-30%. In this case, you could also set two limit orders. One to bet YES at 25% and one to bet NO at 30%. When doing so, the amount bet needs to reflect the payout at each different % chance. If buying YES shares at 25%, an order for M100 will buy 400 shares (your max payout), which would require a limit order of M280 NO at 30% to sell an equal 400 shares.
 
