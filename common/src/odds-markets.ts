@@ -239,6 +239,19 @@ export function winningSide(
 const DRAW_ANSWER = 'Draw'
 
 /**
+ * Whether a game in this Odds API sport can end level. Soccer and NFL games
+ * can; hockey, baseball, basketball and college football play on until
+ * someone wins, so a level final from the feed is missing its decider (an
+ * NHL shootout, say) and isn't resolved from.
+ */
+export function canEndLevel(sportKey: string): boolean {
+  return (
+    sportKey.startsWith('soccer_') ||
+    sportKey.startsWith('americanfootball_nfl')
+  )
+}
+
+/**
  * How a finished game market resolves: the winning team's answer, Draw when a
  * three-way game ends level, or 50/50 between the teams when a game without a
  * Draw answer ends level. Team answers are found by name, falling back to

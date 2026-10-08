@@ -3267,6 +3267,38 @@ export type Database = {
         }
         Relationships: []
       }
+      sports_competition_switches: {
+        Row: {
+          competition_id: string
+          enabled: boolean
+          phase: string
+          updated_by: string
+          updated_time: string
+        }
+        Insert: {
+          competition_id: string
+          enabled: boolean
+          phase: string
+          updated_by: string
+          updated_time?: string
+        }
+        Update: {
+          competition_id?: string
+          enabled?: boolean
+          phase?: string
+          updated_by?: string
+          updated_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_competition_switches_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       stats: {
         Row: {
           daily_values: number[] | null

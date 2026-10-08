@@ -66,6 +66,7 @@ import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
 import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
+import { CompetitionSwitchState } from 'common/sports-calendar'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -5170,6 +5171,27 @@ export const API = (_apiTypeCheck = {
     returns: {} as SportsScheduleResponse,
   },
 
+  // The scheduler switches on /admin/sports: one per Odds API calendar phase.
+  'admin-sports-competition-switches': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { switches: CompetitionSwitchState[] },
+  },
+  'admin-sports-set-competition-switch': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string().max(100),
+        phase: z.string().max(100),
+        on: z.boolean(),
+      })
+      .strict(),
+    returns: {} as { on: boolean },
+  },
   'admin-sports-create-odds-markets': {
     method: 'POST',
     visibility: 'undocumented',

@@ -68,6 +68,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import {
+  createOddsMarketsForActiveCalendar,
   createOddsMarketsForCompetition,
   MAX_NEW_MARKETS_PER_RUN,
   pollOddsScoresAndResolve,
@@ -809,3 +810,117 @@ describe('score feeds that disagree with the market', () => {
     expect(publishSportsLiveScore).not.toHaveBeenCalled()
   })
 })
+
+describe('admin switches', () => {
+  // Rows from sports_competition_switches, through pg.map's row mapper.
+  const switchRows =
+    (rows: [string, string, boolean][]) =>
+    async (sql: string, _values: unknown, map: (row: unknown) => unknown) =>
+      sql.includes('sports_competition_switches')
+        ? rows.map(([competition_id, phase, enabled]) =>
+            map({
+              competition_id,
+              phase,
+              enabled,
+              updated_by: 'admin',
+              updated_time: '2026-10-01T00:00:00Z',
+            })
+          )
+        : []
+  const requestedKeys = () =>
+    jest.mocked(getUpcomingOdds).mock.calls.map(([key]) => key)
+
+  beforeEach(() => {
+    // Inside the NFL regular season, with the NHL's opening night two
+    // weeks out.
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T12:00:00Z'))
+  })
+
+  it('the daily run creates only for switched-on phases', async () => {
+    const db = database()
+    db.pg.map.mockImplementation(
+      switchRows([
+        ['nfl-regular-2026', 'Regular Season', false],
+        ['nhl-2026-27', 'Regular Season', true],
+      ])
+    )
+    await createOddsMarketsForActiveCalendar(db.client)
+    expect(requestedKeys()).toContain('icehockey_nhl')
+    expect(requestedKeys()).toContain('soccer_epl')
+    expect(requestedKeys()).not.toContain('americanfootball_nfl')
+  })
+
+  it("falls back to the calendar's defaults if the switches can't be read", async () => {
+    const db = database()
+    db.pg.map.mockRejectedValue(new Error('relation does not exist'))
+    await createOddsMarketsForActiveCalendar(db.client)
+    expect(requestedKeys()).toContain('americanfootball_nfl')
+    expect(requestedKeys()).not.toContain('icehockey_nhl')
+    expect(log.error).toHaveBeenCalledWith(
+      expect.stringContaining("couldn't read the switches")
+    )
+  })
+
+  it('never creates in a locked phase, even switched on', async () => {
+    jest.mocked(getUpcomingOdds).mockResolvedValue([
+      { ...event, id: 'regular', commence_time: '2026-10-11T20:00:00Z' },
+      { ...event, id: 'playoff', commence_time: '2026-10-25T20:00:00Z' },
+    ])
+    const result = await createOddsMarketsForCompetition(
+      database().client,
+      'mls-2026',
+      {
+        dryRun: true,
+        switches: {
+          'mls-2026:Regular Season': true,
+          'mls-2026:MLS Cup Playoffs': true,
+        },
+      }
+    )
+    expect(result.log.map((r) => r.eventId)).toEqual(['regular'])
+  })
+})
+
+it.each(['icehockey_nhl', 'basketball_nba', 'baseball_mlb'])(
+  'leaves a level %s final for a person instead of splitting it',
+  async (sportKey) => {
+    // These games play on until someone wins, so a level final is missing its
+    // decider (an NHL shootout, say).
+    const db = database()
+    db.pg.manyOrNone
+      .mockResolvedValueOnce([
+        {
+          data: {
+            id: 'game',
+            mechanism: 'cpmm-multi-2',
+            outcomeType: 'MULTIPLE_CHOICE',
+            sportsHomeTeam: 'Home',
+            sportsAwayTeam: 'Away',
+            sportsEventId: `odds:${sportKey}:event`,
+            sportsStartTimestamp: new Date(Date.now() - 1000).toISOString(),
+          },
+        },
+      ])
+      // Answers that would resolve 50/50 if the final were let through.
+      .mockResolvedValueOnce([
+        { id: 'home-answer', text: 'Home', index: 0, contract_id: 'game' },
+        { id: 'away-answer', text: 'Away', index: 1, contract_id: 'game' },
+      ])
+    jest.mocked(getScores).mockResolvedValue([
+      {
+        ...event,
+        sport_key: sportKey,
+        completed: true,
+        scores: [
+          { name: 'Away', score: '2' },
+          { name: 'Home', score: '2' },
+        ],
+        last_update: null,
+      },
+    ])
+    const result = await pollOddsScoresAndResolve(db.client)
+    expect(result.resolved).toBe(0)
+    expect(result.errors).toBe(1)
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  }
+)

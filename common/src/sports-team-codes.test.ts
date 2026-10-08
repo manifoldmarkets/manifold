@@ -43,6 +43,9 @@ describe('team codes', () => {
     expect(teamCode('mlb', 'New York Yankees')).toBe('NYY')
     expect(teamCode('soccer', 'AFC Bournemouth')).toBe('BOU')
     expect(teamCode('soccer', 'Brighton & Hove Albion')).toBe('BHA')
+    expect(teamCode('nhl', 'Montréal Canadiens')).toBe('MTL')
+    expect(teamCode('nhl', 'St Louis Blues')).toBe('STL')
+    expect(teamCode('nhl', 'Utah Hockey Club')).toBe('UTA')
     // Codes are per sport.
     expect(teamCode('mlb', 'Kansas City Chiefs')).toBeUndefined()
   })

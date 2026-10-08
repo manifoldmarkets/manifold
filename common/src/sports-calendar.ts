@@ -16,6 +16,8 @@ export type SportId =
   | 'mlb'
   | 'nba'
   | 'wnba'
+  | 'nhl'
+  | 'cbb'
 
 export type SportsCalendarStatus = 'upcoming' | 'active' | 'completed'
 
@@ -31,7 +33,10 @@ export interface SportsCalendarEntry {
   startDate: string
   /** ISO date YYYY-MM-DD */
   endDate: string
-  /** Create markets for games in this window */
+  /**
+   * The scheduler creates markets for games in this window by default. The
+   * switches on /admin/sports override it without a deploy.
+   */
   autoCreate: boolean
   /** Resolve markets when games finish */
   autoResolve: boolean
@@ -42,16 +47,27 @@ export interface SportsCalendarEntry {
    */
   tiesAllowed?: boolean
   notes?: string
+  /**
+   * Why this phase can't be switched on: it needs code first. Neither the
+   * scheduler nor an admin run creates games in a locked phase.
+   */
+  locked?: string
   /** The Odds API sport key. Competitions without one are created by hand. */
   oddsKey?: string
 }
 
 type CalendarInput = Omit<SportsCalendarEntry, 'oddsKey'>
 
+// Knockout games go to extra time and penalties, and the resolver only sees
+// goals, so a shootout would resolve as a Draw. Decide between the 90-minute
+// result and who advances, and check what /scores reports, before unlocking.
+const KNOCKOUT_LOCK =
+  'Knockout games need an extra time and penalties rule before they can run'
+
 // The Odds API sport key per competition. F1 and the Tour de France are
 // deliberately absent: the provider's coverage is not enough to resolve from
-// scores, so those stay manual. UCL was not in the catalogue as of Aug 2026
-// (re-check when the 2026-27 season opens); NWSL is not covered at all.
+// scores, so those stay manual. NWSL is not covered at all. Every key here
+// had scores in the provider's sports list on 28 Sep 2026.
 const ODDS_KEY_BY_COMPETITION: Record<string, string> = {
   'nfl-preseason-2026': 'americanfootball_nfl_preseason',
   'nfl-regular-2026': 'americanfootball_nfl',
@@ -67,6 +83,13 @@ const ODDS_KEY_BY_COMPETITION: Record<string, string> = {
   'epl-2026-27': 'soccer_epl',
   'mls-2026': 'soccer_usa_mls',
   'mls-2027': 'soccer_usa_mls',
+  'ucl-2026-27': 'soccer_uefa_champs_league',
+  'laliga-2026-27': 'soccer_spain_la_liga',
+  'seriea-2026-27': 'soccer_italy_serie_a',
+  'bundesliga-2026-27': 'soccer_germany_bundesliga',
+  'ligue1-2026-27': 'soccer_france_ligue_one',
+  'nhl-2026-27': 'icehockey_nhl',
+  'ncaab-tournament-2027': 'basketball_ncaab',
 }
 
 const ENTRIES: CalendarInput[] = [
@@ -238,16 +261,66 @@ const ENTRIES: CalendarInput[] = [
     notes: '~380 games total; rolling 14-day creation window',
   },
 
+  // ── Soccer: top European leagues ─────────────────────────────────────────────
+  // About 40 games a weekend between them. Each window ends on the last
+  // matchday, so the Bundesliga and Ligue 1 relegation play-offs (two legs,
+  // extra time) stay out. Dates are approximate: the provider only lists
+  // games that are scheduled, so a window only has to bracket the season.
+  {
+    sport: 'soccer',
+    competition: 'La Liga 2026–27',
+    competitionId: 'laliga-2026-27',
+    phase: 'Season',
+    startDate: '2026-08-14',
+    endDate: '2027-05-30',
+    autoCreate: false,
+    autoResolve: true,
+    notes: '380 games, about 10 a weekend',
+  },
+  {
+    sport: 'soccer',
+    competition: 'Serie A 2026–27',
+    competitionId: 'seriea-2026-27',
+    phase: 'Season',
+    startDate: '2026-08-22',
+    endDate: '2027-05-30',
+    autoCreate: false,
+    autoResolve: true,
+    notes: '380 games, about 10 a weekend',
+  },
+  {
+    sport: 'soccer',
+    competition: 'Bundesliga 2026–27',
+    competitionId: 'bundesliga-2026-27',
+    phase: 'Season',
+    startDate: '2026-08-28',
+    endDate: '2027-05-15',
+    autoCreate: false,
+    autoResolve: true,
+    notes: '306 games, about 9 a weekend',
+  },
+  {
+    sport: 'soccer',
+    competition: 'Ligue 1 2026–27',
+    competitionId: 'ligue1-2026-27',
+    phase: 'Season',
+    startDate: '2026-08-14',
+    endDate: '2027-05-16',
+    autoCreate: false,
+    autoResolve: true,
+    notes: '306 games, about 9 a weekend',
+  },
+
   // ── Soccer: Champions League ─────────────────────────────────────────────────
   {
     sport: 'soccer',
     competition: 'UEFA Champions League 2026–27',
     competitionId: 'ucl-2026-27',
     phase: 'League Phase',
-    startDate: '2026-09-16',
-    endDate: '2026-12-11',
-    // No Odds API key yet. Check the provider lists UCL, add the key, then
-    // switch this on.
+    // Eight matchdays, the last two in January. Every game can end level and
+    // is settled at 90 minutes, so it resolves like a league game.
+    startDate: '2026-09-15',
+    endDate: '2027-01-31',
     autoCreate: false,
     autoResolve: true,
   },
@@ -258,9 +331,9 @@ const ENTRIES: CalendarInput[] = [
     phase: 'Knockout Phase',
     startDate: '2027-02-11',
     endDate: '2027-05-30',
-    // Same extra time and penalties question as the MLS Cup Playoffs.
     autoCreate: false,
     autoResolve: true,
+    locked: KNOCKOUT_LOCK,
   },
 
   // ── Soccer: MLS ──────────────────────────────────────────────────────────────
@@ -285,14 +358,9 @@ const ENTRIES: CalendarInput[] = [
     phase: 'MLS Cup Playoffs',
     startDate: '2026-10-22',
     endDate: '2026-11-28',
-    // Off until knockout rules are decided. Playoff games go to extra time
-    // and penalties, and the resolver only sees goals, so a shootout would
-    // resolve as a Draw. Decide between the 90-minute result and who
-    // advances, and check what /scores reports, before switching this on.
     autoCreate: false,
     autoResolve: true,
-    notes:
-      'Knockout games: off until the extra time and penalties rule is decided',
+    locked: KNOCKOUT_LOCK,
   },
   {
     sport: 'soccer',
@@ -412,6 +480,47 @@ const ENTRIES: CalendarInput[] = [
     notes: 'Resolution-only live mode',
   },
 
+  // ── NHL ──────────────────────────────────────────────────────────────────────
+  // Games can't end level: overtime, then a shootout in the regular season.
+  {
+    sport: 'nhl',
+    competition: 'NHL 2026–27',
+    competitionId: 'nhl-2026-27',
+    phase: 'Regular Season',
+    startDate: '2026-10-06',
+    endDate: '2027-04-15',
+    autoCreate: false,
+    autoResolve: true,
+    notes: '1,312 games, up to 15 a night',
+  },
+  {
+    sport: 'nhl',
+    competition: 'NHL 2026–27',
+    competitionId: 'nhl-2026-27',
+    phase: 'Playoffs',
+    startDate: '2027-04-17',
+    endDate: '2027-06-20',
+    autoCreate: false,
+    autoResolve: true,
+  },
+
+  // ── College basketball ───────────────────────────────────────────────────────
+  // March Madness only, not the ~5,000-game regular season.
+  {
+    sport: 'cbb',
+    competition: 'NCAA Tournament 2027',
+    competitionId: 'ncaab-tournament-2027',
+    phase: 'March Madness',
+    startDate: '2027-03-16',
+    endDate: '2027-04-05',
+    autoCreate: false,
+    autoResolve: true,
+    // The provider files every college game under one key, so the NIT and
+    // other post-season tournaments fall in this window too.
+    notes:
+      '67 games. The NIT shares the window: check the dry run before switching on',
+  },
+
   // ── WNBA ─────────────────────────────────────────────────────────────────────
   {
     sport: 'wnba',
@@ -492,6 +601,63 @@ export function calendarEntriesFor(
   return SPORTS_CALENDAR.filter((e) => e.competitionId === competitionId)
 }
 
+// ─── Scheduler switches ───────────────────────────────────────────────────────
+//
+// Admins switch a phase's scheduled creation on or off from /admin/sports.
+// A phase without a switch falls back to its `autoCreate` default.
+
+/** A phase's key in the switches table and in `CompetitionSwitches`. */
+export const calendarPhaseKey = (
+  entry: Pick<SportsCalendarEntry, 'competitionId' | 'phase'>
+) => `${entry.competitionId}:${entry.phase}`
+
+/** Admin switches by `calendarPhaseKey`. */
+export type CompetitionSwitches = Record<string, boolean>
+
+/** Whether the scheduler creates games in this phase. */
+export function autoCreates(
+  entry: SportsCalendarEntry,
+  switches: CompetitionSwitches
+): boolean {
+  if (entry.locked || !entry.oddsKey) return false
+  return switches[calendarPhaseKey(entry)] ?? entry.autoCreate
+}
+
+/** Why a phase's switch can't be set, or undefined when it can. */
+export function competitionSwitchError(
+  competitionId: string,
+  phase: string,
+  on: boolean
+): string | undefined {
+  const entry = SPORTS_CALENDAR.find(
+    (e) => e.competitionId === competitionId && e.phase === phase
+  )
+  if (!entry) return `No calendar phase ${competitionId} / ${phase}`
+  if (!entry.oddsKey) return `${entry.competition} has no Odds API sport key`
+  if (on && entry.locked) return entry.locked
+  return undefined
+}
+
+/** A phase as the switches panel on /admin/sports shows it. */
+export interface CompetitionSwitchState {
+  competitionId: string
+  competition: string
+  phase: string
+  sport: SportId
+  startDate: string
+  endDate: string
+  status: SportsCalendarStatus
+  /** Whether the scheduler creates games in this phase. */
+  on: boolean
+  /** What `on` is without a switch. */
+  defaultOn: boolean
+  locked?: string
+  notes?: string
+  /** Who set the switch and when; absent while the phase runs on its default. */
+  updatedBy?: string
+  updatedTime?: number
+}
+
 /** What goes in `sportsLeague`: the label the dashboards and the sport rail read. */
 export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
   nfl: 'NFL',
@@ -502,6 +668,8 @@ export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
   soccer: 'Soccer',
   f1: 'Formula 1',
   tdf: 'Tour de France',
+  nhl: 'NHL',
+  cbb: 'NCAAB',
 }
 
 /** Which chip on /sports a calendar sport belongs to. */
@@ -514,6 +682,8 @@ export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
   soccer: 'soccer',
   f1: 'f1',
   tdf: 'other',
+  nhl: 'nhl',
+  cbb: 'ncaab',
 }
 
 // Hours after the start before the market closes: the longest realistic game
@@ -527,4 +697,6 @@ export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
   soccer: 2.5,
   f1: 2,
   tdf: 1,
+  nhl: 4,
+  cbb: 3,
 }
