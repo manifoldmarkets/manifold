@@ -71,6 +71,7 @@ import {
   createOddsMarketsForActiveCalendar,
   createOddsMarketsForCompetition,
   MAX_NEW_MARKETS_PER_RUN,
+  newScorePollState,
   pollOddsScoresAndResolve,
 } from './odds-markets'
 
@@ -463,38 +464,44 @@ it('creates at most the per-run cap, soonest games first', async () => {
   })
 })
 
-it.each([
-  [60 * 1000, 1],
-  [10 * 60 * 1000, 0],
-  [-60 * 1000, 0],
-])(
-  'alerts about a game still unresolved 3 hours after close (offset %s ms)',
-  async (offset, alerts) => {
-    const db = database()
-    db.pg.manyOrNone.mockResolvedValueOnce([
-      {
-        data: {
-          id: 'stuck',
-          question: 'Away at Home',
-          mechanism: 'cpmm-multi-1',
-          outcomeType: 'MULTIPLE_CHOICE',
-          closeTime: NOW - 3 * 60 * 60 * 1000 - offset,
-          sportsEventId: 'odds:americanfootball_nfl:event',
-          sportsStartTimestamp: new Date(
-            NOW - 8 * 60 * 60 * 1000
-          ).toISOString(),
-        },
+it('alerts once an hour about a game still unresolved 3 hours after close', async () => {
+  const stuck = (closeAgo: number) => [
+    {
+      data: {
+        id: `stuck-${closeAgo}`,
+        question: 'Away at Home',
+        mechanism: 'cpmm-multi-1',
+        outcomeType: 'MULTIPLE_CHOICE',
+        closeTime: NOW - closeAgo,
+        sportsEventId: 'odds:americanfootball_nfl:event',
+        sportsStartTimestamp: new Date(NOW - 8 * 60 * 60 * 1000).toISOString(),
       },
-    ])
-    jest.mocked(getScores).mockResolvedValue([])
-    const result = await pollOddsScoresAndResolve(db.client)
-    expect(result.pending).toBe(1)
-    expect(log.error).toHaveBeenCalledTimes(alerts)
+    },
+  ]
+  jest.mocked(getScores).mockResolvedValue([])
+  const poll = async (closeAgo: number, state = newScorePollState()) => {
+    const db = database()
+    db.pg.manyOrNone.mockResolvedValueOnce(stuck(closeAgo))
+    return pollOddsScoresAndResolve(db.client, state)
   }
-)
+
+  // Not yet 3 hours after close: no alert.
+  await poll(3 * 60 * 60 * 1000 - 60 * 1000)
+  expect(log.error).not.toHaveBeenCalled()
+
+  // Overdue: one alert, then none until an hour has passed.
+  const state = newScorePollState()
+  const overdue = 3 * 60 * 60 * 1000 + 10 * 60 * 1000
+  expect((await poll(overdue, state)).pending).toBe(1)
+  await poll(overdue, state)
+  expect(log.error).toHaveBeenCalledTimes(1)
+  jest.spyOn(Date, 'now').mockReturnValue(NOW + 61 * 60 * 1000)
+  await poll(overdue, state)
+  expect(log.error).toHaveBeenCalledTimes(2)
+})
 
 it('does not request scores when there are no in-play markets', async () => {
-  await pollOddsScoresAndResolve(database().client)
+  await pollOddsScoresAndResolve(database().client, newScorePollState())
   expect(getScores).not.toHaveBeenCalled()
   expect(getUser).not.toHaveBeenCalled()
 })
@@ -502,7 +509,7 @@ it('does not request scores when there are no in-play markets', async () => {
 it('only looks for multiple choice game markets to resolve', async () => {
   // Binary game markets from an early build (dev only) are left for a person.
   const db = database()
-  await pollOddsScoresAndResolve(db.client)
+  await pollOddsScoresAndResolve(db.client, newScorePollState())
   expect(db.pg.manyOrNone).toHaveBeenCalledWith(
     expect.stringContaining("mechanism in ('cpmm-multi-1', 'cpmm-multi-2')"),
     expect.anything()
@@ -553,7 +560,9 @@ it.each([
         last_update: null,
       },
     ])
-    expect((await pollOddsScoresAndResolve(db.client)).resolved).toBe(1)
+    expect(
+      (await pollOddsScoresAndResolve(db.client, newScorePollState())).resolved
+    ).toBe(1)
     expect(resolveMarketHelper).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'game' }),
       creator,
@@ -602,7 +611,9 @@ it.each([
         last_update: null,
       },
     ])
-    expect((await pollOddsScoresAndResolve(db.client)).resolved).toBe(1)
+    expect(
+      (await pollOddsScoresAndResolve(db.client, newScorePollState())).resolved
+    ).toBe(1)
     expect(resolveMarketHelper).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'game' }),
       creator,
@@ -778,7 +789,9 @@ describe('score feeds that disagree with the market', () => {
         last_update: null,
       },
     ])
-    expect((await pollOddsScoresAndResolve(db.client)).resolved).toBe(1)
+    expect(
+      (await pollOddsScoresAndResolve(db.client, newScorePollState())).resolved
+    ).toBe(1)
     expect(resolveMarketHelper).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'game' }),
       creator,
@@ -805,7 +818,9 @@ describe('score feeds that disagree with the market', () => {
         last_update: null,
       },
     ])
-    expect((await pollOddsScoresAndResolve(db.client)).resolved).toBe(0)
+    expect(
+      (await pollOddsScoresAndResolve(db.client, newScorePollState())).resolved
+    ).toBe(0)
     expect(resolveMarketHelper).not.toHaveBeenCalled()
     expect(publishSportsLiveScore).not.toHaveBeenCalled()
   })
@@ -918,9 +933,104 @@ it.each(['icehockey_nhl', 'basketball_nba', 'baseball_mlb'])(
         last_update: null,
       },
     ])
-    const result = await pollOddsScoresAndResolve(db.client)
+    const result = await pollOddsScoresAndResolve(
+      db.client,
+      newScorePollState()
+    )
     expect(result.resolved).toBe(0)
     expect(result.errors).toBe(1)
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   }
 )
+
+describe('score polling settings', () => {
+  const MINUTE = 60 * 1000
+  // Rows from sports_score_polling, through pg.map's row mapper.
+  const polling =
+    (rows: [string, number][]) =>
+    async (sql: string, _values: unknown, map: (row: unknown) => unknown) =>
+      sql.includes('sports_score_polling')
+        ? rows.map(([target, interval_seconds]) =>
+            map({
+              target,
+              interval_seconds,
+              updated_by: 'admin',
+              updated_time: '2026-09-01T00:00:00Z',
+            })
+          )
+        : []
+  const nflGame = (startedAgo: number) => [
+    {
+      data: {
+        id: 'game',
+        mechanism: 'cpmm-multi-2',
+        outcomeType: 'MULTIPLE_CHOICE',
+        sportsHomeTeam: 'Home',
+        sportsAwayTeam: 'Away',
+        sportsLeague: 'NFL',
+        sportsEventId: 'odds:americanfootball_nfl:event',
+        sportsStartTimestamp: new Date(NOW - startedAgo).toISOString(),
+        closeTime: NOW - startedAgo + 240 * MINUTE,
+      },
+    },
+  ]
+
+  it('with live scores off, asks only once a game is due to end', async () => {
+    const db = database()
+    db.pg.map.mockImplementation(polling([['sport:nfl', 0]]))
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, newScorePollState())
+    expect(getScores).not.toHaveBeenCalled()
+
+    // NFL games are due to end 3 hours in; finished games cost 2 credits.
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(181 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, newScorePollState())
+    expect(getScores).toHaveBeenCalledWith('americanfootball_nfl', {
+      finishedDays: 3,
+    })
+  })
+
+  it("doesn't write live scores for a sport that has them off", async () => {
+    const db = database()
+    db.pg.map.mockImplementation(polling([['sport:nfl', 0]]))
+    // Due to end but still going: overtime.
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(190 * MINUTE))
+    jest.mocked(getScores).mockResolvedValue([
+      {
+        ...event,
+        completed: false,
+        scores: [
+          { name: 'Away', score: '20' },
+          { name: 'Home', score: '20' },
+        ],
+        last_update: null,
+      },
+    ])
+    const result = await pollOddsScoresAndResolve(
+      db.client,
+      newScorePollState()
+    )
+    expect(result.polled).toBe(1)
+    expect(result.live).toBe(0)
+    expect(db.writes).toEqual([])
+    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+  })
+
+  it('asks for live games only while no game is due to end', async () => {
+    const db = database()
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, newScorePollState())
+    expect(getScores).toHaveBeenCalledWith('americanfootball_nfl', {})
+  })
+
+  it("polls at the defaults if the settings can't be read", async () => {
+    const db = database()
+    db.pg.map.mockRejectedValue(new Error('relation does not exist'))
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, newScorePollState())
+    expect(getScores).toHaveBeenCalledTimes(1)
+    expect(log.error).toHaveBeenCalledWith(
+      expect.stringContaining("couldn't read the polling settings")
+    )
+  })
+})

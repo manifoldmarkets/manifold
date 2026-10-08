@@ -247,6 +247,10 @@ import {
   adminSportsCompetitionSwitches,
   adminSportsSetCompetitionSwitch,
 } from './admin-sports-competition-switches'
+import {
+  adminSportsScorePolling,
+  adminSportsSetScorePolling,
+} from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
 import { adminSportsResolve } from './admin-sports-resolve'
@@ -642,6 +646,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
   'admin-sports-competition-switches': adminSportsCompetitionSwitches,
   'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
+  'admin-sports-score-polling': adminSportsScorePolling,
+  'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
   'sports-schedule': sportsSchedule,
   'admin-sports-resolve': adminSportsResolve,

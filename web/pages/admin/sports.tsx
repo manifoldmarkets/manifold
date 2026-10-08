@@ -27,6 +27,7 @@ import {
 } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
 import { AdminCompetitionSwitches } from 'web/components/sports/admin-competition-switches'
+import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
 import clsx from 'clsx'
 import {
   SPORT_LEAGUE_LABEL,
@@ -734,9 +735,10 @@ export default function SportsAdminPage() {
               <strong>preview</strong> (dry run) or create on demand.
             </li>
             <li>
-              <code>sports-odds-resolve</code> writes live scores every 5
-              minutes and <strong>auto-resolves</strong> games from the final.
-              The football-data pipeline (the World Cup) runs separately.
+              <code>sports-odds-resolve</code> writes live scores as often as
+              set below and <strong>auto-resolves</strong> games from the final,
+              whether or not their competition is switched on. The football-data
+              pipeline (the World Cup) runs separately.
             </li>
             <li>
               Each market is tagged into the official group + any extra topics
@@ -748,6 +750,10 @@ export default function SportsAdminPage() {
 
         <Section title="Scheduler switches" defaultOpen>
           <AdminCompetitionSwitches />
+        </Section>
+
+        <Section title="Live scores and credits" defaultOpen>
+          <AdminScorePolling />
         </Section>
 
         {/* ── 1. Sport + Competition Selector ── */}

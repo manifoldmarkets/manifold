@@ -67,6 +67,7 @@ import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
 import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
 import { CompetitionSwitchState } from 'common/sports-calendar'
+import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -5191,6 +5192,28 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { on: boolean },
+  },
+  // How often the sports resolver asks for scores, and the credits it spends.
+  'admin-sports-score-polling': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as ScorePollingPanel,
+  },
+  'admin-sports-set-score-polling': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        // 'sport:<sport id>', 'game:<contract id>' or 'finals'.
+        target: z.string().max(60),
+        // Seconds; 0 is off. Null goes back to the default.
+        intervalSeconds: z.number().int().min(0).max(3600).nullable(),
+      })
+      .strict(),
+    returns: {} as { intervalSeconds: number | null },
   },
   'admin-sports-create-odds-markets': {
     method: 'POST',

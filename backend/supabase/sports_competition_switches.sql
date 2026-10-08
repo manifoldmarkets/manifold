@@ -1,10 +1,11 @@
-create table if not exists sports_competition_switches (
-  competition_id text not null,
-  phase text not null,
-  enabled boolean not null,
-  updated_by text not null references users(id),
-  updated_time timestamptz not null default now(),
-  primary key (competition_id, phase)
-);
-
-alter table sports_competition_switches enable row level security;
+create table if not exists
+  sports_competition_switches (
+    competition_id text not null,
+    phase text not null,
+    enabled boolean not null,
+    updated_by text not null references users (id),
+    updated_time timestamptz not null default now(),
+    primary key (competition_id, phase)
+  );
+
+alter table sports_competition_switches enable row level security;

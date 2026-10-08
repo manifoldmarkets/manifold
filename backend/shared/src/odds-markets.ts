@@ -26,6 +26,13 @@ import {
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
+import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
+import {
+  liveInterval,
+  parsePollingRows,
+  scorePollPlan,
+  sportForLeague,
+} from 'common/sports-score-polling'
 import {
   autoCreates,
   calendarEntriesFor,
@@ -68,8 +75,6 @@ const LIQUIDITY_TIER = 1000
 export const MAX_NEW_MARKETS_PER_RUN = 25
 /** An unresolved game this long after close gets an error log. */
 const ATTENTION_AFTER_MS = 3 * HOUR_MS
-/** The resolve job's cadence in backend/scheduler/src/jobs/index.ts. */
-const RESOLVE_TICK_MS = 5 * MINUTE_MS
 /**
  * A game kicking off sooner than this isn't created: a pregame line that
  * close to kickoff isn't worth opening, and the margin covers the time a run
@@ -407,14 +412,34 @@ interface PendingGame {
 }
 
 /**
- * One pass over every unresolved Odds API game that has started: write the
- * score onto the market while it is on (the page shows it live), and resolve
- * it once the provider marks it completed. One `/scores` call per sport that
- * has such a game, none otherwise.
+ * What the resolver remembers between ticks: when it last asked for each
+ * sport key's scores, and when it last reported each overdue game. The
+ * scheduler job keeps one for its lifetime; a restart only means one early
+ * call and one early alert.
+ */
+export interface ScorePollState {
+  lastPolled: Record<string, number>
+  lastOverdueAlert: Record<string, number>
+}
+
+export const newScorePollState = (): ScorePollState => ({
+  lastPolled: {},
+  lastOverdueAlert: {},
+})
+
+/**
+ * One tick over every unresolved Odds API game that has started. Sport keys
+ * are asked for scores only as often as /admin/sports says (live scores per
+ * sport or game, and finals once a game is due to end; see
+ * common/sports-score-polling.ts), one `/scores` call per key, none while
+ * nothing is due. Live scores are written onto the markets that want them,
+ * and a game is resolved once the provider marks it completed.
  */
 export async function pollOddsScoresAndResolve(
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  state: ScorePollState
 ): Promise<{
+  polled: number
   live: number
   resolved: number
   pending: number
@@ -444,16 +469,44 @@ export async function pollOddsScoresAndResolve(
     if (!parsed || !Number.isFinite(startTime) || startTime > now) continue
     pending.push({ contract, ...parsed, startTime })
   }
-  const stats = { live: 0, resolved: 0, pending: 0, errors: 0 }
+  const stats = { polled: 0, live: 0, resolved: 0, pending: 0, errors: 0 }
   if (pending.length === 0) return stats
 
-  const creator = await sportsCreator()
+  // Without the admin settings, poll at the defaults rather than not at all.
+  const settings = await getScorePollingSettings(pg).catch((e) => {
+    log.error(`[sports-odds-resolve] couldn't read the polling settings: ${e}`)
+    return parsePollingRows([])
+  })
+  const sportOf = (game: PendingGame) =>
+    sportForLeague((game.contract as any).sportsLeague)
+  const plan = scorePollPlan(
+    pending.map((game) => ({
+      contractId: game.contract.id,
+      sportKey: game.sportKey,
+      sport: sportOf(game),
+      startTime: game.startTime,
+      closeTime: game.contract.closeTime,
+    })),
+    settings,
+    state.lastPolled,
+    now
+  )
+
   const bySport = groupBy(pending, (p) => p.sportKey)
   const resolved = new Set<string>()
-  for (const [sportKey, games] of Object.entries(bySport)) {
+  const creator = plan.length > 0 ? await sportsCreator() : undefined
+  for (const { sportKey, withFinished } of plan) {
+    // Counted even if the call fails, so a failing provider is retried at
+    // the set interval rather than on every tick.
+    state.lastPolled[sportKey] = now
+    stats.polled++
+    const games = bySport[sportKey] ?? []
     let scores: OddsApiScore[]
     try {
-      scores = await getScores(sportKey, LOOKBACK_DAYS)
+      scores = await getScores(
+        sportKey,
+        withFinished ? { finishedDays: LOOKBACK_DAYS } : {}
+      )
     } catch (e) {
       log(`[sports-odds-resolve] scores for ${sportKey} failed: ${e}`)
       stats.errors += games.length
@@ -468,10 +521,17 @@ export async function pollOddsScoresAndResolve(
       }
       try {
         if (score.completed) {
-          await finishGame(pg, game, score, creator)
+          await finishGame(pg, game, score, creator!)
           resolved.add(game.contract.id)
           stats.resolved++
-        } else if (score.scores && score.scores.length > 0) {
+        } else if (
+          score.scores &&
+          score.scores.length > 0 &&
+          liveInterval(
+            { contractId: game.contract.id, sport: sportOf(game) },
+            settings
+          ) > 0
+        ) {
           await writeLiveScore(pg, game, score, now)
           stats.live++
         } else {
@@ -484,7 +544,7 @@ export async function pollOddsScoresAndResolve(
     }
   }
   for (const game of pending) {
-    if (!resolved.has(game.contract.id)) alertIfOverdue(game, now)
+    if (!resolved.has(game.contract.id)) alertIfOverdue(game, state, now)
   }
   return stats
 }
@@ -495,11 +555,11 @@ export async function pollOddsScoresAndResolve(
  * mismatch. The resolver stops looking three days after close, so these need
  * a person.
  */
-function alertIfOverdue(game: PendingGame, now: number) {
+function alertIfOverdue(game: PendingGame, state: ScorePollState, now: number) {
   const { closeTime, id, question } = game.contract
-  if (!closeTime) return
-  const overdue = now - closeTime - ATTENTION_AFTER_MS
-  if (overdue < 0 || overdue % HOUR_MS >= RESOLVE_TICK_MS) return
+  if (!closeTime || now - closeTime < ATTENTION_AFTER_MS) return
+  if (now - (state.lastOverdueAlert[id] ?? -Infinity) < HOUR_MS) return
+  state.lastOverdueAlert[id] = now
   log.error(
     `[sports-odds-resolve] ${id} ("${question}") is unresolved ${Math.floor(
       (now - closeTime) / HOUR_MS

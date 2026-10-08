@@ -3299,6 +3299,65 @@ export type Database = {
           }
         ]
       }
+      sports_odds_api_usage: {
+        Row: {
+          calls: number
+          credits: number
+          day: string
+          remaining_after: number | null
+          sport_key: string
+          updated_time: string
+          used_after: number | null
+        }
+        Insert: {
+          calls?: number
+          credits?: number
+          day: string
+          remaining_after?: number | null
+          sport_key: string
+          updated_time?: string
+          used_after?: number | null
+        }
+        Update: {
+          calls?: number
+          credits?: number
+          day?: string
+          remaining_after?: number | null
+          sport_key?: string
+          updated_time?: string
+          used_after?: number | null
+        }
+        Relationships: []
+      }
+      sports_score_polling: {
+        Row: {
+          interval_seconds: number
+          target: string
+          updated_by: string
+          updated_time: string
+        }
+        Insert: {
+          interval_seconds: number
+          target: string
+          updated_by: string
+          updated_time?: string
+        }
+        Update: {
+          interval_seconds?: number
+          target?: string
+          updated_by?: string
+          updated_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_score_polling_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       stats: {
         Row: {
           daily_values: number[] | null
