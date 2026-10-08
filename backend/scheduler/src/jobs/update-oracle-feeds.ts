@@ -51,7 +51,7 @@ export async function updateOracleFeeds() {
   for (const feed of ORACLE_FEEDS) {
     if (feed.cadence === 'fast') {
       if (isPollDue(feed.id, feed.pollPeriodMs, now))
-        dispatch(feed.id, () => tickOneFeed(pg, feed))
+        dispatch(feed.id, (isCurrent) => tickOneFeed(pg, feed, isCurrent))
     } else if (isPollDue(feed.id, DAILY_PROBE_PERIOD_MS, now)) {
       dispatch(feed.id, () => probeDailyFeedStaleness(pg, feed))
     }
@@ -94,10 +94,15 @@ const STUCK_GRACE_MS = 2 * MINUTE_MS
  * the feed stayed dark: the BTC market above sat frozen for six hours until
  * the scheduler was redeployed.
  *
- * Abandoning does not cancel the run, it only stops it blocking the feed. A
- * straggler overlapping a fresh run is safe: runOracleUpdate serializes on the
- * per-contract advisory lock, decideOracleTransition ignores a point older
- * than the contract's cached one (so a late apply cannot move the mark
+ * Abandoning does not cancel the run; it stops it blocking the feed, and the
+ * run checks before publishing and discards its result once abandoned (see
+ * discardIfAbandoned). That check is what makes a late finish safe: some
+ * adapters stamp a point when the fetch returns, so a run that hung and then
+ * finished would otherwise publish old quotes under a timestamp newer than
+ * its replacement's. A run abandoned mid-publish has already stamped its
+ * point, and overlapping a fresh run is safe then: runOracleUpdate serializes
+ * on the per-contract advisory lock, decideOracleTransition ignores a point
+ * older than the contract's cached one (so a late apply cannot move the mark
  * backwards), provider health is ordered by checkedAt, and oracle_prices
  * inserts are idempotent on (feed_id, ts). A source that hangs on EVERY poll
  * leaks one run per grace period, each reported here — a better failure than a
@@ -131,12 +136,16 @@ const releaseStuckFeeds = (now: number) => {
  * reject; the `.catch` is a backstop so a future edit that lets one throw
  * cannot become an unhandled rejection that takes the scheduler down.
  */
-const dispatch = (feedId: string, run: () => Promise<void>) => {
+const dispatch = (
+  feedId: string,
+  run: (isCurrent: () => boolean) => Promise<void>
+) => {
   if (inFlight[feedId]) return
   const entry = { startedAt: Date.now() }
   inFlight[feedId] = entry
   lastPollAttempt[feedId] = entry.startedAt
-  void run()
+  // False once releaseStuckFeeds has abandoned this run.
+  void run(() => inFlight[feedId] === entry)
     .catch((err) => log.error(`[oracle-feeds] ${feedId}: unhandled — ${err}`))
     .finally(() => {
       // Only release our own slot. If releaseStuckFeeds abandoned this run, a
@@ -259,13 +268,33 @@ const probeDailyFeedStaleness = async (
   }
 }
 
-const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
+// An abandoned run publishes nothing. Checked after every fetch, since the
+// fetch is where a run hangs and some adapters stamp the point when it returns
+// (fetchBtcUsdSpot waits on every venue, then takes Date.now()). A run that
+// came back after its replacement had published would otherwise carry old
+// quotes under the newest timestamp, and the ordering checks would take it as
+// the current price.
+const discardIfAbandoned = (feed: OracleFeedDef, isCurrent: () => boolean) => {
+  if (isCurrent()) return false
+  log.warn(
+    `[oracle-feeds] ${feed.id}: abandoned poll finished; discarding its result`
+  )
+  return true
+}
+
+const tickOneFeed = async (
+  pg: SupabaseDirectClient,
+  feed: OracleFeedDef,
+  isCurrent: () => boolean
+) => {
   try {
     if (feed.fetchObservation) {
+      const observation = await feed.fetchObservation()
+      if (discardIfAbandoned(feed, isCurrent)) return
       await publishOracleObservation(
         pg,
         feed,
-        await feed.fetchObservation(),
+        observation,
         FAST_TICK_ORACLE_BOUNDS
       )
       return
@@ -288,6 +317,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       // the source's block cadence, not the tick rate, so shouldWrite's
       // dedupe isn't needed here.
       const points = await feed.fetchRecent()
+      if (discardIfAbandoned(feed, isCurrent)) return
       const valid: { ts: number; price: number }[] = []
       for (const point of points) {
         const rejection = validateOraclePoint(feed, null, point)
@@ -315,6 +345,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       }
     } else if (feed.fetchLatest) {
       const point = await feed.fetchLatest()
+      if (discardIfAbandoned(feed, isCurrent)) return
       if (point) {
         const rejection = validateOraclePoint(feed, prev, point)
         if (rejection) {
@@ -348,6 +379,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       return
     }
     const latestPoint = latest
+    if (discardIfAbandoned(feed, isCurrent)) return
 
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.

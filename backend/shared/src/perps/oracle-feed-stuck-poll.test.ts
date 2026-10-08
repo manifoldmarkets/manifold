@@ -11,11 +11,11 @@ import { ModuleKind, transpileModule } from 'typescript'
 const MINUTE_MS = 60_000
 const START = 1_790_000_000_000
 
-type Deferred = { promise: Promise<null>; resolve: () => void }
-const deferred = (): Deferred => {
-  let resolveFn = () => {}
-  const promise = new Promise<null>((res) => {
-    resolveFn = () => res(null)
+type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void }
+const deferred = <T = null>(): Deferred<T> => {
+  let resolveFn: (value: T) => void = () => {}
+  const promise = new Promise<T>((res) => {
+    resolveFn = res
   })
   return { promise, resolve: resolveFn }
 }
@@ -25,26 +25,32 @@ const flush = async () => {
   for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r))
 }
 
-function loadJob() {
+type Point = { ts: number; price: number }
+
+function loadJob(source: 'fetchLatest' | 'fetchObservation' = 'fetchLatest') {
   let clock = START
   class FakeDate extends Date {
     static now() {
       return clock
     }
   }
-  const fetchLatest = jest.fn<Promise<null>, []>()
+  const fetchLatest = jest.fn<Promise<Point | null>, []>()
   const logError = jest.fn()
+  const logWarn = jest.fn()
+  const insertOraclePrices = jest.fn()
+  const applyOraclePointToLivePerps = jest.fn()
+  const publishOracleObservation = jest.fn()
   const feed = {
     id: 'test-feed',
     cadence: 'fast',
     pollPeriodMs: 2_000,
     staleAfterMs: 2 * MINUTE_MS,
-    fetchLatest,
+    [source]: fetchLatest,
   }
   const imports: Record<string, unknown> = {
     'common/util/time': { MINUTE_MS },
     'common/perps/oracle': { normalizeOraclePointBatch: jest.fn() },
-    'shared/oracle': { insertOraclePrices: jest.fn() },
+    'shared/oracle': { insertOraclePrices },
     'shared/oracle-feeds': {
       ORACLE_FEEDS: [feed],
       validateOraclePoint: () => null,
@@ -52,12 +58,12 @@ function loadJob() {
     'shared/supabase/init': {
       createSupabaseDirectClient: () => ({ oneOrNone: async () => null }),
     },
-    'shared/utils': { log: Object.assign(jest.fn(), { error: logError }) },
-    'shared/perps/apply-oracle-point': {
-      applyOraclePointToLivePerps: jest.fn(),
+    'shared/utils': {
+      log: Object.assign(jest.fn(), { error: logError, warn: logWarn }),
     },
+    'shared/perps/apply-oracle-point': { applyOraclePointToLivePerps },
     'shared/perps/publish-oracle-observation': {
-      publishOracleObservation: jest.fn(),
+      publishOracleObservation,
       reportOracleTickFailure: jest.fn(),
     },
     'shared/perps/oracle-tick-bounds': { FAST_TICK_ORACLE_BOUNDS: {} },
@@ -88,6 +94,11 @@ function loadJob() {
   return {
     fetchLatest,
     logError,
+    logWarn,
+    insertOraclePrices,
+    applyOraclePointToLivePerps,
+    publishOracleObservation,
+    now: () => clock,
     advance: (ms: number) => {
       clock += ms
     },
@@ -145,16 +156,58 @@ describe('update-oracle-feeds stuck poll', () => {
     expect(job.fetchLatest).toHaveBeenCalledTimes(2)
 
     // The abandoned run finally settles while the replacement is in flight.
-    stuck.resolve()
+    stuck.resolve(null)
     await flush()
     job.advance(2_000)
     await job.tick()
     expect(job.fetchLatest).toHaveBeenCalledTimes(2)
 
-    replacement.resolve()
+    replacement.resolve(null)
     await flush()
     job.advance(2_000)
     await job.tick()
     expect(job.fetchLatest).toHaveBeenCalledTimes(3)
+  })
+
+  // Codex review: three BTC venues answer, the fourth hangs, and the run is
+  // abandoned. When the fourth finally answers, fetchBtcUsdSpot stamps the old
+  // consensus with Date.now(), which is newer than the replacement's point.
+  it("discards an abandoned run's observation instead of publishing it over its replacement's", async () => {
+    const job = loadJob('fetchObservation')
+    const stuck = deferred<Point>()
+    job.fetchLatest
+      .mockReturnValueOnce(stuck.promise)
+      .mockImplementation(async () => ({ ts: job.now(), price: 85_000 }))
+
+    await job.tick()
+    job.advance(2 * MINUTE_MS)
+    await job.tick()
+    expect(job.publishOracleObservation).toHaveBeenCalledTimes(1)
+    expect(job.publishOracleObservation.mock.calls[0][2]).toMatchObject({
+      price: 85_000,
+    })
+
+    job.advance(1_000)
+    stuck.resolve({ ts: job.now(), price: 84_000 })
+    await flush()
+    expect(job.publishOracleObservation).toHaveBeenCalledTimes(1)
+    expect(job.logWarn).toHaveBeenCalledWith(
+      expect.stringContaining('discarding its result')
+    )
+  })
+
+  it("doesn't write or apply an abandoned run's point", async () => {
+    const job = loadJob('fetchLatest')
+    const stuck = deferred<Point | null>()
+    job.fetchLatest.mockReturnValueOnce(stuck.promise).mockResolvedValue(null)
+
+    await job.tick()
+    job.advance(2 * MINUTE_MS)
+    await job.tick()
+
+    stuck.resolve({ ts: job.now(), price: 84_000 })
+    await flush()
+    expect(job.insertOraclePrices).not.toHaveBeenCalled()
+    expect(job.applyOraclePointToLivePerps).not.toHaveBeenCalled()
   })
 })
