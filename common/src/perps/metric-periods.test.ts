@@ -2,6 +2,7 @@ import { DAY_MS } from '../util/time'
 import { mergedEntryPrice } from './amm'
 import {
   calculatePerpMetricPeriods,
+  calculatePerpHistoricalValues,
   PerpMetricPeriodCutoffs,
 } from './metric-periods'
 import { PerpDirection, PerpEvent, PerpPosition } from './position'
@@ -68,6 +69,39 @@ const open = (
     originalCostBasisDelta: margin,
     data: { entryPrice: price },
   })
+
+describe('calculatePerpHistoricalValues', () => {
+  it('reconstructs multiple boundaries and marks unrealized trader profit', () => {
+    expect(
+      calculatePerpHistoricalValues({
+        currentPositions: [position()],
+        events: [open(1, 10)],
+        cutoffs: [
+          { cutoff: 5, price: 100 },
+          { cutoff: 20, price: 110 },
+        ],
+      })
+    ).toEqual([0, 200])
+  })
+  it('refuses incomplete opening history instead of inventing an old position', () => {
+    expect(
+      calculatePerpHistoricalValues({
+        currentPositions: [position()],
+        events: [],
+        cutoffs: [{ cutoff: 20, price: 110 }],
+      })
+    ).toEqual([undefined])
+  })
+  it('keeps a missing mark unknown for an open position', () => {
+    expect(
+      calculatePerpHistoricalValues({
+        currentPositions: [position()],
+        events: [open(1, 10)],
+        cutoffs: [{ cutoff: 20, price: undefined }],
+      })
+    ).toEqual([undefined])
+  })
+})
 
 describe('calculatePerpMetricPeriods', () => {
   it('marks pre-period exposure at the cutoff oracle price', () => {
