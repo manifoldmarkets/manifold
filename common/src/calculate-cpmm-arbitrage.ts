@@ -2276,7 +2276,11 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) => {
-  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  // Working snapshots of the order book and maker balances, carried across
+  // rounds so an order a round's legs fill is not seen as unfilled again by
+  // the next round and filled a second time (cf. calculateCpmmMultiArbitrageBetsYes).
+  let workingUnfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  let workingBalanceByUserId = { ...balanceByUserId }
   const allAnswersToSell = initialAnswers.filter(
     (a) => userBetsByAnswerIdToSell[a.id]?.length
   )
@@ -2307,26 +2311,49 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
             { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
             sharesToSell,
             'YES',
-            unfilledBetsByAnswer[id] ?? [],
-            balanceByUserId,
+            workingUnfilledBetsByAnswer[id] ?? [],
+            workingBalanceByUserId,
             // Zero fees on arbitrage bets
             true
           )
         }
       )
-      const { newUpdatedAnswers, yesBets, noBuyResults } =
-        getBetResultsAndUpdatedAnswers(
-          oppositeAnswersFromSaleToBuyYesShares,
-          yesAmounts,
-          updatedAnswers,
-          undefined,
-          unfilledBets,
-          balanceByUserId,
-          collectedFees,
-          // Charge fees on sale bets
-          answerIdsToSellNow
-        )
+      // The round's NO legs on answers it isn't selling fold into the
+      // redemption below and their fills aren't kept (the TODO there), so a
+      // YES order resting on one of those answers would be filled with no
+      // record of it, paying the seller mana its maker is never charged.
+      // Leave those orders out of the round: its NO legs pass them by, as
+      // they did when the endpoint loaded only the sold answers' orders.
+      const book = Object.values(workingUnfilledBetsByAnswer).flat()
+      const fillsKept = (bet: LimitBet) =>
+        bet.outcome === 'NO' || answerIdsToSellNow.includes(bet.answerId ?? '')
+      const {
+        newUpdatedAnswers,
+        yesBets,
+        noBuyResults,
+        updatedUnfilledBetsByAnswer,
+        updatedBalanceByUserId,
+      } = getBetResultsAndUpdatedAnswers(
+        oppositeAnswersFromSaleToBuyYesShares,
+        yesAmounts,
+        updatedAnswers,
+        undefined,
+        // It rebuilds its own map of the working book from this
+        book.filter(fillsKept),
+        workingBalanceByUserId,
+        collectedFees,
+        // Charge fees on sale bets
+        answerIdsToSellNow
+      )
       updatedAnswers = newUpdatedAnswers
+      workingUnfilledBetsByAnswer = groupBy(
+        [
+          ...Object.values(updatedUnfilledBetsByAnswer).flat(),
+          ...book.filter((bet) => !fillsKept(bet)),
+        ],
+        (bet) => bet.answerId
+      )
+      workingBalanceByUserId = updatedBalanceByUserId
       for (const yesBet of yesBets) {
         const redemptionFill = {
           matchedBetId: null,
