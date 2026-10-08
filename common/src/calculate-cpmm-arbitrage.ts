@@ -1359,33 +1359,35 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   priceLed = false
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
-  const noAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
-      noShares,
-      'NO',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId,
-      true
-    )
-  )
-  const totalNoAmount = sum(noAmounts)
-
   const workingUnfilledBetsByAnswer = mapValues(
     unfilledBetsByAnswer,
     (bets) => [...bets]
   )
   const workingBalanceByUserId = { ...balanceByUserId }
-  const noBetResults = noAmounts.map((noAmount, i) => {
-    const answer = otherAnswers[i]
+  // Each leg is priced against what the earlier legs left the makers: a maker
+  // short of balance across two legs fills less of the second, and the pool
+  // has to sell the rest, or the leg buys fewer than the noShares redeemed.
+  const noAmounts: number[] = []
+  const noBetResults = otherAnswers.map((answer) => {
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
+    const state = { pool, p: answerP(answer), collectedFees }
+    const unfilled = workingUnfilledBetsByAnswer[answer.id] ?? []
+    const noAmount = calculateAmountToBuySharesFixedP(
+      state,
+      noShares,
+      'NO',
+      unfilled,
+      workingBalanceByUserId,
+      true
+    )
+    noAmounts.push(noAmount)
     const result = {
       ...computeFills(
-        { pool, p: answerP(answer), collectedFees },
+        state,
         'NO',
         noAmount,
         undefined,
-        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        unfilled,
         workingBalanceByUserId,
         undefined,
         true
@@ -1400,6 +1402,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
     )
     return result
   })
+  const totalNoAmount = sum(noAmounts)
 
   // Identity: No shares in all other answers is equal to noShares * (n-2) mana + yes shares in answerToBuy (quantity: noShares)
   const redeemedAmount = noShares * (answers.length - 2)
@@ -1625,37 +1628,34 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   priceLed = false
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
-  const yesAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
-      yesShares,
-      'YES',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId,
-      true
-    )
-  )
-  const totalYesAmount = sum(yesAmounts)
-
   const workingUnfilledBetsByAnswer = mapValues(
     unfilledBetsByAnswer,
     (bets) => [...bets]
   )
   const workingBalanceByUserId = { ...balanceByUserId }
-  const yesBetResults = yesAmounts.map((yesAmount, i) => {
-    const answer = otherAnswers[i]
-    const { poolYes, poolNo } = answer
+  // As in buyNoSharesInOtherAnswersThenYesInAnswer: price each leg against
+  // what the earlier legs left the makers, so it buys the yesShares redeemed.
+  const yesAmounts: number[] = []
+  const yesBetResults = otherAnswers.map((answer) => {
+    const pool = { YES: answer.poolYes, NO: answer.poolNo }
+    const state = { pool, p: answerP(answer), collectedFees }
+    const unfilled = workingUnfilledBetsByAnswer[answer.id] ?? []
+    const yesAmount = calculateAmountToBuySharesFixedP(
+      state,
+      yesShares,
+      'YES',
+      unfilled,
+      workingBalanceByUserId,
+      true
+    )
+    yesAmounts.push(yesAmount)
     const result = {
       ...computeFills(
-        {
-          pool: { YES: poolYes, NO: poolNo },
-          p: answerP(answer),
-          collectedFees,
-        },
+        state,
         'YES',
         yesAmount,
         undefined,
-        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        unfilled,
         workingBalanceByUserId,
         undefined,
         true
@@ -1670,6 +1670,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
     )
     return result
   })
+  const totalYesAmount = sum(yesAmounts)
   //{"id": "tQudZcEtlp", "slug": "whos-gonna-win-gn8sCuyRpl", "volume": 0, "answers": [{"id": "Ncus9Qtty2", "prob": 0.16666666666666666, "text": "a", "index": 0, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "CAqyQ8AOSn", "prob": 0.16666666666666666, "text": "b", "index": 1, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "Pc86OAUEsn", "prob": 0.16666666666666666, "text": "c", "index": 2, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "dn0gpUIzpq", "prob": 0.16666666666666666, "text": "d", "index": 3, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "uq5uZd5O0A", "prob": 0.16666666666666666, "text": "e", "index": 4, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "ACNE8CLyyS", "prob": 0.16666666666666666, "text": "Other", "index": 5, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": true, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}], "isRanked": false, "question": "Who's gonna win?", "closeTime": 1767254340000, "creatorId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "mechanism": "cpmm-multi-1", "elasticity": 4.99, "groupSlugs": ["nonpredictive"], "isResolved": false, "visibility": "public", "createdTime": 1755714659073, "creatorName": "Ian Bobby", "description": {"type": "doc", "content": [{"type": "paragraph"}]}, "outcomeType": "MULTIPLE_CHOICE", "subsidyPool": 0, "collectedFees": {"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}, "volume24Hours": 0, "addAnswersMode": "ANYONE", "totalLiquidity": 1000, "creatorUsername": "IanPhilip", "lastUpdatedTime": 1755714659519, "popularityScore": 0, "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2FIanPhilip%2FEyIU8AZ2RC.png?alt=media&token=ff41c9e8-21d5-412d-ac19-854a90cce076", "uniqueBettorCount": 0, "creatorCreatedTime": 1668811545000, "uniqueBettorCountDay": 0, "shouldAnswersSumToOne": true}
   let noBetAmount = betAmount - totalYesAmount
   let pricedFills: ReturnType<typeof computeFills> | undefined
