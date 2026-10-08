@@ -232,6 +232,9 @@ describe('cpmm-multi-2 multi-sell beside an answer bought up to 99%', () => {
   // newest answer through multi-sell then wrote pools summing to 4.86%:
   // multi-sell's search for the NO shares that bring the sum back to one can't
   // land on Other. multi-sell and multi-bet now refuse a v2 trade like this.
+  // (The sale of Other's NO from its near-empty side also returned a cost
+  // short of the root until the general-p solve finished Newton; with that
+  // the pools sum to 1.01, still a miss.)
   // The arbitrage's own legs carry each answer's pool in cpmmState.
   type Leg = {
     answer: { id: string }
@@ -306,7 +309,7 @@ describe('cpmm-multi-2 multi-sell beside an answer bought up to 99%', () => {
 
     const pools = poolsAfterResults(multiSell(answers, newest.id, shares))
     expect(Object.keys(pools)).toHaveLength(answers.length)
-    expect(sumAfter(answers, pools)).toBeLessThan(0.1)
+    expect(Math.abs(sumAfter(answers, pools) - 1)).toBeGreaterThan(1e-3)
     expect(cpmmMultiTradeMissesSumToOne(answers, pools)).toBe(true)
 
     const { newBetResult, otherBetResults } =
