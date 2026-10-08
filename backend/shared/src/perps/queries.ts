@@ -77,6 +77,39 @@ export const rowToPosition = (r: PositionRow): PerpPosition => ({
   updatedTime: new Date(r.updated_time).getTime(),
 })
 
+/** The `contract_perp_events` columns the accounting replays read. */
+export type PerpEventRow = {
+  id: number | string
+  contract_id: string
+  user_id: string
+  event_type: string
+  applied_ts: string
+  ts: string
+  oracle_price: number | string | null
+  size_delta: number | string
+  cost_basis_delta: number | string
+  original_cost_basis_delta: number | string
+  direction: string | null
+  leverage: number | string | null
+  data: Record<string, unknown> | null
+}
+
+export const rowToPerpEvent = (row: PerpEventRow): PerpEvent => ({
+  id: Number(row.id),
+  contractId: row.contract_id,
+  userId: row.user_id,
+  eventType: row.event_type as PerpEvent['eventType'],
+  appliedTime: new Date(row.applied_ts).getTime(),
+  ts: new Date(row.ts).getTime(),
+  oraclePrice: Number(row.oracle_price ?? 0),
+  sizeDelta: Number(row.size_delta),
+  costBasisDelta: Number(row.cost_basis_delta),
+  originalCostBasisDelta: Number(row.original_cost_basis_delta),
+  direction: row.direction as PerpEvent['direction'],
+  leverage: row.leverage == null ? null : Number(row.leverage),
+  data: row.data ?? undefined,
+})
+
 export const upsertPositionsQuery = (positions: PerpPosition[]) => {
   if (!positions.length) return 'select 1 where false'
   const rows = positions.map(positionToRow)
